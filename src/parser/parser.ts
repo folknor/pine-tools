@@ -116,24 +116,25 @@ export class Parser {
     // float name = expr
     if (this.match([TokenType.KEYWORD, ['var', 'varip', 'const']])) {
       const varKeyword = this.previous().value as any;
+      let typeAnnotation: string | undefined;
 
       // Check if next token is also a type keyword (e.g., var float x = 1.0)
       if (this.check([TokenType.KEYWORD, ['int', 'float', 'bool', 'string', 'color', 'line', 'label', 'box', 'table', 'array', 'matrix', 'map']])) {
-        this.advance(); // consume type keyword
+        typeAnnotation = this.advance().value;
       }
 
-      return this.variableDeclaration(varKeyword);
+      return this.variableDeclaration(varKeyword, typeAnnotation);
     }
 
     // Type-annotated variable declaration without var: int x = 1, float y = 2.0
     if (this.check([TokenType.KEYWORD, ['int', 'float', 'bool', 'string', 'color', 'line', 'label', 'box', 'table', 'array', 'matrix', 'map']])) {
       const checkpoint = this.current;
-      const typeKeyword = this.advance(); // consume type keyword
+      const typeKeyword = this.advance().value;
 
       // Check if next token is identifier followed by =
       if (this.check(TokenType.IDENTIFIER) && this.peekNext()?.type === TokenType.ASSIGN) {
         // This is a type-annotated variable declaration
-        return this.variableDeclaration(null);
+        return this.variableDeclaration(null, typeKeyword);
       }
 
       // Not a variable declaration, backtrack
@@ -168,7 +169,8 @@ export class Parser {
     }
 
     // Check if it's an identifier followed by = (variable declaration without var)
-    if (this.check(TokenType.IDENTIFIER) && this.peekNext()?.type === TokenType.ASSIGN) {
+    // But only if it's '=' not ':='
+    if (this.check(TokenType.IDENTIFIER) && this.peekNext()?.type === TokenType.ASSIGN && this.peekNext()?.value === '=') {
       return this.variableDeclaration(null);
     }
 
@@ -198,7 +200,7 @@ export class Parser {
     return this.expressionStatement();
   }
 
-  private variableDeclaration(varType: 'var' | 'varip' | 'const' | null): AST.VariableDeclaration {
+  private variableDeclaration(varType: 'var' | 'varip' | 'const' | null, typeName?: string): AST.VariableDeclaration {
     const token = this.consume(TokenType.IDENTIFIER, 'Expected variable name');
 
     let init: AST.Expression | null = null;
@@ -211,6 +213,7 @@ export class Parser {
       name: token.value,
       varType,
       init,
+      typeAnnotation: typeName ? { name: typeName } : undefined,
       line: token.line,
       column: token.column,
     };

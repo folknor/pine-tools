@@ -421,8 +421,10 @@ export class ComprehensiveValidator {
         declaredWith: statement.varType,
       };
 
-      // Try to infer type from initialization
-      if (statement.init) {
+      // Use type annotation if present, otherwise infer from initialization
+      if (statement.typeAnnotation) {
+        symbol.type = this.mapToPineType(statement.typeAnnotation.name);
+      } else if (statement.init) {
         const initType = this.inferExpressionType(statement.init);
         symbol.type = initType;
       }
@@ -493,6 +495,21 @@ export class ComprehensiveValidator {
       case 'VariableDeclaration':
         if (statement.init) {
           this.validateExpression(statement.init);
+
+          // Check type compatibility
+          const initType = this.inferExpressionType(statement.init);
+          const varSymbol = this.symbolTable.lookupLocal(statement.name);
+          if (varSymbol && varSymbol.type !== 'unknown' && initType !== 'unknown') {
+            if (!TypeChecker.isAssignable(initType, varSymbol.type)) {
+              this.addError(
+                statement.line,
+                statement.column,
+                statement.name.length,
+                `Cannot assign ${initType} to ${varSymbol.type}`,
+                DiagnosticSeverity.Error
+              );
+            }
+          }
         }
         break;
 
@@ -625,6 +642,21 @@ export class ComprehensiveValidator {
       case 'AssignmentStatement':
         this.validateExpression(statement.target);
         this.validateExpression(statement.value);
+
+        // Check type compatibility
+        const targetType = this.inferExpressionType(statement.target);
+        const valueType = this.inferExpressionType(statement.value);
+        if (targetType !== 'unknown' && valueType !== 'unknown') {
+          if (!TypeChecker.isAssignable(valueType, targetType)) {
+            this.addError(
+              statement.line,
+              statement.column,
+              1, // length of operator
+              `Cannot assign ${valueType} to ${targetType}`,
+              DiagnosticSeverity.Error
+            );
+          }
+        }
         break;
     }
   }
