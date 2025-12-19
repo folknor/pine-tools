@@ -317,11 +317,14 @@ export class AccurateValidator {
     // Use negative lookbehind to prevent matching namespaced functions
     // e.g., when checking 'bool', don't match 'input.bool'
     const escapedName = functionName.replace(/\./g, '\\.');
-    const regex = new RegExp(`(?<![a-zA-Z0-9_\\.])${escapedName}\\s*\\(([^)]*)\\)`, 'g');
+    const regex = new RegExp(`(?<![a-zA-Z0-9_\\.])${escapedName}\\s*\\(`, 'g');
 
     let match;
     while ((match = regex.exec(line)) !== null) {
-      const argsString = match[1];
+      const startParenIndex = match.index + match[0].length - 1;
+      const argsString = this.getBalancedContent(line, startParenIndex);
+      if (argsString === null) continue;
+
       const column = match.index;
 
       // Count arguments (simple split by comma, not perfect but good enough)
@@ -428,6 +431,19 @@ export class AccurateValidator {
     }
 
     return args;
+  }
+
+  private getBalancedContent(line: string, startParenIndex: number): string | null {
+    let depth = 1;
+    for (let i = startParenIndex + 1; i < line.length; i++) {
+      if (line[i] === '(') depth++;
+      else if (line[i] === ')') depth--;
+
+      if (depth === 0) {
+        return line.substring(startParenIndex + 1, i);
+      }
+    }
+    return null;
   }
 
   private validateSpecialCases(
