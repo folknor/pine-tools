@@ -181,9 +181,10 @@ export function getNamespaceCompletions(
 
 	// Add color constants for color namespace
 	if (namespace === "color" && nsData.constants) {
-		Object.keys(nsData.constants).forEach((name) => {
+		const constants = nsData.constants;
+		Object.keys(constants).forEach((name) => {
 			const item = createCompletionItem(name, vscode.CompletionItemKind.Color);
-			item.detail = nsData.constants[name];
+			item.detail = constants[name];
 			items.push(item);
 		});
 	}

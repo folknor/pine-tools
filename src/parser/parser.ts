@@ -6,16 +6,14 @@ import { Lexer, type Token, TokenType } from "./lexer";
 export class Parser {
 	private tokens: Token[] = [];
 	private current: number = 0;
+	private parenDepth: number = 0; // Track parenthesis nesting depth
 
 	constructor(source: string) {
 		const lexer = new Lexer(source);
 		this.tokens = lexer
 			.tokenize()
 			.filter(
-				(t) =>
-					t.type !== TokenType.WHITESPACE &&
-					t.type !== TokenType.COMMENT &&
-					t.type !== TokenType.NEWLINE,
+				(t) => t.type !== TokenType.WHITESPACE && t.type !== TokenType.COMMENT,
 			);
 	}
 
@@ -45,6 +43,11 @@ export class Parser {
 	}
 
 	private statement(): AST.Statement | null {
+		// Skip newlines between statements (but not inside parentheses)
+		while (this.check(TokenType.NEWLINE) && this.parenDepth === 0) {
+			this.advance();
+		}
+
 		// Skip annotations
 		if (this.check(TokenType.ANNOTATION)) {
 			this.advance();
@@ -69,6 +72,15 @@ export class Parser {
 		// Return statement
 		if (this.match([TokenType.KEYWORD, ["return"]])) {
 			return this.returnStatement();
+		}
+
+		// Switch expression (Pine Script v6)
+		// switch
+		//     condition => expr
+		//     => defaultExpr
+		if (this.check([TokenType.KEYWORD, ["switch"]])) {
+			// Could be switch expression assigned to a variable - handled via variableDeclaration
+			// But if it appears alone, skip it for now
 		}
 
 		// Type or Enum declaration (Pine Script v6)
@@ -149,6 +161,14 @@ export class Parser {
 				])
 			) {
 				typeAnnotation = this.advance().value;
+				// Check for array type syntax: float[], int[], etc.
+				if (this.check(TokenType.LBRACKET)) {
+					this.advance(); // consume [
+					if (this.check(TokenType.RBRACKET)) {
+						this.advance(); // consume ]
+						typeAnnotation += "[]";
+					}
+				}
 			}
 
 			return this.variableDeclaration(varKeyword, typeAnnotation);
@@ -225,6 +245,16 @@ export class Parser {
 			this.current = checkpoint;
 		}
 
+		// Check for tuple destructuring: [a, b, c] = expr
+		if (this.check(TokenType.LBRACKET)) {
+			const checkpoint = this.current;
+			try {
+				return this.tupleDestructuring();
+			} catch (_e) {
+				this.current = checkpoint;
+			}
+		}
+
 		// Check if it's an identifier followed by = (variable declaration without var)
 		// But only if it's '=' not ':='
 		if (
@@ -261,6 +291,38 @@ export class Parser {
 		return this.expressionStatement();
 	}
 
+	/**
+	 * Parse tuple destructuring: [a, b, c] = expr
+	 */
+	private tupleDestructuring(): AST.TupleDeclaration {
+		const startToken = this.peek();
+		this.consume(TokenType.LBRACKET, 'Expected "["');
+
+		const names: string[] = [];
+		if (!this.check(TokenType.RBRACKET)) {
+			do {
+				const nameToken = this.consume(
+					TokenType.IDENTIFIER,
+					"Expected variable name in tuple",
+				);
+				names.push(nameToken.value);
+			} while (this.match(TokenType.COMMA));
+		}
+
+		this.consume(TokenType.RBRACKET, 'Expected "]"');
+		this.consume(TokenType.ASSIGN, 'Expected "=" after tuple');
+
+		const init = this.expression();
+
+		return {
+			type: "TupleDeclaration",
+			names,
+			init,
+			line: startToken.line,
+			column: startToken.column,
+		};
+	}
+
 	private variableDeclaration(
 		varType: "var" | "varip" | "const" | null,
 		typeName?: string,
@@ -270,6 +332,15 @@ export class Parser {
 		let init: AST.Expression | null = null;
 		if (this.match(TokenType.ASSIGN)) {
 			init = this.expression();
+		}
+
+		// Check for illegal comma-separated declaration (Pine Script v6 doesn't support this)
+		// Extract the first variable but skip the rest (pine-lint behavior)
+		if (this.check(TokenType.COMMA)) {
+			// Skip everything until newline or EOF
+			while (!this.isAtEnd() && !this.check(TokenType.NEWLINE)) {
+				this.advance();
+			}
 		}
 
 		return {
@@ -385,12 +456,73 @@ export class Parser {
 		};
 	}
 
-	private forStatement(): AST.ForStatement {
+	private forStatement(): AST.ForStatement | AST.ForInStatement {
 		const startToken = this.previous();
 		const iterator = this.consume(
 			TokenType.IDENTIFIER,
 			"Expected iterator variable",
 		).value;
+
+		// Check for "for x in collection" syntax
+		if (this.check(TokenType.KEYWORD) && this.peek().value === "in") {
+			this.advance(); // consume 'in'
+			const collection = this.expression();
+
+			const body: AST.Statement[] = [];
+
+			// Skip newlines after collection expression
+			while (this.check(TokenType.NEWLINE)) {
+				this.advance();
+			}
+
+			// Parse the loop body using indentation tracking
+			let bodyIndent: number | null = null;
+
+			while (!this.isAtEnd()) {
+				const currentToken = this.peek();
+				const currentIndent = currentToken.indent || 0;
+
+				if (bodyIndent === null && currentToken.line > startToken.line) {
+					bodyIndent = currentIndent;
+				}
+
+				if (
+					bodyIndent !== null &&
+					currentToken.line > startToken.line &&
+					currentIndent < bodyIndent
+				) {
+					break;
+				}
+
+				const stmt = this.statement();
+				if (stmt) {
+					body.push(stmt);
+				}
+
+				// Skip newlines between statements
+				while (this.check(TokenType.NEWLINE)) {
+					this.advance();
+				}
+
+				// Check if next token is at lower indentation
+				if (!this.isAtEnd()) {
+					const nextIndent = this.peek().indent || 0;
+					if (bodyIndent !== null && nextIndent < bodyIndent) {
+						break;
+					}
+				}
+			}
+
+			return {
+				type: "ForInStatement",
+				iterator,
+				collection,
+				body,
+				line: startToken.line,
+				column: startToken.column,
+			};
+		}
+
 		this.consume(TokenType.ASSIGN, 'Expected "=" in for loop');
 		const from = this.expression();
 		this.match([TokenType.KEYWORD, ["to"]]); // optional 'to' keyword
@@ -551,6 +683,83 @@ export class Parser {
 			body,
 			line,
 			column,
+		};
+	}
+
+	/**
+	 * Parse switch expression (Pine Script v6)
+	 * switch
+	 *     condition => expr
+	 *     => defaultExpr
+	 */
+	private switchExpression(): AST.Expression {
+		const startToken = this.previous();
+
+		// Skip newlines after 'switch'
+		while (this.check(TokenType.NEWLINE)) {
+			this.advance();
+		}
+
+		// Parse switch cases until we hit a line with less indentation
+		const cases: { condition?: AST.Expression; result: AST.Expression }[] = [];
+		let switchIndent: number | null = null;
+
+		while (!this.isAtEnd()) {
+			// Skip newlines
+			while (this.check(TokenType.NEWLINE)) {
+				this.advance();
+			}
+
+			if (this.isAtEnd()) break;
+
+			const currentToken = this.peek();
+			const currentIndent = currentToken.indent || 0;
+
+			// Set expected switch body indentation from first case
+			if (switchIndent === null && currentToken.line > startToken.line) {
+				switchIndent = currentIndent;
+			}
+
+			// Stop if we've returned to base indentation level or less
+			if (
+				switchIndent !== null &&
+				currentToken.line > startToken.line &&
+				currentIndent < switchIndent
+			) {
+				break;
+			}
+
+			// Check for default case (just =>)
+			if (this.match(TokenType.ARROW)) {
+				const result = this.expression();
+				cases.push({ result });
+				continue;
+			}
+
+			// Parse condition => result
+			const condition = this.expression();
+			if (this.match(TokenType.ARROW)) {
+				const result = this.expression();
+				cases.push({ condition, result });
+			} else {
+				// Not a valid case, stop parsing
+				break;
+			}
+		}
+
+		// Return the last case's result as the expression value
+		// (In a full implementation, this would be a SwitchExpression AST node)
+		if (cases.length > 0) {
+			return cases[cases.length - 1].result;
+		}
+
+		// Return a placeholder literal if no cases
+		return {
+			type: "Literal",
+			value: "na",
+			raw: "na",
+			line: startToken.line,
+			column: startToken.column,
 		};
 	}
 
@@ -724,8 +933,51 @@ export class Parser {
 		let expr = this.primary();
 
 		while (true) {
+			// Don't continue postfix operations across newlines (unless inside parentheses)
+			// This prevents `x\n[y]` being parsed as `x[y]`
+			if (this.check(TokenType.NEWLINE) && this.parenDepth === 0) {
+				break;
+			}
+
+			// Handle generic type arguments: array.new<float>()
+			if (this.check(TokenType.COMPARE) && this.peek().value === "<") {
+				// Look ahead to see if this is a generic type argument (followed by identifier and >)
+				const savedPos = this.current;
+				this.advance(); // consume <
+
+				// Consume type identifier(s) - could be "float", "int", "box", etc.
+				if (this.check(TokenType.IDENTIFIER) || this.check(TokenType.KEYWORD)) {
+					this.advance();
+					// Handle nested generics like array<array<float>>
+					while (this.check(TokenType.COMPARE) && this.peek().value === "<") {
+						this.advance();
+						if (
+							this.check(TokenType.IDENTIFIER) ||
+							this.check(TokenType.KEYWORD)
+						) {
+							this.advance();
+						}
+						if (this.check(TokenType.COMPARE) && this.peek().value === ">") {
+							this.advance();
+						}
+					}
+					// Consume closing >
+					if (this.check(TokenType.COMPARE) && this.peek().value === ">") {
+						this.advance();
+						// Now should see ( for function call
+						if (this.match(TokenType.LPAREN)) {
+							expr = this.finishCall(expr);
+							continue;
+						}
+					}
+				}
+				// If pattern didn't match, restore position
+				this.current = savedPos;
+			}
+
 			if (this.match(TokenType.LPAREN)) {
 				// Function call
+				this.parenDepth++; // Increment depth when opening parenthesis
 				expr = this.finishCall(expr);
 			} else if (this.match(TokenType.DOT)) {
 				// Member access - property can be identifier or keyword (e.g., input.float)
@@ -773,6 +1025,11 @@ export class Parser {
 
 		if (!this.check(TokenType.RPAREN)) {
 			do {
+				// Skip newlines between arguments
+				while (this.check(TokenType.NEWLINE)) {
+					this.advance();
+				}
+
 				// Check for named argument: name = value
 				// Allow both IDENTIFIER and KEYWORD as parameter names (Pine Script uses keywords like 'color', 'title', etc. as parameter names)
 				if (
@@ -788,10 +1045,16 @@ export class Parser {
 					const value = this.expression();
 					args.push({ value });
 				}
+
+				// Skip newlines after argument
+				while (this.check(TokenType.NEWLINE)) {
+					this.advance();
+				}
 			} while (this.match(TokenType.COMMA));
 		}
 
 		this.consume(TokenType.RPAREN, 'Expected ")" after arguments');
+		this.parenDepth--; // Decrement depth when closing parenthesis
 
 		return {
 			type: "CallExpression",
@@ -870,10 +1133,17 @@ export class Parser {
 			};
 		}
 
+		// Switch expression (v6)
+		if (this.match([TokenType.KEYWORD, ["switch"]])) {
+			return this.switchExpression();
+		}
+
 		// Grouping
 		if (this.match(TokenType.LPAREN)) {
+			this.parenDepth++; // Increment depth for grouping
 			const expr = this.expression();
 			this.consume(TokenType.RPAREN, 'Expected ")" after expression');
+			this.parenDepth--; // Decrement depth after closing
 			return expr;
 		}
 

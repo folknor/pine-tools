@@ -126,7 +126,7 @@
 		"qa:pinescript": "pnpm run build && node qa-validate-pinescript.js",
 		"qa:pinescript:watch": "pnpm run build && node qa-validate-pinescript.js --watch",
 		"test:mcp": "pnpm run build && node test-mcp-server.js",
-		"package": "vsce package --out build/",
+		"package": "pnpm vsce package --out build/",
 		"rebuild": "pnpm run clean && pnpm run build && pnpm test && pnpm run package",
 		"rebuild:skip-tests": "pnpm run clean && pnpm run build && pnpm run package",
 		"crawl": "node v6/scripts/crawl-docs.js",

@@ -63,6 +63,8 @@ const KEYWORDS = new Set([
 	"export",
 	"import",
 	"as",
+	"in",
+	"to",
 	"switch",
 	"case",
 	"default",
@@ -345,11 +347,15 @@ export class Lexer {
 			this.advance();
 		}
 
-		// Decimal part
-		if (this.peek() === "." && this.isDigit(this.peekNext())) {
-			this.advance(); // .
-			while (this.isDigit(this.peek())) {
-				this.advance();
+		// Decimal part - handle both "1.5" and "1." (trailing dot)
+		if (this.peek() === ".") {
+			const nextChar = this.peekNext();
+			// Check if this is a decimal point (followed by digit) or trailing dot (followed by non-identifier)
+			if (this.isDigit(nextChar) || !this.isAlpha(nextChar)) {
+				this.advance(); // consume .
+				while (this.isDigit(this.peek())) {
+					this.advance();
+				}
 			}
 		}
 
@@ -458,6 +464,9 @@ export class Lexer {
 	}
 
 	private addToken(type: TokenType, value: string, length: number): void {
+		// Only set indent on the first real token of each line
+		const indentValue = this.atLineStart ? this.currentIndent : undefined;
+
 		// Mark that we're no longer at the start of the line (except for NEWLINE tokens)
 		if (
 			type !== TokenType.NEWLINE &&
@@ -473,7 +482,7 @@ export class Lexer {
 			line: this.line,
 			column: this.column - length,
 			length,
-			indent: this.atLineStart ? undefined : this.currentIndent, // Only set indent for non-line-start tokens
+			indent: indentValue,
 		});
 	}
 }

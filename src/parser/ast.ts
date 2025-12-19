@@ -13,10 +13,12 @@ export interface Program extends ASTNode {
 
 export type Statement =
 	| VariableDeclaration
+	| TupleDeclaration
 	| FunctionDeclaration
 	| ExpressionStatement
 	| IfStatement
 	| ForStatement
+	| ForInStatement
 	| WhileStatement
 	| ReturnStatement
 	| TypeDeclaration
@@ -46,6 +48,12 @@ export interface VariableDeclaration extends ASTNode {
 	varType: "var" | "varip" | "const" | null;
 	init: Expression | null;
 	typeAnnotation?: TypeAnnotation;
+}
+
+export interface TupleDeclaration extends ASTNode {
+	type: "TupleDeclaration";
+	names: string[];
+	init: Expression;
 }
 
 export interface FunctionDeclaration extends ASTNode {
@@ -85,6 +93,13 @@ export interface ForStatement extends ASTNode {
 	iterator: string;
 	from: Expression;
 	to: Expression;
+	body: Statement[];
+}
+
+export interface ForInStatement extends ASTNode {
+	type: "ForInStatement";
+	iterator: string;
+	collection: Expression;
 	body: Statement[];
 }
 
