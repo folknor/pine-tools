@@ -269,6 +269,18 @@ export const TA_FUNCTIONS: Record<string, FunctionSignatureSpec> = {
 };
 
 /**
+ * Time Functions
+ */
+export const TIME_FUNCTIONS: Record<string, FunctionSignatureSpec> = {
+  'timestamp': {
+    name: 'timestamp',
+    requiredParams: [],
+    optionalParams: ['year_or_timezone', 'month_or_year', 'day_or_month', 'hour_or_day', 'minute_or_hour', 'second_or_minute', 'second'],
+    signature: 'timestamp(year, month, day, hour?, minute?, second?) or timestamp(timezone, year, month, day, hour?, minute?, second?) or timestamp(dateString) ...'
+  },
+};
+
+/**
  * ALL FUNCTION SIGNATURES
  */
 export const ALL_FUNCTION_SIGNATURES: Record<string, FunctionSignatureSpec> = {
@@ -277,6 +289,7 @@ export const ALL_FUNCTION_SIGNATURES: Record<string, FunctionSignatureSpec> = {
   ...ALERT_FUNCTIONS,
   ...INPUT_FUNCTIONS,
   ...TA_FUNCTIONS,
+  ...TIME_FUNCTIONS,
 };
 
 /**
