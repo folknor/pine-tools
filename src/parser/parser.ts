@@ -1,12 +1,13 @@
 // Simple Pine Script Parser (focused on function call validation)
 
 import type * as AST from "./ast";
-import { Lexer, type Token, TokenType } from "./lexer";
+import { Lexer, type LexerError, type Token, TokenType } from "./lexer";
 
 export class Parser {
 	private tokens: Token[] = [];
 	private current: number = 0;
 	private parenDepth: number = 0; // Track parenthesis nesting depth
+	private lexerErrors: LexerError[] = [];
 
 	constructor(source: string) {
 		const lexer = new Lexer(source);
@@ -15,6 +16,11 @@ export class Parser {
 			.filter(
 				(t) => t.type !== TokenType.WHITESPACE && t.type !== TokenType.COMMENT,
 			);
+		this.lexerErrors = lexer.getErrors();
+	}
+
+	getLexerErrors(): LexerError[] {
+		return this.lexerErrors;
 	}
 
 	parse(): AST.Program {

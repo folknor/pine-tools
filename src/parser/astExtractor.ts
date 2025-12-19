@@ -193,6 +193,7 @@ const BUILTIN_SERIES: Record<string, string> = {
 
 export class ASTExtractor {
 	private scopeCounter = 0;
+	private currentScopeId: string | undefined;
 
 	/**
 	 * Extract pine-lint compatible result from AST

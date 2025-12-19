@@ -180,7 +180,31 @@ export class SymbolTable {
 		}
 
 		// Keywords (treated as reserved symbols)
-		const keywords = ["break", "continue", "type"];
+		// Adding control flow keywords to prevent false "undefined variable" errors
+		// when the parser fails to properly handle certain syntax constructs
+		const keywords = [
+			"break",
+			"continue",
+			"type",
+			"if",
+			"else",
+			"for",
+			"while",
+			"switch",
+			"import",
+			"export",
+			"true",
+			"false",
+			"and",
+			"or",
+			"not",
+			"var",
+			"varip",
+			"method",
+			"series",
+			"simple",
+			"const",
+		];
 
 		for (const name of keywords) {
 			this.globalScope.define({

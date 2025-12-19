@@ -48,6 +48,12 @@ export interface Token {
 	indent?: number; // Indentation level (number of spaces at line start)
 }
 
+export interface LexerError {
+	line: number;
+	column: number;
+	message: string;
+}
+
 const KEYWORDS = new Set([
 	"if",
 	"else",
@@ -120,6 +126,7 @@ export class Lexer {
 	private tokens: Token[] = [];
 	private currentIndent: number = 0; // Track current line's indentation
 	private atLineStart: boolean = true; // Track if we're at the start of a line
+	private lexerErrors: LexerError[] = [];
 
 	constructor(source: string) {
 		this.source = source;
@@ -131,6 +138,10 @@ export class Lexer {
 		}
 		this.addToken(TokenType.EOF, "", 0);
 		return this.tokens;
+	}
+
+	getErrors(): LexerError[] {
+		return this.lexerErrors;
 	}
 
 	private scanToken(): void {
@@ -318,24 +329,47 @@ export class Lexer {
 
 	private scanString(quote: string): void {
 		const start = this.pos - 1;
+		const startLine = this.line;
+		const startColumn = this.column - 1;
 
 		while (this.peek() !== quote && !this.isAtEnd()) {
 			if (this.peek() === "\\") {
 				this.advance(); // Skip escape char
-				this.advance(); // Skip next char
-			} else {
-				if (this.peek() === "\n") {
-					this.line++;
-					this.column = 0;
+				// Valid escape sequences: \n, \t, \\, \", \', etc.
+				// Just skip the next character whatever it is
+				if (!this.isAtEnd()) {
+					this.advance(); // Skip escaped char
 				}
+			} else if (this.peek() === "\n") {
+				// Unescaped newline inside string literal - this is an error
+				const value = this.source.substring(start, this.pos);
+				this.addToken(TokenType.STRING, value, value.length);
+				// Add lexer error for unterminated string (newline)
+				this.lexerErrors.push({
+					line: startLine,
+					column: startColumn + value.length,
+					message: `mismatched character '\\n' expecting '${quote}'`,
+				});
+				return;
+			} else {
 				this.advance();
 			}
 		}
 
-		if (!this.isAtEnd()) {
-			this.advance(); // Closing quote
+		if (this.isAtEnd()) {
+			// Unterminated string - reached end of file without closing quote
+			const value = this.source.substring(start, this.pos);
+			this.addToken(TokenType.STRING, value, value.length);
+			// Add lexer error for unterminated string (EOF)
+			this.lexerErrors.push({
+				line: startLine,
+				column: startColumn + value.length,
+				message: `mismatched character '<EOF>' expecting '${quote}'`,
+			});
+			return;
 		}
 
+		this.advance(); // Closing quote
 		const value = this.source.substring(start, this.pos);
 		this.addToken(TokenType.STRING, value, value.length);
 	}

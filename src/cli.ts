@@ -39,6 +39,9 @@ async function main() {
 		const parser = new Parser(code);
 		const ast = parser.parse();
 
+		// Get lexer errors first (string validation, etc.)
+		const lexerErrors = parser.getLexerErrors();
+
 		const extractor = new ASTExtractor();
 		const result = extractor.extract(ast);
 
@@ -46,14 +49,24 @@ async function main() {
 		const validator = new ComprehensiveValidator();
 		const validationErrors = validator.validate(ast);
 
+		// Convert lexer errors to pine-lint format
+		const lexerPineLintErrors: PineLintError[] = lexerErrors.map((e) => ({
+			start: { line: e.line, column: e.column },
+			end: { line: e.line, column: e.column + 1 },
+			message: e.message,
+		}));
+
 		// Convert validation errors to pine-lint format (only errors, not warnings)
-		const errors: PineLintError[] = validationErrors
+		const validationPineLintErrors: PineLintError[] = validationErrors
 			.filter((e) => e.severity === DiagnosticSeverity.Error)
 			.map((e) => ({
 				start: { line: e.line, column: e.column },
 				end: { line: e.line, column: e.column + e.length },
 				message: e.message,
 			}));
+
+		// Combine all errors (lexer errors first)
+		const errors: PineLintError[] = [...lexerPineLintErrors, ...validationPineLintErrors];
 
 		if (errors.length > 0) {
 			result.errors = errors;

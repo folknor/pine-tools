@@ -757,21 +757,26 @@ export class ComprehensiveValidator {
 				return;
 			}
 
-			// Undefined variable - suggest similar names
-			const similar = this.symbolTable.findSimilarSymbols(identifier.name, 2);
-			let message = `Undefined variable '${identifier.name}'`;
-
-			if (similar.length > 0) {
-				message += `. Did you mean '${similar[0]}'?`;
-			}
-
-			this.addError(
-				identifier.line,
-				identifier.column,
-				identifier.name.length,
-				message,
-				DiagnosticSeverity.Error,
-			);
+			// DISABLED: Undefined variable check produces too many false positives
+			// due to parser scope handling issues with function parameters and
+			// control flow keywords. The authority linter handles this correctly.
+			// Re-enable after fixing the parser's scope tracking for:
+			// - Function parameters not being visible in function body
+			// - Variables declared in if/for blocks not being tracked correctly
+			//
+			// TODO: Fix parser scope tracking, then re-enable this check
+			// const similar = this.symbolTable.findSimilarSymbols(identifier.name, 2);
+			// let message = `Undefined variable '${identifier.name}'`;
+			// if (similar.length > 0) {
+			// 	message += `. Did you mean '${similar[0]}'?`;
+			// }
+			// this.addError(
+			// 	identifier.line,
+			// 	identifier.column,
+			// 	identifier.name.length,
+			// 	message,
+			// 	DiagnosticSeverity.Error,
+			// );
 			return;
 		}
 
