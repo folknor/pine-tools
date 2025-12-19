@@ -9,10 +9,13 @@
  */
 
 // Re-export types
-export type { FunctionParameter, FunctionSignatureSpec } from "./parameter-requirements-generated";
+export type {
+	FunctionParameter,
+	FunctionSignatureSpec,
+} from "./parameter-requirements-generated";
 
-import { PINE_FUNCTIONS as GENERATED } from "./parameter-requirements-generated";
 import { ALL_FUNCTION_SIGNATURES as MANUAL } from "./parameter-requirements";
+import { PINE_FUNCTIONS as GENERATED } from "./parameter-requirements-generated";
 
 /**
  * Merged parameter requirements with manual overrides:
@@ -23,8 +26,8 @@ import { ALL_FUNCTION_SIGNATURES as MANUAL } from "./parameter-requirements";
  * Manual functions take precedence for maximum validation accuracy.
  */
 export const PINE_FUNCTIONS_MERGED = {
-  ...GENERATED,  // Generated functions (auto-parsed)
-  ...MANUAL      // Manual overrides (100% accurate)
+	...GENERATED, // Generated functions (auto-parsed)
+	...MANUAL, // Manual overrides (100% accurate)
 };
 
 // Default export
