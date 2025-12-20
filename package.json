@@ -131,11 +131,10 @@
 		"package": "pnpm vsce package --out build/",
 		"rebuild": "pnpm run clean && pnpm run build && pnpm test && pnpm run package",
 		"rebuild:skip-tests": "pnpm run clean && pnpm run build && pnpm run package",
-		"crawl": "node scripts/crawl-puppeteer.js",
-		"crawl:force": "node scripts/crawl-puppeteer.js",
+		"crawl": "node scripts/crawl.js",
 		"generate": "node scripts/generate.js",
-		"scrape": "node scripts/scrape-puppeteer.js",
-		"scrape:force": "node scripts/scrape-puppeteer.js --force",
+		"scrape": "node scripts/scrape.js",
+		"scrape:force": "node scripts/scrape.js --force",
 		"prepare": "husky"
 	},
 	"devDependencies": {
