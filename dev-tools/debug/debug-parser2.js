@@ -1,7 +1,10 @@
-const { Parser } = require("./dist/src/parser/parser.js");
+const { Parser } = require("../../dist/srcparser/parser");
 const fs = require("node:fs");
 
-const code = fs.readFileSync("./examples/global-liquidity.v6.pine", "utf-8");
+const code = fs.readFileSync(
+	"../pinescripts/demo-scripts/global-liquidity.v6.pine",
+	"utf-8",
+);
 const lines = code.split("\n");
 console.log("Line 18:", lines[17]);
 console.log("Line 19:", lines[18]);

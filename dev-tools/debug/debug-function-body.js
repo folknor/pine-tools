@@ -1,9 +1,12 @@
 #!/usr/bin/env node
 
 const fs = require("node:fs");
-const { Parser } = require("./dist/src/parser/parser");
+const { Parser } = require("../../dist/srcparser/parser");
 
-const code = fs.readFileSync("./examples/global-liquidity.v6.pine", "utf-8");
+const code = fs.readFileSync(
+	"../pinescripts/demo-scripts/global-liquidity.v6.pine",
+	"utf-8",
+);
 
 // Extract just the f_norm function
 const lines = code.split("\n");

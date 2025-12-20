@@ -14,6 +14,7 @@
 		"url": "https://github.com/folknor/pinescript-vscode-extension.git"
 	},
 	"license": "MIT",
+	"packageManager": "pnpm@10.26.1",
 	"engines": {
 		"vscode": "^1.108.0"
 	},
@@ -120,18 +121,20 @@
 		"watch": "tsc -w -p .",
 		"lint": "pnpm exec biome check",
 		"check": "pnpm exec biome check",
-		"test": "pnpm run build && node --test test/*.test.js",
-		"test:validation": "pnpm run build && node --test test/validation.test.js",
-		"test:benchmark": "node --test test/benchmark.test.js",
-		"qa:pinescript": "pnpm run build && node qa-validate-pinescript.js",
-		"qa:pinescript:watch": "pnpm run build && node qa-validate-pinescript.js --watch",
-		"test:mcp": "pnpm run build && node test-mcp-server.js",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"test:ui": "vitest --ui",
+		"test:coverage": "vitest run --coverage",
+		"qa:pinescript": "pnpm run build && node dev-tools/testing/qa-validate-pinescript.js",
+		"qa:pinescript:watch": "pnpm run build && node dev-tools/testing/qa-validate-pinescript.js --watch",
+		"test:mcp": "pnpm run build && node dev-tools/testing/test-mcp-server.js",
 		"package": "pnpm vsce package --out build/",
 		"rebuild": "pnpm run clean && pnpm run build && pnpm test && pnpm run package",
 		"rebuild:skip-tests": "pnpm run clean && pnpm run build && pnpm run package",
-		"crawl": "node v6/scripts/crawl-docs.js",
-		"generate": "node v6/scripts/generate-builtins.js",
-		"scrape": "node v6/scripts/scrape-builtins.js",
+		"crawl": "node scripts/crawl.js",
+		"generate": "node scripts/generate.js",
+		"scrape": "node scripts/scrape.js",
+		"scrape:force": "node scripts/scrape.js --force",
 		"prepare": "husky"
 	},
 	"devDependencies": {
@@ -139,10 +142,14 @@
 		"@modelcontextprotocol/sdk": "^1.25.1",
 		"@types/node": "^25.0.3",
 		"@types/vscode": "^1.107.0",
+		"@vitest/coverage-v8": "^4.0.16",
+		"@vitest/ui": "^4.0.16",
 		"cheerio": "^1.1.2",
 		"husky": "^9.1.7",
 		"playwright": "^1.57.0",
-		"typescript": "^5.9.3"
+		"tslib": "^2.8.1",
+		"typescript": "^5.9.3",
+		"vitest": "^4.0.16"
 	},
 	"dependencies": {
 		"glob": "^13.0.0"

@@ -314,6 +314,15 @@ export class SymbolTable {
 		this.currentScope.markUsed(name);
 	}
 
+	update(symbol: Symbol): void {
+		// Update the symbol in the current scope
+		// This is used for type promotion when a variable's type changes
+		const existing = this.currentScope.lookupLocal(symbol.name);
+		if (existing) {
+			this.currentScope.define(symbol); // Replace the existing symbol
+		}
+	}
+
 	getCurrentScope(): Scope {
 		return this.currentScope;
 	}

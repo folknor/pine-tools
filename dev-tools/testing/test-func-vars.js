@@ -1,7 +1,7 @@
-const { Parser } = require("./dist/src/parser/parser.js");
+const { Parser } = require("../../dist/srcparser/parser");
 const {
 	ComprehensiveValidator,
-} = require("./dist/src/parser/comprehensiveValidator.js");
+} = require("../../dist/srcparser/comprehensiveValidator");
 const code = `//@version=6
 indicator('Test')
 f_norm(x, n) => x * 2

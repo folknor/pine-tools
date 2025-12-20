@@ -12,6 +12,7 @@ import {
 	DiagnosticSeverity,
 } from "./parser/comprehensiveValidator";
 import { Parser } from "./parser/parser";
+import { SemanticAnalyzer } from "./parser/semanticAnalyzer";
 
 async function main() {
 	const args = process.argv.slice(2);
@@ -42,12 +43,22 @@ async function main() {
 		// Get lexer errors first (string validation, etc.)
 		const lexerErrors = parser.getLexerErrors();
 
+		// Get detected version for version-aware validation
+		const detectedVersion = parser.getDetectedVersion() || "6"; // Default to v6 if not detected
+
 		const extractor = new ASTExtractor();
 		const result = extractor.extract(ast);
 
-		// Run validation to get errors
+		// Run validation to get errors (version-aware)
 		const validator = new ComprehensiveValidator();
-		const validationErrors = validator.validate(ast);
+		const validationErrors = validator.validate(ast, detectedVersion);
+
+		// Run semantic analysis to get warnings (only for v6)
+		const semanticWarnings = [];
+		if (detectedVersion === "6") {
+			const semanticAnalyzer = new SemanticAnalyzer();
+			semanticWarnings.push(...semanticAnalyzer.analyze(ast));
+		}
 
 		// Convert lexer errors to pine-lint format
 		const lexerPineLintErrors: PineLintError[] = lexerErrors.map((e) => ({
@@ -65,11 +76,30 @@ async function main() {
 				message: e.message,
 			}));
 
+		// Convert semantic warnings to pine-lint format (warnings)
+		const semanticPineLintWarnings: PineLintError[] = semanticWarnings
+			.filter((w) => w.severity === DiagnosticSeverity.Warning)
+			.map((w) => ({
+				start: { line: w.line, column: w.column },
+				end: { line: w.line, column: w.column + w.length },
+				message: w.message,
+			}));
+
 		// Combine all errors (lexer errors first)
-		const errors: PineLintError[] = [...lexerPineLintErrors, ...validationPineLintErrors];
+		const errors: PineLintError[] = [
+			...lexerPineLintErrors,
+			...validationPineLintErrors,
+		];
+
+		// Combine all warnings
+		const warnings: PineLintError[] = [...semanticPineLintWarnings];
 
 		if (errors.length > 0) {
 			result.errors = errors;
+		}
+
+		if (warnings.length > 0) {
+			result.warnings = warnings;
 		}
 
 		const output: PineLintOutput = {

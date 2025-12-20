@@ -30,9 +30,9 @@ docs/**
 !CHANGELOG.md
 !LICENSE
 
-# Agent definitions (private)
-multi-agent-devex/**
-.CLAUDE.md
+# Agent definitions (private - but .CLAUDE.md exists now)
+# multi-agent-devex/**
+# .CLAUDE.md
 
 # GitHub workflows (not needed in extension)
 .github/**
@@ -41,26 +41,11 @@ multi-agent-devex/**
 v6/scripts/**
 v6/raw/**
 scripts/**
+dev-tools/**
 
-# Examples & Test Files
-examples/**
-
-# Development files
-check-functions.js
-test-comprehensive-validator.js
-test-validation.pine
-PRE-RELEASE-CLEANUP-REPORT.md
-
-# Session debugging/testing files (exclude all)
-test-*.js
-test-*.pine
-debug-*.js
-analyze-*.js
-check-*.js
-find-*.js
-.mcp.json
-settings.json
-mcp/**
+# Examples & Test Files (keep pinescripts/ for examples)
+pinescripts/strategies-todo/**
+pinescripts/indicators-todo/**
 
 # OS & IDE
 .DS_Store

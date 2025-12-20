@@ -5,8 +5,8 @@
  * Test case: Lines 13-16 of valid.pine
  */
 
-import { ASTExtractor } from "../../src/parser/astExtractor.js";
-import { Parser } from "../../src/parser/parser.js";
+import { ASTExtractor } from "../../dist/srcparser/astExtractor.js";
+import { Parser } from "../../dist/srcparser/parser.js";
 
 const code = `//@version=6
 indicator("Valid Indicator - Multiple Params",

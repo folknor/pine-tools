@@ -1,4 +1,4 @@
-const { Lexer } = require("./dist/src/parser/lexer");
+const { Lexer } = require("../../dist/srcparser/lexer");
 
 // Test what tokens are generated for "color = color.gray"
 const code = "color = color.gray";

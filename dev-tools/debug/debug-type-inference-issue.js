@@ -1,7 +1,7 @@
-const { Parser } = require("./dist/src/parser/parser");
+const { Parser } = require("../../dist/srcparser/parser");
 const {
 	ComprehensiveValidator,
-} = require("./dist/src/parser/comprehensiveValidator");
+} = require("../../dist/srcparser/comprehensiveValidator");
 
 const testCode = `
 f_days_to_bars(days) =>

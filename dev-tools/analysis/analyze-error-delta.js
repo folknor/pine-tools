@@ -2,7 +2,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const {
 	comprehensiveValidatePineScript,
-} = require("./dist/src/parser/comprehensiveValidator");
+} = require("../../dist/srcparser/comprehensiveValidator");
 
 // Analyze the delta between old and new errors after the parsing fix
 console.log("=== Analyzing Error Delta After Named Argument Fix ===\n");

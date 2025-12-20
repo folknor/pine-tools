@@ -1,5 +1,5 @@
-const { Lexer } = require("./dist/src/parser/lexer");
-const { Parser } = require("./dist/src/parser/parser");
+const { Lexer } = require("../../dist/srcparser/lexer");
+const { Parser } = require("../../dist/srcparser/parser");
 
 const testCode = `
 if newSessStart

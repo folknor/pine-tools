@@ -11,7 +11,6 @@ import type {
 	CallArgument,
 	CallExpression,
 	Expression,
-	FunctionDeclaration,
 	Identifier,
 	IndexExpression,
 	Literal,
@@ -80,23 +79,21 @@ export class ComprehensiveValidator {
 		this.buildFunctionSignatures();
 	}
 
-	validate(ast: Program): ValidationError[] {
+	validate(ast: Program, version: string = "6"): ValidationError[] {
 		this.errors = [];
 		this.symbolTable = new SymbolTable();
 		this.expressionTypes.clear();
 
-		// First pass: collect all variable declarations
+		// Single pass: collect declarations and validate together
+		// This ensures function parameters are in scope during validation
 		for (const statement of ast.body) {
-			this.collectDeclarations(statement);
+			this.validateStatement(statement, version);
 		}
 
-		// Second pass: validate everything
-		for (const statement of ast.body) {
-			this.validateStatement(statement);
+		// Check for unused variables (only for v6)
+		if (version === "6") {
+			this.checkUnusedVariables();
 		}
-
-		// Check for unused variables
-		this.checkUnusedVariables();
 
 		return this.errors;
 	}
@@ -161,6 +158,20 @@ export class ComprehensiveValidator {
 		"plot.style_areabr": "string",
 		"plot.style_columns": "string",
 		"plot.style_circles": "string",
+
+		// v4/v5 input type constants (for backward compatibility)
+		"input.source": "string",
+		"input.resolution": "string",
+		"input.bool": "string",
+		"input.integer": "string",
+		"input.float": "string",
+		"input.string": "string",
+		"input.color": "string",
+		"input.timeframe": "string",
+		"input.symbol": "string",
+		"input.session": "string",
+		"input.price": "string",
+		"input.time": "string",
 
 		// timeframe namespace properties
 		"timeframe.period": "string",
@@ -444,7 +455,10 @@ export class ComprehensiveValidator {
 		return typeMap[typeStr.toLowerCase()] || "unknown";
 	}
 
-	private collectDeclarations(statement: Statement): void {
+	private collectDeclarations(
+		statement: Statement,
+		version: string = "6",
+	): void {
 		if (statement.type === "VariableDeclaration") {
 			const symbol: SymbolInfo = {
 				name: statement.name,
@@ -460,56 +474,20 @@ export class ComprehensiveValidator {
 			if (statement.typeAnnotation) {
 				symbol.type = this.mapToPineType(statement.typeAnnotation.name);
 			} else if (statement.init) {
-				const initType = this.inferExpressionType(statement.init);
+				const initType = this.inferExpressionType(statement.init, version);
 				symbol.type = initType;
 			}
 
 			this.symbolTable.define(symbol);
 		} else if (statement.type === "FunctionDeclaration") {
-			// First, collect declarations from function body (needed for type inference)
-			this.symbolTable.enterScope();
+			// NOTE: Function declarations are handled in validateStatement
+			// to ensure proper scope management. This method is only called
+			// from within the function scope that's already been entered.
 
-			// Add parameters to scope
-			// Infer parameter types based on common patterns
-			for (let i = 0; i < statement.params.length; i++) {
-				const param = statement.params[i];
-				// First parameter often series data (x, src, val, etc.)
-				// Other parameters often int (length, period, n, etc.)
-				const paramType = i === 0 ? "series<float>" : "int";
-
-				this.symbolTable.define({
-					name: param.name,
-					type: paramType,
-					line: statement.line,
-					column: statement.column,
-					used: false,
-					kind: "variable",
-					declaredWith: null,
-				});
-			}
-
-			// Collect declarations from function body
+			// Collect declarations from function body (without managing scope)
 			for (const stmt of statement.body) {
-				this.collectDeclarations(stmt);
+				this.collectDeclarations(stmt, version);
 			}
-
-			// NOW infer return type (with body variables in scope)
-			const returnType = this.inferFunctionReturnType(statement);
-
-			this.symbolTable.exitScope();
-
-			// Define the function in parent scope
-			const symbol: SymbolInfo = {
-				name: statement.name,
-				type: returnType,
-				line: statement.line,
-				column: statement.column,
-				used: false,
-				kind: "function",
-				declaredWith: null,
-			};
-
-			this.symbolTable.define(symbol);
 		} else if (
 			statement.type === "TypeDeclaration" ||
 			statement.type === "EnumDeclaration"
@@ -527,15 +505,37 @@ export class ComprehensiveValidator {
 		}
 	}
 
-	private validateStatement(statement: Statement): void {
+	private validateStatement(statement: Statement, version: string = "6"): void {
 		const _prevBlockDepth = this.blockDepth;
 		switch (statement.type) {
-			case "VariableDeclaration":
+			case "VariableDeclaration": {
+				// First, register the variable in the symbol table (like collectDeclarations does)
+				const symbol: SymbolInfo = {
+					name: statement.name,
+					type: "unknown",
+					line: statement.line,
+					column: statement.column,
+					used: false,
+					kind: "variable",
+					declaredWith: statement.varType,
+				};
+
+				// Use type annotation if present, otherwise infer from initialization
+				if (statement.typeAnnotation) {
+					symbol.type = this.mapToPineType(statement.typeAnnotation.name);
+				} else if (statement.init) {
+					const initType = this.inferExpressionType(statement.init, version);
+					symbol.type = initType;
+				}
+
+				this.symbolTable.define(symbol);
+
+				// Then validate the initialization expression
 				if (statement.init) {
-					this.validateExpression(statement.init);
+					this.validateExpression(statement.init, version);
 
 					// Check type compatibility
-					const initType = this.inferExpressionType(statement.init);
+					const initType = this.inferExpressionType(statement.init, version);
 					const varSymbol = this.symbolTable.lookupLocal(statement.name);
 					if (
 						varSymbol &&
@@ -543,31 +543,105 @@ export class ComprehensiveValidator {
 						initType !== "unknown"
 					) {
 						if (!TypeChecker.isAssignable(initType, varSymbol.type)) {
-							this.addError(
-								statement.line,
-								statement.column,
-								statement.name.length,
-								`Cannot assign ${initType} to ${varSymbol.type}`,
-								DiagnosticSeverity.Error,
-							);
+							// Check if this is a type promotion case (simple -> series)
+							// In Pine Script, simple types can be promoted to series types
+							if (this.canPromoteType(varSymbol.type, initType)) {
+								// Promote variable type in symbol table
+								varSymbol.type = initType;
+								this.symbolTable.update(varSymbol);
+							} else {
+								this.addError(
+									statement.line,
+									statement.column,
+									statement.name.length,
+									`Cannot assign ${initType} to ${varSymbol.type}`,
+									DiagnosticSeverity.Error,
+								);
+							}
 						}
 					}
 				}
 				break;
+			}
 
 			case "ExpressionStatement":
-				this.validateExpression(statement.expression);
+				this.validateExpression(statement.expression, version);
 				break;
 
 			case "FunctionDeclaration":
 				this.symbolTable.enterScope();
 				this.blockDepth++;
 
-				// Add function parameters to scope
-				for (const param of statement.params) {
+				// Add function parameters to scope with proper type inference
+				// Use the same logic as collectDeclarations for consistency
+				for (let i = 0; i < statement.params.length; i++) {
+					const param = statement.params[i];
+					let paramType: PineType = "unknown";
+
+					// Infer parameter type based on name and position
+					if (i === 0) {
+						// First parameter is often series data (price, src, val, etc.)
+						const paramName = param.name.toLowerCase();
+						if (
+							paramName.includes("price") ||
+							paramName.includes("src") ||
+							paramName.includes("val") ||
+							paramName.includes("close") ||
+							paramName.includes("open") ||
+							paramName.includes("high") ||
+							paramName.includes("low") ||
+							paramName === "price" ||
+							paramName === "src" ||
+							paramName === "val"
+						) {
+							paramType = "series<float>";
+						} else if (
+							paramName.includes("time") ||
+							paramName.includes("index")
+						) {
+							paramType = "series<int>";
+						} else if (
+							paramName.includes("bool") ||
+							paramName.includes("condition")
+						) {
+							paramType = "series<bool>";
+						} else {
+							// Default to series<float> for first parameter
+							paramType = "series<float>";
+						}
+					} else {
+						// Other parameters are often simple types
+						const paramName = param.name.toLowerCase();
+						if (
+							paramName.includes("length") ||
+							paramName.includes("period") ||
+							paramName.includes("window") ||
+							paramName.includes("count") ||
+							paramName.includes("len") ||
+							paramName.includes("n") ||
+							paramName.includes("size")
+						) {
+							paramType = "int";
+						} else if (
+							paramName.includes("overbought") ||
+							paramName.includes("oversold") ||
+							paramName.includes("level") ||
+							paramName.includes("threshold") ||
+							paramName.includes("frac") ||
+							paramName.includes("multiplier") ||
+							paramName.includes("offset") ||
+							paramName.includes("sigma")
+						) {
+							paramType = "float";
+						} else {
+							// Default to int for other parameters
+							paramType = "int";
+						}
+					}
+
 					this.symbolTable.define({
 						name: param.name,
-						type: "unknown", // Parameter types would need type annotations
+						type: paramType,
 						line: statement.line,
 						column: statement.column,
 						used: false,
@@ -576,12 +650,12 @@ export class ComprehensiveValidator {
 					});
 				}
 
-				// Collect declarations within function body
+				// Collect declarations within function body FIRST
 				for (const stmt of statement.body) {
-					this.collectDeclarations(stmt);
+					this.collectDeclarations(stmt, version);
 				}
 
-				// Validate function body
+				// THEN validate function body (with all variables in scope)
 				for (const stmt of statement.body) {
 					this.validateStatement(stmt);
 				}
@@ -590,8 +664,8 @@ export class ComprehensiveValidator {
 				break;
 
 			case "IfStatement": {
-				this.validateExpression(statement.condition);
-				const condType = this.inferExpressionType(statement.condition);
+				this.validateExpression(statement.condition, version);
+				const condType = this.inferExpressionType(statement.condition, version);
 				if (!TypeChecker.isBoolType(condType)) {
 					this.addError(
 						statement.line,
@@ -605,21 +679,21 @@ export class ComprehensiveValidator {
 				// Note: In Pine Script, if statements do NOT create new scopes
 				// Variables assigned inside if blocks persist in the outer scope
 				for (const stmt of statement.consequent) {
-					this.collectDeclarations(stmt);
+					this.collectDeclarations(stmt, version);
 				}
 				this.blockDepth++;
 				for (const stmt of statement.consequent) {
-					this.validateStatement(stmt);
+					this.validateStatement(stmt, version);
 				}
 				this.blockDepth--;
 
 				if (statement.alternate) {
 					this.blockDepth++;
 					for (const stmt of statement.alternate) {
-						this.collectDeclarations(stmt);
+						this.collectDeclarations(stmt, version);
 					}
 					for (const stmt of statement.alternate) {
-						this.validateStatement(stmt);
+						this.validateStatement(stmt, version);
 					}
 					this.blockDepth--;
 				}
@@ -646,19 +720,19 @@ export class ComprehensiveValidator {
 
 				// Validate range expressions
 				if ("from" in statement) {
-					this.validateExpression(statement.from);
+					this.validateExpression(statement.from, version);
 				}
 				if ("to" in statement) {
-					this.validateExpression(statement.to);
+					this.validateExpression(statement.to, version);
 				}
 
 				// Collect declarations first
 				for (const stmt of statement.body) {
-					this.collectDeclarations(stmt);
+					this.collectDeclarations(stmt, version);
 				}
 				// Then validate
 				for (const stmt of statement.body) {
-					this.validateStatement(stmt);
+					this.validateStatement(stmt, version);
 				}
 
 				this.symbolTable.exitScope();
@@ -667,37 +741,52 @@ export class ComprehensiveValidator {
 
 			case "WhileStatement":
 				if ("condition" in statement) {
-					this.validateExpression(statement.condition);
+					this.validateExpression(statement.condition, version);
 				}
 				this.symbolTable.enterScope();
 				this.blockDepth++;
 				for (const stmt of statement.body) {
-					this.validateStatement(stmt);
+					this.validateStatement(stmt, version);
 				}
 				this.symbolTable.exitScope();
 				this.blockDepth--;
 				break;
 
 			case "ReturnStatement":
-				this.validateExpression(statement.value);
+				this.validateExpression(statement.value, version);
 				break;
 
 			case "AssignmentStatement": {
-				this.validateExpression(statement.target);
-				this.validateExpression(statement.value);
+				this.validateExpression(statement.target, version);
+				this.validateExpression(statement.value, version);
 
 				// Check type compatibility
-				const targetType = this.inferExpressionType(statement.target);
-				const valueType = this.inferExpressionType(statement.value);
+				const targetType = this.inferExpressionType(statement.target, version);
+				const valueType = this.inferExpressionType(statement.value, version);
 				if (targetType !== "unknown" && valueType !== "unknown") {
 					if (!TypeChecker.isAssignable(valueType, targetType)) {
-						this.addError(
-							statement.line,
-							statement.column,
-							1, // length of operator
-							`Cannot assign ${valueType} to ${targetType}`,
-							DiagnosticSeverity.Error,
-						);
+						// Check if this is a type promotion case (simple -> series)
+						// In Pine Script, simple types can be promoted to series types
+						if (this.canPromoteType(targetType, valueType)) {
+							// Promote variable type in symbol table
+							if (statement.target.type === "Identifier") {
+								const varSymbol = this.symbolTable.lookupLocal(
+									statement.target.name,
+								);
+								if (varSymbol) {
+									varSymbol.type = valueType;
+									this.symbolTable.update(varSymbol);
+								}
+							}
+						} else {
+							this.addError(
+								statement.line,
+								statement.column,
+								1, // length of operator
+								`Cannot assign ${valueType} to ${targetType}`,
+								DiagnosticSeverity.Error,
+							);
+						}
 					}
 				}
 				break;
@@ -705,45 +794,45 @@ export class ComprehensiveValidator {
 		}
 	}
 
-	private validateExpression(expr: Expression): void {
+	private validateExpression(expr: Expression, version: string = "6"): void {
 		switch (expr.type) {
 			case "Identifier":
 				this.validateIdentifier(expr);
 				break;
 
 			case "CallExpression":
-				this.validateCallExpression(expr);
+				this.validateCallExpression(expr, version);
 				break;
 
 			case "MemberExpression":
-				this.validateExpression(expr.object);
+				this.validateExpression(expr.object, version);
 				break;
 
 			case "BinaryExpression":
-				this.validateExpression(expr.left);
-				this.validateExpression(expr.right);
-				this.validateBinaryExpression(expr);
+				this.validateExpression(expr.left, version);
+				this.validateExpression(expr.right, version);
+				this.validateBinaryExpression(expr, version);
 				break;
 
 			case "UnaryExpression":
-				this.validateExpression(expr.argument);
+				this.validateExpression(expr.argument, version);
 				break;
 
 			case "TernaryExpression":
-				this.validateExpression(expr.condition);
-				this.validateExpression(expr.consequent);
-				this.validateExpression(expr.alternate);
+				this.validateExpression(expr.condition, version);
+				this.validateExpression(expr.consequent, version);
+				this.validateExpression(expr.alternate, version);
 				break;
 
 			case "ArrayExpression":
 				for (const el of expr.elements) {
-					this.validateExpression(el);
+					this.validateExpression(el, version);
 				}
 				break;
 
 			case "IndexExpression":
-				this.validateExpression(expr.object);
-				this.validateExpression(expr.index);
+				this.validateExpression(expr.object, version);
+				this.validateExpression(expr.index, version);
 				break;
 		}
 	}
@@ -757,26 +846,21 @@ export class ComprehensiveValidator {
 				return;
 			}
 
-			// DISABLED: Undefined variable check produces too many false positives
-			// due to parser scope handling issues with function parameters and
-			// control flow keywords. The authority linter handles this correctly.
-			// Re-enable after fixing the parser's scope tracking for:
-			// - Function parameters not being visible in function body
-			// - Variables declared in if/for blocks not being tracked correctly
-			//
-			// TODO: Fix parser scope tracking, then re-enable this check
-			// const similar = this.symbolTable.findSimilarSymbols(identifier.name, 2);
-			// let message = `Undefined variable '${identifier.name}'`;
-			// if (similar.length > 0) {
-			// 	message += `. Did you mean '${similar[0]}'?`;
-			// }
-			// this.addError(
-			// 	identifier.line,
-			// 	identifier.column,
-			// 	identifier.name.length,
-			// 	message,
-			// 	DiagnosticSeverity.Error,
-			// );
+			// RE-ENABLED: Fixed function parameter scope tracking
+			// Function parameters are now properly registered in the symbol table
+			// during both collectDeclarations and validateStatement phases
+			const similar = this.symbolTable.findSimilarSymbols(identifier.name, 2);
+			let message = `Undefined variable '${identifier.name}'`;
+			if (similar.length > 0) {
+				message += `. Did you mean '${similar[0]}'?`;
+			}
+			this.addError(
+				identifier.line,
+				identifier.column,
+				identifier.name.length,
+				message,
+				DiagnosticSeverity.Error,
+			);
 			return;
 		}
 
@@ -784,9 +868,12 @@ export class ComprehensiveValidator {
 		this.symbolTable.markUsed(identifier.name);
 	}
 
-	private validateBinaryExpression(expr: BinaryExpression): void {
-		const leftType = this.inferExpressionType(expr.left);
-		const rightType = this.inferExpressionType(expr.right);
+	private validateBinaryExpression(
+		expr: BinaryExpression,
+		version: string = "6",
+	): void {
+		const leftType = this.inferExpressionType(expr.left, version);
+		const rightType = this.inferExpressionType(expr.right, version);
 
 		if (!TypeChecker.areTypesCompatible(leftType, rightType, expr.operator)) {
 			this.addError(
@@ -799,7 +886,10 @@ export class ComprehensiveValidator {
 		}
 	}
 
-	private validateCallExpression(call: CallExpression): void {
+	private validateCallExpression(
+		call: CallExpression,
+		version: string = "6",
+	): void {
 		// Get function name
 		let functionName = "";
 		if (call.callee.type === "Identifier") {
@@ -833,11 +923,11 @@ export class ComprehensiveValidator {
 		}
 
 		// Validate arguments
-		this.validateFunctionArguments(call, functionName, signature);
+		this.validateFunctionArguments(call, functionName, signature, version);
 
 		// Validate argument expressions
 		for (const arg of call.arguments) {
-			this.validateExpression(arg.value);
+			this.validateExpression(arg.value, version);
 		}
 	}
 
@@ -845,6 +935,7 @@ export class ComprehensiveValidator {
 		call: CallExpression,
 		functionName: string,
 		signature: FunctionSignature,
+		version: string = "6",
 	): void {
 		const args = call.arguments;
 
@@ -856,7 +947,7 @@ export class ComprehensiveValidator {
 		const positionalArgs: { arg: CallArgument; type: PineType }[] = [];
 
 		for (const arg of args) {
-			const argType = this.inferExpressionType(arg.value);
+			const argType = this.inferExpressionType(arg.value, version);
 			if (arg.name) {
 				providedArgs.set(arg.name, { arg, type: argType });
 			} else {
@@ -1035,33 +1126,10 @@ export class ComprehensiveValidator {
 		return typeMap[returnTypeStr.toLowerCase()] || "unknown";
 	}
 
-	private inferFunctionReturnType(func: FunctionDeclaration): PineType {
-		// func is FunctionDeclaration from AST
-		if (!func.body || func.body.length === 0) {
-			return "unknown";
-		}
-
-		// Get the last statement in the function body
-		const lastStmt = func.body[func.body.length - 1];
-
-		// If it's a return statement, infer from the return value
-		if (lastStmt.type === "ReturnStatement") {
-			return this.inferExpressionType(lastStmt.value);
-		}
-
-		// If it's a variable declaration or expression statement, it's the return value
-		if (lastStmt.type === "ExpressionStatement") {
-			return this.inferExpressionType(lastStmt.expression);
-		}
-
-		if (lastStmt.type === "VariableDeclaration" && lastStmt.init) {
-			return this.inferExpressionType(lastStmt.init);
-		}
-
-		return "unknown";
-	}
-
-	private inferExpressionType(expr: Expression): PineType {
+	private inferExpressionType(
+		expr: Expression,
+		version: string = "6",
+	): PineType {
 		// Check cache
 		if (this.expressionTypes.has(expr)) {
 			const cached = this.expressionTypes.get(expr);
@@ -1110,7 +1178,7 @@ export class ComprehensiveValidator {
 
 				// Fallback to TypeChecker for common built-ins
 				const argTypes = callExpr.arguments.map((arg) =>
-					this.inferExpressionType(arg.value),
+					this.inferExpressionType(arg.value, version),
 				);
 				type = TypeChecker.getBuiltinReturnType(funcName, argTypes);
 				break;
@@ -1118,8 +1186,8 @@ export class ComprehensiveValidator {
 
 			case "BinaryExpression": {
 				const binaryExpr = expr as BinaryExpression;
-				const leftType = this.inferExpressionType(binaryExpr.left);
-				const rightType = this.inferExpressionType(binaryExpr.right);
+				const leftType = this.inferExpressionType(binaryExpr.left, version);
+				const rightType = this.inferExpressionType(binaryExpr.right, version);
 				type = TypeChecker.getBinaryOpType(
 					leftType,
 					rightType,
@@ -1135,9 +1203,9 @@ export class ComprehensiveValidator {
 					type = "bool";
 				} else if (unaryExpr.operator === "-") {
 					// Unary minus preserves numeric type
-					type = this.inferExpressionType(unaryExpr.argument);
+					type = this.inferExpressionType(unaryExpr.argument, version);
 				} else {
-					type = this.inferExpressionType(unaryExpr.argument);
+					type = this.inferExpressionType(unaryExpr.argument, version);
 				}
 				break;
 			}
@@ -1145,8 +1213,14 @@ export class ComprehensiveValidator {
 			case "TernaryExpression": {
 				// Phase C - Session 5: Enhanced ternary expression type inference
 				const ternaryExpr = expr as TernaryExpression;
-				const conseqType = this.inferExpressionType(ternaryExpr.consequent);
-				const altType = this.inferExpressionType(ternaryExpr.alternate);
+				const conseqType = this.inferExpressionType(
+					ternaryExpr.consequent,
+					version,
+				);
+				const altType = this.inferExpressionType(
+					ternaryExpr.alternate,
+					version,
+				);
 
 				// If both unknown, return unknown
 				if (conseqType === "unknown" && altType === "unknown") {
@@ -1199,7 +1273,7 @@ export class ComprehensiveValidator {
 			case "IndexExpression": {
 				// Phase B - Session 5: Infer type from array/series element access
 				const indexExpr = expr as IndexExpression;
-				const arrayType = this.inferExpressionType(indexExpr.object);
+				const arrayType = this.inferExpressionType(indexExpr.object, version);
 
 				// Handle series<T>[index] → T
 				const seriesMatch = arrayType.match(/^series<(.+)>$/);
@@ -1234,8 +1308,8 @@ export class ComprehensiveValidator {
 					const propertyName = `${memberExpr.object.name}.${memberExpr.property.name}`;
 					const namespaceName = memberExpr.object.name;
 
-					// Session 9: Check for deprecated v5 constants
-					if (propertyName in this.deprecatedV5Constants) {
+					// Session 9: Check for deprecated v5 constants (only warn in v6)
+					if (version === "6" && propertyName in this.deprecatedV5Constants) {
 						const replacement = this.deprecatedV5Constants[propertyName];
 						this.addError(
 							memberExpr.line || 0,
@@ -1249,39 +1323,52 @@ export class ComprehensiveValidator {
 						break;
 					}
 
-					// Check if it's a known namespace property
-					if (propertyName in this.namespaceProperties) {
+					// Check if it's a known namespace property (v6 only)
+					if (version === "6" && propertyName in this.namespaceProperties) {
 						type = this.namespaceProperties[propertyName];
 						break;
 					}
 
-					// Session 9: Check if namespace exists but property doesn't
-					const knownNamespaces = [
-						"plot",
-						"color",
-						"shape",
-						"size",
-						"location",
-						"barstate",
-						"timeframe",
-						"syminfo",
-						"chart",
-						"position",
-						"scale",
-						"display",
-						"format",
-						"xloc",
-						"yloc",
-					];
-					if (knownNamespaces.includes(namespaceName)) {
-						// Known namespace but unknown property - likely an error
-						this.addError(
-							memberExpr.line || 0,
-							memberExpr.column || 0,
-							propertyName.length,
-							`Unknown property '${memberExpr.property.name}' on namespace '${namespaceName}'`,
-							DiagnosticSeverity.Error,
-						);
+					// For v4/v5, also check input namespace properties
+					if (
+						version !== "6" &&
+						namespaceName === "input" &&
+						propertyName in this.namespaceProperties
+					) {
+						type = this.namespaceProperties[propertyName];
+						break;
+					}
+
+					// Session 9: Check if namespace exists but property doesn't (v6 only)
+					if (version === "6") {
+						const knownNamespaces = [
+							"plot",
+							"color",
+							"shape",
+							"size",
+							"location",
+							"barstate",
+							"timeframe",
+							"syminfo",
+							"chart",
+							"position",
+							"scale",
+							"display",
+							"format",
+							"xloc",
+							"yloc",
+							"input", // v4/v5 input namespace for backward compatibility
+						];
+						if (knownNamespaces.includes(namespaceName)) {
+							// Known namespace but unknown property - likely an error
+							this.addError(
+								memberExpr.line || 0,
+								memberExpr.column || 0,
+								propertyName.length,
+								`Unknown property '${memberExpr.property.name}' on namespace '${namespaceName}'`,
+								DiagnosticSeverity.Error,
+							);
+						}
 					}
 				}
 
@@ -1306,6 +1393,31 @@ export class ComprehensiveValidator {
 				DiagnosticSeverity.Warning,
 			);
 		}
+	}
+
+	private canPromoteType(from: PineType, to: PineType): boolean {
+		// In Pine Script, simple types can be promoted to series types
+		// but not the other way around
+
+		// float -> series<float>
+		if (from === "float" && to === "series<float>") return true;
+		// int -> series<int>
+		if (from === "int" && to === "series<int>") return true;
+		// bool -> series<bool>
+		if (from === "bool" && to === "series<bool>") return true;
+		// string -> series<string>
+		if (from === "string" && to === "series<string>") return true;
+		// color -> series<color>
+		if (from === "color" && to === "series<color>") return true;
+
+		// int -> float (numeric promotion)
+		if (from === "int" && to === "float") return true;
+		// int -> series<float> (int to series<float> promotion)
+		if (from === "int" && to === "series<float>") return true;
+		// series<int> -> series<float> (series int to series float promotion)
+		if (from === "series<int>" && to === "series<float>") return true;
+
+		return false;
 	}
 
 	private addError(

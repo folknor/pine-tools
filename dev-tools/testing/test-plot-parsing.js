@@ -1,7 +1,10 @@
-const { Parser } = require("./dist/src/parser/parser");
+const { Parser } = require("../../dist/srcparser/parser");
 const fs = require("node:fs");
 
-const code = fs.readFileSync("test-plot-parsing.pine", "utf8");
+const code = fs.readFileSync(
+	"../../pinescripts/test-scripts/test-plot-parsing.pine",
+	"utf8",
+);
 
 console.log("=== Testing Plot Statement Parsing ===\n");
 console.log(code);

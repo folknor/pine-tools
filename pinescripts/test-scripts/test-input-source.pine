@@ -1,0 +1,2 @@
+//@version=4
+inp = input(title="Source", type=input.source, defval=hl2)

@@ -70,6 +70,7 @@ export interface PineLintError {
 
 export interface PineLintResult {
 	errors?: PineLintError[];
+	warnings?: PineLintError[];
 	variables: PineLintVariable[];
 	functions: PineLintFunction[];
 	types: PineLintType[];
@@ -193,7 +194,6 @@ const BUILTIN_SERIES: Record<string, string> = {
 
 export class ASTExtractor {
 	private scopeCounter = 0;
-	private currentScopeId: string | undefined;
 
 	/**
 	 * Extract pine-lint compatible result from AST

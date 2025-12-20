@@ -1,5 +1,5 @@
 import assert from "node:assert";
-import test from "node:test";
+import { test } from "vitest";
 
 test("sample passes", async () => {
 	assert.ok(true);

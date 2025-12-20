@@ -382,6 +382,33 @@ export const INPUT_FUNCTIONS: Record<string, FunctionSignatureSpec> = {
 };
 
 /**
+ * v4/v5 Legacy Input Function
+ *
+ * In v4/v5, there was a generic input() function with a 'type' parameter
+ * that was replaced by specific input.* functions in v6
+ */
+export const V4_V5_INPUT_FUNCTION: Record<string, FunctionSignatureSpec> = {
+	input: {
+		name: "input",
+		requiredParams: ["defval"],
+		optionalParams: [
+			"title",
+			"type", // v4/v5 specific parameter
+			"minval",
+			"maxval",
+			"step",
+			"tooltip",
+			"inline",
+			"group",
+			"confirm",
+			"options",
+		],
+		signature:
+			"input(defval, title?, type?, minval?, maxval?, step?, tooltip?, inline?, group?, confirm?, options?)",
+	},
+};
+
+/**
  * Technical Analysis Functions (ta.*)
  */
 export const TA_FUNCTIONS: Record<string, FunctionSignatureSpec> = {
@@ -457,6 +484,7 @@ export const ALL_FUNCTION_SIGNATURES: Record<string, FunctionSignatureSpec> = {
 	...PLOT_FUNCTIONS,
 	...ALERT_FUNCTIONS,
 	...INPUT_FUNCTIONS,
+	...V4_V5_INPUT_FUNCTION, // Add v4/v5 legacy input function
 	...TA_FUNCTIONS,
 	...TIME_FUNCTIONS,
 };

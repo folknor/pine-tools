@@ -1,7 +1,11 @@
-const { Parser } = require("./dist/src/parser/parser");
+const { Parser } = require("../../dist/srcparser/parser");
 const fs = require("node:fs");
 
-const code = fs.readFileSync("examples/demo/tun-satiroglu.pine", "utf8");
+// Note: tun-satiroglu.pine was not found, using gaussian-channel.pine instead
+const code = fs.readFileSync(
+	"../../pinescripts/indicators-processed/gaussian-channel.pine",
+	"utf8",
+);
 
 const parser = new Parser(code);
 const ast = parser.parse();

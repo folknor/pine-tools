@@ -26,16 +26,16 @@ jobs:
         cache: 'npm'
 
     - name: Install dependencies
-      run: npm ci
+      run: pnpm install
 
     - name: Run linter
-      run: npm run lint --if-present || echo "No lint script found, skipping"
+      run: pnpm run lint --if-present || echo "No lint script found, skipping"
 
     - name: Build TypeScript
-      run: npm run build
+      run: pnpm run build
 
     - name: Run unit tests
-      run: npm test
+      run: pnpm test
 
     - name: Run v0.4.0 self-test
       run: node test/v0.4.0-self-test.js
@@ -71,13 +71,13 @@ jobs:
         cache: 'npm'
 
     - name: Install dependencies
-      run: npm ci
+      run: pnpm install
 
     - name: Build extension
       run: npm run build
 
     - name: Install vsce
-      run: npm install -g @vscode/vsce
+      run: pnpm add -g @vscode/vsce
 
     - name: Create build directory
       run: mkdir -p build
@@ -117,14 +117,14 @@ jobs:
         cache: 'npm'
 
     - name: Install dependencies
-      run: npm ci
+      run: pnpm install
 
     - name: Build
       run: npm run build
 
     - name: Verify 100% test pass rate
       run: |
-        npm test 2>&1 | tee test-output.txt
+        pnpm test 2>&1 | tee test-output.txt
         if grep -q "failing" test-output.txt; then
           echo "❌ Tests failing"
           exit 1
@@ -169,5 +169,5 @@ jobs:
 
     - name: Run npm audit
       run: |
-        npm audit --audit-level=moderate || true
+        pnpm audit --audit-level=moderate || true
         echo "Security audit completed"

@@ -1,8 +1,8 @@
 const _fs = require("node:fs");
-const { Parser } = require("../../dist/src/parser/parser.js");
+const { Parser } = require("../../dist/srcparser/parser");
 const {
 	ComprehensiveValidator,
-} = require("../../dist/src/parser/comprehensiveValidator.js");
+} = require("../../dist/srcparser/comprehensiveValidator");
 
 /**
  * Validates a string of Pine Script code.

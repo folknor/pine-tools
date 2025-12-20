@@ -37,12 +37,11 @@ yarn-error.log*
 # Scraped documentation (regenerate as needed)
 v6/raw/*
 !v6/raw/v6-language-constructs.json
+v6/raw/complete-v6-details.json
 v6/docs-crawled/
-v6/scripts/
+!v6/scripts/
 
-# Temporary files
-*.tmp
-*.temp
+# Cache directory for scraped data
 .cache/
 
 # Local development & secrets
@@ -57,3 +56,6 @@ coverage/
 # Personal notes (not for public repo)
 NOTES.md
 TODO-personal.md
+
+# agentic cli
+.crush

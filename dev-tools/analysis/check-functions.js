@@ -1,4 +1,4 @@
-const db = require("./dist/v6/parameter-requirements-merged.js");
+const db = require("../../v6/parameter-requirements-merged.js");
 
 console.log("input.bool:", !!db.PINE_FUNCTIONS_MERGED["input.bool"]);
 console.log("input.color:", !!db.PINE_FUNCTIONS_MERGED["input.color"]);

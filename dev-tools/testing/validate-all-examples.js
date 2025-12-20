@@ -5,7 +5,7 @@
 
 const fs = require("node:fs");
 const path = require("node:path");
-const { AccurateValidator } = require("./dist/src/parser/accurateValidator");
+const { AccurateValidator } = require("../../dist/srcparser/accurateValidator");
 
 const examplesDir = path.join(__dirname, "examples");
 const files = fs.readdirSync(examplesDir).filter((f) => f.endsWith(".pine"));

@@ -1,7 +1,10 @@
 const { validatePineScript } = require("./test-comprehensive-validator.js");
 const fs = require("node:fs");
 
-const code = fs.readFileSync("./examples/global-liquidity.v6.pine", "utf-8");
+const code = fs.readFileSync(
+	"../../pinescripts/demo-scripts/global-liquidity.v6.pine",
+	"utf-8",
+);
 const errors = validatePineScript(code);
 const realErrors = errors.filter(
 	(e) => e.severity === 0 && !e.message.includes("declared but never used"),

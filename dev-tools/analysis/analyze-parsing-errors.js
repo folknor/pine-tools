@@ -2,11 +2,15 @@ const fs = require("node:fs");
 const path = require("node:path");
 const {
 	ComprehensiveValidator,
-} = require("./dist/src/parser/comprehensiveValidator");
+} = require("../../dist/srcparser/comprehensiveValidator");
 
 console.log("=== Analyzing Remaining Parsing Errors ===\n");
 
-const filePath = path.join(__dirname, "examples/demo/tun-satiroglu.pine");
+// Note: tun-satiroglu.pine was not found, using gaussian-channel.pine instead
+const filePath = path.join(
+	__dirname,
+	"../../pinescripts/indicators-processed/gaussian-channel.pine",
+);
 const code = fs.readFileSync(filePath, "utf-8");
 
 const validator = new ComprehensiveValidator();

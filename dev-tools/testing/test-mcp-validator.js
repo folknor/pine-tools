@@ -9,8 +9,11 @@ const { spawn } = require("node:child_process");
 const path = require("node:path");
 const _fs = require("node:fs");
 
-const MCP_SERVER = path.join(__dirname, "mcp/validator-server.js");
-const TEST_FILE = path.join(__dirname, "examples/global-liquidity.v6.pine");
+const MCP_SERVER = path.join(__dirname, "../../mcp/validator-server.js");
+const TEST_FILE = path.join(
+	__dirname,
+	"../../pinescripts/demo-scripts/global-liquidity.v6.pine",
+);
 
 console.log("🧪 Testing MCP PineScript Validator\n");
 

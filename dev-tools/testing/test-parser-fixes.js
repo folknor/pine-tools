@@ -3,7 +3,7 @@
  * Test specific parser fixes from v0.4.4
  */
 
-const { AccurateValidator } = require("./dist/src/parser/accurateValidator");
+const { AccurateValidator } = require("../../dist/srcparser/accurateValidator");
 
 console.log("\n🧪 Testing v0.4.4 Parser Fixes\n");
 console.log("━".repeat(60));

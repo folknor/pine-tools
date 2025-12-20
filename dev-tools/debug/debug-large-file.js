@@ -1,14 +1,18 @@
-const { Parser } = require("./dist/src/parser/parser");
+const { Parser } = require("../../dist/srcparser/parser");
 const {
 	ComprehensiveValidator,
-} = require("./dist/src/parser/comprehensiveValidator");
+} = require("../../dist/srcparser/comprehensiveValidator");
 const fs = require("node:fs");
 
-// Test with tun-satiroglu.pine to understand why variables aren't found
-const code = fs.readFileSync("examples/demo/tun-satiroglu.pine", "utf8");
+// Test with a large indicator file to understand why variables aren't found
+// Note: tun-satiroglu.pine was not found, using gaussian-channel.pine instead
+const code = fs.readFileSync(
+	"../pinescripts/indicators-processed/gaussian-channel.pine",
+	"utf8",
+);
 
 console.log("=== Debugging Large File Variable Recognition ===\n");
-console.log(`File: tun-satiroglu.pine`);
+console.log(`File: gaussian-channel.pine`);
 console.log(`Size: ${code.split("\n").length} lines\n`);
 
 const parser = new Parser(code);

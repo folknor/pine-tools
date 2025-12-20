@@ -1,4 +1,4 @@
-const { Lexer } = require("./dist/src/parser/lexer.js");
+const { Lexer } = require("../../dist/srcparser/lexer");
 
 const code = `f_norm(x, n) =>
     ma = ta.sma(x, n)
@@ -18,7 +18,7 @@ tokens.forEach((t, i) => {
 });
 
 // Now parse it
-const { Parser } = require("./dist/src/parser/parser.js");
+const { Parser } = require("../../dist/srcparser/parser");
 const parser = new Parser(code);
 const ast = parser.parse();
 

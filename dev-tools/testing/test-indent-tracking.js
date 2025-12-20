@@ -1,4 +1,4 @@
-const { Lexer } = require("./dist/src/parser/lexer.js");
+const { Lexer } = require("../../dist/srcparser/lexer");
 
 const code = `f_norm(x, n) =>
     ma = ta.sma(x, n)

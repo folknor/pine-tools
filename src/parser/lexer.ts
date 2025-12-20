@@ -127,6 +127,7 @@ export class Lexer {
 	private currentIndent: number = 0; // Track current line's indentation
 	private atLineStart: boolean = true; // Track if we're at the start of a line
 	private lexerErrors: LexerError[] = [];
+	private detectedVersion: string | null = null;
 
 	constructor(source: string) {
 		this.source = source;
@@ -295,6 +296,9 @@ export class Lexer {
 			}
 			const value = this.source.substring(start, this.pos);
 			this.addToken(TokenType.ANNOTATION, value, value.length);
+
+			// Extract version information
+			this.extractVersionFromAnnotation(value);
 			return;
 		}
 
@@ -304,6 +308,18 @@ export class Lexer {
 		}
 		const value = this.source.substring(start, this.pos);
 		this.addToken(TokenType.COMMENT, value, value.length);
+	}
+
+	private extractVersionFromAnnotation(annotation: string): void {
+		// Parse //@version=X where X is 2, 4, 5, or 6
+		const match = annotation.match(/\/\/@version=(\d+)/);
+		if (match) {
+			this.detectedVersion = match[1];
+		}
+	}
+
+	getDetectedVersion(): string | null {
+		return this.detectedVersion;
 	}
 
 	private scanBlockComment(): void {
@@ -499,7 +515,22 @@ export class Lexer {
 
 	private addToken(type: TokenType, value: string, length: number): void {
 		// Only set indent on the first real token of each line
-		const indentValue = this.atLineStart ? this.currentIndent : undefined;
+		let indentValue = this.atLineStart ? this.currentIndent : undefined;
+
+		// Special case: 'if' after 'else' should have the same indentation as 'else'
+		// This handles 'else if' statements where both tokens should have the same indent
+		if (type === TokenType.KEYWORD && value === "if" && !this.atLineStart) {
+			// Check if the previous token was 'else' on the same line
+			const prevToken = this.tokens[this.tokens.length - 1];
+			if (
+				prevToken &&
+				prevToken.type === TokenType.KEYWORD &&
+				prevToken.value === "else" &&
+				prevToken.line === this.line
+			) {
+				indentValue = prevToken.indent;
+			}
+		}
 
 		// Mark that we're no longer at the start of the line (except for NEWLINE tokens)
 		if (

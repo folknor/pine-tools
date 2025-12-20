@@ -1,4 +1,4 @@
-const { Lexer } = require("./dist/src/parser/lexer.js");
+const { Lexer } = require("../../dist/src/parser/lexer");
 
 const code = `wUSM2  = input.float(0.35, "US M2",  step=0.01, minval=0, maxval=1, group=grpWts)`;
 const lexer = new Lexer(code);

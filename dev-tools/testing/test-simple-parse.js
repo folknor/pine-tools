@@ -1,4 +1,4 @@
-const { Parser } = require("./dist/src/parser/parser.js");
+const { Parser } = require("../../dist/srcparser/parser");
 
 const testCode = `
 //@version=6

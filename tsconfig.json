@@ -1,16 +1,76 @@
 {
 	"compilerOptions": {
-		"target": "ES2020",
-		"module": "commonjs",
-		"lib": ["ES2020"],
+		// Modern target and module options
+		"target": "ES2022",
+		"module": "NodeNext",
+		"moduleResolution": "NodeNext",
+		"lib": ["ES2022"],
+
+		// Output options
 		"outDir": "dist",
 		"rootDir": ".",
-		"strict": true,
+		"sourceMap": true,
+		"declaration": true,
+		"declarationMap": true,
+		"removeComments": false,
+		"importHelpers": true,
+
+		// Module and path resolution
 		"esModuleInterop": true,
+		"allowSyntheticDefaultImports": true,
+		"resolveJsonModule": true,
+		"baseUrl": ".",
+		"paths": {
+			"@/*": ["src/*"],
+			"@test/*": ["test/*"],
+			"@v6/*": ["v6/*"]
+		},
+
+		// Strict type checking (balanced)
+		"strict": true,
+		"noImplicitAny": true,
+		"strictNullChecks": true,
+		"strictFunctionTypes": true,
+		"strictBindCallApply": true,
+		"strictPropertyInitialization": true,
+		"noImplicitThis": true,
+		"alwaysStrict": true,
+		"noUnusedLocals": false,
+		"noUnusedParameters": false,
+		"noImplicitReturns": true,
+		"noFallthroughCasesInSwitch": true,
+		"noImplicitOverride": true,
+
+		// Keep exactOptionalPropertyTypes disabled for compatibility
+		"exactOptionalPropertyTypes": false,
+		"noUncheckedIndexedAccess": false,
+		"noPropertyAccessFromIndexSignature": false,
+
+		// Additional checks
 		"skipLibCheck": true,
-		"moduleResolution": "node",
+		"forceConsistentCasingInFileNames": true,
+
+		// Code generation
+		"downlevelIteration": true,
+		"experimentalDecorators": true,
+		"emitDecoratorMetadata": true,
+
+		// Type definitions
 		"types": ["node", "vscode"]
 	},
-	"include": ["src/**/*.ts", "test/**/*.ts"],
-	"exclude": ["node_modules", "dist"]
+	"include": [
+		"src/**/*.ts",
+		"test/**/*.ts",
+		"v6/**/*.ts",
+		"dev-tools/**/*.ts"
+	],
+	"exclude": [
+		"node_modules",
+		"dist",
+		"**/*.js",
+		"**/*.d.ts"
+	],
+	"ts-node": {
+		"esm": true
+	}
 }
