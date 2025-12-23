@@ -14,10 +14,13 @@ const path = require("node:path");
 const { spawnSync } = require("node:child_process");
 const os = require("node:os");
 
-const RESULTS_DIR = path.join(__dirname, "results");
-const PINE_DIR = path.join(__dirname, "../pinescripts");
-const DIFFERENCES_DIR = path.join(__dirname, "differences");
-const CLI_PATH = path.join(__dirname, "../../dist/srccli.ts");
+const RESULTS_DIR = path.join(__dirname, "../../plan/pine-lint-results");
+const PINE_DIR = path.join(__dirname, "../../pinescripts");
+const DIFFERENCES_DIR = path.join(
+	__dirname,
+	"../../plan/pine-lint-vs-cli-differences",
+);
+const CLI_PATH = path.join(__dirname, "../../dist/src/cli.js");
 
 // Ensure differences directory exists
 if (!fs.existsSync(DIFFERENCES_DIR)) {

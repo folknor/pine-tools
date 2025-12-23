@@ -20,12 +20,15 @@ const path = require("node:path");
 const BASE_URL = "https://www.tradingview.com/pine-script-reference/v6/";
 
 // Parse arguments, filtering out flags
-const positionalArgs = process.argv.slice(2).filter(arg => !arg.startsWith('-'));
+const positionalArgs = process.argv
+	.slice(2)
+	.filter((arg) => !arg.startsWith("-"));
 const INPUT_FILE =
 	positionalArgs[0] ||
 	path.join(__dirname, "../v6/raw/v6-language-constructs.json");
 const OUTPUT_FILE =
-	positionalArgs[1] || path.join(__dirname, "../v6/raw/complete-v6-details.json");
+	positionalArgs[1] ||
+	path.join(__dirname, "../v6/raw/complete-v6-details.json");
 const CACHE_DIR = path.join(__dirname, "../.cache/function-details");
 const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
@@ -120,12 +123,17 @@ async function getSharedPage() {
 		});
 
 		// Wait for initial content
-		await sharedPage.waitForFunction(() => {
-			const content = document.body.innerText;
-			return content.length > 1000 && !content.includes("Loading");
-		}, { timeout: 15000 }).catch(() => {
-			console.log("⏳ Initial page load timeout, continuing...");
-		});
+		await sharedPage
+			.waitForFunction(
+				() => {
+					const content = document.body.innerText;
+					return content.length > 1000 && !content.includes("Loading");
+				},
+				{ timeout: 15000 },
+			)
+			.catch(() => {
+				console.log("⏳ Initial page load timeout, continuing...");
+			});
 
 		console.log("✅ SPA loaded, ready for hash navigation");
 	}
@@ -164,17 +172,24 @@ async function scrapeFunctionDetails(functionName, useCache = true) {
 		}, hashTarget);
 
 		// Brief wait for hash navigation and content update
-		await new Promise(resolve => setTimeout(resolve, 300));
+		await new Promise((resolve) => setTimeout(resolve, 300));
 
 		// Wait for the specific element to be present
-		await page.waitForFunction((funcName) => {
-			const el = document.getElementById(`fun_${funcName}`) ||
-				document.getElementById(`var_${funcName}`) ||
-				document.getElementById(`type_${funcName}`);
-			return el !== null;
-		}, { timeout: 5000 }, funcNameClean).catch(() => {
-			// Element not found via ID, will try fallback
-		});
+		await page
+			.waitForFunction(
+				(funcName) => {
+					const el =
+						document.getElementById(`fun_${funcName}`) ||
+						document.getElementById(`var_${funcName}`) ||
+						document.getElementById(`type_${funcName}`);
+					return el !== null;
+				},
+				{ timeout: 5000 },
+				funcNameClean,
+			)
+			.catch(() => {
+				// Element not found via ID, will try fallback
+			});
 
 		const details = await page.evaluate((funcName) => {
 			const result = {
@@ -190,7 +205,8 @@ async function scrapeFunctionDetails(functionName, useCache = true) {
 
 			// Find the specific function element by ID
 			// TradingView uses IDs like "fun_ta.sma", "var_close", "type_array"
-			const funcElement = document.getElementById(`fun_${funcName}`) ||
+			const funcElement =
+				document.getElementById(`fun_${funcName}`) ||
 				document.getElementById(`var_${funcName}`) ||
 				document.getElementById(`type_${funcName}`) ||
 				document.getElementById(`kw_${funcName}`) ||
@@ -198,10 +214,13 @@ async function scrapeFunctionDetails(functionName, useCache = true) {
 
 			if (!funcElement) {
 				// Try to find by searching all items
-				const items = document.querySelectorAll('.tv-pine-reference-item');
+				const items = document.querySelectorAll(".tv-pine-reference-item");
 				for (const item of items) {
-					const header = item.querySelector('.tv-pine-reference-item__header');
-					if (header && header.textContent.replace(/[()]/g, '').trim() === funcName) {
+					const header = item.querySelector(".tv-pine-reference-item__header");
+					if (
+						header &&
+						header.textContent.replace(/[()]/g, "").trim() === funcName
+					) {
 						return extractFromElement(item);
 					}
 				}
@@ -221,13 +240,17 @@ async function scrapeFunctionDetails(functionName, useCache = true) {
 				};
 
 				// Extract name from header
-				const headerEl = element.querySelector('.tv-pine-reference-item__header');
+				const headerEl = element.querySelector(
+					".tv-pine-reference-item__header",
+				);
 				if (headerEl) {
 					res.name = headerEl.textContent?.trim() || "";
 				}
 
 				// Extract syntax (contains signature like "ta.sma(source, length) → series float")
-				const syntaxEl = element.querySelector('.tv-pine-reference-item__syntax');
+				const syntaxEl = element.querySelector(
+					".tv-pine-reference-item__syntax",
+				);
 				if (syntaxEl) {
 					res.syntax = syntaxEl.textContent?.trim() || "";
 					// Extract return type from syntax
@@ -238,18 +261,22 @@ async function scrapeFunctionDetails(functionName, useCache = true) {
 				}
 
 				// Extract description (first .tv-text that's not an argument)
-				const textElements = element.querySelectorAll('.tv-pine-reference-item__text.tv-text');
+				const textElements = element.querySelectorAll(
+					".tv-pine-reference-item__text.tv-text",
+				);
 				if (textElements.length > 0) {
 					// First text element (before Arguments) is the description
 					const firstText = textElements[0];
-					if (!firstText.querySelector('.tv-pine-reference-item__arg-type')) {
+					if (!firstText.querySelector(".tv-pine-reference-item__arg-type")) {
 						res.description = firstText.textContent?.trim() || "";
 					}
 				}
 
 				// Extract parameters from argument descriptions
 				// Format: <span class="tv-pine-reference-item__arg-type">source (series int/float) </span>Series of values...
-				const argElements = element.querySelectorAll('.tv-pine-reference-item__arg-type');
+				const argElements = element.querySelectorAll(
+					".tv-pine-reference-item__arg-type",
+				);
 				argElements.forEach((argEl) => {
 					const argText = argEl.textContent?.trim() || "";
 					// Parse "source (series int/float)" format
@@ -259,14 +286,27 @@ async function scrapeFunctionDetails(functionName, useCache = true) {
 						const paramType = match[2];
 						// Get description from parent element (rest of text after the span)
 						const parentText = argEl.parentElement?.textContent?.trim() || "";
-						const descText = parentText.replace(argText, '').trim();
+						const descText = parentText.replace(argText, "").trim();
+
+						// Detect optionality from multiple signals:
+						// 1. Word "optional" in arg type text
+						// 2. Parameter name in brackets [param]
+						// 3. Description contains "The default is" or "defaults to" or "Optional."
+						const descLower = descText.toLowerCase();
+						const isOptional =
+							argText.toLowerCase().includes("optional") ||
+							paramName.startsWith("[") ||
+							descLower.includes("the default is") ||
+							descLower.includes("defaults to") ||
+							descLower.includes("default value is") ||
+							descLower.startsWith("optional");
 
 						const param = {
 							name: paramName,
 							type: paramType,
 							description: descText,
-							optional: argText.toLowerCase().includes('optional') || paramName.startsWith('['),
-							required: !argText.toLowerCase().includes('optional') && !paramName.startsWith('['),
+							optional: isOptional,
+							required: !isOptional,
 						};
 						res.parameters.push(param);
 					}
@@ -282,16 +322,16 @@ async function scrapeFunctionDetails(functionName, useCache = true) {
 						const parts = paramsStr.split(/,\s*/);
 						parts.forEach((part) => {
 							const trimmed = part.trim();
-							if (trimmed === '...') {
+							if (trimmed === "...") {
 								// Mark as variadic in metadata
 								res.variadic = true;
 							} else if (trimmed) {
 								res.parameters.push({
 									name: trimmed,
-									type: 'unknown',
-									description: '',
-									optional: trimmed.startsWith('[') || trimmed.endsWith('?'),
-									required: !trimmed.startsWith('[') && !trimmed.endsWith('?'),
+									type: "unknown",
+									description: "",
+									optional: trimmed.startsWith("[") || trimmed.endsWith("?"),
+									required: !trimmed.startsWith("[") && !trimmed.endsWith("?"),
 								});
 							}
 						});
@@ -299,14 +339,16 @@ async function scrapeFunctionDetails(functionName, useCache = true) {
 				}
 
 				// Extract example
-				const exampleEl = element.querySelector('.tv-pine-reference-item__example code');
+				const exampleEl = element.querySelector(
+					".tv-pine-reference-item__example code",
+				);
 				if (exampleEl) {
 					res.example = exampleEl.textContent?.trim() || "";
 				}
 
 				// Extract namespace from function name
-				if (res.name.includes('.')) {
-					res.namespace = res.name.split('.')[0];
+				if (res.name.includes(".")) {
+					res.namespace = res.name.split(".")[0];
 				}
 
 				return res;
@@ -344,7 +386,28 @@ async function scrapeAllFunctions(forceRefresh = false) {
 	}
 
 	const inputData = JSON.parse(fs.readFileSync(INPUT_FILE, "utf8"));
-	const functionNames = inputData.functions?.items || [];
+
+	// Build function list from byNamespace structure
+	// Format: { functions: { byNamespace: { global: ["alert()", ...], ta: ["sma()", ...] } } }
+	let functionNames = [];
+
+	if (inputData.functions?.byNamespace) {
+		for (const [namespace, funcs] of Object.entries(
+			inputData.functions.byNamespace,
+		)) {
+			for (const func of funcs) {
+				// Remove () suffix from function names
+				const baseName = func.replace(/\(\)$/, "");
+				// Add namespace prefix for non-global functions
+				const fullName =
+					namespace === "global" ? baseName : `${namespace}.${baseName}`;
+				functionNames.push(fullName);
+			}
+		}
+	} else if (inputData.functions?.items) {
+		// Legacy format
+		functionNames = inputData.functions.items;
+	}
 
 	if (functionNames.length === 0) {
 		console.error(
@@ -352,6 +415,9 @@ async function scrapeAllFunctions(forceRefresh = false) {
 		);
 		process.exit(1);
 	}
+
+	// Sort for consistent ordering
+	functionNames.sort();
 
 	console.log(`📋 Found ${functionNames.length} functions to process`);
 
@@ -402,7 +468,9 @@ async function scrapeAllFunctions(forceRefresh = false) {
 
 	// Scrape new/updated functions
 	if (functionsToScrape.length > 0) {
-		console.log("🔍 Scraping new/updated functions (optimized with shared browser)...");
+		console.log(
+			"🔍 Scraping new/updated functions (optimized with shared browser)...",
+		);
 
 		// Use larger batches since we're using shared browser with hash navigation
 		const batchSize = 20;
@@ -412,7 +480,9 @@ async function scrapeAllFunctions(forceRefresh = false) {
 			const batch = functionsToScrape.slice(i, i + batchSize);
 			const batchNum = Math.floor(i / batchSize) + 1;
 			const totalBatches = Math.ceil(functionsToScrape.length / batchSize);
-			console.log(`📦 Processing batch ${batchNum}/${totalBatches} (${batch.length} functions)`);
+			console.log(
+				`📦 Processing batch ${batchNum}/${totalBatches} (${batch.length} functions)`,
+			);
 
 			// Process batch sequentially (hash navigation is already fast)
 			for (const funcName of batch) {
@@ -430,8 +500,10 @@ async function scrapeAllFunctions(forceRefresh = false) {
 			// Progress update
 			const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
 			const completed = Math.min(i + batchSize, functionsToScrape.length);
-			const rate = (completed / elapsed * 60).toFixed(1);
-			console.log(`  ✓ Progress: ${completed}/${functionsToScrape.length} (${elapsed}s elapsed, ~${rate} funcs/min)`);
+			const rate = ((completed / elapsed) * 60).toFixed(1);
+			console.log(
+				`  ✓ Progress: ${completed}/${functionsToScrape.length} (${elapsed}s elapsed, ~${rate} funcs/min)`,
+			);
 
 			// Small delay between batches to be nice to the server
 			if (i + batchSize < functionsToScrape.length) {

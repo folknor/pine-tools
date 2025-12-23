@@ -16,6 +16,10 @@ const path = require("node:path");
 
 const DETAILS_FILE =
 	process.argv[2] || path.join(__dirname, "../v6/raw/complete-v6-details.json");
+const LANGUAGE_CONSTRUCTS_FILE = path.join(
+	__dirname,
+	"../v6/raw/v6-language-constructs.json",
+);
 const OUTPUT_DIR = process.argv[3] || path.join(__dirname, "../v6");
 
 function _escapeString(str) {
@@ -316,9 +320,19 @@ function generateNamespaces(data) {
 	const functions = data.functions || {};
 	const variables = data.variables?.items || [];
 	const constants = data.constants?.items || [];
+	// Variable namespaces from builtInVariables (barstate, syminfo, etc.)
+	const variableNamespaces = data.variableNamespaces?.items || [];
 
 	// Build namespaces structure
 	const namespaces = {};
+
+	// Pre-create namespaces for variable namespaces (barstate, syminfo, etc.)
+	// These are namespaces that contain built-in variables, not functions
+	for (const ns of variableNamespaces) {
+		if (!namespaces[ns]) {
+			namespaces[ns] = { functions: {}, variables: {}, constants: {} };
+		}
+	}
 
 	// Add functions to namespaces
 	Object.entries(functions).forEach(([name, details]) => {
@@ -399,7 +413,9 @@ export const NAMESPACE_NAMES = ${JSON.stringify(Object.keys(namespaces).sort())}
 
 	const outputFile = path.join(OUTPUT_DIR, "v6-namespaces.ts");
 	fs.writeFileSync(outputFile, content, "utf8");
-	console.log(`✅ Generated: ${outputFile} (${Object.keys(namespaces).length} namespaces)`);
+	console.log(
+		`✅ Generated: ${outputFile} (${Object.keys(namespaces).length} namespaces)`,
+	);
 }
 
 function generateBuiltinVariablesTyped(data) {
@@ -422,19 +438,19 @@ export const V6_BUILTIN_VARIABLES: Record<string, string> = ${JSON.stringify(typ
 
 // Categorized for quick lookups
 export const SERIES_FLOAT_VARS = new Set(${JSON.stringify(
-		variables.filter((v) => inferVariableType(v) === "series<float>")
+		variables.filter((v) => inferVariableType(v) === "series<float>"),
 	)});
 
 export const SERIES_INT_VARS = new Set(${JSON.stringify(
-		variables.filter((v) => inferVariableType(v) === "series<int>")
+		variables.filter((v) => inferVariableType(v) === "series<int>"),
 	)});
 
 export const SERIES_BOOL_VARS = new Set(${JSON.stringify(
-		variables.filter((v) => inferVariableType(v) === "series<bool>")
+		variables.filter((v) => inferVariableType(v) === "series<bool>"),
 	)});
 
 export const SERIES_STRING_VARS = new Set(${JSON.stringify(
-		variables.filter((v) => inferVariableType(v) === "series<string>")
+		variables.filter((v) => inferVariableType(v) === "series<string>"),
 	)});
 `;
 
@@ -479,7 +495,9 @@ export function getPropertyType(name: string): string | undefined {
 
 	const outputFile = path.join(OUTPUT_DIR, "v6-namespace-properties.ts");
 	fs.writeFileSync(outputFile, content, "utf8");
-	console.log(`✅ Generated: ${outputFile} (${Object.keys(properties).length} properties)`);
+	console.log(
+		`✅ Generated: ${outputFile} (${Object.keys(properties).length} properties)`,
+	);
 }
 
 function generateFunctionMetadata(data) {
@@ -491,35 +509,97 @@ function generateFunctionMetadata(data) {
 
 	// Top-level only functions (can only be called at script root)
 	const topLevelOnly = [
-		"indicator", "strategy", "library",
-		"plot", "plotshape", "plotchar", "plotcandle", "plotbar", "plotarrow",
-		"bgcolor", "barcolor", "fill", "hline",
+		"indicator",
+		"strategy",
+		"library",
+		"plot",
+		"plotshape",
+		"plotchar",
+		"plotcandle",
+		"plotbar",
+		"plotarrow",
+		"bgcolor",
+		"barcolor",
+		"fill",
+		"hline",
 		"alertcondition",
 	];
 
 	// Series-returning functions (return series types)
 	const seriesReturning = [
-		"ta.sma", "ta.ema", "ta.wma", "ta.vwma", "ta.rma", "ta.swma",
-		"ta.rsi", "ta.macd", "ta.stoch", "ta.cci", "ta.atr", "ta.tr",
-		"ta.highest", "ta.lowest", "ta.highestbars", "ta.lowestbars",
-		"ta.crossover", "ta.crossunder", "ta.cross",
-		"ta.change", "ta.mom", "ta.dev", "ta.variance", "ta.stdev",
-		"ta.correlation", "ta.linreg", "ta.median", "ta.mode",
-		"ta.percentile_linear_interpolation", "ta.percentile_nearest_rank",
-		"ta.percentrank", "ta.pivothigh", "ta.pivotlow",
-		"ta.sar", "ta.supertrend",
-		"ta.vwap", "ta.bb", "ta.bbw", "ta.kc", "ta.kcw", "ta.dmi",
-		"math.abs", "math.max", "math.min", "math.avg",
-		"math.sum", "math.log", "math.log10", "math.exp",
-		"math.sqrt", "math.pow", "math.round", "math.floor", "math.ceil",
-		"math.sign", "math.sin", "math.cos", "math.tan", "math.asin", "math.acos", "math.atan",
-		"request.security", "request.security_lower_tf",
+		"ta.sma",
+		"ta.ema",
+		"ta.wma",
+		"ta.vwma",
+		"ta.rma",
+		"ta.swma",
+		"ta.rsi",
+		"ta.macd",
+		"ta.stoch",
+		"ta.cci",
+		"ta.atr",
+		"ta.tr",
+		"ta.highest",
+		"ta.lowest",
+		"ta.highestbars",
+		"ta.lowestbars",
+		"ta.crossover",
+		"ta.crossunder",
+		"ta.cross",
+		"ta.change",
+		"ta.mom",
+		"ta.dev",
+		"ta.variance",
+		"ta.stdev",
+		"ta.correlation",
+		"ta.linreg",
+		"ta.median",
+		"ta.mode",
+		"ta.percentile_linear_interpolation",
+		"ta.percentile_nearest_rank",
+		"ta.percentrank",
+		"ta.pivothigh",
+		"ta.pivotlow",
+		"ta.sar",
+		"ta.supertrend",
+		"ta.vwap",
+		"ta.bb",
+		"ta.bbw",
+		"ta.kc",
+		"ta.kcw",
+		"ta.dmi",
+		"math.abs",
+		"math.max",
+		"math.min",
+		"math.avg",
+		"math.sum",
+		"math.log",
+		"math.log10",
+		"math.exp",
+		"math.sqrt",
+		"math.pow",
+		"math.round",
+		"math.floor",
+		"math.ceil",
+		"math.sign",
+		"math.sin",
+		"math.cos",
+		"math.tan",
+		"math.asin",
+		"math.acos",
+		"math.atan",
+		"request.security",
+		"request.security_lower_tf",
 	];
 
 	// Variadic functions (accept variable number of arguments)
 	const variadic = [
-		"math.max", "math.min", "math.avg", "math.sum",
-		"array.from", "str.format",
+		"math.max",
+		"math.min",
+		"math.avg",
+		"math.sum",
+		"array.from",
+		"str.format",
 	];
 
 	Object.keys(functions).forEach((name) => {
@@ -563,7 +643,11 @@ export const VARIADIC_FUNCTIONS = new Set(${JSON.stringify(variadic)});
 // Helper function to infer variable types based on name patterns
 function inferVariableType(name) {
 	// Price data - series<float>
-	if (["close", "open", "high", "low", "hl2", "hlc3", "ohlc4", "hlcc4"].includes(name)) {
+	if (
+		["close", "open", "high", "low", "hl2", "hlc3", "ohlc4", "hlcc4"].includes(
+			name,
+		)
+	) {
 		return "series<float>";
 	}
 	if (["volume", "ask", "bid"].includes(name)) {
@@ -577,7 +661,18 @@ function inferVariableType(name) {
 	if (["bar_index", "last_bar_index"].includes(name)) {
 		return "series<int>";
 	}
-	if (["dayofweek", "dayofmonth", "month", "year", "hour", "minute", "second", "weekofyear"].includes(name)) {
+	if (
+		[
+			"dayofweek",
+			"dayofmonth",
+			"month",
+			"year",
+			"hour",
+			"minute",
+			"second",
+			"weekofyear",
+		].includes(name)
+	) {
 		return "series<int>";
 	}
 
@@ -592,12 +687,17 @@ function inferVariableType(name) {
 	if (name.startsWith("chart.")) return "simple<string>";
 	if (name.startsWith("session.")) return "simple<bool>";
 	if (name.startsWith("syminfo.")) {
-		if (name.includes("mintick") || name.includes("pointvalue")) return "simple<float>";
+		if (name.includes("mintick") || name.includes("pointvalue"))
+			return "simple<float>";
 		return "simple<string>";
 	}
 	if (name.startsWith("timeframe.")) return "simple<string>";
 	if (name.startsWith("strategy.")) {
-		if (name.includes("position_size") || name.includes("equity") || name.includes("openprofit")) {
+		if (
+			name.includes("position_size") ||
+			name.includes("equity") ||
+			name.includes("openprofit")
+		) {
 			return "series<float>";
 		}
 		return "series<int>";
@@ -671,6 +771,7 @@ function inferConstantType(namespace, fullName) {
 function generateAllFiles() {
 	console.log("🚀 Starting Pine Script v6 TypeScript generation...");
 	console.log(`📁 Input: ${DETAILS_FILE}`);
+	console.log(`📁 Language constructs: ${LANGUAGE_CONSTRUCTS_FILE}`);
 	console.log(`📁 Output: ${OUTPUT_DIR}`);
 
 	// Read input file
@@ -681,6 +782,53 @@ function generateAllFiles() {
 	}
 
 	const data = JSON.parse(fs.readFileSync(DETAILS_FILE, "utf8"));
+
+	// Load language constructs file for variables and constants
+	if (fs.existsSync(LANGUAGE_CONSTRUCTS_FILE)) {
+		const constructs = JSON.parse(
+			fs.readFileSync(LANGUAGE_CONSTRUCTS_FILE, "utf8"),
+		);
+
+		// Merge standalone built-in variables
+		const standaloneVars = constructs.builtInVariables?.standalone?.items || [];
+		// Variable namespace names (barstate, syminfo, etc.)
+		const variableNamespaces =
+			constructs.builtInVariables?.namespaces?.items || [];
+
+		// Add to data object for use by generators
+		data.variables = {
+			items: standaloneVars,
+		};
+		// Pass variable namespaces separately for NAMESPACE_NAMES generation
+		data.variableNamespaces = {
+			items: variableNamespaces,
+		};
+
+		console.log(
+			`📊 Loaded ${variableNamespaces.length} variable namespaces (${variableNamespaces.slice(0, 5).join(", ")}, ...)`,
+		);
+
+		// Also merge constants if not already present
+		if (!data.constants && constructs.constants) {
+			const allConstants = [];
+			const byNs = constructs.constants.byNamespace || {};
+			for (const [ns, items] of Object.entries(byNs)) {
+				for (const item of items) {
+					allConstants.push(`${ns}.${item}`);
+				}
+			}
+			data.constants = { items: allConstants };
+		}
+
+		console.log(
+			`📊 Loaded ${standaloneVars.length} standalone variables from language constructs`,
+		);
+	} else {
+		console.warn(
+			`⚠️  Language constructs file not found: ${LANGUAGE_CONSTRUCTS_FILE}`,
+		);
+		console.warn("   Variable generation will be limited.");
+	}
 
 	// Ensure output directory exists
 	if (!fs.existsSync(OUTPUT_DIR)) {

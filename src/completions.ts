@@ -1,14 +1,10 @@
 import * as vscode from "vscode";
 import { PINE_FUNCTIONS_MERGED } from "../v6/parameter-requirements-merged";
+import { type PineItem, V6_FUNCTIONS, V6_VARIABLES } from "../v6/v6-manual";
 import {
-	type PineItem,
-	V6_FUNCTIONS,
-	V6_VARIABLES,
-} from "../v6/v6-manual";
-import {
-	V6_NAMESPACES,
 	NAMESPACE_NAMES,
 	type NamespaceMember,
+	V6_NAMESPACES,
 } from "../v6/v6-namespaces";
 
 // Helper to convert NamespaceMember to PineItem format for createCompletionItem
@@ -195,9 +191,10 @@ export function getNamespaceCompletions(
 	// Add constants from namespace
 	if (nsData.constants) {
 		Object.entries(nsData.constants).forEach(([name, member]) => {
-			const kind = namespace === "color"
-				? vscode.CompletionItemKind.Color
-				: vscode.CompletionItemKind.Constant;
+			const kind =
+				namespace === "color"
+					? vscode.CompletionItemKind.Color
+					: vscode.CompletionItemKind.Constant;
 			const item = createCompletionItem(name, kind);
 			item.detail = member.type || "const";
 			items.push(item);

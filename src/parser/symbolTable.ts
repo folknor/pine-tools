@@ -1,8 +1,9 @@
 // Symbol Table for tracking variables, functions, and scopes
-import type { PineType } from "./typeSystem";
+
 import { V6_BUILTIN_VARIABLES } from "../../v6/v6-builtin-variables";
-import { NAMESPACE_NAMES } from "../../v6/v6-namespaces";
 import { V6_FUNCTIONS } from "../../v6/v6-manual";
+import { NAMESPACE_NAMES } from "../../v6/v6-namespaces";
+import type { PineType } from "./typeSystem";
 
 export interface Symbol {
 	name: string;

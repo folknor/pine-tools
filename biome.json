@@ -10,6 +10,12 @@
 		"enabled": true
 	},
 	"files": {
-		"includes": ["**/*.ts", "**/*.js", "!**/*.generated.js", "!!**/dist"]
+		"includes": [
+			"**/*.ts",
+			"**/*.js",
+			"!**/*.generated.js",
+			"!!**/dist",
+			"!**/test"
+		]
 	}
 }

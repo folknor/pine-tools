@@ -173,31 +173,69 @@ Remove hardcoded **library/API data** from these files and import from `v6/`:
 | Data Type | Count | Source | Status |
 |-----------|-------|--------|--------|
 | Functions (manual) | 32 | parameter-requirements.ts | 100% accurate |
-| Functions (auto) | 425+ | parameter-requirements-generated.ts | **BROKEN - empty parameters** |
+| Functions (auto) | 457 | parameter-requirements-generated.ts | ✅ **FIXED** - proper parameters |
 | Constants | 239 | pine-constants-complete.ts | Complete |
-| Variables | 161 | pine-builtins-complete.ts | Complete |
-| Namespaces | 48 | Discovered but not exported | **MISSING EXPORT** |
+| Variables (standalone) | 27 | v6-builtin-variables.ts | ✅ **FIXED** - with types |
+| Variables (namespaced) | 15 namespaces | v6-namespaces.ts | ✅ **FIXED** - in NAMESPACE_NAMES |
+| Namespaces | 49 | v6-namespaces.ts | ✅ **FIXED** - exported |
 | Keywords | 25 | Discovered but not exported | **MISSING EXPORT** |
 | Return types | Partial | Hardcoded in src/ | **NEEDS MIGRATION** |
 
-### Root Cause of Data Quality Issues
+### Scraper Fixes (Completed 2025-12-23)
 
-The auto-generated function specs have empty `parameters: []` because:
-1. `scripts/scrape.js` uses **wrong URL pattern**: tries `fun_ta_sma.html` but TradingView uses hash routing `#fun_ta.sma`
-2. The scraper gets "This isn't the page you're looking for" for all function URLs
-3. All cached data in `.cache/function-details/` contains empty parameters
+The scraper (`scripts/scrape.js`) has been fixed and optimized:
 
-**TradingView URL Pattern:**
-- Base: `https://www.tradingview.com/pine-script-reference/v6/`
-- Function: `https://www.tradingview.com/pine-script-reference/v6/#fun_ta.sma`
-- It's a single-page app with hash navigation, not separate HTML files
+**Problems Fixed:**
+1. Wrong URL pattern - was using `.html` files, now uses hash routing (`#fun_ta.sma`)
+2. Empty parameters - now properly extracts from TradingView's SPA
+3. Optional parameter detection - now detects "The default is X" patterns
 
-**Solution:** Fix `scripts/scrape.js` to:
-1. Navigate to base URL with hash fragment (`#fun_ta.sma`)
-2. Wait for SPA content to load
-3. Extract parameters from the loaded content
+**Performance Optimizations:**
+- Single browser instance (was launching 457 separate browsers)
+- Hash navigation instead of full page loads
+- Reduced delays: 100ms per function (was 1000ms), 500ms between batches (was 3000ms)
+- **Result:** ~3.3 minutes for 457 functions (was 10-15+ minutes)
 
-**Validation:** Compare output against local reference manual at `/home/folk/Programs/trading-strategies/pinescriptv6/` to verify correctness.
+**Scrape Results:**
+- 457 functions scraped successfully
+- 0 failures (100% success rate)
+- ~137 functions/min sustained rate
+
+---
+
+## CLI vs pine-lint Comparison (2025-12-23)
+
+Ran comparison of our CLI against TradingView's `pine-lint` on 176 Pine Script files.
+
+**Results (After Built-in Variables Fix):**
+| Metric | Before Fix | After Fix |
+|--------|------------|-----------|
+| Total files | 176 | 176 |
+| Matches (both agree) | 36 (20.5%) | 39 (22.2%) |
+| Mismatches | 140 (79.5%) | 137 (77.8%) |
+
+**Fixed Issues (2025-12-23):**
+- ✅ `Undefined variable 'close'` - FIXED
+- ✅ `Undefined variable 'open'`, `high`, `low`, `volume` - FIXED
+- ✅ `Undefined variable 'barstate'` - FIXED (namespace now recognized)
+- ✅ All 27 standalone built-in variables now recognized
+- ✅ All 15 variable namespaces now in NAMESPACE_NAMES
+
+**Remaining False Positives (137 files):**
+| Error Type | Count | Notes |
+|------------|-------|-------|
+| Type mismatch (unknown type) | ~50 | Type inference returning "unknown" |
+| Cannot assign X to Y | ~13 | False positive type errors |
+| Undefined local variables | ~10 | Scope tracking issues |
+| Unknown namespace properties | ~4 | Missing `shape.labeldown`, `display.data_window` |
+
+**Comparison Tool:**
+```bash
+node dev-tools/analysis/compare-validation-results.js
+```
+Results saved to: `plan/pine-lint-vs-cli-differences/`
+
+**Next Priority:** Fix type inference to reduce "unknown" type cascading errors.
 
 ---
 
@@ -205,13 +243,14 @@ The auto-generated function specs have empty `parameters: []` because:
 
 These issues were identified while fixing test files. All skipped tests have `// TODO:` comments.
 
-### Priority 1: Data Quality (31 skipped tests depend on this)
+### Priority 1: Data Quality ~~(31 skipped tests depend on this)~~ ✅ PARTIALLY FIXED
 
-| Issue | Impact | Solution |
-|-------|--------|----------|
-| Empty `parameters[]` in auto-generated specs | All parameter validation fails | Parse local reference manual |
-| Variadic functions (math.max, str.format) | Incorrect "too many params" errors | Mark as variadic in specs |
-| Missing strategy.*, shape.*, location.* | False "unknown constant" errors | Add to pine-constants-complete.ts |
+| Issue | Impact | Status |
+|-------|--------|--------|
+| Empty `parameters[]` in auto-generated specs | All parameter validation fails | ✅ **FIXED** - scraper working |
+| Variadic functions (math.max, str.format) | Incorrect "too many params" errors | ✅ **FIXED** - marked in metadata |
+| Built-in variables not recognized | False "undefined variable" errors | ❌ **NOT FIXED** - validator issue |
+| Missing strategy.*, shape.*, location.* | False "unknown constant" errors | ❌ Needs investigation |
 
 **Reference Manual Location:** `/home/folk/Programs/trading-strategies/pinescriptv6/`
 - `pinescriptv6_complete_reference.md` - 14,142 lines, complete reference
@@ -252,25 +291,21 @@ These issues were identified while fixing test files. All skipped tests have `//
 
 ## Phase 2 Refactoring Plan (Updated)
 
-### Step 1: Fix Data Quality (HIGHEST PRIORITY)
+### Step 1: Fix Data Quality ✅ COMPLETE
 
-Fix `scripts/scrape.js` to use correct TradingView URL pattern:
+The scraper has been fixed and 457 functions scraped successfully. See "Scraper Fixes" section above.
 
-```javascript
-// Current (BROKEN):
-const functionUrl = `${BASE_URL}fun_${functionName.replace(".", "_")}.html`;
-// → https://www.tradingview.com/pine-script-reference/v6/fun_ta_sma.html (404)
+### Step 2: Fix Built-in Variables Recognition ✅ COMPLETE
 
-// Fixed:
-const functionUrl = `${BASE_URL}#fun_${functionName}`;
-// → https://www.tradingview.com/pine-script-reference/v6/#fun_ta.sma (works)
-```
+**Fixed (2025-12-23):**
+- Updated `scripts/generate.js` to load built-in variables from `v6-language-constructs.json`
+- 27 standalone variables now in `V6_BUILTIN_VARIABLES` with proper types
+- 15 variable namespaces added to `NAMESPACE_NAMES`
+- `symbolTable.ts` already imports and uses `V6_BUILTIN_VARIABLES`
 
-Then update the page.evaluate() selectors to match TradingView's actual HTML structure.
+**Result:** Reduced false positives from 140 to 137 files (fixed `close`, `barstate`, etc.).
 
-**Validation:** Compare scraped output against `/home/folk/Programs/trading-strategies/pinescriptv6/` to verify parameters are extracted correctly.
-
-### Step 2: Expose Parser Errors via API
+### Step 3: Expose Parser Errors via API
 
 Modify `src/parser/parser.ts`:
 - Store errors in array instead of console.log

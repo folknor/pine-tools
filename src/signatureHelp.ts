@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { type PineItem, V6_FUNCTIONS } from "../v6/v6-manual";
-import { V6_NAMESPACES, type NamespaceMember } from "../v6/v6-namespaces";
+import { type NamespaceMember, V6_NAMESPACES } from "../v6/v6-namespaces";
 
 // Helper to convert NamespaceMember to PineItem format
 function memberToPineItem(member: NamespaceMember): PineItem {
