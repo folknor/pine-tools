@@ -188,7 +188,12 @@ export class Lexer {
 				this.addToken(TokenType.COMMA, ",", 1);
 				break;
 			case ".":
-				this.addToken(TokenType.DOT, ".", 1);
+				// Check if this is a number starting with . (e.g., .1 = 0.1)
+				if (this.isDigit(this.peek())) {
+					this.scanNumberStartingWithDot();
+				} else {
+					this.addToken(TokenType.DOT, ".", 1);
+				}
 				break;
 			case "?":
 				this.addToken(TokenType.TERNARY, "?", 1);
@@ -442,6 +447,33 @@ export class Lexer {
 		}
 
 		// Scientific notation
+		if (this.peek() === "e" || this.peek() === "E") {
+			this.advance();
+			if (this.peek() === "+" || this.peek() === "-") {
+				this.advance();
+			}
+			while (this.isDigit(this.peek())) {
+				this.advance();
+			}
+		}
+
+		const value = this.source.substring(start, this.pos);
+		this.addToken(TokenType.NUMBER, value, value.length);
+	}
+
+	/**
+	 * Scan a number that starts with a decimal point (e.g., .1, .5, .123)
+	 * The '.' has already been consumed when this is called.
+	 */
+	private scanNumberStartingWithDot(): void {
+		const start = this.pos - 1; // Include the '.' we already consumed
+
+		// Consume digits after the decimal point
+		while (this.isDigit(this.peek())) {
+			this.advance();
+		}
+
+		// Scientific notation (e.g., .1e5)
 		if (this.peek() === "e" || this.peek() === "E") {
 			this.advance();
 			if (this.peek() === "+" || this.peek() === "-") {

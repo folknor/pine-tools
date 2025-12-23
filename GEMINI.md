@@ -103,7 +103,53 @@ node dev-tools/analysis/compare-validation-results.js
 ```
 Results saved to: `plan/pine-lint-vs-cli-differences/`
 
-**Next Priority:** Fix newline continuation handling to reduce "Unexpected token: \n" errors (~200).
+---
+
+## Error Analysis & Priorities (2025-12-23)
+
+Analysis revealed two **independent problem categories** affecting different files:
+
+### Category A: Lexer/Parser Errors (38 files, ~178 errors remaining)
+
+**Root Causes:**
+1. ~~Lexer doesn't handle floats starting with `.`~~ ✅ **FIXED** (2025-12-23)
+2. Library/export function definitions not parsed (`func(...) =>` syntax)
+3. Multi-line function call continuation issues
+
+Files with newline errors have almost no type errors (only 15 total).
+
+### Category B: Type Inference Errors (134 files, ~493 errors)
+
+**Root Cause:** Incorrect return types for polymorphic functions in scraped data.
+
+Example: `nz()` returns `simple color` in data, but it's polymorphic - returns same type as input.
+```pine
+hp := nz(hp[1])  // nz returns "unknown" instead of float, cascading errors
+```
+
+**Breakdown:**
+- 214 errors (43%) involve `unknown` type - fixable via polymorphic function handling
+- 279 errors (57%) are other type mismatches - need investigation
+
+### Revised Priority List
+
+| Priority | Fix | Impact | Effort | Status |
+|----------|-----|--------|--------|--------|
+| **1** | ~~Lexer: handle `.1` floats~~ | ~~200 errors (42 files)~~ | Low | ✅ **FIXED** |
+| **2** | Mark polymorphic functions (`nz`, `na`, `fixnan`, `array.get/set`, etc.) | ~214 "unknown" cascade errors | Medium | |
+| **3** | Parser: library/export function definitions | ~100+ errors (38 files) | Medium | |
+| **4** | Review remaining type mismatch logic | ~279 errors | High | |
+
+### Polymorphic Functions to Mark
+
+These functions return the same type as their input (or array element type):
+- `nz(source)` - returns type of `source`
+- `fixnan(source)` - returns type of `source`
+- `array.get(id, index)` - returns element type of array
+- `array.set(id, index, value)` - value type must match array element type
+- `array.push/unshift/insert` - similar
+- `map.get/put` - key/value type polymorphism
+- `matrix.get/set` - element type polymorphism
 
 ---
 
