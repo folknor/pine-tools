@@ -1,11 +1,12 @@
-// Comprehensive Pine Script Validator with Type Checking and Scope Analysis
+// Unified Pine Script Validator with Type Checking and Scope Analysis
+// This is the single validator for the extension, combining all validation logic.
 
 import type {
 	FunctionParameter,
 	FunctionSignatureSpec,
 } from "../../v6/parameter-requirements-generated";
 import { PINE_FUNCTIONS_MERGED } from "../../v6/parameter-requirements-merged";
-import { type PineItem, V6_FUNCTIONS, V6_NAMESPACES } from "../../v6/v6-manual";
+import { type PineItem, V6_FUNCTIONS } from "../../v6/v6-manual";
 import type {
 	BinaryExpression,
 	CallArgument,
@@ -51,7 +52,7 @@ interface ParameterInfo {
 	defaultValue?: string;
 }
 
-export class ComprehensiveValidator {
+export class UnifiedPineValidator {
 	private errors: ValidationError[] = [];
 	private symbolTable: SymbolTable;
 	private functionSignatures: Map<string, FunctionSignature> = new Map();
@@ -123,20 +124,6 @@ export class ComprehensiveValidator {
 			}
 		}
 
-		// Build from V6_NAMESPACES
-		for (const [nsName, nsData] of Object.entries(V6_NAMESPACES)) {
-			if (nsData.functions) {
-				for (const [fnName, item] of Object.entries(nsData.functions)) {
-					const fullName = `${nsName}.${fnName}`;
-					if (!this.functionSignatures.has(fullName)) {
-						const sig = this.parseSignature(fullName, item as PineItem);
-						if (sig) {
-							this.functionSignatures.set(fullName, sig);
-						}
-					}
-				}
-			}
-		}
 	}
 
 	// Phase D - Session 5: Namespace properties for property access type inference

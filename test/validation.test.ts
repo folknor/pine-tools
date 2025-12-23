@@ -7,6 +7,7 @@
 import assert from "node:assert";
 import { describe, it } from "vitest";
 import { ALL_FUNCTION_SIGNATURES } from "../v6/parameter-requirements.js";
+import type { FunctionSignatureSpec } from "../v6/parameter-requirements-generated";
 import { PINE_FUNCTIONS } from "../v6/parameter-requirements-generated.js";
 
 describe("Parameter Requirements Validation", () => {
@@ -312,7 +313,7 @@ describe("Parameter Requirements Validation", () => {
 	describe("Data Integrity", () => {
 		it("all manual functions should have signature", () => {
 			Object.entries(ALL_FUNCTION_SIGNATURES).forEach(
-				([name, spec]: [string, any]) => {
+				([name, spec]: [string, FunctionSignatureSpec]) => {
 					assert.ok(spec.signature, `${name} should have signature`);
 					assert.ok(
 						spec.requiredParams,
@@ -327,18 +328,20 @@ describe("Parameter Requirements Validation", () => {
 		});
 
 		it("all generated functions should have syntax and parameters", () => {
-			Object.entries(PINE_FUNCTIONS).forEach(([name, spec]: [string, any]) => {
-				assert.ok(spec.syntax, `${name} should have syntax`);
-				assert.ok(
-					spec.parameters !== undefined,
-					`${name} should have parameters array`,
-				);
-			});
+			Object.entries(PINE_FUNCTIONS).forEach(
+				([name, spec]: [string, FunctionSignatureSpec]) => {
+					assert.ok(spec.syntax, `${name} should have syntax`);
+					assert.ok(
+						spec.parameters !== undefined,
+						`${name} should have parameters array`,
+					);
+				},
+			);
 		});
 
 		it("no duplicate parameter names within a function", () => {
 			Object.entries(ALL_FUNCTION_SIGNATURES).forEach(
-				([name, spec]: [string, any]) => {
+				([name, spec]: [string, FunctionSignatureSpec]) => {
 					const allParams = [...spec.requiredParams, ...spec.optionalParams];
 					const uniqueParams = new Set(allParams);
 					assert.strictEqual(

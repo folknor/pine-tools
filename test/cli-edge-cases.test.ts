@@ -3,7 +3,7 @@
  * Tests CLI behavior under various edge conditions and error scenarios
  */
 
-import { execSync } from "node:child_process";
+import { type ExecException, execSync } from "node:child_process";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
@@ -28,15 +28,22 @@ describe("CLI Edge Cases and Error Handling", () => {
 				cwd: __dirname,
 			});
 			return { success: true, output: JSON.parse(output) };
-		} catch (error: any) {
+		} catch (error) {
+			const execError = error as ExecException & {
+				stdout?: string;
+				stderr?: string;
+			};
 			try {
-				const parsed = JSON.parse(error.stdout);
+				const parsed = JSON.parse(execError.stdout || "");
 				return { success: !expectFailure, output: parsed };
 			} catch {
 				return {
 					success: false,
-					output: { success: false, error: error.message },
-					stderr: error.stderr,
+					output: {
+						success: false,
+						error: execError.message || "Unknown error",
+					},
+					stderr: execError.stderr,
 				};
 			}
 		}

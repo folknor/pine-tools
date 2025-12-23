@@ -14,8 +14,8 @@
  */
 
 const puppeteer = require("puppeteer");
-const fs = require("fs");
-const path = require("path");
+const fs = require("node:fs");
+const path = require("node:path");
 
 const BASE_URL = "https://www.tradingview.com/pine-script-reference/v6/";
 const INPUT_FILE =
@@ -118,6 +118,8 @@ async function scrapeFunctionDetails(functionName, useCache = true) {
 			waitUntil: "networkidle2",
 			timeout: 30000,
 		});
+
+		await page.waitForNetworkIdle();
 
 		const details = await page.evaluate(() => {
 			const result = {
@@ -286,7 +288,7 @@ async function scrapeFunctionDetails(functionName, useCache = true) {
 
 			for (const selector of categoryElements) {
 				const element = document.querySelector(selector);
-				if (element && element.textContent?.trim()) {
+				if (element?.textContent?.trim()) {
 					result.category = element.textContent.trim();
 					break;
 				}

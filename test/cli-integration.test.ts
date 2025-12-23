@@ -3,7 +3,7 @@
  * Tests CLI integration with different file types and edge cases
  */
 
-import { execSync } from "node:child_process";
+import { type ExecException, execSync } from "node:child_process";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
@@ -21,21 +21,29 @@ describe("CLI Integration Tests", () => {
 		fs.rmSync(tempDir, { recursive: true, force: true });
 	});
 
-	const runCLI = (filePath: string) => {
+	const runCLI = (filePath: string, expectFailure = false) => {
 		try {
 			const output = execSync(`node "${cliPath}" "${filePath}"`, {
 				encoding: "utf8",
 				cwd: __dirname,
 			});
 			return { success: true, output: JSON.parse(output) };
-		} catch (error: any) {
+		} catch (error) {
+			const execError = error as ExecException & {
+				stdout?: string;
+				stderr?: string;
+			};
 			try {
-				const parsed = JSON.parse(error.stdout);
-				return { success: false, output: parsed };
+				const parsed = JSON.parse(execError.stdout || "");
+				return { success: !expectFailure, output: parsed };
 			} catch {
 				return {
 					success: false,
-					output: { success: false, error: error.message },
+					output: {
+						success: false,
+						error: execError.message || "Unknown error",
+					},
+					stderr: execError.stderr,
 				};
 			}
 		}
@@ -154,17 +162,16 @@ plotshape(close > open, shape=shape.triangleup)
 
 			const errors = result.output.result.errors;
 			const hasAlertError = errors.some(
-				(e: any) =>
+				(e) =>
 					e.message.includes("Too many parameters") &&
 					e.message.includes("alertcondition"),
 			);
 			const hasInputError = errors.some(
-				(e: any) =>
+				(e) =>
 					e.message.includes("Missing") && e.message.includes("input.string"),
 			);
 			const hasPlotError = errors.some(
-				(e: any) =>
-					e.message.includes("shape") && e.message.includes("plotshape"),
+				(e) => e.message.includes("shape") && e.message.includes("plotshape"),
 			);
 
 			expect(hasAlertError || hasInputError || hasPlotError).toBe(true);
@@ -195,7 +202,7 @@ invalid_str = str.invalid_function("test")
 
 			const errors = result.output.result.errors;
 			const hasNamespaceError = errors.some(
-				(e: any) =>
+				(e) =>
 					e.message.includes("nonexistent") ||
 					e.message.includes("fake_function") ||
 					e.message.includes("invalid_function"),
@@ -272,7 +279,7 @@ alertcondition(true, "Title", "Message", "Extra")
 			expect(result.success).toBe(true);
 
 			const errors = result.output.result.errors;
-			errors.forEach((error: any) => {
+			errors.forEach((error) => {
 				expect(error).toHaveProperty("start");
 				expect(error).toHaveProperty("end");
 				expect(error).toHaveProperty("message");
@@ -306,10 +313,10 @@ plot(undefinedVar)
 			if (errors.length >= 2) {
 				// Lexer errors (syntax) should come before validation errors
 				const syntaxError = errors.find(
-					(e: any) =>
+					(e) =>
 						e.message.includes("Expected") || e.message.includes("Unexpected"),
 				);
-				const validationError = errors.find((e: any) =>
+				const validationError = errors.find((e) =>
 					e.message.includes("undefinedVar"),
 				);
 
@@ -353,13 +360,13 @@ shortTarget = strategy.position_avg_price - atr * riskReward
 // Execute trades
 if longCondition and strategy.position_size == 0
     strategy.entry("Long", strategy.long, comment="Long Entry")
-    
+
 if shortCondition and strategy.position_size == 0
     strategy.entry("Short", strategy.short, comment="Short Entry")
 
 if strategy.position_size > 0
     strategy.exit("Long", stop=longStop, limit=longTarget)
-    
+
 if strategy.position_size < 0
     strategy.exit("Short", stop=shortStop, limit=shortTarget)
 
@@ -414,10 +421,10 @@ bearSignal = ta.crossunder(close, upper)
 signalStrength = math.abs(close - middle) / dev
 
 // Create signal objects
-currentSignal = bullSignal ? 
-    Signal.new(true, false, signalStrength, time) : 
-    bearSignal ? 
-        Signal.new(false, true, signalStrength, time) : 
+currentSignal = bullSignal ?
+    Signal.new(true, false, signalStrength, time) :
+    bearSignal ?
+        Signal.new(false, true, signalStrength, time) :
         na
 
 // Level calculations
@@ -431,18 +438,18 @@ plot(lower, "Lower", color=color.green)
 fill(upper, lower, color.new(color.green, 90), "Cloud")
 
 // Signal shapes
-plotshape(bullSignal, "Buy", style=shape.labelup, location=location.belowbar, 
+plotshape(bullSignal, "Buy", style=shape.labelup, location=location.belowbar,
     color=color.green, textcolor=color.white, size=size.small, text="BUY")
-plotshape(bearSignal, "Sell", style=shape.labeldown, location=location.abovebar, 
+plotshape(bearSignal, "Sell", style=shape.labeldown, location=location.abovebar,
     color=color.red, textcolor=color.white, size=size.small, text="SELL")
 
 // Labels for levels
 if showLabels and not na(resistanceLevels)
-    label.new(bar_index[1], resistanceLevels, "R", 
+    label.new(bar_index[1], resistanceLevels, "R",
         color=labelColor, textcolor=color.white, size=size.small)
-        
+
 if showLabels and not na(supportLevels)
-    label.new(bar_index[1], supportLevels, "S", 
+    label.new(bar_index[1], supportLevels, "S",
         color=labelColor, textcolor=color.white, size=size.small)
 
 // Alert conditions

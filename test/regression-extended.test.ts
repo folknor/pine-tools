@@ -34,11 +34,11 @@ fs.writeFileSync(
 );
 
 const {
-	AccurateValidator,
-} = require("../dist/src/parser/accurateValidator.js");
+	UnifiedPineValidator,
+} = require("../dist/src/parser/unifiedValidator.js");
 
 test("Regression: Missing required parameters", () => {
-	const validator = new AccurateValidator();
+	const validator = new UnifiedPineValidator();
 
 	// Functions with missing required params - should error
 	const tests = [
@@ -53,7 +53,7 @@ test("Regression: Missing required parameters", () => {
 		const errors = validator.validate(fullCode);
 
 		const missingParamError = errors.find(
-			(e: any) => e.message.includes("Missing") && e.message.includes(expected),
+			(e) => e.message.includes("Missing") && e.message.includes(expected),
 		);
 
 		assert.ok(
@@ -64,7 +64,7 @@ test("Regression: Missing required parameters", () => {
 });
 
 test("Regression: Too many parameters", () => {
-	const validator = new AccurateValidator();
+	const validator = new UnifiedPineValidator();
 
 	// Functions with too many params - should error
 	const code = `//@version=6
@@ -73,7 +73,7 @@ alertcondition(close > open, "title", "message", "extra", "another")
 `;
 
 	const errors = validator.validate(code);
-	const tooManyError = errors.find((e: any) => e.message.includes("Too many"));
+	const tooManyError = errors.find((e) => e.message.includes("Too many"));
 
 	assert.ok(
 		tooManyError,
@@ -82,7 +82,7 @@ alertcondition(close > open, "title", "message", "extra", "another")
 });
 
 test("Regression: Wrong parameter names in named arguments", () => {
-	const validator = new AccurateValidator();
+	const validator = new UnifiedPineValidator();
 
 	// Using 'shape=' instead of 'style=' in plotshape
 	const code = `//@version=6
@@ -92,7 +92,7 @@ plotshape(close > open, shape=shape.triangleup)
 
 	const errors = validator.validate(code);
 	const wrongParamError = errors.find(
-		(e: any) => e.message.includes("shape") && e.message.includes("plotshape"),
+		(e) => e.message.includes("shape") && e.message.includes("plotshape"),
 	);
 
 	// Note: Special case validation in validateSpecialCases() checks for 'shape=' literally
@@ -111,7 +111,7 @@ plotshape(close > open, shape=shape.triangleup)
 });
 
 test("Regression: Incomplete function calls (no closing paren)", () => {
-	const validator = new AccurateValidator();
+	const validator = new UnifiedPineValidator();
 
 	// Incomplete references should error
 	const code = `//@version=6
@@ -133,7 +133,7 @@ ta.sma(close,
 });
 
 test("Regression: Valid optional parameters", () => {
-	const validator = new AccurateValidator();
+	const validator = new UnifiedPineValidator();
 
 	// All valid uses of optional parameters
 	const code = `//@version=6
@@ -157,7 +157,7 @@ ta.ema(close, 50)
 });
 
 test("Regression: Mixed positional and named arguments", () => {
-	const validator = new AccurateValidator();
+	const validator = new UnifiedPineValidator();
 
 	// Valid mixed argument styles
 	const code = `//@version=6
@@ -177,7 +177,7 @@ plotshape(close > open, title="Bull", style=shape.triangleup, location=location.
 });
 
 test("Regression: Variadic functions (unlimited parameters)", () => {
-	const validator = new AccurateValidator();
+	const validator = new UnifiedPineValidator();
 
 	// Variadic functions should accept any number of args
 	const code = `//@version=6
@@ -201,7 +201,7 @@ str.format("{0} {1} {2}", close, open, high)
 });
 
 test("Regression: Nested function calls", () => {
-	const validator = new AccurateValidator();
+	const validator = new UnifiedPineValidator();
 
 	// Complex nested scenarios
 	const code = `//@version=6
@@ -217,7 +217,7 @@ text = str.tostring(ta.ema(math.abs(close - open), 10))
 	// Note: Nested calls with single args may match pattern for missing params
 	// This is a known limitation of regex-based parsing
 	const acceptableErrors = errors.filter(
-		(e: any) => e.message.includes("length") && e.message.includes("ta."),
+		(e) => e.message.includes("length") && e.message.includes("ta."),
 	);
 
 	if (acceptableErrors.length > 0) {
@@ -234,7 +234,7 @@ text = str.tostring(ta.ema(math.abs(close - open), 10))
 });
 
 test("Regression: Functions with same suffix but different namespaces", () => {
-	const validator = new AccurateValidator();
+	const validator = new UnifiedPineValidator();
 
 	// Ensure we don't confuse similar names across namespaces
 	const code = `//@version=6
@@ -259,7 +259,7 @@ label.new(bar_index, high, "Text")
 });
 
 test("Regression: Undefined namespace methods", () => {
-	const validator = new AccurateValidator();
+	const validator = new UnifiedPineValidator();
 
 	// Invalid namespace methods - should error
 	const code = `//@version=6
@@ -278,14 +278,14 @@ array.badmethod()
 	);
 
 	// Verify each undefined method is caught
-	assert.ok(errors.some((e: any) => e.message.includes("math.nonexistent")));
-	assert.ok(errors.some((e: any) => e.message.includes("ta.invalid")));
-	assert.ok(errors.some((e: any) => e.message.includes("str.notafunction")));
-	assert.ok(errors.some((e: any) => e.message.includes("array.badmethod")));
+	assert.ok(errors.some((e) => e.message.includes("math.nonexistent")));
+	assert.ok(errors.some((e) => e.message.includes("ta.invalid")));
+	assert.ok(errors.some((e) => e.message.includes("str.notafunction")));
+	assert.ok(errors.some((e) => e.message.includes("array.badmethod")));
 });
 
 test("Regression: Invalid constants in parameter context", () => {
-	const validator = new AccurateValidator();
+	const validator = new UnifiedPineValidator();
 
 	// Invalid constants - should error
 	const code = `//@version=6
@@ -308,7 +308,7 @@ table.new(position.invalid, 2, 2)
 });
 
 test("Regression: Type-like function calls (should error)", () => {
-	const validator = new AccurateValidator();
+	const validator = new UnifiedPineValidator();
 
 	// These are types, not functions - should error if called
 	const code = `//@version=6
@@ -336,7 +336,7 @@ string("test")
 });
 
 test("Regression: Complex real-world scenario", () => {
-	const validator = new AccurateValidator();
+	const validator = new UnifiedPineValidator();
 
 	// Real-world complex Pine Script
 	const code = `//@version=6
@@ -380,7 +380,7 @@ alertcondition(bearish, "Bear Signal", "Bearish crossunder detected")
 });
 
 test("Regression: All input.* function variations", () => {
-	const validator = new AccurateValidator();
+	const validator = new UnifiedPineValidator();
 
 	// Test every input.* function with realistic parameters
 	const code = `//@version=6
@@ -410,7 +410,7 @@ i12 = input.time(timestamp("2024-01-01"), "Time Input")
 });
 
 test("Regression: Edge case - functions as variable names", () => {
-	const validator = new AccurateValidator();
+	const validator = new UnifiedPineValidator();
 
 	// Using function names as variable names (legal in Pine Script)
 	const code = `//@version=6
@@ -437,7 +437,7 @@ mySma = sma * 2
 });
 
 test("Regression: Incomplete namespace references", () => {
-	const validator = new AccurateValidator();
+	const validator = new UnifiedPineValidator();
 
 	// Incomplete references - should error
 	const code = `//@version=6

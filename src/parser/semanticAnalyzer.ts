@@ -15,7 +15,7 @@ import type {
 	VariableDeclaration,
 	WhileStatement,
 } from "./ast";
-import { DiagnosticSeverity } from "./comprehensiveValidator";
+import { DiagnosticSeverity } from "./unifiedValidator";
 
 export interface SemanticWarning {
 	line: number;

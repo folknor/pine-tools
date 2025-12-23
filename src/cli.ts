@@ -8,9 +8,9 @@ import {
 	type PineLintOutput,
 } from "./parser/astExtractor";
 import {
-	ComprehensiveValidator,
+	UnifiedPineValidator,
 	DiagnosticSeverity,
-} from "./parser/comprehensiveValidator";
+} from "./parser/unifiedValidator";
 import { Parser } from "./parser/parser";
 import { SemanticAnalyzer } from "./parser/semanticAnalyzer";
 
@@ -50,7 +50,7 @@ async function main() {
 		const result = extractor.extract(ast);
 
 		// Run validation to get errors (version-aware)
-		const validator = new ComprehensiveValidator();
+		const validator = new UnifiedPineValidator();
 		const validationErrors = validator.validate(ast, detectedVersion);
 
 		// Run semantic analysis to get warnings (only for v6)

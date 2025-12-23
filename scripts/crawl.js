@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
 /**
- * Pine Script v6 Documentation Crawler (Puppeteer Version)
+ * Pine Script v6 Documentation Crawler (Dynamic Discovery Version)
  *
  * This script crawls official TradingView Pine Script v6 reference
- * and extracts all language constructs (functions, constants, variables, etc.).
+ * and dynamically extracts all language constructs from the webpage content.
  *
  * Uses Puppeteer for lightweight browser automation.
  *
@@ -13,8 +13,8 @@
  */
 
 const puppeteer = require("puppeteer");
-const fs = require("fs");
-const path = require("path");
+const fs = require("node:fs");
+const path = require("node:path");
 
 const BASE_URL = "https://www.tradingview.com/pine-script-reference/v6/";
 const OUTPUT_FILE =
@@ -22,7 +22,9 @@ const OUTPUT_FILE =
 	path.join(__dirname, "../v6/raw/v6-language-constructs.json");
 
 async function crawlPineScriptReference() {
-	console.log("🚀 Starting Pine Script v6 documentation crawl (Puppeteer)...");
+	console.log(
+		"🚀 Starting Pine Script v6 documentation crawl (Dynamic Discovery)...",
+	);
 	console.log(`📍 Source: ${BASE_URL}`);
 	console.log(`📁 Output: ${OUTPUT_FILE}`);
 
@@ -53,15 +55,19 @@ async function crawlPineScriptReference() {
 			}
 		});
 
-		// Navigate to the main reference page
+		// Navigate to main reference page
 		console.log("📖 Loading main reference page...");
 		await page.goto(BASE_URL, {
 			waitUntil: "networkidle2",
 			timeout: 30000,
 		});
-		await page.waitForTimeout(2000); // Allow JavaScript to render
 
-		// Extract all language constructs
+		await page.waitForNetworkIdle();
+
+		// Wait for dynamic content to load
+		await new Promise((resolve) => setTimeout(resolve, 8000));
+
+		// Extract all language constructs using dynamic discovery
 		console.log("🔍 Extracting language constructs...");
 
 		const constructs = await page.evaluate(() => {
@@ -70,190 +76,206 @@ async function crawlPineScriptReference() {
 					extractedAt: new Date().toISOString(),
 					source: window.location.href,
 					totalItems: 0,
+					extractionMethod: "dynamic_discovery",
 				},
 				keywords: { count: 0, items: [] },
 				operators: { count: 0, items: [] },
-				constants: { count: 0, items: [] },
-				variables: { count: 0, items: [] },
-				functions: { count: 0, items: [] },
+				builtInVariables: {
+					standalone: { count: 0, items: [] },
+					namespaces: { count: 0, items: [] },
+				},
+				constants: {
+					namespaces: { count: 0, items: [] },
+					byNamespace: {},
+				},
+				functions: {
+					namespaces: { count: 0, items: [] },
+					byNamespace: {},
+				},
 				types: { count: 0, items: [] },
 			};
 
-			// Extract keywords (language keywords) - these are built into language
-			result.keywords.items = [
-				"and",
-				"enum",
-				"export",
-				"for",
-				"for...in",
-				"if",
-				"import",
-				"method",
-				"not",
-				"or",
-				"switch",
-				"type",
-				"var",
-				"varip",
-				"while",
-			];
+			// Extract all TOC items (this is where all language constructs are listed)
+			const tocLinks = document.querySelectorAll(".tv-pine-reference-toc-item");
+			const allDiscoveredItems = {
+				variables: [],
+				functions: [],
+				constants: [],
+				types: [],
+				keywords: new Set(),
+				operators: new Set(),
+			};
 
-			// Extract operators (language operators) - also built into language
-			result.operators.items = [
-				"!=",
-				"%",
-				"%=",
-				"*",
-				"*=",
-				"+",
-				"+=",
-				"-",
-				"-=",
-				"/",
-				"/=",
-				":=",
-				"<",
-				"<=",
-				"=",
-				"==",
-				"=>",
-				">",
-				">=",
-				"?:",
-				"[]",
-			];
+			// Categorize TOC items by their URL patterns
+			tocLinks.forEach((link) => {
+				const href = link.href;
+				const text = link.textContent.trim();
 
-			// Try multiple extraction strategies for functions
-			const functionSelectors = [
-				'a[href*="/fun_"]',
-				".function-item a",
-				".reference-function a",
-				'[data-type="function"] a',
-			];
-
-			for (const selector of functionSelectors) {
-				const elements = document.querySelectorAll(selector);
-				if (elements.length > 0) {
-					elements.forEach((el) => {
-						const text = el.textContent?.trim();
-						if (text && !result.functions.items.includes(text)) {
-							result.functions.items.push(text);
-						}
-					});
-					break;
+				if (href && text) {
+					if (href.includes("#var_")) {
+						allDiscoveredItems.variables.push(text);
+					} else if (href.includes("#fun_")) {
+						allDiscoveredItems.functions.push(text);
+					} else if (href.includes("#const_")) {
+						allDiscoveredItems.constants.push(text);
+					} else if (href.includes("#type_")) {
+						allDiscoveredItems.types.push(text);
+					}
 				}
-			}
+			});
 
-			// Extract constants
-			const constSelectors = [
-				'a[href*="/const_"]',
-				".constant-item a",
-				".reference-constant a",
-				'[data-type="constant"] a',
-			];
+			// Extract keywords and operators from code blocks throughout the page
+			const codeBlocks = document.querySelectorAll("code, pre");
 
-			for (const selector of constSelectors) {
-				const elements = document.querySelectorAll(selector);
-				if (elements.length > 0) {
-					elements.forEach((el) => {
-						const text = el.textContent?.trim();
-						if (text && !result.constants.items.includes(text)) {
-							result.constants.items.push(text);
-						}
+			// Pine Script keywords pattern
+			const keywordRegex =
+				/\b(and|or|not|if|else|for|while|do|switch|case|default|break|continue|return|var|let|const|import|export|true|false|na|null|enum|method|type|varip)\b/g;
+
+			// Operators pattern
+			const operatorRegex = /[+\-*/%=<>!&|^?:]+|[=!]=|[<>]=|\[\]/g;
+
+			codeBlocks.forEach((block) => {
+				const text = block.textContent;
+
+				// Extract keywords
+				keywordRegex.lastIndex = 0; // Reset regex
+				do {
+					match = keywordRegex.exec(text);
+					if (match) {
+						const keyword = match[1];
+						allDiscoveredItems.keywords.add(keyword);
+					}
+				} while (match !== null);
+
+				// Extract operators
+				const operatorMatches = text.match(operatorRegex);
+				if (operatorMatches) {
+					operatorMatches.forEach((op) => {
+						allDiscoveredItems.operators.add(op);
 					});
-					break;
 				}
-			}
+			});
 
-			// Extract variables
-			const varSelectors = [
-				'a[href*="/var_"]',
-				".variable-item a",
-				".reference-variable a",
-				'[data-type="variable"] a',
-			];
+			// Separate variables into standalone and namespaced
+			const standaloneVariables = [];
+			const variableNamespaces = new Set();
 
-			for (const selector of varSelectors) {
-				const elements = document.querySelectorAll(selector);
-				if (elements.length > 0) {
-					elements.forEach((el) => {
-						const text = el.textContent?.trim();
-						if (text && !result.variables.items.includes(text)) {
-							result.variables.items.push(text);
-						}
-					});
-					break;
+			allDiscoveredItems.variables.forEach((variable) => {
+				if (variable.includes(".")) {
+					const namespace = variable.split(".")[0];
+					variableNamespaces.add(namespace);
+				} else {
+					standaloneVariables.push(variable);
 				}
-			}
+			});
 
-			// Count items
+			// Organize functions by namespace
+			const functionNamespaces = new Set();
+			const functionsByNamespace = {};
+
+			allDiscoveredItems.functions.forEach((func) => {
+				if (func.includes(".")) {
+					const parts = func.split(".");
+					const namespace = parts[0];
+					const funcName = parts.slice(1).join(".");
+
+					functionNamespaces.add(namespace);
+					if (!functionsByNamespace[namespace]) {
+						functionsByNamespace[namespace] = [];
+					}
+					functionsByNamespace[namespace].push(funcName);
+				} else {
+					// Standalone function (no namespace)
+					functionNamespaces.add("global");
+					if (!functionsByNamespace.global) {
+						functionsByNamespace.global = [];
+					}
+					functionsByNamespace.global.push(func);
+				}
+			});
+
+			// Organize constants by namespace
+			const constantNamespaces = new Set();
+			const constantsByNamespace = {};
+
+			allDiscoveredItems.constants.forEach((constant) => {
+				if (constant.includes(".")) {
+					const parts = constant.split(".");
+					const namespace = parts[0];
+					const constantName = parts.slice(1).join(".");
+
+					constantNamespaces.add(namespace);
+					if (!constantsByNamespace[namespace]) {
+						constantsByNamespace[namespace] = [];
+					}
+					constantsByNamespace[namespace].push(constantName);
+				}
+			});
+
+			// Populate result object
+			result.keywords.items = Array.from(allDiscoveredItems.keywords).sort();
+			result.operators.items = Array.from(allDiscoveredItems.operators).sort();
+			result.types.items = allDiscoveredItems.types.sort();
+
+			// Variables
+			result.builtInVariables.standalone.items = standaloneVariables.sort();
+			result.builtInVariables.namespaces.items =
+				Array.from(variableNamespaces).sort();
+
+			// Functions
+			result.functions.namespaces.items = Array.from(functionNamespaces).sort();
+			result.functions.byNamespace = functionsByNamespace;
+
+			// Constants
+			result.constants.namespaces.items = Array.from(constantNamespaces).sort();
+			result.constants.byNamespace = constantsByNamespace;
+
+			// Set counts
 			result.keywords.count = result.keywords.items.length;
 			result.operators.count = result.operators.items.length;
-			result.constants.count = result.constants.items.length;
-			result.variables.count = result.variables.items.length;
-			result.functions.count = result.functions.items.length;
 			result.types.count = result.types.items.length;
+			result.builtInVariables.standalone.count = standaloneVariables.length;
+			result.builtInVariables.namespaces.count = variableNamespaces.size;
+			result.functions.namespaces.count = functionNamespaces.size;
+			result.constants.namespaces.count = constantNamespaces.size;
 
-			// Calculate total
+			// Calculate total items
+			const keywordCount = result.keywords.count;
+			const operatorCount = result.operators.count;
+			const variableStandaloneCount = result.builtInVariables.standalone.count;
+			const variableNamespaceCount = result.builtInVariables.namespaces.count;
+			const constantNamespaceCount = result.constants.namespaces.count;
+			const constantItemCount =
+				Object.values(constantsByNamespace).flat().length;
+			const functionNamespaceCount = result.functions.namespaces.count;
+			const functionItemCount = allDiscoveredItems.functions.length;
+			const typeCount = result.types.count;
+
 			result.metadata.totalItems =
-				result.keywords.count +
-				result.operators.count +
-				result.constants.count +
-				result.variables.count +
-				result.functions.count +
-				result.types.count;
+				keywordCount +
+				operatorCount +
+				variableStandaloneCount +
+				variableNamespaceCount +
+				constantNamespaceCount +
+				constantItemCount +
+				functionNamespaceCount +
+				functionItemCount +
+				typeCount;
+
+			// Add discovery statistics
+			result.metadata.discoveryStats = {
+				tocItemsFound: tocLinks.length,
+				codeBlocksAnalyzed: codeBlocks.length,
+				variablesDiscovered: allDiscoveredItems.variables.length,
+				functionsDiscovered: allDiscoveredItems.functions.length,
+				constantsDiscovered: allDiscoveredItems.constants.length,
+				typesDiscovered: allDiscoveredItems.types.length,
+				keywordsDiscovered: result.keywords.count,
+				operatorsDiscovered: result.operators.count,
+			};
 
 			return result;
 		});
-
-		// If main page extraction didn't work well, try to navigate to specific sections
-		if (constructs.functions.count < 100) {
-			console.log("🔍 Main extraction incomplete, trying detailed approach...");
-
-			// Try to find and click on function categories
-			const functionCategories = await page.$$(
-				'a[href*="#fun"], .category-link',
-			);
-
-			for (let i = 0; i < Math.min(functionCategories.length, 10); i++) {
-				try {
-					await functionCategories[i].click();
-					await page.waitForTimeout(1000);
-
-					const categoryFunctions = await page.evaluate(() => {
-						const items = [];
-						const links = document.querySelectorAll('a[href*="/fun_"]');
-						links.forEach((el) => {
-							const text = el.textContent?.trim();
-							if (text && !items.includes(text)) {
-								items.push(text);
-							}
-						});
-						return items;
-					});
-
-					categoryFunctions.forEach((func) => {
-						if (!constructs.functions.items.includes(func)) {
-							constructs.functions.items.push(func);
-						}
-					});
-				} catch (e) {
-					console.log(`⚠️  Could not extract from category ${i}: ${e.message}`);
-				}
-			}
-		}
-
-		// Update counts
-		constructs.functions.count = constructs.functions.items.length;
-		constructs.constants.count = constructs.constants.items.length;
-		constructs.variables.count = constructs.variables.items.length;
-		constructs.metadata.totalItems =
-			constructs.keywords.count +
-			constructs.operators.count +
-			constructs.constants.count +
-			constructs.variables.count +
-			constructs.functions.count +
-			constructs.types.count;
 
 		// Ensure output directory exists
 		const outputDir = path.dirname(OUTPUT_FILE);
@@ -268,11 +290,48 @@ async function crawlPineScriptReference() {
 		console.log(`📊 Results:`);
 		console.log(`   Keywords: ${constructs.keywords.count}`);
 		console.log(`   Operators: ${constructs.operators.count}`);
-		console.log(`   Constants: ${constructs.constants.count}`);
-		console.log(`   Variables: ${constructs.variables.count}`);
-		console.log(`   Functions: ${constructs.functions.count}`);
+		console.log(
+			`   Variables - Standalone: ${constructs.builtInVariables.standalone.count}`,
+		);
+		console.log(
+			`   Variables - Namespaces: ${constructs.builtInVariables.namespaces.count}`,
+		);
+		console.log(
+			`   Constants - Namespaces: ${constructs.constants.namespaces.count}`,
+		);
+		console.log(
+			`   Constants - Items: ${Object.values(constructs.constants.byNamespace).flat().length}`,
+		);
+		console.log(
+			`   Functions - Namespaces: ${constructs.functions.namespaces.count}`,
+		);
 		console.log(`   Types: ${constructs.types.count}`);
 		console.log(`   Total: ${constructs.metadata.totalItems}`);
+		console.log(`🔍 Discovery Stats:`);
+		console.log(
+			`   TOC items found: ${constructs.metadata.discoveryStats.tocItemsFound}`,
+		);
+		console.log(
+			`   Code blocks analyzed: ${constructs.metadata.discoveryStats.codeBlocksAnalyzed}`,
+		);
+		console.log(
+			`   Variables discovered: ${constructs.metadata.discoveryStats.variablesDiscovered}`,
+		);
+		console.log(
+			`   Functions discovered: ${constructs.metadata.discoveryStats.functionsDiscovered}`,
+		);
+		console.log(
+			`   Constants discovered: ${constructs.metadata.discoveryStats.constantsDiscovered}`,
+		);
+		console.log(
+			`   Types discovered: ${constructs.metadata.discoveryStats.typesDiscovered}`,
+		);
+		console.log(
+			`   Keywords discovered: ${constructs.metadata.discoveryStats.keywordsDiscovered}`,
+		);
+		console.log(
+			`   Operators discovered: ${constructs.metadata.discoveryStats.operatorsDiscovered}`,
+		);
 		console.log(`💾 Saved to: ${OUTPUT_FILE}`);
 	} catch (error) {
 		console.error("❌ Crawl failed:", error.message);

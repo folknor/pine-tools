@@ -8,7 +8,11 @@ import {
 	getNamespaceCompletions,
 	getParameterCompletions,
 } from "./completions";
-import { AccurateValidator } from "./parser/accurateValidator";
+import { Parser } from "./parser/parser";
+import {
+	DiagnosticSeverity,
+	UnifiedPineValidator,
+} from "./parser/unifiedValidator";
 import { createSignatureHelpProvider } from "./signatureHelp";
 
 export function activate(context: vscode.ExtensionContext) {
@@ -245,16 +249,19 @@ export function activate(context: vscode.ExtensionContext) {
 	// Diagnostics with ENHANCED parameter validation
 	const diagCollection = vscode.languages.createDiagnosticCollection("pine");
 	context.subscriptions.push(diagCollection);
-	const accurateValidator = new AccurateValidator();
+	const validator = new UnifiedPineValidator();
 
 	const runDiagnostics = (doc: vscode.TextDocument) => {
 		if (doc.languageId !== "pine") return;
 		const text = doc.getText();
 		const diags: vscode.Diagnostic[] = [];
 
-		// Accurate validation using official TradingView parameter requirements
+		// Validation using unified validator
 		try {
-			const errors = accurateValidator.validate(text);
+			const parser = new Parser(text);
+			const ast = parser.parse();
+			const detectedVersion = parser.getDetectedVersion() || "6";
+			const errors = validator.validate(ast, detectedVersion);
 
 			console.log(`[Pine Validator] Found ${errors.length} validation errors`);
 
@@ -280,7 +287,7 @@ export function activate(context: vscode.ExtensionContext) {
 				new vscode.Diagnostic(
 					new vscode.Range(0, 0, 0, 1),
 					"Recommend using //@version=6 for Pine v6.",
-					vscode.DiagnosticSeverity.Warning,
+					DiagnosticSeverity.Warning,
 				),
 			);
 		}
@@ -361,7 +368,7 @@ export function activate(context: vscode.ExtensionContext) {
 				new vscode.Diagnostic(
 					new vscode.Range(pos, endPos),
 					'Invalid parameter "shape". Did you mean "style"?',
-					vscode.DiagnosticSeverity.Error,
+					DiagnosticSeverity.Error,
 				),
 			);
 			match = plotshapeShapeMatch.exec(text);
@@ -377,7 +384,7 @@ export function activate(context: vscode.ExtensionContext) {
 				new vscode.Diagnostic(
 					new vscode.Range(pos, endPos),
 					'Invalid parameter "shape". Did you mean "char"?',
-					vscode.DiagnosticSeverity.Error,
+					DiagnosticSeverity.Error,
 				),
 			);
 			match = plotcharShapeMatch.exec(text);
@@ -399,7 +406,7 @@ export function activate(context: vscode.ExtensionContext) {
 					new vscode.Diagnostic(
 						new vscode.Range(pos, endPos),
 						'"timeframe_gaps" has no effect without a "timeframe" argument in indicator/strategy call',
-						vscode.DiagnosticSeverity.Warning,
+						DiagnosticSeverity.Warning,
 					),
 				);
 			}
@@ -418,7 +425,7 @@ export function activate(context: vscode.ExtensionContext) {
 					new vscode.Diagnostic(
 						new vscode.Range(pos, endPos),
 						`alertcondition() expects 3 parameters (condition, title, message), but got ${args.length}`,
-						vscode.DiagnosticSeverity.Error,
+						DiagnosticSeverity.Error,
 					),
 				);
 			}
@@ -435,7 +442,7 @@ export function activate(context: vscode.ExtensionContext) {
 				new vscode.Diagnostic(
 					new vscode.Range(pos, endPos),
 					"input.string() requires at least one parameter: defval (default value)",
-					vscode.DiagnosticSeverity.Error,
+					DiagnosticSeverity.Error,
 				),
 			);
 			match = inputStringMatch.exec(text);
@@ -454,7 +461,7 @@ export function activate(context: vscode.ExtensionContext) {
 		return new vscode.Diagnostic(
 			new vscode.Range(pos, pos.translate(0, 1)),
 			message,
-			vscode.DiagnosticSeverity.Warning,
+			DiagnosticSeverity.Warning,
 		);
 	};
 

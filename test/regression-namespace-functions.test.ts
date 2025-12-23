@@ -32,14 +32,14 @@ fs.writeFileSync(
 );
 
 const {
-	AccurateValidator,
-} = require("../dist/src/parser/accurateValidator.js");
+	UnifiedPineValidator,
+} = require("../dist/src/parser/unifiedValidator.js");
 const {
 	PINE_FUNCTIONS_MERGED,
 } = require("../dist/v6/parameter-requirements-merged.js");
 
 test("Regression: Namespace functions NOT flagged by suffix types", () => {
-	const validator = new AccurateValidator();
+	const validator = new UnifiedPineValidator();
 
 	// All input.* functions - these MUST NOT be flagged
 	const inputFunctions = [
@@ -57,7 +57,7 @@ test("Regression: Namespace functions NOT flagged by suffix types", () => {
 	const errors = validator.validate(code);
 
 	// Should have ZERO errors - all are valid functions
-	const inputErrors = errors.filter((e: any) => e.message.includes("input."));
+	const inputErrors = errors.filter((e) => e.message.includes("input."));
 
 	assert.strictEqual(
 		inputErrors.length,
@@ -67,7 +67,7 @@ test("Regression: Namespace functions NOT flagged by suffix types", () => {
 });
 
 test("Regression: Type names NOT validated as functions", () => {
-	const validator = new AccurateValidator();
+	const validator = new UnifiedPineValidator();
 
 	// These are types, NOT functions - should NOT be validated
 	const typeNames = [
@@ -86,7 +86,7 @@ test("Regression: Type names NOT validated as functions", () => {
 		const errors = validator.validate(code);
 
 		// Should only error for undefined variable 'x', NOT for type name parameter count
-		const typeErrors = errors.filter((e: any) =>
+		const typeErrors = errors.filter((e) =>
 			e.message.includes(`for '${typeName}'`),
 		);
 
@@ -99,7 +99,7 @@ test("Regression: Type names NOT validated as functions", () => {
 });
 
 test("Regression: Namespaced ta.* functions work correctly", () => {
-	const validator = new AccurateValidator();
+	const validator = new UnifiedPineValidator();
 
 	const taFunctions = [
 		"ta.sma(close, 20)",
@@ -112,7 +112,7 @@ test("Regression: Namespaced ta.* functions work correctly", () => {
 	const code = `//@version=6\nindicator("Test")\nsma = ta.sma(close, 20)\n${taFunctions.join("\n")}`;
 	const errors = validator.validate(code);
 
-	const taErrors = errors.filter((e: any) => e.message.includes("ta."));
+	const taErrors = errors.filter((e) => e.message.includes("ta."));
 
 	assert.strictEqual(
 		taErrors.length,
@@ -122,7 +122,7 @@ test("Regression: Namespaced ta.* functions work correctly", () => {
 });
 
 test("Regression: Namespaced math.* functions work correctly", () => {
-	const validator = new AccurateValidator();
+	const validator = new UnifiedPineValidator();
 
 	const mathFunctions = [
 		"math.abs(-10)",
@@ -136,7 +136,7 @@ test("Regression: Namespaced math.* functions work correctly", () => {
 	const code = `//@version=6\nindicator("Test")\n${mathFunctions.join("\n")}`;
 	const errors = validator.validate(code);
 
-	const mathErrors = errors.filter((e: any) => e.message.includes("math."));
+	const mathErrors = errors.filter((e) => e.message.includes("math."));
 
 	assert.strictEqual(
 		mathErrors.length,
@@ -146,7 +146,7 @@ test("Regression: Namespaced math.* functions work correctly", () => {
 });
 
 test("Regression: Namespaced str.* functions work correctly", () => {
-	const validator = new AccurateValidator();
+	const validator = new UnifiedPineValidator();
 
 	const strFunctions = [
 		"str.tostring(close)",
@@ -158,7 +158,7 @@ test("Regression: Namespaced str.* functions work correctly", () => {
 	const code = `//@version=6\nindicator("Test")\n${strFunctions.join("\n")}`;
 	const errors = validator.validate(code);
 
-	const strErrors = errors.filter((e: any) => e.message.includes("str."));
+	const strErrors = errors.filter((e) => e.message.includes("str."));
 
 	assert.strictEqual(
 		strErrors.length,
@@ -168,7 +168,7 @@ test("Regression: Namespaced str.* functions work correctly", () => {
 });
 
 test("Regression: Complex namespaced patterns", () => {
-	const validator = new AccurateValidator();
+	const validator = new UnifiedPineValidator();
 
 	// Complex patterns that previously failed
 	const code = `//@version=6
@@ -199,7 +199,7 @@ crossUp = ta.crossover(close, sma20)
 });
 
 test("Regression: Edge cases with dots and special patterns", () => {
-	const validator = new AccurateValidator();
+	const validator = new UnifiedPineValidator();
 
 	const code = `//@version=6
 indicator("Test")

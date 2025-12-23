@@ -333,7 +333,7 @@ function generateAllFiles() {
 
 // Run if called directly
 if (require.main === module) {
-	generateAllFiles().catch(console.error);
+	generateAllFiles();
 }
 
 module.exports = {

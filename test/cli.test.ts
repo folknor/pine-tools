@@ -76,7 +76,7 @@ plot(close, style=plot.style_dashed)  // v5 deprecated style
 				cwd: __dirname,
 			});
 			return { success: true, output: JSON.parse(output) };
-		} catch (error: any) {
+		} catch (error) {
 			// CLI returns non-zero exit code on errors, but output is still valid JSON
 			try {
 				const parsed = JSON.parse(error.stdout);
@@ -96,7 +96,7 @@ plot(close, style=plot.style_dashed)  // v5 deprecated style
 			try {
 				execSync(`node "${cliPath}"`, { encoding: "utf8" });
 				expect.fail("Should have thrown an error");
-			} catch (error: any) {
+			} catch (error) {
 				expect(error.stderr || error.stdout).toContain(
 					"Usage: pine-validate <file.pine>",
 				);
@@ -125,7 +125,7 @@ plot(close, style=plot.style_dashed)  // v5 deprecated style
 
 			const errors = result.output.result.errors;
 			const missingParamError = errors.find(
-				(e: any) =>
+				(e) =>
 					e.message.includes("Missing required parameter") &&
 					e.message.includes("length"),
 			);
@@ -135,7 +135,7 @@ plot(close, style=plot.style_dashed)  // v5 deprecated style
 		it("should detect undefined variables", () => {
 			const result = runCLI(invalidFile);
 			const errors = result.output.result.errors;
-			const undefinedVarError = errors.find((e: any) =>
+			const undefinedVarError = errors.find((e) =>
 				e.message.includes("undefinedVar"),
 			);
 			expect(undefinedVarError).toBeDefined();
@@ -149,7 +149,7 @@ plot(close, style=plot.style_dashed)  // v5 deprecated style
 			// Should have lexer errors for syntax issues
 			const errors = result.output.result.errors;
 			const hasLexerError = errors.some(
-				(e: any) =>
+				(e) =>
 					e.message.includes("Unexpected") || e.message.includes("Expected"),
 			);
 			expect(hasLexerError).toBe(true);
@@ -170,7 +170,7 @@ plot(close, style=plot.style_dashed)  // v5 deprecated style
 			// Should detect v5 and handle deprecated syntax
 			const errors = result.output.result.errors;
 			const _hasDeprecatedError = errors.some(
-				(e: any) =>
+				(e) =>
 					e.message.includes("style_dashed") ||
 					e.message.includes("deprecated"),
 			);

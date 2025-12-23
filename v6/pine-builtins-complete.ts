@@ -3,257 +3,251 @@
  * Auto-generated from official TradingView Pine Script v6 Reference
  * Source: https://www.tradingview.com/pine-script-reference/v6/
  *
- * Total: 27 standalone + 21 variable namespaces
- * Generated: 2025-10-05
+ * Total: 27 standalone + 15 variable namespaces
+ * Generated: 2025-12-20
  */
 
 //──────────────────────────────────────────────────────────
 // STANDALONE BUILT-IN VARIABLES (27)
 //──────────────────────────────────────────────────────────
 export const STANDALONE_BUILTINS = new Set([
-	// Price data
 	"ask",
+	"bar_index",
 	"bid",
 	"close",
-	"high",
-	"low",
-	"open",
-	"volume",
-
-	// Derived price series
-	"hl2", // (high + low) / 2
-	"hlc3", // (high + low + close) / 3
-	"hlcc4", // (high + low + close + close) / 4
-	"ohlc4", // (open + high + low + close) / 4
-
-	// Time-related
-	"time", // Current bar's timestamp
-	"time_close", // Current bar's close timestamp
-	"time_tradingday", // Trading day timestamp
-	"timenow", // Current time
-
-	// Time components
 	"dayofmonth",
 	"dayofweek",
+	"high",
+	"hl2",
+	"hlc3",
+	"hlcc4",
 	"hour",
+	"last_bar_index",
+	"last_bar_time",
+	"low",
 	"minute",
 	"month",
+	"na",
+	"ohlc4",
+	"open",
 	"second",
+	"time",
+	"time_close",
+	"time_tradingday",
+	"timenow",
+	"volume",
 	"weekofyear",
 	"year",
-
-	// Bar indexing
-	"bar_index", // Current bar number (0-based)
-	"last_bar_index", // Last bar number
-	"last_bar_time", // Last bar timestamp
-
-	// Special values
-	"na", // Not available / null value
 ]);
 
 //──────────────────────────────────────────────────────────
-// VARIABLE NAMESPACES (21)
+// BARSTATE_BUILTINS namespace (7 variables)
 //──────────────────────────────────────────────────────────
+export const BARSTATE_BUILTINS = new Set([
+	"isconfirmed",
+	"isfirst",
+	"ishistory",
+	"islast",
+	"islastconfirmedhistory",
+	"isnew",
+	"isrealtime",
+]);
 
-// Note: These are namespaces that contain built-in variables
-// Examples: barstate.isfirst, syminfo.ticker, timeframe.period
-export const VARIABLE_NAMESPACES = new Set([
-	"adjustment",
-	"backadjustment",
-	"barstate",
-	"box",
-	"chart",
-	"display",
-	"dividends",
-	"earnings",
-	"label",
-	"line",
-	"linefill",
-	"polyline",
-	"request",
+//──────────────────────────────────────────────────────────
+// CHART_BUILTINS namespace (11 variables)
+//──────────────────────────────────────────────────────────
+export const CHART_BUILTINS = new Set([
+	"bg_color",
+	"fg_color",
+	"is_heikinashi",
+	"is_kagi",
+	"is_linebreak",
+	"is_pnf",
+	"is_range",
+	"is_renko",
+	"is_standard",
+	"left_visible_bar_time",
+	"right_visible_bar_time",
+]);
+
+//──────────────────────────────────────────────────────────
+// DIVIDENDS_BUILTINS namespace (3 variables)
+//──────────────────────────────────────────────────────────
+export const DIVIDENDS_BUILTINS = new Set([
+	"future_amount",
+	"future_ex_date",
+	"future_pay_date",
+]);
+
+//──────────────────────────────────────────────────────────
+// EARNINGS_BUILTINS namespace (4 variables)
+//──────────────────────────────────────────────────────────
+export const EARNINGS_BUILTINS = new Set([
+	"future_eps",
+	"future_period_end_time",
+	"future_revenue",
+	"future_time",
+]);
+
+//──────────────────────────────────────────────────────────
+// LABEL_BUILTINS namespace (1 variables)
+//──────────────────────────────────────────────────────────
+export const LABEL_BUILTINS = new Set(["all"]);
+
+//──────────────────────────────────────────────────────────
+// LINE_BUILTINS namespace (1 variables)
+//──────────────────────────────────────────────────────────
+export const LINE_BUILTINS = new Set(["all"]);
+
+//──────────────────────────────────────────────────────────
+// LINEFILL_BUILTINS namespace (1 variables)
+//──────────────────────────────────────────────────────────
+export const LINEFILL_BUILTINS = new Set(["all"]);
+
+//──────────────────────────────────────────────────────────
+// POLYLINE_BUILTINS namespace (1 variables)
+//──────────────────────────────────────────────────────────
+export const POLYLINE_BUILTINS = new Set(["all"]);
+
+//──────────────────────────────────────────────────────────
+// REQUEST_BUILTINS namespace (2 variables)
+//──────────────────────────────────────────────────────────
+export const REQUEST_BUILTINS = new Set(["security", "security_lower_tf"]);
+
+//──────────────────────────────────────────────────────────
+// SESSION_BUILTINS namespace (7 variables)
+//──────────────────────────────────────────────────────────
+export const SESSION_BUILTINS = new Set([
+	"isfirstbar",
+	"isfirstbar_regular",
+	"islastbar",
+	"islastbar_regular",
+	"ismarket",
+	"ispostmarket",
+	"ispremarket",
+]);
+
+//──────────────────────────────────────────────────────────
+// STRATEGY_BUILTINS namespace (35 variables)
+//──────────────────────────────────────────────────────────
+export const STRATEGY_BUILTINS = new Set([
+	"account_currency",
+	"avg_losing_trade",
+	"avg_losing_trade_percent",
+	"avg_trade",
+	"avg_trade_percent",
+	"avg_winning_trade",
+	"avg_winning_trade_percent",
+	"closedtrades",
+	"closedtrades.first_index",
+	"equity",
+	"eventrades",
+	"grossloss",
+	"grossloss_percent",
+	"grossprofit",
+	"grossprofit_percent",
+	"initial_capital",
+	"losstrades",
+	"margin_liquidation_price",
+	"max_contracts_held_all",
+	"max_contracts_held_long",
+	"max_contracts_held_short",
+	"max_drawdown",
+	"max_drawdown_percent",
+	"max_runup",
+	"max_runup_percent",
+	"netprofit",
+	"netprofit_percent",
+	"openprofit",
+	"openprofit_percent",
+	"opentrades",
+	"opentrades.capital_held",
+	"position_avg_price",
+	"position_entry_name",
+	"position_size",
+	"wintrades",
+]);
+
+//──────────────────────────────────────────────────────────
+// SYMINFO_BUILTINS namespace (40 variables)
+//──────────────────────────────────────────────────────────
+export const SYMINFO_BUILTINS = new Set([
+	"basecurrency",
+	"country",
+	"currency",
+	"current_contract",
+	"description",
+	"employees",
+	"expiration_date",
+	"industry",
+	"isin",
+	"main_tickerid",
+	"mincontract",
+	"minmove",
+	"mintick",
+	"pointvalue",
+	"prefix",
+	"pricescale",
+	"recommendations_buy",
+	"recommendations_buy_strong",
+	"recommendations_date",
+	"recommendations_hold",
+	"recommendations_sell",
+	"recommendations_sell_strong",
+	"recommendations_total",
+	"root",
+	"sector",
 	"session",
-	"settlement_as_close",
-	"strategy",
-	"syminfo",
-	"ta",
-	"table",
-	"text",
-	"timeframe",
-]);
-
-//──────────────────────────────────────────────────────────
-// FUNCTION NAMESPACES (22)
-//──────────────────────────────────────────────────────────
-
-// Note: These are namespaces that contain functions
-// Examples: ta.sma(), input.int(), str.tostring()
-export const FUNCTION_NAMESPACES = new Set([
-	"array",
-	"box",
-	"chart",
-	"color",
-	"input",
-	"label",
-	"line",
-	"linefill",
-	"log",
-	"map",
-	"math",
-	"matrix",
-	"polyline",
-	"request",
-	"runtime",
-	"str",
-	"strategy",
-	"syminfo",
-	"ta",
-	"table",
+	"shareholders",
+	"shares_outstanding_float",
+	"shares_outstanding_total",
+	"target_price_average",
+	"target_price_date",
+	"target_price_estimates",
+	"target_price_high",
+	"target_price_low",
+	"target_price_median",
 	"ticker",
-	"timeframe",
-]);
-
-//──────────────────────────────────────────────────────────
-// KEYWORDS (15)
-//──────────────────────────────────────────────────────────
-export const KEYWORDS = new Set([
-	// Control flow
-	"if",
-	"else",
-	"for",
-	"for...in",
-	"while",
-	"switch",
-
-	// Logical operators
-	"and",
-	"or",
-	"not",
-
-	// Declaration
-	"var",
-	"varip",
-
-	// Module system
-	"import",
-	"export",
-
-	// User-defined types
+	"tickerid",
+	"timezone",
 	"type",
-	"method",
-	"enum",
+	"volumetype",
 ]);
 
 //──────────────────────────────────────────────────────────
-// OPERATORS (21)
+// TA_BUILTINS namespace (10 variables)
 //──────────────────────────────────────────────────────────
-export const OPERATORS = new Set([
-	// Arithmetic
-	"+",
-	"-",
-	"*",
-	"/",
-	"%",
-
-	// Comparison
-	"==",
-	"!=",
-	"<",
-	">",
-	"<=",
-	">=",
-
-	// Assignment
-	"=",
-	":=",
-
-	// Compound assignment
-	"+=",
-	"-=",
-	"*=",
-	"/=",
-	"%=",
-
-	// Ternary
-	"?:",
-
-	// Array access
-	"[]",
-
-	// Function arrow
-	"=>",
+export const TA_BUILTINS = new Set([
+	"accdist",
+	"iii",
+	"nvi",
+	"obv",
+	"pvi",
+	"pvt",
+	"tr",
+	"vwap",
+	"wad",
+	"wvad",
 ]);
 
 //──────────────────────────────────────────────────────────
-// TYPE NAMES (Not to be validated as functions)
+// TABLE_BUILTINS namespace (1 variables)
 //──────────────────────────────────────────────────────────
-export const TYPE_NAMES = new Set([
-	"int",
-	"float",
-	"bool",
-	"string",
-	"color",
-	"array",
-	"matrix",
-	"map",
-	"line",
-	"label",
-	"box",
-	"table",
-	"polyline",
-	"linefill",
-	"series",
-	"simple",
-	"const",
+export const TABLE_BUILTINS = new Set(["all"]);
+
+//──────────────────────────────────────────────────────────
+// TIMEFRAME_BUILTINS namespace (11 variables)
+//──────────────────────────────────────────────────────────
+export const TIMEFRAME_BUILTINS = new Set([
+	"isdaily",
+	"isdwm",
+	"isintraday",
+	"isminutes",
+	"ismonthly",
+	"isseconds",
+	"isticks",
+	"isweekly",
+	"main_period",
+	"multiplier",
+	"period",
 ]);
-
-//──────────────────────────────────────────────────────────
-// UTILITY FUNCTIONS
-//──────────────────────────────────────────────────────────
-
-export function isBuiltInVariable(name: string): boolean {
-	return STANDALONE_BUILTINS.has(name);
-}
-
-export function isVariableNamespace(name: string): boolean {
-	return VARIABLE_NAMESPACES.has(name);
-}
-
-export function isFunctionNamespace(name: string): boolean {
-	return FUNCTION_NAMESPACES.has(name);
-}
-
-export function isKnownNamespace(name: string): boolean {
-	return VARIABLE_NAMESPACES.has(name) || FUNCTION_NAMESPACES.has(name);
-}
-
-export function isKeyword(name: string): boolean {
-	return KEYWORDS.has(name);
-}
-
-export function isOperator(name: string): boolean {
-	return OPERATORS.has(name);
-}
-
-export function isTypeName(name: string): boolean {
-	return TYPE_NAMES.has(name);
-}
-
-export function isReservedWord(name: string): boolean {
-	return isBuiltInVariable(name) || isKeyword(name) || isTypeName(name);
-}
-
-//──────────────────────────────────────────────────────────
-// METADATA
-//──────────────────────────────────────────────────────────
-export const BUILTINS_METADATA = {
-	standaloneBuiltins: STANDALONE_BUILTINS.size,
-	variableNamespaces: VARIABLE_NAMESPACES.size,
-	functionNamespaces: FUNCTION_NAMESPACES.size,
-	keywords: KEYWORDS.size,
-	operators: OPERATORS.size,
-	typeNames: TYPE_NAMES.size,
-	generatedFrom: "v6/raw/v6-language-constructs.json",
-	source: "https://www.tradingview.com/pine-script-reference/v6/",
-	version: "v6",
-	lastUpdated: "2025-10-05",
-};
