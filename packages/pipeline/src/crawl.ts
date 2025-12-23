@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env -S node --experimental-strip-types
 
 /**
  * Pine Script v6 Documentation Crawler (Dynamic Discovery Version)
@@ -8,27 +8,74 @@
  *
  * Uses Puppeteer for lightweight browser automation.
  *
- * Usage: node scripts/crawl.js [output-file]
- * Default output: v6/raw/v6-language-constructs.json
+ * Usage: node --experimental-strip-types packages/pipeline/src/crawl.ts [output-file]
+ * Default output: pine-data/raw/v6/v6-language-constructs.json
  */
 
-const puppeteer = require("puppeteer");
-const fs = require("node:fs");
-const path = require("node:path");
+import puppeteer from "puppeteer";
+import * as fs from "node:fs";
+import * as path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const BASE_URL = "https://www.tradingview.com/pine-script-reference/v6/";
+
+// Resolve paths relative to project root
+const PROJECT_ROOT = __dirname.includes("/dist/")
+	? path.resolve(__dirname, "../../../..")
+	: path.resolve(__dirname, "../../..");
+
 const OUTPUT_FILE =
 	process.argv[2] ||
-	path.join(__dirname, "../v6/raw/v6-language-constructs.json");
+	path.join(PROJECT_ROOT, "pine-data/raw/v6/v6-language-constructs.json");
 
-async function crawlPineScriptReference() {
+interface DiscoveryStats {
+	tocItemsFound: number;
+	codeBlocksAnalyzed: number;
+	variablesDiscovered: number;
+	functionsDiscovered: number;
+	constantsDiscovered: number;
+	typesDiscovered: number;
+	keywordsDiscovered: number;
+	operatorsDiscovered: number;
+}
+
+interface CrawlResult {
+	metadata: {
+		extractedAt: string;
+		source: string;
+		totalItems: number;
+		extractionMethod: string;
+		discoveryStats: DiscoveryStats;
+	};
+	keywords: { count: number; items: string[] };
+	operators: { count: number; items: string[] };
+	builtInVariables: {
+		standalone: { count: number; items: string[] };
+		namespaces: { count: number; items: string[] };
+	};
+	constants: {
+		namespaces: { count: number; items: string[] };
+		byNamespace: Record<string, string[]>;
+	};
+	functions: {
+		namespaces: { count: number; items: string[] };
+		byNamespace: Record<string, string[]>;
+	};
+	types: { count: number; items: string[] };
+}
+
+export async function crawlPineScriptReference(): Promise<CrawlResult> {
 	console.log(
-		"🚀 Starting Pine Script v6 documentation crawl (Dynamic Discovery)...",
+		"Starting Pine Script v6 documentation crawl (Dynamic Discovery)...",
 	);
-	console.log(`📍 Source: ${BASE_URL}`);
-	console.log(`📁 Output: ${OUTPUT_FILE}`);
+	console.log(`Source: ${BASE_URL}`);
+	console.log(`Output: ${OUTPUT_FILE}`);
 
-	let browser;
+	let browser: Awaited<ReturnType<typeof puppeteer.launch>> | null = null;
+
 	try {
 		// Launch Puppeteer with optimized settings
 		browser = await puppeteer.launch({
@@ -56,7 +103,7 @@ async function crawlPineScriptReference() {
 		});
 
 		// Navigate to main reference page
-		console.log("📖 Loading main reference page...");
+		console.log("Loading main reference page...");
 		await page.goto(BASE_URL, {
 			waitUntil: "networkidle2",
 			timeout: 30000,
@@ -68,7 +115,7 @@ async function crawlPineScriptReference() {
 		await new Promise((resolve) => setTimeout(resolve, 8000));
 
 		// Extract all language constructs using dynamic discovery
-		console.log("🔍 Extracting language constructs...");
+		console.log("Extracting language constructs...");
 
 		const constructs = await page.evaluate(() => {
 			const result = {
@@ -77,39 +124,49 @@ async function crawlPineScriptReference() {
 					source: window.location.href,
 					totalItems: 0,
 					extractionMethod: "dynamic_discovery",
+					discoveryStats: {
+						tocItemsFound: 0,
+						codeBlocksAnalyzed: 0,
+						variablesDiscovered: 0,
+						functionsDiscovered: 0,
+						constantsDiscovered: 0,
+						typesDiscovered: 0,
+						keywordsDiscovered: 0,
+						operatorsDiscovered: 0,
+					},
 				},
-				keywords: { count: 0, items: [] },
-				operators: { count: 0, items: [] },
+				keywords: { count: 0, items: [] as string[] },
+				operators: { count: 0, items: [] as string[] },
 				builtInVariables: {
-					standalone: { count: 0, items: [] },
-					namespaces: { count: 0, items: [] },
+					standalone: { count: 0, items: [] as string[] },
+					namespaces: { count: 0, items: [] as string[] },
 				},
 				constants: {
-					namespaces: { count: 0, items: [] },
-					byNamespace: {},
+					namespaces: { count: 0, items: [] as string[] },
+					byNamespace: {} as Record<string, string[]>,
 				},
 				functions: {
-					namespaces: { count: 0, items: [] },
-					byNamespace: {},
+					namespaces: { count: 0, items: [] as string[] },
+					byNamespace: {} as Record<string, string[]>,
 				},
-				types: { count: 0, items: [] },
+				types: { count: 0, items: [] as string[] },
 			};
 
 			// Extract all TOC items (this is where all language constructs are listed)
 			const tocLinks = document.querySelectorAll(".tv-pine-reference-toc-item");
 			const allDiscoveredItems = {
-				variables: [],
-				functions: [],
-				constants: [],
-				types: [],
-				keywords: new Set(),
-				operators: new Set(),
+				variables: [] as string[],
+				functions: [] as string[],
+				constants: [] as string[],
+				types: [] as string[],
+				keywords: new Set<string>(),
+				operators: new Set<string>(),
 			};
 
 			// Categorize TOC items by their URL patterns
 			tocLinks.forEach((link) => {
-				const href = link.href;
-				const text = link.textContent.trim();
+				const href = (link as HTMLAnchorElement).href;
+				const text = link.textContent?.trim() || "";
 
 				if (href && text) {
 					if (href.includes("#var_")) {
@@ -135,17 +192,14 @@ async function crawlPineScriptReference() {
 			const operatorRegex = /[+\-*/%=<>!&|^?:]+|[=!]=|[<>]=|\[\]/g;
 
 			codeBlocks.forEach((block) => {
-				const text = block.textContent;
+				const text = block.textContent || "";
 
 				// Extract keywords
-				keywordRegex.lastIndex = 0; // Reset regex
-				do {
-					match = keywordRegex.exec(text);
-					if (match) {
-						const keyword = match[1];
-						allDiscoveredItems.keywords.add(keyword);
-					}
-				} while (match !== null);
+				keywordRegex.lastIndex = 0;
+				let match: RegExpExecArray | null;
+				while ((match = keywordRegex.exec(text)) !== null) {
+					allDiscoveredItems.keywords.add(match[1]);
+				}
 
 				// Extract operators
 				const operatorMatches = text.match(operatorRegex);
@@ -157,8 +211,8 @@ async function crawlPineScriptReference() {
 			});
 
 			// Separate variables into standalone and namespaced
-			const standaloneVariables = [];
-			const variableNamespaces = new Set();
+			const standaloneVariables: string[] = [];
+			const variableNamespaces = new Set<string>();
 
 			allDiscoveredItems.variables.forEach((variable) => {
 				if (variable.includes(".")) {
@@ -170,8 +224,8 @@ async function crawlPineScriptReference() {
 			});
 
 			// Organize functions by namespace
-			const functionNamespaces = new Set();
-			const functionsByNamespace = {};
+			const functionNamespaces = new Set<string>();
+			const functionsByNamespace: Record<string, string[]> = {};
 
 			allDiscoveredItems.functions.forEach((func) => {
 				if (func.includes(".")) {
@@ -195,8 +249,8 @@ async function crawlPineScriptReference() {
 			});
 
 			// Organize constants by namespace
-			const constantNamespaces = new Set();
-			const constantsByNamespace = {};
+			const constantNamespaces = new Set<string>();
+			const constantsByNamespace: Record<string, string[]> = {};
 
 			allDiscoveredItems.constants.forEach((constant) => {
 				if (constant.includes(".")) {
@@ -286,8 +340,8 @@ async function crawlPineScriptReference() {
 		// Save results
 		fs.writeFileSync(OUTPUT_FILE, JSON.stringify(constructs, null, 2), "utf8");
 
-		console.log("✅ Crawl completed successfully!");
-		console.log(`📊 Results:`);
+		console.log("Crawl completed successfully!");
+		console.log(`Results:`);
 		console.log(`   Keywords: ${constructs.keywords.count}`);
 		console.log(`   Operators: ${constructs.operators.count}`);
 		console.log(
@@ -307,7 +361,7 @@ async function crawlPineScriptReference() {
 		);
 		console.log(`   Types: ${constructs.types.count}`);
 		console.log(`   Total: ${constructs.metadata.totalItems}`);
-		console.log(`🔍 Discovery Stats:`);
+		console.log(`Discovery Stats:`);
 		console.log(
 			`   TOC items found: ${constructs.metadata.discoveryStats.tocItemsFound}`,
 		);
@@ -332,9 +386,11 @@ async function crawlPineScriptReference() {
 		console.log(
 			`   Operators discovered: ${constructs.metadata.discoveryStats.operatorsDiscovered}`,
 		);
-		console.log(`💾 Saved to: ${OUTPUT_FILE}`);
+		console.log(`Saved to: ${OUTPUT_FILE}`);
+
+		return constructs;
 	} catch (error) {
-		console.error("❌ Crawl failed:", error.message);
+		console.error("Crawl failed:", (error as Error).message);
 		process.exit(1);
 	} finally {
 		if (browser) {
@@ -343,9 +399,5 @@ async function crawlPineScriptReference() {
 	}
 }
 
-// Run if called directly
-if (require.main === module) {
-	crawlPineScriptReference().catch(console.error);
-}
-
-module.exports = { crawlPineScriptReference };
+// Run if executed directly
+crawlPineScriptReference().catch(console.error);

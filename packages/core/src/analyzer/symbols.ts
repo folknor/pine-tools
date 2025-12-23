@@ -4,7 +4,7 @@ import {
 	VARIABLES_BY_NAME,
 	FUNCTIONS_BY_NAME,
 	PineV6,
-} from "../../pine-data/v6";
+} from "../../../../pine-data/v6";
 import type { PineType } from "./types";
 
 export interface Symbol {

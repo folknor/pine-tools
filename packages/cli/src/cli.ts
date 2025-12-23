@@ -6,13 +6,13 @@ import {
 	ASTExtractor,
 	type PineLintError,
 	type PineLintOutput,
-} from "./parser/astExtractor";
-import { Parser } from "./parser/parser";
-import { SemanticAnalyzer } from "./parser/semanticAnalyzer";
+} from "../../core/src/parser/astExtractor";
+import { Parser } from "../../core/src/parser/parser";
+import { SemanticAnalyzer } from "../../core/src/parser/semanticAnalyzer";
 import {
 	DiagnosticSeverity,
 	UnifiedPineValidator,
-} from "./analyzer/checker";
+} from "../../core/src/analyzer/checker";
 
 async function main() {
 	const args = process.argv.slice(2);

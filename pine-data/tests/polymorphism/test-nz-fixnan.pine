@@ -1,0 +1,25 @@
+//@version=6
+// Test: Are `nz` and `fixnan` polymorphic?
+
+indicator("Test nz/fixnan polymorphism")
+
+// Test nz with different types
+floatVal = nz(close)
+intVal = nz(bar_index)
+boolVal = nz(close > open)
+
+plot(floatVal, "nz float")
+plot(intVal, "nz int")
+plot(boolVal ? 1 : 0, "nz bool")
+
+// Test fixnan with different types
+fixFloat = fixnan(close)
+// fixnan typically used with float, but let's see if it accepts int
+fixInt = fixnan(float(bar_index))
+
+plot(fixFloat, "fixnan float")
+plot(fixInt, "fixnan int")
+
+// Test nz with replacement value
+nzWithReplacement = nz(close, 0.0)
+plot(nzWithReplacement, "nz with replacement")

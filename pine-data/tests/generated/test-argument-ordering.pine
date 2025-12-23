@@ -1,0 +1,186 @@
+//@version=6
+// AUTO-GENERATED: Test argument ordering for global functions
+// This file tests positional, named, and reordered argument styles
+
+indicator("Argument Ordering Tests", overlay=true)
+
+// === alert ===
+// alert: No required parameters, skip ordering test
+// alert()
+
+// === alertcondition ===
+// Positional
+alertcondition(true)
+// All named
+alertcondition(condition=true)
+
+// === barcolor ===
+// Positional
+barcolor(color.red)
+// All named
+barcolor(color=color.red)
+
+// === bgcolor ===
+// Positional
+bgcolor(color.red)
+// All named
+bgcolor(color=color.red)
+
+// === bool ===
+// bool: No required parameters, skip ordering test
+// bool()
+
+// === box ===
+// box: No required parameters, skip ordering test
+// box()
+
+// === color ===
+// color: No required parameters, skip ordering test
+// color()
+
+// === dayofmonth ===
+// dayofmonth: No required parameters, skip ordering test
+// dayofmonth()
+
+// === dayofweek ===
+// dayofweek: No required parameters, skip ordering test
+// dayofweek()
+
+// === fill ===
+// fill: Requires complex objects, tested separately
+
+// === fixnan ===
+// fixnan: No required parameters, skip ordering test
+// fixnan()
+
+// === float ===
+// float: No required parameters, skip ordering test
+// float()
+
+// === hline ===
+// Positional
+_hline_pos = hline(1.5)
+// All named
+_hline_named = hline(price=1.5)
+
+// === hour ===
+// hour: No required parameters, skip ordering test
+// hour()
+
+// indicator: Script declaration, skip
+// === input ===
+// Positional
+_input_pos = input(true)
+// All named
+_input_named = input(defval=true)
+
+// === int ===
+// int: No required parameters, skip ordering test
+// int()
+
+// === label ===
+// label: No required parameters, skip ordering test
+// label()
+
+// library: Script declaration, skip
+// === line ===
+// line: No required parameters, skip ordering test
+// line()
+
+// === linefill ===
+// linefill: Requires complex objects, tested separately
+
+// === max_bars_back ===
+// max_bars_back: No required parameters, skip ordering test
+// max_bars_back()
+
+// === minute ===
+// minute: No required parameters, skip ordering test
+// minute()
+
+// === month ===
+// month: No required parameters, skip ordering test
+// month()
+
+// === na ===
+// na: No required parameters, skip ordering test
+// na()
+
+// === nz ===
+// nz: No required parameters, skip ordering test
+// nz()
+
+// === plot ===
+// Positional
+_plot_pos = plot(1.5)
+// All named
+_plot_named = plot(series=1.5)
+
+// === plotarrow ===
+// Positional
+plotarrow(1.5)
+// All named
+plotarrow(series=1.5)
+
+// === plotbar ===
+// Positional
+plotbar(1.5, 1.5, 1.5, 1.5)
+// All named
+plotbar(open=1.5, high=1.5, low=1.5, close=1.5)
+// Reversed named
+plotbar(close=1.5, low=1.5, high=1.5, open=1.5)
+
+// === plotcandle ===
+// Positional
+plotcandle(1.5, 1.5, 1.5, 1.5)
+// All named
+plotcandle(open=1.5, high=1.5, low=1.5, close=1.5)
+// Reversed named
+plotcandle(close=1.5, low=1.5, high=1.5, open=1.5)
+
+// === plotchar ===
+// Positional
+plotchar(true)
+// All named
+plotchar(series=true)
+
+// === plotshape ===
+// Positional
+plotshape(true)
+// All named
+plotshape(series=true)
+
+// === second ===
+// second: No required parameters, skip ordering test
+// second()
+
+// strategy: Script declaration, skip
+// === string ===
+// string: No required parameters, skip ordering test
+// string()
+
+// === table ===
+// table: No required parameters, skip ordering test
+// table()
+
+// === time ===
+// time: No required parameters, skip ordering test
+// time()
+
+// === time_close ===
+// time_close: No required parameters, skip ordering test
+// time_close()
+
+// === timestamp ===
+// timestamp: No required parameters, skip ordering test
+// timestamp()
+
+// === weekofyear ===
+// weekofyear: No required parameters, skip ordering test
+// weekofyear()
+
+// === year ===
+// year: No required parameters, skip ordering test
+// year()
+
+plot(close)

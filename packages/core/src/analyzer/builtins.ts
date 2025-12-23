@@ -7,7 +7,7 @@ import {
 	FUNCTIONS_BY_NAME,
 	CONSTANTS_BY_NAME,
 	VARIABLES_BY_NAME,
-} from "../../pine-data/v6";
+} from "../../../../pine-data/v6";
 import type { PineType } from "./types";
 
 // Functions that can only be called at the top level (not in local scopes)
@@ -320,6 +320,12 @@ export function getPolymorphicReturnType(
 	functionName: string,
 	argTypes: PineType[],
 ): PineType | null {
+	// Special case: the generic `input` function returns the type of its first argument
+	// e.g., input(close) returns series<float>, input(14) returns int
+	if (functionName === "input" && argTypes.length > 0) {
+		return argTypes[0] !== "unknown" ? argTypes[0] : null;
+	}
+
 	const polyType = getPolymorphicType(functionName);
 	if (!polyType || argTypes.length === 0) {
 		return null;

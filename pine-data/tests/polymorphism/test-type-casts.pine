@@ -1,0 +1,28 @@
+//@version=6
+// Test: Type casting functions int(), float(), bool(), string(), color()
+
+indicator("Test type cast functions")
+
+// int() - should convert to int
+fromFloat = int(1.5)
+fromBool = int(true)
+plot(fromFloat, "int from float")
+plot(fromBool, "int from bool")
+
+// float() - should convert to float
+fromInt = float(42)
+plot(fromInt, "float from int")
+
+// bool() - should convert to bool
+fromZero = bool(0)
+fromOne = bool(1)
+plot(fromZero ? 1 : 0, "bool from 0")
+plot(fromOne ? 1 : 0, "bool from 1")
+
+// string() - should convert to string
+strFromInt = str.tostring(42)
+// Note: string() might not exist as a global function
+
+// color() - test color function
+myColor = color(#FF0000)
+bgcolor(myColor)

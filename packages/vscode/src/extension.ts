@@ -7,13 +7,13 @@ import {
 	getHoverInfo,
 	getNamespaceCompletions,
 	getParameterCompletions,
-} from "./languageService/completions";
-import { Parser } from "./parser/parser";
+} from "../../lsp/src/languageService/completions";
+import { Parser } from "../../core/src/parser/parser";
 import {
 	DiagnosticSeverity,
 	UnifiedPineValidator,
-} from "./analyzer/checker";
-import { createSignatureHelpProvider } from "./languageService/signatures";
+} from "../../core/src/analyzer/checker";
+import { createSignatureHelpProvider } from "../../lsp/src/languageService/signatures";
 
 export function activate(context: vscode.ExtensionContext) {
 	// Optional: ensure files.associations maps *.pine -> pine

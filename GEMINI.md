@@ -107,19 +107,26 @@ pine-lint <file.pine>              # TradingView's linter (for comparison)
 Ran comparison of our CLI against TradingView's `pine-lint` on 176 Pine Script files.
 
 **Results (After All Fixes - 2025-12-23):**
-| Metric | Initial | After Polymorphic | After Fresh Scrape | After Overload Skip | After Parser Fix |
-|--------|---------|-------------------|-------------------|---------------------|------------------|
+| Metric | Initial | Polymorphic | Overload Skip | Type Coercion | **Current** |
+|--------|---------|-------------|---------------|---------------|-------------|
 | Total files | 176 | 176 | 176 | 176 | 176 |
-| Matches | 36 (20.5%) | 44 (25.0%) | 47 (26.7%) | 53 (30.1%) | **54 (30.7%)** |
-| Mismatches | 140 (79.5%) | 132 (75.0%) | 129 (73.3%) | 123 (69.9%) | **122 (69.3%)** |
+| Matches | 36 (20.5%) | 44 (25.0%) | 53 (30.1%) | 60 (34.1%) | **64 (36.4%)** |
+| Mismatches | 140 (79.5%) | 132 (75.0%) | 123 (69.9%) | 116 (65.9%) | **112 (63.6%)** |
 
-**Remaining Discrepancies (122 files out of 176, 69.3% mismatch rate):**
+**What Was Fixed:**
+- Polymorphic function return types (nz, fixnan, etc.)
+- Overload detection - skip positional type checking for overloaded functions
+- Bidirectional int/float coercion (series<float> ↔ series<int>)
+- Union type handling (`series int/float` accepts both int and float)
+- Generic `input` function returns type of first positional argument
+
+**Remaining Discrepancies (112 files out of 176, 63.6% mismatch rate):**
 | Error Type | Occurrences | Notes |
 |------------|-------------|-------|
 | Multiline strings | 358 | TRUE positives - Pine Script doesn't support multiline strings |
-| Unexpected token | ~210 | EOF (95), commas (59), `:` (16), `]` (12), `=>` (10), etc. |
+| Unexpected token | ~150 | Parser continuation issues, lambdas |
 | Type with 'unknown' | ~100 | Operations on array elements, untracked types |
-| Remaining type mismatches | ~100 | Functions without overloads, type coercion gaps |
+| Remaining type mismatches | ~80 | Named arg polymorphism, color params |
 
 **NOT False Positives (correctly reported errors):**
 | Error Type | Files | Notes |

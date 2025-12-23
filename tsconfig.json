@@ -21,7 +21,11 @@
 		"resolveJsonModule": true,
 		"baseUrl": ".",
 		"paths": {
-			"@/*": ["src/*"],
+			"@core/*": ["packages/core/src/*"],
+			"@lsp/*": ["packages/lsp/src/*"],
+			"@vscode/*": ["packages/vscode/src/*"],
+			"@cli/*": ["packages/cli/src/*"],
+			"@pipeline/*": ["packages/pipeline/src/*"],
 			"@test/*": ["test/*"],
 			"@pine-data/*": ["pine-data/*"]
 		},
@@ -59,7 +63,7 @@
 		"types": ["node", "vscode"]
 	},
 	"include": [
-		"src/**/*.ts",
+		"packages/**/*.ts",
 		"test/**/*.ts",
 		"pine-data/**/*.ts",
 		"dev-tools/**/*.ts"

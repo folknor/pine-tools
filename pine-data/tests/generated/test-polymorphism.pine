@@ -1,0 +1,55 @@
+//@version=6
+// AUTO-GENERATED: Test polymorphic function behavior
+// This file tests functions that return different types based on input
+
+indicator("Polymorphism Tests", overlay=true)
+
+
+// === input() polymorphism test ===
+// Each call should infer a different return type based on defval
+
+_input_int = input(14)
+_input_int_result = _input_int + 1  // Should work if type is int
+
+_input_float = input(1.5)
+_input_float_result = _input_float * 2.0  // Should work if type is float
+
+_input_bool = input(true)
+if _input_bool  // Should work if type is bool
+    na
+
+_input_string = input("hello")
+_input_string_result = _input_string + " world"  // Should work if type is string
+
+_input_series = input(close)
+_input_series_result = ta.sma(_input_series, 14)  // Should work if type is series float
+
+// Named defval argument
+_input_named = input(defval=42, title="Test")
+_input_named_result = _input_named + 1
+
+// Reordered named arguments
+_input_reorder = input(title="Test2", defval=100)
+_input_reorder_result = _input_reorder + 1
+
+
+// === nz() polymorphism test ===
+// nz should return same type as input (int or float, not bool)
+
+_nz_float = nz(close)
+_nz_float_result = _nz_float * 2.0  // Should work if type is series float
+
+_nz_int = nz(bar_index)
+_nz_int_result = _nz_int + 1  // Should work if type is series int
+
+// With replacement value
+_nz_replace = nz(close, 0.0)
+_nz_replace_result = _nz_replace * 2.0
+
+// Named arguments
+_nz_named = nz(source=close, replacement=0.0)
+_nz_named_rev = nz(replacement=0.0, source=close)
+
+
+// Plot to make script valid
+plot(_input_int + _nz_float)

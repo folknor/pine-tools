@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env -S node --experimental-strip-types
 
 /**
  * Pine Script Data Generator
@@ -6,29 +6,103 @@
  * Generates TypeScript data files from scraped Pine Script documentation.
  * Produces a clean, LSP-optimized data structure.
  *
- * Usage: node scripts/generate-pine-data.js [version]
+ * Usage: node --experimental-strip-types packages/pipeline/src/generate.ts [version]
  * Default version: v6
  */
 
-const fs = require("node:fs");
-const path = require("node:path");
+import * as fs from "node:fs";
+import * as path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Resolve paths relative to project root
+const PROJECT_ROOT = __dirname.includes("/dist/")
+	? path.resolve(__dirname, "../../../..")
+	: path.resolve(__dirname, "../../..");
 
 const VERSION = process.argv[2] || "v6";
-const RAW_DIR = path.join(__dirname, `../pine-data/raw/${VERSION}`);
-const OUTPUT_DIR = path.join(__dirname, `../pine-data/${VERSION}`);
+const RAW_DIR = path.join(PROJECT_ROOT, `pine-data/raw/${VERSION}`);
+const OUTPUT_DIR = path.join(PROJECT_ROOT, `pine-data/${VERSION}`);
 
 // Input files
 const DETAILS_FILE = path.join(RAW_DIR, "complete-v6-details.json");
 const CONSTRUCTS_FILE = path.join(RAW_DIR, "v6-language-constructs.json");
 
 // =============================================================================
+// TYPE DEFINITIONS
+// =============================================================================
+
+interface Parameter {
+	name: string;
+	type: string;
+	description: string;
+	optional?: boolean;
+	required?: boolean;
+	default?: string;
+}
+
+interface FunctionDetail {
+	name: string;
+	syntax: string;
+	description: string;
+	parameters: Parameter[];
+	returns: string;
+	example?: string;
+	namespace?: string;
+	category?: string;
+	overloads?: string[];
+	variadic?: boolean;
+}
+
+interface GeneratedFunction {
+	name: string;
+	namespace?: string;
+	syntax: string;
+	description: string;
+	parameters: Array<{
+		name: string;
+		type: string;
+		description: string;
+		required: boolean;
+		default?: string;
+	}>;
+	returns: string;
+	flags?: Record<string, unknown>;
+	example?: string;
+}
+
+interface GeneratedVariable {
+	name: string;
+	namespace?: string;
+	type: string;
+	qualifier: string;
+	description: string;
+}
+
+interface GeneratedConstant {
+	name: string;
+	namespace: string;
+	shortName: string;
+	type: string;
+}
+
+interface DetailsData {
+	functions: Record<string, FunctionDetail>;
+}
+
+interface ConstructsData {
+	keywords?: { items?: string[] };
+	builtInVariables?: { standalone?: { items?: string[] } };
+	constants?: { byNamespace?: Record<string, string[]> };
+}
+
+// =============================================================================
 // TYPE INFERENCE HELPERS
 // =============================================================================
 
-/**
- * Infer variable type based on name patterns
- */
-function inferVariableType(name) {
+function inferVariableType(name: string): { type: string; qualifier: string } {
 	// Price data - series<float>
 	if (["close", "open", "high", "low", "hl2", "hlc3", "ohlc4", "hlcc4"].includes(name)) {
 		return { type: "float", qualifier: "series" };
@@ -79,10 +153,7 @@ function inferVariableType(name) {
 	return { type: "float", qualifier: "series" };
 }
 
-/**
- * Infer constant type based on namespace
- */
-function inferConstantType(namespace) {
+function inferConstantType(namespace: string): string {
 	switch (namespace) {
 		case "color": return "color";
 		case "shape": return "string";
@@ -114,11 +185,8 @@ function inferConstantType(namespace) {
 	}
 }
 
-/**
- * Determine function flags
- */
-function getFunctionFlags(name) {
-	const flags = {};
+function getFunctionFlags(name: string): Record<string, unknown> | undefined {
+	const flags: Record<string, unknown> = {};
 
 	// Top-level only functions
 	const topLevelOnly = [
@@ -131,7 +199,7 @@ function getFunctionFlags(name) {
 	}
 
 	// Variadic functions
-	const variadic = {
+	const variadic: Record<string, { minArgs: number }> = {
 		"math.max": { minArgs: 2 },
 		"math.min": { minArgs: 2 },
 		"math.avg": { minArgs: 2 },
@@ -144,15 +212,10 @@ function getFunctionFlags(name) {
 		flags.minArgs = variadic[name].minArgs;
 	}
 
-	// Polymorphic functions - return type depends on input type
-	// "input": returns same type as first argument
-	// "element": returns element type of array/matrix argument
-	// "numeric": returns same numeric type (int->int, float->float)
-	const polymorphic = {
-		// Returns same type as source argument
+	// Polymorphic functions
+	const polymorphic: Record<string, string> = {
 		"nz": "input",
 		"fixnan": "input",
-		// Returns element type of array
 		"array.get": "element",
 		"array.first": "element",
 		"array.last": "element",
@@ -167,7 +230,6 @@ function getFunctionFlags(name) {
 		"array.mode": "element",
 		"array.stdev": "element",
 		"array.variance": "element",
-		// Returns same numeric type
 		"math.abs": "numeric",
 		"math.sign": "numeric",
 		"math.max": "numeric",
@@ -189,14 +251,9 @@ function getFunctionFlags(name) {
 // GENERATORS
 // =============================================================================
 
-/**
- * Detect if a parameter is optional based on its description
- */
-function isParameterOptional(param) {
-	// Check explicit flags first - but description takes precedence over scraped required flag
+function isParameterOptional(param: Parameter): boolean {
 	if (param.optional === true) return true;
 
-	// Check description for optional indicators (most reliable signal)
 	const desc = (param.description || "").toLowerCase();
 	if (desc.includes("optional")) return true;
 	if (desc.includes("if not specified")) return true;
@@ -207,10 +264,8 @@ function isParameterOptional(param) {
 	if (desc.includes("if omitted")) return true;
 	if (desc.includes("not required")) return true;
 
-	// Check if has default value
 	if (param.default !== undefined) return true;
 
-	// Common parameters that are typically optional (excludes 'title' which is required for indicator/strategy)
 	const commonOptionalParams = [
 		"text", "textcolor", "color", "bgcolor", "bordercolor",
 		"offset", "show_last", "editable", "display", "format", "precision",
@@ -223,24 +278,18 @@ function isParameterOptional(param) {
 		"linestyle", "transp", "show_last",
 	];
 	if (commonOptionalParams.includes(param.name)) {
-		// Double-check: if description says "required" explicitly, respect it
 		if (desc.includes("required argument") || desc.includes("is required")) {
 			return false;
 		}
 		return true;
 	}
 
-	// Check scraped required flag only after all else
 	if (param.required === false) return true;
 
 	return false;
 }
 
-/**
- * Known missing parameters that weren't scraped properly
- * These are manually added to supplement the scraped data
- */
-const MISSING_PARAMETERS = {
+const MISSING_PARAMETERS: Record<string, Parameter[]> = {
 	"input.int": [
 		{ name: "minval", type: "const int", description: "Minimum value of the input.", required: false },
 		{ name: "maxval", type: "const int", description: "Maximum value of the input.", required: false },
@@ -253,22 +302,17 @@ const MISSING_PARAMETERS = {
 	],
 };
 
-/**
- * Generate functions.ts
- */
-function generateFunctions(details, constructs) {
-	console.log("📦 Generating functions.ts...");
+function generateFunctions(details: DetailsData, _constructs: ConstructsData): GeneratedFunction[] {
+	console.log("Generating functions.ts...");
 
-	const functions = [];
+	const functions: GeneratedFunction[] = [];
 
-	// Process function details
 	for (const [name, detail] of Object.entries(details.functions || {})) {
 		if (!detail) continue;
 
 		const namespace = name.includes(".") ? name.split(".")[0] : undefined;
 		const flags = getFunctionFlags(name);
 
-		// Start with scraped parameters
 		let parameters = (detail.parameters || []).map(p => ({
 			name: p.name,
 			type: p.type || "unknown",
@@ -277,17 +321,22 @@ function generateFunctions(details, constructs) {
 			default: p.default,
 		}));
 
-		// Add missing parameters if any
 		if (MISSING_PARAMETERS[name]) {
 			const existingNames = new Set(parameters.map(p => p.name));
 			for (const missing of MISSING_PARAMETERS[name]) {
 				if (!existingNames.has(missing.name)) {
-					parameters.push(missing);
+					parameters.push({
+						name: missing.name,
+						type: missing.type,
+						description: missing.description,
+						required: missing.required ?? true,
+						default: missing.default,
+					});
 				}
 			}
 		}
 
-		const func = {
+		const func: GeneratedFunction = {
 			name,
 			namespace,
 			syntax: detail.syntax || `${name}()`,
@@ -301,7 +350,6 @@ function generateFunctions(details, constructs) {
 		functions.push(func);
 	}
 
-	// Generate TypeScript
 	const content = `/**
  * Pine Script ${VERSION.toUpperCase()} Functions
  * Auto-generated from TradingView documentation
@@ -350,17 +398,14 @@ export const FUNCTION_NAMESPACES: Set<string> = new Set(
 `;
 
 	fs.writeFileSync(path.join(OUTPUT_DIR, "functions.ts"), content);
-	console.log(`   ✅ ${functions.length} functions`);
+	console.log(`   ${functions.length} functions`);
 	return functions;
 }
 
-/**
- * Generate variables.ts
- */
-function generateVariables(details, constructs) {
-	console.log("📦 Generating variables.ts...");
+function generateVariables(_details: DetailsData, constructs: ConstructsData): GeneratedVariable[] {
+	console.log("Generating variables.ts...");
 
-	const variables = [];
+	const variables: GeneratedVariable[] = [];
 
 	// Standalone variables
 	const standalone = constructs.builtInVariables?.standalone?.items || [];
@@ -375,8 +420,8 @@ function generateVariables(details, constructs) {
 		});
 	}
 
-	// Namespace variables (hardcoded as they're not in scraped data)
-	const namespaceVars = [
+	// Namespace variables
+	const namespaceVars: GeneratedVariable[] = [
 		// syminfo
 		{ name: "syminfo.tickerid", type: "simple<string>", qualifier: "simple", description: "Ticker ID with exchange prefix" },
 		{ name: "syminfo.ticker", type: "simple<string>", qualifier: "simple", description: "Ticker symbol without exchange" },
@@ -439,11 +484,10 @@ function generateVariables(details, constructs) {
 	];
 
 	for (const v of namespaceVars) {
-		v.namespace = v.name.split(".")[0];
-		variables.push(v);
+		(v as GeneratedVariable).namespace = v.name.split(".")[0];
+		variables.push(v as GeneratedVariable);
 	}
 
-	// Generate TypeScript
 	const content = `/**
  * Pine Script ${VERSION.toUpperCase()} Built-in Variables
  * Auto-generated from TradingView documentation
@@ -499,19 +543,15 @@ export const VARIABLE_NAMESPACES: Set<string> = new Set(
 `;
 
 	fs.writeFileSync(path.join(OUTPUT_DIR, "variables.ts"), content);
-	console.log(`   ✅ ${variables.length} variables`);
+	console.log(`   ${variables.length} variables`);
 	return variables;
 }
 
-/**
- * Generate constants.ts
- */
-function generateConstants(details, constructs) {
-	console.log("📦 Generating constants.ts...");
+function generateConstants(_details: DetailsData, constructs: ConstructsData): GeneratedConstant[] {
+	console.log("Generating constants.ts...");
 
-	const constants = [];
+	const constants: GeneratedConstant[] = [];
 
-	// Get constants from constructs
 	const byNamespace = constructs.constants?.byNamespace || {};
 	for (const [namespace, items] of Object.entries(byNamespace)) {
 		const type = inferConstantType(namespace);
@@ -525,7 +565,6 @@ function generateConstants(details, constructs) {
 		}
 	}
 
-	// Generate TypeScript
 	const content = `/**
  * Pine Script ${VERSION.toUpperCase()} Constants
  * Auto-generated from TradingView documentation
@@ -571,35 +610,26 @@ export const CONSTANT_NAMESPACES: Set<string> = new Set(CONSTANTS.map(c => c.nam
 `;
 
 	fs.writeFileSync(path.join(OUTPUT_DIR, "constants.ts"), content);
-	console.log(`   ✅ ${constants.length} constants`);
+	console.log(`   ${constants.length} constants`);
 	return constants;
 }
 
-/**
- * Generate keywords.ts
- */
-function generateKeywords(constructs) {
-	console.log("📦 Generating keywords.ts...");
+function generateKeywords(constructs: ConstructsData): string[] {
+	console.log("Generating keywords.ts...");
 
-	// Get keywords from constructs
 	const keywords = constructs.keywords?.items || [];
 
-	// Add additional keywords that may be missing
 	const allKeywords = new Set([
 		...keywords,
-		// Control flow
 		"if", "else", "for", "while", "switch", "case", "default",
 		"break", "continue", "return",
-		// Declarations
 		"var", "varip", "const", "type", "enum", "export", "import",
 		"method", "library", "indicator", "strategy",
-		// Operators/literals
 		"and", "or", "not", "true", "false", "na",
 	]);
 
 	const keywordList = [...allKeywords].sort();
 
-	// Generate TypeScript
 	const content = `/**
  * Pine Script ${VERSION.toUpperCase()} Keywords
  * Auto-generated from TradingView documentation
@@ -653,15 +683,17 @@ export const TYPE_KEYWORDS: Set<string> = new Set([
 `;
 
 	fs.writeFileSync(path.join(OUTPUT_DIR, "keywords.ts"), content);
-	console.log(`   ✅ ${keywordList.length} keywords`);
+	console.log(`   ${keywordList.length} keywords`);
 	return keywordList;
 }
 
-/**
- * Generate index.ts for v6
- */
-function generateVersionIndex(functions, variables, constants, keywords) {
-	console.log("📦 Generating index.ts...");
+function generateVersionIndex(
+	functions: GeneratedFunction[],
+	variables: GeneratedVariable[],
+	constants: GeneratedConstant[],
+	keywords: string[],
+): void {
+	console.log("Generating index.ts...");
 
 	const content = `/**
  * Pine Script ${VERSION.toUpperCase()} Language Data
@@ -750,17 +782,17 @@ export default Pine${VERSION.toUpperCase()};
 `;
 
 	fs.writeFileSync(path.join(OUTPUT_DIR, "index.ts"), content);
-	console.log("   ✅ index.ts");
+	console.log("   index.ts");
 }
 
 // =============================================================================
 // MAIN
 // =============================================================================
 
-function main() {
-	console.log(`\n🚀 Generating Pine Script ${VERSION} data...\n`);
-	console.log(`📁 Raw data: ${RAW_DIR}`);
-	console.log(`📁 Output: ${OUTPUT_DIR}\n`);
+function main(): void {
+	console.log(`\nGenerating Pine Script ${VERSION} data...\n`);
+	console.log(`Raw data: ${RAW_DIR}`);
+	console.log(`Output: ${OUTPUT_DIR}\n`);
 
 	// Ensure output directory exists
 	if (!fs.existsSync(OUTPUT_DIR)) {
@@ -769,16 +801,16 @@ function main() {
 
 	// Load raw data
 	if (!fs.existsSync(DETAILS_FILE)) {
-		console.error(`❌ Details file not found: ${DETAILS_FILE}`);
+		console.error(`Details file not found: ${DETAILS_FILE}`);
 		process.exit(1);
 	}
 	if (!fs.existsSync(CONSTRUCTS_FILE)) {
-		console.error(`❌ Constructs file not found: ${CONSTRUCTS_FILE}`);
+		console.error(`Constructs file not found: ${CONSTRUCTS_FILE}`);
 		process.exit(1);
 	}
 
-	const details = JSON.parse(fs.readFileSync(DETAILS_FILE, "utf8"));
-	const constructs = JSON.parse(fs.readFileSync(CONSTRUCTS_FILE, "utf8"));
+	const details: DetailsData = JSON.parse(fs.readFileSync(DETAILS_FILE, "utf8"));
+	const constructs: ConstructsData = JSON.parse(fs.readFileSync(CONSTRUCTS_FILE, "utf8"));
 
 	// Generate all files
 	const functions = generateFunctions(details, constructs);
@@ -787,11 +819,11 @@ function main() {
 	const keywords = generateKeywords(constructs);
 	generateVersionIndex(functions, variables, constants, keywords);
 
-	console.log(`\n✅ Pine Script ${VERSION} data generated successfully!`);
-	console.log(`   📊 ${functions.length} functions`);
-	console.log(`   📊 ${variables.length} variables`);
-	console.log(`   📊 ${constants.length} constants`);
-	console.log(`   📊 ${keywords.length} keywords\n`);
+	console.log(`\nPine Script ${VERSION} data generated successfully!`);
+	console.log(`   ${functions.length} functions`);
+	console.log(`   ${variables.length} variables`);
+	console.log(`   ${constants.length} constants`);
+	console.log(`   ${keywords.length} keywords\n`);
 }
 
 main();

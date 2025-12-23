@@ -39,15 +39,99 @@ export interface TypeInfo {
 }
 
 export namespace TypeChecker {
+	// Normalize type format: "series int" -> "series<int>", "simple float" -> "simple<float>"
+	function normalizeType(type: string): PineType {
+		// Handle union types by taking the first option (e.g., "int/float" -> "int")
+		if (type.includes("/")) {
+			const parts = type.split("/");
+			// For "series int/float", we want "series int" (first variant)
+			type = type.replace(/\/\w+/, "");
+		}
+
+		// Handle space-separated qualifier types: "series int" -> "series<int>"
+		const match = type.match(/^(series|simple|const|input)\s+(\w+)$/);
+		if (match) {
+			const [, qualifier, baseType] = match;
+			if (qualifier === "series") {
+				return `series<${baseType}>` as PineType;
+			} else if (qualifier === "simple") {
+				return `simple<${baseType}>` as PineType;
+			}
+			// const and input types are treated as the base type
+			return baseType as PineType;
+		}
+
+		return type as PineType;
+	}
+
+	// Check if a "to" type is a union type that accepts either variant
+	function isUnionTypeMatch(from: string, to: string): boolean {
+		if (!to.includes("/")) return false;
+
+		// Extract qualifier and union: "series int/float" -> ["series", "int/float"]
+		const qualifierMatch = to.match(/^(series|simple|const|input)\s+(.+)$/);
+		const fromQualifierMatch = from.match(/^(series|simple|const|input)\s+(.+)$/);
+
+		if (qualifierMatch) {
+			const [, toQualifier, toUnion] = qualifierMatch;
+			const toTypes = toUnion.split("/");
+
+			// Get base type from 'from'
+			let fromBase = from;
+			let fromQualifier = "";
+			if (fromQualifierMatch) {
+				fromQualifier = fromQualifierMatch[1];
+				fromBase = fromQualifierMatch[2];
+			} else if (from.includes("<")) {
+				// Handle our format: "series<int>" -> qualifier="series", base="int"
+				const bracketMatch = from.match(/^(\w+)<(\w+)>$/);
+				if (bracketMatch) {
+					fromQualifier = bracketMatch[1];
+					fromBase = bracketMatch[2];
+				}
+			}
+
+			// Check if fromBase matches any of the union types
+			if (toTypes.includes(fromBase)) {
+				// Qualifiers must be compatible (series accepts simple, simple accepts const, etc.)
+				if (toQualifier === "series") return true; // series accepts everything
+				if (toQualifier === "simple" && (fromQualifier === "simple" || fromQualifier === "const" || fromQualifier === "")) return true;
+				if (toQualifier === "const" && (fromQualifier === "const" || fromQualifier === "")) return true;
+				if (toQualifier === "input" && (fromQualifier === "input" || fromQualifier === "const" || fromQualifier === "")) return true;
+			}
+		} else {
+			// No qualifier, just union type like "int/float"
+			const toTypes = to.split("/");
+			const fromBase = from.replace(/^(series|simple|const|input)\s+/, "").replace(/^(\w+)<(\w+)>$/, "$2");
+			if (toTypes.includes(fromBase)) return true;
+		}
+
+		return false;
+	}
+
 	// Check if type1 is assignable to type2
 	export function isAssignable(from: PineType, to: PineType): boolean {
 		if (from === to) return true;
 		if (to === "unknown" || from === "unknown") return true;
 		if (from === "na") return true; // na is assignable to any type
 
-		// int -> float coercion
+		// Handle union types in target (e.g., "series int/float" accepts both int and float)
+		if ((to as string).includes("/")) {
+			if (isUnionTypeMatch(from as string, to as string)) return true;
+		}
+
+		// Normalize types for comparison (handles "series int" vs "series<int>")
+		const normalizedFrom = normalizeType(from as string);
+		const normalizedTo = normalizeType(to as string);
+		if (normalizedFrom === normalizedTo) return true;
+
+		// int <-> float coercion (Pine Script allows bidirectional numeric coercion)
 		if (from === "int" && to === "float") return true;
+		if (from === "float" && to === "int") return true;
 		if (from === "series<int>" && to === "series<float>") return true;
+		if (from === "series<float>" && to === "series<int>") return true;
+		if (from === "simple<int>" && to === "simple<float>") return true;
+		if (from === "simple<float>" && to === "simple<int>") return true;
 
 		// Simple -> series coercion (base types to series)
 		if (from === "int" && to === "series<int>") return true;
@@ -55,6 +139,10 @@ export namespace TypeChecker {
 		if (from === "bool" && to === "series<bool>") return true;
 		if (from === "string" && to === "series<string>") return true;
 		if (from === "color" && to === "series<color>") return true;
+
+		// Cross-type numeric coercion to series
+		if (from === "int" && to === "series<float>") return true;
+		if (from === "float" && to === "series<int>") return true;
 
 		// simple<T> -> series<T> coercion
 		if (from === "simple<int>" && to === "series<int>") return true;
@@ -70,10 +158,12 @@ export namespace TypeChecker {
 		if (from === "simple<string>" && to === "string") return true;
 		if (from === "simple<color>" && to === "color") return true;
 
-		// int coercion with simple types
+		// Numeric coercion with simple types
 		if (from === "simple<int>" && to === "float") return true;
+		if (from === "simple<float>" && to === "int") return true;
 		if (from === "simple<int>" && to === "simple<float>") return true;
 		if (from === "simple<int>" && to === "series<float>") return true;
+		if (from === "simple<float>" && to === "series<int>") return true;
 
 		return false;
 	}

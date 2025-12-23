@@ -13,11 +13,11 @@ import assert from "node:assert";
 import fs from "node:fs";
 import path from "node:path";
 import { beforeAll, describe, it } from "vitest";
-import type { Program, Statement } from "../src/parser/ast";
+import type { Program, Statement } from "../packages/core/src/parser/ast";
 import {
 	DiagnosticSeverity,
 	UnifiedPineValidator,
-} from "../src/analyzer/checker";
+} from "../packages/core/src/analyzer/checker";
 
 // Create vscode mock
 const vscodeModulePath = path.join(__dirname, "..", "node_modules", "vscode");

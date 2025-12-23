@@ -1,0 +1,41 @@
+//@version=6
+// Test: Is `input` polymorphic?
+// If input returns the type of its defval argument, all these should pass.
+// If input always returns a fixed type (like color), these would fail.
+
+indicator("Test input polymorphism")
+
+// Test 1: input with int defval - use result as int
+myInt = input(14)
+intResult = myInt + 1  // requires int or float
+plot(intResult, "int test")
+
+// Test 2: input with float defval - use result as float
+myFloat = input(1.5)
+floatResult = myFloat * 2.0
+plot(floatResult, "float test")
+
+// Test 3: input with bool defval - use result in condition
+myBool = input(true)
+if myBool
+    label.new(bar_index, high, "bool works")
+
+// Test 4: input with string defval - use result as string
+myString = input("hello")
+stringResult = myString + " world"
+// Can't easily test string without label, but if it compiled it worked
+
+// Test 5: input with series (close) defval - use as series<float>
+mySeries = input(close)
+seriesResult = ta.sma(mySeries, 14)
+plot(seriesResult, "series test")
+
+// Test 6: input with named defval argument
+myNamedInt = input(defval=42, title="Named")
+namedResult = myNamedInt + 1
+plot(namedResult, "named int test")
+
+// Test 7: input with title first, then defval (reordered named args)
+myReordered = input(title="Reordered", defval=100)
+reorderedResult = myReordered + 1
+plot(reorderedResult, "reordered test")

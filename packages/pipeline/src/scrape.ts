@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env -S node --experimental-strip-types
 
 /**
  * Pine Script v6 Documentation Scraper (Puppeteer Version)
@@ -8,36 +8,79 @@
  *
  * Uses Puppeteer for lightweight browser automation.
  *
- * Usage: node scripts/scrape.js [input-file] [output-file]
- * Default input: v6/raw/v6-language-constructs.json
- * Default output: v6/raw/complete-v6-details.json
+ * Usage: node --experimental-strip-types packages/pipeline/src/scrape.ts [input-file] [output-file]
+ * Default input: pine-data/raw/v6/v6-language-constructs.json
+ * Default output: pine-data/raw/v6/complete-v6-details.json
  */
 
-const puppeteer = require("puppeteer");
-const fs = require("node:fs");
-const path = require("node:path");
+import puppeteer, { type Browser, type Page } from "puppeteer";
+import * as fs from "node:fs";
+import * as path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const BASE_URL = "https://www.tradingview.com/pine-script-reference/v6/";
+
+// Resolve paths relative to project root
+const PROJECT_ROOT = __dirname.includes("/dist/")
+	? path.resolve(__dirname, "../../../..")
+	: path.resolve(__dirname, "../../..");
 
 // Parse arguments, filtering out flags
 const positionalArgs = process.argv
 	.slice(2)
 	.filter((arg) => !arg.startsWith("-"));
+
 const INPUT_FILE =
 	positionalArgs[0] ||
-	path.join(__dirname, "../pine-data/raw/v6/v6-language-constructs.json");
+	path.join(PROJECT_ROOT, "pine-data/raw/v6/v6-language-constructs.json");
 const OUTPUT_FILE =
 	positionalArgs[1] ||
-	path.join(__dirname, "../pine-data/raw/v6/complete-v6-details.json");
-const CACHE_DIR = path.join(__dirname, "../.cache/function-details");
+	path.join(PROJECT_ROOT, "pine-data/raw/v6/complete-v6-details.json");
+const CACHE_DIR = path.join(PROJECT_ROOT, ".cache/function-details");
 const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
-function getCacheFilePath(functionName) {
+interface FunctionDetails {
+	name: string;
+	syntax: string;
+	description: string;
+	parameters: Array<{
+		name: string;
+		type: string;
+		description: string;
+		optional: boolean;
+		required: boolean;
+	}>;
+	returns: string;
+	example: string;
+	namespace: string;
+	category: string;
+	overloads?: string[];
+	variadic?: boolean;
+}
+
+interface ScrapeResult {
+	metadata: {
+		extractedAt: string;
+		source: string;
+		totalFunctions: number;
+		successfulScrapes: number;
+		failedScrapes: number;
+		cachedResults: number;
+		forceRefresh: boolean;
+		method: string;
+	};
+	functions: Record<string, FunctionDetails>;
+}
+
+function getCacheFilePath(functionName: string): string {
 	const safeName = functionName.replace(/[^a-zA-Z0-9]/g, "_");
 	return path.join(CACHE_DIR, `${safeName}.json`);
 }
 
-function isCacheValid(cacheFilePath) {
+function isCacheValid(cacheFilePath: string): boolean {
 	if (!fs.existsSync(cacheFilePath)) {
 		return false;
 	}
@@ -47,7 +90,7 @@ function isCacheValid(cacheFilePath) {
 	return age < CACHE_TTL;
 }
 
-function getCachedData(functionName) {
+function getCachedData(functionName: string): FunctionDetails | null {
 	const cacheFilePath = getCacheFilePath(functionName);
 
 	if (!isCacheValid(cacheFilePath)) {
@@ -56,15 +99,15 @@ function getCachedData(functionName) {
 
 	try {
 		const cachedData = JSON.parse(fs.readFileSync(cacheFilePath, "utf8"));
-		console.log(`📋 Using cached data for: ${functionName}`);
+		console.log(`Using cached data for: ${functionName}`);
 		return cachedData;
-	} catch (_error) {
-		console.log(`⚠️  Invalid cache for ${functionName}, will re-scrape`);
+	} catch {
+		console.log(`Invalid cache for ${functionName}, will re-scrape`);
 		return null;
 	}
 }
 
-function saveToCache(functionName, data) {
+function saveToCache(functionName: string, data: FunctionDetails): void {
 	const cacheFilePath = getCacheFilePath(functionName);
 
 	// Ensure cache directory exists
@@ -75,15 +118,15 @@ function saveToCache(functionName, data) {
 	try {
 		fs.writeFileSync(cacheFilePath, JSON.stringify(data, null, 2), "utf8");
 	} catch (error) {
-		console.log(`⚠️  Failed to cache ${functionName}: ${error.message}`);
+		console.log(`Failed to cache ${functionName}: ${(error as Error).message}`);
 	}
 }
 
 // Shared browser instance for optimized scraping
-let sharedBrowser = null;
-let sharedPage = null;
+let sharedBrowser: Browser | null = null;
+let sharedPage: Page | null = null;
 
-async function getSharedBrowser() {
+async function getSharedBrowser(): Promise<Browser> {
 	if (!sharedBrowser) {
 		sharedBrowser = await puppeteer.launch({
 			headless: true,
@@ -99,7 +142,7 @@ async function getSharedBrowser() {
 	return sharedBrowser;
 }
 
-async function getSharedPage() {
+async function getSharedPage(): Promise<Page> {
 	if (!sharedPage) {
 		const browser = await getSharedBrowser();
 		sharedPage = await browser.newPage();
@@ -116,7 +159,7 @@ async function getSharedPage() {
 		});
 
 		// Initial navigation to load the SPA
-		console.log("🌐 Loading TradingView reference page...");
+		console.log("Loading TradingView reference page...");
 		await sharedPage.goto(BASE_URL, {
 			waitUntil: "networkidle2",
 			timeout: 60000,
@@ -132,15 +175,15 @@ async function getSharedPage() {
 				{ timeout: 15000 },
 			)
 			.catch(() => {
-				console.log("⏳ Initial page load timeout, continuing...");
+				console.log("Initial page load timeout, continuing...");
 			});
 
-		console.log("✅ SPA loaded, ready for hash navigation");
+		console.log("SPA loaded, ready for hash navigation");
 	}
 	return sharedPage;
 }
 
-async function closeSharedBrowser() {
+async function closeSharedBrowser(): Promise<void> {
 	if (sharedPage) {
 		sharedPage = null;
 	}
@@ -150,7 +193,10 @@ async function closeSharedBrowser() {
 	}
 }
 
-async function scrapeFunctionDetails(functionName, useCache = true) {
+export async function scrapeFunctionDetails(
+	functionName: string,
+	useCache = true,
+): Promise<FunctionDetails | null> {
 	// Check cache first
 	if (useCache) {
 		const cachedData = getCachedData(functionName);
@@ -167,7 +213,7 @@ async function scrapeFunctionDetails(functionName, useCache = true) {
 		const hashTarget = `fun_${funcNameClean}`;
 
 		// Use hash navigation for speed
-		await page.evaluate((hash) => {
+		await page.evaluate((hash: string) => {
 			window.location.hash = hash;
 		}, hashTarget);
 
@@ -177,7 +223,7 @@ async function scrapeFunctionDetails(functionName, useCache = true) {
 		// Wait for the specific element to be present
 		await page
 			.waitForFunction(
-				(funcName) => {
+				(funcName: string) => {
 					const el =
 						document.getElementById(`fun_${funcName}`) ||
 						document.getElementById(`var_${funcName}`) ||
@@ -191,8 +237,8 @@ async function scrapeFunctionDetails(functionName, useCache = true) {
 				// Element not found via ID, will try fallback
 			});
 
-		const details = await page.evaluate((funcName) => {
-			const result = {
+		const details = await page.evaluate((funcName: string) => {
+			const result: FunctionDetails = {
 				name: "",
 				syntax: "",
 				description: "",
@@ -204,7 +250,6 @@ async function scrapeFunctionDetails(functionName, useCache = true) {
 			};
 
 			// Find the specific function element by ID
-			// TradingView uses IDs like "fun_ta.sma", "var_close", "type_array"
 			const funcElement =
 				document.getElementById(`fun_${funcName}`) ||
 				document.getElementById(`var_${funcName}`) ||
@@ -219,16 +264,16 @@ async function scrapeFunctionDetails(functionName, useCache = true) {
 					const header = item.querySelector(".tv-pine-reference-item__header");
 					if (
 						header &&
-						header.textContent.replace(/[()]/g, "").trim() === funcName
+						header.textContent?.replace(/[()]/g, "").trim() === funcName
 					) {
-						return extractFromElement(item);
+						return extractFromElement(item as HTMLElement);
 					}
 				}
 				return result;
 			}
 
-			function extractFromElement(element) {
-				const res = {
+			function extractFromElement(element: HTMLElement): FunctionDetails {
+				const res: FunctionDetails & { overloads?: string[]; variadic?: boolean } = {
 					name: "",
 					syntax: "",
 					description: "",
@@ -248,11 +293,10 @@ async function scrapeFunctionDetails(functionName, useCache = true) {
 				}
 
 				// Extract ALL syntaxes (there may be multiple overloads)
-				// e.g., str.tostring has 5 overloads with different signatures
 				const syntaxEls = element.querySelectorAll(
 					".tv-pine-reference-item__syntax",
 				);
-				const allSyntaxes = [];
+				const allSyntaxes: string[] = [];
 				syntaxEls.forEach((syntaxEl) => {
 					const syntaxText = syntaxEl.textContent?.trim() || "";
 					if (syntaxText) {
@@ -274,12 +318,11 @@ async function scrapeFunctionDetails(functionName, useCache = true) {
 					}
 				}
 
-				// Extract description (first .tv-text that's not an argument)
+				// Extract description
 				const textElements = element.querySelectorAll(
 					".tv-pine-reference-item__text.tv-text",
 				);
 				if (textElements.length > 0) {
-					// First text element (before Arguments) is the description
 					const firstText = textElements[0];
 					if (!firstText.querySelector(".tv-pine-reference-item__arg-type")) {
 						res.description = firstText.textContent?.trim() || "";
@@ -287,26 +330,18 @@ async function scrapeFunctionDetails(functionName, useCache = true) {
 				}
 
 				// Extract parameters from argument descriptions
-				// Format: <span class="tv-pine-reference-item__arg-type">source (series int/float) </span>Series of values...
 				const argElements = element.querySelectorAll(
 					".tv-pine-reference-item__arg-type",
 				);
 				argElements.forEach((argEl) => {
 					const argText = argEl.textContent?.trim() || "";
-					// Parse "source (series int/float)" format
 					const match = argText.match(/^(\w+)\s*\(([^)]+)\)/);
 					if (match) {
 						const paramName = match[1];
 						const paramType = match[2];
-						// Get description from parent element (rest of text after the span)
 						const parentText = argEl.parentElement?.textContent?.trim() || "";
 						const descText = parentText.replace(argText, "").trim();
 
-						// Detect optionality from multiple signals:
-						// 1. Word "optional" in arg type text
-						// 2. Parameter name in brackets [param]
-						// 3. Description contains "The default is" or "defaults to" or "Optional argument."
-						// 4. Description does NOT contain "Required argument."
 						const descLower = descText.toLowerCase();
 						const hasDefault =
 							descLower.includes("the default is") ||
@@ -321,36 +356,37 @@ async function scrapeFunctionDetails(functionName, useCache = true) {
 						const isExplicitlyRequired = descLower.includes("required argument");
 						const isOptional = isExplicitlyOptional || hasDefault || !isExplicitlyRequired;
 
-						const param = {
+						res.parameters.push({
 							name: paramName,
 							type: paramType,
 							description: descText,
 							optional: isOptional,
 							required: !isOptional,
-						};
-						res.parameters.push(param);
+						});
 					}
 				});
 
-				// Extract parameters from ALL overloads to get complete parameter list
-				// This handles functions like str.tostring that have overloads with additional params
-				const paramsByName = new Map();
+				// Extract parameters from ALL overloads
+				const paramsByName = new Map<string, {
+					name: string;
+					type: string;
+					description: string;
+					optional: boolean;
+					required: boolean;
+				}>();
 
-				// Helper to parse params from a syntax string
-				const parseParamsFromSyntax = (syntaxStr, isFirstOverload = false) => {
+				const parseParamsFromSyntax = (syntaxStr: string, isFirstOverload = false) => {
 					const syntaxMatch = syntaxStr.match(/^[^(]+\(([^)]+)\)/);
 					if (syntaxMatch) {
 						const paramsStr = syntaxMatch[1];
 						const parts = paramsStr.split(/,\s*/);
-						parts.forEach((part, index) => {
+						parts.forEach((part) => {
 							const trimmed = part.trim();
 							if (trimmed === "...") {
 								res.variadic = true;
 							} else if (trimmed) {
 								const existingParam = paramsByName.get(trimmed);
 								if (!existingParam) {
-									// Parameter not seen yet - add it
-									// If it's not in the first overload, it's optional
 									paramsByName.set(trimmed, {
 										name: trimmed,
 										type: "unknown",
@@ -364,47 +400,37 @@ async function scrapeFunctionDetails(functionName, useCache = true) {
 					}
 				};
 
-				// Parse first syntax (primary)
 				if (res.syntax) {
 					parseParamsFromSyntax(res.syntax, true);
 				}
 
-				// Parse additional overloads
 				if (res.overloads) {
 					res.overloads.slice(1).forEach((overload) => {
 						parseParamsFromSyntax(overload, false);
 					});
 				}
 
-				// If we found params from syntax and arg-type elements are limited,
-				// merge the information
 				if (paramsByName.size > res.parameters.length) {
-					// Merge: use arg-type info where available, syntax info otherwise
-					const mergedParams = [];
+					const mergedParams: typeof res.parameters = [];
 					for (const [name, syntaxParam] of paramsByName) {
 						const argTypeParam = res.parameters.find((p) => p.name === name);
 						if (argTypeParam) {
-							// Use the richer arg-type info
 							mergedParams.push(argTypeParam);
 						} else {
-							// Use syntax-derived info
 							mergedParams.push(syntaxParam);
 						}
 					}
 					res.parameters = mergedParams;
 				}
 
-				// If still no parameters, fall back to basic syntax parsing
 				if (res.parameters.length === 0 && res.syntax) {
 					const syntaxMatch = res.syntax.match(/^[^(]+\(([^)]+)\)/);
 					if (syntaxMatch) {
 						const paramsStr = syntaxMatch[1];
-						// Parse comma-separated params, handling variadic "..."
 						const parts = paramsStr.split(/,\s*/);
 						parts.forEach((part) => {
 							const trimmed = part.trim();
 							if (trimmed === "...") {
-								// Mark as variadic in metadata
 								res.variadic = true;
 							} else if (trimmed) {
 								res.parameters.push({
@@ -445,66 +471,61 @@ async function scrapeFunctionDetails(functionName, useCache = true) {
 
 		return details;
 	} catch (error) {
-		console.log(`⚠️  Failed to scrape ${functionName}: ${error.message}`);
+		console.log(`Failed to scrape ${functionName}: ${(error as Error).message}`);
 		return null;
 	}
 }
 
-async function scrapeAllFunctions(forceRefresh = false) {
+export async function scrapeAllFunctions(forceRefresh = false): Promise<ScrapeResult> {
 	console.log(
-		"🚀 Starting Pine Script v6 function details scrape (Puppeteer)...",
+		"Starting Pine Script v6 function details scrape (Puppeteer)...",
 	);
-	console.log(`📁 Input: ${INPUT_FILE}`);
-	console.log(`📁 Output: ${OUTPUT_FILE}`);
-	console.log(`📁 Cache: ${CACHE_DIR}`);
-	console.log(`⏰ Cache TTL: ${CACHE_TTL / (60 * 60 * 1000)} hours`);
-	console.log(`🔄 Force refresh: ${forceRefresh}`);
+	console.log(`Input: ${INPUT_FILE}`);
+	console.log(`Output: ${OUTPUT_FILE}`);
+	console.log(`Cache: ${CACHE_DIR}`);
+	console.log(`Cache TTL: ${CACHE_TTL / (60 * 60 * 1000)} hours`);
+	console.log(`Force refresh: ${forceRefresh}`);
 
 	// Read input file
 	if (!fs.existsSync(INPUT_FILE)) {
-		console.error(`❌ Input file not found: ${INPUT_FILE}`);
+		console.error(`Input file not found: ${INPUT_FILE}`);
 		process.exit(1);
 	}
 
 	const inputData = JSON.parse(fs.readFileSync(INPUT_FILE, "utf8"));
 
 	// Build function list from byNamespace structure
-	// Format: { functions: { byNamespace: { global: ["alert()", ...], ta: ["sma()", ...] } } }
-	let functionNames = [];
+	let functionNames: string[] = [];
 
 	if (inputData.functions?.byNamespace) {
 		for (const [namespace, funcs] of Object.entries(
 			inputData.functions.byNamespace,
 		)) {
-			for (const func of funcs) {
-				// Remove () suffix from function names
+			for (const func of funcs as string[]) {
 				const baseName = func.replace(/\(\)$/, "");
-				// Add namespace prefix for non-global functions
 				const fullName =
 					namespace === "global" ? baseName : `${namespace}.${baseName}`;
 				functionNames.push(fullName);
 			}
 		}
 	} else if (inputData.functions?.items) {
-		// Legacy format
 		functionNames = inputData.functions.items;
 	}
 
 	if (functionNames.length === 0) {
 		console.error(
-			"❌ No functions found in input file. Run crawl script first.",
+			"No functions found in input file. Run crawl script first.",
 		);
 		process.exit(1);
 	}
 
-	// Sort for consistent ordering
 	functionNames.sort();
 
-	console.log(`📋 Found ${functionNames.length} functions to process`);
+	console.log(`Found ${functionNames.length} functions to process`);
 
 	// Analyze cache status
-	const functionsToScrape = [];
-	const functionsFromCache = [];
+	const functionsToScrape: string[] = [];
+	const functionsFromCache: string[] = [];
 
 	if (!forceRefresh) {
 		for (const funcName of functionNames) {
@@ -519,11 +540,11 @@ async function scrapeAllFunctions(forceRefresh = false) {
 		functionsToScrape.push(...functionNames);
 	}
 
-	console.log(`📊 Cache analysis:`);
+	console.log(`Cache analysis:`);
 	console.log(`   From cache: ${functionsFromCache.length}`);
 	console.log(`   To scrape: ${functionsToScrape.length}`);
 
-	const allDetails = {
+	const allDetails: ScrapeResult = {
 		metadata: {
 			extractedAt: new Date().toISOString(),
 			source: BASE_URL,
@@ -538,7 +559,7 @@ async function scrapeAllFunctions(forceRefresh = false) {
 	};
 
 	// Load cached data first
-	console.log("📋 Loading cached data...");
+	console.log("Loading cached data...");
 	for (const funcName of functionsFromCache) {
 		const cachedData = getCachedData(funcName);
 		if (cachedData) {
@@ -550,10 +571,9 @@ async function scrapeAllFunctions(forceRefresh = false) {
 	// Scrape new/updated functions
 	if (functionsToScrape.length > 0) {
 		console.log(
-			"🔍 Scraping new/updated functions (optimized with shared browser)...",
+			"Scraping new/updated functions (optimized with shared browser)...",
 		);
 
-		// Use larger batches since we're using shared browser with hash navigation
 		const batchSize = 20;
 		const startTime = Date.now();
 
@@ -562,10 +582,9 @@ async function scrapeAllFunctions(forceRefresh = false) {
 			const batchNum = Math.floor(i / batchSize) + 1;
 			const totalBatches = Math.ceil(functionsToScrape.length / batchSize);
 			console.log(
-				`📦 Processing batch ${batchNum}/${totalBatches} (${batch.length} functions)`,
+				`Processing batch ${batchNum}/${totalBatches} (${batch.length} functions)`,
 			);
 
-			// Process batch sequentially (hash navigation is already fast)
 			for (const funcName of batch) {
 				const details = await scrapeFunctionDetails(funcName, !forceRefresh);
 				if (details) {
@@ -574,25 +593,21 @@ async function scrapeAllFunctions(forceRefresh = false) {
 				} else {
 					allDetails.metadata.failedScrapes++;
 				}
-				// Minimal delay - hash navigation is very fast
 				await new Promise((resolve) => setTimeout(resolve, 100));
 			}
 
-			// Progress update
 			const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
 			const completed = Math.min(i + batchSize, functionsToScrape.length);
-			const rate = ((completed / elapsed) * 60).toFixed(1);
+			const rate = ((completed / Number(elapsed)) * 60).toFixed(1);
 			console.log(
-				`  ✓ Progress: ${completed}/${functionsToScrape.length} (${elapsed}s elapsed, ~${rate} funcs/min)`,
+				`  Progress: ${completed}/${functionsToScrape.length} (${elapsed}s elapsed, ~${rate} funcs/min)`,
 			);
 
-			// Small delay between batches to be nice to the server
 			if (i + batchSize < functionsToScrape.length) {
 				await new Promise((resolve) => setTimeout(resolve, 500));
 			}
 		}
 
-		// Close shared browser when done
 		await closeSharedBrowser();
 	}
 
@@ -605,8 +620,8 @@ async function scrapeAllFunctions(forceRefresh = false) {
 	// Save results
 	fs.writeFileSync(OUTPUT_FILE, JSON.stringify(allDetails, null, 2), "utf8");
 
-	console.log("✅ Scrape completed successfully!");
-	console.log(`📊 Results:`);
+	console.log("Scrape completed successfully!");
+	console.log(`Results:`);
 	console.log(`   Total functions: ${allDetails.metadata.totalFunctions}`);
 	console.log(`   From cache: ${allDetails.metadata.cachedResults}`);
 	console.log(
@@ -615,14 +630,12 @@ async function scrapeAllFunctions(forceRefresh = false) {
 	console.log(`   Successful: ${allDetails.metadata.successfulScrapes}`);
 	console.log(`   Failed: ${allDetails.metadata.failedScrapes}`);
 	console.log(`   Method: ${allDetails.metadata.method}`);
-	console.log(`💾 Saved to: ${OUTPUT_FILE}`);
+	console.log(`Saved to: ${OUTPUT_FILE}`);
+
+	return allDetails;
 }
 
-// Run if called directly
-if (require.main === module) {
-	const forceRefresh =
-		process.argv.includes("--force") || process.argv.includes("-f");
-	scrapeAllFunctions(forceRefresh).catch(console.error);
-}
-
-module.exports = { scrapeFunctionDetails, scrapeAllFunctions };
+// Run if executed directly
+const forceRefresh =
+	process.argv.includes("--force") || process.argv.includes("-f");
+scrapeAllFunctions(forceRefresh).catch(console.error);
