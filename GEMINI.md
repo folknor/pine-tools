@@ -192,89 +192,6 @@ pine-lint <file.pine>              # TradingView's linter (for comparison)
 
 ---
 
-## Current Refactoring Plan
-
-**Goal**: Make our CLI produce results at least as good as TradingView's `pine-lint`.
-
-### Phase 1: Fix Data Layer (`v6/`)
-
-Update `scripts/generate.js` to produce missing exports:
-
-1. **V6_NAMESPACES** - Organized by namespace:
-   ```typescript
-   export const V6_NAMESPACES = {
-     ta: { functions: {...}, variables: {...}, constants: {...} },
-     math: { functions: {...}, ... },
-     // ...
-   }
-   ```
-
-2. **V6_KEYWORDS** - All Pine Script keywords:
-   ```typescript
-   export const V6_KEYWORDS = ["if", "else", "for", "while", ...];
-   ```
-
-3. **V6_TYPE_NAMES** - All type names:
-   ```typescript
-   export const V6_TYPE_NAMES = ["int", "float", "bool", "string", "color", ...];
-   ```
-
-4. **V6_BUILTIN_VARIABLES** - With types:
-   ```typescript
-   export const V6_BUILTIN_VARIABLES = {
-     close: "series<float>",
-     open: "series<float>",
-     bar_index: "series<int>",
-     // ...
-   }
-   ```
-
-5. **NAMESPACE_PROPERTIES** - Property type mappings:
-   ```typescript
-   export const NAMESPACE_PROPERTIES = {
-     "plot.style_line": "plot_style",
-     "color.red": "color",
-     "barstate.isfirst": "series<bool>",
-     // ...
-   }
-   ```
-
-6. **FUNCTION_METADATA** - Function flags:
-   ```typescript
-   export const FUNCTION_METADATA = {
-     indicator: { topLevelOnly: true },
-     plot: { topLevelOnly: true },
-     "ta.sma": { seriesReturning: true },
-     // ...
-   }
-   ```
-
-### Phase 2: Refactor Code Layer (`src/`)
-
-Remove hardcoded **library/API data** from these files and import from `v6/`:
-
-| File | Keep (Syntax) | Remove → Import from v6/ |
-|------|---------------|--------------------------|
-| `lexer.ts` | Keywords, operators | - |
-| `parser.ts` | Grammar rules | - |
-| `symbolTable.ts` | - | Built-in vars, namespaces |
-| `completions.ts` | - | V6_KEYWORDS, V6_NAMESPACES, function data |
-| `unifiedValidator.ts` | - | namespaceProperties, knownReturnTypes, topLevelOnlyFunctions |
-| `semanticAnalyzer.ts` | - | seriesFunctions, commonVariables |
-| `astExtractor.ts` | - | INPUT_FUNCTIONS, SERIES_FUNCTIONS |
-| `signatureHelp.ts` | - | V6_NAMESPACES |
-
-**Note:** `lexer.ts` can keep keywords hardcoded since they define syntax and rarely change.
-
-### Phase 3: Validate Against pine-lint
-
-1. Compare our CLI output against pre-saved pine-lint results in `./plan/pine-lint-results/*.json`
-2. Our linter should catch everything pine-lint catches
-3. Fix any remaining gaps
-4. Goal: Zero false negatives (we catch at least what TradingView catches)
-
----
-
 ## Data Quality Status
 
 | Data Type | Count | Source | Status |
@@ -293,6 +210,11 @@ The scraper (`scripts/scrape.js`) has been fixed and optimized:
 1. Wrong URL pattern - was using `.html` files, now uses hash routing (`#fun_ta.sma`)
 2. Empty parameters - now properly extracts from TradingView's SPA
 3. Optional parameter detection - now detects "The default is X" patterns
+4. **NEW (2025-12-23):** Fixed parameter optionality detection for "Optional argument." at end of description
+   - Changed from `startsWith("optional")` to `includes("optional argument")` and `includes("optional.")`
+   - Now correctly marks parameters as optional when description ends with "Optional argument."
+   - **Manual fix applied** to `pine-data/v6/functions.ts` for `hline.title` and `plot.title` (set `required: false`)
+   - **Requires full re-scrape** to apply to all functions: `rm -rf .cache/function-details && pnpm run scrape && pnpm run generate`
 
 **Performance Optimizations:**
 - Single browser instance (was launching 457 separate browsers)
@@ -375,17 +297,54 @@ These issues were identified while fixing test files. All skipped tests have `//
 - `reference/constants.md` - All constants
 - `reference/variables.md` - All built-in variables
 
+### Known Parser Hacks (Need Better Solutions)
+
+1. **LBRACKET continuation heuristic** (`src/parser/parser.ts:1247-1248`)
+   - When expression parser encounters NEWLINE followed by `[`, it checks if `column > 10`
+   - If true: treat as array access continuation (skip newline)
+   - If false (column <= 10): treat as new statement (likely tuple like `[a, b]`)
+   - **Why a hack**: Uses magic number 10 instead of proper indentation analysis
+   - **Better solution**: Track whether we're in expression context vs statement context
+
+### Parser Fixes Session (2025-12-23)
+
+**Fixed Issues:**
+
+1. **parenDepth mismatch for generic function calls** (`src/parser/parser.ts:1289`)
+   - **Bug**: When parsing `array.new<int>()`, the generic handling path called `finishCall()` without incrementing `parenDepth`, but `finishCall()` always decrements it
+   - **Symptom**: `parenDepth` became -1, breaking newline skipping at line 74 (`while (this.check(TokenType.NEWLINE) && this.parenDepth === 0)`), causing "Unexpected token: \n" errors on blank lines after generic calls
+   - **Fix**: Added `this.parenDepth++` before calling `finishCall()` in the generic type handling code
+
+2. **Typed function parameters not parsed** (`src/parser/parser.ts:908-966`)
+   - **Bug**: `parseFunctionParams()` only handled simple parameters like `myFunc(x)`, not typed parameters like `myFunc(gap currentGap)`
+   - **Symptom**: Functions with typed parameters like `drawGap(gap currentGap) =>` caused "Expected )" errors
+   - **Fix**: Updated `parseFunctionParams()` to handle:
+     - `paramName` (simple)
+     - `type paramName` (typed with custom type like user-defined type)
+     - `int paramName` (typed with keyword type like int, float, bool)
+     - `paramName = defaultValue` (with default)
+     - `type paramName = defaultValue` (typed with default)
+
+3. **Type keywords used as parameter names** (`src/parser/parser.ts:928-937`)
+   - **Bug**: When parsing `cell(..., color = color.white, ...)`, the `color` was interpreted as a type keyword followed by assignment, causing parse failure
+   - **Symptom**: Functions with parameters named `color`, `label`, `table`, etc. with default values failed to parse
+   - **Fix**: Check if type keyword is followed by IDENTIFIER before treating it as a type; if followed by `=` or `,` or `)`, treat the keyword as the parameter name
+
 ### Priority 2: Parser Issues (10 skipped tests)
 
 | Issue | Impact | Location |
 |-------|--------|----------|
-| Parser errors logged to console but not exposed via API | Can't report syntax errors in CLI | `src/parser/parser.ts` |
-| Generics like `array.new<float>()` not parsed | False syntax errors | `src/parser/parser.ts` |
-| Switch statements not parsed | False syntax errors | `src/parser/parser.ts` |
-| For loops not parsed correctly | False syntax errors | `src/parser/parser.ts` |
+| Parser errors logged to console but not exposed via API | Can't report syntax errors in CLI | `src/parser/parser.ts` | ✅ **FIXED** |
+| Compound assignment (`+=`, `-=`, `*=`, `/=`) not parsed | ~84 false errors, breaks UDF scope | `src/parser/parser.ts` | ✅ **FIXED** |
+| Reassignment operator (`:=`) not parsed | ~15 false errors | `src/parser/parser.ts` | ✅ **FIXED** |
+| For loop body parsing breaks on NEWLINE | For loops only parse 1 statement | `src/parser/parser.ts` | ✅ **FIXED** |
+| Lambda expressions (`=>` outside UDFs) not parsed | ~36 false errors | `src/parser/parser.ts` | ✅ **FIXED** |
+| Generics like `array.new<float>()` cause parenDepth issues | Blank lines after generics fail | `src/parser/parser.ts` | ✅ **FIXED** |
+| Typed function parameters not parsed | UDFs with typed params fail | `src/parser/parser.ts` | ✅ **FIXED** |
+| Switch expressions as primary not parsed | Switch in variable init fails | `src/parser/parser.ts` | ✅ **FIXED** |
 | Library/export declarations not parsed | Library scripts fail | `src/parser/parser.ts` |
-| User-defined functions not parsed | UDF scripts fail | `src/parser/parser.ts` |
 | Type definitions not parsed | Type scripts fail | `src/parser/parser.ts` |
+| EOF handling reports phantom error on valid files | ~429 false errors | `src/parser/parser.ts` |
 
 ### Priority 3: Validator Issues (9 skipped tests)
 
@@ -431,12 +390,17 @@ The scraper has been fixed and 457 functions scraped successfully. See "Scraper 
 
 **Result:** Reduced false positives from 137 to 134 files. All `Unknown property` errors eliminated.
 
-### Step 3: Expose Parser Errors via API
+### Step 3: Expose Parser Errors via API ✅ COMPLETED
 
 Modify `src/parser/parser.ts`:
-- Store errors in array instead of console.log
-- Add `getParserErrors()` method
-- Include in CLI output
+- ✅ Store errors in array instead of console.log
+- ✅ Add `getParserErrors()` method
+- ✅ Include in CLI output
+
+**Implementation:**
+- Added `ParserError` interface and `parserErrors` array to Parser class
+- Added `getParserErrors()` method to expose syntax errors
+- Updated CLI to include parser errors in JSON output alongside lexer and validation errors
 
 ### Step 3: Add Unknown Function Detection
 

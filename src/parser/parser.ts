@@ -580,6 +580,13 @@ export class Parser {
 
 			while (!this.isAtEnd()) {
 				const currentToken = this.peek();
+
+				// Skip NEWLINE tokens when determining loop body boundaries
+				if (currentToken.type === TokenType.NEWLINE) {
+					this.advance();
+					continue;
+				}
+
 				const currentIndent = currentToken.indent || 0;
 
 				if (bodyIndent === null && currentToken.line > startToken.line) {
@@ -597,19 +604,8 @@ export class Parser {
 				const stmt = this.statement();
 				if (stmt) {
 					body.push(stmt);
-				}
-
-				// Skip newlines between statements
-				while (this.check(TokenType.NEWLINE)) {
-					this.advance();
-				}
-
-				// Check if next token is at lower indentation
-				if (!this.isAtEnd()) {
-					const nextIndent = this.peek().indent || 0;
-					if (bodyIndent !== null && nextIndent < bodyIndent) {
-						break;
-					}
+				} else {
+					break;
 				}
 			}
 
@@ -640,6 +636,13 @@ export class Parser {
 
 		while (!this.isAtEnd()) {
 			const currentToken = this.peek();
+
+			// Skip NEWLINE tokens when determining loop body boundaries
+			if (currentToken.type === TokenType.NEWLINE) {
+				this.advance();
+				continue;
+			}
+
 			const currentIndent = currentToken.indent || 0;
 
 			// Set expected body indentation from first statement
@@ -876,6 +879,32 @@ export class Parser {
 		};
 	}
 
+	// Type keywords that can appear as parameter types
+	private static readonly TYPE_KEYWORDS = new Set([
+		"int",
+		"float",
+		"bool",
+		"string",
+		"color",
+		"line",
+		"label",
+		"box",
+		"table",
+		"array",
+		"matrix",
+		"map",
+		"series",
+		"simple",
+	]);
+
+	private isTypeKeyword(): boolean {
+		const token = this.peek();
+		return (
+			token.type === TokenType.KEYWORD &&
+			Parser.TYPE_KEYWORDS.has(token.value)
+		);
+	}
+
 	private parseFunctionParams(): AST.FunctionParam[] {
 		const params: AST.FunctionParam[] = [];
 
@@ -884,10 +913,45 @@ export class Parser {
 		}
 
 		do {
-			const paramName = this.consume(
-				TokenType.IDENTIFIER,
-				"Expected parameter name",
-			);
+			// Pine Script function params can be:
+			// - paramName (simple)
+			// - type paramName (typed, type can be keyword like int/float or identifier like custom type)
+			// - paramName = defaultValue (with default)
+			// - type paramName = defaultValue (typed with default)
+
+			let typeAnnotation: AST.TypeAnnotation | undefined;
+			let paramName: string;
+
+			// Check if first token is a type keyword (int, float, bool, etc.)
+			// But only treat it as a type if followed by an identifier (the param name)
+			// If followed by = or , or ), then the keyword itself is the parameter name
+			if (this.isTypeKeyword() && this.peekNext()?.type === TokenType.IDENTIFIER) {
+				const typeToken = this.advance();
+				typeAnnotation = { name: typeToken.value };
+				// Next token should be the parameter name
+				const nameToken = this.advance();
+				paramName = nameToken.value;
+			} else if (this.isTypeKeyword()) {
+				// Type keyword used as parameter name (e.g., color = color.white)
+				const nameToken = this.advance();
+				paramName = nameToken.value;
+			} else {
+				// First token should be identifier (could be type or param name)
+				const firstIdent = this.consume(
+					TokenType.IDENTIFIER,
+					"Expected parameter name or type",
+				);
+
+				// Check if next token is an identifier (then first was type, second is name)
+				if (this.check(TokenType.IDENTIFIER)) {
+					typeAnnotation = { name: firstIdent.value };
+					const nameToken = this.advance();
+					paramName = nameToken.value;
+				} else {
+					// First identifier is the parameter name
+					paramName = firstIdent.value;
+				}
+			}
 
 			let defaultValue: AST.Expression | undefined;
 			if (this.match(TokenType.ASSIGN)) {
@@ -895,7 +959,8 @@ export class Parser {
 			}
 
 			params.push({
-				name: paramName.value,
+				name: paramName,
+				typeAnnotation,
 				defaultValue,
 			});
 		} while (this.match(TokenType.COMMA));
@@ -1179,7 +1244,8 @@ export class Parser {
 						(nextToken.type === TokenType.KEYWORD &&
 							["and", "or"].includes(nextToken.value)) ||
 						nextToken.type === TokenType.LPAREN ||
-						nextToken.type === TokenType.LBRACKET ||
+						// LBRACKET at start of line is likely a tuple, not array access
+						(nextToken.type === TokenType.LBRACKET && nextToken.column > 10) ||
 						nextToken.type === TokenType.DOT)
 				) {
 					// Skip the newline and continue
@@ -1220,6 +1286,7 @@ export class Parser {
 						this.advance();
 						// Now should see ( for function call
 						if (this.match(TokenType.LPAREN)) {
+							this.parenDepth++; // Increment before finishCall (which decrements)
 							expr = this.finishCall(expr);
 							continue;
 						}
@@ -1374,6 +1441,11 @@ export class Parser {
 				line: token.line,
 				column: token.column,
 			};
+		}
+
+		// Switch expression (can appear as value in variable declaration)
+		if (this.match([TokenType.KEYWORD, ["switch"]])) {
+			return this.switchExpression();
 		}
 
 		// Identifier
