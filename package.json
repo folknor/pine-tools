@@ -118,6 +118,7 @@
 		"clean": "rm -rf dist && rm -f build/*.vsix",
 		"build": "tsc -p . && chmod +x dist/src/cli.js",
 		"build:cli": "tsc -p . && chmod +x dist/src/cli.js",
+		"build:main": "tsc -p . && chmod +x dist/src/cli.js",
 		"watch": "tsc -w -p .",
 		"lint": "pnpm exec biome check",
 		"check": "pnpm exec biome check",
