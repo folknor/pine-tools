@@ -39,6 +39,45 @@ node scripts/generate-pine-data.js
 # - pine-data/v6/keywords.ts   (28 keywords)
 ```
 
+### Data Pipeline Files
+
+| File | Purpose | Safe to Regenerate |
+|------|---------|-------------------|
+| `pine-data/raw/v6/v6-language-constructs.json` | Crawled function/variable list | Yes |
+| `pine-data/raw/v6/complete-v6-details.json` | Scraped function details | Yes |
+| `pine-data/v6/*.ts` | Generated TypeScript | Yes |
+
+### Manual Customizations (preserved in generate script)
+
+All customizations are in `scripts/generate-pine-data.js`, NOT in the output files:
+- **Line 124**: `topLevelOnly` - functions that can only be called at top level
+- **Line 134**: `variadic` - functions accepting variable arguments
+- **Line 151**: `polymorphic` - functions with type-dependent returns
+- **Line 378**: Hardcoded `syminfo.*` namespace variables
+
+**Regenerating is safe** - all customizations are in the script.
+
+### Function Overloads (115 functions)
+
+The scraper now captures **multiple signatures** for overloaded functions. TradingView docs show all overloads, which are now stored in the `overloads` array:
+
+```json
+// pine-data/raw/v6/complete-v6-details.json
+"line.new": {
+  "overloads": [
+    "line.new(first_point, second_point, ...) → series line",
+    "line.new(x1, y1, x2, y2, ...) → series line"
+  ],
+  "parameters": [/* merged from all overloads */]
+}
+```
+
+**Current Status**: The validator only validates against the **first signature**. Calls using alternate signatures get false type mismatch errors.
+
+**TODO**: Implement overload resolution in `src/analyzer/checker.ts`:
+1. Try validating against each signature
+2. Only report error if NONE of the overloads match
+
 ---
 
 ## Commands
@@ -70,13 +109,13 @@ pine-lint <file.pine>              # TradingView's linter (for comparison)
 Ran comparison of our CLI against TradingView's `pine-lint` on 176 Pine Script files.
 
 **Results (After All Fixes - 2025-12-23):**
-| Metric | Initial | After Built-ins | After Namespace Props | After EOF Fix | After Polymorphic |
-|--------|---------|-----------------|----------------------|---------------|-------------------|
+| Metric | Initial | After Namespace Props | After EOF Fix | After Polymorphic | After Fresh Scrape |
+|--------|---------|----------------------|---------------|-------------------|-------------------|
 | Total files | 176 | 176 | 176 | 176 | 176 |
-| Matches | 36 (20.5%) | 39 (22.2%) | 42 (23.9%) | 43 (24.4%) | 44 (25.0%) |
-| Mismatches | 140 (79.5%) | 137 (77.8%) | 134 (76.1%) | 133 (75.6%) | 132 (75.0%) |
+| Matches | 36 (20.5%) | 42 (23.9%) | 43 (24.4%) | 44 (25.0%) | **47 (26.7%)** |
+| Mismatches | 140 (79.5%) | 134 (76.1%) | 133 (75.6%) | 132 (75.0%) | **129 (73.3%)** |
 
-**Remaining Discrepancies (132 files out of 176, 75.0% mismatch rate):**
+**Remaining Discrepancies (129 files out of 176, 73.3% mismatch rate):**
 | Error Type | Files | Occurrences | Notes |
 |------------|-------|-------------|-------|
 | Unexpected token errors | ~100 | ~335 | newlines (178), commas (61), brackets (12), `=>` (11), etc. |

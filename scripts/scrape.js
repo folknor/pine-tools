@@ -25,10 +25,10 @@ const positionalArgs = process.argv
 	.filter((arg) => !arg.startsWith("-"));
 const INPUT_FILE =
 	positionalArgs[0] ||
-	path.join(__dirname, "../v6/raw/v6-language-constructs.json");
+	path.join(__dirname, "../pine-data/raw/v6/v6-language-constructs.json");
 const OUTPUT_FILE =
 	positionalArgs[1] ||
-	path.join(__dirname, "../v6/raw/complete-v6-details.json");
+	path.join(__dirname, "../pine-data/raw/v6/complete-v6-details.json");
 const CACHE_DIR = path.join(__dirname, "../.cache/function-details");
 const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
