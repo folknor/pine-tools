@@ -305,15 +305,21 @@ async function scrapeFunctionDetails(functionName, useCache = true) {
 						// Detect optionality from multiple signals:
 						// 1. Word "optional" in arg type text
 						// 2. Parameter name in brackets [param]
-						// 3. Description contains "The default is" or "defaults to" or "Optional."
+						// 3. Description contains "The default is" or "defaults to" or "Optional argument."
+						// 4. Description does NOT contain "Required argument."
 						const descLower = descText.toLowerCase();
-						const isOptional =
-							argText.toLowerCase().includes("optional") ||
-							paramName.startsWith("[") ||
+						const hasDefault =
 							descLower.includes("the default is") ||
 							descLower.includes("defaults to") ||
 							descLower.includes("default value is") ||
-							descLower.startsWith("optional");
+							descLower.includes("default is ");
+						const isExplicitlyOptional =
+							argText.toLowerCase().includes("optional") ||
+							paramName.startsWith("[") ||
+							descLower.includes("optional argument") ||
+							descLower.includes("optional.");
+						const isExplicitlyRequired = descLower.includes("required argument");
+						const isOptional = isExplicitlyOptional || hasDefault || !isExplicitlyRequired;
 
 						const param = {
 							name: paramName,

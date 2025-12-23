@@ -2478,7 +2478,7 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "title",
         "type": "const string",
         "description": "Title of the object.",
-        "required": true
+        "required": false
       },
       {
         "name": "color",
@@ -6528,7 +6528,7 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "title",
         "type": "const string",
         "description": "Title of the plot.",
-        "required": true
+        "required": false
       },
       {
         "name": "color",

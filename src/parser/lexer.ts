@@ -12,6 +12,7 @@ export enum TokenType {
 
 	// Operators
 	ASSIGN = "ASSIGN", // =, :=
+	COMPOUND_ASSIGN = "COMPOUND_ASSIGN", // +=, -=, *=, /=, %=
 	PLUS = "PLUS", // +
 	MINUS = "MINUS", // -
 	MULTIPLY = "MULTIPLY", // *
@@ -194,16 +195,36 @@ export class Lexer {
 				break;
 
 			case "+":
-				this.addToken(TokenType.PLUS, "+", 1);
+				if (this.peek() === "=") {
+					this.advance();
+					this.addToken(TokenType.COMPOUND_ASSIGN, "+=", 2);
+				} else {
+					this.addToken(TokenType.PLUS, "+", 1);
+				}
 				break;
 			case "-":
-				this.addToken(TokenType.MINUS, "-", 1);
+				if (this.peek() === "=") {
+					this.advance();
+					this.addToken(TokenType.COMPOUND_ASSIGN, "-=", 2);
+				} else {
+					this.addToken(TokenType.MINUS, "-", 1);
+				}
 				break;
 			case "*":
-				this.addToken(TokenType.MULTIPLY, "*", 1);
+				if (this.peek() === "=") {
+					this.advance();
+					this.addToken(TokenType.COMPOUND_ASSIGN, "*=", 2);
+				} else {
+					this.addToken(TokenType.MULTIPLY, "*", 1);
+				}
 				break;
 			case "%":
-				this.addToken(TokenType.MODULO, "%", 1);
+				if (this.peek() === "=") {
+					this.advance();
+					this.addToken(TokenType.COMPOUND_ASSIGN, "%=", 2);
+				} else {
+					this.addToken(TokenType.MODULO, "%", 1);
+				}
 				break;
 
 			case "/":
@@ -211,6 +232,9 @@ export class Lexer {
 					this.scanComment();
 				} else if (this.peek() === "*") {
 					this.scanBlockComment();
+				} else if (this.peek() === "=") {
+					this.advance();
+					this.addToken(TokenType.COMPOUND_ASSIGN, "/=", 2);
 				} else {
 					this.addToken(TokenType.DIVIDE, "/", 1);
 				}

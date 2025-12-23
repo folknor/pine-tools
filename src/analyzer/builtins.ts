@@ -284,13 +284,19 @@ export function buildFunctionSignatures(): Map<string, FunctionSignature> {
 
 // Check if a function is variadic (accepts variable number of arguments)
 export function isVariadicFunction(functionName: string): boolean {
-	return /^(math\.(max|min|avg|sum)|array\.(concat|covariance|avg|min|max|sum))/.test(
-		functionName,
-	);
+	const func = FUNCTIONS_BY_NAME.get(functionName);
+	return func?.flags?.variadic === true;
 }
 
 // Get minimum required arguments for variadic functions
 export function getMinArgsForVariadic(functionName: string): number {
-	if (/^math\.(max|min)/.test(functionName)) return 2;
+	const func = FUNCTIONS_BY_NAME.get(functionName);
+	if (func?.flags?.minArgs !== undefined) {
+		return func.flags.minArgs;
+	}
+	// Default: require at least the number of required parameters
+	if (func) {
+		return func.parameters.filter((p) => p.required).length;
+	}
 	return 1;
 }

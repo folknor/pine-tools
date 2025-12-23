@@ -365,11 +365,11 @@ export class Parser {
 			return this.variableDeclaration(null);
 		}
 
-		// Check for assignment: target := expr or target = expr
+		// Check for assignment: target := expr or target = expr or target += expr (compound)
 		const checkpoint = this.current;
 		try {
 			const target = this.expression();
-			if (this.match(TokenType.ASSIGN)) {
+			if (this.match(TokenType.ASSIGN) || this.match(TokenType.COMPOUND_ASSIGN)) {
 				const operator = this.previous().value;
 				const value = this.expression();
 				return {
