@@ -144,6 +144,44 @@ function getFunctionFlags(name) {
 		flags.minArgs = variadic[name].minArgs;
 	}
 
+	// Polymorphic functions - return type depends on input type
+	// "input": returns same type as first argument
+	// "element": returns element type of array/matrix argument
+	// "numeric": returns same numeric type (int->int, float->float)
+	const polymorphic = {
+		// Returns same type as source argument
+		"nz": "input",
+		"fixnan": "input",
+		// Returns element type of array
+		"array.get": "element",
+		"array.first": "element",
+		"array.last": "element",
+		"array.pop": "element",
+		"array.remove": "element",
+		"array.shift": "element",
+		"array.max": "element",
+		"array.min": "element",
+		"array.avg": "element",
+		"array.sum": "element",
+		"array.median": "element",
+		"array.mode": "element",
+		"array.stdev": "element",
+		"array.variance": "element",
+		// Returns same numeric type
+		"math.abs": "numeric",
+		"math.sign": "numeric",
+		"math.max": "numeric",
+		"math.min": "numeric",
+		"math.avg": "numeric",
+		"math.sum": "numeric",
+		"math.round": "numeric",
+		"math.floor": "numeric",
+		"math.ceil": "numeric",
+	};
+	if (polymorphic[name]) {
+		flags.polymorphic = polymorphic[name];
+	}
+
 	return Object.keys(flags).length > 0 ? flags : undefined;
 }
 

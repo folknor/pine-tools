@@ -92,6 +92,13 @@ export interface FunctionFlags {
 	minArgs?: number;
 	/** Maximum arguments for variadic functions (undefined = unlimited) */
 	maxArgs?: number;
+	/**
+	 * Polymorphic return type - function returns type based on input:
+	 * - "input": returns same type as first argument (nz, fixnan)
+	 * - "element": returns element type of array argument (array.get, array.first)
+	 * - "numeric": returns same numeric type as arguments (math.abs, math.max)
+	 */
+	polymorphic?: "input" | "element" | "numeric";
 }
 
 /**

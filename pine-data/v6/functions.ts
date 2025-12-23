@@ -1,7 +1,7 @@
 /**
  * Pine Script V6 Functions
  * Auto-generated from TradingView documentation
- * Generated: 2025-12-23T17:11:31.459Z
+ * Generated: 2025-12-23T21:25:49.738Z
  * Total: 457 functions
  */
 
@@ -92,6 +92,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
+    "flags": {
+      "polymorphic": "element"
+    },
     "example": "//@version=6indicator(\"array.avg example\")a = array.new_float(0)for i = 0 to 9    array.push(a, close[i])plot(array.avg(a))"
   },
   {
@@ -306,6 +309,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series <type>",
+    "flags": {
+      "polymorphic": "element"
+    },
     "example": "//@version=6indicator(\"array.first example\")arr = array.new_int(3, 10)plot(array.first(arr))"
   },
   {
@@ -354,6 +360,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series <type>",
+    "flags": {
+      "polymorphic": "element"
+    },
     "example": "//@version=6indicator(\"array.get example\")a = array.new_float(0)for i = 0 to 9    array.push(a, close[i] - open[i])plot(array.get(a, 9))"
   },
   {
@@ -464,6 +473,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series <type>",
+    "flags": {
+      "polymorphic": "element"
+    },
     "example": "//@version=6indicator(\"array.last example\")arr = array.new_int(3, 10)plot(array.last(arr))"
   },
   {
@@ -508,6 +520,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
+    "flags": {
+      "polymorphic": "element"
+    },
     "example": "//@version=6indicator(\"array.max\")a = array.from(5, -2, 0, 9, 1)thirdHighest = array.max(a, 2) // 1plot(thirdHighest)"
   },
   {
@@ -524,6 +539,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
+    "flags": {
+      "polymorphic": "element"
+    },
     "example": "//@version=6indicator(\"array.median example\")a = array.new_float(0)for i = 0 to 9    array.push(a, close[i])plot(array.median(a))"
   },
   {
@@ -546,6 +564,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
+    "flags": {
+      "polymorphic": "element"
+    },
     "example": "//@version=6indicator(\"array.min\")a = array.from(5, -2, 0, 9, 1)secondLowest = array.min(a, 1) // 0plot(secondLowest)"
   },
   {
@@ -562,6 +583,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
+    "flags": {
+      "polymorphic": "element"
+    },
     "example": "//@version=6indicator(\"array.mode example\")a = array.new_float(0)for i = 0 to 9    array.push(a, close[i])plot(array.mode(a))"
   },
   {
@@ -886,6 +910,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series <type>",
+    "flags": {
+      "polymorphic": "element"
+    },
     "example": "//@version=6indicator(\"array.pop example\")a = array.new_float(5,high)removedEl = array.pop(a)plot(array.size(a))plot(removedEl)"
   },
   {
@@ -946,6 +973,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series <type>",
+    "flags": {
+      "polymorphic": "element"
+    },
     "example": "//@version=6indicator(\"array.remove example\")a = array.new_float(5,high)removedEl = array.remove(a, 0)plot(array.size(a))plot(removedEl)"
   },
   {
@@ -1006,6 +1036,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series <type>",
+    "flags": {
+      "polymorphic": "element"
+    },
     "example": "//@version=6indicator(\"array.shift example\")a = array.new_float(5,high)removedEl = array.shift(a)plot(array.size(a))plot(removedEl)"
   },
   {
@@ -1148,6 +1181,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
+    "flags": {
+      "polymorphic": "element"
+    },
     "example": "//@version=6indicator(\"array.stdev example\")a = array.new_float(0)for i = 0 to 9    array.push(a, close[i])plot(array.stdev(a))"
   },
   {
@@ -1164,6 +1200,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
+    "flags": {
+      "polymorphic": "element"
+    },
     "example": "//@version=6indicator(\"array.sum example\")a = array.new_float(0)for i = 0 to 9    array.push(a, close[i])plot(array.sum(a))"
   },
   {
@@ -1208,6 +1247,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
+    "flags": {
+      "polymorphic": "element"
+    },
     "example": "//@version=6indicator(\"array.variance example\")a = array.new_float(0)for i = 0 to 9    array.push(a, close[i])plot(array.variance(a))"
   },
   {
@@ -2446,6 +2488,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series color",
+    "flags": {
+      "polymorphic": "input"
+    },
     "example": ""
   },
   {
@@ -2478,7 +2523,7 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "title",
         "type": "const string",
         "description": "Title of the object.",
-        "required": false
+        "required": true
       },
       {
         "name": "color",
@@ -4974,6 +5019,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "const int",
+    "flags": {
+      "polymorphic": "numeric"
+    },
     "example": ""
   },
   {
@@ -5046,7 +5094,8 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "simple float",
     "flags": {
       "variadic": true,
-      "minArgs": 2
+      "minArgs": 2,
+      "polymorphic": "numeric"
     },
     "example": ""
   },
@@ -5064,6 +5113,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "const int",
+    "flags": {
+      "polymorphic": "numeric"
+    },
     "example": ""
   },
   {
@@ -5112,6 +5164,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "const int",
+    "flags": {
+      "polymorphic": "numeric"
+    },
     "example": ""
   },
   {
@@ -5168,7 +5223,8 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "const int",
     "flags": {
       "variadic": true,
-      "minArgs": 2
+      "minArgs": 2,
+      "polymorphic": "numeric"
     },
     "example": "//@version=6indicator(\"math.max\", overlay=true)plot(math.max(close, open))plot(math.max(close, math.max(open, 42)))"
   },
@@ -5194,7 +5250,8 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "const int",
     "flags": {
       "variadic": true,
-      "minArgs": 2
+      "minArgs": 2,
+      "polymorphic": "numeric"
     },
     "example": "//@version=6indicator(\"math.min\", overlay=true)plot(math.min(close, open))plot(math.min(close, math.min(open, 42)))"
   },
@@ -5262,6 +5319,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "const int",
+    "flags": {
+      "polymorphic": "numeric"
+    },
     "example": ""
   },
   {
@@ -5294,6 +5354,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "const float",
+    "flags": {
+      "polymorphic": "numeric"
+    },
     "example": ""
   },
   {
@@ -5350,7 +5413,8 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series float",
     "flags": {
       "variadic": true,
-      "minArgs": 1
+      "minArgs": 1,
+      "polymorphic": "numeric"
     },
     "example": ""
   },
@@ -6511,6 +6575,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "simple color",
+    "flags": {
+      "polymorphic": "input"
+    },
     "example": "//@version=6indicator(\"nz\", overlay=true)plot(nz(ta.sma(close, 100)))"
   },
   {
@@ -6528,7 +6595,7 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "title",
         "type": "const string",
         "description": "Title of the plot.",
-        "required": false
+        "required": true
       },
       {
         "name": "color",

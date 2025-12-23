@@ -300,3 +300,67 @@ export function getMinArgsForVariadic(functionName: string): number {
 	}
 	return 1;
 }
+
+// Check if a function is polymorphic (return type depends on input)
+export function getPolymorphicType(functionName: string): string | undefined {
+	const func = FUNCTIONS_BY_NAME.get(functionName);
+	return func?.flags?.polymorphic;
+}
+
+// Get the return type for a polymorphic function based on argument types
+export function getPolymorphicReturnType(
+	functionName: string,
+	argTypes: PineType[],
+): PineType | null {
+	const polyType = getPolymorphicType(functionName);
+	if (!polyType || argTypes.length === 0) {
+		return null;
+	}
+
+	const firstArgType = argTypes[0];
+
+	switch (polyType) {
+		case "input":
+			// Returns the same type as the first argument
+			// e.g., nz(float) -> float, nz(int) -> int
+			return firstArgType !== "unknown" ? firstArgType : null;
+
+		case "element":
+			// Returns the element type of an array
+			// e.g., array.get(array<float>) -> float
+			// For now, we can't easily extract element type from array type
+			// So we return a reasonable default based on common usage
+			if (firstArgType === "unknown") return null;
+			// If it's an array type like "array<float>", extract the element type
+			const arrayMatch = firstArgType.match(/array<(.+)>/);
+			if (arrayMatch) {
+				return arrayMatch[1] as PineType;
+			}
+			// For series types, return the base type
+			const seriesMatch = firstArgType.match(/series<(.+)>/);
+			if (seriesMatch) {
+				return `series<${seriesMatch[1]}>` as PineType;
+			}
+			return firstArgType;
+
+		case "numeric":
+			// Returns the same numeric type (int stays int, float stays float)
+			// If any arg is float, result is float; otherwise int
+			if (firstArgType === "unknown") return null;
+			// Check if any argument is float
+			for (const argType of argTypes) {
+				if (argType === "float" || argType === "series<float>") {
+					return argType.includes("series") ? "series<float>" : "float";
+				}
+			}
+			// Default to same type as first arg for int
+			if (firstArgType === "int" || firstArgType === "series<int>") {
+				return firstArgType;
+			}
+			// For other numeric types, return float as safe default
+			return firstArgType.includes("series") ? "series<float>" : "float";
+
+		default:
+			return null;
+	}
+}

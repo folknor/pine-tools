@@ -70,17 +70,17 @@ pine-lint <file.pine>              # TradingView's linter (for comparison)
 Ran comparison of our CLI against TradingView's `pine-lint` on 176 Pine Script files.
 
 **Results (After All Fixes - 2025-12-23):**
-| Metric | Initial | After Built-ins | After Namespace Props | After EOF Fix |
-|--------|---------|-----------------|----------------------|---------------|
-| Total files | 176 | 176 | 176 | 176 |
-| Matches | 36 (20.5%) | 39 (22.2%) | 42 (23.9%) | 43 (24.4%) |
-| Mismatches | 140 (79.5%) | 137 (77.8%) | 134 (76.1%) | 133 (75.6%) |
+| Metric | Initial | After Built-ins | After Namespace Props | After EOF Fix | After Polymorphic |
+|--------|---------|-----------------|----------------------|---------------|-------------------|
+| Total files | 176 | 176 | 176 | 176 | 176 |
+| Matches | 36 (20.5%) | 39 (22.2%) | 42 (23.9%) | 43 (24.4%) | 44 (25.0%) |
+| Mismatches | 140 (79.5%) | 137 (77.8%) | 134 (76.1%) | 133 (75.6%) | 132 (75.0%) |
 
-**Remaining Discrepancies (133 files out of 176, 75.6% mismatch rate):**
+**Remaining Discrepancies (132 files out of 176, 75.0% mismatch rate):**
 | Error Type | Files | Occurrences | Notes |
 |------------|-------|-------------|-------|
-| Unexpected token errors | ~100 | ~335 | newlines (200), commas (61), brackets (12), `=>` (11), etc. |
-| Type mismatch errors | 85 | ~200+ | Type inference gaps, 'unknown' cascading, operator/arg mismatches |
+| Unexpected token errors | ~100 | ~335 | newlines (178), commas (61), brackets (12), `=>` (11), etc. |
+| Type mismatch errors | 85 | ~467 | 163 with 'unknown' (array element types), 304 other |
 | Undefined variable | 30 | ~30+ | Scope issues (e.g., 'src' param not in scope) |
 | Missing required param | 13 | ~11 | `line.new` width param, etc. |
 
@@ -118,38 +118,35 @@ Analysis revealed two **independent problem categories** affecting different fil
 
 Files with newline errors have almost no type errors (only 15 total).
 
-### Category B: Type Inference Errors (134 files, ~493 errors)
+### Category B: Type Inference Errors (132 files, ~467 errors)
 
-**Root Cause:** Incorrect return types for polymorphic functions in scraped data.
+**Root Causes:**
+1. ~~Polymorphic functions returning wrong type~~ ✅ **PARTIALLY FIXED** (2025-12-23)
+2. Array element types not tracked through symbol table
+3. Other type inference gaps
 
-Example: `nz()` returns `simple color` in data, but it's polymorphic - returns same type as input.
-```pine
-hp := nz(hp[1])  // nz returns "unknown" instead of float, cascading errors
-```
-
-**Breakdown:**
-- 214 errors (43%) involve `unknown` type - fixable via polymorphic function handling
-- 279 errors (57%) are other type mismatches - need investigation
+**Breakdown (after polymorphic fix):**
+- ~~214 errors (45%) involved `unknown` type~~ → 163 errors (35%) remain
+- 304 errors (65%) are other type mismatches
 
 ### Revised Priority List
 
 | Priority | Fix | Impact | Effort | Status |
 |----------|-----|--------|--------|--------|
 | **1** | ~~Lexer: handle `.1` floats~~ | ~~200 errors (42 files)~~ | Low | ✅ **FIXED** |
-| **2** | Mark polymorphic functions (`nz`, `na`, `fixnan`, `array.get/set`, etc.) | ~214 "unknown" cascade errors | Medium | |
-| **3** | Parser: library/export function definitions | ~100+ errors (38 files) | Medium | |
-| **4** | Review remaining type mismatch logic | ~279 errors | High | |
+| **2** | ~~Polymorphic functions (`nz`, `fixnan`, `math.*`)~~ | ~~51 errors fixed~~ | Medium | ✅ **FIXED** |
+| **3** | Array element type tracking | ~163 remaining "unknown" errors | Medium | |
+| **4** | Parser: library/export function definitions | ~100+ errors (38 files) | Medium | |
+| **5** | Review remaining type mismatch logic | ~304 errors | High | |
 
-### Polymorphic Functions to Mark
+### Polymorphic Functions Implemented
 
-These functions return the same type as their input (or array element type):
-- `nz(source)` - returns type of `source`
-- `fixnan(source)` - returns type of `source`
-- `array.get(id, index)` - returns element type of array
-- `array.set(id, index, value)` - value type must match array element type
-- `array.push/unshift/insert` - similar
-- `map.get/put` - key/value type polymorphism
-- `matrix.get/set` - element type polymorphism
+Functions marked with `flags.polymorphic` in `scripts/generate-pine-data.js`:
+- **"input"**: `nz`, `fixnan` - returns same type as first argument
+- **"element"**: `array.get/first/last/pop/remove/shift/max/min/avg/sum/median/mode/stdev/variance`
+- **"numeric"**: `math.abs/sign/max/min/avg/sum/round/floor/ceil`
+
+Note: Array element type inference requires tracking array declarations (e.g., `array.new_float()`) through the symbol table - not yet implemented.
 
 ---
 

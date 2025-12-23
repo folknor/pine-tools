@@ -38,6 +38,7 @@ import {
 	mapReturnTypeToPineType,
 	isVariadicFunction,
 	getMinArgsForVariadic,
+	getPolymorphicReturnType,
 } from "./builtins";
 
 // Re-export for backward compatibility
@@ -950,7 +951,17 @@ export class UnifiedPineValidator {
 					}
 				}
 
-				// First check function signatures for built-ins
+				// First check if this is a polymorphic function
+				const argTypes = callExpr.arguments.map((arg) =>
+					this.inferExpressionType(arg.value, version),
+				);
+				const polyReturnType = getPolymorphicReturnType(funcName, argTypes);
+				if (polyReturnType) {
+					type = polyReturnType;
+					break;
+				}
+
+				// Then check function signatures for built-ins
 				const signature = this.functionSignatures.get(funcName);
 				if (signature?.returns) {
 					type = mapReturnTypeToPineType(signature.returns);
@@ -965,9 +976,6 @@ export class UnifiedPineValidator {
 				}
 
 				// Fallback to TypeChecker for common built-ins
-				const argTypes = callExpr.arguments.map((arg) =>
-					this.inferExpressionType(arg.value, version),
-				);
 				type = TypeChecker.getBuiltinReturnType(funcName, argTypes);
 				break;
 			}
