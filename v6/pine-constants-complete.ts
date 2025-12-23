@@ -4,7 +4,7 @@
  * Source: https://www.tradingview.com/pine-script-reference/v6/
  *
  * Total: 232 constants
- * Generated: 2025-12-20
+ * Generated: 2025-12-23
  */
 
 //──────────────────────────────────────────────────────────
@@ -13,7 +13,7 @@
 export const ADJUSTMENT_CONSTANTS = new Set([
 	"adjustment.dividends",
 	"adjustment.none",
-	"adjustment.splits",
+	"adjustment.splits"
 ]);
 
 //──────────────────────────────────────────────────────────
@@ -22,7 +22,7 @@ export const ADJUSTMENT_CONSTANTS = new Set([
 export const ALERT_CONSTANTS = new Set([
 	"alert.freq_all",
 	"alert.freq_once_per_bar",
-	"alert.freq_once_per_bar_close",
+	"alert.freq_once_per_bar_close"
 ]);
 
 //──────────────────────────────────────────────────────────
@@ -31,7 +31,7 @@ export const ALERT_CONSTANTS = new Set([
 export const BACKADJUSTMENT_CONSTANTS = new Set([
 	"backadjustment.inherit",
 	"backadjustment.off",
-	"backadjustment.on",
+	"backadjustment.on"
 ]);
 
 //──────────────────────────────────────────────────────────
@@ -41,7 +41,7 @@ export const BARMERGE_CONSTANTS = new Set([
 	"barmerge.gaps_off",
 	"barmerge.gaps_on",
 	"barmerge.lookahead_off",
-	"barmerge.lookahead_on",
+	"barmerge.lookahead_on"
 ]);
 
 //──────────────────────────────────────────────────────────
@@ -64,7 +64,7 @@ export const COLOR_CONSTANTS = new Set([
 	"color.silver",
 	"color.teal",
 	"color.white",
-	"color.yellow",
+	"color.yellow"
 ]);
 
 //──────────────────────────────────────────────────────────
@@ -126,7 +126,7 @@ export const CURRENCY_CONSTANTS = new Set([
 	"currency.USDT",
 	"currency.VES",
 	"currency.VND",
-	"currency.ZAR",
+	"currency.ZAR"
 ]);
 
 //──────────────────────────────────────────────────────────
@@ -139,7 +139,7 @@ export const DAYOFWEEK_CONSTANTS = new Set([
 	"dayofweek.sunday",
 	"dayofweek.thursday",
 	"dayofweek.tuesday",
-	"dayofweek.wednesday",
+	"dayofweek.wednesday"
 ]);
 
 //──────────────────────────────────────────────────────────
@@ -151,7 +151,7 @@ export const DISPLAY_CONSTANTS = new Set([
 	"display.none",
 	"display.pane",
 	"display.price_scale",
-	"display.status_line",
+	"display.status_line"
 ]);
 
 //──────────────────────────────────────────────────────────
@@ -159,7 +159,7 @@ export const DISPLAY_CONSTANTS = new Set([
 //──────────────────────────────────────────────────────────
 export const DIVIDENDS_CONSTANTS = new Set([
 	"dividends.gross",
-	"dividends.net",
+	"dividends.net"
 ]);
 
 //──────────────────────────────────────────────────────────
@@ -168,7 +168,7 @@ export const DIVIDENDS_CONSTANTS = new Set([
 export const EARNINGS_CONSTANTS = new Set([
 	"earnings.actual",
 	"earnings.estimate",
-	"earnings.standardized",
+	"earnings.standardized"
 ]);
 
 //──────────────────────────────────────────────────────────
@@ -178,7 +178,7 @@ export const EXTEND_CONSTANTS = new Set([
 	"extend.both",
 	"extend.left",
 	"extend.none",
-	"extend.right",
+	"extend.right"
 ]);
 
 //──────────────────────────────────────────────────────────
@@ -186,7 +186,7 @@ export const EXTEND_CONSTANTS = new Set([
 //──────────────────────────────────────────────────────────
 export const FONT_CONSTANTS = new Set([
 	"font.family_default",
-	"font.family_monospace",
+	"font.family_monospace"
 ]);
 
 //──────────────────────────────────────────────────────────
@@ -197,7 +197,7 @@ export const FORMAT_CONSTANTS = new Set([
 	"format.mintick",
 	"format.percent",
 	"format.price",
-	"format.volume",
+	"format.volume"
 ]);
 
 //──────────────────────────────────────────────────────────
@@ -206,7 +206,7 @@ export const FORMAT_CONSTANTS = new Set([
 export const HLINE_CONSTANTS = new Set([
 	"hline.style_dashed",
 	"hline.style_dotted",
-	"hline.style_solid",
+	"hline.style_solid"
 ]);
 
 //──────────────────────────────────────────────────────────
@@ -233,7 +233,7 @@ export const LABEL_CONSTANTS = new Set([
 	"label.style_text_outline",
 	"label.style_triangledown",
 	"label.style_triangleup",
-	"label.style_xcross",
+	"label.style_xcross"
 ]);
 
 //──────────────────────────────────────────────────────────
@@ -245,7 +245,7 @@ export const LINE_CONSTANTS = new Set([
 	"line.style_arrow_right",
 	"line.style_dashed",
 	"line.style_dotted",
-	"line.style_solid",
+	"line.style_solid"
 ]);
 
 //──────────────────────────────────────────────────────────
@@ -256,7 +256,7 @@ export const LOCATION_CONSTANTS = new Set([
 	"location.absolute",
 	"location.belowbar",
 	"location.bottom",
-	"location.top",
+	"location.top"
 ]);
 
 //──────────────────────────────────────────────────────────
@@ -266,13 +266,16 @@ export const MATH_CONSTANTS = new Set([
 	"math.e",
 	"math.phi",
 	"math.pi",
-	"math.rphi",
+	"math.rphi"
 ]);
 
 //──────────────────────────────────────────────────────────
 // ORDER_CONSTANTS namespace (2 constants)
 //──────────────────────────────────────────────────────────
-export const ORDER_CONSTANTS = new Set(["order.ascending", "order.descending"]);
+export const ORDER_CONSTANTS = new Set([
+	"order.ascending",
+	"order.descending"
+]);
 
 //──────────────────────────────────────────────────────────
 // PLOT_CONSTANTS namespace (14 constants)
@@ -291,7 +294,7 @@ export const PLOT_CONSTANTS = new Set([
 	"plot.style_linebr",
 	"plot.style_stepline",
 	"plot.style_stepline_diamond",
-	"plot.style_steplinebr",
+	"plot.style_steplinebr"
 ]);
 
 //──────────────────────────────────────────────────────────
@@ -306,7 +309,7 @@ export const POSITION_CONSTANTS = new Set([
 	"position.middle_right",
 	"position.top_center",
 	"position.top_left",
-	"position.top_right",
+	"position.top_right"
 ]);
 
 //──────────────────────────────────────────────────────────
@@ -315,7 +318,7 @@ export const POSITION_CONSTANTS = new Set([
 export const SCALE_CONSTANTS = new Set([
 	"scale.left",
 	"scale.none",
-	"scale.right",
+	"scale.right"
 ]);
 
 //──────────────────────────────────────────────────────────
@@ -323,7 +326,7 @@ export const SCALE_CONSTANTS = new Set([
 //──────────────────────────────────────────────────────────
 export const SESSION_CONSTANTS = new Set([
 	"session.extended",
-	"session.regular",
+	"session.regular"
 ]);
 
 //──────────────────────────────────────────────────────────
@@ -332,7 +335,7 @@ export const SESSION_CONSTANTS = new Set([
 export const SETTLEMENT_AS_CLOSE_CONSTANTS = new Set([
 	"settlement_as_close.inherit",
 	"settlement_as_close.off",
-	"settlement_as_close.on",
+	"settlement_as_close.on"
 ]);
 
 //──────────────────────────────────────────────────────────
@@ -350,7 +353,7 @@ export const SHAPE_CONSTANTS = new Set([
 	"shape.square",
 	"shape.triangledown",
 	"shape.triangleup",
-	"shape.xcross",
+	"shape.xcross"
 ]);
 
 //──────────────────────────────────────────────────────────
@@ -362,7 +365,7 @@ export const SIZE_CONSTANTS = new Set([
 	"size.large",
 	"size.normal",
 	"size.small",
-	"size.tiny",
+	"size.tiny"
 ]);
 
 //──────────────────────────────────────────────────────────
@@ -370,7 +373,7 @@ export const SIZE_CONSTANTS = new Set([
 //──────────────────────────────────────────────────────────
 export const SPLITS_CONSTANTS = new Set([
 	"splits.denominator",
-	"splits.numerator",
+	"splits.numerator"
 ]);
 
 //──────────────────────────────────────────────────────────
@@ -384,7 +387,7 @@ export const STRATEGY_CONSTANTS = new Set([
 	"strategy.long",
 	"strategy.oca",
 	"strategy.percent_of_equity",
-	"strategy.short",
+	"strategy.short"
 ]);
 
 //──────────────────────────────────────────────────────────
@@ -400,13 +403,16 @@ export const TEXT_CONSTANTS = new Set([
 	"text.format_italic",
 	"text.format_none",
 	"text.wrap_auto",
-	"text.wrap_none",
+	"text.wrap_none"
 ]);
 
 //──────────────────────────────────────────────────────────
 // XLOC_CONSTANTS namespace (2 constants)
 //──────────────────────────────────────────────────────────
-export const XLOC_CONSTANTS = new Set(["xloc.bar_index", "xloc.bar_time"]);
+export const XLOC_CONSTANTS = new Set([
+	"xloc.bar_index",
+	"xloc.bar_time"
+]);
 
 //──────────────────────────────────────────────────────────
 // YLOC_CONSTANTS namespace (3 constants)
@@ -414,10 +420,14 @@ export const XLOC_CONSTANTS = new Set(["xloc.bar_index", "xloc.bar_time"]);
 export const YLOC_CONSTANTS = new Set([
 	"yloc.abovebar",
 	"yloc.belowbar",
-	"yloc.price",
+	"yloc.price"
 ]);
 
 //──────────────────────────────────────────────────────────
 // GLOBAL_CONSTANTS namespace (2 constants)
 //──────────────────────────────────────────────────────────
-export const GLOBAL_CONSTANTS = new Set(["true", "false"]);
+export const GLOBAL_CONSTANTS = new Set([
+	"true",
+	"false"
+]);
+

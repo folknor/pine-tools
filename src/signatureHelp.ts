@@ -1,5 +1,16 @@
 import * as vscode from "vscode";
-import { type PineItem, V6_FUNCTIONS, V6_NAMESPACES } from "../v6/v6-manual";
+import { type PineItem, V6_FUNCTIONS } from "../v6/v6-manual";
+import { V6_NAMESPACES, type NamespaceMember } from "../v6/v6-namespaces";
+
+// Helper to convert NamespaceMember to PineItem format
+function memberToPineItem(member: NamespaceMember): PineItem {
+	return {
+		description: member.description || "",
+		syntax: member.syntax,
+		returns: member.returns,
+		type: member.type,
+	};
+}
 
 interface ParsedParameter {
 	label: string;
@@ -95,8 +106,8 @@ export function createSignatureHelpProvider(): vscode.SignatureHelpProvider {
 			if (!funcItem && functionName.includes(".")) {
 				const [ns, fname] = functionName.split(".");
 				const nsData = V6_NAMESPACES[ns];
-				if (nsData?.functions) {
-					funcItem = nsData.functions[fname];
+				if (nsData?.functions?.[fname]) {
+					funcItem = memberToPineItem(nsData.functions[fname]);
 				}
 			}
 

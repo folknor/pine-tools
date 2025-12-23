@@ -1,5 +1,8 @@
 // Symbol Table for tracking variables, functions, and scopes
 import type { PineType } from "./typeSystem";
+import { V6_BUILTIN_VARIABLES } from "../../v6/v6-builtin-variables";
+import { NAMESPACE_NAMES } from "../../v6/v6-namespaces";
+import { V6_FUNCTIONS } from "../../v6/v6-manual";
 
 export interface Symbol {
 	name: string;
@@ -74,23 +77,14 @@ export class SymbolTable {
 	}
 
 	private initializeBuiltins(): void {
-		// Built-in variables - series<float>
-		const seriesFloatVars = [
-			"close",
-			"open",
-			"high",
-			"low",
-			"volume",
-			"hl2",
-			"hlc3",
-			"ohlc4",
-			"hlcc4",
-		];
+		// Built-in variables - from v6/ data layer
+		for (const [name, typeStr] of Object.entries(V6_BUILTIN_VARIABLES)) {
+			// Skip namespaced variables (they're accessed via namespace)
+			if (name.includes(".")) continue;
 
-		for (const name of seriesFloatVars) {
 			this.globalScope.define({
 				name,
-				type: "series<float>",
+				type: typeStr as PineType,
 				line: 0,
 				column: 0,
 				used: false,
@@ -98,77 +92,11 @@ export class SymbolTable {
 			});
 		}
 
-		// Built-in variables - series<int>
-		const seriesIntVars = [
-			"time",
-			"bar_index",
-			"last_bar_index",
-			// Date/time built-ins
-			"year",
-			"month",
-			"weekofyear",
-			"dayofmonth",
-			"dayofweek",
-			"hour",
-			"minute",
-			"second",
-			// Chart built-ins
-			"timenow",
-			"timestamp",
-		];
+		// Built-in functions - from v6/ data layer
+		for (const name of Object.keys(V6_FUNCTIONS)) {
+			// Skip namespaced functions (they're accessed via namespace)
+			if (name.includes(".")) continue;
 
-		for (const name of seriesIntVars) {
-			this.globalScope.define({
-				name,
-				type: "series<int>",
-				line: 0,
-				column: 0,
-				used: false,
-				kind: "variable",
-			});
-		}
-
-		// Special built-in variables (namespaces and special values)
-		const specialVars: Array<{ name: string; type: PineType }> = [
-			{ name: "na", type: "na" },
-			{ name: "syminfo", type: "unknown" },
-			{ name: "timeframe", type: "unknown" },
-			{ name: "barstate", type: "unknown" },
-		];
-
-		for (const { name, type } of specialVars) {
-			this.globalScope.define({
-				name,
-				type,
-				line: 0,
-				column: 0,
-				used: false,
-				kind: "variable",
-			});
-		}
-
-		// Built-in functions
-		const builtinFuncs = [
-			"plot",
-			"plotshape",
-			"plotchar",
-			"hline",
-			"bgcolor",
-			"barcolor",
-			"indicator",
-			"strategy",
-			"library",
-			"alert",
-			"alertcondition",
-			"label",
-			"line",
-			"box",
-			"table",
-			"nz",
-			"na",
-		];
-
-		for (const name of builtinFuncs) {
 			this.globalScope.define({
 				name,
 				type: "unknown",
@@ -180,8 +108,7 @@ export class SymbolTable {
 		}
 
 		// Keywords (treated as reserved symbols)
-		// Adding control flow keywords to prevent false "undefined variable" errors
-		// when the parser fails to properly handle certain syntax constructs
+		// These are language syntax, OK to hardcode per architecture principle
 		const keywords = [
 			"break",
 			"continue",
@@ -217,65 +144,8 @@ export class SymbolTable {
 			});
 		}
 
-		// Namespaces (treated as symbols)
-		// Complete list of all 48 Pine Script v6 built-in namespaces
-		// Source: v6/raw/v6-language-constructs.json
-		const namespaces = [
-			// Function namespaces
-			"array",
-			"box",
-			"chart",
-			"color",
-			"input",
-			"label",
-			"line",
-			"linefill",
-			"log",
-			"map",
-			"math",
-			"matrix",
-			"polyline",
-			"request",
-			"runtime",
-			"str",
-			"strategy",
-			"syminfo",
-			"ta",
-			"table",
-			"ticker",
-			"timeframe",
-
-			// Constant namespaces
-			// NOTE: 'dayofweek' namespace removed - conflicts with dayofweek variable
-			// Both exist in Pine Script but context determines which is used
-			"adjustment",
-			"alert",
-			"backadjustment",
-			"barmerge",
-			"currency",
-			"display",
-			"dividends",
-			"earnings",
-			"extend",
-			"font",
-			"format",
-			"hline",
-			"location",
-			"order",
-			"plot",
-			"position",
-			"scale",
-			"session",
-			"settlement_as_close",
-			"shape",
-			"size",
-			"splits",
-			"text",
-			"xloc",
-			"yloc",
-		];
-
-		for (const name of namespaces) {
+		// Namespaces - from v6/ data layer
+		for (const name of NAMESPACE_NAMES) {
 			this.globalScope.define({
 				name,
 				type: "unknown",

@@ -1,12 +1,25 @@
 import * as vscode from "vscode";
 import { PINE_FUNCTIONS_MERGED } from "../v6/parameter-requirements-merged";
-import { NAMESPACE_CONSTANTS } from "../v6/pine-constants-complete";
 import {
 	type PineItem,
 	V6_FUNCTIONS,
-	V6_NAMESPACES,
 	V6_VARIABLES,
 } from "../v6/v6-manual";
+import {
+	V6_NAMESPACES,
+	NAMESPACE_NAMES,
+	type NamespaceMember,
+} from "../v6/v6-namespaces";
+
+// Helper to convert NamespaceMember to PineItem format for createCompletionItem
+function memberToPineItem(member: NamespaceMember): PineItem {
+	return {
+		description: member.description || "",
+		syntax: member.syntax,
+		returns: member.returns,
+		type: member.type,
+	};
+}
 
 // Keywords for Pine Script v6
 export const V6_KEYWORDS = [
@@ -155,12 +168,12 @@ export function getNamespaceCompletions(
 
 	// Add functions from namespace
 	if (nsData.functions) {
-		Object.entries(nsData.functions).forEach(([name, item]) => {
+		Object.entries(nsData.functions).forEach(([name, member]) => {
 			items.push(
 				createCompletionItem(
 					name,
 					vscode.CompletionItemKind.Function,
-					item as PineItem,
+					memberToPineItem(member),
 				),
 			);
 		});
@@ -168,23 +181,25 @@ export function getNamespaceCompletions(
 
 	// Add variables from namespace
 	if (nsData.variables) {
-		Object.entries(nsData.variables).forEach(([name, item]) => {
+		Object.entries(nsData.variables).forEach(([name, member]) => {
 			items.push(
 				createCompletionItem(
 					name,
 					vscode.CompletionItemKind.Variable,
-					item as PineItem,
+					memberToPineItem(member),
 				),
 			);
 		});
 	}
 
-	// Add color constants for color namespace
-	if (namespace === "color" && nsData.constants) {
-		const constants = nsData.constants;
-		Object.keys(constants).forEach((name) => {
-			const item = createCompletionItem(name, vscode.CompletionItemKind.Color);
-			item.detail = constants[name];
+	// Add constants from namespace
+	if (nsData.constants) {
+		Object.entries(nsData.constants).forEach(([name, member]) => {
+			const kind = namespace === "color"
+				? vscode.CompletionItemKind.Color
+				: vscode.CompletionItemKind.Constant;
+			const item = createCompletionItem(name, kind);
+			item.detail = member.type || "const";
 			items.push(item);
 		});
 	}
@@ -218,12 +233,12 @@ export function getAllCompletions(): vscode.CompletionItem[] {
 	});
 
 	// Add namespace prefixes (for discoverability)
-	Object.keys(V6_NAMESPACES).forEach((ns) => {
+	NAMESPACE_NAMES.forEach((ns) => {
 		const item = new vscode.CompletionItem(
 			ns,
 			vscode.CompletionItemKind.Module,
 		);
-		item.detail = V6_NAMESPACES[ns].description || `${ns} namespace`;
+		item.detail = `${ns} namespace`;
 		item.insertText = new vscode.SnippetString(`${ns}.$1`);
 		item.command = {
 			command: "editor.action.triggerSuggest",
@@ -289,10 +304,11 @@ export function getConstantCompletions(
 	};
 
 	const ns = paramToNamespace[paramName];
-	if (ns && NAMESPACE_CONSTANTS[ns]) {
-		NAMESPACE_CONSTANTS[ns].forEach((constant) => {
+	const nsData = V6_NAMESPACES[ns];
+	if (nsData?.constants) {
+		Object.keys(nsData.constants).forEach((constantName) => {
 			const item = new vscode.CompletionItem(
-				`${ns}.${constant}`,
+				`${ns}.${constantName}`,
 				vscode.CompletionItemKind.Constant,
 			);
 			item.detail = `Constant for ${ns}`;
@@ -321,7 +337,10 @@ export function getHoverInfo(symbol: string): vscode.Hover | undefined {
 		const [ns, name] = symbol.split(".");
 		const nsData = V6_NAMESPACES[ns];
 		if (nsData) {
-			item = nsData.functions?.[name] || nsData.variables?.[name];
+			const member = nsData.functions?.[name] || nsData.variables?.[name];
+			if (member) {
+				item = memberToPineItem(member);
+			}
 		}
 	}
 

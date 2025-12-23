@@ -4,7 +4,7 @@
  * Source: https://www.tradingview.com/pine-script-reference/v6/
  *
  * Total: 27 standalone + 15 variable namespaces
- * Generated: 2025-12-20
+ * Generated: 2025-12-23
  */
 
 //──────────────────────────────────────────────────────────
@@ -37,7 +37,7 @@ export const STANDALONE_BUILTINS = new Set([
 	"timenow",
 	"volume",
 	"weekofyear",
-	"year",
+	"year"
 ]);
 
 //──────────────────────────────────────────────────────────
@@ -50,7 +50,7 @@ export const BARSTATE_BUILTINS = new Set([
 	"islast",
 	"islastconfirmedhistory",
 	"isnew",
-	"isrealtime",
+	"isrealtime"
 ]);
 
 //──────────────────────────────────────────────────────────
@@ -67,7 +67,7 @@ export const CHART_BUILTINS = new Set([
 	"is_renko",
 	"is_standard",
 	"left_visible_bar_time",
-	"right_visible_bar_time",
+	"right_visible_bar_time"
 ]);
 
 //──────────────────────────────────────────────────────────
@@ -76,7 +76,7 @@ export const CHART_BUILTINS = new Set([
 export const DIVIDENDS_BUILTINS = new Set([
 	"future_amount",
 	"future_ex_date",
-	"future_pay_date",
+	"future_pay_date"
 ]);
 
 //──────────────────────────────────────────────────────────
@@ -86,33 +86,44 @@ export const EARNINGS_BUILTINS = new Set([
 	"future_eps",
 	"future_period_end_time",
 	"future_revenue",
-	"future_time",
+	"future_time"
 ]);
 
 //──────────────────────────────────────────────────────────
 // LABEL_BUILTINS namespace (1 variables)
 //──────────────────────────────────────────────────────────
-export const LABEL_BUILTINS = new Set(["all"]);
+export const LABEL_BUILTINS = new Set([
+	"all"
+]);
 
 //──────────────────────────────────────────────────────────
 // LINE_BUILTINS namespace (1 variables)
 //──────────────────────────────────────────────────────────
-export const LINE_BUILTINS = new Set(["all"]);
+export const LINE_BUILTINS = new Set([
+	"all"
+]);
 
 //──────────────────────────────────────────────────────────
 // LINEFILL_BUILTINS namespace (1 variables)
 //──────────────────────────────────────────────────────────
-export const LINEFILL_BUILTINS = new Set(["all"]);
+export const LINEFILL_BUILTINS = new Set([
+	"all"
+]);
 
 //──────────────────────────────────────────────────────────
 // POLYLINE_BUILTINS namespace (1 variables)
 //──────────────────────────────────────────────────────────
-export const POLYLINE_BUILTINS = new Set(["all"]);
+export const POLYLINE_BUILTINS = new Set([
+	"all"
+]);
 
 //──────────────────────────────────────────────────────────
 // REQUEST_BUILTINS namespace (2 variables)
 //──────────────────────────────────────────────────────────
-export const REQUEST_BUILTINS = new Set(["security", "security_lower_tf"]);
+export const REQUEST_BUILTINS = new Set([
+	"security",
+	"security_lower_tf"
+]);
 
 //──────────────────────────────────────────────────────────
 // SESSION_BUILTINS namespace (7 variables)
@@ -124,7 +135,7 @@ export const SESSION_BUILTINS = new Set([
 	"islastbar_regular",
 	"ismarket",
 	"ispostmarket",
-	"ispremarket",
+	"ispremarket"
 ]);
 
 //──────────────────────────────────────────────────────────
@@ -165,7 +176,7 @@ export const STRATEGY_BUILTINS = new Set([
 	"position_avg_price",
 	"position_entry_name",
 	"position_size",
-	"wintrades",
+	"wintrades"
 ]);
 
 //──────────────────────────────────────────────────────────
@@ -211,7 +222,7 @@ export const SYMINFO_BUILTINS = new Set([
 	"tickerid",
 	"timezone",
 	"type",
-	"volumetype",
+	"volumetype"
 ]);
 
 //──────────────────────────────────────────────────────────
@@ -227,13 +238,15 @@ export const TA_BUILTINS = new Set([
 	"tr",
 	"vwap",
 	"wad",
-	"wvad",
+	"wvad"
 ]);
 
 //──────────────────────────────────────────────────────────
 // TABLE_BUILTINS namespace (1 variables)
 //──────────────────────────────────────────────────────────
-export const TABLE_BUILTINS = new Set(["all"]);
+export const TABLE_BUILTINS = new Set([
+	"all"
+]);
 
 //──────────────────────────────────────────────────────────
 // TIMEFRAME_BUILTINS namespace (11 variables)
@@ -249,5 +262,6 @@ export const TIMEFRAME_BUILTINS = new Set([
 	"isweekly",
 	"main_period",
 	"multiplier",
-	"period",
+	"period"
 ]);
+

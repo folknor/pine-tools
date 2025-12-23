@@ -51,6 +51,11 @@ function generateParameterRequirements(data) {
 	const functionSpecs = {};
 
 	Object.entries(functions).forEach(([name, details]) => {
+		// Skip null or undefined entries (failed scrapes)
+		if (!details) {
+			return;
+		}
+
 		const requiredParams = [];
 		const optionalParams = [];
 		const parameters = [];
@@ -259,6 +264,10 @@ function generateManualReference(data) {
 	const functionSpecs = {};
 
 	Object.entries(functions).forEach(([name, details]) => {
+		// Skip null or undefined entries (failed scrapes)
+		if (!details) {
+			return;
+		}
 		functionSpecs[name] = {
 			description: details.description || "",
 			syntax: details.syntax || `${name}()`,
@@ -301,6 +310,364 @@ export const V6_FUNCTIONS: Record<string, PineItem> = ${JSON.stringify(functionS
 	console.log(`✅ Generated: ${outputFile}`);
 }
 
+function generateNamespaces(data) {
+	console.log("🔄 Generating namespaces file...");
+
+	const functions = data.functions || {};
+	const variables = data.variables?.items || [];
+	const constants = data.constants?.items || [];
+
+	// Build namespaces structure
+	const namespaces = {};
+
+	// Add functions to namespaces
+	Object.entries(functions).forEach(([name, details]) => {
+		// Skip null or undefined entries (failed scrapes)
+		if (!details) {
+			return;
+		}
+		if (name.includes(".")) {
+			const [ns, ...rest] = name.split(".");
+			const funcName = rest.join(".");
+			if (!namespaces[ns]) {
+				namespaces[ns] = { functions: {}, variables: {}, constants: {} };
+			}
+			namespaces[ns].functions[funcName] = {
+				fullName: name,
+				syntax: details.syntax || `${name}()`,
+				returns: details.returns || "unknown",
+				description: details.description || "",
+			};
+		}
+	});
+
+	// Add variables to namespaces
+	variables.forEach((variable) => {
+		if (variable.includes(".")) {
+			const [ns, ...rest] = variable.split(".");
+			const varName = rest.join(".");
+			if (!namespaces[ns]) {
+				namespaces[ns] = { functions: {}, variables: {}, constants: {} };
+			}
+			namespaces[ns].variables[varName] = {
+				fullName: variable,
+				type: inferVariableType(variable),
+			};
+		}
+	});
+
+	// Add constants to namespaces
+	constants.forEach((constant) => {
+		if (constant.includes(".")) {
+			const [ns, ...rest] = constant.split(".");
+			const constName = rest.join(".");
+			if (!namespaces[ns]) {
+				namespaces[ns] = { functions: {}, variables: {}, constants: {} };
+			}
+			namespaces[ns].constants[constName] = {
+				fullName: constant,
+				type: inferConstantType(ns, constant),
+			};
+		}
+	});
+
+	const content = `/**
+ * Pine Script v6 Namespaces
+ * Auto-generated - provides organized namespace data for IntelliSense
+ * Generated: ${new Date().toISOString()}
+ */
+
+export interface NamespaceMember {
+	fullName: string;
+	syntax?: string;
+	returns?: string;
+	type?: string;
+	description?: string;
+}
+
+export interface Namespace {
+	functions: Record<string, NamespaceMember>;
+	variables: Record<string, NamespaceMember>;
+	constants: Record<string, NamespaceMember>;
+}
+
+export const V6_NAMESPACES: Record<string, Namespace> = ${JSON.stringify(namespaces, null, 1)};
+
+// Helper to get all namespace names
+export const NAMESPACE_NAMES = ${JSON.stringify(Object.keys(namespaces).sort())};
+`;
+
+	const outputFile = path.join(OUTPUT_DIR, "v6-namespaces.ts");
+	fs.writeFileSync(outputFile, content, "utf8");
+	console.log(`✅ Generated: ${outputFile} (${Object.keys(namespaces).length} namespaces)`);
+}
+
+function generateBuiltinVariablesTyped(data) {
+	console.log("🔄 Generating typed built-in variables file...");
+
+	const variables = data.variables?.items || [];
+
+	const typedVars = {};
+	variables.forEach((variable) => {
+		typedVars[variable] = inferVariableType(variable);
+	});
+
+	const content = `/**
+ * Pine Script v6 Built-in Variables with Types
+ * Auto-generated with inferred types
+ * Generated: ${new Date().toISOString()}
+ */
+
+export const V6_BUILTIN_VARIABLES: Record<string, string> = ${JSON.stringify(typedVars, null, 1)};
+
+// Categorized for quick lookups
+export const SERIES_FLOAT_VARS = new Set(${JSON.stringify(
+		variables.filter((v) => inferVariableType(v) === "series<float>")
+	)});
+
+export const SERIES_INT_VARS = new Set(${JSON.stringify(
+		variables.filter((v) => inferVariableType(v) === "series<int>")
+	)});
+
+export const SERIES_BOOL_VARS = new Set(${JSON.stringify(
+		variables.filter((v) => inferVariableType(v) === "series<bool>")
+	)});
+
+export const SERIES_STRING_VARS = new Set(${JSON.stringify(
+		variables.filter((v) => inferVariableType(v) === "series<string>")
+	)});
+`;
+
+	const outputFile = path.join(OUTPUT_DIR, "v6-builtin-variables.ts");
+	fs.writeFileSync(outputFile, content, "utf8");
+	console.log(`✅ Generated: ${outputFile} (${variables.length} variables)`);
+}
+
+function generateNamespaceProperties(data) {
+	console.log("🔄 Generating namespace properties file...");
+
+	const constants = data.constants?.items || [];
+	const variables = data.variables?.items || [];
+
+	const properties = {};
+
+	// Add constants with their types
+	constants.forEach((constant) => {
+		properties[constant] = inferConstantType(constant.split(".")[0], constant);
+	});
+
+	// Add namespaced variables
+	variables.forEach((variable) => {
+		if (variable.includes(".")) {
+			properties[variable] = inferVariableType(variable);
+		}
+	});
+
+	const content = `/**
+ * Pine Script v6 Namespace Properties
+ * Maps fully-qualified names to their types
+ * Generated: ${new Date().toISOString()}
+ */
+
+export const NAMESPACE_PROPERTIES: Record<string, string> = ${JSON.stringify(properties, null, 1)};
+
+// Get type for a property (returns undefined if not found)
+export function getPropertyType(name: string): string | undefined {
+	return NAMESPACE_PROPERTIES[name];
+}
+`;
+
+	const outputFile = path.join(OUTPUT_DIR, "v6-namespace-properties.ts");
+	fs.writeFileSync(outputFile, content, "utf8");
+	console.log(`✅ Generated: ${outputFile} (${Object.keys(properties).length} properties)`);
+}
+
+function generateFunctionMetadata(data) {
+	console.log("🔄 Generating function metadata file...");
+
+	const functions = data.functions || {};
+
+	const metadata = {};
+
+	// Top-level only functions (can only be called at script root)
+	const topLevelOnly = [
+		"indicator", "strategy", "library",
+		"plot", "plotshape", "plotchar", "plotcandle", "plotbar", "plotarrow",
+		"bgcolor", "barcolor", "fill", "hline",
+		"alertcondition",
+	];
+
+	// Series-returning functions (return series types)
+	const seriesReturning = [
+		"ta.sma", "ta.ema", "ta.wma", "ta.vwma", "ta.rma", "ta.swma",
+		"ta.rsi", "ta.macd", "ta.stoch", "ta.cci", "ta.atr", "ta.tr",
+		"ta.highest", "ta.lowest", "ta.highestbars", "ta.lowestbars",
+		"ta.crossover", "ta.crossunder", "ta.cross",
+		"ta.change", "ta.mom", "ta.dev", "ta.variance", "ta.stdev",
+		"ta.correlation", "ta.linreg", "ta.median", "ta.mode",
+		"ta.percentile_linear_interpolation", "ta.percentile_nearest_rank",
+		"ta.percentrank", "ta.pivothigh", "ta.pivotlow",
+		"ta.sar", "ta.supertrend",
+		"ta.vwap", "ta.bb", "ta.bbw", "ta.kc", "ta.kcw", "ta.dmi",
+		"math.abs", "math.max", "math.min", "math.avg",
+		"math.sum", "math.log", "math.log10", "math.exp",
+		"math.sqrt", "math.pow", "math.round", "math.floor", "math.ceil",
+		"math.sign", "math.sin", "math.cos", "math.tan", "math.asin", "math.acos", "math.atan",
+		"request.security", "request.security_lower_tf",
+	];
+
+	// Variadic functions (accept variable number of arguments)
+	const variadic = [
+		"math.max", "math.min", "math.avg", "math.sum",
+		"array.from", "str.format",
+	];
+
+	Object.keys(functions).forEach((name) => {
+		const flags = {};
+
+		if (topLevelOnly.includes(name)) flags.topLevelOnly = true;
+		if (seriesReturning.includes(name)) flags.seriesReturning = true;
+		if (variadic.includes(name)) flags.variadic = true;
+
+		// Only add if has any flags
+		if (Object.keys(flags).length > 0) {
+			metadata[name] = flags;
+		}
+	});
+
+	const content = `/**
+ * Pine Script v6 Function Metadata
+ * Flags for special function behaviors
+ * Generated: ${new Date().toISOString()}
+ */
+
+export interface FunctionFlags {
+	topLevelOnly?: boolean;    // Can only be called at script root
+	seriesReturning?: boolean; // Returns a series type
+	variadic?: boolean;        // Accepts variable number of arguments
+}
+
+export const FUNCTION_METADATA: Record<string, FunctionFlags> = ${JSON.stringify(metadata, null, 1)};
+
+// Quick lookup helpers
+export const TOP_LEVEL_ONLY_FUNCTIONS = new Set(${JSON.stringify(topLevelOnly)});
+export const SERIES_RETURNING_FUNCTIONS = new Set(${JSON.stringify(seriesReturning)});
+export const VARIADIC_FUNCTIONS = new Set(${JSON.stringify(variadic)});
+`;
+
+	const outputFile = path.join(OUTPUT_DIR, "v6-function-metadata.ts");
+	fs.writeFileSync(outputFile, content, "utf8");
+	console.log(`✅ Generated: ${outputFile}`);
+}
+
+// Helper function to infer variable types based on name patterns
+function inferVariableType(name) {
+	// Price data - series<float>
+	if (["close", "open", "high", "low", "hl2", "hlc3", "ohlc4", "hlcc4"].includes(name)) {
+		return "series<float>";
+	}
+	if (["volume", "ask", "bid"].includes(name)) {
+		return "series<float>";
+	}
+
+	// Time data - series<int>
+	if (["time", "time_close", "time_tradingday", "timenow"].includes(name)) {
+		return "series<int>";
+	}
+	if (["bar_index", "last_bar_index"].includes(name)) {
+		return "series<int>";
+	}
+	if (["dayofweek", "dayofmonth", "month", "year", "hour", "minute", "second", "weekofyear"].includes(name)) {
+		return "series<int>";
+	}
+
+	// Time-related - int
+	if (name === "last_bar_time") return "series<int>";
+
+	// Boolean variables
+	if (name === "na") return "na";
+
+	// Namespaced variables
+	if (name.startsWith("barstate.")) return "series<bool>";
+	if (name.startsWith("chart.")) return "simple<string>";
+	if (name.startsWith("session.")) return "simple<bool>";
+	if (name.startsWith("syminfo.")) {
+		if (name.includes("mintick") || name.includes("pointvalue")) return "simple<float>";
+		return "simple<string>";
+	}
+	if (name.startsWith("timeframe.")) return "simple<string>";
+	if (name.startsWith("strategy.")) {
+		if (name.includes("position_size") || name.includes("equity") || name.includes("openprofit")) {
+			return "series<float>";
+		}
+		return "series<int>";
+	}
+
+	// Default to series<float> for unknown
+	return "series<float>";
+}
+
+// Helper function to infer constant types based on namespace
+function inferConstantType(namespace, fullName) {
+	switch (namespace) {
+		case "color":
+			return "color";
+		case "shape":
+			return "string"; // shape.* constants are shape strings
+		case "plot":
+			return "plot_style";
+		case "hline":
+			return "hline_style";
+		case "line":
+			return "line_style";
+		case "label":
+			return "label_style";
+		case "size":
+			return "string"; // size.* constants
+		case "location":
+			return "string";
+		case "position":
+			return "string";
+		case "display":
+			return "int"; // display flags
+		case "extend":
+			return "string";
+		case "xloc":
+		case "yloc":
+			return "string";
+		case "alert":
+			return "string";
+		case "adjustment":
+			return "adjustment";
+		case "barmerge":
+			return "barmerge";
+		case "currency":
+			return "string";
+		case "dayofweek":
+			return "int";
+		case "earnings":
+		case "dividends":
+		case "splits":
+			return "string";
+		case "format":
+			return "string";
+		case "order":
+			return "string";
+		case "scale":
+			return "scale";
+		case "session":
+			return "string";
+		case "strategy":
+			return "string";
+		case "text":
+			return "string";
+		case "timezone":
+			return "string";
+		default:
+			return "const";
+	}
+}
+
 function generateAllFiles() {
 	console.log("🚀 Starting Pine Script v6 TypeScript generation...");
 	console.log(`📁 Input: ${DETAILS_FILE}`);
@@ -327,6 +694,12 @@ function generateAllFiles() {
 	generateBuiltins(data);
 	generateManualReference(data);
 
+	// New generators for Phase 1 refactoring
+	generateNamespaces(data);
+	generateBuiltinVariablesTyped(data);
+	generateNamespaceProperties(data);
+	generateFunctionMetadata(data);
+
 	console.log("✅ All TypeScript files generated successfully!");
 	console.log(`📂 Location: ${OUTPUT_DIR}`);
 }
@@ -343,4 +716,8 @@ module.exports = {
 	generateConstants,
 	generateBuiltins,
 	generateManualReference,
+	generateNamespaces,
+	generateBuiltinVariablesTyped,
+	generateNamespaceProperties,
+	generateFunctionMetadata,
 };

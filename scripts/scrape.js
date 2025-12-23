@@ -18,11 +18,14 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const BASE_URL = "https://www.tradingview.com/pine-script-reference/v6/";
+
+// Parse arguments, filtering out flags
+const positionalArgs = process.argv.slice(2).filter(arg => !arg.startsWith('-'));
 const INPUT_FILE =
-	process.argv[2] ||
+	positionalArgs[0] ||
 	path.join(__dirname, "../v6/raw/v6-language-constructs.json");
 const OUTPUT_FILE =
-	process.argv[3] || path.join(__dirname, "../v6/raw/complete-v6-details.json");
+	positionalArgs[1] || path.join(__dirname, "../v6/raw/complete-v6-details.json");
 const CACHE_DIR = path.join(__dirname, "../.cache/function-details");
 const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
@@ -73,19 +76,13 @@ function saveToCache(functionName, data) {
 	}
 }
 
-async function scrapeFunctionDetails(functionName, useCache = true) {
-	// Check cache first
-	if (useCache) {
-		const cachedData = getCachedData(functionName);
-		if (cachedData) {
-			return cachedData;
-		}
-	}
+// Shared browser instance for optimized scraping
+let sharedBrowser = null;
+let sharedPage = null;
 
-	let browser;
-	try {
-		// Launch Puppeteer with optimized settings
-		browser = await puppeteer.launch({
+async function getSharedBrowser() {
+	if (!sharedBrowser) {
+		sharedBrowser = await puppeteer.launch({
 			headless: true,
 			args: [
 				"--no-sandbox",
@@ -95,12 +92,18 @@ async function scrapeFunctionDetails(functionName, useCache = true) {
 				"--disable-features=IsolateOrigins,site-per-process",
 			],
 		});
+	}
+	return sharedBrowser;
+}
 
-		const page = await browser.newPage();
+async function getSharedPage() {
+	if (!sharedPage) {
+		const browser = await getSharedBrowser();
+		sharedPage = await browser.newPage();
 
-		// Optimize page for speed
-		await page.setRequestInterception(true);
-		page.on("request", (request) => {
+		// Optimize page for speed - block images, fonts, etc.
+		await sharedPage.setRequestInterception(true);
+		sharedPage.on("request", (request) => {
 			const resourceType = request.resourceType();
 			if (["image", "stylesheet", "font", "media"].includes(resourceType)) {
 				request.abort();
@@ -109,19 +112,71 @@ async function scrapeFunctionDetails(functionName, useCache = true) {
 			}
 		});
 
-		// Construct function URL (e.g., https://www.tradingview.com/pine-script-reference/v6/fun_ta_sma.html)
-		const functionUrl = `${BASE_URL}fun_${functionName.replace(".", "_").replace(/[()]/g, "")}.html`;
-
-		console.log(`🔍 Scraping: ${functionName} -> ${functionUrl}`);
-
-		await page.goto(functionUrl, {
+		// Initial navigation to load the SPA
+		console.log("🌐 Loading TradingView reference page...");
+		await sharedPage.goto(BASE_URL, {
 			waitUntil: "networkidle2",
-			timeout: 30000,
+			timeout: 60000,
 		});
 
-		await page.waitForNetworkIdle();
+		// Wait for initial content
+		await sharedPage.waitForFunction(() => {
+			const content = document.body.innerText;
+			return content.length > 1000 && !content.includes("Loading");
+		}, { timeout: 15000 }).catch(() => {
+			console.log("⏳ Initial page load timeout, continuing...");
+		});
 
-		const details = await page.evaluate(() => {
+		console.log("✅ SPA loaded, ready for hash navigation");
+	}
+	return sharedPage;
+}
+
+async function closeSharedBrowser() {
+	if (sharedPage) {
+		sharedPage = null;
+	}
+	if (sharedBrowser) {
+		await sharedBrowser.close();
+		sharedBrowser = null;
+	}
+}
+
+async function scrapeFunctionDetails(functionName, useCache = true) {
+	// Check cache first
+	if (useCache) {
+		const cachedData = getCachedData(functionName);
+		if (cachedData) {
+			return cachedData;
+		}
+	}
+
+	try {
+		const page = await getSharedPage();
+
+		// Navigate via hash change (much faster than full page load)
+		const funcNameClean = functionName.replace(/[()]/g, "");
+		const hashTarget = `fun_${funcNameClean}`;
+
+		// Use hash navigation for speed
+		await page.evaluate((hash) => {
+			window.location.hash = hash;
+		}, hashTarget);
+
+		// Brief wait for hash navigation and content update
+		await new Promise(resolve => setTimeout(resolve, 300));
+
+		// Wait for the specific element to be present
+		await page.waitForFunction((funcName) => {
+			const el = document.getElementById(`fun_${funcName}`) ||
+				document.getElementById(`var_${funcName}`) ||
+				document.getElementById(`type_${funcName}`);
+			return el !== null;
+		}, { timeout: 5000 }, funcNameClean).catch(() => {
+			// Element not found via ID, will try fallback
+		});
+
+		const details = await page.evaluate((funcName) => {
 			const result = {
 				name: "",
 				syntax: "",
@@ -133,171 +188,132 @@ async function scrapeFunctionDetails(functionName, useCache = true) {
 				category: "",
 			};
 
-			// Extract function name from page title or header
-			const titleElement = document.querySelector(
-				"h1, .function-name, .page-title, .title",
-			);
-			if (titleElement) {
-				result.name = titleElement.textContent?.trim() || "";
-			}
+			// Find the specific function element by ID
+			// TradingView uses IDs like "fun_ta.sma", "var_close", "type_array"
+			const funcElement = document.getElementById(`fun_${funcName}`) ||
+				document.getElementById(`var_${funcName}`) ||
+				document.getElementById(`type_${funcName}`) ||
+				document.getElementById(`kw_${funcName}`) ||
+				document.getElementById(`op_${funcName}`);
 
-			// Extract syntax
-			const syntaxElements = [
-				".function-syntax",
-				".syntax",
-				"code.syntax",
-				".function-signature",
-				"pre code",
-			];
-
-			for (const selector of syntaxElements) {
-				const element = document.querySelector(selector);
-				if (element) {
-					result.syntax = element.textContent?.trim() || "";
-					break;
+			if (!funcElement) {
+				// Try to find by searching all items
+				const items = document.querySelectorAll('.tv-pine-reference-item');
+				for (const item of items) {
+					const header = item.querySelector('.tv-pine-reference-item__header');
+					if (header && header.textContent.replace(/[()]/g, '').trim() === funcName) {
+						return extractFromElement(item);
+					}
 				}
+				return result;
 			}
 
-			// Extract description
-			const descElements = [
-				".function-description",
-				".description",
-				".intro",
-				".summary",
-				"p:first-child",
-				".function-overview",
-			];
+			function extractFromElement(element) {
+				const res = {
+					name: "",
+					syntax: "",
+					description: "",
+					parameters: [],
+					returns: "",
+					example: "",
+					namespace: "",
+					category: "",
+				};
 
-			for (const selector of descElements) {
-				const element = document.querySelector(selector);
-				if (element?.textContent?.trim()) {
-					result.description = element.textContent.trim();
-					break;
+				// Extract name from header
+				const headerEl = element.querySelector('.tv-pine-reference-item__header');
+				if (headerEl) {
+					res.name = headerEl.textContent?.trim() || "";
 				}
-			}
 
-			// Extract parameters
-			const paramElements = [
-				".parameter-list .parameter",
-				".params .param",
-				".arguments .argument",
-				"table.params tr",
-				".function-parameters tr",
-			];
+				// Extract syntax (contains signature like "ta.sma(source, length) → series float")
+				const syntaxEl = element.querySelector('.tv-pine-reference-item__syntax');
+				if (syntaxEl) {
+					res.syntax = syntaxEl.textContent?.trim() || "";
+					// Extract return type from syntax
+					const returnMatch = res.syntax.match(/→\s*(.+)$/);
+					if (returnMatch) {
+						res.returns = returnMatch[1].trim();
+					}
+				}
 
-			for (const selector of paramElements) {
-				const elements = document.querySelectorAll(selector);
-				if (elements.length > 0) {
-					elements.forEach((row) => {
-						const nameEl = row.querySelector(
-							".param-name, .name, td:first-child, th:first-child",
-						);
-						const typeEl = row.querySelector(
-							".param-type, .type, td:nth-child(2), th:nth-child(2)",
-						);
-						const descEl = row.querySelector(
-							".param-description, .description, td:last-child, td:nth-child(3)",
-						);
+				// Extract description (first .tv-text that's not an argument)
+				const textElements = element.querySelectorAll('.tv-pine-reference-item__text.tv-text');
+				if (textElements.length > 0) {
+					// First text element (before Arguments) is the description
+					const firstText = textElements[0];
+					if (!firstText.querySelector('.tv-pine-reference-item__arg-type')) {
+						res.description = firstText.textContent?.trim() || "";
+					}
+				}
 
-						if (nameEl?.textContent?.trim()) {
-							const param = {
-								name: nameEl.textContent.trim(),
-								type: typeEl?.textContent?.trim() || "",
-								description: descEl?.textContent?.trim() || "",
-								optional: false,
-								required: true,
-							};
+				// Extract parameters from argument descriptions
+				// Format: <span class="tv-pine-reference-item__arg-type">source (series int/float) </span>Series of values...
+				const argElements = element.querySelectorAll('.tv-pine-reference-item__arg-type');
+				argElements.forEach((argEl) => {
+					const argText = argEl.textContent?.trim() || "";
+					// Parse "source (series int/float)" format
+					const match = argText.match(/^(\w+)\s*\(([^)]+)\)/);
+					if (match) {
+						const paramName = match[1];
+						const paramType = match[2];
+						// Get description from parent element (rest of text after the span)
+						const parentText = argEl.parentElement?.textContent?.trim() || "";
+						const descText = parentText.replace(argText, '').trim();
 
-							// Check if parameter is optional (contains ?, brackets, or specific text)
-							const paramText =
-								nameEl.textContent + (descEl?.textContent || "");
-							if (
-								paramText.includes("?") ||
-								paramText.includes("optional") ||
-								result.syntax.includes(`[${param.name}]`) ||
-								result.syntax.includes(`${param.name}?`)
-							) {
-								param.optional = true;
-								param.required = false;
+						const param = {
+							name: paramName,
+							type: paramType,
+							description: descText,
+							optional: argText.toLowerCase().includes('optional') || paramName.startsWith('['),
+							required: !argText.toLowerCase().includes('optional') && !paramName.startsWith('['),
+						};
+						res.parameters.push(param);
+					}
+				});
+
+				// If no parameters found from arg-type elements, try to extract from syntax
+				// This handles variadic functions like math.max(number0, number1, ...) → const int
+				if (res.parameters.length === 0 && res.syntax) {
+					const syntaxMatch = res.syntax.match(/^[^(]+\(([^)]+)\)/);
+					if (syntaxMatch) {
+						const paramsStr = syntaxMatch[1];
+						// Parse comma-separated params, handling variadic "..."
+						const parts = paramsStr.split(/,\s*/);
+						parts.forEach((part) => {
+							const trimmed = part.trim();
+							if (trimmed === '...') {
+								// Mark as variadic in metadata
+								res.variadic = true;
+							} else if (trimmed) {
+								res.parameters.push({
+									name: trimmed,
+									type: 'unknown',
+									description: '',
+									optional: trimmed.startsWith('[') || trimmed.endsWith('?'),
+									required: !trimmed.startsWith('[') && !trimmed.endsWith('?'),
+								});
 							}
-
-							result.parameters.push(param);
-						}
-					});
-					break;
+						});
+					}
 				}
+
+				// Extract example
+				const exampleEl = element.querySelector('.tv-pine-reference-item__example code');
+				if (exampleEl) {
+					res.example = exampleEl.textContent?.trim() || "";
+				}
+
+				// Extract namespace from function name
+				if (res.name.includes('.')) {
+					res.namespace = res.name.split('.')[0];
+				}
+
+				return res;
 			}
 
-			// Extract return type
-			const returnElements = [
-				".return-type",
-				".returns",
-				".function-return",
-				".return-description",
-			];
-
-			for (const selector of returnElements) {
-				const element = document.querySelector(selector);
-				if (element) {
-					result.returns = element.textContent?.trim() || "";
-					break;
-				}
-			}
-
-			// If no explicit return type found, try to extract from syntax
-			if (!result.returns && result.syntax.includes("→")) {
-				const match = result.syntax.match(/→\s*([^\n]+)/);
-				if (match) {
-					result.returns = match[1].trim();
-				}
-			}
-
-			// Extract example
-			const exampleElements = [
-				".example-code",
-				".example pre code",
-				".code-example pre code",
-				".usage-example code",
-			];
-
-			for (const selector of exampleElements) {
-				const element = document.querySelector(selector);
-				if (element?.textContent?.trim()) {
-					result.example = element.textContent.trim();
-					break;
-				}
-			}
-
-			// Extract namespace and category from URL or breadcrumbs
-			if (window.location.href.includes("/fun_")) {
-				const urlParts = window.location.href.split("/");
-				const filename = urlParts[urlParts.length - 1];
-				const namespaceMatch = filename.match(/fun_(.+?)_/);
-				if (namespaceMatch) {
-					result.namespace = namespaceMatch[1];
-				}
-			}
-
-			// Extract category from breadcrumbs or sidebar
-			const categoryElements = [
-				".breadcrumb a:last-child",
-				".category",
-				".section",
-				".sidebar .active",
-			];
-
-			for (const selector of categoryElements) {
-				const element = document.querySelector(selector);
-				if (element?.textContent?.trim()) {
-					result.category = element.textContent.trim();
-					break;
-				}
-			}
-
-			return result;
-		});
-
-		await browser.close();
+			return extractFromElement(funcElement);
+		}, funcNameClean);
 
 		// Save to cache if successful
 		if (details) {
@@ -307,9 +323,6 @@ async function scrapeFunctionDetails(functionName, useCache = true) {
 		return details;
 	} catch (error) {
 		console.log(`⚠️  Failed to scrape ${functionName}: ${error.message}`);
-		if (browser) {
-			await browser.close();
-		}
 		return null;
 	}
 }
@@ -389,17 +402,19 @@ async function scrapeAllFunctions(forceRefresh = false) {
 
 	// Scrape new/updated functions
 	if (functionsToScrape.length > 0) {
-		console.log("🔍 Scraping new/updated functions...");
+		console.log("🔍 Scraping new/updated functions (optimized with shared browser)...");
 
-		// Scrape functions in smaller batches to avoid memory issues
-		const batchSize = 5; // Smaller batch size for Puppeteer
+		// Use larger batches since we're using shared browser with hash navigation
+		const batchSize = 20;
+		const startTime = Date.now();
+
 		for (let i = 0; i < functionsToScrape.length; i += batchSize) {
 			const batch = functionsToScrape.slice(i, i + batchSize);
-			console.log(
-				`📦 Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(functionsToScrape.length / batchSize)}`,
-			);
+			const batchNum = Math.floor(i / batchSize) + 1;
+			const totalBatches = Math.ceil(functionsToScrape.length / batchSize);
+			console.log(`📦 Processing batch ${batchNum}/${totalBatches} (${batch.length} functions)`);
 
-			// Process batch sequentially to avoid resource conflicts
+			// Process batch sequentially (hash navigation is already fast)
 			for (const funcName of batch) {
 				const details = await scrapeFunctionDetails(funcName, !forceRefresh);
 				if (details) {
@@ -408,14 +423,24 @@ async function scrapeAllFunctions(forceRefresh = false) {
 				} else {
 					allDetails.metadata.failedScrapes++;
 				}
-				// Add delay between requests
-				await new Promise((resolve) => setTimeout(resolve, 1000));
+				// Minimal delay - hash navigation is very fast
+				await new Promise((resolve) => setTimeout(resolve, 100));
 			}
 
-			// Longer delay between batches
-			console.log("  Waiting 3 seconds between batches...");
-			await new Promise((resolve) => setTimeout(resolve, 3000));
+			// Progress update
+			const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+			const completed = Math.min(i + batchSize, functionsToScrape.length);
+			const rate = (completed / elapsed * 60).toFixed(1);
+			console.log(`  ✓ Progress: ${completed}/${functionsToScrape.length} (${elapsed}s elapsed, ~${rate} funcs/min)`);
+
+			// Small delay between batches to be nice to the server
+			if (i + batchSize < functionsToScrape.length) {
+				await new Promise((resolve) => setTimeout(resolve, 500));
+			}
 		}
+
+		// Close shared browser when done
+		await closeSharedBrowser();
 	}
 
 	// Ensure output directory exists
