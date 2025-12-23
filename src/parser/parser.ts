@@ -75,6 +75,11 @@ export class Parser {
 			this.advance();
 		}
 
+		// If we've reached EOF after skipping newlines, there's nothing left to parse
+		if (this.isAtEnd()) {
+			return null;
+		}
+
 		// Skip annotations
 		if (this.check(TokenType.ANNOTATION)) {
 			this.advance();

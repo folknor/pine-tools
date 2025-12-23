@@ -70,16 +70,16 @@ pine-lint <file.pine>              # TradingView's linter (for comparison)
 Ran comparison of our CLI against TradingView's `pine-lint` on 176 Pine Script files.
 
 **Results (After All Fixes - 2025-12-23):**
-| Metric | Initial | After Built-ins | After Namespace Props |
-|--------|---------|-----------------|----------------------|
-| Total files | 176 | 176 | 176 |
-| Matches | 36 (20.5%) | 39 (22.2%) | 42 (23.9%) |
-| Mismatches | 140 (79.5%) | 137 (77.8%) | 134 (76.1%) |
+| Metric | Initial | After Built-ins | After Namespace Props | After EOF Fix |
+|--------|---------|-----------------|----------------------|---------------|
+| Total files | 176 | 176 | 176 | 176 |
+| Matches | 36 (20.5%) | 39 (22.2%) | 42 (23.9%) | 43 (24.4%) |
+| Mismatches | 140 (79.5%) | 137 (77.8%) | 134 (76.1%) | 133 (75.6%) |
 
-**Remaining Discrepancies (141 files out of 176, 80.1% mismatch rate):**
+**Remaining Discrepancies (133 files out of 176, 75.6% mismatch rate):**
 | Error Type | Files | Occurrences | Notes |
 |------------|-------|-------------|-------|
-| Unexpected token errors | 149 | ~406 | EOF handling (302), commas (61), brackets (12), `=>` (11) |
+| Unexpected token errors | ~100 | ~335 | newlines (200), commas (61), brackets (12), `=>` (11), etc. |
 | Type mismatch errors | 85 | ~200+ | Type inference gaps, 'unknown' cascading, operator/arg mismatches |
 | Undefined variable | 30 | ~30+ | Scope issues (e.g., 'src' param not in scope) |
 | Missing required param | 13 | ~11 | `line.new` width param, etc. |
@@ -90,7 +90,8 @@ Ran comparison of our CLI against TradingView's `pine-lint` on 176 Pine Script f
 | Multiline string errors | 47 | Pine Script doesn't support multiline strings - these are REAL errors. pine-lint stops at first error, we continue. Both agree files are invalid. |
 
 **Error Pattern Breakdown:**
-- `Unexpected token: ` (blank/EOF): 302
+- ~~`Unexpected token: ` (blank/EOF): 302~~ ✅ **FIXED** (2025-12-23)
+- `Unexpected token: \n` (newline): 200 - parser continuation issues
 - `Unexpected token: ,`: 61
 - `Unexpected token: =>`: 11 (some lambda cases remain)
 - `Type mismatch: cannot apply X to Y and unknown`: ~100+
@@ -102,7 +103,7 @@ node dev-tools/analysis/compare-validation-results.js
 ```
 Results saved to: `plan/pine-lint-vs-cli-differences/`
 
-**Next Priority:** Fix EOF/blank token handling to reduce "Unexpected token: " errors (~302).
+**Next Priority:** Fix newline continuation handling to reduce "Unexpected token: \n" errors (~200).
 
 ---
 
@@ -136,11 +137,11 @@ These issues were identified while fixing test files. All skipped tests have `//
 
 ### Priority 2: Parser Issues (10 skipped tests)
 
-| Issue | Impact | Location |
-|-------|--------|----------|
-| Library/export declarations not parsed | Library scripts fail | `src/parser/parser.ts` |
-| Type definitions not parsed | Type scripts fail | `src/parser/parser.ts` |
-| EOF handling reports phantom error on valid files | ~429 false errors | `src/parser/parser.ts` |
+| Issue | Impact | Location | Status |
+|-------|--------|----------|--------|
+| Library/export declarations not parsed | Library scripts fail | `src/parser/parser.ts` | |
+| Type definitions not parsed | Type scripts fail | `src/parser/parser.ts` | |
+| ~~EOF handling reports phantom error on valid files~~ | ~~~429 false errors~~ | `src/parser/parser.ts` | ✅ **FIXED** |
 
 ### Priority 3: Validator Issues (9 skipped tests)
 
