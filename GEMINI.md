@@ -107,17 +107,17 @@ pine-lint <file.pine>              # TradingView's linter (for comparison)
 Ran comparison of our CLI against TradingView's `pine-lint` on 176 Pine Script files.
 
 **Results (After All Fixes - 2025-12-23):**
-| Metric | Initial | After EOF Fix | After Polymorphic | After Fresh Scrape | After Overload Skip |
-|--------|---------|---------------|-------------------|-------------------|---------------------|
+| Metric | Initial | After Polymorphic | After Fresh Scrape | After Overload Skip | After Parser Fix |
+|--------|---------|-------------------|-------------------|---------------------|------------------|
 | Total files | 176 | 176 | 176 | 176 | 176 |
-| Matches | 36 (20.5%) | 43 (24.4%) | 44 (25.0%) | 47 (26.7%) | **53 (30.1%)** |
-| Mismatches | 140 (79.5%) | 133 (75.6%) | 132 (75.0%) | 129 (73.3%) | **123 (69.9%)** |
+| Matches | 36 (20.5%) | 44 (25.0%) | 47 (26.7%) | 53 (30.1%) | **54 (30.7%)** |
+| Mismatches | 140 (79.5%) | 132 (75.0%) | 129 (73.3%) | 123 (69.9%) | **122 (69.3%)** |
 
-**Remaining Discrepancies (123 files out of 176, 69.9% mismatch rate):**
+**Remaining Discrepancies (122 files out of 176, 69.3% mismatch rate):**
 | Error Type | Occurrences | Notes |
 |------------|-------------|-------|
 | Multiline strings | 358 | TRUE positives - Pine Script doesn't support multiline strings |
-| Unexpected token | 291 | EOF (175), commas (61), `:` (14), `]` (12), `=>` (11), etc. |
+| Unexpected token | ~210 | EOF (95), commas (59), `:` (16), `]` (12), `=>` (10), etc. |
 | Type with 'unknown' | ~100 | Operations on array elements, untracked types |
 | Remaining type mismatches | ~100 | Functions without overloads, type coercion gaps |
 

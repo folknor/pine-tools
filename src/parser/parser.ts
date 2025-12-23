@@ -913,11 +913,21 @@ export class Parser {
 	private parseFunctionParams(): AST.FunctionParam[] {
 		const params: AST.FunctionParam[] = [];
 
+		// Skip any leading newlines
+		while (this.check(TokenType.NEWLINE)) {
+			this.advance();
+		}
+
 		if (this.check(TokenType.RPAREN)) {
 			return params; // No parameters
 		}
 
 		do {
+			// Skip newlines between parameters (multi-line function definitions)
+			while (this.check(TokenType.NEWLINE)) {
+				this.advance();
+			}
+
 			// Pine Script function params can be:
 			// - paramName (simple)
 			// - type paramName (typed, type can be keyword like int/float or identifier like custom type)
@@ -927,19 +937,46 @@ export class Parser {
 			let typeAnnotation: AST.TypeAnnotation | undefined;
 			let paramName: string;
 
-			// Check if first token is a type keyword (int, float, bool, etc.)
-			// But only treat it as a type if followed by an identifier (the param name)
-			// If followed by = or , or ), then the keyword itself is the parameter name
-			if (this.isTypeKeyword() && this.peekNext()?.type === TokenType.IDENTIFIER) {
-				const typeToken = this.advance();
-				typeAnnotation = { name: typeToken.value };
-				// Next token should be the parameter name
-				const nameToken = this.advance();
-				paramName = nameToken.value;
+			// Parse type annotation and parameter name
+			// Pine Script supports:
+			// - paramName (simple)
+			// - type paramName (e.g., float source)
+			// - qualifier type paramName (e.g., simple int length, series float price)
+			// - type keywords as param names (e.g., color = color.white)
+
+			// Collect type keywords (qualifiers and base types)
+			const typeKeywords: string[] = [];
+			while (this.isTypeKeyword()) {
+				// Check what follows: if it's an identifier, this is part of the type
+				// If it's = or , or ), this keyword is the parameter name
+				const next = this.peekNext();
+				if (
+					next?.type === TokenType.IDENTIFIER ||
+					(next?.type === TokenType.KEYWORD &&
+						Parser.TYPE_KEYWORDS.has(next.value))
+				) {
+					// More type info or param name follows
+					typeKeywords.push(this.advance().value);
+				} else {
+					// This keyword is the parameter name itself
+					break;
+				}
+			}
+
+			if (typeKeywords.length > 0) {
+				typeAnnotation = { name: typeKeywords.join(" ") };
+				// Next token should be the parameter name (identifier or type keyword used as name)
+				if (this.check(TokenType.IDENTIFIER)) {
+					paramName = this.advance().value;
+				} else if (this.isTypeKeyword()) {
+					// Type keyword used as parameter name
+					paramName = this.advance().value;
+				} else {
+					throw new Error("Expected parameter name after type");
+				}
 			} else if (this.isTypeKeyword()) {
 				// Type keyword used as parameter name (e.g., color = color.white)
-				const nameToken = this.advance();
-				paramName = nameToken.value;
+				paramName = this.advance().value;
 			} else {
 				// First token should be identifier (could be type or param name)
 				const firstIdent = this.consume(
@@ -950,8 +987,7 @@ export class Parser {
 				// Check if next token is an identifier (then first was type, second is name)
 				if (this.check(TokenType.IDENTIFIER)) {
 					typeAnnotation = { name: firstIdent.value };
-					const nameToken = this.advance();
-					paramName = nameToken.value;
+					paramName = this.advance().value;
 				} else {
 					// First identifier is the parameter name
 					paramName = firstIdent.value;
@@ -968,7 +1004,17 @@ export class Parser {
 				typeAnnotation,
 				defaultValue,
 			});
+
+			// Skip newlines after parameter (before comma or closing paren)
+			while (this.check(TokenType.NEWLINE)) {
+				this.advance();
+			}
 		} while (this.match(TokenType.COMMA));
+
+		// Skip trailing newlines before closing paren
+		while (this.check(TokenType.NEWLINE)) {
+			this.advance();
+		}
 
 		return params;
 	}
