@@ -199,6 +199,7 @@ const BUILTIN_SERIES: Record<string, string> = {
 export class ASTExtractor {
 	private scopeCounter = 0;
 	private currentScopeId: string | undefined = undefined;
+	private extractedVariables: PineLintVariable[] = [];
 
 	/**
 	 * Extract pine-lint compatible result from AST
@@ -206,6 +207,7 @@ export class ASTExtractor {
 	extract(ast: Program): PineLintResult {
 		this.scopeCounter = 0;
 		this.currentScopeId = undefined;
+		this.extractedVariables = [];
 
 		const variables = this.extractVariables(ast);
 		const functions = this.extractFunctions(ast);
@@ -219,9 +221,9 @@ export class ASTExtractor {
 	 * Extract all variable declarations
 	 */
 	extractVariables(ast: Program): PineLintVariable[] {
-		const variables: PineLintVariable[] = [];
-		this.walkStatements(ast.body, variables, undefined);
-		return variables;
+		this.extractedVariables = [];
+		this.walkStatements(ast.body, this.extractedVariables, undefined);
+		return this.extractedVariables;
 	}
 
 	/**
@@ -461,12 +463,34 @@ export class ASTExtractor {
 				if (BUILTIN_SERIES[id.name]) {
 					return BUILTIN_SERIES[id.name];
 				}
+				// Check already-extracted variables
+				const variable = this.extractedVariables.find(
+					(v) => v.name === id.name,
+				);
+				if (variable && variable.type !== "undetermined type") {
+					return variable.type;
+				}
 				return "undetermined type";
 			}
 
 			case "CallExpression": {
 				const call = expr as CallExpression;
 				const funcName = this.getCalleeString(call.callee);
+
+				// Handle generic type arguments: array.new<float>() -> array<float>
+				if (call.typeArguments && call.typeArguments.length > 0) {
+					const typeArg = call.typeArguments[0];
+					// array.new<T> returns array<T>, matrix.new<T> returns matrix<T>
+					if (funcName === "array.new" || funcName.startsWith("array.new")) {
+						return `array<${typeArg}>`;
+					}
+					if (funcName === "matrix.new" || funcName.startsWith("matrix.new")) {
+						return `matrix<${typeArg}>`;
+					}
+					if (funcName === "map.new") {
+						return `map<${typeArg}>`;
+					}
+				}
 
 				// Check for polymorphic functions like input() - use data-driven approach
 				if (funcName === "input") {
@@ -506,6 +530,35 @@ export class ASTExtractor {
 						return `${qualifier} ${resultType}`;
 					}
 					return `series ${spec.float}`;
+				}
+
+				// Check for array element-returning functions (polymorphic on array element type)
+				const arrayElementFuncs = [
+					"array.get",
+					"array.first",
+					"array.last",
+					"array.pop",
+					"array.shift",
+					"array.max",
+					"array.min",
+					"array.median",
+					"array.mode",
+					"array.range",
+				];
+				if (arrayElementFuncs.includes(funcName) && call.arguments.length > 0) {
+					// Get the type of the array argument
+					const arrayArgType = this.inferExpressionType(call.arguments[0].value);
+					// Extract element type from array<T>
+					const arrayMatch = arrayArgType.match(/^array<(.+)>$/);
+					if (arrayMatch) {
+						const elementType = arrayMatch[1];
+						// For functions like array.avg, array.sum that always return numeric
+						const numericFuncs = ["array.avg", "array.sum", "array.stdev", "array.variance"];
+						if (numericFuncs.includes(funcName)) {
+							return `series float`;
+						}
+						return elementType;
+					}
 				}
 
 				// Check series-returning functions

@@ -953,6 +953,25 @@ export class UnifiedPineValidator {
 					}
 				}
 
+				// Handle generic type arguments: array.new<float>() -> array<float>
+				if (callExpr.typeArguments && callExpr.typeArguments.length > 0) {
+					const typeArg = callExpr.typeArguments[0];
+					// array.new<T> returns array<T>, matrix.new<T> returns matrix<T>
+					if (funcName === "array.new" || funcName.startsWith("array.new")) {
+						type = `array<${typeArg}>` as PineType;
+						break;
+					}
+					if (funcName === "matrix.new" || funcName.startsWith("matrix.new")) {
+						type = `matrix<${typeArg}>` as PineType;
+						break;
+					}
+					if (funcName === "map.new") {
+						// map.new<K, V> would need two type args
+						type = `map<${typeArg}>` as PineType;
+						break;
+					}
+				}
+
 				// Special handling for request.security with non-tuple returns
 				if (funcName === "request.security" && callExpr.arguments.length >= 3) {
 					const exprArg = callExpr.arguments[2].value;

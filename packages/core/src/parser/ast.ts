@@ -158,6 +158,7 @@ export interface CallExpression extends ASTNode {
 	type: "CallExpression";
 	callee: Expression;
 	arguments: CallArgument[];
+	typeArguments?: string[]; // Generic type arguments, e.g., array.new<float>() stores ["float"]
 }
 
 export interface CallArgument {

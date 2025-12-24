@@ -1381,29 +1381,38 @@ export class Parser {
 				const savedPos = this.current;
 				this.advance(); // consume <
 
+				// Collect type arguments
+				const typeArgs: string[] = [];
+
 				// Consume type identifier(s) - could be "float", "int", "box", etc.
 				if (this.check(TokenType.IDENTIFIER) || this.check(TokenType.KEYWORD)) {
-					this.advance();
+					let typeArg = this.advance().value;
+
 					// Handle nested generics like array<array<float>>
 					while (this.check(TokenType.COMPARE) && this.peek().value === "<") {
+						typeArg += "<";
 						this.advance();
 						if (
 							this.check(TokenType.IDENTIFIER) ||
 							this.check(TokenType.KEYWORD)
 						) {
-							this.advance();
+							typeArg += this.advance().value;
 						}
 						if (this.check(TokenType.COMPARE) && this.peek().value === ">") {
+							typeArg += ">";
 							this.advance();
 						}
 					}
+
+					typeArgs.push(typeArg);
+
 					// Consume closing >
 					if (this.check(TokenType.COMPARE) && this.peek().value === ">") {
 						this.advance();
 						// Now should see ( for function call
 						if (this.match(TokenType.LPAREN)) {
 							this.parenDepth++; // Increment before finishCall (which decrements)
-							expr = this.finishCall(expr);
+							expr = this.finishCall(expr, typeArgs);
 							continue;
 						}
 					}
@@ -1457,7 +1466,10 @@ export class Parser {
 		return expr;
 	}
 
-	private finishCall(callee: AST.Expression): AST.CallExpression {
+	private finishCall(
+		callee: AST.Expression,
+		typeArguments?: string[],
+	): AST.CallExpression {
 		const args: AST.CallArgument[] = [];
 
 		if (!this.check(TokenType.RPAREN)) {
@@ -1493,13 +1505,19 @@ export class Parser {
 		this.consume(TokenType.RPAREN, 'Expected ")" after arguments');
 		this.parenDepth--; // Decrement depth when closing parenthesis
 
-		return {
+		const callExpr: AST.CallExpression = {
 			type: "CallExpression",
 			callee,
 			arguments: args,
 			line: callee.line,
 			column: callee.column,
 		};
+
+		if (typeArguments && typeArguments.length > 0) {
+			callExpr.typeArguments = typeArguments;
+		}
+
+		return callExpr;
 	}
 
 	private primary(): AST.Expression {
