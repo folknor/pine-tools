@@ -213,6 +213,33 @@ string TT = "Line 1 " +
 - **NA type coercion** - `const<na>` assignable to any type
 - **Logical operators** - `and`/`or` now accept numeric types (non-zero is truthy)
 
+### Tests Needed for Regression Prevention
+
+The following tests should be added to prevent regression of fixes since commit 8c7cbbb:
+
+| Commit | Fix | Test Coverage | Tests Needed |
+|--------|-----|---------------|--------------|
+| 32248b7 | Unknown type propagation | ✅ `user-functions.pine` | None - covered |
+| 61474e2 | Comma-separated declarations | ✅ `comma-separated-declarations.pine` | None - covered |
+| 9492b43 | NA type coercion | ⚠️ Partial (`na-handling.pine`) | Add: `const<na>` assignable to any type, function-as-property access (`ta.tr` without parens) |
+| c16cd17 | Numeric types in `and`/`or` | ❌ Missing | Add: `1 and true`, `series<int> or bool` |
+| e7cd1df | Generic type parsing | ❌ Missing | Add: `array.new<chart.point>()`, `map.new<string, float>()` |
+| 23200fb | Type coercion expansion | ❌ Missing | Add: `series<T>` → `T`, numeric → color, numeric → string |
+| 14808bb | Keywords as param names | ❌ Missing | Add: `func(string type) =>`, `func(color color) =>` |
+| e02a4b1 | Multiline strings/expressions | ❌ Missing | Add: multiline string literals, `[a,\n b]`, `x +\n y` |
+| f3da491 | Enum/type declarations | ❌ Missing | Add: `enum SCALE` with member access `SCALE.ATR` |
+| 3d18c49 | Array type coercion | ❌ Missing | Add: `array<type>` assignable to `array<float>` |
+
+**Priority tests to add:**
+
+1. **validation/type-coercion.pine** - Test `series<T>` → `T`, numeric → color/string, `array<type>` → `array<float>`
+2. **syntax/multiline.pine** - Test multiline strings, arrays, and operator continuations
+3. **syntax/generics.pine** - Test `map.new<string, float>()`, `array.new<chart.point>()`
+4. **syntax/keywords-as-params.pine** - Test `func(string type) => type`
+5. **syntax/enums.pine** - Test `enum SCALE` with `SCALE.ATR` member access
+6. **validation/logical-operators.pine** - Test `1 and true`, `series<int> or false`
+7. **validation/na-coercion.pine** - Test `const<na>` to various types, `ta.tr` function-as-property
+
 ---
 
 ## Completed Projects
@@ -228,11 +255,11 @@ packages/core/test/
 ├── core.test.ts        # Test runner
 └── fixtures/
     ├── parse-errors/   # 3 tests - expected parse failures
-    ├── syntax/         # 26 tests - parser syntax coverage
+    ├── syntax/         # 28 tests - parser syntax coverage
     └── validation/     # 4 tests - validator error detection
 ```
 
-**Total: 33 tests passing**
+**Total: 35 tests passing**
 
 Test files use `@expects` directives:
 ```pine
@@ -240,8 +267,6 @@ Test files use `@expects` directives:
 // @expects parse: success
 // @expects no-errors
 ```
-
-See `plan/test-infrastructure-plan.md` for full details.
 
 ### astExtractor.ts Simplification (Complete)
 
