@@ -147,7 +147,6 @@ Discovered automatically via `discover:behavior`:
 
 | Issue | Priority | Notes |
 |-------|----------|-------|
-| Simplify astExtractor.ts | High | ~600 lines doing too much; pine-data approach enables cleanup |
 | Test infrastructure | High | Current tests are stale; need .pine script-driven tests |
 | Unknown type propagation | Medium | ~50 cases; user-defined functions, chained calls |
 | Series/simple coercion | Low | Mechanical fix in `types.ts` |
@@ -157,11 +156,9 @@ Discovered automatically via `discover:behavior`:
 
 ### Next Steps
 
-1. **Simplify astExtractor.ts** - Now that pine-data is the source of truth, this file can be streamlined. Currently handles type inference, qualifier tracking, and special cases in ~600 lines.
+1. **Test infrastructure overhaul** - Replace abstract unit tests with .pine script-driven tests that exercise real Pine Script behavior. See "Larger Projects" section for details.
 
-2. **Test infrastructure overhaul** - Replace abstract unit tests with .pine script-driven tests that exercise real Pine Script behavior.
-
-3. **Re-run comparison analysis** - Get fresh measurements after recent fixes:
+2. **Re-run comparison analysis** - Get fresh measurements after recent fixes:
    ```bash
    node dev-tools/analysis/compare-validation-results.js
    pnpm run debug:internals -- analyze --summary
@@ -169,6 +166,7 @@ Discovered automatically via `discover:behavior`:
 
 ### Recently Fixed
 
+- **astExtractor.ts simplified** - Consolidated function lookups, removed dead code, extracted helpers. 679→650 lines.
 - **Hack audit complete** - 39 hacks identified, 26 fixed, 13 intentionally kept. All hardcoded function lists now use pine-data. See GEMINI.md for full details.
 - **For loop step syntax** - `for i = 0 to 10 by 2` now parses correctly
 - **String → color coercion** - `"red"`, `"#FF0000"` now accepted as color values
@@ -186,28 +184,32 @@ Discovered automatically via `discover:behavior`:
 
 ## Larger Projects
 
-### 1. Simplify astExtractor.ts
-
-~600 lines handling type inference, qualifier tracking, and special cases. Now that pine-data is the source of truth (after hack audit), this file can be significantly streamlined.
-
-**Goals:**
-- Reduce complexity and line count
-- Remove redundant type inference logic
-- Better separation of concerns
-- Clearer data flow
-
-### 2. Test Infrastructure Overhaul
+### 1. Test Infrastructure Overhaul
 
 Replace existing test infrastructure with .pine script-driven tests.
 
-- Delete existing abstract unit tests (currently stale/failing)
-- Create .pine files that test actual Pine Script behavior
-- Run via vitest during `pnpm test`
-- Coverage goal: every behavioral code path has a real Pine Script justification
+**Structure:**
+- Delete `./test/` folder (stale, testing outdated assumptions)
+- Create `./packages/foo/test/` for each package
+- Start with `./packages/core/test/`
+
+**Approach:**
+- Each behavioral branch in parser/analyzer should have a `.pine` file that exercises it
+- Tests run via vitest during `pnpm test`
+- Coverage goal: every code path has a real Pine Script justification
+- No abstract unit tests - test actual Pine Script behavior
 
 ---
 
 ## Completed Projects
+
+### astExtractor.ts Simplification (Complete)
+
+Reduced from 679 to 650 lines:
+- Removed unused `currentScopeId` field
+- Consolidated function lookups (3→1)
+- Extracted `createIteratorVariable()` helper
+- Simplified return statements
 
 ### Hack Audit (Complete)
 
