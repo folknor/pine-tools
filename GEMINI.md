@@ -115,9 +115,12 @@ Discovered automatically via `discover:behavior`:
 
 | Issue | Impact |
 |-------|--------|
-| Array element type tracking | `unknown` type in array operations |
 | Library/export function syntax | Library scripts not parsed |
-| Multi-line call continuation | Parser errors on continued lines |
+
+### Recently Fixed
+
+- **Comma operator support** - `a := 1, b := 2` and `func1(), func2()` now parse correctly
+- **Array element type tracking** - `array.new<float>()` → `array<float>`, `array.get(arr)` → element type
 
 ---
 
