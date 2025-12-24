@@ -1,19 +1,19 @@
 import * as http from "node:http";
 import * as https from "node:https";
 import * as vscode from "vscode";
-import {
-	getAllCompletions,
-	getConstantCompletions,
-	getHoverInfo,
-	getNamespaceCompletions,
-	getParameterCompletions,
-} from "../../lsp/src/languageService/completions";
 import { Parser } from "../../core/src/parser/parser";
 import {
 	DiagnosticSeverity,
 	UnifiedPineValidator,
 } from "../../core/src/analyzer/checker";
-import { createSignatureHelpProvider } from "../../lsp/src/languageService/signatures";
+import {
+	getAllCompletions,
+	getConstantCompletions,
+	getNamespaceCompletions,
+	getParameterCompletions,
+	getHoverInfo,
+	createSignatureHelpProvider,
+} from "./adapters";
 
 export function activate(context: vscode.ExtensionContext) {
 	// Optional: ensure files.associations maps *.pine -> pine
