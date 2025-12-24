@@ -20,6 +20,7 @@ import { setupFormattingHandler } from "./handlers/formatting";
 import { setupHoverHandler } from "./handlers/hover";
 import { setupReferencesHandler } from "./handlers/references";
 import { setupCodeActionsHandler } from "./handlers/codeActions";
+import { setupInlayHintsHandler } from "./handlers/inlayHints";
 import { setupRenameHandler } from "./handlers/rename";
 import { setupSignatureHandler } from "./handlers/signature";
 import { setupSymbolsHandler } from "./handlers/symbols";
@@ -63,6 +64,7 @@ setupDefinitionHandler(connection, languageService);
 setupReferencesHandler(connection, languageService);
 setupRenameHandler(connection, languageService);
 setupCodeActionsHandler(connection, languageService);
+setupInlayHintsHandler(connection, languageService);
 
 // ========== Start Listening ==========
 

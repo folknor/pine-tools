@@ -5,6 +5,7 @@ import {
 	CompletionItemKind,
 	SymbolKind,
 	CodeActionKind,
+	InlayHintKind,
 } from "../src";
 
 describe("PineLanguageService", () => {
@@ -671,6 +672,81 @@ plotchar(close > open, shape="A")
 			);
 
 			expect(actions).toEqual([]);
+		});
+	});
+
+	describe("Inlay Hints", () => {
+		it("should show parameter hints for function calls", () => {
+			service.openDocument(
+				"test.pine",
+				`//@version=6
+x = ta.sma(close, 14)
+`,
+				1,
+			);
+			const hints = service.getInlayHints("test.pine", {
+				start: { line: 0, character: 0 },
+				end: { line: 2, character: 0 },
+			});
+
+			expect(hints.length).toBeGreaterThan(0);
+			// Should have hints for 'source:' and 'length:'
+			const sourceHint = hints.find((h) => h.label === "source:");
+			const lengthHint = hints.find((h) => h.label === "length:");
+			expect(sourceHint).toBeDefined();
+			expect(lengthHint).toBeDefined();
+			expect(sourceHint?.kind).toBe(InlayHintKind.Parameter);
+		});
+
+		it("should not show hints for named arguments", () => {
+			service.openDocument(
+				"test.pine",
+				`//@version=6
+x = input.int(defval=10, title="Value")
+`,
+				1,
+			);
+			const hints = service.getInlayHints("test.pine", {
+				start: { line: 0, character: 0 },
+				end: { line: 2, character: 0 },
+			});
+
+			// Named arguments should not generate hints
+			expect(hints.length).toBe(0);
+		});
+
+		it("should return empty array for unknown functions", () => {
+			service.openDocument(
+				"test.pine",
+				`//@version=6
+x = myCustomFunc(1, 2, 3)
+`,
+				1,
+			);
+			const hints = service.getInlayHints("test.pine", {
+				start: { line: 0, character: 0 },
+				end: { line: 2, character: 0 },
+			});
+
+			// Unknown functions should not generate hints
+			expect(hints.length).toBe(0);
+		});
+
+		it("should show hints for nested function calls", () => {
+			service.openDocument(
+				"test.pine",
+				`//@version=6
+x = ta.ema(ta.sma(close, 14), 21)
+`,
+				1,
+			);
+			const hints = service.getInlayHints("test.pine", {
+				start: { line: 0, character: 0 },
+				end: { line: 2, character: 0 },
+			});
+
+			// Should have hints for both ta.sma and ta.ema
+			expect(hints.length).toBeGreaterThanOrEqual(4);
 		});
 	});
 });

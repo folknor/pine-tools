@@ -23,3 +23,4 @@ export {
 	type RenameResult,
 } from "./rename";
 export { getCodeActions, type CodeActionContext } from "./codeActions";
+export { getInlayHints } from "./inlayHints";

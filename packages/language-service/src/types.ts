@@ -188,3 +188,17 @@ export interface CodeAction {
 export interface WorkspaceEdit {
 	changes: { [uri: string]: TextEdit[] };
 }
+
+// Inlay Hints
+export enum InlayHintKind {
+	Type = 1,
+	Parameter = 2,
+}
+
+export interface InlayHint {
+	position: Position;
+	label: string;
+	kind: InlayHintKind;
+	paddingLeft?: boolean;
+	paddingRight?: boolean;
+}

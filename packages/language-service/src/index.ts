@@ -31,6 +31,7 @@ export {
 	getCodeActions,
 	type CodeActionContext,
 } from "./features/codeActions";
+export { getInlayHints } from "./features/inlayHints";
 export type { HoverOptions } from "./PineLanguageService";
 export { PineLanguageService } from "./PineLanguageService";
 // Types
@@ -47,6 +48,8 @@ export {
 	type FormattingOptions,
 	// Hover
 	type HoverInfo,
+	type InlayHint,
+	InlayHintKind,
 	InsertTextFormat,
 	type Location,
 	// Signature Help

@@ -14,6 +14,7 @@ import {
 	getDiagnostics as getDiagnosticsImpl,
 	getDocumentSymbols as getDocumentSymbolsImpl,
 	getHover as getHoverImpl,
+	getInlayHints as getInlayHintsImpl,
 	getReferences as getReferencesImpl,
 	type ReferencesOptions,
 	getSignatureHelp as getSignatureHelpImpl,
@@ -30,6 +31,7 @@ import type {
 	DocumentSymbol,
 	FormattingOptions,
 	HoverInfo,
+	InlayHint,
 	Location,
 	Position,
 	Range,
@@ -207,6 +209,15 @@ export class PineLanguageService {
 		const doc = this.documents.get(uri);
 		if (!doc) return [];
 		return getCodeActionsImpl(doc, range, context);
+	}
+
+	/**
+	 * Get inlay hints for a range in a document.
+	 */
+	getInlayHints(uri: string, range: Range): InlayHint[] {
+		const doc = this.documents.get(uri);
+		if (!doc) return [];
+		return getInlayHintsImpl(doc, range);
 	}
 
 	// ========== Static Helpers (no document needed) ==========

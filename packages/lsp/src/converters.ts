@@ -14,6 +14,8 @@ import {
 	type DiagnosticSeverity as LSPDiagnosticSeverity,
 	type DocumentSymbol as LSPDocumentSymbol,
 	type Hover as LSPHover,
+	type InlayHint as LSPInlayHint,
+	type InlayHintKind as LSPInlayHintKind,
 	type InsertTextFormat as LSPInsertTextFormat,
 	type SignatureHelp as LSPSignatureHelp,
 	type SymbolKind as LSPSymbolKind,
@@ -28,6 +30,7 @@ import type {
 	Diagnostic,
 	DocumentSymbol,
 	HoverInfo,
+	InlayHint,
 	SignatureHelp,
 	TextEdit,
 } from "../../language-service/src/types";
@@ -156,5 +159,18 @@ export function convertCodeAction(action: CodeAction): LSPCodeAction {
 					),
 				}
 			: undefined,
+	};
+}
+
+/**
+ * Convert language-service InlayHint to LSP InlayHint.
+ */
+export function convertInlayHint(hint: InlayHint): LSPInlayHint {
+	return {
+		position: hint.position,
+		label: hint.label,
+		kind: hint.kind as LSPInlayHintKind,
+		paddingLeft: hint.paddingLeft,
+		paddingRight: hint.paddingRight,
 	};
 }
