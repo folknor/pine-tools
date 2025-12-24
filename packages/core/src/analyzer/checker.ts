@@ -612,6 +612,10 @@ export class UnifiedPineValidator {
 			}
 		}
 
+		// NOTE: Complex callee expressions (e.g., chained calls like `foo().bar()`,
+		// indexed access like `arr[0]()`) are not validated. This is acceptable
+		// because Pine Script rarely uses such patterns, and the type inference
+		// for these cases would require significant additional complexity.
 		if (!functionName) return;
 
 		// Get function signature
@@ -980,13 +984,6 @@ export class UnifiedPineValidator {
 					if (member.object.type === "Identifier") {
 						funcName = `${member.object.name}.${member.property.name}`;
 					}
-				}
-
-				// DEBUG: trace na calls
-				const DEBUG_NA = false;
-				if (DEBUG_NA && funcName === "na") {
-					const sig = this.functionSignatures.get("na");
-					console.log(`DEBUG na call at line ${expr.line}: sig=${JSON.stringify(sig)}, sig.returns=${sig?.returns}`);
 				}
 
 				// Handle generic type arguments: array.new<float>() -> array<float>

@@ -198,25 +198,7 @@ export class Parser {
 			let typeAnnotation: string | undefined;
 
 			// Check if next token is also a type keyword (e.g., var float x = 1.0)
-			if (
-				this.check([
-					TokenType.KEYWORD,
-					[
-						"int",
-						"float",
-						"bool",
-						"string",
-						"color",
-						"line",
-						"label",
-						"box",
-						"table",
-						"array",
-						"matrix",
-						"map",
-					],
-				])
-			) {
+			if (this.isVarTypeKeyword()) {
 				typeAnnotation = this.advance().value;
 				typeAnnotation += this.parseGenericTypeSuffix();
 			}
@@ -225,25 +207,7 @@ export class Parser {
 		}
 
 		// Type-annotated variable declaration without var: int x = 1, float y = 2.0, array<float> z = array.new<float>()
-		if (
-			this.check([
-				TokenType.KEYWORD,
-				[
-					"int",
-					"float",
-					"bool",
-					"string",
-					"color",
-					"line",
-					"label",
-					"box",
-					"table",
-					"array",
-					"matrix",
-					"map",
-				],
-			])
-		) {
+		if (this.isVarTypeKeyword()) {
 			const checkpoint = this.current;
 			let typeAnnotation = this.advance().value;
 			typeAnnotation += this.parseGenericTypeSuffix();
@@ -1199,7 +1163,7 @@ export class Parser {
 		};
 	}
 
-	// Type keywords that can appear as parameter types
+	// Type keywords that can appear as parameter types (includes qualifiers)
 	private static readonly TYPE_KEYWORDS = new Set([
 		"int",
 		"float",
@@ -1217,12 +1181,33 @@ export class Parser {
 		"simple",
 	]);
 
+	// Variable type keywords (excludes qualifiers like series/simple)
+	private static readonly VAR_TYPE_KEYWORDS = [
+		"int",
+		"float",
+		"bool",
+		"string",
+		"color",
+		"line",
+		"label",
+		"box",
+		"table",
+		"array",
+		"matrix",
+		"map",
+	];
+
 	private isTypeKeyword(): boolean {
 		const token = this.peek();
 		return (
 			token.type === TokenType.KEYWORD &&
 			Parser.TYPE_KEYWORDS.has(token.value)
 		);
+	}
+
+	/** Check if current token is a variable type keyword (not a qualifier) */
+	private isVarTypeKeyword(): boolean {
+		return this.check([TokenType.KEYWORD, Parser.VAR_TYPE_KEYWORDS]);
 	}
 
 	/**
@@ -1923,11 +1908,6 @@ export class Parser {
 				line: token.line,
 				column: token.column,
 			};
-		}
-
-		// Switch expression (v6)
-		if (this.match([TokenType.KEYWORD, ["switch"]])) {
-			return this.switchExpression();
 		}
 
 		// Grouping

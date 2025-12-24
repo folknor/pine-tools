@@ -24,7 +24,11 @@ export function isTopLevelOnly(functionName: string): boolean {
 	return func?.flags?.topLevelOnly === true;
 }
 
-// Deprecated v5 constants with their v6 replacements
+// Deprecated v5 constants with their v6 replacements.
+// NOTE: This is intentionally hardcoded rather than in pine-data because:
+// 1. Only 2 items - not worth the pipeline complexity
+// 2. Deprecation info isn't available in TradingView's structured docs
+// 3. These are Pine Script v5→v6 migration specific, not general API data
 export const DEPRECATED_V5_CONSTANTS: Record<string, string> = {
 	"plot.style_dashed": "plot.style_linebr",
 	"plot.style_circles": "plot.style_circles", // Actually valid, but often confused
@@ -184,38 +188,16 @@ export function mapToPineType(typeStr?: string): PineType {
 }
 
 // Map return type string to PineType
+// Uses mapToPineType internally - this function exists for API clarity
 export function mapReturnTypeToPineType(returnTypeStr: string): PineType {
-	const typeMap: Record<string, PineType> = {
-		int: "int",
-		float: "float",
-		bool: "bool",
-		string: "string",
-		color: "color",
-		"series float": "series<float>",
-		"series int": "series<int>",
-		"series bool": "series<bool>",
-		"series string": "series<string>",
-		"series color": "series<color>",
-		"const int": "int",
-		"const float": "float",
-		"const bool": "bool",
-		"const string": "string",
-		"simple int": "int",
-		"simple float": "float",
-		"simple bool": "bool",
-		"simple string": "string",
-		// Input types (from input.* functions)
-		"input int": "int",
-		"input float": "float",
-		"input bool": "bool",
-		"input string": "string",
-		"input color": "color",
-	};
-
-	return typeMap[returnTypeStr.toLowerCase()] || "unknown";
+	return mapToPineType(returnTypeStr);
 }
 
 // Build function signature from PineFunction
+// Returns null on failure - caller should skip invalid entries.
+// NOTE: Silent failure is intentional here. If pine-data contains malformed
+// entries (e.g., from scraping errors), we skip them rather than crashing.
+// The buildFunctionSignatures() caller handles null by not adding to the map.
 export function buildSignatureFromPineFunction(
 	name: string,
 	func: PineFunction,

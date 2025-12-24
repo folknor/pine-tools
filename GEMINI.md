@@ -145,31 +145,31 @@ Discovered automatically via `discover:behavior`:
 
 ## Remaining Work
 
-| Issue | Count | Priority |
-|-------|-------|----------|
-| Unknown type propagation | ~50 | Medium |
-| Series/simple coercion | ~30 | Low |
-| Invalid parameter validation | 14 | Low |
+| Issue | Priority | Notes |
+|-------|----------|-------|
+| Simplify astExtractor.ts | High | ~600 lines doing too much; pine-data approach enables cleanup |
+| Test infrastructure | High | Current tests are stale; need .pine script-driven tests |
+| Unknown type propagation | Medium | ~50 cases; user-defined functions, chained calls |
+| Series/simple coercion | Low | Mechanical fix in `types.ts` |
+| Switch case scoping | Low | Parsing works, variable scoping may be incorrect |
 
-*Note: "String parsing" errors (358) are a red herring - these are v4/v5 scripts with syntax issues.*
+*Note: Counts are stale - run comparison analysis for fresh data.*
 
 ### Next Steps
 
-1. **Re-run comparison analysis** - Recent fixes (ternary, enum, `na`, `hour`) need fresh measurement. Run `node dev-tools/analysis/compare-validation-results.js` then `pnpm run debug:internals -- analyze --summary`.
+1. **Simplify astExtractor.ts** - Now that pine-data is the source of truth, this file can be streamlined. Currently handles type inference, qualifier tracking, and special cases in ~600 lines.
 
-2. **Remaining unknown type propagation** - Patterns to investigate:
-   - Built-ins being shadowed or not recognized
-   - Return types not inferred correctly
-   - User-defined function return types
+2. **Test infrastructure overhaul** - Replace abstract unit tests with .pine script-driven tests that exercise real Pine Script behavior.
 
-3. **Newline "Unexpected token" errors** - 87 showed in last analysis. If ternary fix worked, should be mostly gone after re-running comparison.
-
-4. **Series/simple coercion** - Mechanical fix in `types.ts`, lower priority.
-
-5. **Switch case scoping** - Parsing works but variable scoping inside switch cases may be incorrect.
+3. **Re-run comparison analysis** - Get fresh measurements after recent fixes:
+   ```bash
+   node dev-tools/analysis/compare-validation-results.js
+   pnpm run debug:internals -- analyze --summary
+   ```
 
 ### Recently Fixed
 
+- **Hack audit complete** - 39 hacks identified, 26 fixed, 13 intentionally kept. All hardcoded function lists now use pine-data. See GEMINI.md for full details.
 - **For loop step syntax** - `for i = 0 to 10 by 2` now parses correctly
 - **String → color coercion** - `"red"`, `"#FF0000"` now accepted as color values
 - **Polymorphic function params** - `nz()`, `input()` etc. no longer require specific types
@@ -178,10 +178,8 @@ Discovered automatically via `discover:behavior`:
 - **Multi-word type annotations** - `simple int`, `series float` in params now typed correctly
 - **Comma operator support** - `a := 1, b := 2` and `func1(), func2()` now parse correctly
 - **Array element type tracking** - `array.new<float>()` → `array<float>`, `array.get(arr)` → element type
-- **Multi-line switch case bodies** - `condition => \n    stmt1\n    resultExpr` now parses (scope WIP)
 - **Multi-line ternary expressions** - `cond ? a :\n    b` and nested ternaries across lines now parse correctly
-- **Enum/type declaration bodies** - `enum Foo\n    Bar = "value"` body parsing fixed
-- **`na` as function callee** - `na(x)` now correctly resolves as function call (was parsed as Literal)
+- **`na` as function callee** - `na(x)` now correctly resolves as function call
 - **Variable/function name collision** - built-in variables (hour, minute, etc.) no longer overwritten by same-name functions
 
 ---
@@ -233,15 +231,15 @@ Deep analysis of `packages/core/src/` to identify and document code that "works 
 
 | Location | Category | Description | Severity | Action |
 |----------|----------|-------------|----------|--------|
-| `lexer.ts:103-122` | Dead code | `_BUILTIN_FUNCTIONS` defined but never used | Low | Fix - delete |
+| `lexer.ts:103-122` | Dead code | `_BUILTIN_FUNCTIONS` defined but never used | Low | ✅ FIXED - deleted |
 | `lexer.ts:271-276` | Silent failure | `!` without `=` produces no token | Medium | ✅ FIXED - produces ERROR token |
 | `lexer.ts:452-460,478-486` | Duplicated logic | Scientific notation scanning duplicated | Low | Keep |
 | `lexer.ts:161` | Magic number | Tab = 4 spaces hardcoded | Low | Keep |
-| `parser.ts:1952-1955` | Dead code | Duplicate `switch` keyword check | Low | Fix - delete |
+| `parser.ts:1952-1955` | Dead code | Duplicate `switch` keyword check | Low | ✅ FIXED - deleted |
 | `parser.ts:1719` | Magic number | `column > 10` tuple vs array detection | Medium | ✅ FIXED - named constant with docs |
 | `parser.ts:1252-1253` | TODO comment | BlockExpression incomplete | Medium | ✅ FIXED - documented as low priority |
 | `parser.ts:222-250,288-314` | Duplicated logic | Generic type parsing duplicated | Medium | ✅ FIXED - extracted parseGenericTypeSuffix() |
-| `parser.ts:201-217,268-282` | Duplicated logic | Type keyword list duplicated | Low | Fix - use static |
+| `parser.ts:201-217,268-282` | Duplicated logic | Type keyword list duplicated | Low | ✅ FIXED - static VAR_TYPE_KEYWORDS |
 | `parser.ts:multiple` | Silent failures | `catch (_e)` for backtracking | Low | Keep |
 | `parser.ts:1924-1934` | Special case | `na` as Identifier | Low | Keep - documented |
 | `astExtractor.ts:91-104` | Data in wrong place | `INPUT_FUNCTIONS` hardcoded | High | ✅ FIXED - uses pine-data |
@@ -253,20 +251,20 @@ Deep analysis of `packages/core/src/` to identify and document code that "works 
 | `astExtractor.ts:multiple` | Magic strings | Default type fallbacks | Low | Keep |
 | `semanticAnalyzer.ts:314-366` | Data in wrong place | `seriesFunctions` hardcoded | Medium | ✅ FIXED - uses pine-data return types |
 | `semanticAnalyzer.ts:446-491` | Data in wrong place | `commonVariables` hardcoded | Low | Keep - heuristic |
-| `semanticAnalyzer.ts:298-299` | TODO comment | "simplified check" incomplete | Low | Document |
+| `semanticAnalyzer.ts:298-299` | TODO comment | "simplified check" incomplete | Low | ✅ FIXED - documented |
 | `semanticAnalyzer.ts:432` | Magic number | `0, 0` for missing location | Low | Keep |
-| `checker.ts:1066-1070` | Dead code | `DEBUG_NA = false` left in | Low | Fix - remove |
+| `checker.ts:1066-1070` | Dead code | `DEBUG_NA = false` left in | Low | ✅ FIXED - deleted |
 | `checker.ts:355-412` | Data in wrong place | Param name→type heuristics | High | ✅ FIXED - removed heuristics, use "unknown" |
 | `checker.ts:108-154,258-308` | Duplicated logic | TupleDeclaration duplicated | Medium | ✅ FIXED - extracted helper methods |
 | `checker.ts:941-970` | Special case | plotshape/indicator validations | Medium | ✅ FIXED - documented as intentional |
 | `checker.ts:1076-1098` | Special case | array.new/request.security | Medium | Keep |
-| `checker.ts:761` | Silent failure | Complex callee ignored | Low | Document |
+| `checker.ts:761` | Silent failure | Complex callee ignored | Low | ✅ FIXED - documented |
 | `builtins.ts:19-33` | Data in wrong place | `TOP_LEVEL_ONLY_FUNCTIONS` | Medium | ✅ FIXED - uses flags.topLevelOnly |
-| `builtins.ts:36-39` | Data in wrong place | `DEPRECATED_V5_CONSTANTS` | Low | Move to pine-data |
+| `builtins.ts:36-39` | Data in wrong place | `DEPRECATED_V5_CONSTANTS` | Low | Keep - documented why |
 | `builtins.ts:67-159` | Data in wrong place | Namespace properties hardcoded | High | ✅ FIXED - uses pine-data |
 | `builtins.ts:163-180` | Data in wrong place | `KNOWN_NAMESPACES` hardcoded | Medium | ✅ FIXED - derived from pine-data |
-| `builtins.ts:197-294` | Duplicated logic | Type mapping duplicated | Low | Extract |
-| `builtins.ts:319-320` | Silent failure | `catch (_e) { return null }` | Low | Document |
+| `builtins.ts:197-294` | Duplicated logic | Type mapping duplicated | Low | ✅ FIXED - mapReturnTypeToPineType calls mapToPineType |
+| `builtins.ts:319-320` | Silent failure | `catch (_e) { return null }` | Low | ✅ FIXED - documented |
 | `types.ts:345-421` | Data in wrong place | `builtinTypes` redundant | High | ✅ FIXED - deleted |
 | `types.ts:113-173` | Duplicated logic | Coercion rules repetitive | Medium | Keep |
 

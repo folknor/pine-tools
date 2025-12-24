@@ -296,8 +296,11 @@ export class SemanticAnalyzer {
 		if (statement.target.type === "Identifier") {
 			const targetName = statement.target.name;
 
-			// This is a simplified check - in a full implementation, we'd check the symbol table
-			// to see if the variable was declared with 'var' (series variable)
+			// NOTE: Simplified heuristic - warns on all conditional reassignments.
+			// A complete implementation would check the symbol table to verify:
+			// 1. Variable was declared with 'var' (making it a series variable)
+			// 2. The reassignment actually affects series coherence
+			// Low priority since false positives are acceptable for this lint rule.
 			this.addWarning(
 				statement.line,
 				statement.column,

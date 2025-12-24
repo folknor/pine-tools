@@ -101,27 +101,6 @@ const KEYWORDS = new Set([
 	"to",
 ]);
 
-const _BUILTIN_FUNCTIONS = new Set([
-	"indicator",
-	"strategy",
-	"library",
-	"plot",
-	"plotshape",
-	"plotchar",
-	"plotcandle",
-	"plotbar",
-	"hline",
-	"bgcolor",
-	"barcolor",
-	"fill",
-	"label",
-	"line",
-	"box",
-	"table",
-	"alert",
-	"alertcondition",
-]);
-
 export class Lexer {
 	private source: string;
 	private pos: number = 0;
