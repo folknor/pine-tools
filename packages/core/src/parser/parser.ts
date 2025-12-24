@@ -218,45 +218,7 @@ export class Parser {
 				])
 			) {
 				typeAnnotation = this.advance().value;
-
-				// Check for generic type syntax: array<float>, matrix<int>, etc.
-				if (this.check(TokenType.COMPARE) && this.peek().value === "<") {
-					this.advance(); // consume <
-					// Consume the type parameter (e.g., "float")
-					if (
-						this.check(TokenType.IDENTIFIER) ||
-						this.check(TokenType.KEYWORD)
-					) {
-						typeAnnotation += `<${this.advance().value}`;
-						// Handle nested generics like array<array<float>>
-						while (this.check(TokenType.COMPARE) && this.peek().value === "<") {
-							this.advance(); // consume <
-							if (
-								this.check(TokenType.IDENTIFIER) ||
-								this.check(TokenType.KEYWORD)
-							) {
-								typeAnnotation += `<${this.advance().value}`;
-							}
-							if (this.check(TokenType.COMPARE) && this.peek().value === ">") {
-								this.advance(); // consume >
-								typeAnnotation += ">";
-							}
-						}
-						// Consume closing >
-						if (this.check(TokenType.COMPARE) && this.peek().value === ">") {
-							this.advance(); // consume >
-							typeAnnotation += ">";
-						}
-					}
-				}
-				// Check for simple array type syntax: float[], int[], etc.
-				else if (this.check(TokenType.LBRACKET)) {
-					this.advance(); // consume [
-					if (this.check(TokenType.RBRACKET)) {
-						this.advance(); // consume ]
-						typeAnnotation += "[]";
-					}
-				}
+				typeAnnotation += this.parseGenericTypeSuffix();
 			}
 
 			return this.variableDeclaration(varKeyword, typeAnnotation);
@@ -284,42 +246,7 @@ export class Parser {
 		) {
 			const checkpoint = this.current;
 			let typeAnnotation = this.advance().value;
-
-			// Check for generic type syntax: array<float>, matrix<int>, etc.
-			if (this.check(TokenType.COMPARE) && this.peek().value === "<") {
-				this.advance(); // consume <
-				// Consume the type parameter (e.g., "float")
-				if (this.check(TokenType.IDENTIFIER) || this.check(TokenType.KEYWORD)) {
-					typeAnnotation += `<${this.advance().value}`;
-					// Handle nested generics like array<array<float>>
-					while (this.check(TokenType.COMPARE) && this.peek().value === "<") {
-						this.advance(); // consume <
-						if (
-							this.check(TokenType.IDENTIFIER) ||
-							this.check(TokenType.KEYWORD)
-						) {
-							typeAnnotation += `<${this.advance().value}`;
-						}
-						if (this.check(TokenType.COMPARE) && this.peek().value === ">") {
-							this.advance(); // consume >
-							typeAnnotation += ">";
-						}
-					}
-					// Consume closing >
-					if (this.check(TokenType.COMPARE) && this.peek().value === ">") {
-						this.advance(); // consume >
-						typeAnnotation += ">";
-					}
-				}
-			}
-			// Check for simple array type syntax: float[], int[], etc.
-			else if (this.check(TokenType.LBRACKET)) {
-				this.advance(); // consume [
-				if (this.check(TokenType.RBRACKET)) {
-					this.advance(); // consume ]
-					typeAnnotation += "[]";
-				}
-			}
+			typeAnnotation += this.parseGenericTypeSuffix();
 
 			// Check if next token is identifier followed by =
 			if (
@@ -1249,8 +1176,11 @@ export class Parser {
 		const lastStmt = bodyStatements[bodyStatements.length - 1];
 		if (lastStmt.type === "ExpressionStatement") {
 			// The last expression is the result
-			// For now, just return the last expression (we lose the other statements in the AST)
-			// TODO: Consider adding a BlockExpression node to preserve all statements
+			// NOTE: Multi-statement arrow bodies lose intermediate statements in the AST.
+			// e.g., `f() => a = 1\n    b = 2\n    a + b` only preserves `a + b`.
+			// A proper fix would add a BlockExpression node containing all statements,
+			// with the last expression as the result. Low priority since it only affects
+			// complex multi-line arrow functions and doesn't cause validation errors.
 			return lastStmt.expression;
 		}
 
@@ -1293,6 +1223,48 @@ export class Parser {
 			token.type === TokenType.KEYWORD &&
 			Parser.TYPE_KEYWORDS.has(token.value)
 		);
+	}
+
+	/**
+	 * Parse generic type syntax like <float>, <int>, <array<float>>, including array[] syntax.
+	 * Returns the suffix to append to the base type, or empty string if no generic syntax found.
+	 */
+	private parseGenericTypeSuffix(): string {
+		// Check for generic type syntax: array<float>, matrix<int>, etc.
+		if (this.check(TokenType.COMPARE) && this.peek().value === "<") {
+			this.advance(); // consume <
+			let suffix = "";
+			// Consume the type parameter (e.g., "float")
+			if (this.check(TokenType.IDENTIFIER) || this.check(TokenType.KEYWORD)) {
+				suffix = `<${this.advance().value}`;
+				// Handle nested generics like array<array<float>>
+				while (this.check(TokenType.COMPARE) && this.peek().value === "<") {
+					this.advance(); // consume <
+					if (this.check(TokenType.IDENTIFIER) || this.check(TokenType.KEYWORD)) {
+						suffix += `<${this.advance().value}`;
+					}
+					if (this.check(TokenType.COMPARE) && this.peek().value === ">") {
+						this.advance(); // consume >
+						suffix += ">";
+					}
+				}
+				// Consume closing >
+				if (this.check(TokenType.COMPARE) && this.peek().value === ">") {
+					this.advance(); // consume >
+					suffix += ">";
+				}
+			}
+			return suffix;
+		}
+		// Check for simple array type syntax: float[], int[], etc.
+		if (this.check(TokenType.LBRACKET)) {
+			this.advance(); // consume [
+			if (this.check(TokenType.RBRACKET)) {
+				this.advance(); // consume ]
+				return "[]";
+			}
+		}
+		return "";
 	}
 
 	private parseFunctionParams(): AST.FunctionParam[] {
@@ -1705,6 +1677,9 @@ export class Parser {
 
 				// Allow continuation if next token is an operator, function call, or array access
 				// But break if it looks like a new statement
+				// Heuristic: [ at start of line (column <= ~10) is likely a tuple declaration,
+				// while [ deeper in the line is likely array access continuation
+				const TUPLE_START_COLUMN_THRESHOLD = 10;
 				if (
 					nextToken &&
 					(nextToken.type === TokenType.MULTIPLY ||
@@ -1715,8 +1690,9 @@ export class Parser {
 						(nextToken.type === TokenType.KEYWORD &&
 							["and", "or"].includes(nextToken.value)) ||
 						nextToken.type === TokenType.LPAREN ||
-						// LBRACKET at start of line is likely a tuple, not array access
-						(nextToken.type === TokenType.LBRACKET && nextToken.column > 10) ||
+						// LBRACKET at line start is likely a tuple declaration, not array access
+						(nextToken.type === TokenType.LBRACKET &&
+							nextToken.column > TUPLE_START_COLUMN_THRESHOLD) ||
 						nextToken.type === TokenType.DOT)
 				) {
 					// Skip the newline and continue

@@ -31,7 +31,7 @@ import {
 } from "../common/errors";
 import {
 	type FunctionSignature,
-	TOP_LEVEL_ONLY_FUNCTIONS,
+	isTopLevelOnly,
 	DEPRECATED_V5_CONSTANTS,
 	NAMESPACE_PROPERTIES,
 	KNOWN_NAMESPACES,
@@ -108,50 +108,8 @@ export class UnifiedPineValidator {
 		} else if (statement.type === "TupleDeclaration") {
 			// Handle tuple destructuring: [a, b, c] = expr
 			const tupleDecl = statement as TupleDeclaration;
-
-			// Try to infer types from the init expression
-			const elementTypes: PineType[] = [];
-
-			if (tupleDecl.init.type === "CallExpression") {
-				const call = tupleDecl.init as CallExpression;
-				let funcName = "";
-				if (call.callee.type === "Identifier") {
-					funcName = call.callee.name;
-				} else if (call.callee.type === "MemberExpression") {
-					const member = call.callee;
-					if (member.object.type === "Identifier") {
-						funcName = `${member.object.name}.${member.property.name}`;
-					}
-				}
-
-				// For request.security, look for the expression/array argument
-				if (funcName === "request.security" && call.arguments.length >= 3) {
-					const exprArg = call.arguments[2].value;
-					if (exprArg.type === "ArrayExpression") {
-						// Extract types from array elements
-						for (const elem of (exprArg as ArrayExpression).elements) {
-							elementTypes.push(this.inferExpressionType(elem, version));
-						}
-					}
-				}
-			}
-
-			// Add each tuple element as a variable
-			for (let i = 0; i < tupleDecl.names.length; i++) {
-				const name = tupleDecl.names[i];
-				// Use inferred type from init expression, or default to series<float>
-				const varType = elementTypes[i] || "series<float>";
-
-				this.symbolTable.define({
-					name,
-					type: varType,
-					line: tupleDecl.line,
-					column: tupleDecl.column,
-					used: false,
-					kind: "variable",
-					declaredWith: null,
-				});
-			}
+			const elementTypes = this.inferTupleElementTypes(tupleDecl, version);
+			this.defineTupleVariables(tupleDecl, elementTypes);
 		} else if (statement.type === "FunctionDeclaration") {
 			// NOTE: Function declarations are handled in validateStatement
 			// to ensure proper scope management. This method is only called
@@ -258,50 +216,8 @@ export class UnifiedPineValidator {
 			case "TupleDeclaration": {
 				// Handle tuple destructuring: [a, b, c] = expr
 				const tupleDecl = statement as TupleDeclaration;
-
-				// Try to infer types from the init expression
-				const elementTypes: PineType[] = [];
-
-				if (tupleDecl.init.type === "CallExpression") {
-					const call = tupleDecl.init as CallExpression;
-					let funcName = "";
-					if (call.callee.type === "Identifier") {
-						funcName = call.callee.name;
-					} else if (call.callee.type === "MemberExpression") {
-						const member = call.callee;
-						if (member.object.type === "Identifier") {
-							funcName = `${member.object.name}.${member.property.name}`;
-						}
-					}
-
-					// For request.security, look for the expression/array argument
-					if (funcName === "request.security" && call.arguments.length >= 3) {
-						const exprArg = call.arguments[2].value;
-						if (exprArg.type === "ArrayExpression") {
-							// Extract types from array elements
-							for (const elem of (exprArg as ArrayExpression).elements) {
-								elementTypes.push(this.inferExpressionType(elem, version));
-							}
-						}
-					}
-				}
-
-				// Add each tuple element as a variable
-				for (let i = 0; i < tupleDecl.names.length; i++) {
-					const name = tupleDecl.names[i];
-					// Use inferred type from init expression, or default to series<float>
-					const varType = elementTypes[i] || "series<float>";
-
-					this.symbolTable.define({
-						name,
-						type: varType,
-						line: tupleDecl.line,
-						column: tupleDecl.column,
-						used: false,
-						kind: "variable",
-						declaredWith: null,
-					});
-				}
+				const elementTypes = this.inferTupleElementTypes(tupleDecl, version);
+				this.defineTupleVariables(tupleDecl, elementTypes);
 
 				// Validate the init expression
 				this.validateExpression(tupleDecl.init, version);
@@ -702,7 +618,7 @@ export class UnifiedPineValidator {
 		const signature = this.functionSignatures.get(functionName);
 
 		// Check for top-level only functions in local scope
-		if (TOP_LEVEL_ONLY_FUNCTIONS.has(functionName) && this.blockDepth > 0) {
+		if (isTopLevelOnly(functionName) && this.blockDepth > 0) {
 			this.addError(
 				call.line,
 				call.column,
@@ -871,12 +787,17 @@ export class UnifiedPineValidator {
 		this.validateSpecialCases(call, functionName, args);
 	}
 
+	/**
+	 * Special-case semantic validations that check parameter relationships.
+	 * These are intentionally hardcoded here (not in pine-data) because they're
+	 * behavioral checks rather than type/signature data.
+	 */
 	private validateSpecialCases(
 		call: CallExpression,
 		functionName: string,
 		args: CallArgument[],
 	): void {
-		// plotshape: should use "style" not "shape"
+		// plotshape: common mistake - using "shape" instead of "style"
 		if (functionName === "plotshape" || functionName.endsWith(".plotshape")) {
 			for (const arg of args) {
 				if (arg.name === "shape") {
@@ -891,7 +812,7 @@ export class UnifiedPineValidator {
 			}
 		}
 
-		// indicator/strategy: timeframe_gaps without timeframe
+		// indicator/strategy: timeframe_gaps requires timeframe
 		if (functionName === "indicator" || functionName === "strategy") {
 			const hasTimeframeGaps = args.some((a) => a.name === "timeframe_gaps");
 			const hasTimeframe = args.some((a) => a.name === "timeframe");
@@ -963,6 +884,67 @@ export class UnifiedPineValidator {
 		this.symbolTable.exitScope();
 
 		return returnType;
+	}
+
+	/**
+	 * Infer types for tuple elements from the init expression.
+	 * For request.security with array argument, extracts element types.
+	 */
+	private inferTupleElementTypes(
+		tupleDecl: TupleDeclaration,
+		version: string = "6",
+	): PineType[] {
+		const elementTypes: PineType[] = [];
+
+		if (tupleDecl.init.type === "CallExpression") {
+			const call = tupleDecl.init as CallExpression;
+			let funcName = "";
+			if (call.callee.type === "Identifier") {
+				funcName = call.callee.name;
+			} else if (call.callee.type === "MemberExpression") {
+				const member = call.callee;
+				if (member.object.type === "Identifier") {
+					funcName = `${member.object.name}.${member.property.name}`;
+				}
+			}
+
+			// For request.security, look for the expression/array argument
+			if (funcName === "request.security" && call.arguments.length >= 3) {
+				const exprArg = call.arguments[2].value;
+				if (exprArg.type === "ArrayExpression") {
+					// Extract types from array elements
+					for (const elem of (exprArg as ArrayExpression).elements) {
+						elementTypes.push(this.inferExpressionType(elem, version));
+					}
+				}
+			}
+		}
+
+		return elementTypes;
+	}
+
+	/**
+	 * Define tuple element variables in the symbol table.
+	 */
+	private defineTupleVariables(
+		tupleDecl: TupleDeclaration,
+		elementTypes: PineType[],
+	): void {
+		for (let i = 0; i < tupleDecl.names.length; i++) {
+			const name = tupleDecl.names[i];
+			// Use inferred type from init expression, or default to series<float>
+			const varType = elementTypes[i] || "series<float>";
+
+			this.symbolTable.define({
+				name,
+				type: varType,
+				line: tupleDecl.line,
+				column: tupleDecl.column,
+				used: false,
+				kind: "variable",
+				declaredWith: null,
+			});
+		}
 	}
 
 	private inferExpressionType(

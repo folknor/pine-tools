@@ -234,13 +234,13 @@ Deep analysis of `packages/core/src/` to identify and document code that "works 
 | Location | Category | Description | Severity | Action |
 |----------|----------|-------------|----------|--------|
 | `lexer.ts:103-122` | Dead code | `_BUILTIN_FUNCTIONS` defined but never used | Low | Fix - delete |
-| `lexer.ts:271-276` | Silent failure | `!` without `=` produces no token | Medium | Investigate |
+| `lexer.ts:271-276` | Silent failure | `!` without `=` produces no token | Medium | ✅ FIXED - produces ERROR token |
 | `lexer.ts:452-460,478-486` | Duplicated logic | Scientific notation scanning duplicated | Low | Keep |
 | `lexer.ts:161` | Magic number | Tab = 4 spaces hardcoded | Low | Keep |
 | `parser.ts:1952-1955` | Dead code | Duplicate `switch` keyword check | Low | Fix - delete |
-| `parser.ts:1719` | Magic number | `column > 10` tuple vs array detection | Medium | Investigate |
-| `parser.ts:1252-1253` | TODO comment | BlockExpression incomplete | Medium | Document |
-| `parser.ts:222-250,288-314` | Duplicated logic | Generic type parsing duplicated | Medium | Fix - extract |
+| `parser.ts:1719` | Magic number | `column > 10` tuple vs array detection | Medium | ✅ FIXED - named constant with docs |
+| `parser.ts:1252-1253` | TODO comment | BlockExpression incomplete | Medium | ✅ FIXED - documented as low priority |
+| `parser.ts:222-250,288-314` | Duplicated logic | Generic type parsing duplicated | Medium | ✅ FIXED - extracted parseGenericTypeSuffix() |
 | `parser.ts:201-217,268-282` | Duplicated logic | Type keyword list duplicated | Low | Fix - use static |
 | `parser.ts:multiple` | Silent failures | `catch (_e)` for backtracking | Low | Keep |
 | `parser.ts:1924-1934` | Special case | `na` as Identifier | Low | Keep - documented |
@@ -248,20 +248,20 @@ Deep analysis of `packages/core/src/` to identify and document code that "works 
 | `astExtractor.ts:107-159` | Data in wrong place | `SERIES_FUNCTIONS` hardcoded | High | ✅ FIXED - uses pine-data |
 | `astExtractor.ts:162-180` | Data in wrong place | `QUALIFIER_PRESERVING` hardcoded | High | ✅ FIXED - uses pine-data |
 | `astExtractor.ts:183-197` | Data in wrong place | `BUILTIN_SERIES` hardcoded | High | ✅ FIXED - uses pine-data |
-| `astExtractor.ts:536-547` | Data in wrong place | `arrayElementFuncs` hardcoded | Medium | Move to pine-data |
+| `astExtractor.ts:536-547` | Data in wrong place | `arrayElementFuncs` hardcoded | Medium | ✅ FIXED - uses flags.polymorphic |
 | `astExtractor.ts:324` | Magic number | `+ 20` approx end column | Low | Keep |
 | `astExtractor.ts:multiple` | Magic strings | Default type fallbacks | Low | Keep |
-| `semanticAnalyzer.ts:314-366` | Data in wrong place | `seriesFunctions` hardcoded | Medium | Move to pine-data |
+| `semanticAnalyzer.ts:314-366` | Data in wrong place | `seriesFunctions` hardcoded | Medium | ✅ FIXED - uses pine-data return types |
 | `semanticAnalyzer.ts:446-491` | Data in wrong place | `commonVariables` hardcoded | Low | Keep - heuristic |
 | `semanticAnalyzer.ts:298-299` | TODO comment | "simplified check" incomplete | Low | Document |
 | `semanticAnalyzer.ts:432` | Magic number | `0, 0` for missing location | Low | Keep |
 | `checker.ts:1066-1070` | Dead code | `DEBUG_NA = false` left in | Low | Fix - remove |
 | `checker.ts:355-412` | Data in wrong place | Param name→type heuristics | High | ✅ FIXED - removed heuristics, use "unknown" |
-| `checker.ts:108-154,258-308` | Duplicated logic | TupleDeclaration duplicated | Medium | Fix - extract |
-| `checker.ts:941-970` | Special case | plotshape/indicator validations | Medium | Move to pine-data |
+| `checker.ts:108-154,258-308` | Duplicated logic | TupleDeclaration duplicated | Medium | ✅ FIXED - extracted helper methods |
+| `checker.ts:941-970` | Special case | plotshape/indicator validations | Medium | ✅ FIXED - documented as intentional |
 | `checker.ts:1076-1098` | Special case | array.new/request.security | Medium | Keep |
 | `checker.ts:761` | Silent failure | Complex callee ignored | Low | Document |
-| `builtins.ts:19-33` | Data in wrong place | `TOP_LEVEL_ONLY_FUNCTIONS` | Medium | Move to pine-data |
+| `builtins.ts:19-33` | Data in wrong place | `TOP_LEVEL_ONLY_FUNCTIONS` | Medium | ✅ FIXED - uses flags.topLevelOnly |
 | `builtins.ts:36-39` | Data in wrong place | `DEPRECATED_V5_CONSTANTS` | Low | Move to pine-data |
 | `builtins.ts:67-159` | Data in wrong place | Namespace properties hardcoded | High | ✅ FIXED - uses pine-data |
 | `builtins.ts:163-180` | Data in wrong place | `KNOWN_NAMESPACES` hardcoded | Medium | ✅ FIXED - derived from pine-data |

@@ -446,29 +446,18 @@ export class ASTExtractor {
 				}
 
 				// Check for array element-returning functions (polymorphic on array element type)
-				const arrayElementFuncs = [
-					"array.get",
-					"array.first",
-					"array.last",
-					"array.pop",
-					"array.shift",
-					"array.max",
-					"array.min",
-					"array.median",
-					"array.mode",
-					"array.range",
-				];
-				if (arrayElementFuncs.includes(funcName) && call.arguments.length > 0) {
+				// Uses pine-data flags.polymorphic === "element" instead of hardcoded list
+				const funcDef2 = FUNCTIONS_BY_NAME.get(funcName);
+				if (funcDef2?.flags?.polymorphic === "element" && call.arguments.length > 0) {
 					// Get the type of the array argument
 					const arrayArgType = this.inferExpressionType(call.arguments[0].value);
 					// Extract element type from array<T>
 					const arrayMatch = arrayArgType.match(/^array<(.+)>$/);
 					if (arrayMatch) {
 						const elementType = arrayMatch[1];
-						// For functions like array.avg, array.sum that always return numeric
-						const numericFuncs = ["array.avg", "array.sum", "array.stdev", "array.variance"];
-						if (numericFuncs.includes(funcName)) {
-							return `series float`;
+						// If function has explicit return type (e.g., array.max returns float), use it
+						if (funcDef2.returns && !funcDef2.returns.includes("<type>")) {
+							return funcDef2.returns;
 						}
 						return elementType;
 					}

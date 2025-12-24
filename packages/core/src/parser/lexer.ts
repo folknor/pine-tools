@@ -38,6 +38,7 @@ export enum TokenType {
 	ANNOTATION = "ANNOTATION", // //@version=6
 	EOF = "EOF",
 	WHITESPACE = "WHITESPACE",
+	ERROR = "ERROR", // Invalid/unexpected character
 }
 
 export interface Token {
@@ -272,6 +273,10 @@ export class Lexer {
 				if (this.peek() === "=") {
 					this.advance();
 					this.addToken(TokenType.COMPARE, "!=", 2);
+				} else {
+					// Pine Script uses 'not' for negation, not '!'
+					// Produce an error token so the parser can report a meaningful error
+					this.addToken(TokenType.ERROR, "!", 1);
 				}
 				break;
 

@@ -16,6 +16,7 @@ import type {
 	WhileStatement,
 } from "./ast";
 import { DiagnosticSeverity } from "../common/errors";
+import { FUNCTIONS_BY_NAME } from "../../../../pine-data/v6";
 
 export interface SemanticWarning {
 	line: number;
@@ -309,64 +310,19 @@ export class SemanticAnalyzer {
 	}
 
 	private isSeriesFunction(functionName: string): boolean {
-		// List of functions that should not be called conditionally
-		// These are typically functions that return series values and should be called consistently
-		const seriesFunctions = [
-			// Technical Analysis functions
-			"ta.sma",
-			"ta.ema",
-			"ta.wma",
-			"ta.vwma",
-			"ta.rsi",
-			"ta.macd",
-			"ta.stoch",
-			"ta.bb",
-			"ta.atr",
-			"ta.crossover",
-			"ta.crossunder",
-			"ta.cross",
-			"ta.highest",
-			"ta.lowest",
-			"ta.change",
-			"ta.mom",
-			"ta.valuewhen",
-			"ta.barssince",
+		// Check if function returns a series type using pine-data
+		// These functions should not be called conditionally
+		const func = FUNCTIONS_BY_NAME.get(functionName);
+		if (func?.returns) {
+			// Check if return type is series
+			if (func.returns.startsWith("series")) {
+				return true;
+			}
+		}
 
-			// Request functions
-			"request.security",
-			"request.dividends",
-			"request.splits",
-			"request.earnings",
-
-			// Built-in series functions
-			"math.sin",
-			"math.cos",
-			"math.tan",
-			"math.asin",
-			"math.acos",
-			"math.atan",
-			"math.sqrt",
-			"math.log",
-			"math.exp",
-			"math.abs",
-			"math.round",
-			"math.floor",
-			"math.ceil",
-			"math.sign",
-			"math.pow",
-			"math.max",
-			"math.min",
-
-			// String functions that return series
-			"str.tostring",
-			"str.length",
-			"str.contains",
-			"str.pos",
-			"str.substring",
-		];
-
+		// Fallback: namespace-based heuristic for functions not in pine-data
+		// or for user-defined functions that follow naming conventions
 		return (
-			seriesFunctions.includes(functionName) ||
 			functionName.startsWith("ta.") ||
 			functionName.startsWith("request.") ||
 			functionName.startsWith("str.")

@@ -15,22 +15,14 @@ import type { PineType } from "./types";
 // Re-export getFunctionBehavior for use in checker
 export const getFunctionBehavior = _getFunctionBehavior;
 
-// Functions that can only be called at the top level (not in local scopes)
-export const TOP_LEVEL_ONLY_FUNCTIONS = new Set([
-	"indicator",
-	"strategy",
-	"library",
-	"plot",
-	"plotshape",
-	"plotchar",
-	"plotcandle",
-	"plotbar",
-	"hline",
-	"bgcolor",
-	"barcolor",
-	"fill",
-	"alertcondition",
-]);
+/**
+ * Check if a function can only be called at the top level (not in local scopes).
+ * Uses flags.topLevelOnly from pine-data.
+ */
+export function isTopLevelOnly(functionName: string): boolean {
+	const func = FUNCTIONS_BY_NAME.get(functionName);
+	return func?.flags?.topLevelOnly === true;
+}
 
 // Deprecated v5 constants with their v6 replacements
 export const DEPRECATED_V5_CONSTANTS: Record<string, string> = {

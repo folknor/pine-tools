@@ -7,7 +7,7 @@ export { UnifiedPineValidator, type ValidationError, DiagnosticSeverity } from "
 export {
 	type FunctionSignature,
 	type ParameterInfo,
-	TOP_LEVEL_ONLY_FUNCTIONS,
+	isTopLevelOnly,
 	DEPRECATED_V5_CONSTANTS,
 	NAMESPACE_PROPERTIES,
 	KNOWN_NAMESPACES,
