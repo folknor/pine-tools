@@ -1,0 +1,13 @@
+# Exclude everything first
+**
+
+# Then include only what we need
+!dist/**
+!syntaxes/**
+!language-configuration.json
+!package.json
+!LICENSE
+!readme.md
+
+# Exclude source maps from dist
+dist/**/*.map

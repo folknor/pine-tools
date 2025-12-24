@@ -40,7 +40,13 @@ Add to your Claude Desktop configuration file:
 ### Manual Testing
 
 ```bash
+# Build the server
+pnpm run build
+
 # Start the server
+pnpm run mcp:start
+
+# Or run directly
 node dist/packages/mcp/bin/pine-mcp.js
 
 # The server communicates via stdio using JSON-RPC

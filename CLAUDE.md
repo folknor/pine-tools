@@ -87,11 +87,19 @@ packages/
 ├── core/src/             # Parser, analyzer, types (STABLE)
 │   ├── parser/           # Lexer, parser, AST
 │   └── analyzer/         # Type checker, builtins
-├── language-service/src/ # Language service (TO BE CREATED)
-├── lsp/src/              # LSP server (TO BE REIMPLEMENTED)
-├── mcp/src/              # MCP server (TO BE IMPLEMENTED)
+├── language-service/src/ # Editor-agnostic language service (COMPLETE)
+│   ├── PineLanguageService.ts  # Main facade class
+│   ├── features/         # Completions, hover, diagnostics, etc.
+│   └── documents/        # Document lifecycle management
+├── lsp/src/              # LSP server (COMPLETE)
+│   ├── server.ts         # JSON-RPC server over stdio
+│   ├── handlers/         # LSP protocol handlers
+│   └── converters.ts     # Type conversions
+├── mcp/src/              # MCP server for AI assistants (COMPLETE)
+│   ├── server.ts         # MCP server with tools/resources
+│   └── bin/pine-mcp.ts   # CLI entry point
 ├── cli/src/              # CLI tool (STABLE)
-└── vscode/src/           # VS Code extension (TO BE REIMPLEMENTED)
+└── vscode/src/           # VS Code extension (IN PROGRESS)
 
 dev-tools/
 ├── test-snippet.js       # Quick Pine snippet testing via CLI
@@ -114,13 +122,17 @@ syntaxes/
 
 ## Current Status
 
-### Stable Components (No Changes Needed)
+### Package Status
 
 | Package | Status | Description |
 |---------|--------|-------------|
 | `packages/core/` | ✅ Stable | Parser, lexer, validator, type checker |
 | `packages/cli/` | ✅ Stable | CLI validation tool |
 | `packages/pipeline/` | ✅ Stable | Data generation scripts |
+| `packages/language-service/` | ✅ Complete | Editor-agnostic language service |
+| `packages/lsp/` | ✅ Complete | LSP server (JSON-RPC over stdio) |
+| `packages/mcp/` | ✅ Complete | MCP server for AI assistants |
+| `packages/vscode/` | ✅ Complete | Thin LSP client (197 lines) |
 | `pine-data/` | ✅ Stable | Generated language data |
 | `syntaxes/` | ✅ Stable | TextMate grammar |
 
@@ -139,368 +151,37 @@ Run `pnpm run debug:corpus --summary` for fresh stats.
 
 ### Test Suite
 
-**51 tests passing** in `packages/core/test/`
+**72 tests passing** (51 in `packages/core/test/` + 21 in `packages/language-service/test/`)
 
 ---
 
-## Major Work Items
+## Recently Completed
 
-### Work Item 1: Create Language Service Layer
+### Architecture Refactor (December 2024)
 
-**Priority: High | Effort: Medium | Prerequisite for LSP/MCP/VSCode**
+Restructured the extension from monolithic to modular architecture:
 
-#### Problem
-The current `packages/lsp/` directly imports `vscode` module, making it unusable outside VS Code. Both LSP and MCP need the same language intelligence but currently there's no shared abstraction.
+| Before | After |
+|--------|-------|
+| `packages/lsp/` imported `vscode` directly | Editor-agnostic `packages/language-service/` |
+| `packages/mcp/` was empty | Full MCP server with 4 tools, 3 resources |
+| `packages/vscode/extension.ts` 530 lines | Thin LSP client at 197 lines |
 
-#### Solution
-Create `packages/language-service/` as an editor-agnostic language service that both LSP and MCP can consume.
-
-#### Architecture
+**New Package Structure:**
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    PineLanguageService                          │
-├─────────────────────────────────────────────────────────────────┤
-│ Document Management:                                            │
-│   openDocument(uri, content, version)                           │
-│   updateDocument(uri, content, version)                         │
-│   closeDocument(uri)                                            │
-├─────────────────────────────────────────────────────────────────┤
-│ Intelligence Features:                                          │
-│   getCompletions(uri, position) → CompletionItem[]              │
-│   getHover(uri, position) → HoverInfo | null                    │
-│   getDiagnostics(uri) → Diagnostic[]                            │
-│   getSignatureHelp(uri, position) → SignatureHelp | null        │
-│   format(uri, options) → TextEdit[]                             │
-│   getDefinition(uri, position) → Location | null                │
-│   getReferences(uri, position) → Location[]                     │
-│   getDocumentSymbols(uri) → DocumentSymbol[]                    │
-├─────────────────────────────────────────────────────────────────┤
-│ Internal State:                                                 │
-│   documents: Map<uri, ParsedDocument>                           │
-│   symbolTable: SymbolTable                                      │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-#### Files to Create
-```
-packages/language-service/
-├── src/
-│   ├── index.ts                 # Public exports
-│   ├── PineLanguageService.ts   # Main service class
-│   ├── types.ts                 # Protocol-agnostic types
-│   │   ├── Position, Range, Location
-│   │   ├── CompletionItem, CompletionItemKind
-│   │   ├── Diagnostic, DiagnosticSeverity
-│   │   ├── HoverInfo, SignatureHelp
-│   │   └── TextEdit, DocumentSymbol
-│   ├── features/
-│   │   ├── completions.ts       # Completion logic (from current lsp/)
-│   │   ├── hover.ts             # Hover logic
-│   │   ├── diagnostics.ts       # Validation + pattern checks
-│   │   ├── signatures.ts        # Signature help
-│   │   ├── formatting.ts        # Code formatting
-│   │   ├── definition.ts        # Go-to-definition
-│   │   └── symbols.ts           # Document symbols
-│   └── documents/
-│       ├── DocumentManager.ts   # Document lifecycle
-│       └── ParsedDocument.ts    # Cached parse results
-└── test/
-    └── service.test.ts
-```
-
-#### Implementation Steps
-1. Create `packages/language-service/src/types.ts` with protocol-agnostic types
-2. Create `DocumentManager` for document lifecycle
-3. Port completion logic from `packages/lsp/` (remove vscode imports)
-4. Port hover logic (remove vscode imports)
-5. Port signature help logic (remove vscode imports)
-6. Move hardcoded validation patterns from `packages/vscode/extension.ts` to `diagnostics.ts`
-7. Create `PineLanguageService` facade class
-8. Add unit tests
-
-#### Success Criteria
-- [ ] Zero imports from `vscode` module
-- [ ] All current IntelliSense features working
-- [ ] Hardcoded validation patterns moved from extension.ts
-- [ ] Unit tests for each feature
-- [ ] Can be consumed by both LSP and MCP
-
----
-
-### Work Item 2: Reimplement LSP Server
-
-**Priority: High | Effort: Medium | Depends on: Work Item 1**
-
-#### Problem
-Current `packages/lsp/` is not a proper LSP server - it's a collection of helpers that return VS Code types. Need a real LSP server using `vscode-languageserver`.
-
-#### Solution
-Implement proper LSP server that wraps `PineLanguageService` and communicates via JSON-RPC.
-
-#### Architecture
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                       LSP Server                                │
-├─────────────────────────────────────────────────────────────────┤
-│ Transport: stdio | socket | IPC                                 │
-├─────────────────────────────────────────────────────────────────┤
-│ Protocol Handlers:                                              │
-│   initialize → capabilities                                     │
-│   textDocument/didOpen → diagnostics                            │
-│   textDocument/didChange → diagnostics                          │
-│   textDocument/completion → completions                         │
-│   textDocument/hover → hover                                    │
-│   textDocument/signatureHelp → signatures                       │
-│   textDocument/formatting → edits                               │
-│   textDocument/definition → location                            │
-│   textDocument/references → locations                           │
-│   textDocument/documentSymbol → symbols                         │
-├─────────────────────────────────────────────────────────────────┤
-│ Delegates to: PineLanguageService                               │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-#### Files to Create
-```
-packages/lsp/
-├── src/
-│   ├── index.ts           # Entry point
-│   ├── server.ts          # LSP server setup
-│   ├── capabilities.ts    # Server capabilities
-│   └── handlers/
-│       ├── lifecycle.ts   # initialize, shutdown
-│       ├── documents.ts   # didOpen, didChange, didClose
-│       ├── completion.ts  # textDocument/completion
-│       ├── hover.ts       # textDocument/hover
-│       ├── signature.ts   # textDocument/signatureHelp
-│       ├── formatting.ts  # textDocument/formatting
-│       ├── definition.ts  # textDocument/definition
-│       └── symbols.ts     # textDocument/documentSymbol
-├── bin/
-│   └── pine-lsp.ts        # CLI entry point
-└── test/
-    └── lsp.test.ts
-```
-
-#### Dependencies
-```json
-{
-  "dependencies": {
-    "vscode-languageserver": "^9.0.0",
-    "vscode-languageserver-textdocument": "^1.0.0"
-  }
-}
-```
-
-#### Implementation Steps
-1. Delete current `packages/lsp/src/languageService/` (will be replaced by language-service/)
-2. Set up LSP server with `vscode-languageserver`
-3. Implement lifecycle handlers (initialize, shutdown)
-4. Implement document sync handlers
-5. Wire each LSP method to corresponding `PineLanguageService` method
-6. Add CLI entry point for standalone usage
-7. Add integration tests
-
-#### Success Criteria
-- [ ] Works as standalone process (stdio transport)
-- [ ] All current features exposed via LSP
-- [ ] Can be used by any LSP-compatible editor (Neovim, Sublime, etc.)
-- [ ] Integration tests passing
-
----
-
-### Work Item 3: Implement MCP Server
-
-**Priority: High | Effort: Medium | Depends on: Work Item 1**
-
-#### Problem
-`packages/mcp/` is empty. Need MCP server for AI assistant integration (Claude, Cursor, etc.).
-
-#### Solution
-Implement MCP server using `@modelcontextprotocol/sdk` that exposes Pine Script intelligence as tools.
-
-#### Architecture
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                       MCP Server                                │
-├─────────────────────────────────────────────────────────────────┤
-│ Transport: stdio                                                │
-├─────────────────────────────────────────────────────────────────┤
-│ Tools:                                                          │
-│   pine_validate                                                 │
-│     Input: { code: string }                                     │
-│     Output: { errors: Diagnostic[], warnings: Diagnostic[] }    │
-│                                                                 │
-│   pine_complete                                                 │
-│     Input: { code: string, line: number, character: number }    │
-│     Output: { completions: CompletionItem[] }                   │
-│                                                                 │
-│   pine_hover                                                    │
-│     Input: { symbol: string }                                   │
-│     Output: { documentation: string, type?: string }            │
-│                                                                 │
-│   pine_lookup_function                                          │
-│     Input: { name: string }                                     │
-│     Output: { syntax: string, description: string, params: [] } │
-│                                                                 │
-│   pine_list_functions                                           │
-│     Input: { namespace?: string }                               │
-│     Output: { functions: string[] }                             │
-│                                                                 │
-│   pine_format                                                   │
-│     Input: { code: string }                                     │
-│     Output: { formatted: string }                               │
-├─────────────────────────────────────────────────────────────────┤
-│ Resources:                                                      │
-│   pine://reference/functions                                    │
-│   pine://reference/variables                                    │
-│   pine://reference/constants                                    │
-│   pine://docs/{symbol}                                          │
-├─────────────────────────────────────────────────────────────────┤
-│ Delegates to: PineLanguageService + pine-data                   │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-#### Files to Create
-```
-packages/mcp/
-├── src/
-│   ├── index.ts           # Entry point
-│   ├── server.ts          # MCP server setup
-│   ├── tools/
-│   │   ├── validate.ts    # pine_validate tool
-│   │   ├── complete.ts    # pine_complete tool
-│   │   ├── hover.ts       # pine_hover tool
-│   │   ├── lookup.ts      # pine_lookup_function tool
-│   │   ├── list.ts        # pine_list_functions tool
-│   │   └── format.ts      # pine_format tool
-│   └── resources/
-│       ├── reference.ts   # Reference documentation
-│       └── docs.ts        # Symbol documentation
-├── bin/
-│   └── pine-mcp.ts        # CLI entry point
-└── test/
-    └── mcp.test.ts
-```
-
-#### Implementation Steps
-1. Set up MCP server with `@modelcontextprotocol/sdk`
-2. Implement `pine_validate` tool (highest priority for AI usage)
-3. Implement `pine_lookup_function` and `pine_list_functions` tools
-4. Implement `pine_hover` tool
-5. Implement `pine_complete` tool
-6. Implement `pine_format` tool
-7. Add resource handlers for documentation browsing
-8. Add integration tests
-9. Document MCP configuration for Claude Desktop
-
-#### Success Criteria
-- [ ] Works with Claude Desktop
-- [ ] `pine_validate` returns accurate diagnostics
-- [ ] AI can look up function documentation
-- [ ] Integration tests passing
-
----
-
-### Work Item 4: Reimplement VS Code Extension
-
-**Priority: High | Effort: Low | Depends on: Work Item 2**
-
-#### Problem
-Current `packages/vscode/extension.ts` has:
-- 530 lines of mixed concerns
-- 11 hardcoded validation patterns that belong in core
-- Direct parser/validator calls instead of using LSP
-
-#### Solution
-Thin VS Code extension that is purely an LSP client, plus minimal VS Code-specific features.
-
-#### Architecture
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    VS Code Extension                            │
-├─────────────────────────────────────────────────────────────────┤
-│ LSP Client:                                                     │
-│   - Spawns pine-lsp server process                              │
-│   - Forwards all language features to LSP                       │
-├─────────────────────────────────────────────────────────────────┤
-│ VS Code-Specific Features:                                      │
-│   - File association (*.pine → pine)                            │
-│   - Commands (pine.validate, pine.showDocs)                     │
-│   - Status bar integration                                      │
-│   - Settings UI                                                 │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-#### Files to Create
-```
-packages/vscode/
-├── src/
-│   ├── extension.ts       # Activation, LSP client setup
-│   ├── commands.ts        # VS Code commands
-│   └── settings.ts        # Configuration handling
-└── test/
-    └── extension.test.ts
-```
-
-#### Dependencies
-```json
-{
-  "dependencies": {
-    "vscode-languageclient": "^9.0.0"
-  }
-}
-```
-
-#### Implementation Steps
-1. Remove all validation logic (now in language-service/)
-2. Remove completion/hover/signature providers (now via LSP)
-3. Set up LSP client using `vscode-languageclient`
-4. Configure client to spawn `pine-lsp` server
-5. Keep VS Code-specific commands
-6. Keep file association logic
-7. Update package.json with LSP server bundling
-
-#### Success Criteria
-- [ ] Extension.ts < 150 lines
-- [ ] All features work via LSP
-- [ ] No hardcoded validation patterns
-- [ ] Extension size reduced
-
----
-
-## Implementation Order
-
-```
-┌──────────────────────────────────────────────────────────────────┐
-│  Phase 1: Foundation                                             │
-│  ┌────────────────────────────────────────────────────────────┐  │
-│  │  Work Item 1: Language Service Layer                       │  │
-│  │  - Create packages/language-service/                       │  │
-│  │  - Port all intelligence features                          │  │
-│  │  - Move validation patterns from extension.ts              │  │
-│  └────────────────────────────────────────────────────────────┘  │
-└──────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌──────────────────────────────────────────────────────────────────┐
-│  Phase 2: Protocol Servers (can be parallel)                     │
-│  ┌──────────────────────────┐  ┌──────────────────────────────┐  │
-│  │  Work Item 2: LSP Server │  │  Work Item 3: MCP Server     │  │
-│  │  - Proper JSON-RPC       │  │  - AI assistant tools        │  │
-│  │  - All LSP methods       │  │  - Documentation resources   │  │
-│  └──────────────────────────┘  └──────────────────────────────┘  │
-└──────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌──────────────────────────────────────────────────────────────────┐
-│  Phase 3: Editor Integration                                     │
-│  ┌────────────────────────────────────────────────────────────┐  │
-│  │  Work Item 4: VS Code Extension                            │  │
-│  │  - Thin LSP client                                         │  │
-│  │  - VS Code-specific features only                          │  │
-│  └────────────────────────────────────────────────────────────┘  │
-└──────────────────────────────────────────────────────────────────┘
+packages/
+├── language-service/     # Shared brain (21 tests)
+│   ├── PineLanguageService.ts
+│   ├── features/         # completions, hover, diagnostics, etc.
+│   └── documents/        # Document lifecycle
+├── lsp/                  # LSP server (JSON-RPC over stdio)
+│   ├── server.ts
+│   ├── handlers/
+│   └── converters.ts
+├── mcp/                  # MCP server for AI assistants
+│   └── server.ts         # pine_validate, pine_lookup, etc.
+└── vscode/               # Thin LSP client
+    └── extension.ts      # 197 lines
 ```
 
 ---
@@ -555,6 +236,7 @@ Discovered automatically via `discover:behavior`:
 - **Legacy color constants** - v4/v5 scripts use bare `red`, `green`, etc. In v6, must use `color.red`. Not fixing since these are pre-v6 scripts.
 - **Invalid parameter names** - Some scripts use deprecated params like `type` (input) and `when` (strategy). These are v5 params not valid in v6.
 - **Nested inline switches with tuples** - Deeply nested inline switches with tuple assignments inside case bodies are not yet fully supported. Basic inline switch with tuples works.
+- **Built-in unused variable warnings** - The core validator (`UnifiedPineValidator`) incorrectly reports built-in variables/keywords as "declared but never used". This is a bug in the unused variable detection logic that needs to exclude built-ins from the check. Location: `packages/core/src/analyzer/checker.ts`.
 
 ### Multiline String Behavior (v6)
 
