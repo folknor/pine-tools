@@ -10,9 +10,11 @@ import type {
 	ExpressionStatement,
 	FunctionParam,
 	Identifier,
+	ImportStatement,
 	IndexExpression,
 	Literal,
 	MemberExpression,
+	MethodDeclaration,
 	Program,
 	ReturnStatement,
 	Statement,
@@ -39,6 +41,8 @@ import {
 	isVariadicFunction,
 	getMinArgsForVariadic,
 	getPolymorphicReturnType,
+	getPolymorphicType,
+	getFunctionBehavior,
 	hasOverloads,
 	type ArgumentInfo,
 } from "./builtins";
@@ -171,6 +175,25 @@ export class UnifiedPineValidator {
 				declaredWith: null,
 			};
 			this.symbolTable.define(symbol);
+		} else if (statement.type === "MethodDeclaration") {
+			// Handle method declarations like function declarations
+			for (const stmt of statement.body) {
+				this.collectDeclarations(stmt, version);
+			}
+		} else if (statement.type === "ImportStatement") {
+			// Register import alias as a namespace/variable
+			if (statement.alias) {
+				const symbol: SymbolInfo = {
+					name: statement.alias,
+					type: "unknown", // Library type
+					line: statement.line,
+					column: statement.column,
+					used: false,
+					kind: "variable", // Treat as namespace
+					declaredWith: null,
+				};
+				this.symbolTable.define(symbol);
+			}
 		}
 	}
 
@@ -324,8 +347,12 @@ export class UnifiedPineValidator {
 					const param = statement.params[i];
 					let paramType: PineType = "unknown";
 
-					// Infer parameter type based on name and position
-					if (i === 0) {
+					// Use explicit type annotation if present
+					if (param.typeAnnotation) {
+						paramType = mapToPineType(param.typeAnnotation.name);
+					}
+					// Otherwise infer parameter type based on name and position
+					else if (i === 0) {
 						// First parameter is often series data
 						const paramName = param.name.toLowerCase();
 						if (
@@ -533,6 +560,79 @@ export class UnifiedPineValidator {
 							);
 						}
 					}
+				}
+				break;
+			}
+
+			case "MethodDeclaration": {
+				// Handle method declarations like function declarations
+				// First, infer the method return type from the body
+				let returnType: PineType = "unknown";
+
+				if (statement.returnType) {
+					returnType = mapToPineType(statement.returnType.name);
+				} else {
+					returnType = this.inferFunctionReturnType(
+						statement.body,
+						version,
+						statement.params,
+					);
+				}
+
+				// Register the method in the symbol table
+				this.symbolTable.define({
+					name: statement.name,
+					type: returnType,
+					line: statement.line,
+					column: statement.column,
+					used: false,
+					kind: "function",
+					declaredWith: null,
+				});
+
+				this.symbolTable.enterScope();
+				this.blockDepth++;
+
+				// Add method parameters to scope with proper type
+				for (const param of statement.params) {
+					let paramType: PineType = "unknown";
+					if (param.typeAnnotation) {
+						paramType = mapToPineType(param.typeAnnotation.name);
+					}
+					this.symbolTable.define({
+						name: param.name,
+						type: paramType,
+						line: statement.line,
+						column: statement.column,
+						used: false,
+						kind: "variable",
+						declaredWith: null,
+					});
+				}
+
+				// Collect and validate method body
+				for (const stmt of statement.body) {
+					this.collectDeclarations(stmt, version);
+				}
+				for (const stmt of statement.body) {
+					this.validateStatement(stmt);
+				}
+
+				this.symbolTable.exitScope();
+				this.blockDepth--;
+				break;
+			}
+
+			case "ImportStatement": {
+				// Import statements don't need validation beyond registering the alias
+				// (already done in collectDeclarations)
+				break;
+			}
+
+			case "SequenceStatement": {
+				// Validate each statement in the sequence
+				for (const stmt of statement.statements) {
+					this.validateStatement(stmt, version);
 				}
 				break;
 			}
@@ -750,6 +850,11 @@ export class UnifiedPineValidator {
 		// (we can't reliably determine which overload is being used)
 		const functionHasOverloads = hasOverloads(functionName);
 
+		// For polymorphic functions, skip parameter type checking
+		// (the function signature shows one type but accepts multiple)
+		const functionIsPolymorphic = getPolymorphicType(functionName) !== undefined ||
+			getFunctionBehavior(functionName)?.polymorphic !== undefined;
+
 		// Validate each parameter
 		for (let i = 0; i < signature.parameters.length; i++) {
 			const param = signature.parameters[i];
@@ -757,6 +862,10 @@ export class UnifiedPineValidator {
 			// Check named argument
 			const namedArg = providedArgs.get(param.name);
 			if (namedArg) {
+				// Skip type validation for polymorphic functions (type depends on input)
+				if (functionIsPolymorphic) {
+					continue;
+				}
 				// Validate type (named args are unambiguous, so we can check them)
 				if (param.type && param.type !== "unknown") {
 					if (!TypeChecker.isAssignable(namedArg.type, param.type)) {
@@ -772,10 +881,10 @@ export class UnifiedPineValidator {
 				continue;
 			}
 
-			// Check positional argument (skip for overloaded functions)
+			// Check positional argument (skip for overloaded/polymorphic functions)
 			if (i < positionalArgs.length) {
-				// Skip type checking for overloaded functions - can't determine which signature is used
-				if (functionHasOverloads) {
+				// Skip type checking for overloaded/polymorphic functions
+				if (functionHasOverloads || functionIsPolymorphic) {
 					continue;
 				}
 				const posArg = positionalArgs[i];

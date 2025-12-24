@@ -5,9 +5,9 @@ VS Code extension providing Pine Script v6 support: IntelliSense, validation, an
 ## Architecture: Data vs Syntax
 
 **Hardcoded in parser** (grammar fundamentals):
-- Keywords: `if`, `else`, `for`, `while`, `var`, `varip`, `return`
+- Keywords: `if`, `else`, `for`, `while`, `var`, `varip`, `return`, `import`, `export`, `method`
 - Operators: `+`, `-`, `*`, `/`, `and`, `or`, `not`, `?:`
-- Type keywords: `int`, `float`, `bool`, `string`, `color`
+- Type keywords: `int`, `float`, `bool`, `string`, `color`, `array`, `matrix`, `map`
 
 **Generated from pine-data/** (API data):
 - Function signatures, parameters, return types
@@ -113,12 +113,22 @@ Discovered automatically via `discover:behavior`:
 
 ## Remaining Work
 
-| Issue | Impact |
-|-------|--------|
-| Library/export function syntax | Library scripts not parsed |
+| Issue | Count | Priority |
+|-------|-------|----------|
+| Unexpected token errors | 87 | Medium |
+| Unknown type propagation | ~50 | Medium |
+| Series/simple coercion | ~30 | Low |
+| Invalid parameter validation | 14 | Low |
+
+*Note: "String parsing" errors (358) are a red herring - these are v4/v5 scripts with syntax issues.*
 
 ### Recently Fixed
 
+- **String → color coercion** - `"red"`, `"#FF0000"` now accepted as color values
+- **Polymorphic function params** - `nz()`, `input()` etc. no longer require specific types
+- **Library/export/method support** - `import User/Lib/1 as alias`, `export func()`, `method m()` now parse correctly
+- **Generic type parameters** - `array<float> arr`, `matrix<int> m` in function params now parse correctly
+- **Multi-word type annotations** - `simple int`, `series float` in params now typed correctly
 - **Comma operator support** - `a := 1, b := 2` and `func1(), func2()` now parse correctly
 - **Array element type tracking** - `array.new<float>()` → `array<float>`, `array.get(arr)` → element type
 

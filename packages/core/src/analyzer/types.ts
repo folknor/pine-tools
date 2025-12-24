@@ -165,6 +165,11 @@ export namespace TypeChecker {
 		if (from === "simple<int>" && to === "series<float>") return true;
 		if (from === "simple<float>" && to === "series<int>") return true;
 
+		// String -> color coercion (Pine Script allows color names and hex as strings)
+		// e.g., "red", "blue", "#FF0000", "#00FF00FF"
+		if (from === "string" && (to === "color" || to === "series<color>")) return true;
+		if (from === "series<string>" && to === "series<color>") return true;
+
 		return false;
 	}
 

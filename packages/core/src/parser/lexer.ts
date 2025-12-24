@@ -77,6 +77,7 @@ const KEYWORDS = new Set([
 	"default",
 	"type",
 	"enum", // Pine Script v6 custom type and enum definitions
+	"method", // Pine Script v6 method declarations
 	"and",
 	"or",
 	"not",

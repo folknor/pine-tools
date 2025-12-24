@@ -86,6 +86,22 @@ export class Parser {
 			return null;
 		}
 
+		// Import statement: import User/Library/Version [as alias]
+		if (this.match([TokenType.KEYWORD, ["import"]])) {
+			return this.importStatement();
+		}
+
+		// Export function or method: export funcName(...) => ...
+		// Export method: export method methodName(...) => ...
+		if (this.match([TokenType.KEYWORD, ["export"]])) {
+			return this.exportDeclaration();
+		}
+
+		// Method declaration: method methodName(...) => ...
+		if (this.match([TokenType.KEYWORD, ["method"]])) {
+			return this.methodDeclaration(false);
+		}
+
 		// If statement
 		if (this.match([TokenType.KEYWORD, ["if"]])) {
 			return this.ifStatement();
@@ -871,6 +887,184 @@ export class Parser {
 	}
 
 	/**
+	 * Parse import statement: import User/Library/Version [as alias]
+	 * The path is special - slashes are path separators, not division
+	 */
+	private importStatement(): AST.ImportStatement {
+		const startToken = this.previous();
+
+		// Parse library path: username/libraryName/version
+		// This is a special syntax where / is NOT division
+		let libraryPath = "";
+
+		// First segment: username (identifier)
+		if (this.check(TokenType.IDENTIFIER)) {
+			libraryPath = this.advance().value;
+		} else {
+			throw new Error(`Expected library username at line ${this.peek().line}`);
+		}
+
+		// Expect /
+		if (this.match(TokenType.DIVIDE)) {
+			libraryPath += "/";
+		} else {
+			throw new Error(`Expected "/" in import path at line ${this.peek().line}`);
+		}
+
+		// Second segment: libraryName (identifier)
+		if (this.check(TokenType.IDENTIFIER)) {
+			libraryPath += this.advance().value;
+		} else {
+			throw new Error(`Expected library name at line ${this.peek().line}`);
+		}
+
+		// Expect /
+		if (this.match(TokenType.DIVIDE)) {
+			libraryPath += "/";
+		} else {
+			throw new Error(`Expected "/" in import path at line ${this.peek().line}`);
+		}
+
+		// Third segment: version (number)
+		if (this.check(TokenType.NUMBER)) {
+			libraryPath += this.advance().value;
+		} else {
+			throw new Error(`Expected library version number at line ${this.peek().line}`);
+		}
+
+		// Optional: as alias
+		let alias: string | undefined;
+		if (this.check(TokenType.KEYWORD) && this.peek().value === "as") {
+			this.advance(); // consume 'as'
+			if (this.check(TokenType.IDENTIFIER)) {
+				alias = this.advance().value;
+			} else {
+				throw new Error(`Expected alias name after 'as' at line ${this.peek().line}`);
+			}
+		}
+
+		return {
+			type: "ImportStatement",
+			libraryPath,
+			alias,
+			line: startToken.line,
+			column: startToken.column,
+		};
+	}
+
+	/**
+	 * Parse export declaration: export funcName(...) => ... or export method methodName(...) => ...
+	 */
+	private exportDeclaration(): AST.FunctionDeclaration | AST.MethodDeclaration {
+		// Check if it's 'export method'
+		if (this.match([TokenType.KEYWORD, ["method"]])) {
+			return this.methodDeclaration(true);
+		}
+
+		// Otherwise it's 'export funcName(...) => ...'
+		const nameToken = this.consume(TokenType.IDENTIFIER, "Expected function name after 'export'");
+		this.consume(TokenType.LPAREN, 'Expected "(" after function name');
+		const params = this.parseFunctionParams();
+		this.consume(TokenType.RPAREN, 'Expected ")" after function parameters');
+		this.consume(TokenType.ARROW, 'Expected "=>" after function parameters');
+
+		const funcDecl = this.functionDeclaration(
+			nameToken.value,
+			params,
+			nameToken.line,
+			nameToken.column,
+		);
+		funcDecl.isExport = true;
+		return funcDecl;
+	}
+
+	/**
+	 * Parse method declaration: [export] method methodName(...) => ...
+	 */
+	private methodDeclaration(isExport: boolean): AST.MethodDeclaration {
+		const nameToken = this.consume(TokenType.IDENTIFIER, "Expected method name after 'method'");
+		this.consume(TokenType.LPAREN, 'Expected "(" after method name');
+		const params = this.parseFunctionParams();
+		this.consume(TokenType.RPAREN, 'Expected ")" after method parameters');
+		this.consume(TokenType.ARROW, 'Expected "=>" after method parameters');
+
+		// Parse method body - same logic as function body
+		const body: AST.Statement[] = [];
+		const line = nameToken.line;
+
+		// Skip newlines after the => token
+		while (this.check(TokenType.NEWLINE)) {
+			this.advance();
+		}
+
+		// Check if next token is on a new line with deeper indentation
+		const nextToken = this.peek();
+		if (nextToken.line === line) {
+			// Single-line method: same line as =>
+			try {
+				const expr = this.expression();
+				body.push({
+					type: "ReturnStatement",
+					value: expr,
+					line: expr.line,
+					column: expr.column,
+				} as AST.ReturnStatement);
+			} catch (_e) {
+				// Error parsing expression - method may be incomplete
+			}
+		} else {
+			// Multi-line method: parse all statements at deeper indentation
+			let methodBodyIndent: number | null = null;
+
+			while (!this.isAtEnd()) {
+				const currentToken = this.peek();
+				const currentIndent = currentToken.indent || 0;
+
+				// Skip NEWLINE tokens
+				if (currentToken.type === TokenType.NEWLINE) {
+					this.advance();
+					continue;
+				}
+
+				// Set expected body indentation from first statement
+				if (methodBodyIndent === null && currentToken.line > line) {
+					methodBodyIndent = currentIndent;
+				}
+
+				// Stop if we've returned to base indentation level or less
+				if (
+					currentToken.line > line &&
+					methodBodyIndent !== null &&
+					currentIndent < methodBodyIndent
+				) {
+					break;
+				}
+
+				try {
+					const stmt = this.statement();
+					if (stmt) {
+						body.push(stmt);
+					} else {
+						break;
+					}
+				} catch (_e) {
+					break;
+				}
+			}
+		}
+
+		return {
+			type: "MethodDeclaration",
+			name: nameToken.value,
+			params,
+			body,
+			isExport,
+			line: nameToken.line,
+			column: nameToken.column,
+		};
+	}
+
+	/**
 	 * Parse switch expression (Pine Script v6)
 	 * switch
 	 *     condition => expr
@@ -1012,13 +1206,14 @@ export class Parser {
 			// Collect type keywords (qualifiers and base types)
 			const typeKeywords: string[] = [];
 			while (this.isTypeKeyword()) {
-				// Check what follows: if it's an identifier, this is part of the type
+				// Check what follows: if it's an identifier, < (generic), or type keyword, this is part of the type
 				// If it's = or , or ), this keyword is the parameter name
 				const next = this.peekNext();
 				if (
 					next?.type === TokenType.IDENTIFIER ||
 					(next?.type === TokenType.KEYWORD &&
-						Parser.TYPE_KEYWORDS.has(next.value))
+						Parser.TYPE_KEYWORDS.has(next.value)) ||
+					(next?.type === TokenType.COMPARE && next.value === "<")
 				) {
 					// More type info or param name follows
 					typeKeywords.push(this.advance().value);
@@ -1026,6 +1221,28 @@ export class Parser {
 					// This keyword is the parameter name itself
 					break;
 				}
+			}
+
+			// Check for generic type syntax: array<float>, matrix<int>, map<string, float>
+			if (typeKeywords.length > 0 && this.check(TokenType.COMPARE) && this.peek().value === "<") {
+				this.advance(); // consume <
+				let genericType = "<";
+				let depth = 1;
+				// Consume everything until matching >
+				while (!this.isAtEnd() && depth > 0) {
+					const token = this.advance();
+					if (token.type === TokenType.COMPARE && token.value === "<") {
+						depth++;
+					} else if (token.type === TokenType.COMPARE && token.value === ">") {
+						depth--;
+					}
+					genericType += token.value;
+					// Add space after comma for readability
+					if (token.type === TokenType.COMMA && depth > 0) {
+						genericType += " ";
+					}
+				}
+				typeKeywords[typeKeywords.length - 1] += genericType;
 			}
 
 			if (typeKeywords.length > 0) {

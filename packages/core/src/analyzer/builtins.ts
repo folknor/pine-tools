@@ -7,10 +7,13 @@ import {
 	FUNCTIONS_BY_NAME,
 	CONSTANTS_BY_NAME,
 	VARIABLES_BY_NAME,
-	getFunctionBehavior,
+	getFunctionBehavior as _getFunctionBehavior,
 	getReturnTypeParam,
 } from "../../../../pine-data/v6";
 import type { PineType } from "./types";
+
+// Re-export getFunctionBehavior for use in checker
+export const getFunctionBehavior = _getFunctionBehavior;
 
 // Functions that can only be called at the top level (not in local scopes)
 export const TOP_LEVEL_ONLY_FUNCTIONS = new Set([
@@ -194,6 +197,8 @@ export interface ParameterInfo {
 export function mapToPineType(typeStr?: string): PineType {
 	if (!typeStr) return "unknown";
 
+	const normalized = typeStr.toLowerCase().trim();
+
 	const typeMap: Record<string, PineType> = {
 		int: "int",
 		float: "float",
@@ -205,9 +210,55 @@ export function mapToPineType(typeStr?: string): PineType {
 		"series bool": "series<bool>",
 		"series string": "series<string>",
 		"series color": "series<color>",
+		// Simple qualifier variants (simple means value doesn't change per bar)
+		"simple int": "int",
+		"simple float": "float",
+		"simple bool": "bool",
+		"simple string": "string",
+		"simple color": "color",
+		// Combined qualifiers
+		"simple series int": "series<int>",
+		"simple series float": "series<float>",
+		"simple series bool": "series<bool>",
+		"simple series string": "series<string>",
+		"simple series color": "series<color>",
+		// Input qualifier variants
+		"input int": "int",
+		"input float": "float",
+		"input bool": "bool",
+		"input string": "string",
+		"input color": "color",
+		// Const qualifier variants
+		"const int": "int",
+		"const float": "float",
+		"const bool": "bool",
+		"const string": "string",
+		"const color": "color",
 	};
 
-	return typeMap[typeStr.toLowerCase()] || "unknown";
+	if (typeMap[normalized]) {
+		return typeMap[normalized];
+	}
+
+	// Handle array types like "array<float>", "array<int>"
+	const arrayMatch = normalized.match(/^(?:simple\s+)?array<(\w+)>$/);
+	if (arrayMatch) {
+		return `array<${arrayMatch[1]}>` as PineType;
+	}
+
+	// Handle matrix types like "matrix<float>"
+	const matrixMatch = normalized.match(/^(?:simple\s+)?matrix<(\w+)>$/);
+	if (matrixMatch) {
+		return `matrix<${matrixMatch[1]}>` as PineType;
+	}
+
+	// Handle map types like "map<string, float>"
+	const mapMatch = normalized.match(/^(?:simple\s+)?map<(\w+),\s*(\w+)>$/);
+	if (mapMatch) {
+		return `map<${mapMatch[1]}, ${mapMatch[2]}>` as PineType;
+	}
+
+	return "unknown";
 }
 
 // Map return type string to PineType
@@ -331,7 +382,7 @@ export function getPolymorphicReturnType(
 	argInfos?: ArgumentInfo[],
 ): PineType | null {
 	// Try data-driven approach first using function-behavior.json
-	const behavior = getFunctionBehavior(functionName);
+	const behavior = _getFunctionBehavior(functionName);
 
 	if (behavior?.polymorphic) {
 		const returnTypeParam = behavior.polymorphic.returnTypeParam;

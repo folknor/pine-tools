@@ -24,11 +24,28 @@ export type Statement =
 	| TypeDeclaration
 	| EnumDeclaration
 	| AssignmentStatement
-	| SequenceStatement;
+	| SequenceStatement
+	| ImportStatement
+	| MethodDeclaration;
 
 export interface SequenceStatement extends ASTNode {
 	type: "SequenceStatement";
 	statements: Statement[];
+}
+
+export interface ImportStatement extends ASTNode {
+	type: "ImportStatement";
+	libraryPath: string; // e.g., "TradingView/RelativeValue/3"
+	alias?: string; // e.g., "TVrv"
+}
+
+export interface MethodDeclaration extends ASTNode {
+	type: "MethodDeclaration";
+	name: string;
+	params: FunctionParam[];
+	body: Statement[];
+	returnType?: TypeAnnotation;
+	isExport?: boolean;
 }
 
 export interface TypeDeclaration extends ASTNode {
