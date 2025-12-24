@@ -72,6 +72,7 @@ const KEYWORDS = new Set([
 	"as",
 	"in",
 	"to",
+	"by",
 	"switch",
 	"case",
 	"default",

@@ -124,6 +124,7 @@ Discovered automatically via `discover:behavior`:
 
 ### Recently Fixed
 
+- **For loop step syntax** - `for i = 0 to 10 by 2` now parses correctly
 - **String → color coercion** - `"red"`, `"#FF0000"` now accepted as color values
 - **Polymorphic function params** - `nz()`, `input()` etc. no longer require specific types
 - **Library/export/method support** - `import User/Lib/1 as alias`, `export func()`, `method m()` now parse correctly

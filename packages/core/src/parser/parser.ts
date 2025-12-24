@@ -710,6 +710,12 @@ export class Parser {
 		this.match([TokenType.KEYWORD, ["to"]]); // optional 'to' keyword
 		const to = this.expression();
 
+		// Optional step value: "by <expr>"
+		let step: AST.Expression | undefined;
+		if (this.match([TokenType.KEYWORD, ["by"]])) {
+			step = this.expression();
+		}
+
 		const body: AST.Statement[] = [];
 
 		// Skip newlines after to expression
@@ -758,6 +764,7 @@ export class Parser {
 			iterator,
 			from,
 			to,
+			step,
 			body,
 			line: startToken.line,
 			column: startToken.column,

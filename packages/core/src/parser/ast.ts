@@ -116,6 +116,7 @@ export interface ForStatement extends ASTNode {
 	iterator: string;
 	from: Expression;
 	to: Expression;
+	step?: Expression; // Optional step value from "by" clause
 	body: Statement[];
 }
 
