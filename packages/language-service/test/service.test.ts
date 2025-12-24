@@ -4,6 +4,7 @@ import {
 	DiagnosticSeverity,
 	CompletionItemKind,
 	SymbolKind,
+	CodeActionKind,
 } from "../src";
 
 describe("PineLanguageService", () => {
@@ -574,6 +575,102 @@ myFunc() =>
 			const functions = PineLanguageService.getAllFunctions("ta");
 			expect(functions).toContain("ta.sma");
 			expect(functions).toContain("ta.ema");
+		});
+	});
+
+	describe("Code Actions", () => {
+		it("should offer to add version header", () => {
+			service.openDocument("test.pine", "x = 1", 1);
+			const diagnostics = service.getDiagnostics("test.pine");
+			const versionDiag = diagnostics.find((d) =>
+				d.message.includes("Recommend using //@version=6"),
+			);
+
+			expect(versionDiag).toBeDefined();
+
+			const actions = service.getCodeActions(
+				"test.pine",
+				{ start: { line: 0, character: 0 }, end: { line: 0, character: 1 } },
+				{ diagnostics: [versionDiag!] },
+			);
+
+			expect(actions.length).toBeGreaterThan(0);
+			const addVersion = actions.find((a) => a.title === "Add //@version=6");
+			expect(addVersion).toBeDefined();
+			expect(addVersion?.kind).toBe(CodeActionKind.QuickFix);
+			expect(addVersion?.isPreferred).toBe(true);
+			expect(addVersion?.edit?.changes["test.pine"]).toBeDefined();
+		});
+
+		it("should offer to fix plotshape shape= to style=", () => {
+			service.openDocument(
+				"test.pine",
+				`//@version=6
+plotshape(close > open, shape=shape.triangleup)
+`,
+				1,
+			);
+			const diagnostics = service.getDiagnostics("test.pine");
+			const shapeDiag = diagnostics.find(
+				(d) =>
+					d.message.includes('Invalid parameter "shape"') &&
+					d.message.includes('Did you mean "style"'),
+			);
+
+			expect(shapeDiag).toBeDefined();
+
+			const actions = service.getCodeActions(
+				"test.pine",
+				shapeDiag!.range,
+				{ diagnostics: [shapeDiag!] },
+			);
+
+			const fixAction = actions.find((a) =>
+				a.title.includes('Change "shape" to "style"'),
+			);
+			expect(fixAction).toBeDefined();
+			expect(fixAction?.kind).toBe(CodeActionKind.QuickFix);
+		});
+
+		it("should offer to fix plotchar shape= to char=", () => {
+			service.openDocument(
+				"test.pine",
+				`//@version=6
+plotchar(close > open, shape="A")
+`,
+				1,
+			);
+			const diagnostics = service.getDiagnostics("test.pine");
+			const shapeDiag = diagnostics.find(
+				(d) =>
+					d.message.includes('Invalid parameter "shape"') &&
+					d.message.includes('Did you mean "char"'),
+			);
+
+			expect(shapeDiag).toBeDefined();
+
+			const actions = service.getCodeActions(
+				"test.pine",
+				shapeDiag!.range,
+				{ diagnostics: [shapeDiag!] },
+			);
+
+			const fixAction = actions.find((a) =>
+				a.title.includes('Change "shape" to "char"'),
+			);
+			expect(fixAction).toBeDefined();
+			expect(fixAction?.kind).toBe(CodeActionKind.QuickFix);
+		});
+
+		it("should return empty array for no applicable fixes", () => {
+			service.openDocument("test.pine", "//@version=6\nx = 1", 1);
+			const actions = service.getCodeActions(
+				"test.pine",
+				{ start: { line: 1, character: 0 }, end: { line: 1, character: 5 } },
+				{ diagnostics: [] },
+			);
+
+			expect(actions).toEqual([]);
 		});
 	});
 });

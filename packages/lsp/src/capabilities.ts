@@ -1,4 +1,5 @@
 import {
+	CodeActionKind,
 	type ServerCapabilities,
 	TextDocumentSyncKind,
 } from "vscode-languageserver/node";
@@ -26,6 +27,9 @@ export function getCapabilities(): ServerCapabilities {
 		referencesProvider: true,
 		renameProvider: {
 			prepareProvider: true,
+		},
+		codeActionProvider: {
+			codeActionKinds: [CodeActionKind.QuickFix],
 		},
 	};
 }

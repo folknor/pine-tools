@@ -1,12 +1,14 @@
 import { PineV6 } from "../../../pine-data/v6";
 import { DocumentManager, type ParsedDocument } from "./documents";
 import {
+	type CodeActionContext,
 	type DefinitionResult,
 	format as formatImpl,
 	formatToString,
 	getAllConstantNames,
 	getAllFunctionNames,
 	getAllVariableNames,
+	getCodeActions as getCodeActionsImpl,
 	getCompletions as getCompletionsImpl,
 	getDefinition as getDefinitionImpl,
 	getDiagnostics as getDiagnosticsImpl,
@@ -22,6 +24,7 @@ import {
 	type RenameResult,
 } from "./features";
 import type {
+	CodeAction,
 	CompletionItem,
 	Diagnostic,
 	DocumentSymbol,
@@ -29,6 +32,7 @@ import type {
 	HoverInfo,
 	Location,
 	Position,
+	Range,
 	SignatureHelp,
 	SymbolInfo,
 	TextEdit,
@@ -190,6 +194,19 @@ export class PineLanguageService {
 		const doc = this.documents.get(uri);
 		if (!doc) return null;
 		return renameImpl(doc, position, newName);
+	}
+
+	/**
+	 * Get code actions (quick fixes) for a range in a document.
+	 */
+	getCodeActions(
+		uri: string,
+		range: Range,
+		context: CodeActionContext,
+	): CodeAction[] {
+		const doc = this.documents.get(uri);
+		if (!doc) return [];
+		return getCodeActionsImpl(doc, range, context);
 	}
 
 	// ========== Static Helpers (no document needed) ==========

@@ -6,6 +6,8 @@
  */
 
 import {
+	type CodeAction as LSPCodeAction,
+	type CodeActionKind as LSPCodeActionKind,
 	type CompletionItem as LSPCompletionItem,
 	type CompletionItemKind as LSPCompletionItemKind,
 	type Diagnostic as LSPDiagnostic,
@@ -21,6 +23,7 @@ import {
 } from "vscode-languageserver/node";
 
 import type {
+	CodeAction,
 	CompletionItem,
 	Diagnostic,
 	DocumentSymbol,
@@ -117,5 +120,41 @@ export function convertDocumentSymbol(symbol: DocumentSymbol): LSPDocumentSymbol
 		range: symbol.range,
 		selectionRange: symbol.selectionRange,
 		children: symbol.children?.map(convertDocumentSymbol),
+	};
+}
+
+/**
+ * Convert LSP Diagnostic to language-service Diagnostic.
+ * (reverse direction for code action context)
+ */
+export function convertLSPDiagnostic(diagnostic: LSPDiagnostic): Diagnostic {
+	return {
+		range: diagnostic.range,
+		severity: diagnostic.severity as number,
+		message: diagnostic.message,
+		source: diagnostic.source,
+		code: diagnostic.code?.toString(),
+	};
+}
+
+/**
+ * Convert language-service CodeAction to LSP CodeAction.
+ */
+export function convertCodeAction(action: CodeAction): LSPCodeAction {
+	return {
+		title: action.title,
+		kind: action.kind as LSPCodeActionKind,
+		diagnostics: action.diagnostics?.map(convertDiagnostic),
+		isPreferred: action.isPreferred,
+		edit: action.edit
+			? {
+					changes: Object.fromEntries(
+						Object.entries(action.edit.changes).map(([uri, edits]) => [
+							uri,
+							edits.map(convertTextEdit),
+						]),
+					),
+				}
+			: undefined,
 	};
 }

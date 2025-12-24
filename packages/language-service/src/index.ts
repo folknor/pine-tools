@@ -27,10 +27,16 @@ export {
 	type PrepareRenameResult,
 	type RenameResult,
 } from "./features/rename";
+export {
+	getCodeActions,
+	type CodeActionContext,
+} from "./features/codeActions";
 export type { HoverOptions } from "./PineLanguageService";
 export { PineLanguageService } from "./PineLanguageService";
 // Types
 export {
+	type CodeAction,
+	CodeActionKind,
 	type CompletionItem,
 	// Completions
 	CompletionItemKind,
@@ -55,4 +61,5 @@ export {
 	SymbolKind,
 	// Formatting
 	type TextEdit,
+	type WorkspaceEdit,
 } from "./types";

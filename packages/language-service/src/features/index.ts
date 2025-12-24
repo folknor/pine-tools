@@ -22,3 +22,4 @@ export {
 	type PrepareRenameResult,
 	type RenameResult,
 } from "./rename";
+export { getCodeActions, type CodeActionContext } from "./codeActions";

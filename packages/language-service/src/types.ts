@@ -163,3 +163,28 @@ export interface SymbolInfo {
 	namespace?: string;
 	deprecated?: boolean;
 }
+
+// Code Actions
+export enum CodeActionKind {
+	Empty = "",
+	QuickFix = "quickfix",
+	Refactor = "refactor",
+	RefactorExtract = "refactor.extract",
+	RefactorInline = "refactor.inline",
+	RefactorRewrite = "refactor.rewrite",
+	Source = "source",
+	SourceOrganizeImports = "source.organizeImports",
+	SourceFixAll = "source.fixAll",
+}
+
+export interface CodeAction {
+	title: string;
+	kind: CodeActionKind;
+	diagnostics?: Diagnostic[];
+	isPreferred?: boolean;
+	edit?: WorkspaceEdit;
+}
+
+export interface WorkspaceEdit {
+	changes: { [uri: string]: TextEdit[] };
+}
