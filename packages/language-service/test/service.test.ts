@@ -190,6 +190,26 @@ describe("PineLanguageService", () => {
 			const result = PineLanguageService.formatCode("x = 1");
 			expect(result).toBe("x = 1\n");
 		});
+
+		it("should add spacing around compound operators", () => {
+			const result = PineLanguageService.formatCode("x:=1\ny+=2\nz==3");
+			expect(result).toBe("x := 1\ny += 2\nz == 3\n");
+		});
+
+		it("should add spacing after commas", () => {
+			const result = PineLanguageService.formatCode("f(a,b,c)");
+			expect(result).toBe("f(a, b, c)\n");
+		});
+
+		it("should not modify strings", () => {
+			const result = PineLanguageService.formatCode('x = "a,b,c"');
+			expect(result).toBe('x = "a,b,c"\n');
+		});
+
+		it("should preserve comments", () => {
+			const result = PineLanguageService.formatCode("x = 1 // a+b comment");
+			expect(result).toBe("x = 1 // a+b comment\n");
+		});
 	});
 
 	describe("Rename Symbol", () => {
