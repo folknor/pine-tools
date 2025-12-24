@@ -138,35 +138,54 @@ Discovered automatically via `discover:behavior`:
 ### Type Coercion
 `types.ts` handles:
 - `simple<T>` ↔ `series<T>` coercion
+- `series<T>` → `T` coercion (series values in simple contexts)
 - `int` ↔ `float` bidirectional coercion
+- `series<float>` → `color` coercion
+- Numeric → `string` coercion
 - Color type arithmetic
 
 ---
+
+## Current Status
+
+**79 of 112 v6 scripts pass validation (70% clean)**
+
+Run `pnpm run debug:internals -- analyze --summary` for fresh data.
 
 ## Remaining Work
 
 | Issue | Priority | Notes |
 |-------|----------|-------|
-| Unknown type propagation | Medium | ~50 cases; user-defined functions, chained calls |
-| Series/simple coercion | Low | Mechanical fix in `types.ts` |
+| Multiline strings | High | Lexer doesn't support actual newlines in strings |
+| Unknown type propagation | Medium | User-defined functions, chained calls |
 | Switch case scoping | Low | Parsing works, variable scoping may be incorrect |
 | Undefined function detection | Low | Validator doesn't detect calls to undefined functions |
 
-*Note: Counts are stale - run comparison analysis for fresh data.*
-
 ### Next Steps
 
-1. **Re-run comparison analysis** - Get fresh measurements after recent fixes:
-   ```bash
-   node dev-tools/analysis/compare-validation-results.js
-   pnpm run debug:internals -- analyze --summary
+1. **Multiline string support** - The lexer needs to handle strings with actual newlines:
+   ```pine
+   string TT = "Line 1
+        Line 2
+        Line 3"
    ```
+   This is valid in Pine Script v6 but our lexer expects strings on single lines.
+   - Location: `packages/core/src/parser/lexer.ts`
+   - Look for string tokenization logic (~line 400-450)
+   - Currently errors with `mismatched character '\n' expecting '"'`
 
 2. **Expand test coverage** - Add more .pine fixtures to cover edge cases
 
 ### Recently Fixed
 
-- **Test infrastructure complete** - 33 tests in `packages/core/test/` using .pine fixtures with `@expects` directives
+**December 2024 Session (59% → 70% v6 clean):**
+- **Generic type parsing** - `map.new<string, float>()` and `array.new<chart.point>()` now parse correctly
+- **Namespace properties** - Added `strategy.*_percent`, `syminfo.country/industry/root`
+- **Type coercion expansion** - `series<T>` → `T`, `series<float>` → `color`, numeric → `string`
+- **Keywords as param names** - `ma(string type) => ...` now parses (keywords like `type` allowed as param names)
+
+**Earlier Fixes:**
+- **Test infrastructure complete** - 35 tests in `packages/core/test/` using .pine fixtures with `@expects` directives
 - **astExtractor.ts simplified** - Consolidated function lookups, removed dead code, extracted helpers. 679→650 lines.
 - **Hack audit complete** - 39 hacks identified, 26 fixed, 13 intentionally kept. All hardcoded function lists now use pine-data. See GEMINI.md for full details.
 - **For loop step syntax** - `for i = 0 to 10 by 2` now parses correctly
@@ -180,6 +199,8 @@ Discovered automatically via `discover:behavior`:
 - **Multi-line ternary expressions** - `cond ? a :\n    b` and nested ternaries across lines now parse correctly
 - **`na` as function callee** - `na(x)` now correctly resolves as function call
 - **Variable/function name collision** - built-in variables (hour, minute, etc.) no longer overwritten by same-name functions
+- **NA type coercion** - `const<na>` assignable to any type
+- **Logical operators** - `and`/`or` now accept numeric types (non-zero is truthy)
 
 ---
 
