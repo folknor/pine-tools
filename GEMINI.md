@@ -30,13 +30,19 @@ This follows standard LSP design: the parser knows language grammar, while seman
 
 ```bash
 # Generate pine-data/v6/ from raw scraped data
-node scripts/generate-pine-data.js
+pnpm run generate
 
 # Output:
 # - pine-data/v6/functions.ts  (457 functions)
 # - pine-data/v6/variables.ts  (80 variables)
 # - pine-data/v6/constants.ts  (237 constants)
 # - pine-data/v6/keywords.ts   (28 keywords)
+
+# Discover function behavior (polymorphism, argument ordering)
+pnpm run discover:behavior
+
+# Output:
+# - pine-data/v6/function-behavior.json
 ```
 
 ### Data Pipeline Files
@@ -46,14 +52,16 @@ node scripts/generate-pine-data.js
 | `pine-data/raw/v6/v6-language-constructs.json` | Crawled function/variable list | Yes |
 | `pine-data/raw/v6/complete-v6-details.json` | Scraped function details | Yes |
 | `pine-data/v6/*.ts` | Generated TypeScript | Yes |
+| `pine-data/v6/function-behavior.json` | Discovered polymorphism/ordering | Yes |
 
 ### Manual Customizations (preserved in generate script)
 
-All customizations are in `scripts/generate-pine-data.js`, NOT in the output files:
-- **Line 124**: `topLevelOnly` - functions that can only be called at top level
-- **Line 134**: `variadic` - functions accepting variable arguments
-- **Line 151**: `polymorphic` - functions with type-dependent returns
-- **Line 378**: Hardcoded `syminfo.*` namespace variables
+All customizations are in `packages/pipeline/src/generate.ts`, NOT in the output files:
+- `topLevelOnly` - functions that can only be called at top level
+- `variadic` - functions accepting variable arguments
+- Hardcoded `syminfo.*` namespace variables
+
+**Polymorphic behavior** is now discovered automatically via `pnpm run discover:behavior` and stored in `function-behavior.json`.
 
 **Regenerating is safe** - all customizations are in the script.
 
@@ -86,18 +94,19 @@ pnpm install          # Install dependencies
 pnpm run build        # Build extension
 pnpm run watch        # Watch mode
 
-# Generation Pipeline
-pnpm run crawl        # Crawl TradingView docs → v6/raw/v6-language-constructs.json
-pnpm run scrape       # Scrape details → v6/raw/complete-v6-details.json
-pnpm run generate     # Generate TypeScript from raw data
+# Generation Pipeline (all scripts in packages/pipeline/src/)
+pnpm run crawl            # Crawl TradingView docs → pine-data/raw/v6/v6-language-constructs.json
+pnpm run scrape           # Scrape details → pine-data/raw/v6/complete-v6-details.json
+pnpm run generate         # Generate TypeScript from raw data
+pnpm run discover:behavior # Discover polymorphism → pine-data/v6/function-behavior.json
+pnpm run generate:tests   # Generate test .pine files
 
 # Testing
 pnpm test             # Run all tests
-pnpm run qa:pinescript # Validate all .pine files in project
 
 # CLI Tool
-node dist/src/cli.js <file.pine>  # Our linter
-pine-lint <file.pine>              # TradingView's linter (for comparison)
+node dist/packages/cli/src/cli.js <file.pine>  # Our linter
+pine-lint <file.pine>                           # TradingView's linter (for comparison)
 ```
 
 ---
@@ -188,12 +197,27 @@ Files with newline errors have almost no type errors (only 15 total).
 | **5** | Array element type tracking | ~157 "unknown" errors | Medium | |
 | **6** | Parser: library/export function definitions | ~100+ errors (38 files) | Medium | |
 
-### Polymorphic Functions Implemented
+### Polymorphic Functions (Data-Driven)
 
-Functions marked with `flags.polymorphic` in `scripts/generate-pine-data.js`:
-- **"input"**: `nz`, `fixnan` - returns same type as first argument
-- **"element"**: `array.get/first/last/pop/remove/shift/max/min/avg/sum/median/mode/stdev/variance`
-- **"numeric"**: `math.abs/sign/max/min/avg/sum/round/floor/ceil`
+Polymorphic behavior is now discovered automatically and stored in `pine-data/v6/function-behavior.json`:
+
+```json
+{
+  "input": {
+    "polymorphic": { "returnTypeParam": "defval", "strategy": "dependent-on-input" },
+    "argumentOrdering": "flexible"
+  },
+  "nz": {
+    "polymorphic": { "returnTypeParam": "source", "strategy": "dependent-on-input" },
+    "argumentOrdering": "flexible"
+  }
+}
+```
+
+The type checker uses this data to infer return types based on named or positional arguments.
+For example, `input(defval=42)` returns `input int`, `input(defval=2.0)` returns `input float`.
+
+Legacy flags in function metadata (`flags.polymorphic`) are still supported as fallback.
 
 ### Type Coercion Fixes (2025-12-23)
 

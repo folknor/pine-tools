@@ -20,7 +20,7 @@ const DIFFERENCES_DIR = path.join(
 	__dirname,
 	"../../plan/pine-lint-vs-cli-differences",
 );
-const CLI_PATH = path.join(__dirname, "../../dist/src/cli.js");
+const CLI_PATH = path.join(__dirname, "../../dist/packages/cli/src/cli.js");
 
 // Ensure differences directory exists
 if (!fs.existsSync(DIFFERENCES_DIR)) {
