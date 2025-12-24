@@ -148,17 +148,19 @@ Discovered automatically via `discover:behavior`:
 
 ## Current Status
 
-**70 of 91 v6 scripts pass validation (77% clean)**
+**42 of 49 v6 scripts parse cleanly (86%)**
 
-Note: 91 v6 scripts in the test corpus (indicators-processed + strategies-todo folders)
-
-Run `pnpm run debug:internals -- analyze --summary` for fresh data.
+Breakdown:
+- 42 scripts: No parse errors
+- 2 scripts: Actual syntax errors in source (not parser bugs)
+  - `tdf-20251102.pine` - Missing commas between function arguments
+  - `854667873-nsdt-2.pine` - Corrupted comment (line break without `//`)
+- 5 scripts: Analysis timeout (very large files)
 
 ## Remaining Work
 
 | Issue | Priority | Notes |
 |-------|----------|-------|
-| Parse errors in complex scripts | Medium | ~20 "Unexpected token" errors in v6 scripts |
 | Unknown type propagation | Low | User-defined functions, chained calls |
 
 ### Known Limitations
@@ -183,7 +185,10 @@ string TT = "Line 1 " +
 
 ### Recently Fixed
 
-**December 2024 Session (59% → 77% v6 clean):**
+**December 2024 Session (59% → 86% v6 clean):**
+- **Line continuation in function args** - `func(arg =\n value)` pattern now supported
+- **Nested switch/for/tuple parsing** - Fixed tuple declarations being misparsed as array subscripts in nested blocks
+- **UDT annotations** - `TypeName varName = expr` pattern now recognized as type annotation
 - **Missing namespace properties** - Added `timeframe.main_period/isticks`, `session.isfirstbar*`, `syminfo.country/industry/root`, `strategy.*_percent`
 - **Array type coercion** - `array<type>` (unresolved element) now assignable to `array<int/float>`
 - **Enum/type declarations** - User-defined enums now registered in symbol table (`SCALE.ATR` works)
@@ -248,11 +253,11 @@ packages/core/test/
 ├── core.test.ts        # Test runner
 └── fixtures/
     ├── parse-errors/   # 3 tests - expected parse failures
-    ├── syntax/         # 32 tests - parser syntax coverage
-    └── validation/     # 7 tests - validator error detection
+    ├── syntax/         # 40 tests - parser syntax coverage
+    └── validation/     # 8 tests - validator error detection
 ```
 
-**Total: 42 tests passing**
+**Total: 51 tests passing**
 
 Test files use `@expects` directives:
 ```pine

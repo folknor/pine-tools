@@ -1952,6 +1952,10 @@ export class Parser {
 				) {
 					const name = this.advance().value;
 					this.advance(); // consume =
+					// Skip newlines after = (allows: arg =\n value)
+					while (this.check(TokenType.NEWLINE)) {
+						this.advance();
+					}
 					const value = this.expression();
 					args.push({ name, value });
 				} else {

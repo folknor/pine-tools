@@ -1,0 +1,74 @@
+// @test syntax/function-arg-continuation
+// @expects parse: success
+
+// Line continuation after = in named arguments
+
+// Basic: newline after = before value
+x = input.bool(defval =
+    true)
+
+// Newline after = with string value
+y = input.string(defval =
+    "hello")
+
+// Multiple args with continuation
+z = input.int(
+    defval = 1,
+    title =
+        "My Input",
+    tooltip =
+        "Description here")
+
+// Continuation in method call
+arr = array.new<float>()
+arr.push(value =
+    42.0)
+
+// Continuation with complex expression
+val = input.float(defval =
+    close[1] * 2 + open / 3)
+
+// Multiple continuations in same call
+cfg = input.bool(
+    title =
+        "Enable Feature",
+    defval =
+        true,
+    tooltip =
+        "When enabled, does something",
+    group =
+        "Settings")
+
+// Nested function call in continued arg
+nested = input.float(defval =
+    math.max(1, math.min(10, close)))
+
+// Continuation with ternary expression
+cond = input.bool(defval =
+    close > open ? true : false)
+
+// Continuation after group arg (common pattern)
+grouped = input.int(
+    50,
+    title = "Length",
+    tooltip = "Description",
+    group =
+        stratname)
+
+// Continuation in multi-line string scenarios
+multi = input.string(title = "Option", defval =
+    "default value",
+    options = ["a", "b", "c"])
+
+// Continuation with array literal
+arrArg = func(data =
+    [1, 2, 3])
+
+// Deep indentation continuation
+deep = input.bool(
+    defval =
+        true,
+    title =
+        "Deep",
+    tooltip =
+        "Very deep indentation")
