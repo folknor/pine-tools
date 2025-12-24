@@ -163,13 +163,16 @@ Run `pnpm run debug:corpus --summary` for fresh stats.
 
 Breakdown:
 - 44 scripts: No parse errors
-- 5 scripts: Parse errors (some real source issues, some parser bugs remaining)
+- 5 scripts: Source file issues (not parser bugs):
+  - `tdf-20251102.pine` - Missing commas between function arguments
+  - `854667873-nsdt-2.pine` - Broken comment (line wrap without `//`)
+  - `873410237-v6.pine` - Broken comments with Chinese characters
+  - `878477865-BigBeluga` - Broken comment + inconsistent switch indentation
+  - `894372674-Smrt-Algo` - `bar index` typo (should be `bar_index`)
 
 ## Remaining Work
 
-| Issue | Priority | Notes |
-|-------|----------|-------|
-| Parse errors in complex scripts | Medium | ~5 scripts with "Unexpected token" errors |
+No major parser issues remaining. The 5 failing scripts all have source file errors.
 
 ### Known Limitations
 
@@ -194,6 +197,7 @@ string TT = "Line 1 " +
 ### Recently Fixed
 
 **December 2024 Session (59% → 89.8% v6 clean):**
+- **Line continuation for `?` and `=` at line start** - `cond\n? val : alt` and `arg_name\n= value` now parse correctly
 - **CLI stdout flush fix** - Large file output was truncating at 64KB; now uses `process.stdout.write` with callback
 - **User-defined function type inference** - UDF return types now propagate to call sites (e.g., `result = myFunc(close)` gets proper type)
 - **Keyword consolidation** - Removed duplicate `to` in lexer; keywords now centralized in `packages/core/src/constants/keywords.ts`
