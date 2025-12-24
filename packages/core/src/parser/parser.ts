@@ -13,6 +13,7 @@ export class Parser {
 	private tokens: Token[] = [];
 	private current: number = 0;
 	private parenDepth: number = 0; // Track parenthesis nesting depth
+	private bracketDepth: number = 0; // Track bracket nesting depth for arrays
 	private lexerErrors: LexerError[] = [];
 	private parserErrors: ParserError[] = [];
 	private detectedVersion: string | null = null;
@@ -70,8 +71,8 @@ export class Parser {
 	}
 
 	private statement(): AST.Statement | null {
-		// Skip newlines between statements (but not inside parentheses)
-		while (this.check(TokenType.NEWLINE) && this.parenDepth === 0) {
+		// Skip newlines between statements (but not inside parentheses or brackets)
+		while (this.check(TokenType.NEWLINE) && this.parenDepth === 0 && this.bracketDepth === 0) {
 			this.advance();
 		}
 
@@ -468,7 +469,7 @@ export class Parser {
 	private expressionStatement(): AST.ExpressionStatement | AST.SequenceStatement {
 		const expr = this.expression();
 
-		// Check for comma-separated expressions (e.g., func1(), func2(), func3())
+		// Check for comma-separated expressions/assignments (e.g., func1(), a := b)
 		if (this.check(TokenType.COMMA)) {
 			const statements: AST.Statement[] = [
 				{
@@ -480,13 +481,31 @@ export class Parser {
 			];
 
 			while (this.match(TokenType.COMMA)) {
+				// Check if next part is an assignment (identifier followed by := or = or +=)
 				const nextExpr = this.expression();
-				statements.push({
-					type: "ExpressionStatement",
-					expression: nextExpr,
-					line: nextExpr.line,
-					column: nextExpr.column,
-				});
+				if (
+					this.check(TokenType.ASSIGN) ||
+					this.check(TokenType.COMPOUND_ASSIGN)
+				) {
+					const op = this.advance().value;
+					const value = this.expression();
+					const stmt: AST.AssignmentStatement = {
+						type: "AssignmentStatement",
+						target: nextExpr,
+						value,
+						operator: op,
+						line: nextExpr.line,
+						column: nextExpr.column,
+					};
+					statements.push(stmt);
+				} else {
+					statements.push({
+						type: "ExpressionStatement",
+						expression: nextExpr,
+						line: nextExpr.line,
+						column: nextExpr.column,
+					});
+				}
 			}
 
 			return {
@@ -1503,6 +1522,10 @@ export class Parser {
 
 			if (this.match([TokenType.KEYWORD, ["or"]])) {
 				const operator = this.previous().value;
+				// Skip newlines after operator (line continuation)
+				while (this.check(TokenType.NEWLINE)) {
+					this.advance();
+				}
 				const right = this.logicalAnd();
 				expr = {
 					type: "BinaryExpression",
@@ -1541,6 +1564,10 @@ export class Parser {
 
 			if (this.match([TokenType.KEYWORD, ["and"]])) {
 				const operator = this.previous().value;
+				// Skip newlines after operator (line continuation)
+				while (this.check(TokenType.NEWLINE)) {
+					this.advance();
+				}
 				const right = this.comparison();
 				expr = {
 					type: "BinaryExpression",
@@ -1575,6 +1602,10 @@ export class Parser {
 
 			if (this.match(TokenType.COMPARE)) {
 				const operator = this.previous().value;
+				// Skip newlines after operator (line continuation)
+				while (this.check(TokenType.NEWLINE)) {
+					this.advance();
+				}
 				const right = this.addition();
 				expr = {
 					type: "BinaryExpression",
@@ -1613,6 +1644,10 @@ export class Parser {
 
 			if (this.match(TokenType.PLUS, TokenType.MINUS)) {
 				const operator = this.previous().value;
+				// Skip newlines after operator (line continuation)
+				while (this.check(TokenType.NEWLINE)) {
+					this.advance();
+				}
 				const right = this.multiplication();
 				expr = {
 					type: "BinaryExpression",
@@ -1657,6 +1692,10 @@ export class Parser {
 
 			if (this.match(TokenType.MULTIPLY, TokenType.DIVIDE, TokenType.MODULO)) {
 				const operator = this.previous().value;
+				// Skip newlines after operator (line continuation)
+				while (this.check(TokenType.NEWLINE)) {
+					this.advance();
+				}
 				const right = this.unary();
 				expr = {
 					type: "BinaryExpression",
@@ -1743,11 +1782,11 @@ export class Parser {
 				) {
 					// Skip the newline and continue
 					this.advance();
-				} else if (this.parenDepth === 0) {
-					// Not in parentheses and doesn't look like continuation - break
+				} else if (this.parenDepth === 0 && this.bracketDepth === 0) {
+					// Not in parentheses/brackets and doesn't look like continuation - break
 					break;
 				} else {
-					// In parentheses - allow continuation by skipping newline
+					// In parentheses or brackets - allow continuation by skipping newline
 					this.advance();
 				}
 			}
@@ -2018,13 +2057,31 @@ export class Parser {
 
 		// Array literal
 		if (this.match(TokenType.LBRACKET)) {
+			this.bracketDepth++; // Track bracket depth for multiline arrays
 			const elements: AST.Expression[] = [];
+			// Skip newlines after opening bracket
+			while (this.check(TokenType.NEWLINE)) {
+				this.advance();
+			}
 			if (!this.check(TokenType.RBRACKET)) {
 				do {
+					// Skip newlines before element
+					while (this.check(TokenType.NEWLINE)) {
+						this.advance();
+					}
 					elements.push(this.expression());
+					// Skip newlines after element
+					while (this.check(TokenType.NEWLINE)) {
+						this.advance();
+					}
 				} while (this.match(TokenType.COMMA));
 			}
+			// Skip newlines before closing bracket
+			while (this.check(TokenType.NEWLINE)) {
+				this.advance();
+			}
 			const closeBracket = this.consume(TokenType.RBRACKET, 'Expected "]"');
+			this.bracketDepth--; // Decrement after closing
 			return {
 				type: "ArrayExpression",
 				elements,

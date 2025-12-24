@@ -362,7 +362,6 @@ export class Lexer {
 		const start = this.pos - 1;
 		const startLine = this.line;
 		const startColumn = this.column - 1;
-		let hasError = false;
 
 		while (this.peek() !== quote && !this.isAtEnd()) {
 			if (this.peek() === "\\") {
@@ -373,19 +372,9 @@ export class Lexer {
 					this.advance(); // Skip escaped char
 				}
 			} else if (this.peek() === "\n") {
-				// Unescaped newline inside string literal - this is an error
-				// But we'll try to recover by looking for the closing quote
-				if (!hasError) {
-					// Report the error for this string (one per malformed string)
-					this.lexerErrors.push({
-						line: startLine,
-						column: this.column,
-						message: `mismatched character '\\n' expecting '${quote}'`,
-					});
-					hasError = true;
-				}
-				// Continue scanning - try to find the closing quote for error recovery
-				// This prevents cascading errors by consuming the whole "intended" string
+				// Multiline strings are valid in Pine Script v6 (though deprecated)
+				// Each wrapped line adds exactly one space regardless of indentation
+				// We preserve the raw source; normalization happens at a higher level if needed
 				this.line++;
 				this.column = 0;
 				this.advance(); // consume the newline
@@ -396,13 +385,11 @@ export class Lexer {
 
 		if (this.isAtEnd()) {
 			// Unterminated string - reached end of file without closing quote
-			if (!hasError) {
-				this.lexerErrors.push({
-					line: startLine,
-					column: startColumn + (this.pos - start),
-					message: `mismatched character '<EOF>' expecting '${quote}'`,
-				});
-			}
+			this.lexerErrors.push({
+				line: startLine,
+				column: startColumn + (this.pos - start),
+				message: `mismatched character '<EOF>' expecting '${quote}'`,
+			});
 			const value = this.source.substring(start, this.pos);
 			this.addToken(TokenType.STRING, value, value.length);
 			return;
