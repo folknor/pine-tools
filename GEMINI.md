@@ -115,7 +115,6 @@ Discovered automatically via `discover:behavior`:
 
 | Issue | Count | Priority |
 |-------|-------|----------|
-| Unexpected token errors | 87 | Medium |
 | Unknown type propagation | ~50 | Medium |
 | Series/simple coercion | ~30 | Low |
 | Invalid parameter validation | 14 | Low |
@@ -133,6 +132,8 @@ Discovered automatically via `discover:behavior`:
 - **Comma operator support** - `a := 1, b := 2` and `func1(), func2()` now parse correctly
 - **Array element type tracking** - `array.new<float>()` → `array<float>`, `array.get(arr)` → element type
 - **Multi-line switch case bodies** - `condition => \n    stmt1\n    resultExpr` now parses (scope WIP)
+- **Multi-line ternary expressions** - `cond ? a :\n    b` and nested ternaries across lines now parse correctly
+- **Enum/type declaration bodies** - `enum Foo\n    Bar = "value"` body parsing fixed
 
 ---
 

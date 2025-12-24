@@ -162,11 +162,14 @@ export class Parser {
 				if (bodyIndent > baseIndent) {
 					while (!this.isAtEnd()) {
 						const currentToken = this.peek();
-						const currentIndent = currentToken.indent || 0;
+						// Only check indentation for tokens that start a line (have indent defined)
+						// Tokens in the middle of a line have indent: undefined
+						const isLineStart = currentToken.indent !== undefined;
 
 						if (
+							isLineStart &&
 							currentToken.line > startToken.line &&
-							currentIndent < bodyIndent
+							currentToken.indent! < bodyIndent
 						) {
 							break;
 						}
@@ -1432,8 +1435,20 @@ export class Parser {
 		const expr = this.logicalOr();
 
 		if (this.match(TokenType.TERNARY)) {
+			// Skip newlines after ? for multi-line ternary
+			while (this.check(TokenType.NEWLINE)) {
+				this.advance();
+			}
 			const consequent = this.expression();
+			// Skip newlines before : for multi-line ternary (when consequent ends on previous line)
+			while (this.check(TokenType.NEWLINE)) {
+				this.advance();
+			}
 			this.consume(TokenType.COLON, 'Expected ":" in ternary expression');
+			// Skip newlines after : for multi-line ternary
+			while (this.check(TokenType.NEWLINE)) {
+				this.advance();
+			}
 			const alternate = this.expression();
 
 			return {
