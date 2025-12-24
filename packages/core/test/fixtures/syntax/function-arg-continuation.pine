@@ -72,3 +72,28 @@ deep = input.bool(
         "Deep",
     tooltip =
         "Very deep indentation")
+
+// === NEW: = at line START (arg_name\n= value) ===
+
+// Basic: = at start of line
+before_eq = input.float(5, minval = 0.6, maxval
+    = 15.1)
+
+// Multiple args with = at line start
+multi_eq = input.int(defval
+    = 10, title
+    = "Test", minval
+    = 1)
+
+// Mixed: some = at end, some at start
+mixed_eq = input.string(defval =
+    "hello", title
+    = "Title")
+
+// = at line start with long arg names
+long_name = input.bool(
+    defval = true,
+    confirm
+        = false,
+    tooltip
+        = "Very long tooltip here")

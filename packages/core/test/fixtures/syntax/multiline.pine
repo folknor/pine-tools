@@ -48,4 +48,23 @@ float ternary = close > open ?
     high :
     low
 
+// Ternary with ? at line start (common in nested ternaries)
+float ternary2 = close > open
+    ? high
+    : low
+
+// Nested ternary with operators at line start
+float nested_tern = close > open
+    ? high > low
+        ? high
+        : (high + low) / 2
+    : low
+
+// Chained ternary with ? at line start
+float chained = close > 100
+    ? 1.0
+    : close > 50
+        ? 0.5
+        : 0.0
+
 plot(sum)
