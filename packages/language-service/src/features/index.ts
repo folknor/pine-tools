@@ -25,3 +25,4 @@ export {
 export { getCodeActions, type CodeActionContext } from "./codeActions";
 export { getFoldingRanges } from "./folding";
 export { getInlayHints } from "./inlayHints";
+export { getSemanticTokens, getSemanticTokensLegend } from "./semanticTokens";

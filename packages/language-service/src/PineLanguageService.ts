@@ -18,6 +18,8 @@ import {
 	getInlayHints as getInlayHintsImpl,
 	getReferences as getReferencesImpl,
 	type ReferencesOptions,
+	getSemanticTokens as getSemanticTokensImpl,
+	getSemanticTokensLegend,
 	getSignatureHelp as getSignatureHelpImpl,
 	getSymbolInfo as getSymbolInfoImpl,
 	prepareRename as prepareRenameImpl,
@@ -37,6 +39,7 @@ import type {
 	Location,
 	Position,
 	Range,
+	SemanticTokensResult,
 	SignatureHelp,
 	SymbolInfo,
 	TextEdit,
@@ -229,6 +232,22 @@ export class PineLanguageService {
 		const doc = this.documents.get(uri);
 		if (!doc) return [];
 		return getFoldingRangesImpl(doc);
+	}
+
+	/**
+	 * Get semantic tokens for a document.
+	 */
+	getSemanticTokens(uri: string): SemanticTokensResult {
+		const doc = this.documents.get(uri);
+		if (!doc) return { data: [] };
+		return getSemanticTokensImpl(doc);
+	}
+
+	/**
+	 * Get the semantic tokens legend (static).
+	 */
+	static getSemanticTokensLegend() {
+		return getSemanticTokensLegend();
 	}
 
 	// ========== Static Helpers (no document needed) ==========

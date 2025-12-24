@@ -33,6 +33,7 @@ export {
 } from "./features/codeActions";
 export { getFoldingRanges } from "./features/folding";
 export { getInlayHints } from "./features/inlayHints";
+export { getSemanticTokens, getSemanticTokensLegend } from "./features/semanticTokens";
 export type { HoverOptions } from "./PineLanguageService";
 export { PineLanguageService } from "./PineLanguageService";
 // Types
@@ -60,6 +61,10 @@ export {
 	// Position & Range
 	type Position,
 	type Range,
+	type SemanticToken,
+	SemanticTokenModifier,
+	type SemanticTokensResult,
+	SemanticTokenType,
 	type SignatureHelp,
 	type SignatureInfo,
 	type SymbolInfo,

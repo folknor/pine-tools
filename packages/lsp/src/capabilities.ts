@@ -1,8 +1,10 @@
 import {
 	CodeActionKind,
+	SemanticTokensRegistrationType,
 	type ServerCapabilities,
 	TextDocumentSyncKind,
 } from "vscode-languageserver/node";
+import { PineLanguageService } from "../../language-service/src";
 
 /**
  * Returns the server capabilities for the Pine Script LSP.
@@ -33,5 +35,9 @@ export function getCapabilities(): ServerCapabilities {
 		},
 		inlayHintProvider: true,
 		foldingRangeProvider: true,
+		semanticTokensProvider: {
+			legend: PineLanguageService.getSemanticTokensLegend(),
+			full: true,
+		},
 	};
 }

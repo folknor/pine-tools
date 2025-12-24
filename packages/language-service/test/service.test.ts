@@ -7,6 +7,7 @@ import {
 	CodeActionKind,
 	InlayHintKind,
 	FoldingRangeKind,
+	SemanticTokenType,
 } from "../src";
 
 describe("PineLanguageService", () => {
@@ -834,6 +835,40 @@ y = 2
 			service.openDocument("test.pine", "", 1);
 			const ranges = service.getFoldingRanges("test.pine");
 			expect(ranges).toEqual([]);
+		});
+	});
+
+	describe("Semantic Tokens", () => {
+		it("should return tokens for variables and functions", () => {
+			service.openDocument(
+				"test.pine",
+				`//@version=6
+x = ta.sma(close, 14)
+`,
+				1,
+			);
+			const result = service.getSemanticTokens("test.pine");
+
+			// Should have encoded token data
+			expect(result.data.length).toBeGreaterThan(0);
+			// Each token is 5 numbers
+			expect(result.data.length % 5).toBe(0);
+		});
+
+		it("should provide token legend", () => {
+			const legend = PineLanguageService.getSemanticTokensLegend();
+
+			expect(legend.tokenTypes).toContain("function");
+			expect(legend.tokenTypes).toContain("variable");
+			expect(legend.tokenTypes).toContain("property");
+			expect(legend.tokenModifiers).toContain("declaration");
+			expect(legend.tokenModifiers).toContain("defaultLibrary");
+		});
+
+		it("should return empty data for empty document", () => {
+			service.openDocument("test.pine", "", 1);
+			const result = service.getSemanticTokens("test.pine");
+			expect(result.data).toEqual([]);
 		});
 	});
 });

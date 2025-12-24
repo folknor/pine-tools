@@ -23,6 +23,7 @@ import { setupCodeActionsHandler } from "./handlers/codeActions";
 import { setupFoldingHandler } from "./handlers/folding";
 import { setupInlayHintsHandler } from "./handlers/inlayHints";
 import { setupRenameHandler } from "./handlers/rename";
+import { setupSemanticTokensHandler } from "./handlers/semanticTokens";
 import { setupSignatureHandler } from "./handlers/signature";
 import { setupSymbolsHandler } from "./handlers/symbols";
 
@@ -67,6 +68,7 @@ setupRenameHandler(connection, languageService);
 setupCodeActionsHandler(connection, languageService);
 setupInlayHintsHandler(connection, languageService);
 setupFoldingHandler(connection, languageService);
+setupSemanticTokensHandler(connection, languageService);
 
 // ========== Start Listening ==========
 
