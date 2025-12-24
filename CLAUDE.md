@@ -148,7 +148,9 @@ Discovered automatically via `discover:behavior`:
 
 ## Current Status
 
-**79 of 112 v6 scripts pass validation (70% clean)**
+**70 of 91 v6 scripts pass validation (77% clean)**
+
+Note: 91 v6 scripts in the test corpus (indicators-processed + strategies-todo folders)
 
 Run `pnpm run debug:internals -- analyze --summary` for fresh data.
 
@@ -187,7 +189,11 @@ Run `pnpm run debug:internals -- analyze --summary` for fresh data.
 
 ### Recently Fixed
 
-**December 2024 Session (59% → 70% v6 clean):**
+**December 2024 Session (59% → 77% v6 clean):**
+- **Multiline strings** - Lexer now allows newlines in string literals (deprecated v6 feature)
+- **Multiline arrays** - Parser tracks bracket depth to allow `[a,\n b,\n c]` syntax
+- **Multiline expressions** - Line continuation after operators (`x !=\n y` now parses)
+- **Mixed comma expressions** - `func(), x := na` now parses correctly
 - **Generic type parsing** - `map.new<string, float>()` and `array.new<chart.point>()` now parse correctly
 - **Namespace properties** - Added `strategy.*_percent`, `syminfo.country/industry/root`
 - **Type coercion expansion** - `series<T>` → `T`, `series<float>` → `color`, numeric → `string`
