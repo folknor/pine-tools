@@ -4,9 +4,15 @@
 	"description": "Unofficial Pine Script v6 support for VS Code — IntelliSense, hover docs, and real-time validation with 100% language coverage.",
 	"publisher": "folknor",
 	"author": {
-		"name": "Jaroslav Pantsjoha",
-		"url": "https://github.com/jpantsjoha"
+		"name": "folknor",
+		"url": "https://github.com/folknor"
 	},
+	"contributors": [
+		{
+			"name": "Jaroslav Pantsjoha",
+			"url": "https://github.com/jpantsjoha"
+		}
+	],
 	"version": "0.5.0",
 	"repository": {
 		"type": "git",
