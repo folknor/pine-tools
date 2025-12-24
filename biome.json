@@ -15,7 +15,8 @@
 			"**/*.js",
 			"!**/*.generated.js",
 			"!!**/dist",
-			"!**/test"
+			"!**/packages/**/test",
+			"!**/pine-data"
 		]
 	}
 }
