@@ -1,0 +1,44 @@
+// @test syntax/operators
+// @description All operator types - arithmetic, comparison, logical, assignment
+// @expects parse: success
+// @expects no-errors
+
+//@version=6
+indicator("Operator Tests")
+
+// Arithmetic operators
+a = 10 + 5
+b = 10 - 5
+c = 10 * 5
+d = 10 / 5
+e = 10 % 3
+
+// Comparison operators
+cmp1 = close > open
+cmp2 = close < open
+cmp3 = close >= open
+cmp4 = close <= open
+cmp5 = close == open
+cmp6 = close != open
+
+// Logical operators
+log1 = true and false
+log2 = true or false
+log3 = not true
+
+// Assignment operators
+var x = 0
+x := 10
+x += 5
+x -= 3
+x *= 2
+x /= 4
+x %= 3
+
+// Ternary operator
+result = close > open ? 1 : 0
+
+// Unary minus operator
+neg = -close
+
+plot(a + b + c + d + e)

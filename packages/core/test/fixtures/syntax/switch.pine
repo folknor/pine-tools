@@ -1,0 +1,29 @@
+// @test syntax/switch
+// @description Switch statements and expressions
+// @expects parse: success
+// @expects no-errors
+
+//@version=6
+indicator("Switch Tests")
+
+// Switch with expression
+dayOfWeek = dayofweek
+dayName = switch dayOfWeek
+    dayofweek.sunday => "Sunday"
+    dayofweek.monday => "Monday"
+    dayofweek.tuesday => "Tuesday"
+    dayofweek.wednesday => "Wednesday"
+    dayofweek.thursday => "Thursday"
+    dayofweek.friday => "Friday"
+    dayofweek.saturday => "Saturday"
+    => "Unknown"
+
+// Switch without expression (condition-based)
+trend = switch
+    close > open * 1.01 => "Strong Up"
+    close > open => "Up"
+    close < open * 0.99 => "Strong Down"
+    close < open => "Down"
+    => "Flat"
+
+plot(close, title=trend)

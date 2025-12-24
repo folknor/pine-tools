@@ -1,0 +1,37 @@
+// @test syntax/input
+// @description Input function variations
+// @expects parse: success
+// @expects no-errors
+
+//@version=6
+indicator("Input Tests")
+
+// Basic inputs with defaults
+length = input(14, "Length")
+source = input(close, "Source")
+showLabel = input(true, "Show Label")
+labelText = input("Signal", "Label Text")
+
+// Input with type specification
+intInput = input.int(10, "Integer", minval=1, maxval=100)
+floatInput = input.float(1.5, "Float", minval=0.1, maxval=10.0, step=0.1)
+boolInput = input.bool(true, "Boolean")
+stringInput = input.string("default", "String")
+colorInput = input.color(color.red, "Color")
+
+// Input with options
+maType = input.string("SMA", "MA Type", options=["SMA", "EMA", "WMA"])
+
+// Input with tooltip
+tooltipInput = input(20, "Period", tooltip="Moving average period")
+
+// Input with group
+groupInput = input.int(14, "RSI Length", group="RSI Settings")
+
+// Timeframe input
+tf = input.timeframe("D", "Timeframe")
+
+// Source input
+src = input.source(close, "Price Source")
+
+plot(ta.sma(source, length))

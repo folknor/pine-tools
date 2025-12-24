@@ -1,0 +1,10 @@
+// @test parse-errors/unclosed-paren
+// @description Unclosed parenthesis should fail parsing
+// @expects parse: fail
+
+//@version=6
+indicator("Parse Error Test")
+
+x = ta.sma(close, 14
+
+plot(x)

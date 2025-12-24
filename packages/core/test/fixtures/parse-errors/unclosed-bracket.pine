@@ -1,0 +1,10 @@
+// @test parse-errors/unclosed-bracket
+// @description Unclosed array bracket should fail
+// @expects parse: fail
+
+//@version=6
+indicator("Parse Error Test")
+
+arr = [1, 2, 3
+
+plot(close)

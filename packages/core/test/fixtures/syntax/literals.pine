@@ -1,0 +1,31 @@
+// @test syntax/literals
+// @description Basic literal types: integers, floats, strings, booleans
+// @expects parse: success
+// @expects no-errors
+
+//@version=6
+indicator("Literal Tests")
+
+// Integer literals
+intVal = 42
+negInt = -10
+zeroInt = 0
+
+// Float literals
+floatVal = 3.14
+negFloat = -2.5
+sciFloat = 1.5e10
+sciNeg = 2e-3
+
+// Boolean literals
+boolTrue = true
+boolFalse = false
+
+// String literals
+strDouble = "hello world"
+strSingle = 'single quotes'
+
+// Special literals
+naVal = na
+
+plot(intVal)

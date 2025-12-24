@@ -1,0 +1,27 @@
+// @test syntax/comments
+// @description Comment syntax - single line and block comments
+// @expects parse: success
+// @expects no-errors
+
+//@version=6
+indicator("Comment Tests")
+
+// Single line comment
+x = 1 // Trailing comment
+
+/* Block comment on single line */
+y = 2
+
+/*
+Multi-line
+block comment
+*/
+z = 3
+
+/* Block comment with * asterisks * inside */
+w = 4
+
+// Comment with special chars: @#$%^&*(){}[]|
+a = 5
+
+plot(x + y + z + w + a)

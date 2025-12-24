@@ -1,0 +1,25 @@
+// @test syntax/strategy
+// @description Strategy declaration and order functions
+// @expects parse: success
+// @expects no-errors
+
+//@version=6
+strategy("Strategy Test", overlay=true)
+
+// Entry conditions
+longCondition = ta.crossover(ta.sma(close, 14), ta.sma(close, 28))
+shortCondition = ta.crossunder(ta.sma(close, 14), ta.sma(close, 28))
+
+// Execute orders
+if longCondition
+    strategy.entry("Long", strategy.long)
+
+if shortCondition
+    strategy.entry("Short", strategy.short)
+
+// Exit conditions
+if strategy.position_size > 0 and close < strategy.position_avg_price * 0.95
+    strategy.close("Long")
+
+plot(ta.sma(close, 14), color=color.blue)
+plot(ta.sma(close, 28), color=color.red)

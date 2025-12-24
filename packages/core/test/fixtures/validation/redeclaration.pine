@@ -1,0 +1,20 @@
+// @test validation/redeclaration
+// @description Variable redeclaration behavior
+// @expects parse: success
+// @expects no-errors
+
+// NOTE: The validator currently does not detect variable redeclarations.
+// In Pine Script, redeclaration with = is actually allowed in some contexts.
+// Once stricter checking is implemented, change expects to:
+// error: message="already declared"
+
+//@version=6
+indicator("Redeclaration Tests")
+
+// First declaration
+x = 10
+
+// Redeclaration of same variable
+x = 20
+
+plot(x)

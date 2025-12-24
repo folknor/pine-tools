@@ -1,0 +1,32 @@
+// @test syntax/arrays
+// @description Array declarations and operations
+// @expects parse: success
+// @expects no-errors
+
+//@version=6
+indicator("Array Tests")
+
+// Array creation with generic type
+var array<float> prices = array.new<float>(0)
+var array<int> counts = array.new<int>(10, 0)
+var array<string> labels = array.new<string>()
+
+// Array operations
+array.push(prices, close)
+lastPrice = array.get(prices, 0)
+array.set(prices, 0, 100.0)
+size = array.size(prices)
+
+// Array from values
+arr = array.from(1.0, 2.0, 3.0, 4.0, 5.0)
+
+// Array methods
+highest = array.max(arr)
+lowest = array.min(arr)
+avg = array.avg(arr)
+total = array.sum(arr)
+
+// Matrix creation
+var matrix<float> mat = matrix.new<float>(3, 3, 0.0)
+
+plot(lastPrice)

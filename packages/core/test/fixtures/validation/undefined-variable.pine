@@ -1,0 +1,11 @@
+// @test validation/undefined-variable
+// @description Should detect undefined variable
+// @expects parse: success
+// @expects error: message="Undefined variable"
+
+//@version=6
+indicator("Undefined Variable Test")
+
+x = undefinedVar
+
+plot(x)

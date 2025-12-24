@@ -1,0 +1,33 @@
+// @test syntax/na-handling
+// @description na value handling and related functions
+// @expects parse: success
+// @expects no-errors
+
+//@version=6
+indicator("NA Handling Tests")
+
+// na literal (untyped)
+x = na
+
+// NOTE: Typed na assignments like `float y = na` cause validator errors
+// because validator doesn't recognize na as assignable to typed variables
+
+// na comparison
+isNa1 = na(close)
+isNa2 = na(x)
+
+// nz - replace na with zero or default
+val1 = nz(close)
+val2 = nz(close, 0)
+val3 = nz(close[1], close)
+
+// fixnan - replace na with last non-na value
+val4 = fixnan(close)
+
+// Conditional na
+result = close > open ? close : na
+
+// na in expressions
+sum = nz(close[1]) + nz(close[2])
+
+plot(nz(result, 0))

@@ -1,0 +1,48 @@
+// @test syntax/functions
+// @description Function declarations and calls
+// @expects parse: success
+// @expects no-errors
+
+//@version=6
+indicator("Function Tests")
+
+// Simple function
+add(a, b) =>
+    a + b
+
+// Function with type annotations
+multiply(float a, float b) =>
+    a * b
+
+// Function with default parameters
+greet(name, greeting = 0) =>
+    name + greeting
+
+// Multi-line function body
+calculate(x, y) =>
+    sum = x + y
+    diff = x - y
+    sum * diff
+
+// Function with array parameter
+getAverage(array<float> arr) =>
+    sum = 0.0
+    for val in arr
+        sum += val
+    sum / array.size(arr)
+
+// Calling functions
+result1 = add(1, 2)
+result2 = multiply(3.0, 4.0)
+result3 = greet("World")
+result4 = greet("Pine", "Hey")
+result5 = calculate(10, 5)
+
+// Built-in function calls
+sma = ta.sma(close, 14)
+ema = ta.ema(close, 14)
+
+// Named parameters
+plotResult = plot(close, title="Close", color=color.blue)
+
+plot(result1)

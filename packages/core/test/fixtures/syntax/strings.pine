@@ -1,0 +1,30 @@
+// @test syntax/strings
+// @description String literals and escape sequences
+// @expects parse: success
+// @expects no-errors
+
+//@version=6
+indicator("String Tests")
+
+// Simple strings
+str1 = "hello"
+str2 = 'world'
+
+// Empty strings
+str3 = ""
+str4 = ''
+
+// Escape sequences
+esc1 = "line1\nline2"
+esc2 = "tab\there"
+esc3 = "quote: \""
+esc4 = 'single: \''
+esc5 = "backslash: \\"
+
+// Unicode
+uni1 = "emoji: \u2714"
+
+// String with numbers
+mixed = "price: 100.50"
+
+plot(close, title=str1)

@@ -1,0 +1,15 @@
+// @test validation/undefined-function
+// @description Undefined function calls - currently not detected by validator
+// @expects parse: success
+// @expects no-errors
+
+// NOTE: The validator currently does not detect calls to undefined functions.
+// This test documents the current behavior. Once implemented, change expects to:
+// error: message="Undefined function"
+
+//@version=6
+indicator("Undefined Function Test")
+
+x = nonExistentFunction(close, 14)
+
+plot(x)

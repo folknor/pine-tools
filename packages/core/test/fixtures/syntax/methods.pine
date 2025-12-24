@@ -1,0 +1,23 @@
+// @test syntax/methods
+// @description Method declarations and method calls
+// @expects parse: success
+// @expects no-errors
+
+//@version=6
+indicator("Method Tests")
+
+// Method declaration on array type
+method push_twice(array<float> self, float val) =>
+    array.push(self, val)
+    array.push(self, val)
+
+// Method declaration with return type
+method double_size(array<float> self) =>
+    array.size(self) * 2
+
+// Using methods
+var arr = array.new<float>(0)
+arr.push_twice(1.0)
+sz = arr.double_size()
+
+plot(sz)

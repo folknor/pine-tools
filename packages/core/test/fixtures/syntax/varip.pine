@@ -1,0 +1,32 @@
+// @test syntax/varip
+// @description var and varip variable declarations
+// @expects parse: success
+// @expects no-errors
+
+//@version=6
+indicator("Var/Varip Tests")
+
+// var - persists across bars
+var int barCount = 0
+barCount += 1
+
+// var with different types
+var float totalVolume = 0.0
+totalVolume += volume
+
+var string lastSignal = "none"
+var bool wasUp = false
+var color bgColor = color.white
+
+// varip - persists across bars AND ticks (real-time only)
+varip int tickCount = 0
+tickCount += 1
+
+varip float lastPrice = 0.0
+lastPrice := close
+
+// var with arrays
+var array<float> prices = array.new<float>(0)
+array.push(prices, close)
+
+plot(barCount)

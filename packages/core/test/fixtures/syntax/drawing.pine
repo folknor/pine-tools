@@ -1,0 +1,34 @@
+// @test syntax/drawing
+// @description Drawing objects - lines, labels, boxes
+// @expects parse: success
+// @expects no-errors
+
+//@version=6
+indicator("Drawing Tests", overlay=true)
+
+// Line creation
+var line myLine = na
+if barstate.islast
+    myLine := line.new(bar_index - 10, close[10], bar_index, close, color=color.blue, width=2)
+
+// Label creation
+var label myLabel = na
+if barstate.islast
+    myLabel := label.new(bar_index, high, "Current High", color=color.green, style=label.style_label_down)
+
+// Box creation
+var box myBox = na
+if barstate.islast
+    myBox := box.new(bar_index - 5, high, bar_index, low, bgcolor=color.new(color.blue, 80), border_color=color.blue)
+
+// Modifying drawing objects
+if not na(myLine)
+    line.set_color(myLine, close > open ? color.green : color.red)
+
+// Delete old drawings
+if barstate.isconfirmed
+    line.delete(myLine[1])
+    label.delete(myLabel[1])
+    box.delete(myBox[1])
+
+plot(close)

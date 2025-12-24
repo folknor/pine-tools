@@ -1,0 +1,10 @@
+// @test parse-errors/invalid-operator
+// @description Invalid operator sequence should fail
+// @expects parse: fail
+
+//@version=6
+indicator("Parse Error Test")
+
+x = 1 ++ 2
+
+plot(x)

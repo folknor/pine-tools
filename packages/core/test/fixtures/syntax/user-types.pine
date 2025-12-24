@@ -1,0 +1,39 @@
+// @test syntax/user-types
+// @description User-defined types (UDT) and type expressions
+// @expects parse: success
+// @expects no-errors
+
+//@version=6
+indicator("User Type Tests")
+
+// Simple type definition
+type SimplePoint
+    float x
+    float y
+
+// Type with default values
+type Trade
+    float entry = 0.0
+    float exit = 0.0
+    int quantity = 1
+    string direction = "long"
+
+// Type with array field
+type Portfolio
+    array<float> prices
+    array<string> symbols
+
+// Creating instances
+point = SimplePoint.new(10.0, 20.0)
+trade = Trade.new(100.0, 105.0, 10, "long")
+
+// Accessing fields
+px = point.x
+py = point.y
+entryPrice = trade.entry
+
+// Modifying fields
+point.x := 15.0
+trade.quantity := 20
+
+plot(entryPrice)

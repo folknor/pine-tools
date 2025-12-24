@@ -1,0 +1,37 @@
+// @test syntax/plot-functions
+// @description Various plot functions
+// @expects parse: success
+// @expects no-errors
+
+//@version=6
+indicator("Plot Tests", overlay=true)
+
+// Basic plot
+plot(close, "Close", color.blue)
+
+// Plot with all parameters
+plot(close, title="Price", color=color.red, linewidth=2, style=plot.style_line)
+
+// Plotshape
+plotshape(close > open, style=shape.triangleup, location=location.belowbar, color=color.green, size=size.small)
+
+// Plotchar
+plotchar(close < open, char="▼", location=location.abovebar, color=color.red)
+
+// Plotarrow
+plotarrow(close - open, colorup=color.green, colordown=color.red)
+
+// Bgcolor
+bgcolor(close > open ? color.new(color.green, 90) : color.new(color.red, 90))
+
+// Barcolor
+barcolor(close > open ? color.green : color.red)
+
+// Fill between plots
+p1 = plot(ta.sma(close, 10), color=color.blue)
+p2 = plot(ta.sma(close, 20), color=color.red)
+fill(p1, p2, color=color.new(color.purple, 80))
+
+// Hline
+hline(100, "Upper", color=color.red, linestyle=hline.style_dashed)
+hline(0, "Zero", color=color.gray)

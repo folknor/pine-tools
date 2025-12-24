@@ -1,0 +1,40 @@
+// @test syntax/if-else
+// @description If/else statements and expressions
+// @expects parse: success
+// @expects no-errors
+
+//@version=6
+indicator("If-Else Tests")
+
+// Simple if
+if close > open
+    label.new(bar_index, high, "Up")
+
+// If-else
+direction = 0
+if close > open
+    direction := 1
+else
+    direction := -1
+
+// If-else if-else
+trend = "neutral"
+if close > open * 1.01
+    trend := "bullish"
+else if close < open * 0.99
+    trend := "bearish"
+else
+    trend := "neutral"
+
+// Ternary expression (single line)
+color1 = close > open ? color.green : color.red
+
+// Ternary expression (multiline - continuation on same line as ?)
+color2 = close > open ?
+    color.green :
+    color.red
+
+// Nested ternary
+color3 = close > open ? color.green : color.red
+
+plot(direction)

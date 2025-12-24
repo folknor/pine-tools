@@ -1,0 +1,32 @@
+// @test syntax/numbers
+// @description Numeric literals - integers, floats, hex, scientific
+// @expects parse: success
+// @expects no-errors
+
+//@version=6
+indicator("Number Tests")
+
+// Integers
+int1 = 0
+int2 = 42
+int3 = -100
+
+// Floats
+float1 = 0.0
+float2 = 3.14159
+float3 = -2.5
+float4 = .5
+float5 = 10.
+
+// Scientific notation
+sci1 = 1e10
+sci2 = 1E10
+sci3 = 2.5e-3
+sci4 = 1.0E+5
+
+// Hex colors (parsed as color literals)
+hex1 = #FF0000
+hex2 = #00ff00
+hex3 = #0000FF80
+
+plot(int1 + int2 + float1 + float2)

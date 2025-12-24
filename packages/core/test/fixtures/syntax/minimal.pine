@@ -1,0 +1,8 @@
+// @test syntax/minimal
+// @description Minimal valid Pine Script
+// @expects parse: success
+// @expects no-errors
+
+//@version=6
+indicator("Minimal")
+plot(close)

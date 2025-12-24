@@ -147,25 +147,26 @@ Discovered automatically via `discover:behavior`:
 
 | Issue | Priority | Notes |
 |-------|----------|-------|
-| Test infrastructure | High | Current tests are stale; need .pine script-driven tests |
 | Unknown type propagation | Medium | ~50 cases; user-defined functions, chained calls |
 | Series/simple coercion | Low | Mechanical fix in `types.ts` |
 | Switch case scoping | Low | Parsing works, variable scoping may be incorrect |
+| Undefined function detection | Low | Validator doesn't detect calls to undefined functions |
 
 *Note: Counts are stale - run comparison analysis for fresh data.*
 
 ### Next Steps
 
-1. **Test infrastructure overhaul** - Replace abstract unit tests with .pine script-driven tests that exercise real Pine Script behavior. See "Larger Projects" section for details.
-
-2. **Re-run comparison analysis** - Get fresh measurements after recent fixes:
+1. **Re-run comparison analysis** - Get fresh measurements after recent fixes:
    ```bash
    node dev-tools/analysis/compare-validation-results.js
    pnpm run debug:internals -- analyze --summary
    ```
 
+2. **Expand test coverage** - Add more .pine fixtures to cover edge cases
+
 ### Recently Fixed
 
+- **Test infrastructure complete** - 33 tests in `packages/core/test/` using .pine fixtures with `@expects` directives
 - **astExtractor.ts simplified** - Consolidated function lookups, removed dead code, extracted helpers. 679→650 lines.
 - **Hack audit complete** - 39 hacks identified, 26 fixed, 13 intentionally kept. All hardcoded function lists now use pine-data. See GEMINI.md for full details.
 - **For loop step syntax** - `for i = 0 to 10 by 2` now parses correctly
@@ -182,26 +183,33 @@ Discovered automatically via `discover:behavior`:
 
 ---
 
-## Larger Projects
+## Completed Projects
 
-### 1. Test Infrastructure Overhaul
+### Test Infrastructure (Complete)
 
-Replace existing test infrastructure with .pine script-driven tests.
+Replaced stale `./test/` folder with .pine script-driven tests.
 
 **Structure:**
-- Delete `./test/` folder (stale, testing outdated assumptions)
-- Create `./packages/foo/test/` for each package
-- Start with `./packages/core/test/`
+```
+packages/core/test/
+├── helpers.ts          # parseTestFile(), runTest()
+├── core.test.ts        # Test runner
+└── fixtures/
+    ├── parse-errors/   # 3 tests - expected parse failures
+    ├── syntax/         # 26 tests - parser syntax coverage
+    └── validation/     # 4 tests - validator error detection
+```
 
-**Approach:**
-- Each behavioral branch in parser/analyzer should have a `.pine` file that exercises it
-- Tests run via vitest during `pnpm test`
-- Coverage goal: every code path has a real Pine Script justification
-- No abstract unit tests - test actual Pine Script behavior
+**Total: 33 tests passing**
 
----
+Test files use `@expects` directives:
+```pine
+// @test syntax/for-loops
+// @expects parse: success
+// @expects no-errors
+```
 
-## Completed Projects
+See `plan/test-infrastructure-plan.md` for full details.
 
 ### astExtractor.ts Simplification (Complete)
 

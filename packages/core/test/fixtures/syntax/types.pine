@@ -1,0 +1,41 @@
+// @test syntax/types
+// @description Type annotations and declarations
+// @expects parse: success
+// @expects no-errors
+
+//@version=6
+indicator("Type Tests")
+
+// Basic type annotations
+int myInt = 42
+float myFloat = 3.14
+bool myBool = true
+string myString = "test"
+color myColor = color.red
+
+// Series/simple qualifiers
+series float seriesFloat = close
+simple int simpleInt = 10
+
+// Array types
+var array<float> floatArr = array.new<float>(0)
+var array<int> intArr = array.new<int>(5, 0)
+var array<string> strArr = array.new<string>()
+var array<bool> boolArr = array.new<bool>(3, true)
+
+// Matrix types
+var matrix<float> floatMat = matrix.new<float>(3, 3, 0.0)
+
+// Map types (map syntax requires special handling)
+// var map<string, float> strToFloat = map.new<string, float>()
+
+// Type in function parameters
+getSum(float a, float b) =>
+    a + b
+
+// Type in function return
+getValue() =>
+    float result = close * 2
+    result
+
+plot(myFloat)

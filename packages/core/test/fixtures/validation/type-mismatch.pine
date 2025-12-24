@@ -1,0 +1,13 @@
+// @test validation/type-mismatch
+// @description Type mismatch on variable assignment
+// @expects parse: success
+// @expects error: message="Cannot assign string to int"
+
+//@version=6
+indicator("Type Mismatch Tests")
+
+// This should produce a type mismatch - assigning string to int
+// Currently not detected by validator
+int x = "hello"
+
+plot(close)

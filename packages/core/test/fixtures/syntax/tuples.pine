@@ -1,0 +1,28 @@
+// @test syntax/tuples
+// @description Tuple declarations and destructuring
+// @expects parse: success
+// @expects no-errors
+
+//@version=6
+indicator("Tuple Tests")
+
+// Function returning tuple
+getRange() =>
+    [high, low]
+
+// Tuple destructuring
+[h, l] = getRange()
+
+// Multiple return values from built-in
+[macdLine, signalLine, histogram] = ta.macd(close, 12, 26, 9)
+
+// Tuple with more elements
+getData() =>
+    [open, high, low, close]
+
+[o, hi, lo, c] = getData()
+
+// Nested function calls returning tuples
+[superTrend, direction] = ta.supertrend(3, 10)
+
+plot(h - l)

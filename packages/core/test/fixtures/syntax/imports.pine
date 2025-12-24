@@ -1,0 +1,18 @@
+// @test syntax/imports
+// @description Import statements and library usage
+// @expects parse: success
+// @expects no-errors
+
+//@version=6
+indicator("Import Tests")
+
+// Import with alias
+import TradingView/ta/1 as ta_lib
+
+// Import specific version
+import PineCoders/Time/4 as timeLib
+
+// Using imported library (simulated - just test syntax parses)
+// In real code: result = ta_lib.sma(close, 14)
+
+plot(close)

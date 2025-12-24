@@ -1,0 +1,30 @@
+// @test syntax/switch-type
+// @description Switch with type expressions
+// @expects parse: success
+// @expects no-errors
+
+//@version=6
+indicator("Switch Type Tests")
+
+// Switch with expression
+trend = switch
+    close > open => "bullish"
+    close < open => "bearish"
+    => "neutral"
+
+// Switch with variable
+direction = close > open ? 1 : close < open ? 2 : 0
+desc = switch direction
+    1 => "up"
+    2 => "down"
+    => "flat"
+
+// Switch returning numbers
+score = switch
+    close > open * 1.02 => 100
+    close > open * 1.01 => 75
+    close > open => 50
+    close < open => 25
+    => 0
+
+plot(score)

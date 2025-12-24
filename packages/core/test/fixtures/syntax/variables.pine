@@ -1,0 +1,35 @@
+// @test syntax/variables
+// @description Variable declarations with different keywords and types
+// @expects parse: success
+// @expects no-errors
+
+//@version=6
+indicator("Variable Tests")
+
+// Simple assignment
+x = 1
+
+// Type annotations
+int intVar = 42
+float floatVar = 3.14
+bool boolVar = true
+string strVar = "test"
+color colorVar = color.red
+
+// Var keyword (persistent across bars)
+var int persistentInt = 0
+var float persistentFloat = 0.0
+
+// Varip keyword (persistent across bars and intrabars)
+varip int intrabatInt = 0
+
+// Reassignment
+x := 2
+
+// Compound assignment
+x += 1
+x -= 1
+x *= 2
+x /= 2
+
+plot(x)

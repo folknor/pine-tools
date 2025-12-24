@@ -1,0 +1,19 @@
+// @test syntax/exports
+// @description Library exports - functions, types, and constants
+// @expects parse: success
+// @expects no-errors
+
+//@version=6
+library("Export Tests")
+
+// Export a function
+export add(float a, float b) =>
+    a + b
+
+// Export with type annotation
+export multiply(float x, float y) =>
+    x * y
+
+// Non-exported helper function
+helper(x) =>
+    x * 2
