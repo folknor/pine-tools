@@ -13,15 +13,9 @@ yarn.lock
 # IDE & Editor
 .vscode/
 .idea/
-.claude/
 *.swp
 *.swo
 *~
-
-# Agent definitions (private development context)
-multi-agent-devex/
-.CLAUDE.md
-# GEMINI.md - Now public! AI assistant context for Pine Script v6
 
 # OS files
 .DS_Store
@@ -34,13 +28,6 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Scraped documentation (regenerate as needed)
-v6/raw/*
-!v6/raw/v6-language-constructs.json
-v6/raw/complete-v6-details.json
-v6/docs-crawled/
-!v6/scripts/
-
 # Cache directory for scraped data
 .cache/
 
@@ -49,17 +36,15 @@ v6/docs-crawled/
 .env.local
 .env.*.local
 
-# Test coverage
-coverage/
-.nyc_output/
-
-# Personal notes (not for public repo)
-NOTES.md
-TODO-personal.md
-
-# agentic cli
+# LLMs
 .crush
+.crush.json
+.claude
+multi-agent-devex
+.CLAUDE.md
+GEMINI.md
 
+# Personal
 pinescripts
 plan
 dev-tools
