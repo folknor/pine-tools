@@ -197,21 +197,15 @@ export class UnifiedPineValidator {
 						varSymbol.type !== "unknown" &&
 						initType !== "unknown"
 					) {
+						// Check type compatibility (isAssignable handles all coercion rules)
 						if (!TypeChecker.isAssignable(initType, varSymbol.type)) {
-							// Check if this is a type promotion case (simple -> series)
-							if (this.canPromoteType(varSymbol.type, initType)) {
-								// Promote variable type in symbol table
-								varSymbol.type = initType;
-								this.symbolTable.update(varSymbol);
-							} else {
-								this.addError(
-									statement.line,
-									statement.column,
-									statement.name.length,
-									`Cannot assign ${initType} to ${varSymbol.type}`,
-									DiagnosticSeverity.Error,
-								);
-							}
+							this.addError(
+								statement.line,
+								statement.column,
+								statement.name.length,
+								`Cannot assign ${initType} to ${varSymbol.type}`,
+								DiagnosticSeverity.Error,
+							);
 						}
 					}
 				}
@@ -393,32 +387,18 @@ export class UnifiedPineValidator {
 				this.validateExpression(statement.target, version);
 				this.validateExpression(statement.value, version);
 
-				// Check type compatibility
+				// Check type compatibility (isAssignable handles all coercion rules)
 				const targetType = this.inferExpressionType(statement.target, version);
 				const valueType = this.inferExpressionType(statement.value, version);
 				if (targetType !== "unknown" && valueType !== "unknown") {
 					if (!TypeChecker.isAssignable(valueType, targetType)) {
-						// Check if this is a type promotion case
-						if (this.canPromoteType(targetType, valueType)) {
-							// Promote variable type in symbol table
-							if (statement.target.type === "Identifier") {
-								const varSymbol = this.symbolTable.lookupLocal(
-									statement.target.name,
-								);
-								if (varSymbol) {
-									varSymbol.type = valueType;
-									this.symbolTable.update(varSymbol);
-								}
-							}
-						} else {
-							this.addError(
-								statement.line,
-								statement.column,
-								1, // length of operator
-								`Cannot assign ${valueType} to ${targetType}`,
-								DiagnosticSeverity.Error,
-							);
-						}
+						this.addError(
+							statement.line,
+							statement.column,
+							1, // length of operator
+							`Cannot assign ${valueType} to ${targetType}`,
+							DiagnosticSeverity.Error,
+						);
 					}
 				}
 				break;
@@ -1256,21 +1236,8 @@ export class UnifiedPineValidator {
 		}
 	}
 
-	private canPromoteType(from: PineType, to: PineType): boolean {
-		// In Pine Script, simple types can be promoted to series types
-		if (from === "float" && to === "series<float>") return true;
-		if (from === "int" && to === "series<int>") return true;
-		if (from === "bool" && to === "series<bool>") return true;
-		if (from === "string" && to === "series<string>") return true;
-		if (from === "color" && to === "series<color>") return true;
-
-		// int -> float (numeric promotion)
-		if (from === "int" && to === "float") return true;
-		if (from === "int" && to === "series<float>") return true;
-		if (from === "series<int>" && to === "series<float>") return true;
-
-		return false;
-	}
+	// NOTE: canPromoteType was removed as redundant with TypeChecker.isAssignable()
+	// All type coercion rules (simple->series, int->float, etc.) are in types.ts
 
 	private addError(
 		line: number,

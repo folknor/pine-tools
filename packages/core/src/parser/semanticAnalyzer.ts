@@ -400,8 +400,19 @@ export class SemanticAnalyzer {
 		}
 	}
 
+	/**
+	 * Check if a variable name is commonly used in Pine Script.
+	 *
+	 * NOTE: This list is intentionally hardcoded (not from pine-data) because:
+	 * 1. These are UX heuristics for "unused variable" warnings, not API data
+	 * 2. Common variable naming patterns are not in TradingView docs
+	 * 3. These reduce noise from false positive "unused" warnings on plot variables
+	 *
+	 * The list includes common indicator names (ma, rsi, macd), color variables,
+	 * boolean flags, and input parameter names that may appear unused but are
+	 * actually used by plots or external references.
+	 */
 	private isCommonlyUsedVariable(name: string): boolean {
-		// Variables that are commonly used for plotting, external reference, or special purposes
 		const commonVariables = new Set([
 			// Common plot variables
 			"ma",

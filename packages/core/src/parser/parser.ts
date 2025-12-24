@@ -2,6 +2,7 @@
 
 import type * as AST from "./ast";
 import { Lexer, type LexerError, type Token, TokenType } from "./lexer";
+import { TYPE_KEYWORDS, VAR_TYPE_KEYWORDS } from "../constants/keywords";
 
 export interface ParserError {
 	line: number;
@@ -1255,51 +1256,19 @@ export class Parser {
 		};
 	}
 
-	// Type keywords that can appear as parameter types (includes qualifiers)
-	private static readonly TYPE_KEYWORDS = new Set([
-		"int",
-		"float",
-		"bool",
-		"string",
-		"color",
-		"line",
-		"label",
-		"box",
-		"table",
-		"array",
-		"matrix",
-		"map",
-		"series",
-		"simple",
-	]);
-
-	// Variable type keywords (excludes qualifiers like series/simple)
-	private static readonly VAR_TYPE_KEYWORDS = [
-		"int",
-		"float",
-		"bool",
-		"string",
-		"color",
-		"line",
-		"label",
-		"box",
-		"table",
-		"array",
-		"matrix",
-		"map",
-	];
+	// Type keywords defined in constants/keywords.ts
 
 	private isTypeKeyword(): boolean {
 		const token = this.peek();
 		return (
 			token.type === TokenType.KEYWORD &&
-			Parser.TYPE_KEYWORDS.has(token.value)
+			TYPE_KEYWORDS.has(token.value)
 		);
 	}
 
 	/** Check if current token is a variable type keyword (not a qualifier) */
 	private isVarTypeKeyword(): boolean {
-		return this.check([TokenType.KEYWORD, Parser.VAR_TYPE_KEYWORDS]);
+		return this.check([TokenType.KEYWORD, [...VAR_TYPE_KEYWORDS]]);
 	}
 
 	/**

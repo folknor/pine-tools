@@ -119,7 +119,20 @@ export interface ParameterInfo {
 	defaultValue?: string;
 }
 
-// Map type string to PineType
+/**
+ * Map type string from pine-data to internal PineType.
+ *
+ * NOTE: This typeMap is intentionally separate from TypeChecker.normalizeType() because:
+ * 1. This handles scraped API data normalization (e.g., "simple int" → "int")
+ * 2. TypeChecker.normalizeType() handles runtime type comparison
+ * 3. This strips qualifiers (const, input) that aren't tracked internally
+ *
+ * The typeMap normalizes various formats from TradingView's documentation:
+ * - "series int" → "series<int>"
+ * - "simple float" → "float" (simple qualifier stripped)
+ * - "const bool" → "bool" (const qualifier stripped)
+ * - "input int" → "int" (input qualifier stripped)
+ */
 export function mapToPineType(typeStr?: string): PineType {
 	if (!typeStr) return "unknown";
 

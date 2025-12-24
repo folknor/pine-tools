@@ -1,4 +1,6 @@
 // Pine Script v6 Lexer/Tokenizer
+import { LEXER_KEYWORDS } from "../constants/keywords";
+
 export enum TokenType {
 	// Literals
 	NUMBER = "NUMBER",
@@ -56,50 +58,7 @@ export interface LexerError {
 	message: string;
 }
 
-const KEYWORDS = new Set([
-	"if",
-	"else",
-	"for",
-	"while",
-	"break",
-	"continue",
-	"return",
-	"var",
-	"varip",
-	"const",
-	"na",
-	"export",
-	"import",
-	"as",
-	"in",
-	"to",
-	"by",
-	"switch",
-	"case",
-	"default",
-	"type",
-	"enum", // Pine Script v6 custom type and enum definitions
-	"method", // Pine Script v6 method declarations
-	"and",
-	"or",
-	"not",
-	"int",
-	"float",
-	"bool",
-	"string",
-	"color",
-	"line",
-	"label",
-	"box",
-	"table",
-	"array",
-	"matrix",
-	"map",
-	"series",
-	"simple",
-	"input",
-	"to",
-]);
+// Keywords are defined in constants/keywords.ts (uses LEXER_KEYWORDS)
 
 export class Lexer {
 	private source: string;
@@ -498,7 +457,7 @@ export class Lexer {
 		// Check for boolean literals first (before keywords)
 		if (value === "true" || value === "false") {
 			this.addToken(TokenType.BOOL, value, value.length);
-		} else if (KEYWORDS.has(value)) {
+		} else if (LEXER_KEYWORDS.has(value)) {
 			this.addToken(TokenType.KEYWORD, value, value.length);
 		} else {
 			this.addToken(TokenType.IDENTIFIER, value, value.length);

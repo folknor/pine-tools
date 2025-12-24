@@ -5,6 +5,7 @@ import {
 	FUNCTIONS_BY_NAME,
 	PineV6,
 } from "../../../../pine-data/v6";
+import { RESERVED_KEYWORDS } from "../constants/keywords";
 import type { PineType } from "./types";
 
 export interface Symbol {
@@ -116,32 +117,8 @@ export class SymbolTable {
 		}
 
 		// Keywords (treated as reserved symbols)
-		// These are language syntax, OK to hardcode per architecture principle
-		const keywords = [
-			"break",
-			"continue",
-			"type",
-			"if",
-			"else",
-			"for",
-			"while",
-			"switch",
-			"import",
-			"export",
-			"true",
-			"false",
-			"and",
-			"or",
-			"not",
-			"var",
-			"varip",
-			"method",
-			"series",
-			"simple",
-			"const",
-		];
-
-		for (const name of keywords) {
+		// Defined in constants/keywords.ts per architecture principle
+		for (const name of RESERVED_KEYWORDS) {
 			this.globalScope.define({
 				name,
 				type: "unknown", // Keywords don't have a value type
