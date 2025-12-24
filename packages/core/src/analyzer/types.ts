@@ -291,9 +291,11 @@ export namespace TypeChecker {
 			return isAssignable(left, right) || isAssignable(right, left);
 		}
 
-		// Logical operators require bool
+		// Logical operators accept bool or numeric types (non-zero is truthy in Pine Script)
 		if (["and", "or"].includes(operator)) {
-			return isBoolType(left) && isBoolType(right);
+			const leftOk = isBoolType(left) || isNumericType(left);
+			const rightOk = isBoolType(right) || isNumericType(right);
+			return leftOk && rightOk;
 		}
 
 		return false;
