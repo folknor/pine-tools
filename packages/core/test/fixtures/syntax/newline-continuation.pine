@@ -1,0 +1,72 @@
+// @test syntax/newline-continuation
+// @expects parse: success
+
+// Tests for newline continuation behavior
+// LBRACKET after newline should NOT be treated as array subscript
+
+// Tuple after simple expression
+x = 1
+[a, b] = [2, 3]
+
+// Tuple after function call
+result = func()
+[c, d] = [4, 5]
+
+// Tuple after method call
+value = obj.method()
+[e, f] = [6, 7]
+
+// Tuple after switch (column 0)
+switch x
+    1 => y
+[g, h] = [8, 9]
+
+// Tuple after for loop
+for i = 0 to 5
+    z = i
+[j, k] = [10, 11]
+
+// Tuple after while loop
+while cond
+    w = 1
+[m, n] = [12, 13]
+
+// Tuple after if statement
+if test
+    q = 1
+[p, r] = [14, 15]
+
+// Deeply nested tuple after switch-for
+switch mode
+    A =>
+        for i = 0 to 3
+            s = i
+        [t, u] = [16, 17]
+    B =>
+        v = 0
+
+// Array access on SAME line should still work
+arr = myArray
+elem = arr[0]
+
+// Method chain with array access on same line
+data = getData()[0]
+
+// Operators after newline should continue expression
+longValue = a +
+    b +
+    c
+
+// Comparison after newline
+isEqual = x ==
+    y
+
+// Logical operator after newline
+combined = a and
+    b or
+    c
+
+// Dot access after newline
+result = obj
+    .method()
+    .property

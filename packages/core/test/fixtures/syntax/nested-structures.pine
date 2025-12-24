@@ -1,0 +1,92 @@
+// @test syntax/nested-structures
+// @expects parse: success
+
+// Deep nesting tests for switch, for, if with tuples and UDTs
+
+// Triple nesting: switch -> for -> if with tuple
+switch level1
+    A =>
+        for i = 0 to 5
+            if i > 2
+                [x, y] = compute(i)
+                result = x + y
+    B =>
+        for j = 0 to 3
+            if j < 2
+                [a, b] = transform(j)
+                output = a * b
+
+// Triple nesting: for -> switch -> for with UDT
+for outer = 0 to 10
+    switch getMode(outer)
+        Fast =>
+            for inner = 0 to 5
+                Data d = process(inner)
+                store(d)
+        Slow =>
+            for inner = 0 to 3
+                Info info = analyze(inner)
+                log(info)
+
+// Switch with multiple cases, each with for and tuples
+switch category
+    Cat1 =>
+        for i = 0 to 2
+            [v1, v2] = split1(i)
+        sum1 = v1
+    Cat2 =>
+        for i = 0 to 3
+            [v3, v4] = split2(i)
+        sum2 = v3
+    Cat3 =>
+        for i = 0 to 4
+            [v5, v6] = split3(i)
+        sum3 = v5
+    =>
+        for i = 0 to 1
+            [v7, v8] = splitDefault(i)
+        sumDefault = v7
+
+// If-else chain with tuples at each level
+if cond1
+    [r1, r2] = branch1()
+else if cond2
+    [r3, r4] = branch2()
+else if cond3
+    [r5, r6] = branch3()
+else
+    [r7, r8] = branchDefault()
+
+// While with nested switch and tuple
+while running
+    switch state
+        Init =>
+            [a, b] = initialize()
+            state := Running
+        Running =>
+            [c, d] = step()
+            if done
+                state := Complete
+        Complete =>
+            [e, f] = finalize()
+            running := false
+
+// For-in with nested structures
+for item in collection
+    switch item.type
+        TypeA =>
+            Handler h = getHandler(item)
+            h.process()
+        TypeB =>
+            Processor p = getProcessor(item)
+            p.execute()
+
+// Multiple UDTs in deeply nested context
+switch mode
+    Complex =>
+        for i = 0 to 10
+            if valid(i)
+                First f = getFirst(i)
+                Second s = getSecond(i)
+                Third t = getThird(i)
+                combine(f, s, t)

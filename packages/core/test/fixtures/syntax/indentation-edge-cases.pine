@@ -1,0 +1,90 @@
+// @test syntax/indentation-edge-cases
+// @expects parse: success
+
+// Edge cases for indentation handling with tuples and UDTs
+
+// Tuple at exactly column 0
+x = 1
+[a, b] = [2, 3]
+
+// Tuple at column 1 (still should be tuple, not subscript)
+ [c, d] = [4, 5]
+
+// UDT followed immediately by tuple on next line
+MyType obj = create()
+[e, f] = obj.split()
+
+// Multiple statements on conceptually same "block level"
+for i = 0 to 5
+    first = i
+    second = i * 2
+    [g, h] = [first, second]
+    third = g + h
+
+// Tuple after comment line
+result = compute()
+// This is a comment
+[j, k] = result
+
+// Empty lines between expression and tuple
+value = getValue()
+
+
+[m, n] = transform(value)
+
+// Tuple after multi-line function call
+output = complexFunction(
+    arg1,
+    arg2,
+    arg3
+)
+[p, q] = output
+
+// Tuple after multi-line array literal
+arr = [
+    1,
+    2,
+    3
+]
+[r, s] = [arr[0], arr[1]]
+
+// UDT in various indentation contexts
+Config cfg = load()
+    Settings set = apply(cfg)
+        Options opt = finalize(set)
+
+// Switch case with varying statement types
+switch mode
+    A =>
+        x = 1
+        Type1 t1 = create1()
+        [v1, v2] = split1()
+        y = v1 + v2
+    B =>
+        Type2 t2 = create2()
+        x = 2
+        [v3, v4] = split2()
+        Type3 t3 = create3()
+
+// For loop with mixed content
+for i = 0 to 10
+    prefix = i * 10
+    Item item = getItem(i)
+    [lo, hi] = item.bounds()
+    suffix = lo + hi
+    Result res = compute(prefix, suffix)
+    store(res)
+
+// Deeply indented tuple (4 levels)
+if a
+    if b
+        if c
+            if d
+                [deep1, deep2] = [1, 2]
+
+// Deeply indented UDT
+if a
+    if b
+        if c
+            if d
+                DeepType dt = createDeep()

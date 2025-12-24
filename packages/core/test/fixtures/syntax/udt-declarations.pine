@@ -1,0 +1,51 @@
+// @test syntax/udt-declarations
+// @expects parse: success
+
+// User-defined type (UDT) declarations: TypeName varName = expr
+
+// Basic UDT declaration
+MyType obj = getValue()
+
+// UDT with method call
+Candle cdl = data.get(0)
+
+// UDT with complex expression
+Point pt = chart.point.new(time, close)
+
+// UDT in for loop
+for i = 0 to 10
+    Item item = items.get(i)
+    process(item)
+
+// UDT in while loop
+while condition
+    Result res = compute()
+    update(res)
+
+// UDT in if statement
+if enabled
+    Config cfg = loadConfig()
+    apply(cfg)
+
+// UDT in switch case
+switch mode
+    ModeA =>
+        Handler h = getHandler()
+        h.run()
+    ModeB =>
+        Processor p = getProcessor()
+        p.execute()
+
+// Multiple UDTs in sequence
+First a = getFirst()
+Second b = getSecond()
+Third c = getThird()
+
+// UDT with array method
+Element elem = myArray.pop()
+
+// UDT with map method
+Value val = myMap.get(key)
+
+// UDT with matrix method
+Cell cell = myMatrix.get(row, col)

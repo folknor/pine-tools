@@ -1,0 +1,50 @@
+// @test syntax/subscript-vs-tuple
+// @expects parse: success
+
+// Tests for subscript vs tuple disambiguation
+// [ at start of new line = tuple, [ on same line = subscript
+
+// Same line array access (should work)
+arr = myArray
+x = arr[0]
+y = arr[1]
+
+// Same line with expression index
+z = arr[i + 1]
+w = arr[len - 1]
+
+// Method returning array, accessed on same line
+first = getData()[0]
+last = getItems()[size - 1]
+
+// Tuple at column 0 after expression
+value = compute()
+[a, b] = split(value)
+
+// Tuple at column 0 after array access
+elem = arr[0]
+[c, d] = transform(elem)
+
+// Multiple tuples in sequence
+[e, f] = func1()
+[g, h] = func2()
+[i, j] = func3()
+
+// Tuple inside indented block (not column 0, but still tuple)
+if condition
+    result = process()
+    [k, l] = result
+
+for idx = 0 to 10
+    item = get(idx)
+    [m, n] = item
+
+// Nested array access on same line
+matrix = getMatrix()
+cell = matrix[row][col]
+
+// Chained method with array access
+data = obj.getData().getItems()[0]
+
+// Complex expression with array at end
+final = (a + b) * arr[c]
