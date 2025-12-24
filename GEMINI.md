@@ -34,7 +34,34 @@ pnpm run discover:behavior # Discover polymorphism → function-behavior.json
 
 # CLI
 node dist/packages/cli/src/cli.js <file.pine>
+
+# Dev Tools
+pnpm run test:snippet -- 'code'              # Test Pine snippet via CLI
+pnpm run test:snippet -- --errors 'code'     # Show only errors
+pnpm run test:snippet -- --filter text 'code'  # Filter errors
+
+pnpm run debug:internals -- lookup hour      # Check symbol in pine-data
+pnpm run debug:internals -- parse 'x = 1'    # Show AST
+pnpm run debug:internals -- validate 'code'  # Full validation details
+pnpm run debug:internals -- symbols hour     # List matching symbols
+pnpm run debug:internals -- analyze --summary          # Discrepancy summary
+pnpm run debug:internals -- analyze --cli-errors       # CLI error summary
+pnpm run debug:internals -- analyze --filter "token"   # Filter by message
 ```
+
+### For LLM Agents
+
+**Use the dev tools above instead of complex shell commands.** These tools are pre-approved and avoid permission prompts:
+
+| Instead of... | Use this |
+|---------------|----------|
+| `cat > /tmp/test.js << 'EOF' ... EOF && node /tmp/test.js` | `pnpm run debug:internals -- validate 'code'` |
+| `echo 'code' > /tmp/test.pine && node dist/.../cli.js /tmp/test.pine` | `pnpm run test:snippet -- 'code'` |
+| `for f in plan/pine-lint-vs-cli-differences/*.json; do jq ... $f; done` | `pnpm run debug:internals -- analyze --filter "..."` |
+| Grepping for function definitions in pine-data | `pnpm run debug:internals -- lookup <name>` |
+| Creating temp files to test Parser/Validator | `pnpm run debug:internals -- parse 'code'` or `validate 'code'` |
+
+The dev tools handle temp files, JSON parsing, and output formatting automatically.
 
 ---
 
@@ -54,6 +81,11 @@ packages/
 ├── cli/src/              # CLI tool
 ├── lsp/src/              # Language Server
 └── vscode/src/           # VS Code extension
+
+dev-tools/
+├── test-snippet.js       # Quick Pine snippet testing via CLI
+├── debug-internals.js    # Debug parser/validator/symbols directly
+└── analysis/             # Comparison tools
 
 pine-data/
 ├── v6/                   # Generated data (safe to regenerate)
