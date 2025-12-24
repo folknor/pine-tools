@@ -1961,6 +1961,32 @@ export class Parser {
 			} while (this.match(TokenType.COMMA));
 		}
 
+		// Provide helpful error message for common mistakes
+		if (!this.check(TokenType.RPAREN)) {
+			// Check if this looks like another argument (missing comma)
+			const current = this.peek();
+			const next = this.peekNext();
+			if (
+				(current?.type === TokenType.IDENTIFIER ||
+					current?.type === TokenType.KEYWORD) &&
+				next?.type === TokenType.ASSIGN
+			) {
+				throw new Error(
+					`Missing comma before '${current.value}' argument at line ${current.line}`,
+				);
+			}
+			// Check for two identifiers in a row (e.g., "bar index" instead of "bar_index")
+			// After parsing "bar" as expression, we're at "index" - check if previous was also identifier
+			const prev = this.previous();
+			if (
+				prev?.type === TokenType.IDENTIFIER &&
+				current?.type === TokenType.IDENTIFIER
+			) {
+				throw new Error(
+					`Unexpected identifier '${current.value}' - did you mean '${prev.value}_${current.value}'? At line ${current.line}`,
+				);
+			}
+		}
 		this.consume(TokenType.RPAREN, 'Expected ")" after arguments');
 		this.parenDepth--; // Decrement depth when closing parenthesis
 
