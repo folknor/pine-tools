@@ -84,12 +84,14 @@ packages/
 │   ├── generate.ts       # Generate TypeScript data
 │   ├── generate-syntax.ts # Generate tmLanguage
 │   └── discover-function-behavior.ts
-├── core/src/             # Parser, analyzer, types
+├── core/src/             # Parser, analyzer, types (STABLE)
 │   ├── parser/           # Lexer, parser, AST
 │   └── analyzer/         # Type checker, builtins
-├── cli/src/              # CLI tool
-├── lsp/src/              # Language Server
-└── vscode/src/           # VS Code extension
+├── language-service/src/ # Language service (TO BE CREATED)
+├── lsp/src/              # LSP server (TO BE REIMPLEMENTED)
+├── mcp/src/              # MCP server (TO BE IMPLEMENTED)
+├── cli/src/              # CLI tool (STABLE)
+└── vscode/src/           # VS Code extension (TO BE REIMPLEMENTED)
 
 dev-tools/
 ├── test-snippet.js       # Quick Pine snippet testing via CLI
@@ -106,6 +108,399 @@ pine-data/
 
 syntaxes/
 └── pine.tmLanguage.json  # Generated syntax highlighting
+```
+
+---
+
+## Current Status
+
+### Stable Components (No Changes Needed)
+
+| Package | Status | Description |
+|---------|--------|-------------|
+| `packages/core/` | ✅ Stable | Parser, lexer, validator, type checker |
+| `packages/cli/` | ✅ Stable | CLI validation tool |
+| `packages/pipeline/` | ✅ Stable | Data generation scripts |
+| `pine-data/` | ✅ Stable | Generated language data |
+| `syntaxes/` | ✅ Stable | TextMate grammar |
+
+### Corpus Validation
+
+**44 of 49 v6 scripts pass validation (89.8%)**
+
+Run `pnpm run debug:corpus --summary` for fresh stats.
+
+5 failing scripts have source file issues (not parser bugs):
+- `tdf-20251102.pine` - Missing commas between function arguments
+- `854667873-nsdt-2.pine` - Broken comment (line wrap without `//`)
+- `873410237-v6.pine` - Broken comments with Chinese characters
+- `878477865-BigBeluga` - Broken comment + inconsistent switch indentation
+- `894372674-Smrt-Algo` - `bar index` typo (should be `bar_index`)
+
+### Test Suite
+
+**51 tests passing** in `packages/core/test/`
+
+---
+
+## Major Work Items
+
+### Work Item 1: Create Language Service Layer
+
+**Priority: High | Effort: Medium | Prerequisite for LSP/MCP/VSCode**
+
+#### Problem
+The current `packages/lsp/` directly imports `vscode` module, making it unusable outside VS Code. Both LSP and MCP need the same language intelligence but currently there's no shared abstraction.
+
+#### Solution
+Create `packages/language-service/` as an editor-agnostic language service that both LSP and MCP can consume.
+
+#### Architecture
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    PineLanguageService                          │
+├─────────────────────────────────────────────────────────────────┤
+│ Document Management:                                            │
+│   openDocument(uri, content, version)                           │
+│   updateDocument(uri, content, version)                         │
+│   closeDocument(uri)                                            │
+├─────────────────────────────────────────────────────────────────┤
+│ Intelligence Features:                                          │
+│   getCompletions(uri, position) → CompletionItem[]              │
+│   getHover(uri, position) → HoverInfo | null                    │
+│   getDiagnostics(uri) → Diagnostic[]                            │
+│   getSignatureHelp(uri, position) → SignatureHelp | null        │
+│   format(uri, options) → TextEdit[]                             │
+│   getDefinition(uri, position) → Location | null                │
+│   getReferences(uri, position) → Location[]                     │
+│   getDocumentSymbols(uri) → DocumentSymbol[]                    │
+├─────────────────────────────────────────────────────────────────┤
+│ Internal State:                                                 │
+│   documents: Map<uri, ParsedDocument>                           │
+│   symbolTable: SymbolTable                                      │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### Files to Create
+```
+packages/language-service/
+├── src/
+│   ├── index.ts                 # Public exports
+│   ├── PineLanguageService.ts   # Main service class
+│   ├── types.ts                 # Protocol-agnostic types
+│   │   ├── Position, Range, Location
+│   │   ├── CompletionItem, CompletionItemKind
+│   │   ├── Diagnostic, DiagnosticSeverity
+│   │   ├── HoverInfo, SignatureHelp
+│   │   └── TextEdit, DocumentSymbol
+│   ├── features/
+│   │   ├── completions.ts       # Completion logic (from current lsp/)
+│   │   ├── hover.ts             # Hover logic
+│   │   ├── diagnostics.ts       # Validation + pattern checks
+│   │   ├── signatures.ts        # Signature help
+│   │   ├── formatting.ts        # Code formatting
+│   │   ├── definition.ts        # Go-to-definition
+│   │   └── symbols.ts           # Document symbols
+│   └── documents/
+│       ├── DocumentManager.ts   # Document lifecycle
+│       └── ParsedDocument.ts    # Cached parse results
+└── test/
+    └── service.test.ts
+```
+
+#### Implementation Steps
+1. Create `packages/language-service/src/types.ts` with protocol-agnostic types
+2. Create `DocumentManager` for document lifecycle
+3. Port completion logic from `packages/lsp/` (remove vscode imports)
+4. Port hover logic (remove vscode imports)
+5. Port signature help logic (remove vscode imports)
+6. Move hardcoded validation patterns from `packages/vscode/extension.ts` to `diagnostics.ts`
+7. Create `PineLanguageService` facade class
+8. Add unit tests
+
+#### Success Criteria
+- [ ] Zero imports from `vscode` module
+- [ ] All current IntelliSense features working
+- [ ] Hardcoded validation patterns moved from extension.ts
+- [ ] Unit tests for each feature
+- [ ] Can be consumed by both LSP and MCP
+
+---
+
+### Work Item 2: Reimplement LSP Server
+
+**Priority: High | Effort: Medium | Depends on: Work Item 1**
+
+#### Problem
+Current `packages/lsp/` is not a proper LSP server - it's a collection of helpers that return VS Code types. Need a real LSP server using `vscode-languageserver`.
+
+#### Solution
+Implement proper LSP server that wraps `PineLanguageService` and communicates via JSON-RPC.
+
+#### Architecture
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                       LSP Server                                │
+├─────────────────────────────────────────────────────────────────┤
+│ Transport: stdio | socket | IPC                                 │
+├─────────────────────────────────────────────────────────────────┤
+│ Protocol Handlers:                                              │
+│   initialize → capabilities                                     │
+│   textDocument/didOpen → diagnostics                            │
+│   textDocument/didChange → diagnostics                          │
+│   textDocument/completion → completions                         │
+│   textDocument/hover → hover                                    │
+│   textDocument/signatureHelp → signatures                       │
+│   textDocument/formatting → edits                               │
+│   textDocument/definition → location                            │
+│   textDocument/references → locations                           │
+│   textDocument/documentSymbol → symbols                         │
+├─────────────────────────────────────────────────────────────────┤
+│ Delegates to: PineLanguageService                               │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### Files to Create
+```
+packages/lsp/
+├── src/
+│   ├── index.ts           # Entry point
+│   ├── server.ts          # LSP server setup
+│   ├── capabilities.ts    # Server capabilities
+│   └── handlers/
+│       ├── lifecycle.ts   # initialize, shutdown
+│       ├── documents.ts   # didOpen, didChange, didClose
+│       ├── completion.ts  # textDocument/completion
+│       ├── hover.ts       # textDocument/hover
+│       ├── signature.ts   # textDocument/signatureHelp
+│       ├── formatting.ts  # textDocument/formatting
+│       ├── definition.ts  # textDocument/definition
+│       └── symbols.ts     # textDocument/documentSymbol
+├── bin/
+│   └── pine-lsp.ts        # CLI entry point
+└── test/
+    └── lsp.test.ts
+```
+
+#### Dependencies
+```json
+{
+  "dependencies": {
+    "vscode-languageserver": "^9.0.0",
+    "vscode-languageserver-textdocument": "^1.0.0"
+  }
+}
+```
+
+#### Implementation Steps
+1. Delete current `packages/lsp/src/languageService/` (will be replaced by language-service/)
+2. Set up LSP server with `vscode-languageserver`
+3. Implement lifecycle handlers (initialize, shutdown)
+4. Implement document sync handlers
+5. Wire each LSP method to corresponding `PineLanguageService` method
+6. Add CLI entry point for standalone usage
+7. Add integration tests
+
+#### Success Criteria
+- [ ] Works as standalone process (stdio transport)
+- [ ] All current features exposed via LSP
+- [ ] Can be used by any LSP-compatible editor (Neovim, Sublime, etc.)
+- [ ] Integration tests passing
+
+---
+
+### Work Item 3: Implement MCP Server
+
+**Priority: High | Effort: Medium | Depends on: Work Item 1**
+
+#### Problem
+`packages/mcp/` is empty. Need MCP server for AI assistant integration (Claude, Cursor, etc.).
+
+#### Solution
+Implement MCP server using `@modelcontextprotocol/sdk` that exposes Pine Script intelligence as tools.
+
+#### Architecture
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                       MCP Server                                │
+├─────────────────────────────────────────────────────────────────┤
+│ Transport: stdio                                                │
+├─────────────────────────────────────────────────────────────────┤
+│ Tools:                                                          │
+│   pine_validate                                                 │
+│     Input: { code: string }                                     │
+│     Output: { errors: Diagnostic[], warnings: Diagnostic[] }    │
+│                                                                 │
+│   pine_complete                                                 │
+│     Input: { code: string, line: number, character: number }    │
+│     Output: { completions: CompletionItem[] }                   │
+│                                                                 │
+│   pine_hover                                                    │
+│     Input: { symbol: string }                                   │
+│     Output: { documentation: string, type?: string }            │
+│                                                                 │
+│   pine_lookup_function                                          │
+│     Input: { name: string }                                     │
+│     Output: { syntax: string, description: string, params: [] } │
+│                                                                 │
+│   pine_list_functions                                           │
+│     Input: { namespace?: string }                               │
+│     Output: { functions: string[] }                             │
+│                                                                 │
+│   pine_format                                                   │
+│     Input: { code: string }                                     │
+│     Output: { formatted: string }                               │
+├─────────────────────────────────────────────────────────────────┤
+│ Resources:                                                      │
+│   pine://reference/functions                                    │
+│   pine://reference/variables                                    │
+│   pine://reference/constants                                    │
+│   pine://docs/{symbol}                                          │
+├─────────────────────────────────────────────────────────────────┤
+│ Delegates to: PineLanguageService + pine-data                   │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### Files to Create
+```
+packages/mcp/
+├── src/
+│   ├── index.ts           # Entry point
+│   ├── server.ts          # MCP server setup
+│   ├── tools/
+│   │   ├── validate.ts    # pine_validate tool
+│   │   ├── complete.ts    # pine_complete tool
+│   │   ├── hover.ts       # pine_hover tool
+│   │   ├── lookup.ts      # pine_lookup_function tool
+│   │   ├── list.ts        # pine_list_functions tool
+│   │   └── format.ts      # pine_format tool
+│   └── resources/
+│       ├── reference.ts   # Reference documentation
+│       └── docs.ts        # Symbol documentation
+├── bin/
+│   └── pine-mcp.ts        # CLI entry point
+└── test/
+    └── mcp.test.ts
+```
+
+#### Implementation Steps
+1. Set up MCP server with `@modelcontextprotocol/sdk`
+2. Implement `pine_validate` tool (highest priority for AI usage)
+3. Implement `pine_lookup_function` and `pine_list_functions` tools
+4. Implement `pine_hover` tool
+5. Implement `pine_complete` tool
+6. Implement `pine_format` tool
+7. Add resource handlers for documentation browsing
+8. Add integration tests
+9. Document MCP configuration for Claude Desktop
+
+#### Success Criteria
+- [ ] Works with Claude Desktop
+- [ ] `pine_validate` returns accurate diagnostics
+- [ ] AI can look up function documentation
+- [ ] Integration tests passing
+
+---
+
+### Work Item 4: Reimplement VS Code Extension
+
+**Priority: High | Effort: Low | Depends on: Work Item 2**
+
+#### Problem
+Current `packages/vscode/extension.ts` has:
+- 530 lines of mixed concerns
+- 11 hardcoded validation patterns that belong in core
+- Direct parser/validator calls instead of using LSP
+
+#### Solution
+Thin VS Code extension that is purely an LSP client, plus minimal VS Code-specific features.
+
+#### Architecture
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    VS Code Extension                            │
+├─────────────────────────────────────────────────────────────────┤
+│ LSP Client:                                                     │
+│   - Spawns pine-lsp server process                              │
+│   - Forwards all language features to LSP                       │
+├─────────────────────────────────────────────────────────────────┤
+│ VS Code-Specific Features:                                      │
+│   - File association (*.pine → pine)                            │
+│   - Commands (pine.validate, pine.showDocs)                     │
+│   - Status bar integration                                      │
+│   - Settings UI                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### Files to Create
+```
+packages/vscode/
+├── src/
+│   ├── extension.ts       # Activation, LSP client setup
+│   ├── commands.ts        # VS Code commands
+│   └── settings.ts        # Configuration handling
+└── test/
+    └── extension.test.ts
+```
+
+#### Dependencies
+```json
+{
+  "dependencies": {
+    "vscode-languageclient": "^9.0.0"
+  }
+}
+```
+
+#### Implementation Steps
+1. Remove all validation logic (now in language-service/)
+2. Remove completion/hover/signature providers (now via LSP)
+3. Set up LSP client using `vscode-languageclient`
+4. Configure client to spawn `pine-lsp` server
+5. Keep VS Code-specific commands
+6. Keep file association logic
+7. Update package.json with LSP server bundling
+
+#### Success Criteria
+- [ ] Extension.ts < 150 lines
+- [ ] All features work via LSP
+- [ ] No hardcoded validation patterns
+- [ ] Extension size reduced
+
+---
+
+## Implementation Order
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  Phase 1: Foundation                                             │
+│  ┌────────────────────────────────────────────────────────────┐  │
+│  │  Work Item 1: Language Service Layer                       │  │
+│  │  - Create packages/language-service/                       │  │
+│  │  - Port all intelligence features                          │  │
+│  │  - Move validation patterns from extension.ts              │  │
+│  └────────────────────────────────────────────────────────────┘  │
+└──────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌──────────────────────────────────────────────────────────────────┐
+│  Phase 2: Protocol Servers (can be parallel)                     │
+│  ┌──────────────────────────┐  ┌──────────────────────────────┐  │
+│  │  Work Item 2: LSP Server │  │  Work Item 3: MCP Server     │  │
+│  │  - Proper JSON-RPC       │  │  - AI assistant tools        │  │
+│  │  - All LSP methods       │  │  - Documentation resources   │  │
+│  └──────────────────────────┘  └──────────────────────────────┘  │
+└──────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌──────────────────────────────────────────────────────────────────┐
+│  Phase 3: Editor Integration                                     │
+│  ┌────────────────────────────────────────────────────────────┐  │
+│  │  Work Item 4: VS Code Extension                            │  │
+│  │  - Thin LSP client                                         │  │
+│  │  - VS Code-specific features only                          │  │
+│  └────────────────────────────────────────────────────────────┘  │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -155,26 +550,7 @@ Discovered automatically via `discover:behavior`:
 
 ---
 
-## Current Status
-
-**44 of 49 v6 scripts pass validation (89.8%)**
-
-Run `pnpm run debug:corpus --summary` for fresh stats.
-
-Breakdown:
-- 44 scripts: No parse errors
-- 5 scripts: Source file issues (not parser bugs):
-  - `tdf-20251102.pine` - Missing commas between function arguments
-  - `854667873-nsdt-2.pine` - Broken comment (line wrap without `//`)
-  - `873410237-v6.pine` - Broken comments with Chinese characters
-  - `878477865-BigBeluga` - Broken comment + inconsistent switch indentation
-  - `894372674-Smrt-Algo` - `bar index` typo (should be `bar_index`)
-
-## Remaining Work
-
-No major parser issues remaining. The 5 failing scripts all have source file errors.
-
-### Known Limitations
+## Known Limitations
 
 - **Legacy color constants** - v4/v5 scripts use bare `red`, `green`, etc. In v6, must use `color.red`. Not fixing since these are pre-v6 scripts.
 - **Invalid parameter names** - Some scripts use deprecated params like `type` (input) and `when` (strategy). These are v5 params not valid in v6.
@@ -194,117 +570,13 @@ string TT = "Line 1 " +
      "Line 2"
 ```
 
-### Recently Fixed
-
-**December 2024 Session (59% → 89.8% v6 clean):**
-- **Line continuation for `?` and `=` at line start** - `cond\n? val : alt` and `arg_name\n= value` now parse correctly
-- **CLI stdout flush fix** - Large file output was truncating at 64KB; now uses `process.stdout.write` with callback
-- **User-defined function type inference** - UDF return types now propagate to call sites (e.g., `result = myFunc(close)` gets proper type)
-- **Keyword consolidation** - Removed duplicate `to` in lexer; keywords now centralized in `packages/core/src/constants/keywords.ts`
-- **Line continuation in function args** - `func(arg =\n value)` pattern now supported
-- **Nested switch/for/tuple parsing** - Fixed tuple declarations being misparsed as array subscripts in nested blocks
-- **UDT annotations** - `TypeName varName = expr` pattern now recognized as type annotation
-- **Missing namespace properties** - Added `timeframe.main_period/isticks`, `session.isfirstbar*`, `syminfo.country/industry/root`, `strategy.*_percent`
-- **Array type coercion** - `array<type>` (unresolved element) now assignable to `array<int/float>`
-- **Enum/type declarations** - User-defined enums now registered in symbol table (`SCALE.ATR` works)
-- **Multiline strings** - Lexer now allows newlines in string literals (deprecated v6 feature)
-- **Multiline arrays** - Parser tracks bracket depth to allow `[a,\n b,\n c]` syntax
-- **Multiline expressions** - Line continuation after operators (`x !=\n y` now parses)
-- **Mixed comma expressions** - `func(), x := na` now parses correctly
-- **Generic type parsing** - `map.new<string, float>()` and `array.new<chart.point>()` now parse correctly
-- **Namespace properties** - Added `strategy.*_percent`, `syminfo.country/industry/root`
-- **Type coercion expansion** - `series<T>` → `T`, `series<float>` → `color`, numeric → `string`
-- **Keywords as param names** - `ma(string type) => ...` now parses (keywords like `type` allowed as param names)
-
-**Earlier Fixes:**
-- **Test infrastructure complete** - 35 tests in `packages/core/test/` using .pine fixtures with `@expects` directives
-- **astExtractor.ts simplified** - Consolidated function lookups, removed dead code, extracted helpers. 679→650 lines.
-- **Hack audit complete** - 39 hacks identified, 26 fixed, 13 intentionally kept. All hardcoded function lists now use pine-data. See CLAUDE.md for full details.
-- **For loop step syntax** - `for i = 0 to 10 by 2` now parses correctly
-- **String → color coercion** - `"red"`, `"#FF0000"` now accepted as color values
-- **Polymorphic function params** - `nz()`, `input()` etc. no longer require specific types
-- **Library/export/method support** - `import User/Lib/1 as alias`, `export func()`, `method m()` now parse correctly
-- **Generic type parameters** - `array<float> arr`, `matrix<int> m` in function params now parse correctly
-- **Multi-word type annotations** - `simple int`, `series float` in params now typed correctly
-- **Comma operator support** - `a := 1, b := 2` and `func1(), func2()` now parse correctly
-- **Array element type tracking** - `array.new<float>()` → `array<float>`, `array.get(arr)` → element type
-- **Multi-line ternary expressions** - `cond ? a :\n    b` and nested ternaries across lines now parse correctly
-- **`na` as function callee** - `na(x)` now correctly resolves as function call
-- **Variable/function name collision** - built-in variables (hour, minute, etc.) no longer overwritten by same-name functions
-- **NA type coercion** - `const<na>` assignable to any type
-- **Logical operators** - `and`/`or` now accept numeric types (non-zero is truthy)
-
-### Tests Needed for Regression Prevention
-
-The following tests should be added to prevent regression of fixes since commit 8c7cbbb:
-
-| Commit | Fix | Test Coverage |
-|--------|-----|---------------|
-| 32248b7 | Unknown type propagation | ✅ `syntax/user-functions.pine` |
-| 61474e2 | Comma-separated declarations | ✅ `syntax/comma-separated-declarations.pine` |
-| 9492b43 | NA type coercion | ✅ `validation/na-coercion.pine` |
-| c16cd17 | Numeric types in `and`/`or` | ✅ `validation/logical-operators.pine` |
-| e7cd1df | Generic type parsing | ✅ `syntax/generics.pine` |
-| 23200fb | Type coercion expansion | ✅ `validation/type-coercion.pine` |
-| 14808bb | Keywords as param names | ✅ `syntax/keywords-as-params.pine` |
-| e02a4b1 | Multiline strings/expressions | ✅ `syntax/multiline.pine` |
-| f3da491 | Enum/type declarations | ✅ `syntax/enums.pine` |
-| 3d18c49 | Array type coercion | ✅ `validation/type-coercion.pine` |
-
-All fixes since commit 8c7cbbb now have regression tests
-
 ---
 
-## Completed Projects
-
-### Test Infrastructure (Complete)
-
-Replaced stale `./test/` folder with .pine script-driven tests.
-
-**Structure:**
-```
-packages/core/test/
-├── helpers.ts          # parseTestFile(), runTest()
-├── core.test.ts        # Test runner
-└── fixtures/
-    ├── parse-errors/   # 3 tests - expected parse failures
-    ├── syntax/         # 40 tests - parser syntax coverage
-    └── validation/     # 8 tests - validator error detection
-```
-
-**Total: 51 tests passing**
-
-Test files use `@expects` directives:
-```pine
-// @test syntax/for-loops
-// @expects parse: success
-// @expects no-errors
-```
-
-### astExtractor.ts Simplification (Complete)
-
-Reduced from 679 to 650 lines:
-- Removed unused `currentScopeId` field
-- Consolidated function lookups (3→1)
-- Extracted `createIteratorVariable()` helper
-- Simplified return statements
-
-### Hack Audit (Complete)
-
-Deep analysis of `packages/core/src/` - 39 hacks identified across 10 files:
-- **7 high-severity** (data in wrong place) → All fixed, now use pine-data
-- **12 medium-severity** (duplication, special cases) → All fixed or documented
-- **20 low-severity** (magic numbers, dead code) → 9 fixed, 11 intentionally kept
-
-See CLAUDE.md for the detailed hack table with all findings and resolutions.
-
----
-
-## Future Work (Out of Scope)
+## Future Work (Out of Scope for Current Items)
 
 - **Library imports for IntelliSense** - Handle `import User/Lib/1` for local development in LSP/VS Code extension (fetch/cache library definitions)
-
-- Should language-configuration.json be autogenerated?
+- **language-configuration.json autogeneration** - Consider generating from pine-data
+- **Fuzzer implementation** - Property-based testing for parser robustness
 
 ---
 
