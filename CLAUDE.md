@@ -158,38 +158,34 @@ Run `pnpm run debug:internals -- analyze --summary` for fresh data.
 
 | Issue | Priority | Notes |
 |-------|----------|-------|
-| Multiline strings | High | Lexer doesn't support actual newlines in strings |
-| Unknown type propagation | Medium | User-defined functions, chained calls |
-| Switch case scoping | Low | Parsing works, variable scoping may be incorrect |
-| Undefined function detection | Low | Validator doesn't detect calls to undefined functions |
+| Parse errors in complex scripts | Medium | ~20 "Unexpected token" errors in v6 scripts |
+| Array type coercion | Medium | `array<type>` → `array<int/float>` not recognized |
+| Missing namespace properties | Low | `chart.point`, `session.isfirstbar`, `timeframe.main_period` |
+| Unknown type propagation | Low | User-defined functions, chained calls |
 
-### Next Steps
+### Known Limitations
 
-1. **Multiline string support** - The lexer needs to handle strings with actual newlines:
-   ```pine
-   string TT = "Line 1
-        Line 2
-        Line 3"
-   ```
-   This is valid in Pine Script v6 but our lexer expects strings on single lines.
-   - Location: `packages/core/src/parser/lexer.ts`
-   - Look for string tokenization logic (~line 361-414)
-   - Currently errors with `mismatched character '\n' expecting '"'`
+- **Legacy color constants** - v4/v5 scripts use bare `red`, `green`, etc. In v6, must use `color.red`. Not fixing since these are pre-v6 scripts.
+- **Invalid parameter names** - Some scripts use deprecated params like `type` (input) and `when` (strategy). These are v5 params not valid in v6.
 
-   **Important v6 behavior**: Each wrapped line within a multiline string adds exactly one space to the beginning of its character sequence, regardless of indentation length.
+### Multiline String Behavior (v6)
 
-   **Deprecation warning**: This multiline string syntax is deprecated in v6. Future Pine Script versions may not support it. The recommended approach is to split strings and concatenate with `+`:
-   ```pine
-   string TT = "Line 1 " +
-        "Line 2 " +
-        "Line 3"
-   ```
+Multiline strings are valid but **deprecated** in v6:
+```pine
+string TT = "Line 1
+     Line 2"  // Each wrapped line adds exactly one space
+```
 
-2. **Expand test coverage** - Add more .pine fixtures to cover edge cases
+Recommended approach - concatenate with `+`:
+```pine
+string TT = "Line 1 " +
+     "Line 2"
+```
 
 ### Recently Fixed
 
 **December 2024 Session (59% → 77% v6 clean):**
+- **Enum/type declarations** - User-defined enums now registered in symbol table (`SCALE.ATR` works)
 - **Multiline strings** - Lexer now allows newlines in string literals (deprecated v6 feature)
 - **Multiline arrays** - Parser tracks bracket depth to allow `[a,\n b,\n c]` syntax
 - **Multiline expressions** - Line continuation after operators (`x !=\n y` now parses)
