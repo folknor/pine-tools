@@ -317,9 +317,7 @@ function cmdAnalyze(args) {
 	// Check if directory exists
 	if (!fs.existsSync(DIFF_DIR)) {
 		console.error(`Differences directory not found: ${DIFF_DIR}`);
-		console.error(
-			"Run 'node dev-tools/analysis/compare-validation-results.js' first.",
-		);
+		console.error("Run 'node dev-tools/compare-validation-results.js' first.");
 		process.exit(1);
 	}
 

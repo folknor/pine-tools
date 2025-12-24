@@ -267,5 +267,5 @@ string TT = "Line 1 " +
 Compare CLI output against TradingView's pine-lint:
 
 ```bash
-node dev-tools/analysis/compare-validation-results.js
+node dev-tools/compare-validation-results.js
 ```
