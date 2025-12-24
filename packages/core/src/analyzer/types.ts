@@ -171,10 +171,40 @@ export namespace TypeChecker {
 		if (from === "simple<int>" && to === "series<float>") return true;
 		if (from === "simple<float>" && to === "series<int>") return true;
 
+		// series<T> -> T coercion (Pine Script allows series values in simple contexts)
+		// This is common when passing series values to functions expecting simple types
+		if (from === "series<int>" && to === "int") return true;
+		if (from === "series<float>" && to === "float") return true;
+		if (from === "series<bool>" && to === "bool") return true;
+		if (from === "series<string>" && to === "string") return true;
+		if (from === "series<color>" && to === "color") return true;
+
+		// Cross-type series to simple coercion
+		if (from === "series<float>" && to === "int") return true;
+		if (from === "series<int>" && to === "float") return true;
+
 		// String -> color coercion (Pine Script allows color names and hex as strings)
 		// e.g., "red", "blue", "#FF0000", "#00FF00FF"
 		if (from === "string" && (to === "color" || to === "series<color>")) return true;
 		if (from === "series<string>" && to === "series<color>") return true;
+
+		// Numeric -> color coercion (colors can be specified as ARGB integers)
+		if (from === "int" && (to === "color" || to === "series<color>")) return true;
+		if (from === "float" && (to === "color" || to === "series<color>")) return true;
+		if (from === "series<int>" && (to === "series<color>" || to === "color")) return true;
+		if (from === "series<float>" && (to === "series<color>" || to === "color")) return true;
+		if (from === "simple<int>" && (to === "color" || to === "series<color>")) return true;
+		if (from === "simple<float>" && (to === "color" || to === "series<color>")) return true;
+
+		// Color -> numeric coercion (color can be converted to its integer representation)
+		if (from === "color" && (to === "int" || to === "float")) return true;
+		if (from === "series<color>" && (to === "series<int>" || to === "series<float>")) return true;
+
+		// Numeric -> string coercion (str.tostring is often implicit)
+		if (from === "int" && (to === "string" || to === "series<string>")) return true;
+		if (from === "float" && (to === "string" || to === "series<string>")) return true;
+		if (from === "series<int>" && to === "series<string>") return true;
+		if (from === "series<float>" && to === "series<string>") return true;
 
 		return false;
 	}
