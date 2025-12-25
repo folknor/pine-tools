@@ -8,6 +8,7 @@
 !package.json
 !LICENSE
 !readme.md
+!CHANGELOG.md
 
 # Exclude source maps from dist
 dist/**/*.map

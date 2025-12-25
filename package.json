@@ -23,6 +23,9 @@
 	"engines": {
 		"vscode": "^1.108.0"
 	},
+	"activationEvents": [
+		"onLanguage:pine"
+	],
 	"categories": [
 		"Programming Languages",
 		"Linters",
