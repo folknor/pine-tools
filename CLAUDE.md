@@ -185,6 +185,50 @@ string TT = "Line 1 " +
 
 ---
 
+## VS Code Marketplace Publishing
+
+### Required Steps
+
+1. **Add extension icon** (128x128 PNG):
+   ```bash
+   # Add icon.png to project root, then update package.json:
+   "icon": "icon.png"
+   ```
+
+2. **Create Azure DevOps PAT**:
+   - Go to https://dev.azure.com
+   - Create Personal Access Token with "Marketplace (Publish)" scope
+   - Token must be for "All accessible organizations"
+
+3. **Publish**:
+   ```bash
+   pnpm exec vsce login folknor
+   pnpm exec vsce publish
+   ```
+
+### Optional Enhancements
+
+| Feature | Description | Effort |
+|---------|-------------|--------|
+| **Extension icon** | Pine tree or chart icon, 128x128 PNG | Required |
+| **Gallery banner** | Marketplace header image/color in package.json | Low |
+| **Badges** | Version, installs, rating badges in README | Low |
+| **GIF demos** | Animated demos of IntelliSense, formatting | Medium |
+| **Keybindings** | Default keyboard shortcuts for commands | Low |
+| **Snippets** | Code snippets for common patterns (`indicator`, `strategy`) | Medium |
+| **Code actions** | Quick fixes for diagnostics (auto-import, fix typos) | High |
+| **Debugger** | Step-through debugging (requires TradingView API) | Not feasible |
+
+### Package Commands
+
+```bash
+pnpm run package          # Build VSIX to dist/
+pnpm run rebuild          # Clean + build + test + package
+pnpm run rebuild:skip-tests  # Clean + build + package (no tests)
+```
+
+---
+
 ## Future Work
 
 - **Fuzzer implementation** - Property-based testing for parser robustness
