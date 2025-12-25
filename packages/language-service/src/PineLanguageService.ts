@@ -17,15 +17,15 @@ import {
 	getHover as getHoverImpl,
 	getInlayHints as getInlayHintsImpl,
 	getReferences as getReferencesImpl,
-	type ReferencesOptions,
 	getSemanticTokens as getSemanticTokensImpl,
 	getSemanticTokensLegend,
 	getSignatureHelp as getSignatureHelpImpl,
 	getSymbolInfo as getSymbolInfoImpl,
-	prepareRename as prepareRenameImpl,
 	type PrepareRenameResult,
-	rename as renameImpl,
+	prepareRename as prepareRenameImpl,
+	type ReferencesOptions,
 	type RenameResult,
+	rename as renameImpl,
 } from "./features";
 import type {
 	CodeAction,
@@ -197,7 +197,11 @@ export class PineLanguageService {
 	/**
 	 * Rename a symbol at a position.
 	 */
-	rename(uri: string, position: Position, newName: string): RenameResult | null {
+	rename(
+		uri: string,
+		position: Position,
+		newName: string,
+	): RenameResult | null {
 		const doc = this.documents.get(uri);
 		if (!doc) return null;
 		return renameImpl(doc, position, newName);

@@ -29,7 +29,10 @@ export function getFoldingRanges(doc: ParsedDocument): FoldingRange[] {
 /**
  * Collect folding ranges for multi-line comments.
  */
-function collectCommentFolds(doc: ParsedDocument, ranges: FoldingRange[]): void {
+function collectCommentFolds(
+	doc: ParsedDocument,
+	ranges: FoldingRange[],
+): void {
 	const lines = doc.content.split("\n");
 	let blockStart = -1;
 

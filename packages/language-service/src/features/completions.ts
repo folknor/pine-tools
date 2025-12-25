@@ -429,7 +429,10 @@ const libraryContentCache = new Map<string, string>();
  * Register library content for import resolution.
  * This is called by the LSP server when it has access to the filesystem.
  */
-export function registerLibraryContent(sourcePath: string, content: string): void {
+export function registerLibraryContent(
+	sourcePath: string,
+	content: string,
+): void {
 	libraryContentCache.set(sourcePath, content);
 }
 

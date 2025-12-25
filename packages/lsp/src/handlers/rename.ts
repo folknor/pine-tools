@@ -20,18 +20,16 @@ export function setupRenameHandler(
 	languageService: PineLanguageService,
 ): void {
 	// Prepare rename - check if symbol can be renamed
-	connection.onPrepareRename(
-		(params: PrepareRenameParams): Range | null => {
-			const result = languageService.prepareRename(
-				params.textDocument.uri,
-				params.position,
-			);
+	connection.onPrepareRename((params: PrepareRenameParams): Range | null => {
+		const result = languageService.prepareRename(
+			params.textDocument.uri,
+			params.position,
+		);
 
-			if (!result) return null;
+		if (!result) return null;
 
-			return result.range;
-		},
-	);
+		return result.range;
+	});
 
 	// Rename - perform the rename
 	connection.onRenameRequest((params: RenameParams): WorkspaceEdit | null => {

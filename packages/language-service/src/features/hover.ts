@@ -1,12 +1,12 @@
 import type { ParsedDocument } from "../documents/ParsedDocument";
 import type { HoverInfo, Position } from "../types";
-import { getSymbolInfo } from "./lookup";
 import {
-	getResolvedImports,
-	parseLibrary,
 	findLibraryExport,
+	getResolvedImports,
 	type LibraryExport,
+	parseLibrary,
 } from "./imports";
+import { getSymbolInfo } from "./lookup";
 
 // Map to store library content for hover resolution
 const libraryContentCache = new Map<string, string>();

@@ -14,7 +14,7 @@ import {
 	type DiagnosticSeverity as LSPDiagnosticSeverity,
 	type DocumentSymbol as LSPDocumentSymbol,
 	type FoldingRange as LSPFoldingRange,
-	FoldingRangeKind as LSPFoldingRangeKind,
+	type FoldingRangeKind as LSPFoldingRangeKind,
 	type Hover as LSPHover,
 	type InlayHint as LSPInlayHint,
 	type InlayHintKind as LSPInlayHintKind,
@@ -119,7 +119,9 @@ export function convertTextEdit(edit: TextEdit): LSPTextEdit {
 /**
  * Convert language-service DocumentSymbol to LSP DocumentSymbol.
  */
-export function convertDocumentSymbol(symbol: DocumentSymbol): LSPDocumentSymbol {
+export function convertDocumentSymbol(
+	symbol: DocumentSymbol,
+): LSPDocumentSymbol {
 	return {
 		name: symbol.name,
 		kind: symbol.kind as LSPSymbolKind,

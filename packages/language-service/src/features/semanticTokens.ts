@@ -2,11 +2,12 @@
  * Semantic tokens provide rich token classification for syntax highlighting.
  */
 
-import { FUNCTIONS_BY_NAME, VARIABLES, CONSTANTS } from "../../../../pine-data/v6";
-import type {
-	Expression,
-	Statement,
-} from "../../../core/src/parser/ast";
+import {
+	CONSTANTS,
+	FUNCTIONS_BY_NAME,
+	VARIABLES,
+} from "../../../../pine-data/v6";
+import type { Expression, Statement } from "../../../core/src/parser/ast";
 import type { ParsedDocument } from "../documents/ParsedDocument";
 import {
 	type SemanticToken,
@@ -58,7 +59,10 @@ function collectTokensFromStatement(
 					line: stmt.line - 1,
 					character: stmt.column - 1,
 					length: stmt.name.length,
-					tokenType: stmt.varType === "const" ? SemanticTokenType.Variable : SemanticTokenType.Variable,
+					tokenType:
+						stmt.varType === "const"
+							? SemanticTokenType.Variable
+							: SemanticTokenType.Variable,
 					tokenModifiers: modifiers,
 				});
 			}
@@ -75,11 +79,14 @@ function collectTokensFromStatement(
 					character: stmt.column - 1,
 					length: stmt.name.length,
 					tokenType: SemanticTokenType.Function,
-					tokenModifiers: [SemanticTokenModifier.Declaration, SemanticTokenModifier.Definition],
+					tokenModifiers: [
+						SemanticTokenModifier.Declaration,
+						SemanticTokenModifier.Definition,
+					],
 				});
 			}
 			// Mark parameters
-			for (const param of stmt.params) {
+			for (const _param of stmt.params) {
 				// We don't have exact position for params, skip for now
 			}
 			// Process body
@@ -95,7 +102,10 @@ function collectTokensFromStatement(
 					character: stmt.column - 1,
 					length: stmt.name.length,
 					tokenType: SemanticTokenType.Method,
-					tokenModifiers: [SemanticTokenModifier.Declaration, SemanticTokenModifier.Definition],
+					tokenModifiers: [
+						SemanticTokenModifier.Declaration,
+						SemanticTokenModifier.Definition,
+					],
 				});
 			}
 			for (const s of stmt.body) {
@@ -232,9 +242,13 @@ function collectTokensFromExpression(
 		case "MemberExpression":
 			collectTokensFromExpression(expr.object, tokens);
 			// Mark property as namespace or property
-			if (expr.property.line !== undefined && expr.property.column !== undefined) {
+			if (
+				expr.property.line !== undefined &&
+				expr.property.column !== undefined
+			) {
 				// Check if this is a namespace.function pattern
-				const objName = expr.object.type === "Identifier" ? expr.object.name : null;
+				const objName =
+					expr.object.type === "Identifier" ? expr.object.name : null;
 				const propName = expr.property.name;
 				const fullName = objName ? `${objName}.${propName}` : propName;
 
@@ -253,7 +267,9 @@ function collectTokensFromExpression(
 					line: expr.property.line - 1,
 					character: expr.property.column - 1,
 					length: propName.length,
-					tokenType: isBuiltinFunc ? SemanticTokenType.Function : SemanticTokenType.Property,
+					tokenType: isBuiltinFunc
+						? SemanticTokenType.Function
+						: SemanticTokenType.Property,
 					tokenModifiers: modifiers,
 				});
 			}
@@ -315,12 +331,13 @@ function encodeTokens(tokens: SemanticToken[]): SemanticTokensResult {
 
 	for (const token of tokens) {
 		const deltaLine = token.line - prevLine;
-		const deltaChar = deltaLine === 0 ? token.character - prevChar : token.character;
+		const deltaChar =
+			deltaLine === 0 ? token.character - prevChar : token.character;
 
 		// Encode modifiers as bit mask
 		let modifiersMask = 0;
 		for (const mod of token.tokenModifiers) {
-			modifiersMask |= (1 << mod);
+			modifiersMask |= 1 << mod;
 		}
 
 		data.push(

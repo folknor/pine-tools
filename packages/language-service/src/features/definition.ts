@@ -7,8 +7,8 @@ import type {
 import { Parser } from "../../../core/src/parser/parser";
 import type { ParsedDocument } from "../documents/ParsedDocument";
 import type { Location, Position, Range } from "../types";
+import { findLibraryExport, getResolvedImports, parseLibrary } from "./imports";
 import { getSymbolInfo } from "./lookup";
-import { getResolvedImports, parseLibrary, findLibraryExport } from "./imports";
 
 // Map to store library content for definition resolution
 const libraryContentCache = new Map<string, string>();
@@ -156,7 +156,12 @@ function findExportLocationInLibrary(
 				const uri = sourcePath.startsWith("file://")
 					? sourcePath
 					: `file://${sourcePath}`;
-				return createLocation(uri, funcDecl.line, funcDecl.column, funcDecl.name);
+				return createLocation(
+					uri,
+					funcDecl.line,
+					funcDecl.column,
+					funcDecl.name,
+				);
 			}
 		} else if (stmt.type === "MethodDeclaration") {
 			const methodDecl = stmt as MethodDeclaration;
@@ -164,7 +169,12 @@ function findExportLocationInLibrary(
 				const uri = sourcePath.startsWith("file://")
 					? sourcePath
 					: `file://${sourcePath}`;
-				return createLocation(uri, methodDecl.line, methodDecl.column, methodDecl.name);
+				return createLocation(
+					uri,
+					methodDecl.line,
+					methodDecl.column,
+					methodDecl.name,
+				);
 			}
 		}
 	}
@@ -208,13 +218,23 @@ function findDefinitionInStatement(
 		case "FunctionDeclaration": {
 			const funcDecl = stmt as FunctionDeclaration;
 			if (funcDecl.name === symbolName) {
-				return createLocation(uri, funcDecl.line, funcDecl.column, funcDecl.name);
+				return createLocation(
+					uri,
+					funcDecl.line,
+					funcDecl.column,
+					funcDecl.name,
+				);
 			}
 			// Check parameters
 			for (const param of funcDecl.params) {
 				if (param.name === symbolName) {
 					// Parameters don't have their own line/column, use function's
-					return createLocation(uri, funcDecl.line, funcDecl.column, param.name);
+					return createLocation(
+						uri,
+						funcDecl.line,
+						funcDecl.column,
+						param.name,
+					);
 				}
 			}
 			// Search in function body
@@ -228,12 +248,22 @@ function findDefinitionInStatement(
 		case "MethodDeclaration": {
 			const methodDecl = stmt as MethodDeclaration;
 			if (methodDecl.name === symbolName) {
-				return createLocation(uri, methodDecl.line, methodDecl.column, methodDecl.name);
+				return createLocation(
+					uri,
+					methodDecl.line,
+					methodDecl.column,
+					methodDecl.name,
+				);
 			}
 			// Check parameters
 			for (const param of methodDecl.params) {
 				if (param.name === symbolName) {
-					return createLocation(uri, methodDecl.line, methodDecl.column, param.name);
+					return createLocation(
+						uri,
+						methodDecl.line,
+						methodDecl.column,
+						param.name,
+					);
 				}
 			}
 			// Search in method body

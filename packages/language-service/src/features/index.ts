@@ -1,51 +1,51 @@
+export { type CodeActionContext, getCodeActions } from "./codeActions";
 export {
+	clearLibraryContent,
 	getAllCompletions,
 	getCompletions,
 	getNamespaceCompletions,
 	registerLibraryContent,
-	clearLibraryContent,
 } from "./completions";
+export {
+	clearLibraryContentForDefinition,
+	type DefinitionResult,
+	getDefinition,
+	registerLibraryContentForDefinition,
+} from "./definition";
 export { getDiagnostics } from "./diagnostics";
+export { getFoldingRanges } from "./folding";
 export { format, formatToString } from "./formatting";
 export {
+	clearLibraryContentForHover,
 	getHover,
 	registerLibraryContentForHover,
-	clearLibraryContentForHover,
 } from "./hover";
+export {
+	clearLibraryCache,
+	findLibraryExport,
+	getLibraryAliasBeforeDot,
+	getLibraryCompletions,
+	getResolvedImports,
+	getUnresolvedImports,
+	type LibraryExport,
+	type ParsedLibrary,
+	parseLibrary,
+	type ResolvedImport,
+} from "./imports";
+export { getInlayHints } from "./inlayHints";
 export {
 	getAllConstantNames,
 	getAllFunctionNames,
 	getAllVariableNames,
 	getSymbolInfo,
 } from "./lookup";
-export { getSignatureHelp } from "./signatures";
-export { getDocumentSymbols } from "./symbols";
-export {
-	getDefinition,
-	registerLibraryContentForDefinition,
-	clearLibraryContentForDefinition,
-	type DefinitionResult,
-} from "./definition";
 export { getReferences, type ReferencesOptions } from "./references";
 export {
-	prepareRename,
-	rename,
 	type PrepareRenameResult,
+	prepareRename,
 	type RenameResult,
+	rename,
 } from "./rename";
-export { getCodeActions, type CodeActionContext } from "./codeActions";
-export { getFoldingRanges } from "./folding";
-export { getInlayHints } from "./inlayHints";
 export { getSemanticTokens, getSemanticTokensLegend } from "./semanticTokens";
-export {
-	getResolvedImports,
-	getUnresolvedImports,
-	parseLibrary,
-	clearLibraryCache,
-	getLibraryAliasBeforeDot,
-	getLibraryCompletions,
-	findLibraryExport,
-	type ResolvedImport,
-	type LibraryExport,
-	type ParsedLibrary,
-} from "./imports";
+export { getSignatureHelp } from "./signatures";
+export { getDocumentSymbols } from "./symbols";

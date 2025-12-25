@@ -11,10 +11,14 @@
  * ```
  */
 
-import { Parser } from "../../../../packages/core/src/parser/parser";
 import type * as AST from "../../../../packages/core/src/parser/ast";
+import { Parser } from "../../../../packages/core/src/parser/parser";
 import type { ParsedDocument } from "../documents/ParsedDocument";
-import { CompletionItemKind, type CompletionItem, type Position } from "../types";
+import {
+	type CompletionItem,
+	CompletionItemKind,
+	type Position,
+} from "../types";
 
 /**
  * Represents a resolved library import with its source directive.
@@ -121,7 +125,11 @@ export function getResolvedImports(doc: ParsedDocument): ResolvedImport[] {
 export function getUnresolvedImports(
 	doc: ParsedDocument,
 ): Array<{ alias: string; libraryPath: string; line: number }> {
-	const unresolved: Array<{ alias: string; libraryPath: string; line: number }> = [];
+	const unresolved: Array<{
+		alias: string;
+		libraryPath: string;
+		line: number;
+	}> = [];
 
 	for (const stmt of doc.ast.body) {
 		if (stmt.type !== "ImportStatement") continue;
@@ -131,7 +139,8 @@ export function getUnresolvedImports(
 
 		if (!sourcePath) {
 			unresolved.push({
-				alias: importStmt.alias ?? importStmt.libraryPath.split("/").pop() ?? "lib",
+				alias:
+					importStmt.alias ?? importStmt.libraryPath.split("/").pop() ?? "lib",
 				libraryPath: importStmt.libraryPath,
 				line: stmt.line,
 			});
@@ -147,7 +156,10 @@ export function getUnresolvedImports(
  * @param content The library file content
  * @param sourcePath The path to the library file (for caching)
  */
-export function parseLibrary(content: string, sourcePath: string): ParsedLibrary {
+export function parseLibrary(
+	content: string,
+	sourcePath: string,
+): ParsedLibrary {
 	// Check cache first
 	const cached = libraryCache.get(sourcePath);
 	if (cached) return cached;
@@ -289,7 +301,9 @@ export function getLibraryAliasBeforeDot(
  * @param library The parsed library
  * @returns Completion items for the library's exports
  */
-export function getLibraryCompletions(library: ParsedLibrary): CompletionItem[] {
+export function getLibraryCompletions(
+	library: ParsedLibrary,
+): CompletionItem[] {
 	const items: CompletionItem[] = [];
 
 	for (const exp of library.exports) {

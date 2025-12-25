@@ -1,6 +1,5 @@
 import {
 	CodeActionKind,
-	SemanticTokensRegistrationType,
 	type ServerCapabilities,
 	TextDocumentSyncKind,
 } from "vscode-languageserver/node";

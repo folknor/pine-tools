@@ -46,11 +46,7 @@ function extractSymbol(
 				name: stmt.name,
 				kind: SymbolKind.Struct,
 				range: createRange(stmt.line, stmt.column, stmt.name, doc),
-				selectionRange: createSelectionRange(
-					stmt.line,
-					stmt.column,
-					stmt.name,
-				),
+				selectionRange: createSelectionRange(stmt.line, stmt.column, stmt.name),
 			};
 
 		case "EnumDeclaration":
@@ -58,11 +54,7 @@ function extractSymbol(
 				name: stmt.name,
 				kind: SymbolKind.Enum,
 				range: createRange(stmt.line, stmt.column, stmt.name, doc),
-				selectionRange: createSelectionRange(
-					stmt.line,
-					stmt.column,
-					stmt.name,
-				),
+				selectionRange: createSelectionRange(stmt.line, stmt.column, stmt.name),
 			};
 
 		case "ImportStatement":
@@ -202,9 +194,12 @@ function findBlockEndLine(body: Statement[], startLine: number): number {
 function createRange(
 	line: number,
 	column: number,
-	name: string,
+	_name: string,
 	doc: ParsedDocument,
-): { start: { line: number; character: number }; end: { line: number; character: number } } {
+): {
+	start: { line: number; character: number };
+	end: { line: number; character: number };
+} {
 	const lineContent = doc.getLine(line - 1);
 	return {
 		start: { line: line - 1, character: column - 1 },
@@ -220,7 +215,10 @@ function createSelectionRange(
 	line: number,
 	column: number,
 	name: string,
-): { start: { line: number; character: number }; end: { line: number; character: number } } {
+): {
+	start: { line: number; character: number };
+	end: { line: number; character: number };
+} {
 	return {
 		start: { line: line - 1, character: column - 1 },
 		end: { line: line - 1, character: column - 1 + name.length },

@@ -2,38 +2,41 @@
 
 // Document classes
 export { DocumentManager, ParsedDocument } from "./documents";
+export {
+	type CodeActionContext,
+	getCodeActions,
+} from "./features/codeActions";
 // Feature implementations (for direct use if needed)
 export {
 	getAllCompletions,
 	getCompletions,
 	getNamespaceCompletions,
 } from "./features/completions";
+export { type DefinitionResult, getDefinition } from "./features/definition";
 export { getDiagnostics } from "./features/diagnostics";
+export { getFoldingRanges } from "./features/folding";
 export { format, formatToString } from "./features/formatting";
 export { getHover } from "./features/hover";
+export { getInlayHints } from "./features/inlayHints";
 export {
 	getAllConstantNames,
 	getAllFunctionNames,
 	getAllVariableNames,
 	getSymbolInfo,
 } from "./features/lookup";
-export { getSignatureHelp } from "./features/signatures";
-export { getDocumentSymbols } from "./features/symbols";
-export { getDefinition, type DefinitionResult } from "./features/definition";
 export { getReferences, type ReferencesOptions } from "./features/references";
 export {
-	prepareRename,
-	rename,
 	type PrepareRenameResult,
+	prepareRename,
 	type RenameResult,
+	rename,
 } from "./features/rename";
 export {
-	getCodeActions,
-	type CodeActionContext,
-} from "./features/codeActions";
-export { getFoldingRanges } from "./features/folding";
-export { getInlayHints } from "./features/inlayHints";
-export { getSemanticTokens, getSemanticTokensLegend } from "./features/semanticTokens";
+	getSemanticTokens,
+	getSemanticTokensLegend,
+} from "./features/semanticTokens";
+export { getSignatureHelp } from "./features/signatures";
+export { getDocumentSymbols } from "./features/symbols";
 export type { HoverOptions } from "./PineLanguageService";
 export { PineLanguageService } from "./PineLanguageService";
 // Types

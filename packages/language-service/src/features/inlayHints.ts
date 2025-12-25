@@ -216,7 +216,7 @@ function extractParamName(param: string): string | null {
  */
 function collectInlayHintsFromCall(
 	call: CallExpression,
-	doc: ParsedDocument,
+	_doc: ParsedDocument,
 	_range: Range,
 	hints: InlayHint[],
 ): void {

@@ -33,7 +33,13 @@ export function getReferences(
 
 	// Walk the AST to find all occurrences of this symbol
 	for (const stmt of doc.ast.body) {
-		findReferencesInStatement(stmt, symbol, doc.uri, locations, includeDeclaration);
+		findReferencesInStatement(
+			stmt,
+			symbol,
+			doc.uri,
+			locations,
+			includeDeclaration,
+		);
 	}
 
 	return locations;
@@ -66,23 +72,38 @@ function findReferencesInStatement(
 			const funcDecl = stmt as FunctionDeclaration;
 			// Check if function name is the symbol
 			if (funcDecl.name === symbolName && includeDeclaration) {
-				locations.push(createLocation(uri, funcDecl.line, funcDecl.column, funcDecl.name));
+				locations.push(
+					createLocation(uri, funcDecl.line, funcDecl.column, funcDecl.name),
+				);
 			}
 			// Check parameters
 			for (const param of funcDecl.params) {
 				if (param.name === symbolName && includeDeclaration) {
 					// Parameters don't have their own line/column in current AST
 					// Use function line as approximation
-					locations.push(createLocation(uri, funcDecl.line, funcDecl.column, param.name));
+					locations.push(
+						createLocation(uri, funcDecl.line, funcDecl.column, param.name),
+					);
 				}
 				// Check default values
 				if (param.defaultValue) {
-					findReferencesInExpression(param.defaultValue, symbolName, uri, locations);
+					findReferencesInExpression(
+						param.defaultValue,
+						symbolName,
+						uri,
+						locations,
+					);
 				}
 			}
 			// Search in function body
 			for (const bodyStmt of funcDecl.body) {
-				findReferencesInStatement(bodyStmt, symbolName, uri, locations, includeDeclaration);
+				findReferencesInStatement(
+					bodyStmt,
+					symbolName,
+					uri,
+					locations,
+					includeDeclaration,
+				);
 			}
 			break;
 		}
@@ -90,18 +111,38 @@ function findReferencesInStatement(
 		case "MethodDeclaration": {
 			const methodDecl = stmt as MethodDeclaration;
 			if (methodDecl.name === symbolName && includeDeclaration) {
-				locations.push(createLocation(uri, methodDecl.line, methodDecl.column, methodDecl.name));
+				locations.push(
+					createLocation(
+						uri,
+						methodDecl.line,
+						methodDecl.column,
+						methodDecl.name,
+					),
+				);
 			}
 			for (const param of methodDecl.params) {
 				if (param.name === symbolName && includeDeclaration) {
-					locations.push(createLocation(uri, methodDecl.line, methodDecl.column, param.name));
+					locations.push(
+						createLocation(uri, methodDecl.line, methodDecl.column, param.name),
+					);
 				}
 				if (param.defaultValue) {
-					findReferencesInExpression(param.defaultValue, symbolName, uri, locations);
+					findReferencesInExpression(
+						param.defaultValue,
+						symbolName,
+						uri,
+						locations,
+					);
 				}
 			}
 			for (const bodyStmt of methodDecl.body) {
-				findReferencesInStatement(bodyStmt, symbolName, uri, locations, includeDeclaration);
+				findReferencesInStatement(
+					bodyStmt,
+					symbolName,
+					uri,
+					locations,
+					includeDeclaration,
+				);
 			}
 			break;
 		}
@@ -120,11 +161,23 @@ function findReferencesInStatement(
 		case "IfStatement": {
 			findReferencesInExpression(stmt.condition, symbolName, uri, locations);
 			for (const bodyStmt of stmt.consequent) {
-				findReferencesInStatement(bodyStmt, symbolName, uri, locations, includeDeclaration);
+				findReferencesInStatement(
+					bodyStmt,
+					symbolName,
+					uri,
+					locations,
+					includeDeclaration,
+				);
 			}
 			if (stmt.alternate) {
 				for (const bodyStmt of stmt.alternate) {
-					findReferencesInStatement(bodyStmt, symbolName, uri, locations, includeDeclaration);
+					findReferencesInStatement(
+						bodyStmt,
+						symbolName,
+						uri,
+						locations,
+						includeDeclaration,
+					);
 				}
 			}
 			break;
@@ -133,7 +186,9 @@ function findReferencesInStatement(
 		case "ForStatement": {
 			// Check iterator declaration
 			if (stmt.iterator === symbolName && includeDeclaration) {
-				locations.push(createLocation(uri, stmt.line, stmt.column, stmt.iterator));
+				locations.push(
+					createLocation(uri, stmt.line, stmt.column, stmt.iterator),
+				);
 			}
 			// Check range expressions
 			findReferencesInExpression(stmt.from, symbolName, uri, locations);
@@ -143,18 +198,32 @@ function findReferencesInStatement(
 			}
 			// Search in body
 			for (const bodyStmt of stmt.body) {
-				findReferencesInStatement(bodyStmt, symbolName, uri, locations, includeDeclaration);
+				findReferencesInStatement(
+					bodyStmt,
+					symbolName,
+					uri,
+					locations,
+					includeDeclaration,
+				);
 			}
 			break;
 		}
 
 		case "ForInStatement": {
 			if (stmt.iterator === symbolName && includeDeclaration) {
-				locations.push(createLocation(uri, stmt.line, stmt.column, stmt.iterator));
+				locations.push(
+					createLocation(uri, stmt.line, stmt.column, stmt.iterator),
+				);
 			}
 			findReferencesInExpression(stmt.collection, symbolName, uri, locations);
 			for (const bodyStmt of stmt.body) {
-				findReferencesInStatement(bodyStmt, symbolName, uri, locations, includeDeclaration);
+				findReferencesInStatement(
+					bodyStmt,
+					symbolName,
+					uri,
+					locations,
+					includeDeclaration,
+				);
 			}
 			break;
 		}
@@ -162,7 +231,13 @@ function findReferencesInStatement(
 		case "WhileStatement": {
 			findReferencesInExpression(stmt.condition, symbolName, uri, locations);
 			for (const bodyStmt of stmt.body) {
-				findReferencesInStatement(bodyStmt, symbolName, uri, locations, includeDeclaration);
+				findReferencesInStatement(
+					bodyStmt,
+					symbolName,
+					uri,
+					locations,
+					includeDeclaration,
+				);
 			}
 			break;
 		}
@@ -199,7 +274,13 @@ function findReferencesInStatement(
 
 		case "SequenceStatement": {
 			for (const seqStmt of stmt.statements) {
-				findReferencesInStatement(seqStmt, symbolName, uri, locations, includeDeclaration);
+				findReferencesInStatement(
+					seqStmt,
+					symbolName,
+					uri,
+					locations,
+					includeDeclaration,
+				);
 			}
 			break;
 		}
@@ -275,13 +356,28 @@ function findReferencesInExpression(
 
 		case "SwitchExpression": {
 			if (expr.discriminant) {
-				findReferencesInExpression(expr.discriminant, symbolName, uri, locations);
+				findReferencesInExpression(
+					expr.discriminant,
+					symbolName,
+					uri,
+					locations,
+				);
 			}
 			for (const switchCase of expr.cases) {
 				if (switchCase.condition) {
-					findReferencesInExpression(switchCase.condition, symbolName, uri, locations);
+					findReferencesInExpression(
+						switchCase.condition,
+						symbolName,
+						uri,
+						locations,
+					);
 				}
-				findReferencesInExpression(switchCase.result, symbolName, uri, locations);
+				findReferencesInExpression(
+					switchCase.result,
+					symbolName,
+					uri,
+					locations,
+				);
 			}
 			break;
 		}

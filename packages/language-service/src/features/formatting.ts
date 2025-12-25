@@ -90,16 +90,19 @@ function formatLine(line: string): string {
 
 	// Add spacing around single-char operators (but not in ++, --, etc.)
 	// Be careful with - as it's also unary and in negative numbers
-	code = code.replace(/([^+\-*/<>=!:])([+\-*/%<>])([^=+\-])/g, "$1 $2 $3");
+	code = code.replace(/([^+\-*/<>=!:])([+\-*/%<>])([^=+-])/g, "$1 $2 $3");
 
 	// Fix doubled spaces
-	code = code.replace(/  +/g, " ");
+	code = code.replace(/ {2,}/g, " ");
 
 	// Ensure space after commas
 	code = code.replace(/,([^\s])/g, ", $1");
 
 	// Restore strings
-	code = code.replace(/__STR(\d+)__/g, (_, idx) => strings[Number.parseInt(idx)]);
+	code = code.replace(
+		/__STR(\d+)__/g,
+		(_, idx) => strings[Number.parseInt(idx, 10)],
+	);
 
 	// Combine code and comment, preserving a single space before comment
 	code = code.trimEnd();
