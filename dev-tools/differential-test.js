@@ -53,94 +53,215 @@ async function checkPineScript(code, options = {}) {
 	}
 }
 
-// === Script Generator ===
+// === Script Generator (Comprehensive) ===
 
-const identifier = fc.stringMatching(/^[a-zA-Z_][a-zA-Z0-9_]{1,8}$/);
-const intLiteral = fc.integer({ min: 0, max: 1000 }).map(String);
-const floatLiteral = fc.integer({ min: 0, max: 1000 }).map(n => `${n}.0`);
+const identifier = fc.stringMatching(/^[a-zA-Z_][a-zA-Z0-9_]{1,12}$/);
+const intLiteral = fc.integer({ min: -10000, max: 10000 }).map(String);
+const floatLiteral = fc.tuple(
+	fc.integer({ min: -1000, max: 1000 }),
+	fc.integer({ min: 0, max: 99 })
+).map(([a, b]) => `${a}.${b}`);
 const boolLiteral = fc.constantFrom("true", "false");
-const stringLiteral = fc.stringMatching(/^[a-zA-Z0-9 ]{0,20}$/).map(s => `"${s}"`);
+const stringLiteral = fc.stringMatching(/^[a-zA-Z0-9 _-]{0,30}$/).map(s => `"${s}"`);
 
+// Comprehensive builtin variables
 const builtinVar = fc.constantFrom(
-	"close", "open", "high", "low", "volume", "time", "bar_index",
-	"na", "true", "false"
+	// Price data
+	"close", "open", "high", "low", "volume", "hl2", "hlc3", "ohlc4", "hlcc4",
+	// Time
+	"time", "time_close", "timenow", "bar_index", "last_bar_index",
+	// Date parts
+	"year", "month", "weekofyear", "dayofmonth", "dayofweek", "hour", "minute", "second",
+	// Special values
+	"na", "true", "false",
+	// Syminfo
+	"syminfo.ticker", "syminfo.tickerid", "syminfo.mintick",
+	// Barstate
+	"barstate.isfirst", "barstate.islast", "barstate.ishistory", "barstate.isrealtime",
+	"barstate.isnew", "barstate.isconfirmed",
+	// Timeframe
+	"timeframe.period", "timeframe.multiplier", "timeframe.isintraday", "timeframe.isdaily",
 );
 
+// Comprehensive builtin functions
 const builtinFunc = fc.constantFrom(
-	"ta.sma", "ta.ema", "ta.rsi", "ta.macd",
-	"math.abs", "math.max", "math.min", "math.round",
-	"str.tostring", "nz", "fixnan",
-	"plot", "plotshape", "bgcolor", "barcolor",
-	"input.int", "input.float", "input.bool", "input.string",
+	// Technical Analysis
+	"ta.sma", "ta.ema", "ta.wma", "ta.vwma", "ta.rma", "ta.hma",
+	"ta.rsi", "ta.mfi", "ta.cci", "ta.mom", "ta.roc",
+	"ta.atr", "ta.tr", "ta.highest", "ta.lowest",
+	"ta.change", "ta.stdev", "ta.variance", "ta.median",
+	"ta.cross", "ta.crossover", "ta.crossunder",
+	"ta.rising", "ta.falling", "ta.pivothigh", "ta.pivotlow",
+	// Math
+	"math.abs", "math.sign", "math.max", "math.min", "math.avg",
+	"math.sum", "math.pow", "math.sqrt", "math.exp", "math.log",
+	"math.ceil", "math.floor", "math.round",
+	"math.sin", "math.cos", "math.tan",
+	// String
+	"str.tostring", "str.format", "str.length", "str.contains",
+	"str.substring", "str.replace", "str.lower", "str.upper",
+	// Plotting
+	"plot", "plotshape", "plotchar", "plotarrow",
+	"bgcolor", "barcolor", "hline",
+	// Input
+	"input", "input.int", "input.float", "input.bool", "input.string", "input.color",
+	// Other
+	"nz", "na", "fixnan", "float", "int", "bool", "string",
+	"array.new_float", "array.new_int", "array.size", "array.get", "array.push",
 );
 
+// Color constants
 const colorConst = fc.constantFrom(
-	"color.red", "color.green", "color.blue", "color.white",
-	"color.black", "color.yellow", "color.purple", "color.orange"
+	"color.red", "color.green", "color.blue", "color.white", "color.black",
+	"color.yellow", "color.orange", "color.purple", "color.aqua", "color.lime",
+	"color.gray", "color.silver", "color.maroon", "color.navy", "color.teal",
 );
 
-// Simple expressions (no recursion to keep scripts parseable)
+// Shape/style constants
+const shapeConst = fc.constantFrom(
+	"shape.xcross", "shape.cross", "shape.circle", "shape.triangleup", "shape.triangledown",
+	"shape.flag", "shape.arrowup", "shape.arrowdown", "shape.square", "shape.diamond",
+	"location.abovebar", "location.belowbar", "location.top", "location.bottom",
+	"size.tiny", "size.small", "size.normal", "size.large", "size.huge",
+);
+
+// Recursive expression builder
+const expression = fc.letrec(tie => ({
+	atom: fc.oneof(
+		{ weight: 4, arbitrary: builtinVar },
+		{ weight: 3, arbitrary: intLiteral },
+		{ weight: 3, arbitrary: floatLiteral },
+		{ weight: 2, arbitrary: boolLiteral },
+		{ weight: 2, arbitrary: stringLiteral },
+		{ weight: 2, arbitrary: colorConst },
+		{ weight: 1, arbitrary: shapeConst },
+		{ weight: 2, arbitrary: identifier },
+	),
+	binary: fc.tuple(
+		tie("atom"),
+		fc.constantFrom("+", "-", "*", "/", "%", ">", "<", ">=", "<=", "==", "!=", "and", "or"),
+		tie("atom")
+	).map(([l, op, r]) => `${l} ${op} ${r}`),
+	unary: fc.tuple(fc.constantFrom("-", "not "), tie("atom"))
+		.map(([op, e]) => `${op}${e}`),
+	ternary: fc.tuple(tie("atom"), tie("atom"), tie("atom"))
+		.map(([c, t, f]) => `${c} ? ${t} : ${f}`),
+	call: fc.tuple(builtinFunc, fc.array(tie("simple"), { minLength: 1, maxLength: 4 }))
+		.map(([fn, args]) => `${fn}(${args.join(", ")})`),
+	index: fc.tuple(identifier, tie("atom"))
+		.map(([arr, idx]) => `${arr}[${idx}]`),
+	simple: fc.oneof(
+		{ weight: 5, arbitrary: tie("atom") },
+		{ weight: 3, arbitrary: tie("binary") },
+		{ weight: 2, arbitrary: tie("call") },
+		{ weight: 1, arbitrary: tie("unary") },
+		{ weight: 1, arbitrary: tie("ternary") },
+	),
+	complex: fc.oneof(
+		{ weight: 4, arbitrary: tie("simple") },
+		{ weight: 2, arbitrary: fc.tuple(tie("simple"), fc.constantFrom("+", "-", "*", "/", "and", "or"), tie("simple"))
+			.map(([l, op, r]) => `${l} ${op} ${r}`) },
+		{ weight: 1, arbitrary: fc.tuple(tie("simple"), tie("simple"), tie("simple"))
+			.map(([c, t, f]) => `${c} ? ${t} : ${f}`) },
+	),
+})).complex;
+
+// Simple expressions for conditions
 const simpleExpr = fc.oneof(
 	{ weight: 3, arbitrary: builtinVar },
 	{ weight: 2, arbitrary: intLiteral },
 	{ weight: 2, arbitrary: floatLiteral },
 	{ weight: 1, arbitrary: boolLiteral },
-	{ weight: 1, arbitrary: stringLiteral },
-	{ weight: 1, arbitrary: colorConst },
+	{ weight: 1, arbitrary: identifier },
 );
 
-const binaryOp = fc.constantFrom("+", "-", "*", "/", ">", "<", ">=", "<=", "==", "!=", "and", "or");
-
-const binaryExpr = fc.tuple(simpleExpr, binaryOp, simpleExpr)
-	.map(([l, op, r]) => `${l} ${op} ${r}`);
-
-const funcCall = fc.tuple(
-	builtinFunc,
-	fc.array(simpleExpr, { minLength: 1, maxLength: 3 })
-).map(([fn, args]) => `${fn}(${args.join(", ")})`);
-
-const expression = fc.oneof(
-	{ weight: 3, arbitrary: simpleExpr },
-	{ weight: 2, arbitrary: binaryExpr },
-	{ weight: 2, arbitrary: funcCall },
-);
-
-// Statements
+// Comprehensive statement types
 const varDecl = fc.tuple(
-	fc.constantFrom("", "var "),
+	fc.constantFrom("", "var ", "varip "),
 	identifier,
 	expression
 ).map(([kw, name, expr]) => `${kw}${name} = ${expr}`);
 
+const assignment = fc.tuple(identifier, fc.constantFrom(":=", "+=", "-=", "*=", "/="), expression)
+	.map(([name, op, expr]) => `${name} ${op} ${expr}`);
+
 const plotStmt = fc.tuple(
-	fc.constantFrom("plot", "plotshape", "bgcolor"),
+	fc.constantFrom("plot", "plotshape", "plotchar", "plotarrow", "bgcolor", "barcolor"),
 	expression,
 	fc.option(stringLiteral)
-).map(([fn, expr, title]) =>
-	title ? `${fn}(${expr}, title=${title})` : `${fn}(${expr})`
-);
+).map(([fn, expr, title]) => title ? `${fn}(${expr}, title=${title})` : `${fn}(${expr})`);
 
 const ifStmt = fc.tuple(
 	simpleExpr,
-	varDecl
-).map(([cond, body]) => `if ${cond}\n    ${body}`);
+	fc.array(varDecl, { minLength: 1, maxLength: 3 }),
+	fc.option(fc.array(varDecl, { minLength: 1, maxLength: 2 }))
+).map(([cond, consequent, alternate]) => {
+	let code = `if ${cond}\n${consequent.map(s => `    ${s}`).join("\n")}`;
+	if (alternate) code += `\nelse\n${alternate.map(s => `    ${s}`).join("\n")}`;
+	return code;
+});
+
+const forStmt = fc.tuple(
+	identifier,
+	fc.integer({ min: 0, max: 10 }).map(String),
+	fc.integer({ min: 1, max: 100 }).map(String),
+	fc.array(varDecl, { minLength: 1, maxLength: 3 })
+).map(([i, from, to, body]) =>
+	`for ${i} = ${from} to ${to}\n${body.map(s => `    ${s}`).join("\n")}`
+);
+
+const whileStmt = fc.tuple(
+	fc.tuple(identifier, fc.constantFrom(">", "<", ">=", "<=", "!="), intLiteral)
+		.map(([id, op, val]) => `${id} ${op} ${val}`),
+	fc.array(varDecl, { minLength: 1, maxLength: 2 })
+).map(([cond, body]) =>
+	`while ${cond}\n${body.map(s => `    ${s}`).join("\n")}`
+);
+
+const switchStmt = fc.tuple(
+	simpleExpr,
+	fc.array(fc.tuple(simpleExpr, expression), { minLength: 2, maxLength: 4 }),
+	fc.option(expression)
+).map(([disc, cases, def]) => {
+	let code = `switch ${disc}\n`;
+	for (const [cond, result] of cases) code += `    ${cond} => ${result}\n`;
+	if (def) code += `    => ${def}\n`;
+	return code;
+});
+
+const funcDecl = fc.tuple(
+	identifier,
+	fc.array(identifier, { minLength: 0, maxLength: 3 }),
+	fc.array(varDecl, { minLength: 1, maxLength: 4 }),
+	expression
+).map(([name, params, body, ret]) =>
+	`${name}(${params.join(", ")}) =>\n${body.map(s => `    ${s}`).join("\n")}\n    ${ret}`
+);
+
+const alertStmt = fc.tuple(simpleExpr, stringLiteral)
+	.map(([cond, msg]) => `alertcondition(${cond}, title="Alert", message=${msg})`);
 
 const statement = fc.oneof(
-	{ weight: 4, arbitrary: varDecl },
-	{ weight: 2, arbitrary: plotStmt },
-	{ weight: 1, arbitrary: ifStmt },
+	{ weight: 5, arbitrary: varDecl },
+	{ weight: 3, arbitrary: assignment },
+	{ weight: 3, arbitrary: plotStmt },
+	{ weight: 2, arbitrary: ifStmt },
+	{ weight: 1, arbitrary: forStmt },
+	{ weight: 1, arbitrary: whileStmt },
+	{ weight: 1, arbitrary: switchStmt },
+	{ weight: 1, arbitrary: funcDecl },
+	{ weight: 1, arbitrary: alertStmt },
 );
 
-// Full script with valid header
-const indicatorName = fc.stringMatching(/^[A-Za-z][A-Za-z0-9 ]{0,15}$/).map(s => `"${s}"`);
+// Full script with valid header (3-20 statements)
+const indicatorName = fc.stringMatching(/^[A-Za-z][A-Za-z0-9 ]{0,20}$/).map(s => `"${s}"`);
 
-const scriptHeader = indicatorName.map(name =>
-	`//@version=6\nindicator(${name}, overlay=false)`
-);
+const scriptHeader = fc.tuple(indicatorName, fc.boolean())
+	.map(([name, overlay]) => `//@version=6\nindicator(${name}, overlay=${overlay})`);
 
 const fullScript = fc.tuple(
 	scriptHeader,
-	fc.array(statement, { minLength: 2, maxLength: 8 })
+	fc.array(statement, { minLength: 3, maxLength: 20 })
 ).map(([header, stmts]) => `${header}\n\n${stmts.join("\n")}`);
 
 // === Validators ===
