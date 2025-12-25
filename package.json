@@ -120,6 +120,7 @@
 		"debug:internals": "node dev-tools/debug-internals.js",
 		"debug:tokens": "node dev-tools/debug-internals.js tokens",
 		"debug:corpus": "node dev-tools/debug-internals.js corpus",
+		"debug:diff": "node dev-tools/differential-test.js",
 		"mcp:start": "node dist/packages/mcp/bin/pine-mcp.js",
 		"lsp:start": "node dist/packages/lsp/bin/pine-lsp.js --stdio",
 		"prepare": "husky"

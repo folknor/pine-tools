@@ -52,6 +52,8 @@ pnpm run debug:internals -- corpus --errors            # Files with parse errors
 # Convenience aliases
 pnpm run debug:tokens 'code'                 # Shortcut for tokens command
 pnpm run debug:corpus --summary              # Shortcut for corpus analysis
+pnpm run debug:diff -- --count 10            # Differential test vs TradingView
+pnpm run debug:diff -- --count 5 --verbose   # Show generated scripts
 ```
 
 ### For LLM Agents
@@ -231,11 +233,24 @@ pnpm run rebuild:skip-tests  # Clean + build + package (no tests)
 
 ## Future Work
 
-- **Differential testing** - Generate random Pine scripts, validate against both TradingView's pine-lint and internal LSP, identify discrepancies. Requires:
-  1. Extend fuzzer to generate complete valid scripts (with `//@version=6` header, `indicator()`/`strategy()` call)
-  2. Submit to TradingView pine-lint via Puppeteer (already a devDep)
-  3. Compare diagnostics between pine-lint and internal validator
-  4. Track false positives/negatives to improve internal validator
+- *No major items pending*
+
+---
+
+## Differential Testing
+
+Compare internal validator against TradingView's pine-lint API:
+
+```bash
+pnpm run debug:diff -- --count 10           # Test 10 random scripts
+pnpm run debug:diff -- --count 5 --verbose  # Show generated scripts
+pnpm run debug:diff -- --count 20 --save    # Save discrepancies to JSON
+```
+
+**What it finds:**
+- ❌ **Only in TradingView** - Errors we're missing (false negatives)
+- ⚠️ **Only in Internal** - Errors we report that TV doesn't (false positives)
+- 📝 **Different messages** - Same error, different wording
 
 ---
 
