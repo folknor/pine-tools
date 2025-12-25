@@ -132,6 +132,7 @@
 		"@vscode/vsce": "^3.7.1",
 		"@vscode/vsce-sign": "^2.0.9",
 		"esbuild": "^0.27.2",
+		"fast-check": "^4.5.2",
 		"husky": "^9.1.7",
 		"keytar": "^7.9.0",
 		"puppeteer": "^24.34.0",
