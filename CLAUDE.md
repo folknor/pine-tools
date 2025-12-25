@@ -74,41 +74,6 @@ The dev tools handle temp files, JSON parsing, and output formatting automatical
 
 ---
 
-## Current Status
-
-### Package Status
-
-| Package | Status | Description |
-|---------|--------|-------------|
-| `packages/core/` | ✅ Stable | Parser, lexer, validator, type checker |
-| `packages/cli/` | ✅ Stable | CLI validation tool |
-| `packages/pipeline/` | ✅ Stable | Data generation scripts |
-| `packages/language-service/` | ✅ Complete | Editor-agnostic language service |
-| `packages/lsp/` | ✅ Complete | LSP server (JSON-RPC over stdio) |
-| `packages/mcp/` | ✅ Complete | MCP server for AI assistants |
-| `packages/vscode/` | ✅ Complete | Thin LSP client (197 lines) |
-| `pine-data/` | ✅ Stable | Generated language data |
-| `syntaxes/` | ✅ Stable | TextMate grammar |
-
-### Corpus Validation
-
-**44 of 49 v6 scripts pass validation (89.8%)**
-
-Run `pnpm run debug:corpus --summary` for fresh stats.
-
-5 failing scripts have source file issues (not parser bugs):
-- `tdf-20251102.pine` - Missing commas between function arguments
-- `854667873-nsdt-2.pine` - Broken comment (line wrap without `//`)
-- `873410237-v6.pine` - Broken comments with Chinese characters
-- `878477865-BigBeluga` - Broken comment + inconsistent switch indentation
-- `894372674-Smrt-Algo` - `bar index` typo (should be `bar_index`)
-
-### Test Suite
-
-**145 tests passing** (78 in `packages/core/test/` + 67 in `packages/language-service/test/`)
-
----
-
 **Library Import Resolution Usage:**
 ```pine
 /// @source ./libs/my-library.pine
@@ -249,11 +214,19 @@ Issues discovered via differential testing (`pnpm run debug:diff`).
 | **Ternary branch types** | `?:` branches must have compatible types | `checker.ts` |
 | **Switch expression parsing** | Fixed discriminant parsing to not continue across newlines | `parser.ts` |
 
+### Status
+
+The type checker is in good shape. Differential testing shows most discrepancies are:
+- Expected wording differences between our messages and TradingView's
+- Unused variable warnings (expected for randomly generated test code)
+- Our new checks working correctly (ternary types, logical operators, etc.)
+
 ### Remaining (Low Priority)
 
 | Issue | Description | Location |
 |-------|-------------|----------|
-| **Function consistency** | Warning when `ta.crossover`/`ta.rsi` etc. are in conditional scope | `checker.ts` |
+| **Function consistency** | Warning when `ta.crossover`/`ta.rsi` etc. are in conditional scope. This is a recommendation, not an error - code still runs. Requires building a list of functions needing every-bar calling. | `checker.ts` |
+| **Complex type compatibility** | `array<T>`, `matrix<T>`, `line`, `label`, `box`, `table` not fully handled in ternary branch type checking | `checker.ts` |
 
 Run `pnpm run debug:diff -- --count 20 --verbose` to see current discrepancies.
 
