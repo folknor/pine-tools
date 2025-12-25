@@ -1,47 +1,39 @@
 // @test validation/logical-operators
-// @description Numeric types in logical operators (and/or)
+// @description Boolean types in logical operators (and/or)
 // @expects parse: success
 // @expects no-errors
 
 //@version=6
-indicator("Logical Operators with Numeric Types Tests")
+indicator("Logical Operators Tests")
 
-// Basic: numeric and bool
-bool test1 = 1 and true
-bool test2 = true and 1
-bool test3 = 0 or true
-bool test4 = true or 0
+// Basic boolean operations
+bool test1 = true and false
+bool test2 = true or false
+bool test3 = not true
 
-// Float and bool
-bool test5 = 1.5 and true
-bool test6 = true and 1.5
-bool test7 = 0.0 or false
-bool test8 = false or 0.0
+// Comparison results with logical operators
+bool cmp1 = (close > open) and (high > low)
+bool cmp2 = (close > open) or (high > low)
+bool cmp3 = not (close > open)
 
-// Series numeric and bool
-bool seriesTest1 = close and true
-bool seriesTest2 = volume or false
-bool seriesTest3 = bar_index and true
+// Series bool operations
+bool seriesTest1 = (close > open) and (volume > 0)
+bool seriesTest2 = (close > open) or (volume > 0)
 
-// Series numeric and series bool
-bool seriesTest4 = close and (high > low)
-bool seriesTest5 = volume or (close > open)
-
-// Chained operations
-bool chained1 = 1 and 2 and true
-bool chained2 = 0 or 1 or false
-bool chained3 = close and volume and (high > low)
-
-// Numeric on both sides
-bool numericBoth1 = 1 and 2
-bool numericBoth2 = 0 or 1
-bool numericBoth3 = close and volume
+// Chained boolean operations
+bool chained1 = true and false and true
+bool chained2 = true or false or true
+bool chained3 = (close > open) and (high > low) and (volume > 0)
 
 // In conditional expressions
-result = close and volume ? high : low
+result = (close > open) and (volume > 0) ? high : low
 
 // In if conditions
-if close and volume
+if (close > open) and (volume > 0)
     label.new(bar_index, high, "Active")
+
+// Negation with comparison
+bool neg1 = not (close == open)
+bool neg2 = not na(close)
 
 plot(close)

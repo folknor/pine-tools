@@ -82,6 +82,7 @@ export class SymbolTable {
 
 	private initializeBuiltins(): void {
 		// Built-in variables - from pine-data layer
+		// Mark as used: true - builtins shouldn't trigger "unused variable" warnings
 		for (const [name, variable] of VARIABLES_BY_NAME) {
 			// Skip namespaced variables (they're accessed via namespace)
 			if (name.includes(".")) continue;
@@ -91,7 +92,7 @@ export class SymbolTable {
 				type: variable.type as PineType,
 				line: 0,
 				column: 0,
-				used: false,
+				used: true, // Builtins are language-provided, not user-declared
 				kind: "variable",
 			});
 		}
@@ -111,7 +112,7 @@ export class SymbolTable {
 				type: "unknown",
 				line: 0,
 				column: 0,
-				used: false,
+				used: true, // Builtins are language-provided, not user-declared
 				kind: "function",
 			});
 		}
@@ -124,7 +125,7 @@ export class SymbolTable {
 				type: "unknown", // Keywords don't have a value type
 				line: 0,
 				column: 0,
-				used: false,
+				used: true, // Keywords are language-provided, not user-declared
 				kind: "variable",
 			});
 		}
@@ -136,7 +137,7 @@ export class SymbolTable {
 				type: "unknown",
 				line: 0,
 				column: 0,
-				used: false,
+				used: true, // Namespaces are language-provided, not user-declared
 				kind: "variable",
 			});
 		}

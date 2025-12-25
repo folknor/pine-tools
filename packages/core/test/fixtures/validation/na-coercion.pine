@@ -23,10 +23,10 @@ float condFloat = close > open ? close : na
 int condInt = bar_index > 10 ? bar_index : na
 string condStr = close > open ? "up" : na
 
-// NA in comparisons
+// NA in comparisons - must use na() function, not direct comparison
 bool isNaCheck = na(close)
-bool eqNa = close == na
-bool neNa = close != na
+bool eqNa = na(close)      // close == na is invalid, use na()
+bool neNa = not na(close)  // close != na is invalid, use not na()
 
 // NA in operations (should be allowed)
 float naOp = close + na

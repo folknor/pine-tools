@@ -372,11 +372,9 @@ export namespace TypeChecker {
 			return isAssignable(left, right) || isAssignable(right, left);
 		}
 
-		// Logical operators accept bool or numeric types (non-zero is truthy in Pine Script)
+		// Logical operators require bool types only
 		if (["and", "or"].includes(operator)) {
-			const leftOk = isBoolType(left) || isNumericType(left);
-			const rightOk = isBoolType(right) || isNumericType(right);
-			return leftOk && rightOk;
+			return isBoolType(left) && isBoolType(right);
 		}
 
 		return false;
@@ -428,8 +426,12 @@ export namespace TypeChecker {
 			type === "series<int>" ||
 			type === "series<float>" ||
 			type === "simple<int>" ||
-			type === "simple<float>" ||
-			// Color is numeric in Pine Script (can do arithmetic on it)
+			type === "simple<float>"
+		);
+	}
+
+	export function isColorType(type: PineType): boolean {
+		return (
 			type === "color" ||
 			type === "series<color>" ||
 			type === "simple<color>"

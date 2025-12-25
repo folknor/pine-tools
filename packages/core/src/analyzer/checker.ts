@@ -512,12 +512,14 @@ export class UnifiedPineValidator {
 
 			case "UnaryExpression":
 				this.validateExpression(expr.argument, version);
+				this.validateUnaryExpression(expr, version);
 				break;
 
 			case "TernaryExpression":
 				this.validateExpression(expr.condition, version);
 				this.validateExpression(expr.consequent, version);
 				this.validateExpression(expr.alternate, version);
+				this.validateTernaryExpression(expr, version);
 				break;
 
 			case "ArrayExpression":
@@ -583,12 +585,65 @@ export class UnifiedPineValidator {
 		const leftType = this.inferExpressionType(expr.left, version);
 		const rightType = this.inferExpressionType(expr.right, version);
 
+		// Check for direct na comparison (x == na or x != na)
+		if (expr.operator === "==" || expr.operator === "!=") {
+			const isLeftNaIdentifier =
+				expr.left.type === "Identifier" && expr.left.name === "na";
+			const isRightNaIdentifier =
+				expr.right.type === "Identifier" && expr.right.name === "na";
+
+			if (isLeftNaIdentifier || isRightNaIdentifier) {
+				this.addError(
+					expr.line,
+					expr.column,
+					2,
+					`Cannot compare a value to 'na' directly. Use the 'na()' function instead.`,
+					DiagnosticSeverity.Error,
+				);
+				return; // Don't report additional type errors for this
+			}
+		}
+
 		if (!TypeChecker.areTypesCompatible(leftType, rightType, expr.operator)) {
 			this.addError(
 				expr.line,
 				expr.column,
 				1,
 				`Type mismatch: cannot apply '${expr.operator}' to ${leftType} and ${rightType}`,
+				DiagnosticSeverity.Error,
+			);
+		}
+	}
+
+	private validateUnaryExpression(
+		expr: UnaryExpression,
+		version: string = "6",
+	): void {
+		if (expr.operator === "not") {
+			const argType = this.inferExpressionType(expr.argument, version);
+			if (!TypeChecker.isBoolType(argType) && argType !== "unknown") {
+				this.addError(
+					expr.line,
+					expr.column,
+					3, // length of "not"
+					`Type mismatch: 'not' operator requires bool, got ${argType}`,
+					DiagnosticSeverity.Error,
+				);
+			}
+		}
+	}
+
+	private validateTernaryExpression(
+		expr: TernaryExpression,
+		version: string = "6",
+	): void {
+		const condType = this.inferExpressionType(expr.condition, version);
+		if (!TypeChecker.isBoolType(condType) && condType !== "unknown") {
+			this.addError(
+				expr.condition.line || expr.line,
+				expr.condition.column || expr.column,
+				1,
+				`Ternary condition must be bool, got ${condType}`,
 				DiagnosticSeverity.Error,
 			);
 		}
