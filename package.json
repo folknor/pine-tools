@@ -111,6 +111,7 @@
 		"rebuild:skip-tests": "pnpm run clean && pnpm run build:prod && pnpm run package",
 		"crawl": "node --experimental-strip-types packages/pipeline/src/crawl.ts",
 		"generate": "node --experimental-strip-types packages/pipeline/src/generate.ts",
+		"generate:markdown": "node --experimental-strip-types packages/pipeline/src/generate-markdown.ts",
 		"generate:tests": "node --experimental-strip-types packages/pipeline/src/generate-function-tests.ts",
 		"generate:syntax": "node --experimental-strip-types packages/pipeline/src/generate-syntax.ts",
 		"discover:behavior": "node --experimental-strip-types packages/pipeline/src/discover-function-behavior.ts",
