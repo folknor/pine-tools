@@ -725,10 +725,7 @@ export class UnifiedPineValidator {
 		if (base1 === base2) return true;
 
 		// Numeric types can be mixed (int <-> float)
-		if (
-			TypeChecker.isNumericType(type1) &&
-			TypeChecker.isNumericType(type2)
-		) {
+		if (TypeChecker.isNumericType(type1) && TypeChecker.isNumericType(type2)) {
 			return true;
 		}
 

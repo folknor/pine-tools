@@ -432,9 +432,7 @@ export namespace TypeChecker {
 
 	export function isColorType(type: PineType): boolean {
 		return (
-			type === "color" ||
-			type === "series<color>" ||
-			type === "simple<color>"
+			type === "color" || type === "series<color>" || type === "simple<color>"
 		);
 	}
 

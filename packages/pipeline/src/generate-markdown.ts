@@ -21,7 +21,6 @@ const PROJECT_ROOT = __dirname.includes("/dist/")
 	? path.resolve(__dirname, "../../../..")
 	: path.resolve(__dirname, "../../..");
 
-const VERSION = "v6";
 const OUTPUT_FILE = path.join(PROJECT_ROOT, "PINE_REFERENCE.md");
 
 // Import generated data
@@ -84,15 +83,16 @@ const KEYWORDS: Set<string> = keywordsModule.KEYWORDS;
 // =============================================================================
 
 function escapeMarkdown(text: string): string {
-	return text
-		.replace(/\\/g, "\\\\")
-		.replace(/\|/g, "\\|")
-		.replace(/`/g, "\\`");
+	return text.replace(/\\/g, "\\\\").replace(/\|/g, "\\|").replace(/`/g, "\\`");
 }
 
 function generateTableOfContents(): string {
-	const functionNamespaces = new Set(FUNCTIONS.map((f) => f.namespace).filter(Boolean));
-	const variableNamespaces = new Set(VARIABLES.map((v) => v.namespace).filter(Boolean));
+	const functionNamespaces = new Set(
+		FUNCTIONS.map((f) => f.namespace).filter(Boolean),
+	);
+	const variableNamespaces = new Set(
+		VARIABLES.map((v) => v.namespace).filter(Boolean),
+	);
 	const constantNamespaces = new Set(CONSTANTS.map((c) => c.namespace));
 
 	let toc = "## Table of Contents\n\n";
@@ -124,16 +124,18 @@ function generateFunctionsSection(): string {
 	const functionsByNamespace = new Map<string, PineFunction[]>();
 	for (const fn of FUNCTIONS) {
 		const ns = fn.namespace || "_global";
-		if (!functionsByNamespace.has(ns)) {
-			functionsByNamespace.set(ns, []);
+		const existing = functionsByNamespace.get(ns);
+		if (existing) {
+			existing.push(fn);
+		} else {
+			functionsByNamespace.set(ns, [fn]);
 		}
-		functionsByNamespace.get(ns)!.push(fn);
 	}
 
 	const namespaces = [...functionsByNamespace.keys()].sort();
 
 	for (const ns of namespaces) {
-		const functions = functionsByNamespace.get(ns)!.sort((a, b) =>
+		const functions = (functionsByNamespace.get(ns) ?? []).sort((a, b) =>
 			a.name.localeCompare(b.name),
 		);
 		const heading = ns === "_global" ? "Global Functions" : ns;
@@ -170,7 +172,7 @@ function generateFunctionsSection(): string {
 			if (fn.example) {
 				content += "**Example:**\n\n";
 				content += "```pine\n";
-				content += fn.example + "\n";
+				content += `${fn.example}\n`;
 				content += "```\n\n";
 			}
 		}
@@ -202,16 +204,18 @@ function generateVariablesSection(): string {
 	const variablesByNamespace = new Map<string, PineVariable[]>();
 	for (const v of VARIABLES) {
 		if (v.namespace) {
-			if (!variablesByNamespace.has(v.namespace)) {
-				variablesByNamespace.set(v.namespace, []);
+			const existing = variablesByNamespace.get(v.namespace);
+			if (existing) {
+				existing.push(v);
+			} else {
+				variablesByNamespace.set(v.namespace, [v]);
 			}
-			variablesByNamespace.get(v.namespace)!.push(v);
 		}
 	}
 
 	const namespaces = [...variablesByNamespace.keys()].sort();
 	for (const ns of namespaces) {
-		const vars = variablesByNamespace.get(ns)!.sort((a, b) =>
+		const vars = (variablesByNamespace.get(ns) ?? []).sort((a, b) =>
 			a.name.localeCompare(b.name),
 		);
 		content += `### ${ns}\n\n`;
@@ -232,15 +236,17 @@ function generateConstantsSection(): string {
 
 	const constantsByNamespace = new Map<string, PineConstant[]>();
 	for (const c of CONSTANTS) {
-		if (!constantsByNamespace.has(c.namespace)) {
-			constantsByNamespace.set(c.namespace, []);
+		const existing = constantsByNamespace.get(c.namespace);
+		if (existing) {
+			existing.push(c);
+		} else {
+			constantsByNamespace.set(c.namespace, [c]);
 		}
-		constantsByNamespace.get(c.namespace)!.push(c);
 	}
 
 	const namespaces = [...constantsByNamespace.keys()].sort();
 	for (const ns of namespaces) {
-		const consts = constantsByNamespace.get(ns)!.sort((a, b) =>
+		const consts = (constantsByNamespace.get(ns) ?? []).sort((a, b) =>
 			a.name.localeCompare(b.name),
 		);
 		content += `### ${ns} Constants\n\n`;
