@@ -1,5 +1,15 @@
 # pine-tools
 
+**This project uses pnpm.** Do not use npm or yarn.
+
+```bash
+pnpm install          # Install dependencies
+pnpm run <script>     # Run scripts
+pnpm test             # Run tests
+```
+
+---
+
 ## Architecture: Data vs Syntax
 
 **Hardcoded in parser** (grammar fundamentals):
