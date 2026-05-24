@@ -1,153 +1,153 @@
 {
-	"name": "pine-tools",
-	"displayName": "Pine Script Tools",
-	"description": "Unofficial Pine Script v6 tools, including a language service, LSP, MCP, Visual Studio Code extension, CLI linter tool, and more.",
-	"publisher": "folknor",
-	"author": {
-		"name": "folknor",
-		"url": "https://github.com/folknor"
-	},
-	"contributors": [
-		{
-			"name": "Jaroslav Pantsjoha",
-			"url": "https://github.com/jpantsjoha"
-		}
-	],
-	"version": "0.5.0",
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/folknor/pinescript-vscode-extension.git"
-	},
-	"license": "MIT",
-	"packageManager": "pnpm@10.28.0",
-	"engines": {
-		"vscode": "^1.108.0"
-	},
-	"activationEvents": [
-		"onLanguage:pine"
-	],
-	"categories": [
-		"Programming Languages",
-		"Linters",
-		"Snippets"
-	],
-	"keywords": [
-		"pine",
-		"pinescript",
-		"pine-script",
-		"tradingview",
-		"trading",
-		"indicators",
-		"strategies",
-		"syntax",
-		"intellisense",
-		"diagnostics",
-		"v6"
-	],
-	"main": "./dist/packages/vscode/src/extension.js",
-	"bin": {
-		"pine-validate": "./dist/packages/cli/src/cli.js",
-		"pine-lsp": "./dist/packages/lsp/bin/pine-lsp.js",
-		"pine-mcp": "./dist/packages/mcp/bin/pine-mcp.js"
-	},
-	"contributes": {
-		"commands": [
-			{
-				"command": "pine.validate",
-				"title": "Pine: Validate current file"
-			},
-			{
-				"command": "pine.showDocs",
-				"title": "Pine: Show docs for symbol"
-			}
-		],
-		"configuration": {
-			"title": "Pine Script Extension",
-			"properties": {
-				"pine.applyFileAssociation": {
-					"type": "boolean",
-					"default": true,
-					"description": "On activation, ensure files.associations maps *.pine to the pine language."
-				}
-			}
-		},
-		"languages": [
-			{
-				"id": "pine",
-				"aliases": [
-					"Pine",
-					"Pine Script",
-					"pine"
-				],
-				"extensions": [
-					".pine"
-				],
-				"configuration": "./language-configuration.json"
-			}
-		],
-		"grammars": [
-			{
-				"language": "pine",
-				"scopeName": "source.pine",
-				"path": "./syntaxes/pine.tmLanguage.json"
-			}
-		]
-	},
-	"scripts": {
-		"clean": "rm -rf dist && rm -f build/*.vsix",
-		"build": "node scripts/build-extension.js",
-		"build:dev": "node scripts/build-extension.js",
-		"build:prod": "node scripts/build-extension.js --production",
-		"build:tsc": "tsc -p . && cp pine-data/v6/*.json dist/pine-data/v6/ && chmod +x dist/packages/cli/src/cli.js",
-		"watch": "node scripts/build-extension.js --watch",
-		"lint": "pnpm exec biome check --max-diagnostics=none --reporter=github --formatter-enabled=true --linter-enabled=true --assist-enabled=true",
-		"check": "pnpm exec biome check --max-diagnostics=none --reporter=github --formatter-enabled=true --linter-enabled=true --assist-enabled=true",
-		"test": "pnpm run build:tsc && vitest run",
-		"test:watch": "vitest",
-		"test:ui": "vitest --ui",
-		"test:coverage": "vitest run --coverage",
-		"package": "pnpm run clean && pnpm run build:prod && pnpm exec vsce package --no-dependencies --out dist/",
-		"rebuild": "pnpm run clean && pnpm run build:prod && pnpm run build:tsc && pnpm test && pnpm run package",
-		"rebuild:skip-tests": "pnpm run clean && pnpm run build:prod && pnpm run package",
-		"crawl": "node --experimental-strip-types packages/pipeline/src/crawl.ts",
-		"generate": "node --experimental-strip-types packages/pipeline/src/generate.ts",
-		"generate:markdown": "node --experimental-strip-types packages/pipeline/src/generate-markdown.ts",
-		"generate:tests": "node --experimental-strip-types packages/pipeline/src/generate-function-tests.ts",
-		"generate:syntax": "node --experimental-strip-types packages/pipeline/src/generate-syntax.ts",
-		"discover:behavior": "node --experimental-strip-types packages/pipeline/src/discover-function-behavior.ts",
-		"scrape": "node --experimental-strip-types packages/pipeline/src/scrape.ts",
-		"scrape:force": "node --experimental-strip-types packages/pipeline/src/scrape.ts --force",
-		"test:snippet": "node dev-tools/test-snippet.js",
-		"debug:internals": "node dev-tools/debug-internals.js",
-		"debug:tokens": "node dev-tools/debug-internals.js tokens",
-		"debug:corpus": "node dev-tools/debug-internals.js corpus",
-		"debug:diff": "node dev-tools/differential-test.js",
-		"mcp:start": "node dist/packages/mcp/bin/pine-mcp.js",
-		"lsp:start": "node dist/packages/lsp/bin/pine-lsp.js --stdio",
-		"prepare": "husky"
-	},
-	"devDependencies": {
-		"@biomejs/biome": "^2.3.11",
-		"@types/node": "^25.0.9",
-		"@types/vscode": "^1.108.1",
-		"@vitest/ui": "^4.0.17",
-		"@vscode/vsce": "^3.7.1",
-		"@vscode/vsce-sign": "^2.0.9",
-		"esbuild": "^0.27.2",
-		"fast-check": "^4.5.3",
-		"husky": "^9.1.7",
-		"keytar": "^7.9.0",
-		"puppeteer": "^24.35.0",
-		"tslib": "^2.8.1",
-		"typescript": "^5.9.3",
-		"vitest": "^4.0.17"
-	},
-	"dependencies": {
-		"@modelcontextprotocol/sdk": "^1.25.2",
-		"glob": "^13.0.0",
-		"vscode-languageclient": "^9.0.1",
-		"vscode-languageserver": "^9.0.1",
-		"vscode-languageserver-textdocument": "^1.0.12",
-		"zod": "^4.3.5"
-	}
+  "activationEvents": [
+    "onLanguage:pine"
+  ],
+  "author": {
+    "name": "folknor",
+    "url": "https://github.com/folknor"
+  },
+  "bin": {
+    "pine-lsp": "./dist/packages/lsp/bin/pine-lsp.js",
+    "pine-mcp": "./dist/packages/mcp/bin/pine-mcp.js",
+    "pine-validate": "./dist/packages/cli/src/cli.js"
+  },
+  "categories": [
+    "Programming Languages",
+    "Linters",
+    "Snippets"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "pine.validate",
+        "title": "Pine: Validate current file"
+      },
+      {
+        "command": "pine.showDocs",
+        "title": "Pine: Show docs for symbol"
+      }
+    ],
+    "configuration": {
+      "properties": {
+        "pine.applyFileAssociation": {
+          "default": true,
+          "description": "On activation, ensure files.associations maps *.pine to the pine language.",
+          "type": "boolean"
+        }
+      },
+      "title": "Pine Script Extension"
+    },
+    "grammars": [
+      {
+        "language": "pine",
+        "path": "./syntaxes/pine.tmLanguage.json",
+        "scopeName": "source.pine"
+      }
+    ],
+    "languages": [
+      {
+        "aliases": [
+          "Pine",
+          "Pine Script",
+          "pine"
+        ],
+        "configuration": "./language-configuration.json",
+        "extensions": [
+          ".pine"
+        ],
+        "id": "pine"
+      }
+    ]
+  },
+  "contributors": [
+    {
+      "name": "Jaroslav Pantsjoha",
+      "url": "https://github.com/jpantsjoha"
+    }
+  ],
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "glob": "^13.0.6",
+    "vscode-languageclient": "^9.0.1",
+    "vscode-languageserver": "^9.0.1",
+    "vscode-languageserver-textdocument": "^1.0.12",
+    "zod": "^4.4.3"
+  },
+  "description": "Unofficial Pine Script v6 tools, including a language service, LSP, MCP, Visual Studio Code extension, CLI linter tool, and more.",
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.15",
+    "@types/node": "^25.9.1",
+    "@types/vscode": "^1.120.0",
+    "@vitest/ui": "^4.1.7",
+    "@vscode/vsce": "^3.9.1",
+    "@vscode/vsce-sign": "^2.0.9",
+    "esbuild": "^0.28.0",
+    "fast-check": "^4.8.0",
+    "husky": "^9.1.7",
+    "keytar": "^7.9.0",
+    "puppeteer": "^25.0.4",
+    "tslib": "^2.8.1",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.7"
+  },
+  "displayName": "Pine Script Tools",
+  "engines": {
+    "vscode": "^1.108.0"
+  },
+  "keywords": [
+    "pine",
+    "pinescript",
+    "pine-script",
+    "tradingview",
+    "trading",
+    "indicators",
+    "strategies",
+    "syntax",
+    "intellisense",
+    "diagnostics",
+    "v6"
+  ],
+  "license": "MIT",
+  "main": "./dist/packages/vscode/src/extension.js",
+  "name": "pine-tools",
+  "packageManager": "pnpm@10.28.0",
+  "publisher": "folknor",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/folknor/pinescript-vscode-extension.git"
+  },
+  "scripts": {
+    "build": "node scripts/build-extension.js",
+    "build:dev": "node scripts/build-extension.js",
+    "build:prod": "node scripts/build-extension.js --production",
+    "build:tsc": "tsc -p . && cp pine-data/v6/*.json dist/pine-data/v6/ && chmod +x dist/packages/cli/src/cli.js",
+    "check": "pnpm exec biome check --max-diagnostics=none --reporter=github --formatter-enabled=true --linter-enabled=true --assist-enabled=true",
+    "clean": "rm -rf dist && rm -f build/*.vsix",
+    "crawl": "node --experimental-strip-types packages/pipeline/src/crawl.ts",
+    "debug:corpus": "node dev-tools/debug-internals.js corpus",
+    "debug:diff": "node dev-tools/differential-test.js",
+    "debug:internals": "node dev-tools/debug-internals.js",
+    "debug:tokens": "node dev-tools/debug-internals.js tokens",
+    "discover:behavior": "node --experimental-strip-types packages/pipeline/src/discover-function-behavior.ts",
+    "generate": "node --experimental-strip-types packages/pipeline/src/generate.ts",
+    "generate:markdown": "node --experimental-strip-types packages/pipeline/src/generate-markdown.ts",
+    "generate:syntax": "node --experimental-strip-types packages/pipeline/src/generate-syntax.ts",
+    "generate:tests": "node --experimental-strip-types packages/pipeline/src/generate-function-tests.ts",
+    "lint": "pnpm exec biome check --max-diagnostics=none --reporter=github --formatter-enabled=true --linter-enabled=true --assist-enabled=true",
+    "lsp:start": "node dist/packages/lsp/bin/pine-lsp.js --stdio",
+    "mcp:start": "node dist/packages/mcp/bin/pine-mcp.js",
+    "package": "pnpm run clean && pnpm run build:prod && pnpm exec vsce package --no-dependencies --out dist/",
+    "prepare": "husky",
+    "rebuild": "pnpm run clean && pnpm run build:prod && pnpm run build:tsc && pnpm test && pnpm run package",
+    "rebuild:skip-tests": "pnpm run clean && pnpm run build:prod && pnpm run package",
+    "scrape": "node --experimental-strip-types packages/pipeline/src/scrape.ts",
+    "scrape:force": "node --experimental-strip-types packages/pipeline/src/scrape.ts --force",
+    "test": "pnpm run build:tsc && vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:snippet": "node dev-tools/test-snippet.js",
+    "test:ui": "vitest --ui",
+    "test:watch": "vitest",
+    "watch": "node scripts/build-extension.js --watch"
+  },
+  "version": "0.5.0"
 }

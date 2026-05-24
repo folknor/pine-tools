@@ -19,15 +19,14 @@
 		"esModuleInterop": true,
 		"allowSyntheticDefaultImports": true,
 		"resolveJsonModule": true,
-		"baseUrl": ".",
 		"paths": {
-			"@core/*": ["packages/core/src/*"],
-			"@lsp/*": ["packages/lsp/src/*"],
-			"@vscode/*": ["packages/vscode/src/*"],
-			"@cli/*": ["packages/cli/src/*"],
-			"@pipeline/*": ["packages/pipeline/src/*"],
-			"@test/*": ["test/*"],
-			"@pine-data/*": ["pine-data/*"]
+			"@core/*": ["./packages/core/src/*"],
+			"@lsp/*": ["./packages/lsp/src/*"],
+			"@vscode/*": ["./packages/vscode/src/*"],
+			"@cli/*": ["./packages/cli/src/*"],
+			"@pipeline/*": ["./packages/pipeline/src/*"],
+			"@test/*": ["./test/*"],
+			"@pine-data/*": ["./pine-data/*"]
 		},
 
 		// Strict type checking (balanced)
@@ -55,7 +54,6 @@
 		"forceConsistentCasingInFileNames": true,
 
 		// Code generation
-		"downlevelIteration": true,
 		"experimentalDecorators": true,
 		"emitDecoratorMetadata": true,
 
