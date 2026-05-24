@@ -470,12 +470,19 @@ export async function scrapeFunctionDetails(
 					}
 				}
 
-				// Extract example
+				// Extract example. Use innerText (not textContent) so that <br> and
+				// block-element boundaries inside the syntax-highlighted code block
+				// produce real newlines instead of being silently collapsed.
+				// TradingView emits &nbsp; for every space inside code blocks, so
+				// normalize U+00A0 back to regular spaces — otherwise pasted examples
+				// fail to parse as Pine Script.
 				const exampleEl = element.querySelector(
 					".tv-pine-reference-item__example code",
-				);
+				) as HTMLElement | null;
 				if (exampleEl) {
-					res.example = exampleEl.textContent?.trim() || "";
+					res.example = (exampleEl.innerText || "")
+						.replace(/\u00a0/g, " ")
+						.trim();
 				}
 
 				// Extract namespace from function name
@@ -646,8 +653,14 @@ export async function scrapeAllFunctions(
 	const serialized = JSON.stringify(allDetails, null, 2);
 
 	if (DRY_RUN) {
+		const dryRunFile = OUTPUT_FILE.replace(/\.json$/, ".dryrun.json");
+		const outputDir = path.dirname(dryRunFile);
+		if (!fs.existsSync(outputDir)) {
+			fs.mkdirSync(outputDir, { recursive: true });
+		}
+		fs.writeFileSync(dryRunFile, serialized, "utf8");
 		console.log(
-			`[dry-run] Skipping write to ${OUTPUT_FILE} (${serialized.length} bytes)`,
+			`[dry-run] Wrote sample to ${dryRunFile} (${serialized.length} bytes); real output ${OUTPUT_FILE} untouched`,
 		);
 	} else {
 		// Ensure output directory exists
