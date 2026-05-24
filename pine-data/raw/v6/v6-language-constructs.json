@@ -1,16 +1,16 @@
 {
   "metadata": {
-    "extractedAt": "2025-12-20T13:47:47.382Z",
+    "extractedAt": "2026-05-24T22:19:36.461Z",
     "source": "https://www.tradingview.com/pine-script-reference/v6/",
-    "totalItems": 866,
+    "totalItems": 888,
     "extractionMethod": "dynamic_discovery",
     "discoveryStats": {
-      "tocItemsFound": 921,
-      "codeBlocksAnalyzed": 2801,
+      "tocItemsFound": 941,
+      "codeBlocksAnalyzed": 2866,
       "variablesDiscovered": 161,
-      "functionsDiscovered": 457,
+      "functionsDiscovered": 475,
       "constantsDiscovered": 239,
-      "typesDiscovered": 18,
+      "typesDiscovered": 20,
       "keywordsDiscovered": 25,
       "operatorsDiscovered": 33
     }
@@ -478,12 +478,13 @@
   },
   "functions": {
     "namespaces": {
-      "count": 23,
+      "count": 25,
       "items": [
         "array",
         "box",
         "chart",
         "color",
+        "footprint",
         "global",
         "input",
         "label",
@@ -502,7 +503,8 @@
         "ta",
         "table",
         "ticker",
-        "timeframe"
+        "timeframe",
+        "volume_row"
       ]
     },
     "byNamespace": {
@@ -652,6 +654,17 @@
         "r()",
         "rgb()",
         "t()"
+      ],
+      "footprint": [
+        "buy_volume()",
+        "delta()",
+        "get_row_by_price()",
+        "poc()",
+        "rows()",
+        "sell_volume()",
+        "total_volume()",
+        "vah()",
+        "val()"
       ],
       "input": [
         "bool()",
@@ -826,6 +839,7 @@
         "earnings()",
         "economic()",
         "financial()",
+        "footprint()",
         "quandl()",
         "security()",
         "security_lower_tf()",
@@ -1008,11 +1022,21 @@
         "change()",
         "from_seconds()",
         "in_seconds()"
+      ],
+      "volume_row": [
+        "buy_volume()",
+        "delta()",
+        "down_price()",
+        "has_buy_imbalance()",
+        "has_sell_imbalance()",
+        "sell_volume()",
+        "total_volume()",
+        "up_price()"
       ]
     }
   },
   "types": {
-    "count": 18,
+    "count": 20,
     "items": [
       "array",
       "bool",
@@ -1021,6 +1045,7 @@
       "color",
       "const",
       "float",
+      "footprint",
       "int",
       "label",
       "line",
@@ -1031,7 +1056,8 @@
       "series",
       "simple",
       "string",
-      "table"
+      "table",
+      "volume_row"
     ]
   }
 }

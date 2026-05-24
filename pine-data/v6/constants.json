@@ -1,16 +1,4 @@
-/**
- * Pine Script V6 Constants
- * Auto-generated from TradingView documentation
- * Generated: 2026-05-24T22:23:46.499Z
- * Total: 237 constants
- */
-
-import type { PineConstant } from "../schema/types";
-
-/**
- * All v6 constants
- */
-export const CONSTANTS: PineConstant[] = [
+[
   {
     "name": "adjustment.dividends",
     "namespace": "adjustment",
@@ -1433,33 +1421,4 @@ export const CONSTANTS: PineConstant[] = [
     "shortName": "price",
     "type": "string"
   }
-];
-
-/**
- * Constants indexed by full name for O(1) lookup
- */
-export const CONSTANTS_BY_NAME: Map<string, PineConstant> = new Map(
-	CONSTANTS.map(c => [c.name, c])
-);
-
-/**
- * Constants grouped by namespace
- */
-export const CONSTANTS_BY_NAMESPACE: Map<string, PineConstant[]> = (() => {
-	const map = new Map<string, PineConstant[]>();
-	for (const c of CONSTANTS) {
-		if (!map.has(c.namespace)) map.set(c.namespace, []);
-		map.get(c.namespace)!.push(c);
-	}
-	return map;
-})();
-
-/**
- * All constant names as a Set for fast membership check
- */
-export const CONSTANT_NAMES: Set<string> = new Set(CONSTANTS.map(c => c.name));
-
-/**
- * All namespace names that have constants
- */
-export const CONSTANT_NAMESPACES: Set<string> = new Set(CONSTANTS.map(c => c.namespace));
+]

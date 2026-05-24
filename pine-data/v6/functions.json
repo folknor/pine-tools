@@ -1,16 +1,4 @@
-/**
- * Pine Script V6 Functions
- * Auto-generated from TradingView documentation
- * Generated: 2026-05-24T22:23:46.488Z
- * Total: 475 functions
- */
-
-import type { PineFunction } from "../schema/types";
-
-/**
- * All v6 functions as an array
- */
-export const FUNCTIONS: PineFunction[] = [
+[
   {
     "name": "alert",
     "syntax": "alert(message, freq) → void",
@@ -12603,36 +12591,4 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series int",
     "example": ""
   }
-];
-
-/**
- * Functions indexed by name for O(1) lookup
- */
-export const FUNCTIONS_BY_NAME: Map<string, PineFunction> = new Map(
-	FUNCTIONS.map(f => [f.name, f])
-);
-
-/**
- * Functions grouped by namespace
- */
-export const FUNCTIONS_BY_NAMESPACE: Map<string, PineFunction[]> = (() => {
-	const map = new Map<string, PineFunction[]>();
-	for (const f of FUNCTIONS) {
-		const ns = f.namespace || "_global";
-		if (!map.has(ns)) map.set(ns, []);
-		map.get(ns)!.push(f);
-	}
-	return map;
-})();
-
-/**
- * All function names as a Set for fast membership check
- */
-export const FUNCTION_NAMES: Set<string> = new Set(FUNCTIONS.map(f => f.name));
-
-/**
- * All namespace names that have functions
- */
-export const FUNCTION_NAMESPACES: Set<string> = new Set(
-	FUNCTIONS.filter(f => f.namespace).map(f => f.namespace!)
-);
+]

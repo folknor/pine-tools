@@ -1,16 +1,4 @@
-/**
- * Pine Script V6 Built-in Variables
- * Auto-generated from TradingView documentation
- * Generated: 2026-05-24T22:23:46.499Z
- * Total: 90 variables
- */
-
-import type { PineVariable } from "../schema/types";
-
-/**
- * All v6 built-in variables
- */
-export const VARIABLES: PineVariable[] = [
+[
   {
     "name": "ask",
     "type": "series<float>",
@@ -614,43 +602,4 @@ export const VARIABLES: PineVariable[] = [
     "description": "Maximum drawdown as percentage",
     "namespace": "strategy"
   }
-];
-
-/**
- * Variables indexed by name for O(1) lookup
- */
-export const VARIABLES_BY_NAME: Map<string, PineVariable> = new Map(
-	VARIABLES.map(v => [v.name, v])
-);
-
-/**
- * Variables grouped by namespace
- */
-export const VARIABLES_BY_NAMESPACE: Map<string, PineVariable[]> = (() => {
-	const map = new Map<string, PineVariable[]>();
-	for (const v of VARIABLES) {
-		const ns = v.namespace || "_standalone";
-		if (!map.has(ns)) map.set(ns, []);
-		map.get(ns)!.push(v);
-	}
-	return map;
-})();
-
-/**
- * All variable names as a Set for fast membership check
- */
-export const VARIABLE_NAMES: Set<string> = new Set(VARIABLES.map(v => v.name));
-
-/**
- * Standalone variables (no namespace)
- */
-export const STANDALONE_VARIABLES: Set<string> = new Set(
-	VARIABLES.filter(v => !v.namespace).map(v => v.name)
-);
-
-/**
- * All namespace names that have variables
- */
-export const VARIABLE_NAMESPACES: Set<string> = new Set(
-	VARIABLES.filter(v => v.namespace).map(v => v.namespace!)
-);
+]

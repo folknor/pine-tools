@@ -1,7 +1,7 @@
 /**
  * Pine Script V6 Language Data
  * Auto-generated - single entry point for all v6 data
- * Generated: 2025-12-24T18:19:57.279Z
+ * Generated: 2026-05-24T22:23:46.500Z
  */
 
 // Re-export everything
