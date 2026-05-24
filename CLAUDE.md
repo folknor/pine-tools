@@ -36,7 +36,7 @@ pnpm test                 # Run tests
 # Data Pipeline (packages/pipeline/src/)
 pnpm run crawl            # Crawl TradingView docs
 pnpm run scrape           # Scrape function details
-pnpm run generate         # Generate pine-data/v6/*.ts
+pnpm run generate         # Generate pine-data/v6/*.{ts,json}
 pnpm run generate:syntax  # Generate syntaxes/pine.tmLanguage.json
 pnpm run discover:behavior # Discover polymorphism → function-behavior.json
 
@@ -102,7 +102,7 @@ All API data is scraped from TradingView docs and generated:
 |---------|--------|
 | `crawl` | `pine-data/raw/v6/v6-language-constructs.json` |
 | `scrape` | `pine-data/raw/v6/complete-v6-details.json` |
-| `generate` | `pine-data/v6/*.ts` |
+| `generate` | `pine-data/v6/*.ts` + `*.json` (vendor-friendly snapshot for downstream Rust/non-node consumers) |
 | `generate:syntax` | `syntaxes/pine.tmLanguage.json` |
 | `discover:behavior` | `pine-data/v6/function-behavior.json` |
 

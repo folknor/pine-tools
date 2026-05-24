@@ -1316,6 +1316,18 @@ function main(): void {
 	const keywords = generateKeywords(constructs);
 	generateVersionIndex(functions, variables, constants, keywords);
 
+	// Emit JSON snapshots for downstream consumers (e.g. pine-oracle)
+	// that vendor pine-data without a node toolchain.
+	const writeJson = (name: string, data: unknown): void => {
+		const file = path.join(OUTPUT_DIR, `${name}.json`);
+		fs.writeFileSync(file, `${JSON.stringify(data, null, 2)}\n`);
+		console.log(`Wrote ${file}`);
+	};
+	writeJson("functions", functions);
+	writeJson("variables", variables);
+	writeJson("constants", constants);
+	writeJson("keywords", keywords);
+
 	console.log(`\nPine Script ${VERSION} data generated successfully!`);
 	console.log(`   ${functions.length} functions`);
 	console.log(`   ${variables.length} variables`);

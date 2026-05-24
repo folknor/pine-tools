@@ -49,3 +49,6 @@ pinescripts
 
 # Generated reference
 PINE_REFERENCE.md
+
+# Local MCP config (contains absolute paths)
+.mcp.json

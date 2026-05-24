@@ -27,8 +27,15 @@ const PROJECT_ROOT = __dirname.includes("/dist/")
 	? path.resolve(__dirname, "../../../..")
 	: path.resolve(__dirname, "../../..");
 
+const DRY_RUN =
+	process.argv.includes("--dry-run") || process.argv.includes("-n");
+
+const positionalArgs = process.argv
+	.slice(2)
+	.filter((arg) => !arg.startsWith("-"));
+
 const OUTPUT_FILE =
-	process.argv[2] ||
+	positionalArgs[0] ||
 	path.join(PROJECT_ROOT, "pine-data/raw/v6/v6-language-constructs.json");
 
 interface DiscoveryStats {
@@ -333,14 +340,22 @@ export async function crawlPineScriptReference(): Promise<CrawlResult> {
 			return result;
 		});
 
-		// Ensure output directory exists
-		const outputDir = path.dirname(OUTPUT_FILE);
-		if (!fs.existsSync(outputDir)) {
-			fs.mkdirSync(outputDir, { recursive: true });
-		}
+		const serialized = JSON.stringify(constructs, null, 2);
 
-		// Save results
-		fs.writeFileSync(OUTPUT_FILE, JSON.stringify(constructs, null, 2), "utf8");
+		if (DRY_RUN) {
+			console.log(
+				`[dry-run] Skipping write to ${OUTPUT_FILE} (${serialized.length} bytes)`,
+			);
+		} else {
+			// Ensure output directory exists
+			const outputDir = path.dirname(OUTPUT_FILE);
+			if (!fs.existsSync(outputDir)) {
+				fs.mkdirSync(outputDir, { recursive: true });
+			}
+
+			// Save results
+			fs.writeFileSync(OUTPUT_FILE, serialized, "utf8");
+		}
 
 		console.log("Crawl completed successfully!");
 		console.log(`Results:`);
@@ -388,7 +403,11 @@ export async function crawlPineScriptReference(): Promise<CrawlResult> {
 		console.log(
 			`   Operators discovered: ${constructs.metadata.discoveryStats.operatorsDiscovered}`,
 		);
-		console.log(`Saved to: ${OUTPUT_FILE}`);
+		console.log(
+			DRY_RUN
+				? `[dry-run] Would save to: ${OUTPUT_FILE}`
+				: `Saved to: ${OUTPUT_FILE}`,
+		);
 
 		return constructs;
 	} catch (error) {

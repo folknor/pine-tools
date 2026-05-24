@@ -23,6 +23,9 @@ const PROJECT_ROOT = __dirname.includes("/dist/")
 
 const OUTPUT_FILE = path.join(PROJECT_ROOT, "PINE_REFERENCE.md");
 
+const DRY_RUN =
+	process.argv.includes("--dry-run") || process.argv.includes("-n");
+
 // Import generated data
 const functionsModule = await import(
 	path.join(PROJECT_ROOT, "pine-data/v6/functions.ts"),
@@ -304,10 +307,20 @@ function main(): void {
 
 	const markdown = generateMarkdown();
 
-	fs.writeFileSync(OUTPUT_FILE, markdown, "utf8");
+	if (DRY_RUN) {
+		console.log(
+			`[dry-run] Skipping write to ${OUTPUT_FILE} (${markdown.length} bytes)`,
+		);
+	} else {
+		fs.writeFileSync(OUTPUT_FILE, markdown, "utf8");
+	}
 
 	const lines = markdown.split("\n").length;
-	console.log(`✓ Reference generated successfully!`);
+	console.log(
+		DRY_RUN
+			? `✓ Reference generated in memory (dry run)`
+			: `✓ Reference generated successfully!`,
+	);
 	console.log(`  ${FUNCTIONS.length} functions`);
 	console.log(`  ${VARIABLES.length} variables`);
 	console.log(`  ${CONSTANTS.length} constants`);

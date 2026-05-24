@@ -33,6 +33,10 @@ const positionalArgs = process.argv
 	.slice(2)
 	.filter((arg) => !arg.startsWith("-"));
 
+const DRY_RUN =
+	process.argv.includes("--dry-run") || process.argv.includes("-n");
+const DRY_RUN_LIMIT = 5;
+
 const INPUT_FILE =
 	positionalArgs[0] ||
 	path.join(PROJECT_ROOT, "pine-data/raw/v6/v6-language-constructs.json");
@@ -108,6 +112,10 @@ function getCachedData(functionName: string): FunctionDetails | null {
 }
 
 function saveToCache(functionName: string, data: FunctionDetails): void {
+	if (DRY_RUN) {
+		return;
+	}
+
 	const cacheFilePath = getCacheFilePath(functionName);
 
 	// Ensure cache directory exists
@@ -557,6 +565,13 @@ export async function scrapeAllFunctions(
 		functionsToScrape.push(...functionNames);
 	}
 
+	if (DRY_RUN && functionsToScrape.length > DRY_RUN_LIMIT) {
+		console.log(
+			`[dry-run] Limiting fresh scrapes from ${functionsToScrape.length} to ${DRY_RUN_LIMIT}`,
+		);
+		functionsToScrape.splice(DRY_RUN_LIMIT);
+	}
+
 	console.log(`Cache analysis:`);
 	console.log(`   From cache: ${functionsFromCache.length}`);
 	console.log(`   To scrape: ${functionsToScrape.length}`);
@@ -628,14 +643,22 @@ export async function scrapeAllFunctions(
 		await closeSharedBrowser();
 	}
 
-	// Ensure output directory exists
-	const outputDir = path.dirname(OUTPUT_FILE);
-	if (!fs.existsSync(outputDir)) {
-		fs.mkdirSync(outputDir, { recursive: true });
-	}
+	const serialized = JSON.stringify(allDetails, null, 2);
 
-	// Save results
-	fs.writeFileSync(OUTPUT_FILE, JSON.stringify(allDetails, null, 2), "utf8");
+	if (DRY_RUN) {
+		console.log(
+			`[dry-run] Skipping write to ${OUTPUT_FILE} (${serialized.length} bytes)`,
+		);
+	} else {
+		// Ensure output directory exists
+		const outputDir = path.dirname(OUTPUT_FILE);
+		if (!fs.existsSync(outputDir)) {
+			fs.mkdirSync(outputDir, { recursive: true });
+		}
+
+		// Save results
+		fs.writeFileSync(OUTPUT_FILE, serialized, "utf8");
+	}
 
 	console.log("Scrape completed successfully!");
 	console.log(`Results:`);
@@ -647,7 +670,11 @@ export async function scrapeAllFunctions(
 	console.log(`   Successful: ${allDetails.metadata.successfulScrapes}`);
 	console.log(`   Failed: ${allDetails.metadata.failedScrapes}`);
 	console.log(`   Method: ${allDetails.metadata.method}`);
-	console.log(`Saved to: ${OUTPUT_FILE}`);
+	console.log(
+		DRY_RUN
+			? `[dry-run] Would save to: ${OUTPUT_FILE}`
+			: `Saved to: ${OUTPUT_FILE}`,
+	);
 
 	return allDetails;
 }
