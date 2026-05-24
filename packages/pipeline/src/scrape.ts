@@ -58,7 +58,7 @@ interface FunctionDetails {
 		required: boolean;
 	}>;
 	returns: string;
-	example: string;
+	examples: string[];
 	namespace: string;
 	category: string;
 	overloads?: string[];
@@ -252,7 +252,7 @@ export async function scrapeFunctionDetails(
 				description: "",
 				parameters: [],
 				returns: "",
-				example: "",
+				examples: [],
 				namespace: "",
 				category: "",
 			};
@@ -290,7 +290,7 @@ export async function scrapeFunctionDetails(
 					description: "",
 					parameters: [],
 					returns: "",
-					example: "",
+					examples: [],
 					namespace: "",
 					category: "",
 				};
@@ -470,19 +470,22 @@ export async function scrapeFunctionDetails(
 					}
 				}
 
-				// Extract example. Use innerText (not textContent) so that <br> and
-				// block-element boundaries inside the syntax-highlighted code block
+				// Extract examples. Functions can have multiple example snippets,
+				// rendered as separate sibling .tv-pine-reference-item__example
+				// blocks — querySelectorAll captures all of them.
+				// Use innerText (not textContent) so <br> and block-element boundaries
 				// produce real newlines instead of being silently collapsed.
 				// TradingView emits &nbsp; for every space inside code blocks, so
 				// normalize U+00A0 back to regular spaces — otherwise pasted examples
 				// fail to parse as Pine Script.
-				const exampleEl = element.querySelector(
+				const exampleEls = element.querySelectorAll(
 					".tv-pine-reference-item__example code",
-				) as HTMLElement | null;
-				if (exampleEl) {
-					res.example = (exampleEl.innerText || "")
+				);
+				for (const exampleEl of exampleEls) {
+					const text = ((exampleEl as HTMLElement).innerText || "")
 						.replace(/\u00a0/g, " ")
 						.trim();
+					if (text) res.examples.push(text);
 				}
 
 				// Extract namespace from function name

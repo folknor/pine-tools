@@ -49,7 +49,7 @@ interface FunctionDetail {
 	description: string;
 	parameters: Parameter[];
 	returns: string;
-	example?: string;
+	examples?: string[];
 	namespace?: string;
 	category?: string;
 	overloads?: string[];
@@ -70,7 +70,7 @@ interface GeneratedFunction {
 	}>;
 	returns: string;
 	flags?: Record<string, unknown>;
-	example?: string;
+	examples?: string[];
 }
 
 interface GeneratedVariable {
@@ -483,7 +483,7 @@ function generateFunctions(
 			parameters,
 			returns: detail.returns || "void",
 			flags,
-			example: detail.example,
+			examples: detail.examples,
 		};
 
 		functions.push(func);

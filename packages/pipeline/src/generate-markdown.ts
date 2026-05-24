@@ -57,7 +57,7 @@ type PineFunction = {
 		default?: string;
 	}>;
 	returns: string;
-	example?: string;
+	examples?: string[];
 	flags?: Record<string, unknown>;
 };
 
@@ -172,11 +172,14 @@ function generateFunctionsSection(): string {
 				content += `**Returns:** \`${fn.returns}\`\n\n`;
 			}
 
-			if (fn.example) {
-				content += "**Example:**\n\n";
-				content += "```pine\n";
-				content += `${fn.example}\n`;
-				content += "```\n\n";
+			if (fn.examples && fn.examples.length > 0) {
+				const heading = fn.examples.length > 1 ? "**Examples:**" : "**Example:**";
+				content += `${heading}\n\n`;
+				for (const example of fn.examples) {
+					content += "```pine\n";
+					content += `${example}\n`;
+					content += "```\n\n";
+				}
 			}
 		}
 	}

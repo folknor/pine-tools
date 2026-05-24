@@ -70,7 +70,7 @@ interface CompletionItemData {
 	description?: string;
 	returns?: string;
 	type?: string;
-	example?: string;
+	examples?: string[];
 	namespace?: string;
 }
 
@@ -132,9 +132,11 @@ function createCompletionItem(
 			docParts.push(`**Type:** \`${data.type}\``);
 		}
 
-		if (data.example) {
-			docParts.push("**Example:**");
-			docParts.push(`\`\`\`pine\n${data.example}\n\`\`\``);
+		if (data.examples && data.examples.length > 0) {
+			docParts.push(data.examples.length > 1 ? "**Examples:**" : "**Example:**");
+			for (const example of data.examples) {
+				docParts.push(`\`\`\`pine\n${example}\n\`\`\``);
+			}
 		}
 
 		if (data.namespace) {
@@ -182,7 +184,7 @@ export function getNamespaceCompletions(namespace: string): CompletionItem[] {
 					syntax: func.syntax,
 					description: func.description,
 					returns: func.returns,
-					example: func.example,
+					examples: func.examples,
 					namespace: func.namespace,
 				}),
 			);
@@ -253,7 +255,7 @@ export function getAllCompletions(): CompletionItem[] {
 					syntax: func.syntax,
 					description: func.description,
 					returns: func.returns,
-					example: func.example,
+					examples: func.examples,
 				}),
 			);
 		}

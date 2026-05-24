@@ -123,8 +123,8 @@ export interface PineFunction {
 	deprecated?: string;
 	/** Version when introduced */
 	since?: "v4" | "v5" | "v6";
-	/** Example code */
-	example?: string;
+	/** Example code snippets (TradingView lists one or more per function) */
+	examples?: string[];
 }
 
 // =============================================================================
