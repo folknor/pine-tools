@@ -12,29 +12,104 @@ import {
 import { Parser } from "../../core/src/parser/parser";
 import { SemanticAnalyzer } from "../../core/src/parser/semanticAnalyzer";
 
-async function main() {
-	const args = process.argv.slice(2);
+const HELP = `Usage: pine-validate [options] [file.pine]
 
-	if (args.length === 0) {
-		console.error("Usage: pine-validate <file.pine>");
-		process.exit(1);
+Validate a Pine Script source. Reads from a file path, an inline string, or stdin.
+
+Options:
+  -c, --code <pinescript>   Validate the given Pine Script string instead of a file
+  -h, --help                Show this help and exit
+
+Input sources (pick one):
+  pine-validate path/to/script.pine
+  pine-validate --code 'indicator("x") plot(close)'
+  cat script.pine | pine-validate -
+
+Output: JSON on stdout matching the pine-lint format.`;
+
+interface ParsedArgs {
+	help: boolean;
+	code?: string;
+	filePath?: string;
+	stdin: boolean;
+}
+
+function parseArgs(argv: string[]): ParsedArgs {
+	const parsed: ParsedArgs = { help: false, stdin: false };
+	for (let i = 0; i < argv.length; i++) {
+		const arg = argv[i];
+		if (arg === "-h" || arg === "--help") {
+			parsed.help = true;
+		} else if (arg === "-c" || arg === "--code") {
+			const value = argv[++i];
+			if (value === undefined) {
+				throw new Error(`Missing value for ${arg}`);
+			}
+			parsed.code = value;
+		} else if (arg === "-") {
+			parsed.stdin = true;
+		} else if (arg.startsWith("-")) {
+			throw new Error(`Unknown option: ${arg}`);
+		} else if (parsed.filePath === undefined) {
+			parsed.filePath = arg;
+		} else {
+			throw new Error(`Unexpected argument: ${arg}`);
+		}
+	}
+	return parsed;
+}
+
+async function main() {
+	let parsed: ParsedArgs;
+	try {
+		parsed = parseArgs(process.argv.slice(2));
+	} catch (e) {
+		const msg = (e as Error).message;
+		console.error(`${msg}\n\n${HELP}`);
+		process.exit(2);
 	}
 
-	// Match pine-lint behavior: single file
-	const filePath = args[0];
-	const absolutePath = path.resolve(filePath);
+	if (parsed.help) {
+		console.log(HELP);
+		process.exit(0);
+	}
 
-	if (!fs.existsSync(absolutePath)) {
-		const output: PineLintOutput = {
-			success: false,
-			error: `File not found: ${filePath}`,
-		};
-		console.log(JSON.stringify(output, null, 2));
-		process.exit(1);
+	const sourceCount =
+		(parsed.code !== undefined ? 1 : 0) +
+		(parsed.filePath !== undefined ? 1 : 0) +
+		(parsed.stdin ? 1 : 0);
+
+	if (sourceCount === 0) {
+		console.error(`No input provided.\n\n${HELP}`);
+		process.exit(2);
+	}
+	if (sourceCount > 1) {
+		console.error(
+			`Provide only one of: file path, --code, or stdin.\n\n${HELP}`,
+		);
+		process.exit(2);
+	}
+
+	let code: string;
+	if (parsed.code !== undefined) {
+		code = parsed.code;
+	} else if (parsed.stdin) {
+		code = fs.readFileSync(0, "utf-8");
+	} else {
+		const filePath = parsed.filePath as string;
+		const absolutePath = path.resolve(filePath);
+		if (!fs.existsSync(absolutePath)) {
+			const output: PineLintOutput = {
+				success: false,
+				error: `File not found: ${filePath}`,
+			};
+			console.log(JSON.stringify(output, null, 2));
+			process.exit(1);
+		}
+		code = fs.readFileSync(absolutePath, "utf-8");
 	}
 
 	try {
-		const code = fs.readFileSync(absolutePath, "utf-8");
 		const parser = new Parser(code);
 		const ast = parser.parse();
 
