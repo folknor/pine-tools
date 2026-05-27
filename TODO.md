@@ -1,12 +1,35 @@
 # TODO
 
+> **Read first**: [CLAUDE.md](CLAUDE.md) — Methodology. We aim to be MORE
+> correct than TradingView's pine-lint. The "false positive" / "false
+> negative" labels below are TV-diff heuristics, not verdicts. Treat
+> them as navigation aids; investigate each before acting.
+
 Discrepancies between our linter and TradingView's pine-lint over 748 v6
 fixtures.
 
-- **6483 false positives** (errors we report that TV doesn't), in **46
-  categories**. (Was 6609 in 48; net −126 hits, −2 categories.)
-- **59 false negatives** (errors TV catches that we don't), in **19
-  categories**. (Unchanged.)
+- **6524 disagreements where we flag and TV doesn't** ("FP"-labelled),
+  in **47 categories**. Some are genuine over-strictness in our linter;
+  some are us correctly catching what TV missed (see INV001 for the
+  canonical example).
+- **59 disagreements where TV flags and we don't** ("FN"-labelled),
+  in **19 categories**.
+
+## Investigations
+
+See [investigations/README.md](investigations/README.md) for the format
+and full index.
+
+- [INV001](investigations/INV001-ternary-branch-compat/notes.md) —
+  ternary branches, cross-type, TV-silent-on-nonsense,
+  type-compatibility
+
+## Gotchas
+
+See [gotchas/README.md](gotchas/README.md) for the format and full
+index.
+
+_None yet._
 
 ## Resolved (2026-05-27)
 
@@ -16,13 +39,6 @@ fixtures.
   Added `array<unknown>` / `array<type>` as assignable-to-anything in
   `types.ts:isAssignable` to cover unresolved element types. Removed
   the `Cannot assign array<X> to array<x>` category (85 hits).
-- **Ternary branch type-compatibility removed** — TV accepts every
-  cross-type ternary branch mix in our corpus
-  (`color`/`string`, `color`/`int`, `simple<string>`/`series<float>`,
-  even `bool`/`color`). Dropped the
-  `areTernaryBranchTypesCompatible` check from `checker.ts`. Removed
-  the `Ternary branches must have compatible types. Got '*' and '*'`
-  category (43 hits).
 
 ## Reverted (2026-05-27)
 

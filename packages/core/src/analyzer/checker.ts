@@ -675,9 +675,66 @@ export class UnifiedPineValidator {
 			);
 		}
 
-		// No branch-type compatibility check: TradingView's pine-lint accepts
-		// every cross-type mix in our corpus (color|string, color|int, even
-		// simple<string>|series<float>), so flagging them is a false positive.
+		// Check that both branches have compatible types — stricter than
+		// isAssignable. pine-lint --tv accepts cross-type mixes here
+		// (color|string, color|int, even simple<string>|series<float>) but
+		// those are nonsense values that can't be assigned to a typed
+		// variable. We flag anyway. see INV001.
+		const conseqType = this.inferExpressionType(expr.consequent, version);
+		const altType = this.inferExpressionType(expr.alternate, version);
+
+		if (
+			conseqType === "unknown" ||
+			altType === "unknown" ||
+			conseqType === "na" ||
+			altType === "na"
+		) {
+			return;
+		}
+
+		if (!this.areTernaryBranchTypesCompatible(conseqType, altType)) {
+			this.addError(
+				expr.line,
+				expr.column,
+				1,
+				`Ternary branches must have compatible types. Got '${conseqType}' and '${altType}'`,
+				DiagnosticSeverity.Error,
+			);
+		}
+	}
+
+	// Strict ternary branch compatibility: branches must share a type
+	// category (numeric/bool/string/color), modulo series/simple stripping.
+	// see INV001.
+	private areTernaryBranchTypesCompatible(
+		type1: PineType,
+		type2: PineType,
+	): boolean {
+		if (type1 === type2) return true;
+
+		const base1 = this.getBaseType(type1);
+		const base2 = this.getBaseType(type2);
+		if (base1 === base2) return true;
+
+		if (TypeChecker.isNumericType(type1) && TypeChecker.isNumericType(type2)) {
+			return true;
+		}
+		if (TypeChecker.isBoolType(type1) && TypeChecker.isBoolType(type2)) {
+			return true;
+		}
+		if (TypeChecker.isStringType(type1) && TypeChecker.isStringType(type2)) {
+			return true;
+		}
+		if (TypeChecker.isColorType(type1) && TypeChecker.isColorType(type2)) {
+			return true;
+		}
+
+		return false;
+	}
+
+	private getBaseType(type: PineType): string {
+		const match = (type as string).match(/^(?:series|simple)<(.+)>$/);
+		return match ? match[1] : (type as string);
 	}
 
 	private validateCallExpression(

@@ -10,6 +10,59 @@ pnpm test             # Run tests
 
 ---
 
+## Methodology — we aim to be MORE correct than TradingView's pine-lint
+
+TradingView's `pine-lint` is a reference, not the spec. It has real bugs:
+it stops at the first error, blames whitespace for a missing `)`
+elsewhere in the file, silently accepts nonsense expressions, and its
+results sometimes change run-to-run for no apparent reason. **Matching
+it is not the goal.** Our linter should catch what TV catches *and*
+what TV misses.
+
+### Hard rules
+
+- **TV silence is evidence, not authority.** When TV is silent and we
+  flag an expression, that is a disagreement — it might be us being
+  wrong, or it might be us correctly catching something TV missed.
+  Investigate the expression itself before deciding.
+- **Never relax a check just because TV is silent.** If the existing
+  checker is stricter than TV, treat the comment / commit that
+  introduced it as a signal that someone already weighed this trade-off.
+- **Disagreements are claims, not bugs.** The "false positive" /
+  "false negative" labels in `lint-reports/real-failures.json` are
+  position-based heuristics. Treat them as "things to look at," not
+  "things to fix."
+
+### Per-disagreement workflow
+
+For every concrete TV-vs-us discrepancy we choose to act on:
+
+1. **Reproduce** with a minimal `.pine` fixture in
+   `packages/core/test/fixtures/regression/`. The discovery test runner
+   picks it up automatically — a repro that doesn't fail-on-regression
+   is just a paragraph with code in it. Use the
+   `// @expects error: line=N, message="..."` directive form (the bare
+   `// @expects errors: N` is currently ignored by the runner).
+2. **Open an investigation** under `investigations/INV###-name/` with
+   `notes.md` and the repro file (or a pointer to the regression
+   fixture). Sequential numbering, never reuse. Index entries live in
+   `investigations/README.md` and are surfaced in `TODO.md`.
+3. **Annotate code decisions inline** with a `// see INV###` or
+   `// see G###` pointer. Don't wax lyrical in the code — the long
+   reasoning lives in the markdown.
+4. **Record side-knowledge as gotchas.** If we learn something general
+   (e.g. "TV's parser flakes on multiline strings") that doesn't belong
+   to a specific investigation, add `gotchas/G###.md` with as much
+   context as possible. Index in `gotchas/README.md`, surfaced in
+   `TODO.md`.
+
+### Indexes
+
+`TODO.md` carries two summary indexes (`gotchas/` and `investigations/`)
+so a reader can scan the entire trail of decisions from one place.
+
+---
+
 ## Architecture: Data vs Syntax
 
 **Hardcoded in parser** (grammar fundamentals):
