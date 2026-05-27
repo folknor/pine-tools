@@ -1,0 +1,21 @@
+// @test regression/INV007-blank-line-in-type-body
+// @description A blank line inside a `type` body must not terminate the body-skip. Field declarations past the blank line are still type fields, not top-level statements. See investigations/INV007-type-body-blank-line/notes.md.
+// @expects parse: success
+// @expects no-errors
+//@version=6
+indicator("t")
+
+type Session
+    string sess
+    int session
+
+    bool is_extended
+    bool in_session
+
+    color colour
+
+type Empty
+
+    int x = 0
+
+plot(close)

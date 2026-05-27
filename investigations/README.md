@@ -38,3 +38,5 @@ file rather than renumbering.
   bool-param-as-series-float
 - [INV006](INV006-method-variable-namespace/notes.md) — symbol-table,
   Scope, methods, variables, namespace, lookupCallable
+- [INV007](INV007-type-body-blank-line/notes.md) — parser, type/enum
+  body, blank-line, NEWLINE indent, body-skip

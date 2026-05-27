@@ -36,6 +36,8 @@ and full index.
   expression cache, bool-param-as-series-float
 - [INV006](investigations/INV006-method-variable-namespace/notes.md) —
   symbol-table, Scope, methods, variables, namespace, lookupCallable
+- [INV007](investigations/INV007-type-body-blank-line/notes.md) —
+  parser, type/enum body, blank-line, NEWLINE indent, body-skip
 
 ## Gotchas
 

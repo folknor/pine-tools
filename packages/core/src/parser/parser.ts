@@ -992,6 +992,17 @@ export class Parser {
 			if (bodyIndent > baseIndent) {
 				while (!this.isAtEnd()) {
 					const currentToken = this.peek();
+					// NEWLINE tokens that start blank lines carry the
+					// leading-whitespace count as their `indent` (e.g. 0 for
+					// an empty line). A NEWLINE is not a content token, so
+					// we must skip it before deciding whether the body has
+					// ended — otherwise a blank line inside a type body
+					// (indent 0) terminates the skip and field declarations
+					// past it leak into top-level parsing. see INV007.
+					if (currentToken.type === TokenType.NEWLINE) {
+						this.advance();
+						continue;
+					}
 					const isLineStart = currentToken.indent !== undefined;
 
 					if (
