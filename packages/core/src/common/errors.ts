@@ -14,6 +14,10 @@ export interface ValidationError {
 	length: number;
 	message: string;
 	severity: DiagnosticSeverity;
+	// pine-lint-compatible structured form (optional). When set, `message` is
+	// the unfilled template and `ctx` is the value map that fills it.
+	code?: string;
+	ctx?: Record<string, string>;
 }
 
 // Error factory functions for common error types

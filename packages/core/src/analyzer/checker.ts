@@ -790,6 +790,38 @@ export class UnifiedPineValidator {
 			);
 		}
 
+		// str.tostring rejects map arguments (overload list lacks map<K,V>);
+		// pine-lint emits CE10123 here.
+		if (functionName === "str.tostring" && call.arguments.length > 0) {
+			const firstArg = call.arguments[0];
+			const argType = this.inferExpressionType(firstArg.value, version);
+			if (argType.startsWith("map<")) {
+				const repr =
+					firstArg.value.type === "Identifier"
+						? (firstArg.value as Identifier).name
+						: firstArg.value.type === "Literal"
+							? String((firstArg.value as Literal).raw ?? "")
+							: "";
+				this.errors.push({
+					line: firstArg.value.line,
+					column: firstArg.value.column,
+					length: 0,
+					message:
+						'Cannot call "{funId}" with argument "{argDisplayName}"="{argUserFriendlyRepresentation}". An argument of "{argumentType}" type was used but a "{currentTypeDocStr}" {typePostfix} is expected.',
+					severity: DiagnosticSeverity.Error,
+					code: "CE10123",
+					ctx: {
+						argDisplayName: "value",
+						argUserFriendlyRepresentation: repr,
+						argumentType: argType,
+						currentTypeDocStr: "series float",
+						funId: "str.tostring",
+						typePostfix: "",
+					},
+				});
+			}
+		}
+
 		if (!signature) {
 			// Unknown function - could be user-defined
 			return;
@@ -1158,10 +1190,24 @@ export class UnifiedPineValidator {
 						break;
 					}
 					if (funcName === "map.new") {
-						// map.new<K, V> would need two type args
-						type = `map<${typeArg}>` as PineType;
+						const valueArg = callExpr.typeArguments[1];
+						type = (
+							valueArg ? `map<${typeArg}, ${valueArg}>` : `map<${typeArg}>`
+						) as PineType;
 						break;
 					}
+				}
+
+				// array.from(arg0, ...) — element type is taken from the first argument,
+				// matching pine-lint (e.g. array.from(1,2,3) -> array<int>).
+				if (funcName === "array.from" && callExpr.arguments.length > 0) {
+					const elem = this.inferExpressionType(
+						callExpr.arguments[0].value,
+						version,
+					);
+					const bare = elem.replace(/^(const|simple|series|input)\s+/, "");
+					type = `array<${bare}>` as PineType;
+					break;
 				}
 
 				// Special handling for request.security with non-tuple returns

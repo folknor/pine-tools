@@ -150,14 +150,20 @@ async function main() {
 			message: e.message,
 		}));
 
-		// Convert validation errors to pine-lint format (only errors, not warnings)
+		// Convert validation errors to pine-lint format (only errors, not warnings).
+		// Preserve optional `code`/`ctx` so structured pine-lint errors round-trip.
 		const validationPineLintErrors: PineLintError[] = validationErrors
 			.filter((e) => e.severity === DiagnosticSeverity.Error)
-			.map((e) => ({
-				start: { line: e.line, column: e.column },
-				end: { line: e.line, column: e.column + e.length },
-				message: e.message,
-			}));
+			.map((e) => {
+				const out: PineLintError = {
+					start: { line: e.line, column: e.column },
+					end: { line: e.line, column: e.column + e.length },
+					message: e.message,
+				};
+				if (e.code !== undefined) out.code = e.code;
+				if (e.ctx !== undefined) out.ctx = e.ctx;
+				return out;
+			});
 
 		// Convert semantic warnings to pine-lint format (warnings)
 		const semanticPineLintWarnings: PineLintError[] = semanticWarnings

@@ -242,6 +242,22 @@ Run `pnpm run debug:diff -- --count 20 --verbose` to see current discrepancies.
 
 ---
 
+## pine-lint (authority)
+
+TradingView's `pine-lint` is the source of truth for Pine v6 validity — when our checker disagrees, pine-lint wins.
+
+Invoke the script directly (shell aliases aren't available in non-interactive sessions):
+
+```bash
+python3 /home/folk/Programs/pinescript_syntax_checker/pinescript_syntax_checker/pinescript_checker.py <file.pine> --pretty
+```
+
+`--username <name>` overrides the default `admin`; `--full-response` keeps the `scopes` section that's stripped by default.
+
+The local CLI (`node dist/packages/cli/src/cli.js`, built from `packages/cli/src/cli.ts`) runs this repo's own parser + validator offline and emits the same JSON shape as pine-lint so the two can be diffed — it's the thing being measured *against* pine-lint, not a substitute for it.
+
+---
+
 ## Differential Testing
 
 Compare internal validator against TradingView's pine-lint API:

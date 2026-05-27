@@ -15,6 +15,7 @@ import type {
 	FunctionDeclaration,
 	FunctionParam,
 	Identifier,
+	Literal,
 	MemberExpression,
 	Program,
 	Statement,
@@ -71,6 +72,11 @@ export interface PineLintError {
 	start: PineLintPosition;
 	end: PineLintPosition;
 	message: string;
+	// Optional pine-lint-compatible fields. When `code` is set, `message` is
+	// expected to be the unfilled template (e.g. `"... {funId} ..."`) and `ctx`
+	// holds the values that fill those placeholders.
+	code?: string;
+	ctx?: Record<string, string>;
 }
 
 export interface PineLintResult {
@@ -92,6 +98,39 @@ export interface PineLintOutput {
 function getFunctionReturnType(funcName: string): string | undefined {
 	const func = FUNCTIONS_BY_NAME.get(funcName);
 	return func?.returns;
+}
+
+// Helper: drop a leading `const`/`simple`/`series`/`input` qualifier so element
+// types render bare (matches pine-lint's `array<int>` rather than `array<const int>`).
+function stripTypeQualifier(t: string): string {
+	return t.replace(/^(const|simple|series|input)\s+/, "");
+}
+
+// Compute the 1-indexed source position of the last character of an expression.
+// CallExpression nodes carry endLine/endColumn from the parser (the RPAREN);
+// other forms fall back to a length-based estimate from the node's own text.
+function computeExpressionEnd(
+	expr: Expression | null,
+): { line: number; column: number } | undefined {
+	if (!expr) return undefined;
+	if (expr.endLine !== undefined && expr.endColumn !== undefined) {
+		return { line: expr.endLine, column: expr.endColumn };
+	}
+	if (expr.type === "Literal") {
+		const lit = expr as Literal;
+		const text = String(lit.raw ?? lit.value ?? "");
+		return { line: lit.line, column: lit.column + Math.max(0, text.length - 1) };
+	}
+	if (expr.type === "Identifier") {
+		const id = expr as Identifier;
+		return { line: id.line, column: id.column + Math.max(0, id.name.length - 1) };
+	}
+	if (expr.type === "MemberExpression") {
+		return computeExpressionEnd(
+			(expr as { property: Expression }).property,
+		);
+	}
+	return undefined;
 }
 
 // Helper: Get variable type from pine-data
@@ -147,7 +186,10 @@ export class ASTExtractor {
 	 */
 	extractVariables(ast: Program): PineLintVariable[] {
 		this.extractedVariables = [];
-		this.walkStatements(ast.body, this.extractedVariables, undefined);
+		// Pine-lint labels every top-level binding with scopeId "#1" (the script's
+		// main scope). Inner function declarations bump the counter via walkStatements.
+		this.scopeCounter = 1;
+		this.walkStatements(ast.body, this.extractedVariables, "#1");
 		return this.extractedVariables;
 	}
 
@@ -235,15 +277,17 @@ export class ASTExtractor {
 		scopeId: string | undefined,
 	): PineLintVariable {
 		const typeString = this.inferVariableType(varDecl);
-		const endColumn =
-			varDecl.column + varDecl.name.length + (varDecl.init ? 20 : 0); // Approximate
+		const end = computeExpressionEnd(varDecl.init) ?? {
+			line: varDecl.line,
+			column: varDecl.column + varDecl.name.length - 1,
+		};
 
 		const variable: PineLintVariable = {
 			name: varDecl.name,
 			type: typeString,
 			definition: {
 				start: { line: varDecl.line, column: varDecl.column },
-				end: { line: varDecl.line, column: endColumn },
+				end,
 			},
 		};
 
@@ -429,8 +473,17 @@ export class ASTExtractor {
 						return `matrix<${typeArg}>`;
 					}
 					if (funcName === "map.new") {
-						return `map<${typeArg}>`;
+						const valueArg = call.typeArguments[1];
+						return valueArg
+							? `map<${typeArg}, ${valueArg}>`
+							: `map<${typeArg}>`;
 					}
+				}
+
+				// array.from(arg0, arg1, ...) — element type comes from the first arg
+				if (funcName === "array.from" && call.arguments.length > 0) {
+					const elem = this.inferExpressionType(call.arguments[0].value);
+					return `array<${stripTypeQualifier(elem)}>`;
 				}
 
 				// Handle input functions - polymorphic return type based on defval

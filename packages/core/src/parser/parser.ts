@@ -2132,7 +2132,7 @@ export class Parser {
 				);
 			}
 		}
-		this.consume(TokenType.RPAREN, 'Expected ")" after arguments');
+		const rparen = this.consume(TokenType.RPAREN, 'Expected ")" after arguments');
 		this.parenDepth--; // Decrement depth when closing parenthesis
 
 		const callExpr: AST.CallExpression = {
@@ -2141,6 +2141,8 @@ export class Parser {
 			arguments: args,
 			line: callee.line,
 			column: callee.column,
+			endLine: rparen.line,
+			endColumn: rparen.column,
 		};
 
 		if (typeArguments && typeArguments.length > 0) {

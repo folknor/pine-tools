@@ -4,6 +4,11 @@ export interface ASTNode {
 	type: string;
 	line: number;
 	column: number;
+	// 1-indexed source position of the last character of the node, set when
+	// the parser can compute it (currently CallExpression). Optional so existing
+	// nodes that don't set it still type-check.
+	endLine?: number;
+	endColumn?: number;
 }
 
 export interface Program extends ASTNode {
