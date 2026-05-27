@@ -1,0 +1,13 @@
+// @test regression/INV008-if-body-indent
+// @description An `if` statement at column 1 with no indented body must not consume the rest of the script as its body. Subsequent same-column statements stay at the global scope and global-only functions (`plot`) remain callable. See investigations/INV008-if-body-indent-leak/notes.md.
+// @expects parse: success
+// @expects errors: 2
+// @expects error: line=4, message="Undefined variable 'rename'"
+// @expects error: line=4, message="Undefined variable 'conflict'"
+//@version=6
+indicator("t")
+
+or rename if conflict
+
+overlap = input.bool(true)
+plot(close)

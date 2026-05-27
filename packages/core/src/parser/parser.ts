@@ -513,9 +513,16 @@ export class Parser {
 			this.advance();
 		}
 
-		// Parse the consequent block using indentation tracking
-		// Track the indentation of the if statement and its body
-		const _baseIndent = this.peek().indent || 0;
+		// Parse the consequent block using indentation tracking. The body
+		// must be indented STRICTLY MORE than the `if` keyword itself —
+		// otherwise we'd swallow any following same-column statements as
+		// the body and the `if`'s scope would leak to end-of-file. That
+		// happened in real fixtures when malformed continuation text
+		// (`or rename if conflict` left over from a wrap-without-//
+		// comment) parsed as a column-1 `if` and consumed the rest of
+		// the file, hiding subsequent top-level variable declarations.
+		// see INV008.
+		const ifIndent = startToken.indent ?? 0;
 		let consequentIndent: number | null = null;
 
 		while (!this.isAtEnd() && !this.check([TokenType.KEYWORD, ["else"]])) {
@@ -524,6 +531,10 @@ export class Parser {
 
 			// Set expected consequent indentation from first statement
 			if (consequentIndent === null && currentToken.line > startToken.line) {
+				if (currentIndent <= ifIndent) {
+					// No properly-indented body — the `if` has no consequent.
+					break;
+				}
 				consequentIndent = currentIndent;
 			}
 

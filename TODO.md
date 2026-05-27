@@ -38,6 +38,9 @@ and full index.
   symbol-table, Scope, methods, variables, namespace, lookupCallable
 - [INV007](investigations/INV007-type-body-blank-line/notes.md) —
   parser, type/enum body, blank-line, NEWLINE indent, body-skip
+- [INV008](investigations/INV008-if-body-indent-leak/notes.md) —
+  parser, ifStatement, body indent, scope leak, blockDepth-stuck,
+  also fixes task #4
 
 ## Gotchas
 

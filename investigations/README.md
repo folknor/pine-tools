@@ -40,3 +40,6 @@ file rather than renumbering.
   Scope, methods, variables, namespace, lookupCallable
 - [INV007](INV007-type-body-blank-line/notes.md) — parser, type/enum
   body, blank-line, NEWLINE indent, body-skip
+- [INV008](INV008-if-body-indent-leak/notes.md) — parser,
+  ifStatement, body indent, scope leak, blockDepth-stuck, also fixes
+  task #4
