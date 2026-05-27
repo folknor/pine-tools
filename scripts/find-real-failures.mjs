@@ -162,6 +162,8 @@ async function main() {
 		totalLocalOnly: 0,
 		totalTvOnly: 0,
 		totalSamePosDifferentMessage: 0,
+		tvUnparseableFiles: [],
+		localUnparseableFiles: [],
 		tvUnparseable: 0,
 		localUnparseable: 0,
 	};
@@ -170,8 +172,14 @@ async function main() {
 	const localOnlyExamples = new Map();
 	const tvOnlyExamples = new Map();
 	for (const r of fileReports) {
-		if (!r.localOk) summary.localUnparseable++;
-		if (!r.tvOk) summary.tvUnparseable++;
+		if (!r.localOk) {
+			summary.localUnparseable++;
+			summary.localUnparseableFiles.push(r.file);
+		}
+		if (!r.tvOk) {
+			summary.tvUnparseable++;
+			summary.tvUnparseableFiles.push(r.file);
+		}
 		if (r.localOnly.length > 0) summary.filesWithLocalOnly++;
 		if (r.tvOnly.length > 0) summary.filesWithTvOnly++;
 		if (r.samePositionDifferentMessage && r.samePositionDifferentMessage.length > 0) {
@@ -210,7 +218,13 @@ async function main() {
 	console.log(`total tv-only:                       ${summary.totalTvOnly}`);
 	console.log(`total same-pos different-msg pairs:  ${summary.totalSamePosDifferentMessage}`);
 	console.log(`TV response unparseable:             ${summary.tvUnparseable}`);
+	if (summary.tvUnparseableFiles.length) {
+		for (const f of summary.tvUnparseableFiles) console.log(`  ${f}`);
+	}
 	console.log(`local response unparseable:          ${summary.localUnparseable}`);
+	if (summary.localUnparseableFiles.length) {
+		for (const f of summary.localUnparseableFiles) console.log(`  ${f}`);
+	}
 
 	console.log(`\ntop 15 local-only messages (we flag, TV silent — investigate per category):`);
 	for (const [m, c] of [...localOnlyByMessage.entries()].sort((a, b) => b[1] - a[1]).slice(0, 15)) {

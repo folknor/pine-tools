@@ -61,9 +61,7 @@ count.
 | script | purpose |
 |---|---|
 | `scripts/collect-pine-fixtures.mjs` | Walks a source tree (default `/home/folk/Programs`), dedupes `.pine` files by sha256, copies unique ones into `fixtures/<hash>.pine`. Run once to (re)build the corpus. |
-| `scripts/lint-fixtures.mjs` | Runs `pine-lint` (local) on every fixture and writes `lint-reports/fixtures-lint-report.json` — overall pass/fail counts, top error messages, slowest files. Cheap (~12s) — useful for "did this change make our linter worse on the corpus?" |
-| `scripts/lint-fixtures-by-version.mjs` | Cross-references the local-only report against each fixture's `//@version=N` directive — shows error distribution by Pine version and the top error messages restricted to v6 files. |
-| `scripts/compare-tv.mjs` | One file at a time: runs local + `--tv` in parallel, prints the error diff (false positives / false negatives) for that file. Repro tool. |
+| `scripts/compare-tv.mjs` | One file at a time: runs local + `--tv` in parallel, prints the error diff (local-only / tv-only) for that file. Pass `--json` to emit machine-readable output. Repro tool. |
 | `scripts/find-real-failures.mjs` | Runs local + `--tv` on every v6 fixture, records per-file false positives (we flag, TV doesn't) and false negatives (TV flags, we don't). Writes `lint-reports/real-failures.json`. Hits TV ~750 times (~2 min at concurrency 4). |
 | `scripts/categorize-failures.mjs` | Reads `real-failures.json`, normalizes error messages into templates (strips line numbers, variable names, etc.), groups every occurrence under one of 48 / 19 categories, writes `lint-reports/failures-by-category.json`. |
 | `scripts/snapshot-local-lint.mjs` | Runs `pine-lint` (local) on every fixture and writes `lint-reports/local-baseline.json` — sorted per-file error lists. The regression contract. Re-run after every intentional change. |

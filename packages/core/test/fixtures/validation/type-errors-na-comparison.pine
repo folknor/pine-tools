@@ -2,6 +2,8 @@
 // @description Direct na comparison is invalid - must use na() function
 // @expects parse: success
 // @expects errors: 2
+// @expects error: line=5, message="Cannot compare a value to 'na' directly. Use the 'na()' function instead."
+// @expects error: line=6, message="Cannot compare a value to 'na' directly. Use the 'na()' function instead."
 
 //@version=6
 indicator("NA Comparison Errors")

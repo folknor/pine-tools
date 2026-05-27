@@ -122,6 +122,7 @@
     "build:prod": "node scripts/build-extension.js --production",
     "build:tsc": "tsc -p . && cp pine-data/v6/*.json dist/pine-data/v6/ && chmod +x dist/packages/cli/src/cli.js",
     "install:cli": "node scripts/install-cli.js",
+    "audit:fixtures": "pnpm run build:tsc && node scripts/audit-fixtures.mjs",
     "check": "pnpm exec biome check --max-diagnostics=none --reporter=github --formatter-enabled=true --linter-enabled=true --assist-enabled=true",
     "clean": "rm -rf dist && rm -f build/*.vsix",
     "crawl": "node --experimental-strip-types packages/pipeline/src/crawl.ts",

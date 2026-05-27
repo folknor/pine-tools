@@ -2,6 +2,10 @@
 // @description Error messages for invalid logical operator operands
 // @expects parse: success
 // @expects errors: 4
+// @expects error: line=5, message="Operator 'or' requires bool operands, but left operand is int"
+// @expects error: line=8, message="Operator 'and' requires bool operands, but right operand is string"
+// @expects error: line=11, message="Operator 'or' requires bool operands, but left operand is color"
+// @expects error: line=14, message="Operator 'and' requires bool operands, but right operand is float"
 
 //@version=6
 indicator("Logical Operator Errors")

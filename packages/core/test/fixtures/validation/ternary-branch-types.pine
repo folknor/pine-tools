@@ -1,7 +1,10 @@
 // @test validation/ternary-branch-types
-// @description Ternary expression branches must have compatible types
+// @description Ternary expression branches must have compatible types. See investigations/INV001-ternary-branch-compat/notes.md for why we stay stricter than pine-lint here.
 // @expects parse: success
 // @expects errors: 3
+// @expects error: line=5, message="Ternary branches must have compatible types. Got 'int' and 'color'"
+// @expects error: line=8, message="Ternary branches must have compatible types. Got 'string' and 'bool'"
+// @expects error: line=11, message="Ternary branches must have compatible types. Got 'color' and 'string'"
 
 //@version=6
 indicator("Ternary Branch Type Errors")
