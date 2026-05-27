@@ -25,6 +25,9 @@ export interface TestExpectations {
 	noErrors?: boolean;
 	errors?: ExpectedError[];
 	warnings?: ExpectedError[];
+	errorCount?: number;
+	warningCount?: number;
+	directiveErrors?: string[]; // malformed/unknown directives — fail the test
 }
 
 /**
@@ -45,9 +48,14 @@ export interface ParsedTestFile {
  *   // @description <text>
  *   // @expects parse: success|fail
  *   // @expects no-errors
+ *   // @expects errors: N           — assert exactly N errors total
+ *   // @expects warnings: N         — assert exactly N warnings total
  *   // @expects error: line=N, message="text"
  *   // @expects error: message=/regex/
  *   // @expects warning: line=N, message="text"
+ *
+ * Unknown directives fail the test rather than being silently ignored,
+ * to surface typos like `errros: 4` or `expect error: ...`.
  */
 export function parseTestFile(content: string): ParsedTestFile {
 	const lines = content.split("\n");
@@ -92,7 +100,9 @@ export function parseTestFile(content: string): ParsedTestFile {
 }
 
 /**
- * Parse an @expects directive value
+ * Parse an @expects directive value. Unknown forms are recorded on
+ * expectations.directiveErrors so the test fails loudly rather than
+ * silently ignoring typos (e.g. `errros: 4`, `expect error: ...`).
  */
 function parseExpectsDirective(
 	value: string,
@@ -107,7 +117,21 @@ function parseExpectsDirective(
 		const parseValue = value.slice(6).trim();
 		if (parseValue === "success" || parseValue === "fail") {
 			expectations.parse = parseValue;
+		} else {
+			recordDirectiveError(
+				expectations,
+				`Unknown parse: value '${parseValue}' (expected 'success' or 'fail')`,
+			);
 		}
+		return;
+	}
+
+	// `errors: N` / `warnings: N` — total-count assertions
+	const countMatch = value.match(/^(errors|warnings):\s*(\d+)\s*$/);
+	if (countMatch) {
+		const [, kind, n] = countMatch;
+		if (kind === "errors") expectations.errorCount = parseInt(n, 10);
+		else expectations.warningCount = parseInt(n, 10);
 		return;
 	}
 
@@ -128,6 +152,16 @@ function parseExpectsDirective(
 		expectations.warnings.push(warning);
 		return;
 	}
+
+	recordDirectiveError(expectations, `Unknown @expects directive: '${value}'`);
+}
+
+function recordDirectiveError(
+	expectations: TestExpectations,
+	message: string,
+): void {
+	if (!expectations.directiveErrors) expectations.directiveErrors = [];
+	expectations.directiveErrors.push(message);
 }
 
 /**
@@ -194,6 +228,16 @@ export function runTest(
 		failures: [],
 	};
 
+	// Surface any directive-level errors before doing anything else —
+	// silently swallowing typos is what made several existing fixtures
+	// no-ops for years.
+	if (expectations.directiveErrors && expectations.directiveErrors.length > 0) {
+		result.success = false;
+		for (const msg of expectations.directiveErrors) {
+			result.failures.push(`Bad @expects directive: ${msg}`);
+		}
+	}
+
 	// Parse the code
 	const parser = new Parser(code);
 	const ast = parser.parse();
@@ -242,6 +286,26 @@ export function runTest(
 				result.success = false;
 				result.failures.push(
 					`Expected no errors but got ${errors.length}: ${errors.map((e) => `[${e.line}:${e.column}] ${e.message}`).join(", ")}`,
+				);
+			}
+		}
+
+		// Check total-count assertions
+		if (expectations.errorCount !== undefined) {
+			const errors = result.validationErrors.filter((e) => e.severity === 0);
+			if (errors.length !== expectations.errorCount) {
+				result.success = false;
+				result.failures.push(
+					`Expected exactly ${expectations.errorCount} error(s), got ${errors.length}: ${errors.map((e) => `[${e.line}:${e.column}] ${e.message}`).join(", ")}`,
+				);
+			}
+		}
+		if (expectations.warningCount !== undefined) {
+			const warnings = result.validationErrors.filter((e) => e.severity === 1);
+			if (warnings.length !== expectations.warningCount) {
+				result.success = false;
+				result.failures.push(
+					`Expected exactly ${expectations.warningCount} warning(s), got ${warnings.length}: ${warnings.map((e) => `[${e.line}:${e.column}] ${e.message}`).join(", ")}`,
 				);
 			}
 		}

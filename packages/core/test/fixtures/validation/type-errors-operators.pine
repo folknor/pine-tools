@@ -1,7 +1,7 @@
 // @test validation/type-errors-operators
 // @description Type errors for operators (ternary, logical, arithmetic, comparison)
 // @expects parse: success
-// @expects errors: 10
+// @expects errors: 9
 
 //@version=6
 indicator("Operator Type Errors")
