@@ -414,14 +414,19 @@ export class UnifiedPineValidator {
 					);
 				}
 
-				// Register the method in the symbol table
+				// Register the method in the symbol table. Use kind:"method"
+				// rather than "function" so it lives in the method namespace
+				// and does not clobber a same-named variable. Bare-identifier
+				// lookups (e.g. `n - 1` where `n` is an `int` variable AND a
+				// method exists) resolve to the variable; call-site lookups
+				// fall back to the method namespace. see INV006.
 				this.symbolTable.define({
 					name: statement.name,
 					type: returnType,
 					line: statement.line,
 					column: statement.column,
 					used: false,
-					kind: "function",
+					kind: "method",
 					declaredWith: null,
 				});
 
@@ -1235,11 +1240,14 @@ export class UnifiedPineValidator {
 					break;
 				}
 
-				// Check if it's a user-defined function with registered return type
-				const udfSymbol = this.symbolTable.lookup(funcName);
+				// Check if it's a user-defined function or method with a
+				// registered return type. Use lookupCallable so we also see
+				// methods (which live in a separate namespace from variables).
+				// see INV006.
+				const udfSymbol = this.symbolTable.lookupCallable(funcName);
 				if (
 					udfSymbol &&
-					udfSymbol.kind === "function" &&
+					(udfSymbol.kind === "function" || udfSymbol.kind === "method") &&
 					udfSymbol.type !== "unknown"
 				) {
 					type = udfSymbol.type;

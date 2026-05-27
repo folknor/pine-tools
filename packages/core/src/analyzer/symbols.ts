@@ -14,12 +14,17 @@ export interface Symbol {
 	line: number;
 	column: number;
 	used: boolean;
-	kind: "variable" | "function" | "parameter";
+	kind: "variable" | "function" | "parameter" | "method";
 	declaredWith?: "var" | "varip" | "const" | null; // for variables
 }
 
 export class Scope {
+	// Variables / functions / parameters live in one namespace, methods in
+	// another. Pine allows `int n = bar_index` and `method n(float v) =>
+	// not na(v)` to coexist — a bare `n` resolves to the variable, while
+	// `n(5.0)` / `(5.0).n()` resolve to the method. see INV006.
 	private symbols: Map<string, Symbol> = new Map();
+	private methods: Map<string, Symbol> = new Map();
 	private parent: Scope | null;
 	private children: Scope[] = [];
 
@@ -28,7 +33,11 @@ export class Scope {
 	}
 
 	define(symbol: Symbol): void {
-		this.symbols.set(symbol.name, symbol);
+		if (symbol.kind === "method") {
+			this.methods.set(symbol.name, symbol);
+		} else {
+			this.symbols.set(symbol.name, symbol);
+		}
 	}
 
 	lookup(name: string): Symbol | undefined {
@@ -38,12 +47,27 @@ export class Scope {
 		return undefined;
 	}
 
+	// Lookup for call sites — accepts methods too. Variables take
+	// precedence (which would error elsewhere if the variable isn't
+	// callable), then methods, then walk parents.
+	lookupCallable(name: string): Symbol | undefined {
+		const symbol = this.symbols.get(name);
+		if (symbol) return symbol;
+		const method = this.methods.get(name);
+		if (method) return method;
+		if (this.parent) return this.parent.lookupCallable(name);
+		return undefined;
+	}
+
 	lookupLocal(name: string): Symbol | undefined {
 		return this.symbols.get(name);
 	}
 
 	getAllSymbols(): Symbol[] {
-		return Array.from(this.symbols.values());
+		return [
+			...Array.from(this.symbols.values()),
+			...Array.from(this.methods.values()),
+		];
 	}
 
 	getUnusedSymbols(): Symbol[] {
@@ -51,7 +75,7 @@ export class Scope {
 	}
 
 	markUsed(name: string): void {
-		const symbol = this.symbols.get(name);
+		const symbol = this.symbols.get(name) ?? this.methods.get(name);
 		if (symbol) {
 			symbol.used = true;
 		} else if (this.parent) {
@@ -160,6 +184,12 @@ export class SymbolTable {
 
 	lookup(name: string): Symbol | undefined {
 		return this.currentScope.lookup(name);
+	}
+
+	// Call-site lookup that also considers method declarations. See
+	// Scope.lookupCallable / INV006.
+	lookupCallable(name: string): Symbol | undefined {
+		return this.currentScope.lookupCallable(name);
 	}
 
 	lookupLocal(name: string): Symbol | undefined {

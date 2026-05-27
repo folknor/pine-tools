@@ -1,0 +1,21 @@
+// @test regression/INV006-method-shadows-variable
+// @description Pine v6 allows a variable and a method to share a name. A bare-identifier use must resolve to the variable; both function-call and method-call syntaxes must resolve to the method. See investigations/INV006-method-variable-namespace/notes.md.
+// @expects parse: success
+// @expects no-errors
+//@version=6
+indicator("t")
+
+int n = bar_index
+
+method n(float v) => not na(v)
+
+// Bare-identifier — resolves to the int variable, not the method.
+x = n - 1
+
+// Function-call — resolves to the method.
+y = n(5.0)
+
+// Method-call — resolves to the method.
+z = (5.0).n()
+
+plot(x)

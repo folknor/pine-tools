@@ -34,6 +34,8 @@ and full index.
 - [INV005](investigations/INV005-udf-param-type/notes.md) —
   type-inference, inferFunctionReturnType, UDF parameter type,
   expression cache, bool-param-as-series-float
+- [INV006](investigations/INV006-method-variable-namespace/notes.md) —
+  symbol-table, Scope, methods, variables, namespace, lookupCallable
 
 ## Gotchas
 
