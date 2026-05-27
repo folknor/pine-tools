@@ -46,6 +46,8 @@ GEMINI.md
 
 # Personal
 pinescripts
+fixtures/
+lint-reports/
 
 # Generated reference
 PINE_REFERENCE.md
