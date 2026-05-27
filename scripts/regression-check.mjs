@@ -5,17 +5,24 @@
 // For every fixture, diffs the current per-file error set against the
 // baseline. Errors are keyed by (line, col, message):
 //
-//   appeared    — in current, not in baseline. Pure regression candidates.
+//   appeared    — in current, not in baseline. Regression candidates.
 //   disappeared — in baseline, not in current. Cross-referenced against
 //                 lint-reports/real-failures.json (if present) to mark:
-//                   knownFP: true  → was a known false positive (good)
-//                   knownFP: false → was NOT on the FP list, may be a
-//                                    real positive we stopped catching
-//                                    (suspicious — verify against TV)
-//                   knownFP: null  → no TV reference available; can't tell
+//                   tvSilent: true  → TV is silent at this position
+//                                     (could be us correctly stopping
+//                                     over-strict flagging OR us
+//                                     incorrectly stopping a finding TV
+//                                     missed — investigate)
+//                   tvSilent: false → TV also flags this position; us
+//                                     going silent is suspicious and
+//                                     warrants a --tv recheck
+//                   tvSilent: null  → no TV reference for this file
+//                                     (e.g. v4/v5 fixture, or v6 added
+//                                     since last find-real-failures run)
 //
-// Writes lint-reports/regression-report.json. Exits non-zero if any
-// regressions appeared, so the script can gate a pre-commit hook later.
+// Writes lint-reports/regression-report.json. Exits non-zero if any new
+// errors appeared. Per CLAUDE.md, neither label is a verdict — both are
+// navigation aids for human investigation. See G001.
 //
 // Usage: node scripts/regression-check.mjs [--concurrency N]
 
@@ -49,17 +56,17 @@ try {
 	process.exit(2);
 }
 
-// Build known-FP set per fixture (basename) from the TV comparison report.
-// If the report is missing, the script still works — disappearances simply
-// can't be annotated.
-const knownFP = new Map();
+// Build the per-fixture set of positions where TV is silent and we
+// previously flagged, from the TV-diff report. If the report is missing
+// the script still works — disappearances simply can't be annotated.
+const tvSilentPositions = new Map();
 let tvAvailable = false;
 try {
 	const tv = JSON.parse(await readFile(TV_REF, "utf8"));
 	for (const f of tv.files) {
 		const set = new Set();
-		for (const e of f.falsePositives) set.add(`${e.line}:${e.col}:${e.message}`);
-		knownFP.set(basename(f.file), set);
+		for (const e of f.localOnly) set.add(`${e.line}:${e.col}:${e.message}`);
+		tvSilentPositions.set(basename(f.file), set);
 	}
 	tvAvailable = true;
 } catch {
@@ -148,14 +155,14 @@ for (const name of entries) {
 	const disappeared = base.errors.filter((e) => !newKeys.has(`${e.line}:${e.col}:${e.message}`));
 	if (appeared.length === 0 && disappeared.length === 0) continue;
 
-	const fpSet = knownFP.get(name);
-	// knownFP is meaningful only for files that appeared in the TV reference.
-	// For files outside it (e.g. non-v6 fixtures, or v6 files added since the
-	// last find-real-failures.mjs run), we have no per-error TV data, so mark
-	// disappearances as unverifiable rather than suspicious.
+	const tvSilentSet = tvSilentPositions.get(name);
+	// tvSilent is meaningful only for files that appeared in the TV
+	// reference. For files outside it (non-v6 fixtures, or v6 files added
+	// since the last find-real-failures.mjs run), there's no per-error TV
+	// data, so mark disappearances as unverifiable.
 	const annotatedDisappeared = disappeared.map((e) => ({
 		...e,
-		knownFP: tvAvailable && fpSet ? fpSet.has(`${e.line}:${e.col}:${e.message}`) : null,
+		tvSilent: tvAvailable && tvSilentSet ? tvSilentSet.has(`${e.line}:${e.col}:${e.message}`) : null,
 	}));
 
 	report.filesChanged.push({ file: name, appeared, disappeared: annotatedDisappeared });
@@ -164,23 +171,23 @@ for (const name of entries) {
 const totals = {
 	filesChanged: report.filesChanged.length,
 	newAppearances: 0,
-	disappearedKnownFP: 0,
-	disappearedSuspicious: 0,
+	disappearedTvSilent: 0,
+	disappearedTvFlagged: 0,
 	disappearedUnverifiable: 0,
 };
-const suspiciousFiles = [];
+const tvFlaggedDisappearanceFiles = [];
 for (const f of report.filesChanged) {
 	totals.newAppearances += f.appeared.length;
-	const suspicious = f.disappeared.filter((e) => e.knownFP === false);
-	if (suspicious.length) suspiciousFiles.push(f.file);
+	const tvFlagged = f.disappeared.filter((e) => e.tvSilent === false);
+	if (tvFlagged.length) tvFlaggedDisappearanceFiles.push(f.file);
 	for (const e of f.disappeared) {
-		if (e.knownFP === true) totals.disappearedKnownFP++;
-		else if (e.knownFP === false) totals.disappearedSuspicious++;
+		if (e.tvSilent === true) totals.disappearedTvSilent++;
+		else if (e.tvSilent === false) totals.disappearedTvFlagged++;
 		else totals.disappearedUnverifiable++;
 	}
 }
 report.totals = totals;
-report.suspiciousFiles = suspiciousFiles;
+report.tvFlaggedDisappearanceFiles = tvFlaggedDisappearanceFiles;
 
 await mkdir(resolve("lint-reports"), { recursive: true });
 await writeFile(OUT, JSON.stringify(report, null, 2));
@@ -192,14 +199,14 @@ console.log(`fixtures changed:             ${totals.filesChanged}`);
 console.log(`fixtures added (no baseline): ${report.filesAdded.length}`);
 console.log(`fixtures removed:             ${report.filesRemoved.length}`);
 console.log(`new error appearances:        ${totals.newAppearances}${totals.newAppearances ? "  ← REGRESSION CANDIDATES" : ""}`);
-console.log(`disappeared, known FP:        ${totals.disappearedKnownFP}  (good — fixed)`);
-console.log(`disappeared, suspicious:      ${totals.disappearedSuspicious}${totals.disappearedSuspicious ? "  ← may be a lost true positive; verify with --tv" : ""}`);
+console.log(`disappeared, TV-silent here:  ${totals.disappearedTvSilent}  (we used to flag where TV is silent — investigate per category, not auto-good)`);
+console.log(`disappeared, TV-also-flagged: ${totals.disappearedTvFlagged}${totals.disappearedTvFlagged ? "  ← we stopped flagging something TV catches; verify with --tv" : ""}`);
 console.log(`disappeared, unverifiable:    ${totals.disappearedUnverifiable}  (file outside TV reference; v4/v5/non-v6 or added since last find-real-failures run)`);
 
-if (suspiciousFiles.length) {
-	console.log(`\nfiles needing TV recheck (${suspiciousFiles.length}):`);
-	for (const f of suspiciousFiles.slice(0, 15)) console.log(`  node scripts/compare-tv.mjs fixtures/${f}`);
-	if (suspiciousFiles.length > 15) console.log(`  … +${suspiciousFiles.length - 15} more (see ${OUT})`);
+if (tvFlaggedDisappearanceFiles.length) {
+	console.log(`\nfiles where TV-also-flagged disappearances need recheck (${tvFlaggedDisappearanceFiles.length}):`);
+	for (const f of tvFlaggedDisappearanceFiles.slice(0, 15)) console.log(`  node scripts/compare-tv.mjs fixtures/${f}`);
+	if (tvFlaggedDisappearanceFiles.length > 15) console.log(`  … +${tvFlaggedDisappearanceFiles.length - 15} more (see ${OUT})`);
 }
 
 console.log(`\nfull report: ${OUT}`);

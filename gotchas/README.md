@@ -1,8 +1,14 @@
 # Gotchas
 
-Side-knowledge that doesn't belong to a specific investigation. Each
-gotcha is a long-form `.md` file with as much context as we can muster,
-so future-us (or a future Claude) doesn't relearn the same lesson.
+Side-knowledge about things *we can't fix* — Pine language quirks,
+TradingView linter behaviors, scraping anomalies in upstream docs.
+Long-form `.md` files with as much context as we can muster, so future-
+us (or a future Claude) doesn't relearn the same lesson.
+
+A gotcha is **not** a known bug in our own code. Bugs we can fix go in
+[`../TODO.md`](../TODO.md) as work items. If you reach for a gotcha to
+describe something we control, ask: "could I fix this if I wanted to?"
+If yes, it's a TODO entry.
 
 ## Format
 
@@ -21,4 +27,5 @@ found, and the lesson worth remembering.
 
 ## Index
 
-_None yet._
+- [G001](G001-tv-pine-lint-not-spec.md) — pine-lint, --tv, TradingView,
+  reference-not-spec, non-determinism, error-recovery, warning-vs-error

@@ -50,11 +50,14 @@ For every concrete TV-vs-us discrepancy we choose to act on:
 3. **Annotate code decisions inline** with a `// see INV###` or
    `// see G###` pointer. Don't wax lyrical in the code — the long
    reasoning lives in the markdown.
-4. **Record side-knowledge as gotchas.** If we learn something general
-   (e.g. "TV's parser flakes on multiline strings") that doesn't belong
-   to a specific investigation, add `gotchas/G###.md` with as much
-   context as possible. Index in `gotchas/README.md`, surfaced in
-   `TODO.md`.
+4. **Record side-knowledge as gotchas.** A gotcha is something *we
+   can't fix* that we need to remember when working — Pine language
+   quirks, TV linter behaviors, scraping anomalies in upstream docs.
+   It is *not* a known bug in our own code (those go in TODO.md as
+   work items). Examples: "TV's parser flakes on multiline strings",
+   "Pine v6 deprecates multiline string literals but still parses
+   them". Add `gotchas/G###.md` with as much context as possible.
+   Index in `gotchas/README.md`, surfaced in `TODO.md`.
 
 ### Indexes
 

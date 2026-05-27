@@ -56,6 +56,28 @@ Authoritative per-occurrence list lives in
 holds every `(fixture, line, column, exact message)` that contributed to the
 count.
 
+## Tooling bugs to fix
+
+These are bugs in *our* tooling that affect how we read the linter's
+state. Not gotchas (we control these); just work to do.
+
+- **Test runner ignores `// @expects errors: N`.** The discovery test
+  runner (`packages/core/test/helpers.ts`) only honors `// @expects
+  error: line=N, message="..."` (singular `error:`). Several existing
+  fixtures in `packages/core/test/fixtures/validation/` use the
+  unsupported `errors: N` form and trivially pass — they look like
+  assertions but don't actually verify anything. Either teach the
+  runner to honor the count form, or migrate fixtures to the
+  per-error form.
+- **`find-real-failures.mjs` position-only matching counts coincident
+  positions as agreement.** Today: we error at `(10, 6)` with one
+  message, TV errors at `(10, 6)` with a different message → script
+  treats both as agreement, neither shows up in `localOnly` or
+  `tvOnly`. Bit us several times this session (synthetic test
+  fixtures with cross-error overlaps). Fix: key by `(line, col,
+  message-template)`, or surface "same position different message" as
+  a third diff category.
+
 ## Scripts behind this report
 
 | script | purpose |

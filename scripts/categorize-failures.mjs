@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Reads lint-reports/real-failures.json, normalizes each error message into a
-// template (variable parts → "*"), groups every false positive / false
+// template (variable parts → "*"), groups every local-only / tv-only
 // negative by that template, and writes a comprehensive index so each TODO
 // category can be cross-referenced to every fixture:line that hits it.
 
@@ -77,64 +77,56 @@ function group(errors) {
 	return buckets;
 }
 
-const fp = [];
-const fn = [];
+const localOnly = [];
+const tvOnly = [];
 for (const f of report.files) {
-	for (const e of f.falsePositives) fp.push({ ...e, file: f.file });
-	for (const e of f.falseNegatives) fn.push({ ...e, file: f.file });
+	for (const e of f.localOnly) localOnly.push({ ...e, file: f.file });
+	for (const e of f.tvOnly) tvOnly.push({ ...e, file: f.file });
 }
 
-const fpBuckets = group(fp);
-const fnBuckets = group(fn);
+const localOnlyBuckets = group(localOnly);
+const tvOnlyBuckets = group(tvOnly);
+
+function bucketsToOutput(buckets) {
+	return [...buckets.entries()]
+		.sort((a, b) => b[1].length - a[1].length)
+		.map(([template, items]) => ({
+			template,
+			count: items.length,
+			distinctFiles: new Set(items.map((i) => i.file)).size,
+			occurrences: items.map((i) => ({
+				file: i.file.replace(/^.*\/fixtures\//, "fixtures/"),
+				line: i.line,
+				col: i.col,
+				message: i.message,
+			})),
+		}));
+}
 
 const output = {
 	generatedFrom: "lint-reports/real-failures.json",
 	scanned: report.summary.scanned,
 	totals: {
-		falsePositives: fp.length,
-		falseNegatives: fn.length,
-		falsePositiveCategories: fpBuckets.size,
-		falseNegativeCategories: fnBuckets.size,
+		localOnly: localOnly.length,
+		tvOnly: tvOnly.length,
+		localOnlyCategories: localOnlyBuckets.size,
+		tvOnlyCategories: tvOnlyBuckets.size,
 	},
-	falsePositives: [...fpBuckets.entries()]
-		.sort((a, b) => b[1].length - a[1].length)
-		.map(([template, items]) => ({
-			template,
-			count: items.length,
-			distinctFiles: new Set(items.map((i) => i.file)).size,
-			occurrences: items.map((i) => ({
-				file: i.file.replace(/^.*\/fixtures\//, "fixtures/"),
-				line: i.line,
-				col: i.col,
-				message: i.message,
-			})),
-		})),
-	falseNegatives: [...fnBuckets.entries()]
-		.sort((a, b) => b[1].length - a[1].length)
-		.map(([template, items]) => ({
-			template,
-			count: items.length,
-			distinctFiles: new Set(items.map((i) => i.file)).size,
-			occurrences: items.map((i) => ({
-				file: i.file.replace(/^.*\/fixtures\//, "fixtures/"),
-				line: i.line,
-				col: i.col,
-				message: i.message,
-			})),
-		})),
+	localOnly: bucketsToOutput(localOnlyBuckets),
+	tvOnly: bucketsToOutput(tvOnlyBuckets),
 };
 
 await writeFile("lint-reports/failures-by-category.json", JSON.stringify(output, null, 2));
 
 console.log(`scanned ${output.scanned} v6 files`);
-console.log(`false positives: ${output.totals.falsePositives} hits in ${output.totals.falsePositiveCategories} categories`);
-console.log(`false negatives: ${output.totals.falseNegatives} hits in ${output.totals.falseNegativeCategories} categories`);
-console.log(`\nfalse-positive categories (all ${output.totals.falsePositiveCategories}):`);
-for (const c of output.falsePositives) {
+console.log(`local-only: ${output.totals.localOnly} hits in ${output.totals.localOnlyCategories} categories  (we flag, TV silent — investigate)`);
+console.log(`tv-only:    ${output.totals.tvOnly} hits in ${output.totals.tvOnlyCategories} categories  (TV flags, we silent — investigate)`);
+console.log(`\nlocal-only categories (all ${output.totals.localOnlyCategories}):`);
+for (const c of output.localOnly) {
 	console.log(`  ${String(c.count).padStart(5)}  in ${String(c.distinctFiles).padStart(3)} files  |  ${c.template}`);
 }
-console.log(`\nfalse-negative categories (all ${output.totals.falseNegativeCategories}):`);
-for (const c of output.falseNegatives) {
+console.log(`\ntv-only categories (all ${output.totals.tvOnlyCategories}):`);
+for (const c of output.tvOnly) {
 	console.log(`  ${String(c.count).padStart(5)}  in ${String(c.distinctFiles).padStart(3)} files  |  ${c.template}`);
 }
 console.log(`\nwrote lint-reports/failures-by-category.json`);

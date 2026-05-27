@@ -1,11 +1,15 @@
 #!/usr/bin/env node
 // For every v6 fixture, runs both pine-lint (local) and pine-lint --tv
-// (TradingView) and records errors that disagree on whether there is a
-// problem at a given (line, column).
+// (TradingView) and records errors where the two disagree on whether
+// there is a problem at a given (line, column).
 //
-// - false positive: error we report at (line,col) that TV does not.
-// - false negative: error TV reports at (line,col) that we do not.
-// Wording differences at the same position do NOT count as failures.
+// - localOnly: error we report at (line,col) that TV does not.
+// - tvOnly:    error TV reports at (line,col) that we do not.
+// Wording differences at the same position do NOT count as disagreement.
+//
+// The labels are navigation aids, not verdicts. Per CLAUDE.md, TV silence
+// is evidence — not authority. A `localOnly` finding may be us being
+// over-strict OR us correctly catching what TV missed. See gotcha G001.
 //
 // Usage: node scripts/find-real-failures.mjs [--limit N] [--concurrency K]
 
@@ -83,8 +87,8 @@ async function main() {
 
 			const tvKeys = new Set(tvE.errors.map((e) => `${e.line}:${e.col}`));
 			const localKeys = new Set(localE.errors.map((e) => `${e.line}:${e.col}`));
-			const falsePositives = localE.errors.filter((e) => !tvKeys.has(`${e.line}:${e.col}`));
-			const falseNegatives = tvE.errors.filter((e) => !localKeys.has(`${e.line}:${e.col}`));
+			const localOnly = localE.errors.filter((e) => !tvKeys.has(`${e.line}:${e.col}`));
+			const tvOnly = tvE.errors.filter((e) => !localKeys.has(`${e.line}:${e.col}`));
 
 			fileReports[i] = {
 				file,
@@ -92,8 +96,8 @@ async function main() {
 				tvOk: tvE.ok,
 				localErrorCount: localE.errors.length,
 				tvErrorCount: tvE.errors.length,
-				falsePositives,
-				falseNegatives,
+				localOnly,
+				tvOnly,
 				localParseError: localE.parseError,
 				tvParseError: tvE.parseError,
 				tvExitCode: tv.code,
@@ -111,33 +115,33 @@ async function main() {
 	const summary = {
 		v6Total: v6Paths.length,
 		scanned: targets.length,
-		filesWithFalsePositives: 0,
-		filesWithFalseNegatives: 0,
-		totalFalsePositives: 0,
-		totalFalseNegatives: 0,
+		filesWithLocalOnly: 0,
+		filesWithTvOnly: 0,
+		totalLocalOnly: 0,
+		totalTvOnly: 0,
 		tvUnparseable: 0,
 		localUnparseable: 0,
 	};
-	const fpByMessage = new Map();
-	const fnByMessage = new Map();
-	const fpExamples = new Map();
-	const fnExamples = new Map();
+	const localOnlyByMessage = new Map();
+	const tvOnlyByMessage = new Map();
+	const localOnlyExamples = new Map();
+	const tvOnlyExamples = new Map();
 	for (const r of fileReports) {
 		if (!r.localOk) summary.localUnparseable++;
 		if (!r.tvOk) summary.tvUnparseable++;
-		if (r.falsePositives.length > 0) summary.filesWithFalsePositives++;
-		if (r.falseNegatives.length > 0) summary.filesWithFalseNegatives++;
-		summary.totalFalsePositives += r.falsePositives.length;
-		summary.totalFalseNegatives += r.falseNegatives.length;
-		for (const e of r.falsePositives) {
+		if (r.localOnly.length > 0) summary.filesWithLocalOnly++;
+		if (r.tvOnly.length > 0) summary.filesWithTvOnly++;
+		summary.totalLocalOnly += r.localOnly.length;
+		summary.totalTvOnly += r.tvOnly.length;
+		for (const e of r.localOnly) {
 			const m = e.message.slice(0, 200);
-			fpByMessage.set(m, (fpByMessage.get(m) ?? 0) + 1);
-			if (!fpExamples.has(m)) fpExamples.set(m, { file: r.file, line: e.line, col: e.col });
+			localOnlyByMessage.set(m, (localOnlyByMessage.get(m) ?? 0) + 1);
+			if (!localOnlyExamples.has(m)) localOnlyExamples.set(m, { file: r.file, line: e.line, col: e.col });
 		}
-		for (const e of r.falseNegatives) {
+		for (const e of r.tvOnly) {
 			const m = e.message.slice(0, 200);
-			fnByMessage.set(m, (fnByMessage.get(m) ?? 0) + 1);
-			if (!fnExamples.has(m)) fnExamples.set(m, { file: r.file, line: e.line, col: e.col });
+			tvOnlyByMessage.set(m, (tvOnlyByMessage.get(m) ?? 0) + 1);
+			if (!tvOnlyExamples.has(m)) tvOnlyExamples.set(m, { file: r.file, line: e.line, col: e.col });
 		}
 	}
 
@@ -145,26 +149,26 @@ async function main() {
 	const reportPath = join(OUT_DIR, "real-failures.json");
 	await writeFile(reportPath, JSON.stringify({
 		summary,
-		topFalsePositives: [...fpByMessage.entries()].sort((a, b) => b[1] - a[1]).slice(0, 50).map(([m, c]) => ({ message: m, count: c, example: fpExamples.get(m) })),
-		topFalseNegatives: [...fnByMessage.entries()].sort((a, b) => b[1] - a[1]).slice(0, 50).map(([m, c]) => ({ message: m, count: c, example: fnExamples.get(m) })),
+		topLocalOnly: [...localOnlyByMessage.entries()].sort((a, b) => b[1] - a[1]).slice(0, 50).map(([m, c]) => ({ message: m, count: c, example: localOnlyExamples.get(m) })),
+		topTvOnly: [...tvOnlyByMessage.entries()].sort((a, b) => b[1] - a[1]).slice(0, 50).map(([m, c]) => ({ message: m, count: c, example: tvOnlyExamples.get(m) })),
 		files: fileReports,
 	}, null, 2));
 
 	console.log(`\n=== summary ===`);
 	console.log(`v6 scanned:                 ${summary.scanned}`);
-	console.log(`files with false positives: ${summary.filesWithFalsePositives}`);
-	console.log(`files with false negatives: ${summary.filesWithFalseNegatives}`);
-	console.log(`total false positives:      ${summary.totalFalsePositives}`);
-	console.log(`total false negatives:      ${summary.totalFalseNegatives}`);
+	console.log(`files with local-only errs: ${summary.filesWithLocalOnly}`);
+	console.log(`files with tv-only errs:    ${summary.filesWithTvOnly}`);
+	console.log(`total local-only:           ${summary.totalLocalOnly}`);
+	console.log(`total tv-only:              ${summary.totalTvOnly}`);
 	console.log(`TV response unparseable:    ${summary.tvUnparseable}`);
 	console.log(`local response unparseable: ${summary.localUnparseable}`);
 
-	console.log(`\ntop 15 false-positive messages:`);
-	for (const [m, c] of [...fpByMessage.entries()].sort((a, b) => b[1] - a[1]).slice(0, 15)) {
+	console.log(`\ntop 15 local-only messages (we flag, TV silent — investigate per category):`);
+	for (const [m, c] of [...localOnlyByMessage.entries()].sort((a, b) => b[1] - a[1]).slice(0, 15)) {
 		console.log(`  ${String(c).padStart(5)}  ${m}`);
 	}
-	console.log(`\ntop 15 false-negative messages:`);
-	for (const [m, c] of [...fnByMessage.entries()].sort((a, b) => b[1] - a[1]).slice(0, 15)) {
+	console.log(`\ntop 15 tv-only messages (TV flags, we silent — investigate per category):`);
+	for (const [m, c] of [...tvOnlyByMessage.entries()].sort((a, b) => b[1] - a[1]).slice(0, 15)) {
 		console.log(`  ${String(c).padStart(5)}  ${m}`);
 	}
 	console.log(`\nfull report: ${reportPath}`);
