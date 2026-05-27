@@ -1,0 +1,23 @@
+// @test regression/INV005-bool-param-and-or
+// @description User-defined function and method parameters with declared types must keep those types in the body. Specifically, a `bool` param used in `and`/`or`/`not`/ternary-condition must not be re-inferred as series<float>. See investigations/INV005-udf-param-type/notes.md.
+// @expects parse: success
+// @expects no-errors
+//@version=6
+indicator("t")
+
+f(bool a, bool b) =>
+    a and b
+
+g(int x, int y) =>
+    x > y
+
+h(bool flag) =>
+    flag ? 1 : 0
+
+type Wrapper
+    int v = 0
+
+method m(Wrapper w, bool flag) =>
+    flag and w.v > 0
+
+plot(close)

@@ -1017,12 +1017,22 @@ export class UnifiedPineValidator {
 		// Enter a temporary scope for type inference
 		this.symbolTable.enterScope();
 
-		// Add function parameters to temporary scope
+		// Add function parameters to temporary scope. Honour the declared
+		// type when present — without this, a `bool a` parameter would be
+		// registered as `series<float>` here, the body's `a and b`
+		// expression would be cached with `a: series<float>`, and the
+		// subsequent full validation pass would read the wrong type from
+		// cache and report "Operator 'and' requires bool operands, but
+		// left operand is series<float>". For untyped UDF params, fall
+		// back to `series<float>` as before. see INV005.
 		if (params) {
 			for (const param of params) {
+				const paramType: PineType = param.typeAnnotation
+					? mapToPineType(param.typeAnnotation.name)
+					: "series<float>";
 				this.symbolTable.define({
 					name: param.name,
-					type: "series<float>", // Default assumption for UDF params
+					type: paramType,
 					line: 0,
 					column: 0,
 					used: false,

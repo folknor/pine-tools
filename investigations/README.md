@@ -33,3 +33,6 @@ file rather than renumbering.
   / function parameters, qualifier + user-defined type, parameter-scope
 - [INV004](INV004-array-suffix-in-params/notes.md) — parser, method /
   function parameters, `T[]` array-suffix syntax, mapToPineType
+- [INV005](INV005-udf-param-type/notes.md) — type-inference,
+  inferFunctionReturnType, UDF parameter type, expression cache,
+  bool-param-as-series-float

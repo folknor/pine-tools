@@ -31,6 +31,9 @@ and full index.
 - [INV004](investigations/INV004-array-suffix-in-params/notes.md) —
   parser, method / function parameters, `T[]` array-suffix syntax,
   mapToPineType
+- [INV005](investigations/INV005-udf-param-type/notes.md) —
+  type-inference, inferFunctionReturnType, UDF parameter type,
+  expression cache, bool-param-as-series-float
 
 ## Gotchas
 
