@@ -25,6 +25,9 @@ and full index.
   type-compatibility
 - [INV002](investigations/INV002-export-enum-type/notes.md) — parser,
   `export enum`, `export type`, library exports, symbol-table-cascade
+- [INV003](investigations/INV003-qualifier-user-type-param/notes.md) —
+  parser, method / function parameters, qualifier + user-defined
+  type, parameter-scope
 
 ## Gotchas
 

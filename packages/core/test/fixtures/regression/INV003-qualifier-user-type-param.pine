@@ -1,0 +1,18 @@
+// @test regression/INV003-qualifier-user-type-param
+// @description Method and function parameters declared with a qualifier (simple/series) followed by a user-defined type name must parse and register the parameter in the body scope. See investigations/INV003-qualifier-user-type-param/notes.md.
+// @expects parse: success
+// @expects no-errors
+//@version=6
+library("t")
+
+export enum Tz
+    Utc = "UTC"
+    Exchange = "Exchange"
+
+export method to_string(simple Tz timezone) =>
+    switch timezone
+        Tz.Utc => "Etc/UTC"
+        Tz.Exchange => "Exchange"
+
+export foo(series Tz timezone) =>
+    timezone == Tz.Utc

@@ -1552,6 +1552,27 @@ export class Parser {
 				typeKeywords[typeKeywords.length - 1] += genericType;
 			}
 
+			// `simple Tz timezone` / `series Tz timezone` — a qualifier
+			// followed by a user-defined type name (IDENTIFIER, not a
+			// type-keyword) followed by the param name. The qualifier loop
+			// above stops as soon as it sees an IDENTIFIER, so without this
+			// step we'd treat `Tz` as the param name and choke on
+			// `timezone`. Detect the pattern by peeking: current is
+			// IDENTIFIER, next is IDENTIFIER (or KEYWORD usable as a name).
+			// see INV003.
+			if (
+				typeKeywords.length > 0 &&
+				this.check(TokenType.IDENTIFIER)
+			) {
+				const next = this.peekNext();
+				if (
+					next?.type === TokenType.IDENTIFIER ||
+					next?.type === TokenType.KEYWORD
+				) {
+					typeKeywords.push(this.advance().value);
+				}
+			}
+
 			if (typeKeywords.length > 0) {
 				typeAnnotation = { name: typeKeywords.join(" ") };
 				// Next token should be the parameter name (identifier or keyword used as name)
