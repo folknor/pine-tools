@@ -5,7 +5,13 @@
 //
 // - localOnly: error we report at (line,col) that TV does not.
 // - tvOnly:    error TV reports at (line,col) that we do not.
-// Wording differences at the same position do NOT count as disagreement.
+// - samePositionDifferentMessage: both linters flag the same (line,col)
+//   but worded the error differently. In every case observed so far
+//   this is the same underlying bug seen through two vocabularies
+//   (e.g. our "Operator 'or' requires bool" vs TV's "Cannot call
+//   operator with argument…"); it is *not* a disagreement. Kept as a
+//   sanity check so reviewers can confirm the position overlap is
+//   genuine and not coincidental.
 //
 // The labels are navigation aids, not verdicts. Per CLAUDE.md, TV silence
 // is evidence — not authority. A `localOnly` finding may be us being
@@ -85,10 +91,44 @@ async function main() {
 			const localE = pickErrors(local.out);
 			const tvE = pickErrors(tv.out);
 
-			const tvKeys = new Set(tvE.errors.map((e) => `${e.line}:${e.col}`));
-			const localKeys = new Set(localE.errors.map((e) => `${e.line}:${e.col}`));
-			const localOnly = localE.errors.filter((e) => !tvKeys.has(`${e.line}:${e.col}`));
-			const tvOnly = tvE.errors.filter((e) => !localKeys.has(`${e.line}:${e.col}`));
+			const tvByPos = new Map();
+			for (const e of tvE.errors) {
+				const k = `${e.line}:${e.col}`;
+				if (!tvByPos.has(k)) tvByPos.set(k, []);
+				tvByPos.get(k).push(e);
+			}
+			const localByPos = new Map();
+			for (const e of localE.errors) {
+				const k = `${e.line}:${e.col}`;
+				if (!localByPos.has(k)) localByPos.set(k, []);
+				localByPos.get(k).push(e);
+			}
+
+			const localOnly = localE.errors.filter((e) => !tvByPos.has(`${e.line}:${e.col}`));
+			const tvOnly = tvE.errors.filter((e) => !localByPos.has(`${e.line}:${e.col}`));
+
+			// Same position, different message — both linters caught
+			// something at (line, col) but worded it differently. Usually
+			// this is just two correct linters with different wording; we
+			// surface it so reviewers can spot the rare case where it's
+			// actually two genuinely different bugs at the same column.
+			const samePositionDifferentMessage = [];
+			for (const [k, locals] of localByPos.entries()) {
+				const tvs = tvByPos.get(k);
+				if (!tvs) continue;
+				for (const local of locals) {
+					for (const tv of tvs) {
+						if (local.message !== tv.message) {
+							samePositionDifferentMessage.push({
+								line: local.line,
+								col: local.col,
+								localMessage: local.message,
+								tvMessage: tv.message,
+							});
+						}
+					}
+				}
+			}
 
 			fileReports[i] = {
 				file,
@@ -98,6 +138,7 @@ async function main() {
 				tvErrorCount: tvE.errors.length,
 				localOnly,
 				tvOnly,
+				samePositionDifferentMessage,
 				localParseError: localE.parseError,
 				tvParseError: tvE.parseError,
 				tvExitCode: tv.code,
@@ -117,8 +158,10 @@ async function main() {
 		scanned: targets.length,
 		filesWithLocalOnly: 0,
 		filesWithTvOnly: 0,
+		filesWithSamePosDifferentMessage: 0,
 		totalLocalOnly: 0,
 		totalTvOnly: 0,
+		totalSamePosDifferentMessage: 0,
 		tvUnparseable: 0,
 		localUnparseable: 0,
 	};
@@ -131,6 +174,10 @@ async function main() {
 		if (!r.tvOk) summary.tvUnparseable++;
 		if (r.localOnly.length > 0) summary.filesWithLocalOnly++;
 		if (r.tvOnly.length > 0) summary.filesWithTvOnly++;
+		if (r.samePositionDifferentMessage && r.samePositionDifferentMessage.length > 0) {
+			summary.filesWithSamePosDifferentMessage++;
+			summary.totalSamePosDifferentMessage += r.samePositionDifferentMessage.length;
+		}
 		summary.totalLocalOnly += r.localOnly.length;
 		summary.totalTvOnly += r.tvOnly.length;
 		for (const e of r.localOnly) {
@@ -155,13 +202,15 @@ async function main() {
 	}, null, 2));
 
 	console.log(`\n=== summary ===`);
-	console.log(`v6 scanned:                 ${summary.scanned}`);
-	console.log(`files with local-only errs: ${summary.filesWithLocalOnly}`);
-	console.log(`files with tv-only errs:    ${summary.filesWithTvOnly}`);
-	console.log(`total local-only:           ${summary.totalLocalOnly}`);
-	console.log(`total tv-only:              ${summary.totalTvOnly}`);
-	console.log(`TV response unparseable:    ${summary.tvUnparseable}`);
-	console.log(`local response unparseable: ${summary.localUnparseable}`);
+	console.log(`v6 scanned:                          ${summary.scanned}`);
+	console.log(`files with local-only errs:          ${summary.filesWithLocalOnly}`);
+	console.log(`files with tv-only errs:             ${summary.filesWithTvOnly}`);
+	console.log(`files with same-pos different-msg:   ${summary.filesWithSamePosDifferentMessage}`);
+	console.log(`total local-only:                    ${summary.totalLocalOnly}`);
+	console.log(`total tv-only:                       ${summary.totalTvOnly}`);
+	console.log(`total same-pos different-msg pairs:  ${summary.totalSamePosDifferentMessage}`);
+	console.log(`TV response unparseable:             ${summary.tvUnparseable}`);
+	console.log(`local response unparseable:          ${summary.localUnparseable}`);
 
 	console.log(`\ntop 15 local-only messages (we flag, TV silent — investigate per category):`);
 	for (const [m, c] of [...localOnlyByMessage.entries()].sort((a, b) => b[1] - a[1]).slice(0, 15)) {
