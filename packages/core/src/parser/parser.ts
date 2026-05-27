@@ -1510,13 +1510,15 @@ export class Parser {
 			// Collect type keywords (qualifiers and base types)
 			const typeKeywords: string[] = [];
 			while (this.isTypeKeyword()) {
-				// Check what follows: if it's an identifier, < (generic), or any keyword, this is part of the type
-				// If it's = or , or ), this keyword is the parameter name
+				// Check what follows: if it's an identifier, < (generic), [ (array
+				// suffix), or any keyword, this is part of the type. If it's = / , /
+				// ) , this keyword is the parameter name.
 				const next = this.peekNext();
 				if (
 					next?.type === TokenType.IDENTIFIER ||
 					next?.type === TokenType.KEYWORD || // Any keyword can be a param name (e.g., 'type', 'color')
-					(next?.type === TokenType.COMPARE && next.value === "<")
+					(next?.type === TokenType.COMPARE && next.value === "<") ||
+					next?.type === TokenType.LBRACKET // array suffix `T[]` — see INV004
 				) {
 					// More type info or param name follows
 					typeKeywords.push(this.advance().value);
@@ -1570,6 +1572,21 @@ export class Parser {
 					next?.type === TokenType.KEYWORD
 				) {
 					typeKeywords.push(this.advance().value);
+				}
+			}
+
+			// `T[]` array-suffix syntax (e.g. `float[] xs`). The qualifier
+			// loop above already consumed `T` (the LBRACKET-aware continuation
+			// condition was extended in this same fix); now glue the `[]`
+			// onto the last collected type. see INV004.
+			if (
+				typeKeywords.length > 0 &&
+				this.check(TokenType.LBRACKET)
+			) {
+				this.advance(); // consume [
+				if (this.check(TokenType.RBRACKET)) {
+					this.advance(); // consume ]
+					typeKeywords[typeKeywords.length - 1] += "[]";
 				}
 			}
 

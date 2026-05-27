@@ -31,3 +31,5 @@ file rather than renumbering.
   `export type`, library exports, symbol-table-cascade
 - [INV003](INV003-qualifier-user-type-param/notes.md) — parser, method
   / function parameters, qualifier + user-defined type, parameter-scope
+- [INV004](INV004-array-suffix-in-params/notes.md) — parser, method /
+  function parameters, `T[]` array-suffix syntax, mapToPineType

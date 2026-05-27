@@ -211,6 +211,12 @@ export function mapToPineType(typeStr?: string): PineType {
 		return `array<${normalizeInnerType(arrayMatch[1])}>` as PineType;
 	}
 
+	// `T[]` short form for `array<T>` (e.g. `float[]`, `int[]`). see INV004.
+	const arraySuffixMatch = trimmed.match(/^(?:simple\s+)?(\w+)\[\]$/i);
+	if (arraySuffixMatch) {
+		return `array<${normalizeInnerType(arraySuffixMatch[1])}>` as PineType;
+	}
+
 	const matrixMatch = trimmed.match(/^(?:simple\s+)?matrix<(\w+)>$/i);
 	if (matrixMatch) {
 		return `matrix<${normalizeInnerType(matrixMatch[1])}>` as PineType;

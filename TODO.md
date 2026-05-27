@@ -28,6 +28,9 @@ and full index.
 - [INV003](investigations/INV003-qualifier-user-type-param/notes.md) —
   parser, method / function parameters, qualifier + user-defined
   type, parameter-scope
+- [INV004](investigations/INV004-array-suffix-in-params/notes.md) —
+  parser, method / function parameters, `T[]` array-suffix syntax,
+  mapToPineType
 
 ## Gotchas
 

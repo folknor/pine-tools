@@ -1,0 +1,17 @@
+// @test regression/INV004-array-suffix-in-params
+// @description Function and method parameters declared with the `T[]` array-suffix syntax must parse and register the parameter in the body scope. Equivalent to `array<T>`. See investigations/INV004-array-suffix-in-params/notes.md.
+// @expects parse: success
+// @expects no-errors
+//@version=6
+indicator("t")
+
+f(float[] xs, int[] ys) =>
+    array.size(xs) + array.size(ys)
+
+type Wrapper
+    int x = 0
+
+method m(Wrapper w, float[] tops, float[] bottoms) =>
+    array.size(tops) + array.size(bottoms) + w.x
+
+plot(close)
