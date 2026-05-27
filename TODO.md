@@ -3,15 +3,67 @@
 Discrepancies between our linter and TradingView's pine-lint over 748 v6
 fixtures.
 
-- **6609 false positives** (errors we report that TV doesn't) across 193
-  files, in **48 categories**.
-- **59 false negatives** (errors TV catches that we don't) across 43 files,
-  in **19 categories**.
+- **5732 false positives** (errors we report that TV doesn't), in **41
+  categories**. (Was 6609 in 48; net −877 hits, −7 categories.)
+- **67 false negatives** (errors TV catches that we don't), in **19
+  categories**. (Was 59; the +8 are previously-masked errors now visible
+  because the bool-coercion fix stopped raising over-strict errors that
+  hid TV's argument-type-mismatch reports.)
+
+## Resolved (2026-05-27)
+
+- **Numeric & color values in bool contexts** — added `isBoolCoercible` in
+  `packages/core/src/analyzer/types.ts` (bool ∪ numerics ∪ color); replaced
+  5 condition-site `isBoolType` calls in `checker.ts` and the `and`/`or`
+  operand check in `types.ts`. Removed 7 whole FP categories totalling
+  ~670 hits (`Operator 'and'/'or' requires bool operands, but left/right
+  operand is *`, `Type mismatch: 'not' operator requires bool, got *`,
+  `Ternary condition must be bool, got *`, `Condition must be boolean,
+  got *`).
+- **User-defined type name lowercasing** — fixed `mapToPineType` in
+  `packages/core/src/analyzer/builtins.ts` to preserve case for
+  user-defined inner types in `array<T>` / `matrix<T>` / `map<K,V>`. Added
+  `array<unknown>` / `array<type>` as assignable-to-anything in
+  `types.ts:isAssignable` to cover unresolved element types. Removed the
+  `Cannot assign array<X> to array<x>` category (85 hits).
+- **Bool-coercible to bool in function parameters** — extended
+  `types.ts:isAssignable` to accept `isBoolCoercible(from)` when target is
+  `bool` / `series<bool>` / `simple<bool>`. Removed the
+  `Type mismatch for parameter '*': expected *, got *` category (127
+  hits) and shrunk `Type mismatch for argument *` (98→85),
+  `Cannot assign * to *` (90→72), and `Type mismatch: cannot apply *` (238→231).
+
+## Newly visible (not regressions — were always FPs, just unblocked)
+
+- `Ternary branches must have compatible types. Got '*' and '*'` grew
+  41→43 because previously-masked `bool ? T : F` cases now reach the
+  branch-compat check. The branch-compat function in `checker.ts:715` is
+  intentionally stricter than `isAssignable`; the data shows TV doesn't
+  flag `bool`/numeric or `bool`/color mixes in branches, so this check
+  needs the same coercion treatment.
+- `Cannot call "{funId}" with argument ...` FNs grew 16→24 because TV's
+  argument-type-mismatch errors used to be at the same `(line, col)` as
+  our over-strict errors and counted as TPs by position; now we're silent
+  there. These are real bugs in the user's code that we should be
+  catching. Likely all gated by `hasOverloads()` in `builtins.ts`.
 
 Authoritative per-occurrence list lives in
 `lint-reports/failures-by-category.json`. For every category below the JSON
 holds every `(fixture, line, column, exact message)` that contributed to the
 count.
+
+## Scripts behind this report
+
+| script | purpose |
+|---|---|
+| `scripts/collect-pine-fixtures.mjs` | Walks a source tree (default `/home/folk/Programs`), dedupes `.pine` files by sha256, copies unique ones into `fixtures/<hash>.pine`. Run once to (re)build the corpus. |
+| `scripts/lint-fixtures.mjs` | Runs `pine-lint` (local) on every fixture and writes `lint-reports/fixtures-lint-report.json` — overall pass/fail counts, top error messages, slowest files. Cheap (~12s) — useful for "did this change make our linter worse on the corpus?" |
+| `scripts/lint-fixtures-by-version.mjs` | Cross-references the local-only report against each fixture's `//@version=N` directive — shows error distribution by Pine version and the top error messages restricted to v6 files. |
+| `scripts/compare-tv.mjs` | One file at a time: runs local + `--tv` in parallel, prints the error diff (false positives / false negatives) for that file. Repro tool. |
+| `scripts/find-real-failures.mjs` | Runs local + `--tv` on every v6 fixture, records per-file false positives (we flag, TV doesn't) and false negatives (TV flags, we don't). Writes `lint-reports/real-failures.json`. Hits TV ~750 times (~2 min at concurrency 4). |
+| `scripts/categorize-failures.mjs` | Reads `real-failures.json`, normalizes error messages into templates (strips line numbers, variable names, etc.), groups every occurrence under one of 48 / 19 categories, writes `lint-reports/failures-by-category.json`. |
+| `scripts/snapshot-local-lint.mjs` | Runs `pine-lint` (local) on every fixture and writes `lint-reports/local-baseline.json` — sorted per-file error lists. The regression contract. Re-run after every intentional change. |
+| `scripts/regression-check.mjs` | Reruns local lint over the corpus and diffs against the baseline. **No network.** Annotates disappeared errors against `real-failures.json` to distinguish "fixed a known FP" from "stopped catching a real error". Exits non-zero on any new error appearance. |
 
 Repro for any fixture:
 
@@ -19,12 +71,56 @@ Repro for any fixture:
 node scripts/compare-tv.mjs fixtures/<hash>.pine
 ```
 
-Refresh both reports after a change:
+---
+
+## Regression check — the local-only loop (paramount before any parser/lexer/type work)
+
+Before touching the parser, lexer, or type checker, snapshot the baseline:
 
 ```bash
-node scripts/find-real-failures.mjs --concurrency 4
-node scripts/categorize-failures.mjs
+node scripts/snapshot-local-lint.mjs    # ~12s, no network
 ```
+
+After every change, run the check:
+
+```bash
+node scripts/regression-check.mjs       # ~13s, no network
+```
+
+Interpreting the output:
+
+- **new error appearances > 0** → pure regression. The script exits 1.
+  Open `lint-reports/regression-report.json` → `filesChanged[*].appeared`
+  for the exact `(file, line, col, message)` of every new error.
+- **disappeared, known FP** → progress. These were on the false-positive
+  list in `real-failures.json`; you fixed them.
+- **disappeared, suspicious** → an error went away that was NOT a known
+  false positive. Could be a legitimate cascade-collapse from a parser
+  recovery fix, or could be a real positive we've stopped catching. The
+  script prints the exact `compare-tv.mjs` commands needed to verify each
+  file (typically a handful, not 750).
+
+When the check is clean and the changes look right, re-snapshot to lock in
+the new baseline:
+
+```bash
+node scripts/snapshot-local-lint.mjs    # overwrites lint-reports/local-baseline.json
+```
+
+### Periodic re-baseline against TradingView
+
+The TV-touching pipeline only needs to run when you want to refresh the
+canonical FP/FN inventory and the category breakdown (after a substantial
+change, or before opening a new round of work):
+
+```bash
+node scripts/find-real-failures.mjs --concurrency 4    # ~2 min, 750 TV calls
+node scripts/categorize-failures.mjs                   # reads JSON, no network
+```
+
+This refreshes `lint-reports/real-failures.json` and
+`lint-reports/failures-by-category.json`, which the local regression check
+reads to annotate disappearances.
 
 ---
 
@@ -82,47 +178,6 @@ These are real syntax errors in the user's code that we don't surface.
 
 ---
 
-## Type checker — numeric series rejected in bool contexts
-
-Pine v6 truthifies numeric series (0/na → false). Our `and`/`or`/`not` and
-ternary/`if` condition checks demand strict `bool`. Update `types.ts` /
-`checker.ts` to accept `int`, `float`, `series<int>`, `series<float>` as
-bool-coercible.
-
-| count | files | category |
-|---|---|---|
-| 199 | 28 | `Operator 'and' requires bool operands, but left operand is *` |
-| 166 | 32 | `Ternary condition must be bool, got *` |
-| 130 | 20 | `Operator 'and' requires bool operands, but right operand is *` |
-| 59 | 17 | `Condition must be boolean, got *` |
-| 38 | 7 | `Type mismatch: 'not' operator requires bool, got *` |
-| 26 | 15 | `Operator 'or' requires bool operands, but left operand is *` |
-| 13 | 12 | `Operator 'or' requires bool operands, but right operand is *` |
-
-The categories above collapse two underlying issues — *numeric series* and
-*color* — distinguishable per occurrence in the JSON via the `got` value.
-
-## Type checker — color in bool contexts
-
-Pine treats `na` color as false; we reject color → bool entirely. Same
-category names as above; the JSON occurrences disambiguate via `got color`
-vs `got series<float>`.
-
-| count | files | category |
-|---|---|---|
-| 110 (of 127) | 6 | `Type mismatch for parameter 'active': expected bool, got color` |
-
-## Type checker — user-defined type name lowercasing
-
-Type-name comparison is case-insensitive on one side. `array<POI>` should
-equal `array<POI>`, not `array<poi>`.
-
-| count | files | category |
-|---|---|---|
-| 85 | 23 | `Cannot assign array<X> to array<x>` (case-mismatch class) |
-
-JSON shows the concrete type names (`POI`, `OrderBlock`, `Trade`, …).
-
 ## Type checker — over-strict operand/arg/branch types
 
 Probably a mix of legitimate-bug and over-strict-rule cases; need to walk
@@ -130,17 +185,21 @@ the JSON occurrences and decide per category.
 
 | count | files | category |
 |---|---|---|
-| 238 | 57 | `Type mismatch: cannot apply '*' to * and *` |
-| 98 | 45 | `Type mismatch for argument *: expected *, got *` |
-| 90 | 27 | `Cannot assign * to *` |
-| 41 | 14 | `Ternary branches must have compatible types. Got '*' and '*'` |
-| 127 | 6 | `Type mismatch for parameter '*': expected *, got *` (concentrated in 6 files — likely 1–2 root causes) |
+| 231 | 56 | `Type mismatch: cannot apply '*' to * and *` |
+| 85 | 40 | `Type mismatch for argument *: expected *, got *` |
+| 72 | 22 | `Cannot assign * to *` |
+| 43 | 14 | `Ternary branches must have compatible types. Got '*' and '*'` |
+
+**Next obvious fix**: ternary branch compatibility (`checker.ts:715`,
+`areTernaryBranchTypesCompatible`). TV data shows it accepts `bool`/numeric
+and `bool`/color mixes in branches; we reject. Extending it the same way
+we extended `isBoolCoercible` should remove most of the 43 hits.
 
 ## Type checker — false negatives
 
 | count | files | category |
 |---|---|---|
-| 16 | 8 | `Cannot call "{funId}" with argument ...` (arg type mismatches on built-ins we miss) |
+| 24 | 8 | `Cannot call "{funId}" with argument ...` (arg type mismatches on built-ins we miss) |
 | 3 | 3 | `Cannot assign * to *` (TV catches assignment type errors we don't) |
 | 2 | 2 | `Could not find {kind} '{fullName}'` |
 | 2 | 1 | `Cannot use a collection in a type template of another collection` |
@@ -149,7 +208,7 @@ the JSON occurrences and decide per category.
 | 2 | 2 | `Value with NA type cannot be assigned to a variable that was defined without type keyword` |
 | 1 | 1 | `Incorrect field type "{id}" of enum "{enumName}"` |
 
-The 16 missed argument-type-mismatches are particularly worth chasing —
+The 24 missed argument-type-mismatches are particularly worth chasing —
 these are real runtime bugs in the user's code that we'd hide. Look first
 at functions registered with `type: "unknown"` parameters (see
 `hasOverloads()` in `builtins.ts`) — that bypass skips positional type
@@ -236,11 +295,3 @@ TV.
   library-only constraints. Decide whether we want to implement those at all
   before counting them as bugs.
 
----
-
-## Measurement
-
-After each change, rerun the two scripts above and compare summary counts in
-`lint-reports/failures-by-category.json`. The cascade-driven Parser
-categories should drop sharply once sync lands; everything else should track
-distinct type-system / scope / pine-data fixes.

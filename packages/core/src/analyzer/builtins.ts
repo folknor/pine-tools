@@ -131,10 +131,34 @@ export interface ParameterInfo {
  * - "const bool" → "bool" (const qualifier stripped)
  * - "input int" → "int" (input qualifier stripped)
  */
+const BUILTIN_SCALAR_TYPES = new Set([
+	"int",
+	"float",
+	"bool",
+	"string",
+	"color",
+	"line",
+	"label",
+	"box",
+	"table",
+	"void",
+	"na",
+]);
+
+// Lowercase the inner type if it matches a built-in scalar; otherwise
+// preserve the original casing so user-defined types like `POI` survive.
+function normalizeInnerType(inner: string): string {
+	const trimmed = inner.trim();
+	const lower = trimmed.toLowerCase();
+	if (BUILTIN_SCALAR_TYPES.has(lower)) return lower;
+	return trimmed;
+}
+
 export function mapToPineType(typeStr?: string): PineType {
 	if (!typeStr) return "unknown";
 
-	const normalized = typeStr.toLowerCase().trim();
+	const trimmed = typeStr.trim();
+	const normalized = trimmed.toLowerCase();
 
 	const typeMap: Record<string, PineType> = {
 		int: "int",
@@ -177,22 +201,24 @@ export function mapToPineType(typeStr?: string): PineType {
 		return typeMap[normalized];
 	}
 
-	// Handle array types like "array<float>", "array<int>"
-	const arrayMatch = normalized.match(/^(?:simple\s+)?array<(\w+)>$/);
+	// For generic container types we match case-insensitively against the
+	// original (case-preserved) string and normalize only the inner type
+	// when it's a known built-in. This keeps user-defined type names like
+	// `POI` from being silently lowercased to `poi`.
+
+	const arrayMatch = trimmed.match(/^(?:simple\s+)?array<(\w+)>$/i);
 	if (arrayMatch) {
-		return `array<${arrayMatch[1]}>` as PineType;
+		return `array<${normalizeInnerType(arrayMatch[1])}>` as PineType;
 	}
 
-	// Handle matrix types like "matrix<float>"
-	const matrixMatch = normalized.match(/^(?:simple\s+)?matrix<(\w+)>$/);
+	const matrixMatch = trimmed.match(/^(?:simple\s+)?matrix<(\w+)>$/i);
 	if (matrixMatch) {
-		return `matrix<${matrixMatch[1]}>` as PineType;
+		return `matrix<${normalizeInnerType(matrixMatch[1])}>` as PineType;
 	}
 
-	// Handle map types like "map<string, float>"
-	const mapMatch = normalized.match(/^(?:simple\s+)?map<(\w+),\s*(\w+)>$/);
+	const mapMatch = trimmed.match(/^(?:simple\s+)?map<(\w+),\s*(\w+)>$/i);
 	if (mapMatch) {
-		return `map<${mapMatch[1]}, ${mapMatch[2]}>` as PineType;
+		return `map<${normalizeInnerType(mapMatch[1])}, ${normalizeInnerType(mapMatch[2])}>` as PineType;
 	}
 
 	return "unknown";

@@ -146,17 +146,17 @@ export namespace TypeChecker {
 		if (to === "unknown" || from === "unknown") return true;
 		if (isNaType(from)) return true; // na is assignable to any type (const<na>, series<na>, etc.)
 
-		// Array type coercion: array<type> (unresolved element type) is assignable to any array
-		// This handles cases where type inference couldn't determine the element type
+		// Array type coercion: array<type> or array<unknown> (unresolved element
+		// type) is assignable to any array. This handles cases where type
+		// inference couldn't determine the element type — we can't prove the
+		// assignment is wrong, so accept it rather than emit a false positive.
 		const fromStr = from as string;
 		const toStr = to as string;
 		if (fromStr.startsWith("array<") && toStr.startsWith("array<")) {
-			const fromElement = fromStr.slice(6, -1); // Extract element type from array<T>
+			const fromElement = fromStr.slice(6, -1);
 			const toElement = toStr.slice(6, -1);
-			// If source element type is "type" (unresolved), allow assignment to any array
-			if (fromElement === "type") return true;
-			// If target element type is "type" (unresolved), allow any array to be assigned
-			if (toElement === "type") return true;
+			if (fromElement === "type" || fromElement === "unknown") return true;
+			if (toElement === "type" || toElement === "unknown") return true;
 		}
 
 		// Handle union types in target (e.g., "series int/float" accepts both int and float)
@@ -183,6 +183,17 @@ export namespace TypeChecker {
 		if (from === "bool" && to === "series<bool>") return true;
 		if (from === "string" && to === "series<string>") return true;
 		if (from === "color" && to === "series<color>") return true;
+
+		// Any bool-coercible type (numerics, color) assigns to a bool
+		// destination. Pine truthifies these at runtime via 0/na-vs-non-na,
+		// so a function parameter typed `bool` accepts a `color` argument
+		// the same way `if some_color` is a valid condition.
+		if (
+			isBoolCoercible(from as PineType) &&
+			(to === "bool" || to === "series<bool>" || to === "simple<bool>")
+		) {
+			return true;
+		}
 
 		// Cross-type numeric coercion to series
 		if (from === "int" && to === "series<float>") return true;
@@ -372,9 +383,9 @@ export namespace TypeChecker {
 			return isAssignable(left, right) || isAssignable(right, left);
 		}
 
-		// Logical operators require bool types only
+		// Logical operators accept anything bool-coercible (bool + numerics)
 		if (["and", "or"].includes(operator)) {
-			return isBoolType(left) && isBoolType(right);
+			return isBoolCoercible(left) && isBoolCoercible(right);
 		}
 
 		return false;
@@ -440,6 +451,14 @@ export namespace TypeChecker {
 		return (
 			type === "bool" || type === "series<bool>" || type === "simple<bool>"
 		);
+	}
+
+	// Pine v6 truthifies values in boolean contexts via na-presence and
+	// (for numerics) zero-vs-nonzero. Bool, numerics, and color all qualify.
+	// Use this — not isBoolType — at condition sites (`if`, `while`,
+	// ternary condition, `and`/`or`/`not` operands).
+	export function isBoolCoercible(type: PineType): boolean {
+		return isBoolType(type) || isNumericType(type) || isColorType(type);
 	}
 
 	export function isStringType(type: PineType): boolean {
