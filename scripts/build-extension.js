@@ -68,7 +68,14 @@ const mcpConfig = {
 	external: [], // Bundle everything for the MCP server
 };
 
-// Build the CLI
+// Build the CLI. __BUILD_TIME__ is replaced at bundle time so `pine-lint
+// --version` reports when this binary was produced, in the builder's local
+// timezone (second granularity).
+const buildTime = (() => {
+	const d = new Date();
+	const pad = (n) => String(n).padStart(2, "0");
+	return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+})();
 const cliConfig = {
 	...commonOptions,
 	entryPoints: ["packages/cli/src/cli.ts"],
@@ -76,6 +83,9 @@ const cliConfig = {
 	external: [],
 	banner: {
 		js: "#!/usr/bin/env node",
+	},
+	define: {
+		__BUILD_TIME__: JSON.stringify(buildTime),
 	},
 };
 

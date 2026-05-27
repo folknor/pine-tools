@@ -12,40 +12,66 @@ import {
 import { Parser } from "../../core/src/parser/parser";
 import { SemanticAnalyzer } from "../../core/src/parser/semanticAnalyzer";
 
-const HELP = `Usage: pine-validate [options] [file.pine]
+// Replaced by esbuild's `define` at build time (see scripts/build-extension.js).
+// Falls back to "dev" if the file is run outside the bundle (e.g. via ts-node).
+declare const __BUILD_TIME__: string;
+const BUILD_TIME =
+	typeof __BUILD_TIME__ !== "undefined" ? __BUILD_TIME__ : "dev";
+
+const HELP = `Usage: pine-lint [options] [file.pine]
 
 Validate a Pine Script source. Reads from a file path, an inline string, or stdin.
 
 Options:
   -c, --code <pinescript>   Validate the given Pine Script string instead of a file
+      --tv                  Send the source to TradingView's translate_light endpoint
+                            and return its response instead of running locally
+      --full-response       With --tv, keep the verbose "scopes" block in the result
+                            (stripped by default)
+  -V, --version             Print the build timestamp and exit
   -h, --help                Show this help and exit
 
 Input sources (pick one):
-  pine-validate path/to/script.pine
-  pine-validate --code 'indicator("x") plot(close)'
-  cat script.pine | pine-validate -
+  pine-lint path/to/script.pine
+  pine-lint --code 'indicator("x") plot(close)'
+  cat script.pine | pine-lint -
 
 Output: JSON on stdout matching the pine-lint format.`;
 
 interface ParsedArgs {
 	help: boolean;
+	version: boolean;
 	code?: string;
 	filePath?: string;
 	stdin: boolean;
+	tv: boolean;
+	fullResponse: boolean;
 }
 
 function parseArgs(argv: string[]): ParsedArgs {
-	const parsed: ParsedArgs = { help: false, stdin: false };
+	const parsed: ParsedArgs = {
+		help: false,
+		version: false,
+		stdin: false,
+		tv: false,
+		fullResponse: false,
+	};
 	for (let i = 0; i < argv.length; i++) {
 		const arg = argv[i];
 		if (arg === "-h" || arg === "--help") {
 			parsed.help = true;
+		} else if (arg === "-V" || arg === "--version") {
+			parsed.version = true;
 		} else if (arg === "-c" || arg === "--code") {
 			const value = argv[++i];
 			if (value === undefined) {
 				throw new Error(`Missing value for ${arg}`);
 			}
 			parsed.code = value;
+		} else if (arg === "--tv") {
+			parsed.tv = true;
+		} else if (arg === "--full-response") {
+			parsed.fullResponse = true;
 		} else if (arg === "-") {
 			parsed.stdin = true;
 		} else if (arg.startsWith("-")) {
@@ -57,6 +83,36 @@ function parseArgs(argv: string[]): ParsedArgs {
 		}
 	}
 	return parsed;
+}
+
+// POST the Pine source to TradingView's translate_light endpoint. Mirrors the
+// Python pinescript_checker.py: multipart "source" field, the same Referer /
+// User-Agent / DNT headers, 10s timeout. Returns the parsed JSON body.
+async function checkWithTradingView(code: string): Promise<unknown> {
+	const url =
+		"https://pine-facade.tradingview.com/pine-facade/translate_light?user_name=admin&v=3";
+	const headers: Record<string, string> = {
+		Referer: "https://www.tradingview.com/",
+		"User-Agent":
+			"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
+		DNT: "1",
+	};
+	const form = new FormData();
+	form.append("source", code);
+
+	const controller = new AbortController();
+	const timer = setTimeout(() => controller.abort(), 10_000);
+	try {
+		const resp = await fetch(url, {
+			method: "POST",
+			body: form,
+			headers,
+			signal: controller.signal,
+		});
+		return await resp.json();
+	} finally {
+		clearTimeout(timer);
+	}
 }
 
 async function main() {
@@ -71,6 +127,11 @@ async function main() {
 
 	if (parsed.help) {
 		console.log(HELP);
+		process.exit(0);
+	}
+
+	if (parsed.version) {
+		console.log(BUILD_TIME);
 		process.exit(0);
 	}
 
@@ -107,6 +168,30 @@ async function main() {
 			process.exit(1);
 		}
 		code = fs.readFileSync(absolutePath, "utf-8");
+	}
+
+	if (parsed.tv) {
+		try {
+			const tvResult = (await checkWithTradingView(code)) as {
+				success?: boolean;
+				result?: Record<string, unknown>;
+			};
+			if (!parsed.fullResponse && tvResult.result) {
+				delete tvResult.result.scopes;
+			}
+			console.log(JSON.stringify(tvResult));
+			process.exit(tvResult.success === false ? 1 : 0);
+		} catch (e) {
+			const msg = (e as Error).message;
+			console.log(
+				JSON.stringify({
+					success: false,
+					error: `Network request failed: ${msg}`,
+					errors: [],
+				}),
+			);
+			process.exit(1);
+		}
 	}
 
 	try {
