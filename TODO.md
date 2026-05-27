@@ -3,90 +3,37 @@
 Discrepancies between our linter and TradingView's pine-lint over 748 v6
 fixtures.
 
-- **5732 false positives** (errors we report that TV doesn't), in **41
-  categories**. (Was 6609 in 48; net −877 hits, −7 categories.)
-- **67 false negatives** (errors TV catches that we don't), in **19
-  categories**. (Was 59; the +8 are previously-masked errors now visible
-  because the bool-coercion fix stopped raising over-strict errors that
-  hid TV's argument-type-mismatch reports.)
+- **6483 false positives** (errors we report that TV doesn't), in **46
+  categories**. (Was 6609 in 48; net −126 hits, −2 categories.)
+- **59 false negatives** (errors TV catches that we don't), in **19
+  categories**. (Unchanged.)
 
 ## Resolved (2026-05-27)
 
-- **Numeric & color values in bool contexts** — added `isBoolCoercible` in
-  `packages/core/src/analyzer/types.ts` (bool ∪ numerics ∪ color); replaced
-  5 condition-site `isBoolType` calls in `checker.ts` and the `and`/`or`
-  operand check in `types.ts`. Removed 7 whole FP categories totalling
-  ~670 hits (`Operator 'and'/'or' requires bool operands, but left/right
-  operand is *`, `Type mismatch: 'not' operator requires bool, got *`,
-  `Ternary condition must be bool, got *`, `Condition must be boolean,
-  got *`).
 - **User-defined type name lowercasing** — fixed `mapToPineType` in
   `packages/core/src/analyzer/builtins.ts` to preserve case for
-  user-defined inner types in `array<T>` / `matrix<T>` / `map<K,V>`. Added
-  `array<unknown>` / `array<type>` as assignable-to-anything in
-  `types.ts:isAssignable` to cover unresolved element types. Removed the
-  `Cannot assign array<X> to array<x>` category (85 hits).
-- **Bool-coercible to bool in function parameters** — extended
-  `types.ts:isAssignable` to accept `isBoolCoercible(from)` when target is
-  `bool` / `series<bool>` / `simple<bool>`. Removed the
-  `Type mismatch for parameter '*': expected *, got *` category (127
-  hits) and shrunk `Type mismatch for argument *` (98→85),
-  `Cannot assign * to *` (90→72), and `Type mismatch: cannot apply *` (238→231).
+  user-defined inner types in `array<T>` / `matrix<T>` / `map<K,V>`.
+  Added `array<unknown>` / `array<type>` as assignable-to-anything in
+  `types.ts:isAssignable` to cover unresolved element types. Removed
+  the `Cannot assign array<X> to array<x>` category (85 hits).
+- **Ternary branch type-compatibility removed** — TV accepts every
+  cross-type ternary branch mix in our corpus
+  (`color`/`string`, `color`/`int`, `simple<string>`/`series<float>`,
+  even `bool`/`color`). Dropped the
+  `areTernaryBranchTypesCompatible` check from `checker.ts`. Removed
+  the `Ternary branches must have compatible types. Got '*' and '*'`
+  category (43 hits).
 
-## Open concern — bool-coercion may be too permissive
+## Reverted (2026-05-27)
 
-Investigation after the coercion fix landed: pine-lint --tv strictly
-enforces bool in `if`/`while`/`and`/`or`/`not`/ternary contexts. Direct
-verification:
-
-```
-pine-lint --tv --code '//@version=6
-indicator("t")
-my_int = 5
-if my_int
-    label.new(bar_index, close, "test")'
-# → errors: 1
-#   The condition of the "{blockName}" statement must evaluate to a "bool" value.
-```
-
-So `isBoolCoercible` accepting numerics and color in condition sites is
-*too permissive* — TV does not auto-coerce. The 670+ FPs that
-disappeared after that fix appear to be a mix of:
-
-1. **Wins**: our type inference incorrectly tagged the expression as
-   non-bool (e.g. inferred `series<float>` where TV inferred
-   `series<bool>` because the value was a comparison). TV is silent at
-   those positions because *both* the type and the bool-context are
-   fine in TV's model. Our fix unmasks them because we now skip the
-   bool check entirely.
-2. **Losses (+8 FNs)**: cases like `123 or false`, `if my_float_var` —
-   real bugs in user code where the variable / literal *is* numeric.
-   TV correctly errors; we used to error (with our own wording) and
-   now we're silent. These appear in the `Cannot call "{funId}" with
-   argument ...` FN category (count grew 16 → 24) and in three of our
-   own validation fixtures (`packages/core/test/fixtures/validation/
-   logical-operators-errors.pine`, `type-errors-operators.pine`,
-   `ternary-branch-types.pine`) — which the test runner currently
-   *doesn't* actually exercise (it only honors `error: line=...`
-   directives, not bare `errors: N`).
-
-**The correct fix** is to leave the bool-context check strict and fix
-the type-inference site that produces `series<float>` (or `color`)
-where the expression should be `series<bool>`. Likely sites:
-
-- Comparison expressions returning the wrong type
-- User-defined / library-imported function return types missing
-- `ta.*` / `request.*` functions with stale or incomplete signatures
-
-Until the inference is fixed, the current state is a net trade-off:
-−877 FPs in exchange for +8 FNs. **Do not extend this coercion further
-without an inference-side fix.**
-
-## Newly visible (not regressions — were always FPs, just unblocked)
-
-- `Ternary branches must have compatible types. Got '*' and '*'` was
-  surfaced in the same way; subsequently removed entirely after TV
-  data confirmed it never errors on cross-type branches.
+- **Bool-coercion in condition sites** (initially landed, then
+  reverted). Adding `isBoolCoercible` and routing `if`/`and`/`or`/
+  `not`/ternary/parameter-bool through it removed ~670 FPs at the
+  cost of +8 FNs. Direct `pine-lint --tv` verification showed TV
+  strictly enforces bool everywhere; the 670 disappearances were
+  masking our own type-inference bugs (we infer `series<float>` /
+  `color` where TV correctly infers `series<bool>`). The right fix
+  is to repair the inference, not relax the check. See task #9.
 
 Authoritative per-occurrence list lives in
 `lint-reports/failures-by-category.json`. For every category below the JSON
@@ -219,22 +166,29 @@ These are real syntax errors in the user's code that we don't surface.
 
 ---
 
-## Type checker — over-strict operand/arg/branch types
+## Type checker — over-strict bool / arg / assign rules
 
-Probably a mix of legitimate-bug and over-strict-rule cases; need to walk
-the JSON occurrences and decide per category.
+The single biggest cluster. These look like over-strict rules but per
+task #9 the root cause is more likely our type inference producing
+non-bool types where TV correctly produces bool.
 
 | count | files | category |
 |---|---|---|
-| 231 | 56 | `Type mismatch: cannot apply '*' to * and *` |
-| 85 | 40 | `Type mismatch for argument *: expected *, got *` |
-| 72 | 22 | `Cannot assign * to *` |
-| 43 | 14 | `Ternary branches must have compatible types. Got '*' and '*'` |
+| 238 | 57 | `Type mismatch: cannot apply '*' to * and *` |
+| 199 | 28 | `Operator 'and' requires bool operands, but left operand is *` |
+| 166 | 32 | `Ternary condition must be bool, got *` |
+| 130 | 20 | `Operator 'and' requires bool operands, but right operand is *` |
+| 127 | 6 | `Type mismatch for parameter '*': expected *, got *` |
+| 98 | 45 | `Type mismatch for argument *: expected *, got *` |
+| 90 | 27 | `Cannot assign * to *` |
+| 59 | 17 | `Condition must be boolean, got *` |
+| 38 | 7 | `Type mismatch: 'not' operator requires bool, got *` |
+| 26 | 15 | `Operator 'or' requires bool operands, but left operand is *` |
+| 13 | 12 | `Operator 'or' requires bool operands, but right operand is *` |
 
-**Next obvious fix**: ternary branch compatibility (`checker.ts:715`,
-`areTernaryBranchTypesCompatible`). TV data shows it accepts `bool`/numeric
-and `bool`/color mixes in branches; we reject. Extending it the same way
-we extended `isBoolCoercible` should remove most of the 43 hits.
+**Right approach**: pick a specific FP, trace through `inferExpressionType`
+in `checker.ts` to see why we produce e.g. `series<float>` for what
+should be `series<bool>`. Don't relax the bool checks — they're correct.
 
 ## Type checker — false negatives
 
@@ -288,10 +242,14 @@ files) is the same shape applied to identifiers in syntactic positions.
 
 ---
 
-## pine-data — stale or incomplete built-in surface
+## pine-data — scraper missing v6 built-ins
 
-We reject access to built-ins that exist in v6. Likely the scraper missed
-fields, or v6 added them after the last regen.
+We reject access to built-ins that exist in v6. Pine-data was regenerated
+2026-05-26 and these are still absent from `pine-data/v6/variables.json`
+— verified via `pine-lint --tv` that TradingView accepts code referencing
+them (`syminfo.target_price_average`, `ta.accdist`, `chart.point`, etc.).
+So the scraper is missing them; fix belongs in the pipeline scripts, not
+the generated files (which would be lost on next regen).
 
 | count | files | category |
 |---|---|---|
