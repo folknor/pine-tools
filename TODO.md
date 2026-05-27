@@ -41,6 +41,9 @@ and full index.
 - [INV008](investigations/INV008-if-body-indent-leak/notes.md) —
   parser, ifStatement, body indent, scope leak, blockDepth-stuck,
   also fixes task #4
+- [INV009](investigations/INV009-cannot-call-fns-mostly-column-shifts/notes.md)
+  — analysis, "Cannot call" FNs, column shifts, polymorphic bypass,
+  pine-data unions
 
 ## Gotchas
 
