@@ -1,0 +1,25 @@
+// @test regression/INV011-input-polymorphism
+// @description input(defval, …) must return the type of defval — `bool` for bool defvals, `int` for int, `float` for float, `string` for string. The bundled CLI used to lose function-behavior.json at runtime and fall back to a wrong default. See investigations/INV011-bundled-function-behavior-not-loaded/notes.md.
+// @expects parse: success
+// @expects no-errors
+//@version=6
+indicator("t")
+
+useBool   = input(true,  "Use Bool")
+useInt    = input(5,     "Use Int")
+useFloat  = input(0.5,   "Use Float")
+useString = input("foo", "Use String")
+
+// useBool must be bool for these expressions to type-check.
+condResult  = useBool ? 1 : 0
+gateResult  = useBool and useInt > 0
+
+// useInt and useFloat must be numeric for arithmetic.
+sum  = useInt + useFloat
+
+// useString must be string for comparison to a string literal.
+match = useString == "foo"
+
+plot(condResult)
+plot(sum)
+plot(match ? 1 : 0)

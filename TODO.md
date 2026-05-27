@@ -47,6 +47,9 @@ and full index.
 - [INV010](investigations/INV010-udf-tuple-return-types/notes.md) —
   type-inference, inferTupleElementTypes, UDF tuple destructure,
   bool-as-series-float
+- [INV011](investigations/INV011-bundled-function-behavior-not-loaded/notes.md)
+  — bundle, esbuild, __dirname, function-behavior.json,
+  polymorphic-resolution-disabled
 
 ## Gotchas
 
