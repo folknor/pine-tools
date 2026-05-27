@@ -906,12 +906,14 @@ export class UnifiedPineValidator {
 			return; // Skip further parameter validation for variadic functions
 		}
 
-		// For functions with overloads, skip positional type checking
-		// (we can't reliably determine which overload is being used)
+		// Two bypasses below — read INV009 before tightening either of them.
+		// pine-data lists only one overload's types for polymorphic /
+		// overloaded functions, so removing these bypasses without first
+		// widening the data (see task #17) would turn the 3 real argument-
+		// type-mismatch FNs documented in INV009 into many FPs across the
+		// corpus. Both bypasses must be retained until pine-data emits
+		// union types for these params.
 		const functionHasOverloads = hasOverloads(functionName);
-
-		// For polymorphic functions, skip parameter type checking
-		// (the function signature shows one type but accepts multiple)
 		const functionIsPolymorphic =
 			getPolymorphicType(functionName) !== undefined ||
 			getFunctionBehavior(functionName)?.polymorphic !== undefined;

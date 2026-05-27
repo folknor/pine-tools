@@ -8,50 +8,74 @@
 Discrepancies between our linter and TradingView's pine-lint over 748 v6
 fixtures.
 
-- **6524 disagreements where we flag and TV doesn't** ("FP"-labelled),
-  in **47 categories**. Some are genuine over-strictness in our linter;
-  some are us correctly catching what TV missed (see INV001 for the
-  canonical example).
-- **59 disagreements where TV flags and we don't** ("FN"-labelled),
-  in **19 categories**.
+- **disagreements where we flag and TV doesn't** ("FP"-labelled) —
+  some are genuine over-strictness in our linter, some are us
+  correctly catching what TV missed (see INV001 for the canonical
+  example).
+- **disagreements where TV flags and we don't** ("FN"-labelled).
 
-## Investigations
+Current counts live in `lint-reports/failures-by-category.json` —
+regenerate with `node scripts/find-real-failures.mjs` followed by
+`node scripts/categorize-failures.mjs`. Past investigations are
+indexed at [investigations/README.md](investigations/README.md)
+and are not duplicated here — TODO.md is for *pending* work only.
 
-See [investigations/README.md](investigations/README.md) for the format
-and full index.
+## Pending follow-ups
 
-- [INV001](investigations/INV001-ternary-branch-compat/notes.md) —
-  ternary branches, cross-type, TV-silent-on-nonsense,
-  type-compatibility
-- [INV002](investigations/INV002-export-enum-type/notes.md) — parser,
-  `export enum`, `export type`, library exports, symbol-table-cascade
-- [INV003](investigations/INV003-qualifier-user-type-param/notes.md) —
-  parser, method / function parameters, qualifier + user-defined
-  type, parameter-scope
-- [INV004](investigations/INV004-array-suffix-in-params/notes.md) —
-  parser, method / function parameters, `T[]` array-suffix syntax,
-  mapToPineType
-- [INV005](investigations/INV005-udf-param-type/notes.md) —
-  type-inference, inferFunctionReturnType, UDF parameter type,
-  expression cache, bool-param-as-series-float
-- [INV006](investigations/INV006-method-variable-namespace/notes.md) —
-  symbol-table, Scope, methods, variables, namespace, lookupCallable
-- [INV007](investigations/INV007-type-body-blank-line/notes.md) —
-  parser, type/enum body, blank-line, NEWLINE indent, body-skip
-- [INV008](investigations/INV008-if-body-indent-leak/notes.md) —
-  parser, ifStatement, body indent, scope leak, blockDepth-stuck,
-  also fixes task #4
-- [INV009](investigations/INV009-cannot-call-fns-mostly-column-shifts/notes.md)
-  — analysis, "Cannot call" FNs, column shifts, polymorphic bypass,
-  pine-data unions
-- [INV010](investigations/INV010-udf-tuple-return-types/notes.md) —
-  type-inference, inferTupleElementTypes, UDF tuple destructure,
-  bool-as-series-float
-- [INV011](investigations/INV011-bundled-function-behavior-not-loaded/notes.md)
-  — bundle, esbuild, __dirname, function-behavior.json,
-  polymorphic-resolution-disabled
-- [INV012](investigations/INV012-parser-sync-column-1/notes.md) —
-  parser, error recovery, synchronize, cascade, column-1 anchor
+Open work items, each either deferred from an investigation or queued
+as a discrete next step. Sequential numbering matches the task-tool
+IDs so the two stay in sync.
+
+- **#3 — pine-data scraper missing v6 built-ins.** ~45 FPs across
+  `syminfo.target_price_*`, `chart.point`, `ta.accdist`,
+  `session.islastbar`, `strategy.eventrades`, etc. Verified via
+  `pine-lint --tv` that TV recognises these; pine-data was regenerated
+  recently but they're still absent, so the gap is in the scraper.
+  Fix lives in `packages/pipeline/`, not the generated files.
+- **#4 — over-strict "cannot be called from a local scope" FPs.** Was
+  31 across 6 files; INV008 cut it to 15. Most of the residual is in
+  one file (`d40d7b52…pine`, 11 hits) whose trigger pattern resists
+  minimal-repro extraction — `head -446` is clean, `head -447`
+  (adding the wrap-continuation line of a `plotshape(…)` call) tips
+  it. Needs more bisection. The other five files have one hit each
+  and probably need their own minimal repros.
+- **#8 — true argument-type-mismatch FNs gated on #17.** Per INV009,
+  most of the "16 missed FNs" turned out to be column-shift
+  artefacts; only 3 are genuinely missed (`nz(bool)`,
+  `plot(title=non-const)`, `int(bool)`). Fixing them requires
+  widening pine-data signatures before tightening the
+  `validateFunctionArguments` polymorphic bypass — gated on #17.
+- **#9 — type-inference where we infer non-bool but TV infers bool.**
+  Umbrella task. Several big wins landed via INV005, INV010, INV011;
+  remaining FPs need a fresh corpus diff and per-category dives. The
+  current top non-cascade category likely needs a new pass.
+- **#17 — pine-data scraper: emit union types for
+  polymorphic-function params.** Right now polymorphic functions list
+  one overload's parameter types ("`simple color`" for `nz.source`),
+  forcing the checker to bypass type validation entirely via
+  `functionIsPolymorphic`. Goal: union of types across overloads, so
+  the checker can validate against the union and unblock the 3 FNs
+  from #8.
+- **#18 — built-in color constants infer as `undetermined type`.**
+  Surfaced by INV011 — accounts for ~117 newly-visible "Ternary
+  branches must have compatible types. Got 'color' and 'string'" FPs.
+  The constants ARE in `CONSTANTS_BY_NAME` with `type: "color"`,
+  but minimal repros mimicking the pattern lint cleanly. The
+  `"undetermined type"` label in pine-lint's variable-list output
+  comes from `astExtractor.ts`, a separate path from the validator's
+  `inferExpressionType` — investigating may need to reconcile the
+  two type-inference paths.
+- **#20 — refine INV012 with a context-aware synchronize.** Current
+  `synchronize()` skips to the next column-1 statement after a parse
+  error. Correct in aggregate (−1270 cascade FPs across the corpus)
+  but occasionally skips legitimate declarations between the error
+  and the next true top-level statement, accounting for some of the
+  "Undefined variable …" appearances that surfaced after INV012
+  (sampling suggests *most* are real but not all). A
+  parser-state-aware synchronize that tracked "in a function body /
+  switch arm / if body" and skipped to the end of *that* context
+  rather than all the way out would be more precise. Bigger change
+  needing a context stack; defer until the simpler win is stable.
 
 ## Gotchas
 
@@ -59,26 +83,6 @@ See [gotchas/README.md](gotchas/README.md) for the format and full
 index.
 
 _None yet._
-
-## Resolved (2026-05-27)
-
-- **User-defined type name lowercasing** — fixed `mapToPineType` in
-  `packages/core/src/analyzer/builtins.ts` to preserve case for
-  user-defined inner types in `array<T>` / `matrix<T>` / `map<K,V>`.
-  Added `array<unknown>` / `array<type>` as assignable-to-anything in
-  `types.ts:isAssignable` to cover unresolved element types. Removed
-  the `Cannot assign array<X> to array<x>` category (85 hits).
-
-## Reverted (2026-05-27)
-
-- **Bool-coercion in condition sites** (initially landed, then
-  reverted). Adding `isBoolCoercible` and routing `if`/`and`/`or`/
-  `not`/ternary/parameter-bool through it removed ~670 FPs at the
-  cost of +8 FNs. Direct `pine-lint --tv` verification showed TV
-  strictly enforces bool everywhere; the 670 disappearances were
-  masking our own type-inference bugs (we infer `series<float>` /
-  `color` where TV correctly infers `series<bool>`). The right fix
-  is to repair the inference, not relax the check. See task #9.
 
 Authoritative per-occurrence list lives in
 `lint-reports/failures-by-category.json`. For every category below the JSON
