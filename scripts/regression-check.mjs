@@ -5,9 +5,16 @@
 // For every fixture, diffs the current per-file error set against the
 // baseline. Errors are keyed by (line, col, message):
 //
-//   appeared    — in current, not in baseline. Regression candidates.
-//   disappeared — in baseline, not in current. Cross-referenced against
-//                 lint-reports/real-failures.json (if present) to mark:
+//   appeared      — in current, not in baseline. Regression candidates.
+//   disappeared   — in baseline, not in current. Cross-referenced against
+//                   lint-reports/real-failures.json (if present) to mark:
+//   messageChanged — an "appeared" and a "disappeared" share the same
+//                   (line, col) but have different messages. Almost
+//                   always the same finding under different wording
+//                   (e.g. a "Did you mean" suggestion that shifted), so
+//                   we pull these out of appeared/disappeared into a
+//                   third bucket. Same idea as
+//                   find-real-failures.mjs's samePositionDifferentMessage.
 //                   tvSilent: true  → TV is silent at this position
 //                                     (could be us correctly stopping
 //                                     over-strict flagging OR us
@@ -151,26 +158,68 @@ for (const name of entries) {
 
 	const oldKeys = new Set(base.errors.map((e) => `${e.line}:${e.col}:${e.message}`));
 	const newKeys = new Set(cur.errors.map((e) => `${e.line}:${e.col}:${e.message}`));
-	const appeared = cur.errors.filter((e) => !oldKeys.has(`${e.line}:${e.col}:${e.message}`));
-	const disappeared = base.errors.filter((e) => !newKeys.has(`${e.line}:${e.col}:${e.message}`));
-	if (appeared.length === 0 && disappeared.length === 0) continue;
+	const rawAppeared = cur.errors.filter((e) => !oldKeys.has(`${e.line}:${e.col}:${e.message}`));
+	const rawDisappeared = base.errors.filter((e) => !newKeys.has(`${e.line}:${e.col}:${e.message}`));
+
+	// "Message changed at same position" — when an appeared and a
+	// disappeared error share the same (line, col) but differ only in
+	// message, they're almost always the same underlying finding with
+	// different wording (e.g. a "Did you mean" suggestion that shifted
+	// after a scope-table change, or a more-precise message replacing a
+	// generic one). Pull these out of the appeared/disappeared lists into
+	// a third category so reviewers don't pattern-match them as
+	// regressions or true fixes. see find-real-failures.mjs for the
+	// equivalent samePositionDifferentMessage logic.
+	const disappearedByPos = new Map();
+	for (const e of rawDisappeared) {
+		const k = `${e.line}:${e.col}`;
+		if (!disappearedByPos.has(k)) disappearedByPos.set(k, []);
+		disappearedByPos.get(k).push(e);
+	}
+	const messageChanged = [];
+	const appearedFinal = [];
+	for (const a of rawAppeared) {
+		const key = `${a.line}:${a.col}`;
+		const candidates = disappearedByPos.get(key);
+		if (candidates && candidates.length > 0) {
+			const d = candidates.shift();
+			messageChanged.push({
+				line: a.line,
+				col: a.col,
+				oldMessage: d.message,
+				newMessage: a.message,
+			});
+		} else {
+			appearedFinal.push(a);
+		}
+	}
+	const disappearedFinal = [];
+	for (const [, arr] of disappearedByPos) disappearedFinal.push(...arr);
+
+	if (appearedFinal.length === 0 && disappearedFinal.length === 0 && messageChanged.length === 0) continue;
 
 	const tvSilentSet = tvSilentPositions.get(name);
 	// tvSilent is meaningful only for files that appeared in the TV
 	// reference. For files outside it (non-v6 fixtures, or v6 files added
 	// since the last find-real-failures.mjs run), there's no per-error TV
 	// data, so mark disappearances as unverifiable.
-	const annotatedDisappeared = disappeared.map((e) => ({
+	const annotatedDisappeared = disappearedFinal.map((e) => ({
 		...e,
 		tvSilent: tvAvailable && tvSilentSet ? tvSilentSet.has(`${e.line}:${e.col}:${e.message}`) : null,
 	}));
 
-	report.filesChanged.push({ file: name, appeared, disappeared: annotatedDisappeared });
+	report.filesChanged.push({
+		file: name,
+		appeared: appearedFinal,
+		disappeared: annotatedDisappeared,
+		messageChanged,
+	});
 }
 
 const totals = {
 	filesChanged: report.filesChanged.length,
 	newAppearances: 0,
+	messageChanged: 0,
 	disappearedTvSilent: 0,
 	disappearedTvFlagged: 0,
 	disappearedUnverifiable: 0,
@@ -178,6 +227,7 @@ const totals = {
 const tvFlaggedDisappearanceFiles = [];
 for (const f of report.filesChanged) {
 	totals.newAppearances += f.appeared.length;
+	totals.messageChanged += (f.messageChanged ?? []).length;
 	const tvFlagged = f.disappeared.filter((e) => e.tvSilent === false);
 	if (tvFlagged.length) tvFlaggedDisappearanceFiles.push(f.file);
 	for (const e of f.disappeared) {
@@ -199,6 +249,7 @@ console.log(`fixtures changed:             ${totals.filesChanged}`);
 console.log(`fixtures added (no baseline): ${report.filesAdded.length}`);
 console.log(`fixtures removed:             ${report.filesRemoved.length}`);
 console.log(`new error appearances:        ${totals.newAppearances}${totals.newAppearances ? "  ← REGRESSION CANDIDATES" : ""}`);
+console.log(`message changed at same pos:  ${totals.messageChanged}  (same line:col, different wording — usually a suggestion shift, not a regression)`);
 console.log(`disappeared, TV-silent here:  ${totals.disappearedTvSilent}  (we used to flag where TV is silent — investigate per category, not auto-good)`);
 console.log(`disappeared, TV-also-flagged: ${totals.disappearedTvFlagged}${totals.disappearedTvFlagged ? "  ← we stopped flagging something TV catches; verify with --tv" : ""}`);
 console.log(`disappeared, unverifiable:    ${totals.disappearedUnverifiable}  (file outside TV reference; v4/v5/non-v6 or added since last find-real-failures run)`);
