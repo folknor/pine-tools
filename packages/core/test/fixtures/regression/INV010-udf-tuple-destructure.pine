@@ -1,0 +1,29 @@
+// @test regression/INV010-udf-tuple-destructure
+// @description Destructuring a tuple returned by a user-defined function or method must preserve each element's actual type. Defaulting unknown elements to series<float> retypes bool/int/color variables and breaks downstream type checks. See investigations/INV010-udf-tuple-return-types/notes.md.
+// @expects parse: success
+// @expects no-errors
+//@version=6
+indicator("t")
+
+// User-defined function returning a (bool, int) tuple.
+f() =>
+    bool flag = true
+    int counter = 5
+    [flag, counter]
+
+[isOn, n] = f()
+result = isOn and n > 0
+plot(result ? 1 : 0)
+
+// User-defined method returning a (color, float) tuple.
+type Wrapper
+    int seed = 0
+
+method m(Wrapper this) =>
+    color c = color.green
+    float v = 1.5
+    [c, v]
+
+Wrapper w = Wrapper.new(0)
+[col, val] = w.m()
+plot(val, color = col)

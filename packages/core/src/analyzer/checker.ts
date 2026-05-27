@@ -50,6 +50,12 @@ export class UnifiedPineValidator {
 	private symbolTable: SymbolTable;
 	private functionSignatures: Map<string, FunctionSignature>;
 	private expressionTypes: Map<Expression, PineType> = new Map();
+	// Function-name → per-tuple-element return types, for user-defined
+	// functions / methods whose body's final expression is a tuple
+	// (ArrayExpression). Used by inferTupleElementTypes so destructuring
+	// assignments like `[a, b, c] = f()` recover the element types
+	// rather than defaulting everything to `series<float>`. see INV010.
+	private udfTupleReturnTypes: Map<string, PineType[]> = new Map();
 	private blockDepth: number = 0;
 
 	constructor() {
@@ -61,6 +67,7 @@ export class UnifiedPineValidator {
 		this.errors = [];
 		this.symbolTable = new SymbolTable();
 		this.expressionTypes.clear();
+		this.udfTupleReturnTypes.clear();
 
 		// Single pass: collect declarations and validate together
 		// This ensures function parameters are in scope during validation
@@ -238,6 +245,16 @@ export class UnifiedPineValidator {
 					);
 				}
 
+				// If the body's final expression is a tuple, capture the
+				// element types so `[a, b, c] = f()` recovers them at the
+				// destructure site. see INV010.
+				const tupleTypes = this.inferUdfTupleReturnTypes(
+					statement.body,
+					version,
+					statement.params,
+				);
+				if (tupleTypes) this.udfTupleReturnTypes.set(statement.name, tupleTypes);
+
 				// Register the function in the symbol table at the outer scope
 				this.symbolTable.define({
 					name: statement.name,
@@ -413,6 +430,14 @@ export class UnifiedPineValidator {
 						statement.params,
 					);
 				}
+
+				// see INV010 — same tuple-return capture as FunctionDeclaration.
+				const tupleTypes = this.inferUdfTupleReturnTypes(
+					statement.body,
+					version,
+					statement.params,
+				);
+				if (tupleTypes) this.udfTupleReturnTypes.set(statement.name, tupleTypes);
 
 				// Register the method in the symbol table. Use kind:"method"
 				// rather than "function" so it lives in the method namespace
@@ -1110,9 +1135,80 @@ export class UnifiedPineValidator {
 					}
 				}
 			}
+
+			// User-defined function whose body's last expression is a
+			// tuple — recover the per-element types we captured when the
+			// function was validated. Without this every element defaults
+			// to `series<float>` and a destructured bool / int / color
+			// element gets wrongly typed downstream. see INV010.
+			if (elementTypes.length === 0 && funcName) {
+				const udfTuple = this.udfTupleReturnTypes.get(funcName);
+				if (udfTuple) {
+					for (const t of udfTuple) elementTypes.push(t);
+				}
+			}
 		}
 
 		return elementTypes;
+	}
+
+	/**
+	 * If the function body's final expression is a tuple literal
+	 * (ArrayExpression), infer per-element types under the same temp
+	 * scope inferFunctionReturnType uses. Returns undefined when the
+	 * body doesn't return a tuple. see INV010.
+	 */
+	private inferUdfTupleReturnTypes(
+		body: Statement[],
+		version: string,
+		params?: FunctionParam[],
+	): PineType[] | undefined {
+		if (body.length === 0) return undefined;
+		const last = body[body.length - 1];
+
+		let tupleExpr: ArrayExpression | undefined;
+		if (last.type === "ExpressionStatement") {
+			const expr = (last as ExpressionStatement).expression;
+			if (expr.type === "ArrayExpression") {
+				tupleExpr = expr as ArrayExpression;
+			}
+		} else if (last.type === "ReturnStatement") {
+			const value = (last as ReturnStatement).value;
+			if (value?.type === "ArrayExpression") {
+				tupleExpr = value as ArrayExpression;
+			}
+		}
+		if (!tupleExpr) return undefined;
+
+		// Mirror inferFunctionReturnType's temp-scope setup so the
+		// element-type inference sees the parameters and any locals.
+		this.symbolTable.enterScope();
+		if (params) {
+			for (const param of params) {
+				const paramType: PineType = param.typeAnnotation
+					? mapToPineType(param.typeAnnotation.name)
+					: "series<float>";
+				this.symbolTable.define({
+					name: param.name,
+					type: paramType,
+					line: 0,
+					column: 0,
+					used: false,
+					kind: "variable",
+					declaredWith: null,
+				});
+			}
+		}
+		for (const stmt of body) {
+			this.collectDeclarations(stmt, version);
+		}
+
+		const types: PineType[] = [];
+		for (const elem of tupleExpr.elements) {
+			types.push(this.inferExpressionType(elem, version));
+		}
+		this.symbolTable.exitScope();
+		return types;
 	}
 
 	/**

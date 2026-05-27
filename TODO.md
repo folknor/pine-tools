@@ -44,6 +44,9 @@ and full index.
 - [INV009](investigations/INV009-cannot-call-fns-mostly-column-shifts/notes.md)
   — analysis, "Cannot call" FNs, column shifts, polymorphic bypass,
   pine-data unions
+- [INV010](investigations/INV010-udf-tuple-return-types/notes.md) —
+  type-inference, inferTupleElementTypes, UDF tuple destructure,
+  bool-as-series-float
 
 ## Gotchas
 
