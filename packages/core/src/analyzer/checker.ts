@@ -289,7 +289,7 @@ export class UnifiedPineValidator {
 				this.validateExpression(statement.condition, version);
 				const condType = this.inferExpressionType(statement.condition, version);
 				// Skip check if type is unknown (can't verify, don't complain)
-				if (condType !== "unknown" && !TypeChecker.isBoolCoercible(condType)) {
+				if (condType !== "unknown" && !TypeChecker.isBoolType(condType)) {
 					this.addError(
 						statement.line,
 						statement.column,
@@ -609,7 +609,7 @@ export class UnifiedPineValidator {
 		// first to provide better error messages that identify which operand is wrong.
 		// The areTypesCompatible check below serves as a fallback for edge cases.
 		if (expr.operator === "and" || expr.operator === "or") {
-			if (leftType !== "unknown" && !TypeChecker.isBoolCoercible(leftType)) {
+			if (leftType !== "unknown" && !TypeChecker.isBoolType(leftType)) {
 				this.addError(
 					expr.line,
 					expr.column,
@@ -619,7 +619,7 @@ export class UnifiedPineValidator {
 				);
 				return; // Don't report additional errors for this expression
 			}
-			if (rightType !== "unknown" && !TypeChecker.isBoolCoercible(rightType)) {
+			if (rightType !== "unknown" && !TypeChecker.isBoolType(rightType)) {
 				this.addError(
 					expr.line,
 					expr.column,
@@ -648,7 +648,7 @@ export class UnifiedPineValidator {
 	): void {
 		if (expr.operator === "not") {
 			const argType = this.inferExpressionType(expr.argument, version);
-			if (!TypeChecker.isBoolCoercible(argType) && argType !== "unknown") {
+			if (!TypeChecker.isBoolType(argType) && argType !== "unknown") {
 				this.addError(
 					expr.line,
 					expr.column,
@@ -665,7 +665,7 @@ export class UnifiedPineValidator {
 		version: string = "6",
 	): void {
 		const condType = this.inferExpressionType(expr.condition, version);
-		if (!TypeChecker.isBoolCoercible(condType) && condType !== "unknown") {
+		if (!TypeChecker.isBoolType(condType) && condType !== "unknown") {
 			this.addError(
 				expr.condition.line || expr.line,
 				expr.condition.column || expr.column,

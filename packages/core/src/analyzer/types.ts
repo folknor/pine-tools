@@ -184,17 +184,6 @@ export namespace TypeChecker {
 		if (from === "string" && to === "series<string>") return true;
 		if (from === "color" && to === "series<color>") return true;
 
-		// Any bool-coercible type (numerics, color) assigns to a bool
-		// destination. Pine truthifies these at runtime via 0/na-vs-non-na,
-		// so a function parameter typed `bool` accepts a `color` argument
-		// the same way `if some_color` is a valid condition.
-		if (
-			isBoolCoercible(from as PineType) &&
-			(to === "bool" || to === "series<bool>" || to === "simple<bool>")
-		) {
-			return true;
-		}
-
 		// Cross-type numeric coercion to series
 		if (from === "int" && to === "series<float>") return true;
 		if (from === "float" && to === "series<int>") return true;
@@ -383,9 +372,9 @@ export namespace TypeChecker {
 			return isAssignable(left, right) || isAssignable(right, left);
 		}
 
-		// Logical operators accept anything bool-coercible (bool + numerics)
+		// Logical operators require bool types only
 		if (["and", "or"].includes(operator)) {
-			return isBoolCoercible(left) && isBoolCoercible(right);
+			return isBoolType(left) && isBoolType(right);
 		}
 
 		return false;
@@ -451,14 +440,6 @@ export namespace TypeChecker {
 		return (
 			type === "bool" || type === "series<bool>" || type === "simple<bool>"
 		);
-	}
-
-	// Pine v6 truthifies values in boolean contexts via na-presence and
-	// (for numerics) zero-vs-nonzero. Bool, numerics, and color all qualify.
-	// Use this — not isBoolType — at condition sites (`if`, `while`,
-	// ternary condition, `and`/`or`/`not` operands).
-	export function isBoolCoercible(type: PineType): boolean {
-		return isBoolType(type) || isNumericType(type) || isColorType(type);
 	}
 
 	export function isStringType(type: PineType): boolean {
