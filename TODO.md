@@ -50,6 +50,8 @@ and full index.
 - [INV011](investigations/INV011-bundled-function-behavior-not-loaded/notes.md)
   — bundle, esbuild, __dirname, function-behavior.json,
   polymorphic-resolution-disabled
+- [INV012](investigations/INV012-parser-sync-column-1/notes.md) —
+  parser, error recovery, synchronize, cascade, column-1 anchor
 
 ## Gotchas
 

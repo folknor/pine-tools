@@ -2412,23 +2412,42 @@ export class Parser {
 		throw new Error(`${message} at line ${this.peek().line}`);
 	}
 
+	// Called after a parse error. We must skip past whatever tripped the
+	// parser before trying the next statement, otherwise we cascade
+	// (every token in the broken expression looks like a fresh statement
+	// start to the top-level parse loop, each producing its own error).
+	//
+	// The heuristic: walk until the next token that starts a NEW line
+	// AT COLUMN 1 — i.e. a true top-level statement, dedented out of
+	// whatever nested context the error happened in. Same effect as the
+	// previous behaviour when the next line *is* at column 1, but skips
+	// over nested broken code (switch arm bodies, function bodies, …)
+	// rather than treating each interior line as a fresh top-level
+	// statement.
+	//
+	// Fallback anchors: top-level statement-start keywords (`if`, `for`,
+	// `while`, `var`, `varip`, `const`) — kept for cases where the bad
+	// token *is* at column 1 and we want to resume immediately. see INV012.
 	private synchronize(): void {
 		this.advance();
 
 		while (!this.isAtEnd()) {
-			// Look for statement boundaries
-			if (this.previous().type === TokenType.NEWLINE) return;
+			const token = this.peek();
 
-			switch (this.peek().type) {
-				case TokenType.KEYWORD:
-					if (
-						["if", "for", "while", "var", "varip", "const"].includes(
-							this.peek().value,
-						)
-					) {
-						return;
-					}
-					break;
+			// Token starts a new line at column 1 — a true top-level
+			// statement boundary, regardless of what indented context the
+			// error originally came from.
+			if (token.indent === 0 && token.line > 1) return;
+
+			// Statement-start keyword we recognise — resume here.
+			if (token.type === TokenType.KEYWORD) {
+				if (
+					["if", "for", "while", "var", "varip", "const"].includes(
+						token.value,
+					)
+				) {
+					return;
+				}
 			}
 
 			this.advance();

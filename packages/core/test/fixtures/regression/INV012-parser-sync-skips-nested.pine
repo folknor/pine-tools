@@ -1,0 +1,26 @@
+// @test regression/INV012-parser-sync-skips-nested
+// @description A parse error deep inside a nested expression must not cascade into the top-level statements that follow. The parser's synchronize() routine should skip past the broken nested context to the next true top-level statement. See investigations/INV012-parser-sync-column-1/notes.md.
+// @expects parse: success
+//@version=6
+indicator("t")
+
+// Function with a switch arm body that uses `:=` (reassignment).
+// Our parser currently doesn't accept `:=` in this nested-switch-arm
+// position — that's a real limitation, but it should produce ONE
+// error, not a cascade across the rest of the script.
+f() =>
+    var int x = 0
+    float result = switch close
+        1.0 => 1
+        =>
+            x := 2
+            x
+    result
+
+// These top-level calls must still parse and validate cleanly even
+// though `f()` body has a parse error. plot must NOT be reported as
+// "cannot be called from a local scope" — synchronize must have
+// returned the parser to true top-level by here.
+y = f()
+plot(y)
+plot(close)
