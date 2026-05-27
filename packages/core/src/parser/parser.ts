@@ -1,7 +1,11 @@
-// Simple Pine Script Parser (focused on function call validation)
+// Simple Pine Script Parser (focused on function call validation).
+// Expression-precedence methods live in `./expressions` as the
+// ExpressionParser class; Parser owns an instance and forwards to it
+// via the 11 one-line delegators below.
 
 import { TYPE_KEYWORDS, VAR_TYPE_KEYWORDS } from "../constants/keywords";
 import type * as AST from "./ast";
+import { ExpressionParser } from "./expressions";
 import { Lexer, type LexerError, type Token, TokenType } from "./lexer";
 
 export interface ParserError {
@@ -11,13 +15,19 @@ export interface ParserError {
 }
 
 export class Parser {
-	private tokens: Token[] = [];
-	private current: number = 0;
-	private parenDepth: number = 0; // Track parenthesis nesting depth
-	private bracketDepth: number = 0; // Track bracket nesting depth for arrays
+	// Token machinery and tracking state are public so co-located sub-
+	// parsers (expressions, statements, …) in sibling modules can read
+	// and update them. Keeping them on Parser keeps the canonical
+	// parse-state in one object; the sub-parsers are plain logic
+	// modules over that state.
+	public tokens: Token[] = [];
+	public current: number = 0;
+	public parenDepth: number = 0; // Track parenthesis nesting depth
+	public bracketDepth: number = 0; // Track bracket nesting depth for arrays
 	private lexerErrors: LexerError[] = [];
-	private parserErrors: ParserError[] = [];
+	public parserErrors: ParserError[] = [];
 	private detectedVersion: string | null = null;
+	private exprs!: ExpressionParser;
 
 	constructor(source: string) {
 		const lexer = new Lexer(source);
@@ -28,6 +38,7 @@ export class Parser {
 			);
 		this.lexerErrors = lexer.getErrors();
 		this.detectedVersion = lexer.getDetectedVersion();
+		this.exprs = new ExpressionParser(this);
 	}
 
 	getLexerErrors(): LexerError[] {
@@ -1132,7 +1143,7 @@ export class Parser {
 	 *     condition => expr
 	 *     => defaultExpr
 	 */
-	private switchExpression(): AST.Expression {
+	public switchExpression(): AST.Expression {
 		const startToken = this.previous();
 
 		// Check for discriminant expression on the same line (e.g., "switch pos")
@@ -1669,694 +1680,35 @@ export class Parser {
 		return params;
 	}
 
-	private expression(): AST.Expression {
-		return this.ternary();
-	}
+	// Expression-precedence methods delegate to ExpressionParser in
+	// ./expressions. They stay on Parser as thin pass-throughs so
+	// existing call sites in the statement/declaration parsers below
+	// don't have to change. The actual implementations live in the
+	// sibling file.
 
-	private ternary(): AST.Expression {
-		const expr = this.logicalOr();
+	private expression(): AST.Expression { return this.exprs.expression(); }
+	private ternary(): AST.Expression { return this.exprs.ternary(); }
 
-		// Handle line continuation: newline followed by ? (ternary operator at line start)
-		if (this.check(TokenType.NEWLINE)) {
-			const nextToken = this.peekNext();
-			if (nextToken && nextToken.type === TokenType.TERNARY) {
-				this.advance(); // skip newline
-			}
-		}
+	private logicalOr(): AST.Expression { return this.exprs.logicalOr(); }
 
-		if (this.match(TokenType.TERNARY)) {
-			// Skip newlines after ? for multi-line ternary
-			while (this.check(TokenType.NEWLINE)) {
-				this.advance();
-			}
-			const consequent = this.expression();
-			// Skip newlines before : for multi-line ternary (when consequent ends on previous line)
-			while (this.check(TokenType.NEWLINE)) {
-				this.advance();
-			}
-			this.consume(TokenType.COLON, 'Expected ":" in ternary expression');
-			// Skip newlines after : for multi-line ternary
-			while (this.check(TokenType.NEWLINE)) {
-				this.advance();
-			}
-			const alternate = this.expression();
+	private logicalAnd(): AST.Expression { return this.exprs.logicalAnd(); }
 
-			return {
-				type: "TernaryExpression",
-				condition: expr,
-				consequent,
-				alternate,
-				line: expr.line,
-				column: expr.column,
-			};
-		}
+	private comparison(): AST.Expression { return this.exprs.comparison(); }
 
-		return expr;
-	}
+	private addition(): AST.Expression { return this.exprs.addition(); }
 
-	private logicalOr(): AST.Expression {
-		let expr = this.logicalAnd();
+	private multiplication(): AST.Expression { return this.exprs.multiplication(); }
 
-		while (true) {
-			// Skip newlines that are clearly line continuations
-			if (this.check(TokenType.NEWLINE)) {
-				const nextToken = this.peekNext();
-				// If next token is 'or', it's a line continuation
-				if (
-					nextToken &&
-					nextToken.type === TokenType.KEYWORD &&
-					nextToken.value === "or"
-				) {
-					this.advance(); // skip newline
-				} else {
-					break; // Not a continuation, end the expression
-				}
-			}
+	private unary(): AST.Expression { return this.exprs.unary(); }
 
-			if (this.match([TokenType.KEYWORD, ["or"]])) {
-				const operator = this.previous().value;
-				// Skip newlines after operator (line continuation)
-				while (this.check(TokenType.NEWLINE)) {
-					this.advance();
-				}
-				const right = this.logicalAnd();
-				expr = {
-					type: "BinaryExpression",
-					operator,
-					left: expr,
-					right,
-					line: expr.line,
-					column: expr.column,
-				};
-			} else {
-				break;
-			}
-		}
+	private postfix(): AST.Expression { return this.exprs.postfix(); }
 
-		return expr;
-	}
+	private finishCall(callee: AST.Expression, typeArguments?: string[]): AST.CallExpression { return this.exprs.finishCall(callee, typeArguments); }
 
-	private logicalAnd(): AST.Expression {
-		let expr = this.comparison();
-
-		while (true) {
-			// Skip newlines that are clearly line continuations
-			if (this.check(TokenType.NEWLINE)) {
-				const nextToken = this.peekNext();
-				// If next token is 'and', it's a line continuation
-				if (
-					nextToken &&
-					nextToken.type === TokenType.KEYWORD &&
-					nextToken.value === "and"
-				) {
-					this.advance(); // skip newline
-				} else {
-					break; // Not a continuation, end the expression
-				}
-			}
-
-			if (this.match([TokenType.KEYWORD, ["and"]])) {
-				const operator = this.previous().value;
-				// Skip newlines after operator (line continuation)
-				while (this.check(TokenType.NEWLINE)) {
-					this.advance();
-				}
-				const right = this.comparison();
-				expr = {
-					type: "BinaryExpression",
-					operator,
-					left: expr,
-					right,
-					line: expr.line,
-					column: expr.column,
-				};
-			} else {
-				break;
-			}
-		}
-
-		return expr;
-	}
-
-	private comparison(): AST.Expression {
-		let expr = this.addition();
-
-		while (true) {
-			// Skip newlines that are clearly line continuations
-			if (this.check(TokenType.NEWLINE)) {
-				const nextToken = this.peekNext();
-				// If next token is a comparison operator, it's a line continuation
-				if (nextToken && nextToken.type === TokenType.COMPARE) {
-					this.advance(); // skip newline
-				} else {
-					break; // Not a continuation, end the expression
-				}
-			}
-
-			if (this.match(TokenType.COMPARE)) {
-				const operator = this.previous().value;
-				// Skip newlines after operator (line continuation)
-				while (this.check(TokenType.NEWLINE)) {
-					this.advance();
-				}
-				const right = this.addition();
-				expr = {
-					type: "BinaryExpression",
-					operator,
-					left: expr,
-					right,
-					line: expr.line,
-					column: expr.column,
-				};
-			} else {
-				break;
-			}
-		}
-
-		return expr;
-	}
-
-	private addition(): AST.Expression {
-		let expr = this.multiplication();
-
-		while (true) {
-			// Skip newlines that are clearly line continuations
-			if (this.check(TokenType.NEWLINE)) {
-				const nextToken = this.peekNext();
-				// If next token is + or -, it's a line continuation
-				if (
-					nextToken &&
-					(nextToken.type === TokenType.PLUS ||
-						nextToken.type === TokenType.MINUS)
-				) {
-					this.advance(); // skip newline
-				} else {
-					break; // Not a continuation, end the expression
-				}
-			}
-
-			if (this.match(TokenType.PLUS, TokenType.MINUS)) {
-				const operator = this.previous().value;
-				// Skip newlines after operator (line continuation)
-				while (this.check(TokenType.NEWLINE)) {
-					this.advance();
-				}
-				const right = this.multiplication();
-				expr = {
-					type: "BinaryExpression",
-					operator,
-					left: expr,
-					right,
-					line: expr.line,
-					column: expr.column,
-				};
-			} else {
-				break;
-			}
-		}
-
-		return expr;
-	}
-
-	private multiplication(): AST.Expression {
-		let expr = this.unary();
-
-		while (true) {
-			// Skip newlines that are clearly line continuations
-			if (this.check(TokenType.NEWLINE)) {
-				const nextToken = this.peekNext();
-				// If next token is *, /, or %, it's a line continuation
-				// OR if we just processed a binary operator and next token is an identifier/literal/paren
-				if (
-					nextToken &&
-					(nextToken.type === TokenType.MULTIPLY ||
-						nextToken.type === TokenType.DIVIDE ||
-						nextToken.type === TokenType.MODULO ||
-						(this.previous().type === TokenType.DIVIDE &&
-							(nextToken.type === TokenType.IDENTIFIER ||
-								nextToken.type === TokenType.NUMBER ||
-								nextToken.type === TokenType.LPAREN)))
-				) {
-					this.advance(); // skip newline
-				} else {
-					break; // Not a continuation, end the expression
-				}
-			}
-
-			if (this.match(TokenType.MULTIPLY, TokenType.DIVIDE, TokenType.MODULO)) {
-				const operator = this.previous().value;
-				// Skip newlines after operator (line continuation)
-				while (this.check(TokenType.NEWLINE)) {
-					this.advance();
-				}
-				const right = this.unary();
-				expr = {
-					type: "BinaryExpression",
-					operator,
-					left: expr,
-					right,
-					line: expr.line,
-					column: expr.column,
-				};
-			} else {
-				break;
-			}
-		}
-
-		return expr;
-	}
-
-	private unary(): AST.Expression {
-		// Skip newlines that are clearly line continuations in expressions
-		// This handles cases where binary operators span multiple lines
-		if (this.check(TokenType.NEWLINE)) {
-			const nextToken = this.peekNext();
-			// If next token suggests continuation (identifier, number, paren, unary op), skip newline
-			if (
-				nextToken &&
-				(nextToken.type === TokenType.IDENTIFIER ||
-					nextToken.type === TokenType.NUMBER ||
-					nextToken.type === TokenType.LPAREN ||
-					nextToken.type === TokenType.MINUS ||
-					(nextToken.type === TokenType.KEYWORD && nextToken.value === "not"))
-			) {
-				this.advance(); // skip newline
-			}
-		}
-
-		if (
-			this.match(TokenType.MINUS) ||
-			this.match([TokenType.KEYWORD, ["not"]])
-		) {
-			const operator = this.previous().value;
-			const right = this.unary();
-			return {
-				type: "UnaryExpression",
-				operator,
-				argument: right,
-				line: this.previous().line,
-				column: this.previous().column,
-			};
-		}
-
-		return this.postfix();
-	}
-
-	private postfix(): AST.Expression {
-		let expr = this.primary();
-
-		while (true) {
-			// Allow line continuation for expressions (except for certain cases)
-			// Skip newlines but allow continuation if we're in the middle of an expression
-			if (this.check(TokenType.NEWLINE)) {
-				// Check if the next token after newline suggests continuation
-				const nextToken = this.peekNext();
-				const _nextNextToken = this.tokens[this.current + 2];
-
-				// Allow continuation if next token is an operator, function call, or dot access
-				// But break if it looks like a new statement (LBRACKET is always treated as new statement)
-				if (
-					nextToken &&
-					(nextToken.type === TokenType.MULTIPLY ||
-						nextToken.type === TokenType.DIVIDE ||
-						nextToken.type === TokenType.PLUS ||
-						nextToken.type === TokenType.MINUS ||
-						nextToken.type === TokenType.COMPARE ||
-						(nextToken.type === TokenType.KEYWORD &&
-							["and", "or"].includes(nextToken.value)) ||
-						nextToken.type === TokenType.LPAREN ||
-						nextToken.type === TokenType.DOT)
-				) {
-					// Skip the newline and continue
-					this.advance();
-				} else if (this.parenDepth === 0 && this.bracketDepth === 0) {
-					// Not in parentheses/brackets and doesn't look like continuation - break
-					break;
-				} else {
-					// In parentheses or brackets - allow continuation by skipping newline
-					this.advance();
-				}
-			}
-
-			// Handle generic type arguments: array.new<float>()
-			if (this.check(TokenType.COMPARE) && this.peek().value === "<") {
-				// Look ahead to see if this is a generic type argument (followed by identifier and >)
-				const savedPos = this.current;
-				this.advance(); // consume <
-
-				// Collect type arguments
-				const typeArgs: string[] = [];
-
-				// Consume type identifier(s) - could be "float", "int", "box", "chart.point", etc.
-				// Also handles map<key, value> syntax with multiple type arguments
-				if (this.check(TokenType.IDENTIFIER) || this.check(TokenType.KEYWORD)) {
-					while (true) {
-						let typeArg = this.advance().value;
-
-						// Handle dotted type names like chart.point
-						while (this.check(TokenType.DOT)) {
-							this.advance(); // consume .
-							if (
-								this.check(TokenType.IDENTIFIER) ||
-								this.check(TokenType.KEYWORD)
-							) {
-								typeArg += `.${this.advance().value}`;
-							}
-						}
-
-						// Handle nested generics like array<array<float>>
-						while (this.check(TokenType.COMPARE) && this.peek().value === "<") {
-							typeArg += "<";
-							this.advance();
-							if (
-								this.check(TokenType.IDENTIFIER) ||
-								this.check(TokenType.KEYWORD)
-							) {
-								typeArg += this.advance().value;
-								// Handle dotted type names in nested generics
-								while (this.check(TokenType.DOT)) {
-									this.advance();
-									if (
-										this.check(TokenType.IDENTIFIER) ||
-										this.check(TokenType.KEYWORD)
-									) {
-										typeArg += `.${this.advance().value}`;
-									}
-								}
-							}
-							if (this.check(TokenType.COMPARE) && this.peek().value === ">") {
-								typeArg += ">";
-								this.advance();
-							}
-						}
-
-						typeArgs.push(typeArg);
-
-						// Check for another type argument (comma followed by identifier/keyword)
-						if (!this.check(TokenType.COMMA)) {
-							break;
-						}
-						this.advance();
-						if (
-							!(
-								this.check(TokenType.IDENTIFIER) ||
-								this.check(TokenType.KEYWORD)
-							)
-						) {
-							break;
-						}
-						// Continue loop to parse the next type arg
-					}
-
-					// Consume closing >
-					if (this.check(TokenType.COMPARE) && this.peek().value === ">") {
-						this.advance();
-						// Now should see ( for function call
-						if (this.match(TokenType.LPAREN)) {
-							this.parenDepth++; // Increment before finishCall (which decrements)
-							expr = this.finishCall(expr, typeArgs);
-							continue;
-						}
-					}
-				}
-				// If pattern didn't match, restore position
-				this.current = savedPos;
-			}
-
-			if (this.match(TokenType.LPAREN)) {
-				// Function call
-				this.parenDepth++; // Increment depth when opening parenthesis
-				expr = this.finishCall(expr);
-			} else if (this.match(TokenType.DOT)) {
-				// Member access - property can be identifier or keyword (e.g., input.float)
-				let property: Token;
-				if (this.check(TokenType.IDENTIFIER)) {
-					property = this.advance();
-				} else if (this.check(TokenType.KEYWORD)) {
-					property = this.advance();
-				} else {
-					throw new Error(`Expected property name at line ${this.peek().line}`);
-				}
-				expr = {
-					type: "MemberExpression",
-					object: expr,
-					property: {
-						type: "Identifier",
-						name: property.value,
-						line: property.line,
-						column: property.column,
-					},
-					line: expr.line,
-					column: expr.column,
-				};
-			} else if (this.check(TokenType.LBRACKET)) {
-				// Check if [ is on a new line at the start - likely a tuple declaration, not array access
-				const bracketToken = this.peek();
-				if (bracketToken.line > expr.line && (bracketToken.column || 0) <= 1) {
-					// [ at start of new line - not subscript access
-					break;
-				}
-				this.advance(); // consume [
-				// Array/index access
-				const index = this.expression();
-				this.consume(TokenType.RBRACKET, 'Expected "]"');
-				expr = {
-					type: "IndexExpression",
-					object: expr,
-					index,
-					line: expr.line,
-					column: expr.column,
-				};
-			} else {
-				break;
-			}
-		}
-
-		return expr;
-	}
-
-	private finishCall(
-		callee: AST.Expression,
-		typeArguments?: string[],
-	): AST.CallExpression {
-		const args: AST.CallArgument[] = [];
-
-		if (!this.check(TokenType.RPAREN)) {
-			do {
-				// Skip newlines between arguments
-				while (this.check(TokenType.NEWLINE)) {
-					this.advance();
-				}
-
-				// Check for named argument: name = value
-				// Allow both IDENTIFIER and KEYWORD as parameter names (Pine Script uses keywords like 'color', 'title', etc. as parameter names)
-				// Also handle line continuation: name\n= value
-				let nextTok = this.peekNext();
-				if (nextTok?.type === TokenType.NEWLINE) {
-					// Look past the newline to check for =
-					const afterNewline = this.tokens[this.current + 2];
-					if (afterNewline?.type === TokenType.ASSIGN) {
-						nextTok = afterNewline;
-					}
-				}
-				if (
-					(this.check(TokenType.IDENTIFIER) || this.check(TokenType.KEYWORD)) &&
-					nextTok?.type === TokenType.ASSIGN
-				) {
-					const name = this.advance().value;
-					// Skip newlines before = (allows: arg\n= value)
-					while (this.check(TokenType.NEWLINE)) {
-						this.advance();
-					}
-					this.advance(); // consume =
-					// Skip newlines after = (allows: arg =\n value)
-					while (this.check(TokenType.NEWLINE)) {
-						this.advance();
-					}
-					const value = this.expression();
-					args.push({ name, value });
-				} else {
-					// Positional argument
-					const value = this.expression();
-					args.push({ value });
-				}
-
-				// Skip newlines after argument
-				while (this.check(TokenType.NEWLINE)) {
-					this.advance();
-				}
-			} while (this.match(TokenType.COMMA));
-		}
-
-		// Provide helpful error message for common mistakes
-		if (!this.check(TokenType.RPAREN)) {
-			// Check if this looks like another argument (missing comma)
-			const current = this.peek();
-			const next = this.peekNext();
-			if (
-				(current?.type === TokenType.IDENTIFIER ||
-					current?.type === TokenType.KEYWORD) &&
-				next?.type === TokenType.ASSIGN
-			) {
-				throw new Error(
-					`Missing comma before '${current.value}' argument at line ${current.line}`,
-				);
-			}
-			// Check for two identifiers in a row (e.g., "bar index" instead of "bar_index")
-			// After parsing "bar" as expression, we're at "index" - check if previous was also identifier
-			const prev = this.previous();
-			if (
-				prev?.type === TokenType.IDENTIFIER &&
-				current?.type === TokenType.IDENTIFIER
-			) {
-				throw new Error(
-					`Unexpected identifier '${current.value}' - did you mean '${prev.value}_${current.value}'? At line ${current.line}`,
-				);
-			}
-		}
-		const rparen = this.consume(TokenType.RPAREN, 'Expected ")" after arguments');
-		this.parenDepth--; // Decrement depth when closing parenthesis
-
-		const callExpr: AST.CallExpression = {
-			type: "CallExpression",
-			callee,
-			arguments: args,
-			line: callee.line,
-			column: callee.column,
-			endLine: rparen.line,
-			endColumn: rparen.column,
-		};
-
-		if (typeArguments && typeArguments.length > 0) {
-			callExpr.typeArguments = typeArguments;
-		}
-
-		return callExpr;
-	}
-
-	private primary(): AST.Expression {
-		// Literals
-		if (this.match(TokenType.NUMBER)) {
-			const token = this.previous();
-			return {
-				type: "Literal",
-				value: parseFloat(token.value),
-				raw: token.value,
-				line: token.line,
-				column: token.column,
-			};
-		}
-
-		if (this.match(TokenType.STRING)) {
-			const token = this.previous();
-			return {
-				type: "Literal",
-				value: token.value,
-				raw: token.value,
-				line: token.line,
-				column: token.column,
-			};
-		}
-
-		if (this.match(TokenType.BOOL)) {
-			const token = this.previous();
-			return {
-				type: "Literal",
-				value: token.value === "true",
-				raw: token.value,
-				line: token.line,
-				column: token.column,
-			};
-		}
-
-		if (this.match(TokenType.COLOR)) {
-			const token = this.previous();
-			return {
-				type: "Literal",
-				value: token.value, // Keep hex color as string (e.g., "#d8e3ac")
-				raw: token.value,
-				line: token.line,
-				column: token.column,
-			};
-		}
-
-		// Parse 'na' as an Identifier so it works both as a constant and function call
-		// The analyzer handles na() returning bool and na as a constant value
-		if (this.match([TokenType.KEYWORD, ["na"]])) {
-			const token = this.previous();
-			return {
-				type: "Identifier",
-				name: "na",
-				line: token.line,
-				column: token.column,
-			};
-		}
-
-		// Switch expression (can appear as value in variable declaration)
-		if (this.match([TokenType.KEYWORD, ["switch"]])) {
-			return this.switchExpression();
-		}
-
-		// Identifier
-		if (this.match(TokenType.IDENTIFIER) || this.match(TokenType.KEYWORD)) {
-			const token = this.previous();
-			return {
-				type: "Identifier",
-				name: token.value,
-				line: token.line,
-				column: token.column,
-			};
-		}
-
-		// Grouping
-		if (this.match(TokenType.LPAREN)) {
-			this.parenDepth++; // Increment depth for grouping
-			const expr = this.expression();
-			this.consume(TokenType.RPAREN, 'Expected ")" after expression');
-			this.parenDepth--; // Decrement depth after closing
-			return expr;
-		}
-
-		// Array literal
-		if (this.match(TokenType.LBRACKET)) {
-			this.bracketDepth++; // Track bracket depth for multiline arrays
-			const elements: AST.Expression[] = [];
-			// Skip newlines after opening bracket
-			while (this.check(TokenType.NEWLINE)) {
-				this.advance();
-			}
-			if (!this.check(TokenType.RBRACKET)) {
-				do {
-					// Skip newlines before element
-					while (this.check(TokenType.NEWLINE)) {
-						this.advance();
-					}
-					elements.push(this.expression());
-					// Skip newlines after element
-					while (this.check(TokenType.NEWLINE)) {
-						this.advance();
-					}
-				} while (this.match(TokenType.COMMA));
-			}
-			// Skip newlines before closing bracket
-			while (this.check(TokenType.NEWLINE)) {
-				this.advance();
-			}
-			const closeBracket = this.consume(TokenType.RBRACKET, 'Expected "]"');
-			this.bracketDepth--; // Decrement after closing
-			return {
-				type: "ArrayExpression",
-				elements,
-				line: closeBracket.line,
-				column: closeBracket.column,
-			};
-		}
-
-		throw new Error(`Unexpected token: ${this.peek().value}`);
-	}
+	private primary(): AST.Expression { return this.exprs.primary(); }
 
 	// Utility methods
-	private match(...types: (TokenType | [TokenType, string[]])[]): boolean {
+	public match(...types: (TokenType | [TokenType, string[]])[]): boolean {
 		for (const type of types) {
 			if (Array.isArray(type)) {
 				const [tokenType, values] = type;
@@ -2374,7 +1726,7 @@ export class Parser {
 		return false;
 	}
 
-	private check(type: TokenType | [TokenType, string[]]): boolean {
+	public check(type: TokenType | [TokenType, string[]]): boolean {
 		if (this.isAtEnd()) return false;
 		if (Array.isArray(type)) {
 			const [tokenType, values] = type;
@@ -2385,29 +1737,29 @@ export class Parser {
 		return this.peek().type === type;
 	}
 
-	private advance(): Token {
+	public advance(): Token {
 		if (!this.isAtEnd()) this.current++;
 		return this.previous();
 	}
 
-	private isAtEnd(): boolean {
+	public isAtEnd(): boolean {
 		return this.peek().type === TokenType.EOF;
 	}
 
-	private peek(): Token {
+	public peek(): Token {
 		return this.tokens[this.current];
 	}
 
-	private peekNext(): Token | null {
+	public peekNext(): Token | null {
 		if (this.current + 1 >= this.tokens.length) return null;
 		return this.tokens[this.current + 1];
 	}
 
-	private previous(): Token {
+	public previous(): Token {
 		return this.tokens[this.current - 1];
 	}
 
-	private consume(type: TokenType, message: string): Token {
+	public consume(type: TokenType, message: string): Token {
 		if (this.check(type)) return this.advance();
 		throw new Error(`${message} at line ${this.peek().line}`);
 	}

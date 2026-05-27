@@ -70,12 +70,18 @@ IDs so the two stay in sync.
   error. Correct in aggregate (−1270 cascade FPs across the corpus)
   but occasionally skips legitimate declarations between the error
   and the next true top-level statement, accounting for some of the
-  "Undefined variable …" appearances that surfaced after INV012
-  (sampling suggests *most* are real but not all). A
-  parser-state-aware synchronize that tracked "in a function body /
-  switch arm / if body" and skipped to the end of *that* context
-  rather than all the way out would be more precise. Bigger change
-  needing a context stack; defer until the simpler win is stable.
+  "Undefined variable …" appearances that surfaced after INV012.
+  Sampling suggests *most* of those are real findings the cascade
+  was hiding (e.g. comma-pair declarations our parser doesn't
+  recognise), not sync over-skipping — so the upside here is smaller
+  than it first looked. **Half-measure attempted** (looser sync that
+  preferred next-NEWLINE over column-1 when followed by a plausible
+  statement-start keyword) — produced 2244 *new* cascade FPs and was
+  reverted. The real fix needs a parser-state stack tracking
+  "currently inside function body / switch arm / if body / type
+  body" and a sync that skips to the end of *that* context, not the
+  next column-1. Bigger refactor; defer until someone has appetite
+  for the stack-threading work.
 
 ## Gotchas
 
@@ -99,6 +105,7 @@ count.
 | `scripts/categorize-failures.mjs` | Reads `real-failures.json`, normalizes error messages into templates (strips line numbers, variable names, etc.), groups every occurrence under one of 48 / 19 categories, writes `lint-reports/failures-by-category.json`. |
 | `scripts/snapshot-local-lint.mjs` | Runs `pine-lint` (local) on every fixture and writes `lint-reports/local-baseline.json` — sorted per-file error lists. The regression contract. Re-run after every intentional change. |
 | `scripts/regression-check.mjs` | Reruns local lint over the corpus and diffs against the baseline. **No network.** Annotates disappeared errors against `real-failures.json` to distinguish "fixed a known FP" from "stopped catching a real error". Exits non-zero on any new error appearance. |
+| `scripts/audit-fixtures.mjs` | Scans every `.pine` fixture under `packages/core/test/fixtures/` without running vitest. Flags fixtures with malformed `@expects` directives and fixtures whose only assertion is a total `errors: N` count (no per-error coverage), printing suggested `// @expects error: line=N, message="..."` directives ready to paste. Exits non-zero on malformed directives. Wrapper: `pnpm run audit:fixtures` (also rebuilds the compiled helpers it imports). |
 
 Repro for any fixture:
 
