@@ -145,52 +145,7 @@ export class Parser {
 
 		// Type or Enum declaration (Pine Script v6)
 		if (this.match([TokenType.KEYWORD, ["type", "enum"]])) {
-			const kind = this.previous().value;
-			const nameToken = this.consume(
-				TokenType.IDENTIFIER,
-				`Expected ${kind} name`,
-			);
-
-			// Skip the body of the type/enum (indented block)
-			// We use indentation tracking to skip the block
-			const startToken = this.previous();
-
-			// Skip newlines after name
-			while (this.check(TokenType.NEWLINE)) {
-				this.advance();
-			}
-
-			const firstBodyToken = this.peek();
-			if (firstBodyToken.line > startToken.line) {
-				const bodyIndent = firstBodyToken.indent || 0;
-				const baseIndent = startToken.indent || 0;
-
-				if (bodyIndent > baseIndent) {
-					while (!this.isAtEnd()) {
-						const currentToken = this.peek();
-						// Only check indentation for tokens that start a line (have indent defined)
-						// Tokens in the middle of a line have indent: undefined
-						const isLineStart = currentToken.indent !== undefined;
-
-						if (
-							isLineStart &&
-							currentToken.line > startToken.line &&
-							currentToken.indent !== undefined &&
-							currentToken.indent < bodyIndent
-						) {
-							break;
-						}
-						this.advance();
-					}
-				}
-			}
-
-			return {
-				type: kind === "type" ? "TypeDeclaration" : "EnumDeclaration",
-				name: nameToken.value,
-				line: nameToken.line,
-				column: nameToken.column,
-			} as AST.Statement;
+			return this.typeOrEnumDeclaration(this.previous().value);
 		}
 
 		// Variable declaration with optional type annotation:
@@ -965,15 +920,31 @@ export class Parser {
 	}
 
 	/**
-	 * Parse export declaration: export funcName(...) => ... or export method methodName(...) => ...
+	 * Parse export declaration. Valid follow tokens:
+	 *   export funcName(...) => ...           (function)
+	 *   export method methodName(...) => ...  (method)
+	 *   export enum Name ...                  (enum, see INV002)
+	 *   export type Name ...                  (type, see INV002)
 	 */
-	private exportDeclaration(): AST.FunctionDeclaration | AST.MethodDeclaration {
-		// Check if it's 'export method'
+	private exportDeclaration():
+		| AST.FunctionDeclaration
+		| AST.MethodDeclaration
+		| AST.TypeDeclaration
+		| AST.EnumDeclaration {
 		if (this.match([TokenType.KEYWORD, ["method"]])) {
 			return this.methodDeclaration(true);
 		}
 
-		// Otherwise it's 'export funcName(...) => ...'
+		// `export enum Name ...` / `export type Name ...` — Pine v6 library
+		// exports. Without this branch the parser falls into the function-
+		// declaration path below, hits a parse error ("Expected function name
+		// after 'export'") and the enum never registers as a symbol, so every
+		// reference like `Name.Member` becomes "Undefined variable 'Name'".
+		// see INV002.
+		if (this.match([TokenType.KEYWORD, ["enum", "type"]])) {
+			return this.typeOrEnumDeclaration(this.previous().value);
+		}
+
 		const nameToken = this.consume(
 			TokenType.IDENTIFIER,
 			"Expected function name after 'export'",
@@ -991,6 +962,57 @@ export class Parser {
 		);
 		funcDecl.isExport = true;
 		return funcDecl;
+	}
+
+	/**
+	 * Parse a type or enum declaration body, given the already-consumed
+	 * `type`/`enum` keyword. The body is an indented block that we skip
+	 * (members are not currently tracked in the AST — only the declaration
+	 * itself, so it can be registered as a namespace symbol).
+	 */
+	private typeOrEnumDeclaration(
+		kind: string,
+	): AST.TypeDeclaration | AST.EnumDeclaration {
+		const nameToken = this.consume(
+			TokenType.IDENTIFIER,
+			`Expected ${kind} name`,
+		);
+
+		const startToken = this.previous();
+
+		while (this.check(TokenType.NEWLINE)) {
+			this.advance();
+		}
+
+		const firstBodyToken = this.peek();
+		if (firstBodyToken.line > startToken.line) {
+			const bodyIndent = firstBodyToken.indent || 0;
+			const baseIndent = startToken.indent || 0;
+
+			if (bodyIndent > baseIndent) {
+				while (!this.isAtEnd()) {
+					const currentToken = this.peek();
+					const isLineStart = currentToken.indent !== undefined;
+
+					if (
+						isLineStart &&
+						currentToken.line > startToken.line &&
+						currentToken.indent !== undefined &&
+						currentToken.indent < bodyIndent
+					) {
+						break;
+					}
+					this.advance();
+				}
+			}
+		}
+
+		return {
+			type: kind === "type" ? "TypeDeclaration" : "EnumDeclaration",
+			name: nameToken.value,
+			line: nameToken.line,
+			column: nameToken.column,
+		} as AST.TypeDeclaration | AST.EnumDeclaration;
 	}
 
 	/**

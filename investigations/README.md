@@ -27,3 +27,5 @@ file rather than renumbering.
 
 - [INV001](INV001-ternary-branch-compat/notes.md) — ternary branches,
   cross-type, TV-silent-on-nonsense, type-compatibility
+- [INV002](INV002-export-enum-type/notes.md) — parser, `export enum`,
+  `export type`, library exports, symbol-table-cascade

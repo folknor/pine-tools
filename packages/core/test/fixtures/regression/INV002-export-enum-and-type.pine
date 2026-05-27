@@ -1,0 +1,17 @@
+// @test regression/INV002-export-enum-and-type
+// @description Pine v6 libraries can export both enums and types via `export enum Name` / `export type Name`. The parser must register both as namespace symbols so that subsequent `Name.Member` references resolve. See investigations/INV002-export-enum-type/notes.md.
+// @expects parse: success
+// @expects no-errors
+//@version=6
+library("test")
+
+export enum Tz
+    Utc = "UTC"
+    Exchange = "Exchange"
+
+export type Bar
+    int x = 0
+    float y = 0.0
+
+x = Tz.Utc
+y = Tz.Exchange
