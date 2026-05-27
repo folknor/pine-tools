@@ -33,19 +33,60 @@ fixtures.
   hits) and shrunk `Type mismatch for argument *` (98→85),
   `Cannot assign * to *` (90→72), and `Type mismatch: cannot apply *` (238→231).
 
+## Open concern — bool-coercion may be too permissive
+
+Investigation after the coercion fix landed: pine-lint --tv strictly
+enforces bool in `if`/`while`/`and`/`or`/`not`/ternary contexts. Direct
+verification:
+
+```
+pine-lint --tv --code '//@version=6
+indicator("t")
+my_int = 5
+if my_int
+    label.new(bar_index, close, "test")'
+# → errors: 1
+#   The condition of the "{blockName}" statement must evaluate to a "bool" value.
+```
+
+So `isBoolCoercible` accepting numerics and color in condition sites is
+*too permissive* — TV does not auto-coerce. The 670+ FPs that
+disappeared after that fix appear to be a mix of:
+
+1. **Wins**: our type inference incorrectly tagged the expression as
+   non-bool (e.g. inferred `series<float>` where TV inferred
+   `series<bool>` because the value was a comparison). TV is silent at
+   those positions because *both* the type and the bool-context are
+   fine in TV's model. Our fix unmasks them because we now skip the
+   bool check entirely.
+2. **Losses (+8 FNs)**: cases like `123 or false`, `if my_float_var` —
+   real bugs in user code where the variable / literal *is* numeric.
+   TV correctly errors; we used to error (with our own wording) and
+   now we're silent. These appear in the `Cannot call "{funId}" with
+   argument ...` FN category (count grew 16 → 24) and in three of our
+   own validation fixtures (`packages/core/test/fixtures/validation/
+   logical-operators-errors.pine`, `type-errors-operators.pine`,
+   `ternary-branch-types.pine`) — which the test runner currently
+   *doesn't* actually exercise (it only honors `error: line=...`
+   directives, not bare `errors: N`).
+
+**The correct fix** is to leave the bool-context check strict and fix
+the type-inference site that produces `series<float>` (or `color`)
+where the expression should be `series<bool>`. Likely sites:
+
+- Comparison expressions returning the wrong type
+- User-defined / library-imported function return types missing
+- `ta.*` / `request.*` functions with stale or incomplete signatures
+
+Until the inference is fixed, the current state is a net trade-off:
+−877 FPs in exchange for +8 FNs. **Do not extend this coercion further
+without an inference-side fix.**
+
 ## Newly visible (not regressions — were always FPs, just unblocked)
 
-- `Ternary branches must have compatible types. Got '*' and '*'` grew
-  41→43 because previously-masked `bool ? T : F` cases now reach the
-  branch-compat check. The branch-compat function in `checker.ts:715` is
-  intentionally stricter than `isAssignable`; the data shows TV doesn't
-  flag `bool`/numeric or `bool`/color mixes in branches, so this check
-  needs the same coercion treatment.
-- `Cannot call "{funId}" with argument ...` FNs grew 16→24 because TV's
-  argument-type-mismatch errors used to be at the same `(line, col)` as
-  our over-strict errors and counted as TPs by position; now we're silent
-  there. These are real bugs in the user's code that we should be
-  catching. Likely all gated by `hasOverloads()` in `builtins.ts`.
+- `Ternary branches must have compatible types. Got '*' and '*'` was
+  surfaced in the same way; subsequently removed entirely after TV
+  data confirmed it never errors on cross-type branches.
 
 Authoritative per-occurrence list lives in
 `lint-reports/failures-by-category.json`. For every category below the JSON
