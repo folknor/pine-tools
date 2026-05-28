@@ -299,49 +299,6 @@ function isParameterOptional(param: Parameter): boolean {
 	return false;
 }
 
-const MISSING_PARAMETERS: Record<string, Parameter[]> = {
-	"input.int": [
-		{
-			name: "minval",
-			type: "const int",
-			description: "Minimum value of the input.",
-			required: false,
-		},
-		{
-			name: "maxval",
-			type: "const int",
-			description: "Maximum value of the input.",
-			required: false,
-		},
-		{
-			name: "step",
-			type: "const int",
-			description: "Step value for the input.",
-			required: false,
-		},
-	],
-	"input.float": [
-		{
-			name: "minval",
-			type: "const float",
-			description: "Minimum value of the input.",
-			required: false,
-		},
-		{
-			name: "maxval",
-			type: "const float",
-			description: "Maximum value of the input.",
-			required: false,
-		},
-		{
-			name: "step",
-			type: "const float",
-			description: "Step value for the input.",
-			required: false,
-		},
-	],
-};
-
 function generateFunctions(
 	details: DetailsData,
 	_constructs: ConstructsData,
@@ -375,21 +332,6 @@ function generateFunctions(
 			required: !isParameterOptional(p),
 			default: p.default,
 		}));
-
-		if (MISSING_PARAMETERS[name]) {
-			const existingNames = new Set(parameters.map((p) => p.name));
-			for (const missing of MISSING_PARAMETERS[name]) {
-				if (!existingNames.has(missing.name)) {
-					parameters.push({
-						name: missing.name,
-						type: missing.type,
-						description: missing.description,
-						required: missing.required ?? true,
-						default: missing.default,
-					});
-				}
-			}
-		}
 
 		const func: GeneratedFunction = {
 			name,

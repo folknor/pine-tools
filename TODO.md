@@ -59,16 +59,23 @@ IDs so the two stay in sync.
   forcing the checker to bypass type validation entirely via
   `functionIsPolymorphic`. Goal: union of types across overloads, so
   the checker can validate against the union and unblock the 3 FNs
-  from #8.
+  from #8. Note there are **two parallel encodings of polymorphism**:
+  the *discovered* `pine-data/v6/function-behavior.json` (`returnTypeParam`
+  for `input`/`nz`, arg-ordering quirks) and the *hand-coded*
+  `polymorphic` map in `getFunctionFlags`. The JSON is regenerated only
+  by `discover:behavior` — not the main `crawl→scrape→generate` flow — so
+  it's stale (stamped 2026-05-24, 5 functions). Consolidating the two
+  encodings is part of this fix.
 - **#18 — built-in color constants infer as `undetermined type`.**
-  Surfaced by INV011 — accounts for ~117 newly-visible "Ternary
-  branches must have compatible types. Got 'color' and 'string'" FPs.
-  The constants ARE in `CONSTANTS_BY_NAME` with `type: "color"`,
-  but minimal repros mimicking the pattern lint cleanly. The
-  `"undetermined type"` label in pine-lint's variable-list output
+  Surfaced by INV011. The "Ternary branches must have compatible types"
+  cluster is now down to **31** (from ~117+) after the variable/constant
+  scraping and display-flag fixes, but a residue of "Got 'color' and
+  'string'" FPs remains. The constants ARE in `CONSTANTS_BY_NAME` with
+  `type: "color"`, but minimal repros mimicking the pattern lint cleanly.
+  The `"undetermined type"` label in pine-lint's variable-list output
   comes from `astExtractor.ts`, a separate path from the validator's
-  `inferExpressionType` — investigating may need to reconcile the
-  two type-inference paths.
+  `inferExpressionType` — investigating may need to reconcile the two
+  type-inference paths.
 - **#20 — refine INV012 with a context-aware synchronize.** Current
   `synchronize()` skips to the next column-1 statement after a parse
   error. Correct in aggregate (−1270 cascade FPs across the corpus)
@@ -86,6 +93,20 @@ IDs so the two stay in sync.
   body" and a sync that skips to the end of *that* context, not the
   next column-1. Bigger refactor; defer until someone has appetite
   for the stack-threading work.
+- **#21 — retire/scrape the remaining hardcoded function metadata in
+  `generate.ts`.** `MISSING_PARAMETERS` is **done** — removed (the
+  re-scrape now carries `input.int`/`input.float`'s `minval`/`maxval`/`step`,
+  the merge deduped, regression-check confirmed a no-op). The `variadic`
+  map turned out **not** safe to delete: the scrape sets `variadic: true`
+  for most of them, but its required-param count overcounts `minArgs` for
+  `array.from` and `str.format` (both valid with 1 arg, scrape says 2), and
+  `math.sum` isn't variadic at all — so the map's `minArgs` values are
+  authoritative and stay. Still hand-coded and harder (TV doesn't expose
+  these cleanly): `getFunctionFlags.topLevelOnly` (15 fns, "global scope
+  only"), the `polymorphic` category map (~25 fns → see #17), and
+  `isParameterOptional` + `commonOptionalParams` — prose-matching heuristics
+  for argument optionality, the last cousin of the retired
+  `inferVariableType` / `inferConstantType` guessers.
 
 ## Gotchas
 
@@ -179,27 +200,28 @@ to column 1, etc.) should collapse most of these.
 
 | count | files | category |
 |---|---|---|
-| 1697 | 44 | `Undefined variable '*'` *(many are recovery artifacts, see Symbols below)* |
-| 1652 | 14 | `Unexpected token: \n` |
-| 1292 | 48 | `Undefined variable '*'. Did you mean '*'?` *(also partly recovery)* |
-| 145 | 12 | `Unexpected token: =>` |
-| 56 | 4 | `Unexpected token: =` |
-| 56 | 7 | `Expected variable name` |
-| 48 | 7 | `Expected ")" after arguments` |
-| 46 | 17 | `Expected iterator variable` |
-| 41 | 11 | `Unexpected token: .` |
-| 36 | 10 | `Unexpected token: )` |
-| 34 | 11 | `Unexpected token: ,` |
-| 24 | 6 | `Expected ")" after method parameters` |
-| 18 | 4 | `Unexpected token: ]` |
-| 15 | 5 | `Expected function name after 'export'` |
-| 11 | 2 | `Expected type name` |
-| 9 | 4 | `Expected ']'` |
+| 1086 | 38 | `Undefined variable '*'` *(many are recovery artifacts, see Symbols below)* |
+| 1072 | 41 | `Undefined variable '*'. Did you mean '*'?` *(also partly recovery)* |
+| 549 | 12 | `Unexpected token: \n` |
+| 103 | 9 | `Unexpected token: =>` |
+| 55 | 7 | `Expected variable name` |
+| 54 | 4 | `Unexpected token: =` |
+| 45 | 16 | `Expected iterator variable` |
+| 42 | 11 | `Unexpected token: .` |
+| 38 | 11 | `Unexpected token: ,` |
+| 33 | 8 | `Unexpected token: )` |
+| 14 | 5 | `Expected ")" after arguments` |
+| 14 | 3 | `Expected ")" after method parameters` |
 | 7 | 5 | `Unexpected token: :=` |
+| 7 | 3 | `Unexpected token: :` |
+| 6 | 3 | `Unexpected token: ]` |
 | 5 | 4 | `Unexpected token: +` |
-| 2 | 2 | `Unexpected token: :` |
+| 3 | 3 | `Expected ']'` |
+| 1 | 1 | `Expected function name after 'export'` |
+| 1 | 1 | `Expected type name` |
 | 1 | 1 | `Expected method name after 'method'` |
 | 1 | 1 | `Unexpected token: ==` |
+| 1 | 1 | `Missing comma before '*' argument` |
 
 Example: `fixtures/0c053259a16ba1b4aa4898add6830d5fe0e6bcb90766e1595ca40c08f5644da8.pine`
 — TV reports 1 error at L61 (invalid `series float` qualifier in function
@@ -226,23 +248,25 @@ These are real syntax errors in the user's code that we don't surface.
 
 ## Type checker — over-strict bool / arg / assign rules
 
-The single biggest cluster. These look like over-strict rules but per
-task #9 the root cause is more likely our type inference producing
-non-bool types where TV correctly produces bool.
+Per task #9 the root cause is more likely our type inference producing
+non-bool types where TV correctly produces bool. Much reduced this round:
+the `input`/`const` qualifier coercion and display-flag fixes cleared the
+`Type mismatch for parameter` category entirely (was 127) and most of the
+bool-operator and ternary FPs.
 
 | count | files | category |
 |---|---|---|
-| 238 | 57 | `Type mismatch: cannot apply '*' to * and *` |
-| 199 | 28 | `Operator 'and' requires bool operands, but left operand is *` |
-| 166 | 32 | `Ternary condition must be bool, got *` |
-| 130 | 20 | `Operator 'and' requires bool operands, but right operand is *` |
-| 127 | 6 | `Type mismatch for parameter '*': expected *, got *` |
-| 98 | 45 | `Type mismatch for argument *: expected *, got *` |
-| 90 | 27 | `Cannot assign * to *` |
-| 59 | 17 | `Condition must be boolean, got *` |
-| 38 | 7 | `Type mismatch: 'not' operator requires bool, got *` |
-| 26 | 15 | `Operator 'or' requires bool operands, but left operand is *` |
-| 13 | 12 | `Operator 'or' requires bool operands, but right operand is *` |
+| 75 | 30 | `Type mismatch: cannot apply '*' to * and *` |
+| 44 | 19 | `Cannot assign * to *` |
+| 31 | 12 | `Ternary branches must have compatible types. Got '*' and '*'` |
+| 16 | 6 | `Type mismatch for argument *: expected *, got *` |
+| 11 | 5 | `Condition must be boolean, got *` |
+| 6 | 3 | `Operator 'and' requires bool operands, but right operand is *` |
+| 5 | 1 | `Operator 'and' requires bool operands, but left operand is *` |
+| 5 | 3 | `Operator 'or' requires bool operands, but left operand is *` |
+| 4 | 1 | `Type mismatch: 'not' operator requires bool, got *` |
+| 3 | 2 | `Ternary condition must be bool, got *` |
+| 1 | 1 | `Operator 'or' requires bool operands, but right operand is *` |
 
 **Right approach**: pick a specific FP, trace through `inferExpressionType`
 in `checker.ts` to see why we produce e.g. `series<float>` for what
@@ -252,7 +276,7 @@ should be `series<bool>`. Don't relax the bool checks — they're correct.
 
 | count | files | category |
 |---|---|---|
-| 24 | 8 | `Cannot call "{funId}" with argument ...` (arg type mismatches on built-ins we miss) |
+| 16 | 8 | `Cannot call "{funId}" with argument ...` (arg type mismatches on built-ins we miss) |
 | 3 | 3 | `Cannot assign * to *` (TV catches assignment type errors we don't) |
 | 2 | 2 | `Could not find {kind} '{fullName}'` |
 | 2 | 1 | `Cannot use a collection in a type template of another collection` |
@@ -261,7 +285,7 @@ should be `series<bool>`. Don't relax the bool checks — they're correct.
 | 2 | 2 | `Value with NA type cannot be assigned to a variable that was defined without type keyword` |
 | 1 | 1 | `Incorrect field type "{id}" of enum "{enumName}"` |
 
-The 24 missed argument-type-mismatches are particularly worth chasing —
+The 16 missed argument-type-mismatches are particularly worth chasing —
 these are real runtime bugs in the user's code that we'd hide. Look first
 at functions registered with `type: "unknown"` parameters (see
 `hasOverloads()` in `builtins.ts`) — that bypass skips positional type
@@ -271,19 +295,19 @@ checking.
 
 ## Symbols — undefined-variable clusters
 
-`Undefined variable '*'` (1697 hits in 44 files) and `Undefined variable '*'.
-Did you mean '*'?` (1292 hits in 48 files) dominate the count, but most of
+`Undefined variable '*'` (1086 hits in 38 files) and `Undefined variable '*'.
+Did you mean '*'?` (1072 hits in 41 files) dominate the count, but most of
 both come from a handful of files where the same name appears dozens of
 times. The JSON groups occurrences per category — find the names that
 repeat:
 
 | ~count | name | example fixture |
 |---|---|---|
-| 95 | `Timezone` | `fffe6a2f18a42e0f83a5aa832b48019ad0f121627ca61cc0b5e63252f682433a.pine:131` |
-| 66 | `entryOrderType` | `6293fd713714b37c8f108b12e64e92399f72036aac8ff8f9f2933ac09e042022.pine:499` |
-| 64 | `fvg` | `4d78be7e3f7e6ab005629fa3e77f339e1107cfdf026d883dfca1e9c2797d9c5d.pine:919` |
-| 60 | `exiu` | `e1a8cc990e645380ff1c4fa0718ab38012db5ac3df5221efd66e859acd8091ae.pine:108` |
-| 56 | `numOfTakeProfitTargets` | `6293fd713714b37c8f108b12e64e92399f72036aac8ff8f9f2933ac09e042022.pine:698` |
+| 64 | `fvg` | `4d78be7e3f7e6ab005629fa3e77f339e1107cfdf026d883dfca1e9c2797d9c5d.pine` |
+| 60 | `exiu` | `e1a8cc990e645380ff1c4fa0718ab38012db5ac3df5221efd66e859acd8091ae.pine` |
+| 55 | `stuff` | `4d78be7e3f7e6ab005629fa3e77f339e1107cfdf026d883dfca1e9c2797d9c5d.pine` |
+| 55 | `this` | `6874e63621f8bc08b944708a25d8859bd487a769f8553ed75fea33ea49cd00a6.pine` |
+| 54 | `dr` | `6293fd713714b37c8f108b12e64e92399f72036aac8ff8f9f2933ac09e042022.pine` |
 
 Per-file root causes are almost always one of:
 
@@ -302,11 +326,11 @@ files) is the same shape applied to identifiers in syntactic positions.
 
 ## Checker — local-scope restrictions probably too strict
 
-`Function '*' cannot be called from a local scope` fires 31 times across 6
+`Function '*' cannot be called from a local scope` fires 15 times across 5
 files for `plot`, `plotshape`, `plotcandle`, `alertcondition`, `barcolor`,
-`bgcolor`, `fill`. Some of these (`alertcondition` in particular) may
-actually be callable from `if`/`for` bodies in v6 — verify per-function with
-TV.
+`bgcolor`, `fill` (down from 31 after INV008; see #4). Some of these
+(`alertcondition` in particular) may actually be callable from `if`/`for`
+bodies in v6 — verify per-function with TV.
 
 ---
 

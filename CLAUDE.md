@@ -79,6 +79,11 @@ so a reader can scan the entire trail of decisions from one place.
 - Constants (`color.red`, `shape.circle`)
 - Syntax highlighting patterns
 
+Variable and constant **types** (incl. qualifier) are scraped from each
+reference page's "Type" field — never guess them by namespace. The old
+`inferVariableType` / `inferConstantType` heuristics were retired for
+exactly that reason; don't reintroduce that pattern.
+
 ---
 
 ## Commands
@@ -165,6 +170,11 @@ All API data is scraped from TradingView docs and generated:
 | `discover:behavior` | `pine-data/v6/function-behavior.json` |
 
 **Regenerating is safe** - customizations are in the scripts, not output files.
+
+⚠️ `function-behavior.json` is regenerated **only** by `discover:behavior`,
+*not* by `generate` — so it goes stale after a `crawl`/`scrape`/`generate`
+refresh unless you re-run `discover:behavior`. (Its `.ts` sibling is a
+hand-written loader that embeds the JSON — see INV011.)
 
 ### Polymorphic Functions
 

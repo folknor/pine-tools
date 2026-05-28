@@ -1,7 +1,7 @@
 /**
  * Pine Script V6 Functions
  * Auto-generated from TradingView documentation
- * Generated: 2026-05-28T07:14:59.152Z
+ * Generated: 2026-05-28T07:47:07.469Z
  * Total: 475 functions
  */
 

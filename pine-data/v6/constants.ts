@@ -1,7 +1,7 @@
 /**
  * Pine Script V6 Constants
  * Auto-generated from TradingView documentation
- * Generated: 2026-05-28T07:14:59.171Z
+ * Generated: 2026-05-28T07:47:07.474Z
  * Total: 237 constants
  */
 
