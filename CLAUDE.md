@@ -97,7 +97,9 @@ pnpm run generate:syntax  # Generate syntaxes/pine.tmLanguage.json
 pnpm run discover:behavior # Discover polymorphism → function-behavior.json
 
 # CLI
-node dist/packages/cli/src/cli.js <file.pine>
+pnpm run install:cli                          # build bundle + install to ~/.local/bin/pine-lint
+pine-lint <file.pine>                         # run the installed CLI (re-run install:cli after src changes)
+node dist/packages/cli/src/cli.js <file.pine> # or run the bundle directly without installing
 
 # Dev Tools
 pnpm run test:snippet -- 'code'              # Test Pine snippet via CLI
@@ -298,19 +300,28 @@ Run `pnpm run debug:diff -- --count 20 --verbose` to see current discrepancies.
 
 ---
 
-## pine-lint (authority)
+## pine-lint CLI & TradingView authority
 
-TradingView's `pine-lint` is the source of truth for Pine v6 validity — when our checker disagrees, pine-lint wins.
+`pine-lint` is **this repo's own CLI** (bundled from `packages/cli/src/cli.ts`,
+installed to `~/.local/bin/pine-lint` by `pnpm run install:cli` — re-run after
+any CLI source change). Run bare, it executes our offline parser + validator;
+with `--tv` it forwards the source to TradingView's `translate_light` endpoint
+and returns TV's response instead. TradingView is the source of truth for Pine
+v6 *validity* — when our checker disagrees, TV (via `--tv`) wins. (But see the
+Methodology section above: TV *silence* is evidence, not authority.)
 
-Invoke the script directly (shell aliases aren't available in non-interactive sessions):
+Usage (JSON on stdout, matching the pine-lint format):
 
 ```bash
-python3 /home/folk/Programs/pinescript_syntax_checker/pinescript_syntax_checker/pinescript_checker.py <file.pine> --pretty
+pine-lint <file.pine>                         # our local validator
+pine-lint -c 'indicator("x")'                 # validate an inline string
+cat script.pine | pine-lint -                 # validate from stdin
+pine-lint --tv <file.pine>                    # TradingView's verdict (the authority)
+pine-lint --tv --full-response <file.pine>    # keep the verbose "scopes" block (stripped by default)
 ```
 
-`--username <name>` overrides the default `admin`; `--full-response` keeps the `scopes` section that's stripped by default.
-
-The local CLI (`node dist/packages/cli/src/cli.js`, built from `packages/cli/src/cli.ts`) runs this repo's own parser + validator offline and emits the same JSON shape as pine-lint so the two can be diffed — it's the thing being measured *against* pine-lint, not a substitute for it.
+`scripts/compare-tv.mjs <file.pine>` runs both at once and prints the
+local-only / tv-only error diff — the everyday repro tool.
 
 ---
 

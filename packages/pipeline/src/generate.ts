@@ -88,13 +88,24 @@ interface GeneratedConstant {
 	type: string;
 }
 
+interface ScrapedVariable {
+	name: string;
+	type: string;
+	description: string;
+	namespace: string;
+}
+
 interface DetailsData {
 	functions: Record<string, FunctionDetail>;
+	variables?: Record<string, ScrapedVariable>;
 }
 
 interface ConstructsData {
 	keywords?: { items?: string[] };
-	builtInVariables?: { standalone?: { items?: string[] } };
+	builtInVariables?: {
+		standalone?: { items?: string[] };
+		byNamespace?: Record<string, string[]>;
+	};
 	constants?: { byNamespace?: Record<string, string[]> };
 }
 
@@ -102,88 +113,28 @@ interface ConstructsData {
 // TYPE INFERENCE HELPERS
 // =============================================================================
 
-function inferVariableType(name: string): { type: string; qualifier: string } {
-	// Price data - series<float>
-	if (
-		["close", "open", "high", "low", "hl2", "hlc3", "ohlc4", "hlcc4"].includes(
-			name,
-		)
-	) {
-		return { type: "float", qualifier: "series" };
+// Parse TV's qualified type string (e.g. "series float", "simple string",
+// "array<line>") into our { type, qualifier } shape. Scalars become
+// `qualifier<base>` (e.g. series<float>); collections keep their literal form
+// and are treated as series.
+function parseQualifiedType(raw: string): { type: string; qualifier: string } {
+	const s = (raw || "").trim();
+	const m = s.match(/^(series|simple|input|const)\s+(.+)$/);
+	if (m) {
+		const qualifier = m[1];
+		const base = m[2].trim();
+		return { qualifier, type: `${qualifier}<${base}>` };
 	}
-	if (["volume", "ask", "bid"].includes(name)) {
-		return { type: "float", qualifier: "series" };
-	}
-
-	// Time data - series<int>
-	if (
-		[
-			"time",
-			"time_close",
-			"time_tradingday",
-			"timenow",
-			"last_bar_time",
-		].includes(name)
-	) {
-		return { type: "int", qualifier: "series" };
-	}
-	if (["bar_index", "last_bar_index"].includes(name)) {
-		return { type: "int", qualifier: "series" };
-	}
-	if (
-		[
-			"dayofweek",
-			"dayofmonth",
-			"month",
-			"year",
-			"hour",
-			"minute",
-			"second",
-			"weekofyear",
-		].includes(name)
-	) {
-		return { type: "int", qualifier: "series" };
-	}
-
-	// Special
-	if (name === "na") return { type: "na", qualifier: "const" };
-
-	// Namespaced variables
-	if (name.startsWith("barstate."))
-		return { type: "bool", qualifier: "series" };
-	if (name.startsWith("chart.")) {
-		if (name.includes("color")) return { type: "color", qualifier: "simple" };
-		if (name.includes("time")) return { type: "int", qualifier: "series" };
-		return { type: "bool", qualifier: "simple" };
-	}
-	if (name.startsWith("session.")) return { type: "bool", qualifier: "series" };
-	if (name.startsWith("syminfo.")) {
-		if (name.includes("mintick") || name.includes("pointvalue"))
-			return { type: "float", qualifier: "simple" };
-		return { type: "string", qualifier: "simple" };
-	}
-	if (name.startsWith("timeframe.")) {
-		if (name.startsWith("timeframe.is"))
-			return { type: "bool", qualifier: "simple" };
-		if (name === "timeframe.multiplier")
-			return { type: "int", qualifier: "simple" };
-		return { type: "string", qualifier: "simple" };
-	}
-	if (name.startsWith("strategy.")) {
-		if (
-			name.includes("position_size") ||
-			name.includes("equity") ||
-			name.includes("profit") ||
-			name.includes("loss")
-		) {
-			return { type: "float", qualifier: "series" };
-		}
-		return { type: "int", qualifier: "series" };
-	}
-
-	// Default
-	return { type: "float", qualifier: "series" };
+	// Collection (array<…>/matrix<…>/map<…>) or otherwise unqualified.
+	return { qualifier: "series", type: s };
 }
+
+// Variables whose TV detail page exposes no machine-readable "Type" field.
+// Empty by design — populate only if the scrape surfaces such cases.
+const VARIABLE_TYPE_OVERRIDES: Record<
+	string,
+	{ type: string; qualifier: string }
+> = {};
 
 function inferConstantType(namespace: string): string {
 	switch (namespace) {
@@ -542,417 +493,54 @@ export const FUNCTION_NAMESPACES: Set<string> = new Set(
 }
 
 function generateVariables(
-	_details: DetailsData,
+	details: DetailsData,
 	constructs: ConstructsData,
 ): GeneratedVariable[] {
 	console.log("Generating variables.ts...");
 
 	const variables: GeneratedVariable[] = [];
 
-	// Standalone variables
-	const standalone = constructs.builtInVariables?.standalone?.items || [];
-	for (const name of standalone) {
-		const { type, qualifier } = inferVariableType(name);
+	// Build the authoritative name list from the crawl (standalone + namespaced
+	// members), then resolve each variable's type from the scrape. The old
+	// hand-maintained `namespaceVars` array and `inferVariableType()` heuristics
+	// are retired — TV's "Type" field is the source of truth now.
+	const names: string[] = [
+		...(constructs.builtInVariables?.standalone?.items || []),
+	];
+	const byNamespace = constructs.builtInVariables?.byNamespace || {};
+	for (const [namespace, members] of Object.entries(byNamespace)) {
+		for (const member of members) {
+			names.push(`${namespace}.${member}`);
+		}
+	}
+
+	const scraped = details.variables || {};
+	const missingType: string[] = [];
+
+	for (const name of [...new Set(names)].sort()) {
+		const sv = scraped[name];
+		let typeInfo: { type: string; qualifier: string };
+		if (sv?.type) {
+			typeInfo = parseQualifiedType(sv.type);
+		} else if (VARIABLE_TYPE_OVERRIDES[name]) {
+			typeInfo = VARIABLE_TYPE_OVERRIDES[name];
+		} else {
+			missingType.push(name);
+			typeInfo = { type: "series<float>", qualifier: "series" };
+		}
 		variables.push({
 			name,
-			namespace: undefined,
-			type: `${qualifier}<${type}>`,
-			qualifier,
-			description: `Built-in variable: ${name}`,
+			namespace: name.includes(".") ? name.split(".")[0] : undefined,
+			type: typeInfo.type,
+			qualifier: typeInfo.qualifier,
+			description: sv?.description || `Built-in variable: ${name}`,
 		});
 	}
 
-	// Namespace variables
-	const namespaceVars: GeneratedVariable[] = [
-		// syminfo
-		{
-			name: "syminfo.tickerid",
-			type: "simple<string>",
-			qualifier: "simple",
-			description: "Ticker ID with exchange prefix",
-		},
-		{
-			name: "syminfo.ticker",
-			type: "simple<string>",
-			qualifier: "simple",
-			description: "Ticker symbol without exchange",
-		},
-		{
-			name: "syminfo.prefix",
-			type: "simple<string>",
-			qualifier: "simple",
-			description: "Exchange prefix",
-		},
-		{
-			name: "syminfo.type",
-			type: "simple<string>",
-			qualifier: "simple",
-			description: "Symbol type (stock, forex, crypto, etc.)",
-		},
-		{
-			name: "syminfo.session",
-			type: "simple<string>",
-			qualifier: "simple",
-			description: "Session type",
-		},
-		{
-			name: "syminfo.timezone",
-			type: "simple<string>",
-			qualifier: "simple",
-			description: "Timezone",
-		},
-		{
-			name: "syminfo.currency",
-			type: "simple<string>",
-			qualifier: "simple",
-			description: "Currency",
-		},
-		{
-			name: "syminfo.basecurrency",
-			type: "simple<string>",
-			qualifier: "simple",
-			description: "Base currency",
-		},
-		{
-			name: "syminfo.description",
-			type: "simple<string>",
-			qualifier: "simple",
-			description: "Symbol description",
-		},
-		{
-			name: "syminfo.mintick",
-			type: "simple<float>",
-			qualifier: "simple",
-			description: "Minimum tick size",
-		},
-		{
-			name: "syminfo.pointvalue",
-			type: "simple<float>",
-			qualifier: "simple",
-			description: "Point value",
-		},
-		{
-			name: "syminfo.country",
-			type: "simple<string>",
-			qualifier: "simple",
-			description: "Country code of the symbol",
-		},
-		{
-			name: "syminfo.industry",
-			type: "simple<string>",
-			qualifier: "simple",
-			description: "Industry of the symbol",
-		},
-		{
-			name: "syminfo.root",
-			type: "simple<string>",
-			qualifier: "simple",
-			description: "Root symbol",
-		},
-		// barstate
-		{
-			name: "barstate.isfirst",
-			type: "series<bool>",
-			qualifier: "series",
-			description: "True on first bar",
-		},
-		{
-			name: "barstate.islast",
-			type: "series<bool>",
-			qualifier: "series",
-			description: "True on last bar",
-		},
-		{
-			name: "barstate.ishistory",
-			type: "series<bool>",
-			qualifier: "series",
-			description: "True on historical bars",
-		},
-		{
-			name: "barstate.isrealtime",
-			type: "series<bool>",
-			qualifier: "series",
-			description: "True on realtime bars",
-		},
-		{
-			name: "barstate.isnew",
-			type: "series<bool>",
-			qualifier: "series",
-			description: "True on new bar",
-		},
-		{
-			name: "barstate.isconfirmed",
-			type: "series<bool>",
-			qualifier: "series",
-			description: "True when bar is confirmed",
-		},
-		{
-			name: "barstate.islastconfirmedhistory",
-			type: "series<bool>",
-			qualifier: "series",
-			description: "True on last confirmed historical bar",
-		},
-		// timeframe
-		{
-			name: "timeframe.period",
-			type: "simple<string>",
-			qualifier: "simple",
-			description: "Timeframe period string",
-		},
-		{
-			name: "timeframe.multiplier",
-			type: "simple<int>",
-			qualifier: "simple",
-			description: "Timeframe multiplier",
-		},
-		{
-			name: "timeframe.isseconds",
-			type: "simple<bool>",
-			qualifier: "simple",
-			description: "True if seconds timeframe",
-		},
-		{
-			name: "timeframe.isminutes",
-			type: "simple<bool>",
-			qualifier: "simple",
-			description: "True if minutes timeframe",
-		},
-		{
-			name: "timeframe.isdaily",
-			type: "simple<bool>",
-			qualifier: "simple",
-			description: "True if daily timeframe",
-		},
-		{
-			name: "timeframe.isweekly",
-			type: "simple<bool>",
-			qualifier: "simple",
-			description: "True if weekly timeframe",
-		},
-		{
-			name: "timeframe.ismonthly",
-			type: "simple<bool>",
-			qualifier: "simple",
-			description: "True if monthly timeframe",
-		},
-		{
-			name: "timeframe.isdwm",
-			type: "simple<bool>",
-			qualifier: "simple",
-			description: "True if daily/weekly/monthly",
-		},
-		{
-			name: "timeframe.isintraday",
-			type: "simple<bool>",
-			qualifier: "simple",
-			description: "True if intraday timeframe",
-		},
-		{
-			name: "timeframe.isticks",
-			type: "simple<bool>",
-			qualifier: "simple",
-			description: "True if ticks timeframe",
-		},
-		{
-			name: "timeframe.main_period",
-			type: "simple<string>",
-			qualifier: "simple",
-			description: "Main period of the chart timeframe",
-		},
-		// chart
-		{
-			name: "chart.bg_color",
-			type: "color",
-			qualifier: "simple",
-			description: "Chart background color",
-		},
-		{
-			name: "chart.fg_color",
-			type: "color",
-			qualifier: "simple",
-			description: "Chart foreground color",
-		},
-		{
-			name: "chart.is_standard",
-			type: "simple<bool>",
-			qualifier: "simple",
-			description: "True if standard chart",
-		},
-		{
-			name: "chart.is_heikinashi",
-			type: "simple<bool>",
-			qualifier: "simple",
-			description: "True if Heikin Ashi chart",
-		},
-		{
-			name: "chart.is_renko",
-			type: "simple<bool>",
-			qualifier: "simple",
-			description: "True if Renko chart",
-		},
-		{
-			name: "chart.is_kagi",
-			type: "simple<bool>",
-			qualifier: "simple",
-			description: "True if Kagi chart",
-		},
-		{
-			name: "chart.is_linebreak",
-			type: "simple<bool>",
-			qualifier: "simple",
-			description: "True if Line Break chart",
-		},
-		{
-			name: "chart.is_pnf",
-			type: "simple<bool>",
-			qualifier: "simple",
-			description: "True if Point & Figure chart",
-		},
-		{
-			name: "chart.is_range",
-			type: "simple<bool>",
-			qualifier: "simple",
-			description: "True if Range chart",
-		},
-		{
-			name: "chart.left_visible_bar_time",
-			type: "series<int>",
-			qualifier: "series",
-			description: "Time of leftmost visible bar",
-		},
-		{
-			name: "chart.right_visible_bar_time",
-			type: "series<int>",
-			qualifier: "series",
-			description: "Time of rightmost visible bar",
-		},
-		// session
-		{
-			name: "session.ismarket",
-			type: "series<bool>",
-			qualifier: "series",
-			description: "True during market session",
-		},
-		{
-			name: "session.ispremarket",
-			type: "series<bool>",
-			qualifier: "series",
-			description: "True during pre-market",
-		},
-		{
-			name: "session.ispostmarket",
-			type: "series<bool>",
-			qualifier: "series",
-			description: "True during post-market",
-		},
-		{
-			name: "session.isfirstbar",
-			type: "series<bool>",
-			qualifier: "series",
-			description: "True on first bar of session",
-		},
-		{
-			name: "session.isfirstbar_regular",
-			type: "series<bool>",
-			qualifier: "series",
-			description: "True on first bar of regular session",
-		},
-		// strategy
-		{
-			name: "strategy.position_size",
-			type: "series<float>",
-			qualifier: "series",
-			description: "Current position size",
-		},
-		{
-			name: "strategy.position_avg_price",
-			type: "series<float>",
-			qualifier: "series",
-			description: "Average position price",
-		},
-		{
-			name: "strategy.equity",
-			type: "series<float>",
-			qualifier: "series",
-			description: "Current equity",
-		},
-		{
-			name: "strategy.openprofit",
-			type: "series<float>",
-			qualifier: "series",
-			description: "Open profit",
-		},
-		{
-			name: "strategy.netprofit",
-			type: "series<float>",
-			qualifier: "series",
-			description: "Net profit",
-		},
-		{
-			name: "strategy.grossprofit",
-			type: "series<float>",
-			qualifier: "series",
-			description: "Gross profit",
-		},
-		{
-			name: "strategy.grossloss",
-			type: "series<float>",
-			qualifier: "series",
-			description: "Gross loss",
-		},
-		{
-			name: "strategy.closedtrades",
-			type: "series<int>",
-			qualifier: "series",
-			description: "Number of closed trades",
-		},
-		{
-			name: "strategy.opentrades",
-			type: "series<int>",
-			qualifier: "series",
-			description: "Number of open trades",
-		},
-		{
-			name: "strategy.wintrades",
-			type: "series<int>",
-			qualifier: "series",
-			description: "Number of winning trades",
-		},
-		{
-			name: "strategy.losstrades",
-			type: "series<int>",
-			qualifier: "series",
-			description: "Number of losing trades",
-		},
-		{
-			name: "strategy.initial_capital",
-			type: "simple<float>",
-			qualifier: "simple",
-			description: "Initial capital",
-		},
-		{
-			name: "strategy.openprofit_percent",
-			type: "series<float>",
-			qualifier: "series",
-			description: "Open profit as percentage",
-		},
-		{
-			name: "strategy.netprofit_percent",
-			type: "series<float>",
-			qualifier: "series",
-			description: "Net profit as percentage",
-		},
-		{
-			name: "strategy.max_drawdown_percent",
-			type: "series<float>",
-			qualifier: "series",
-			description: "Maximum drawdown as percentage",
-		},
-	];
-
-	for (const v of namespaceVars) {
-		(v as GeneratedVariable).namespace = v.name.split(".")[0];
-		variables.push(v as GeneratedVariable);
+	if (missingType.length > 0) {
+		console.warn(
+			`   ⚠ ${missingType.length} variable(s) lacked a scraped Type; defaulted to series<float>: ${missingType.join(", ")}`,
+		);
 	}
 
 	const content = `/**

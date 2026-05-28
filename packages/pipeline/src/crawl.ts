@@ -62,6 +62,7 @@ interface CrawlResult {
 	builtInVariables: {
 		standalone: { count: number; items: string[] };
 		namespaces: { count: number; items: string[] };
+		byNamespace: Record<string, string[]>;
 	};
 	constants: {
 		namespaces: { count: number; items: string[] };
@@ -147,6 +148,7 @@ export async function crawlPineScriptReference(): Promise<CrawlResult> {
 				builtInVariables: {
 					standalone: { count: 0, items: [] as string[] },
 					namespaces: { count: 0, items: [] as string[] },
+					byNamespace: {} as Record<string, string[]>,
 				},
 				constants: {
 					namespaces: { count: 0, items: [] as string[] },
@@ -219,14 +221,24 @@ export async function crawlPineScriptReference(): Promise<CrawlResult> {
 				}
 			});
 
-			// Separate variables into standalone and namespaced
+			// Separate variables into standalone and namespaced. Keep the full
+			// member name per namespace (not just the prefix) so scrape + generate
+			// can resolve each variable's detail page — mirrors how functions and
+			// constants are captured below.
 			const standaloneVariables: string[] = [];
 			const variableNamespaces = new Set<string>();
+			const variablesByNamespace: Record<string, string[]> = {};
 
 			allDiscoveredItems.variables.forEach((variable) => {
 				if (variable.includes(".")) {
-					const namespace = variable.split(".")[0];
+					const parts = variable.split(".");
+					const namespace = parts[0];
+					const member = parts.slice(1).join(".");
 					variableNamespaces.add(namespace);
+					if (!variablesByNamespace[namespace]) {
+						variablesByNamespace[namespace] = [];
+					}
+					variablesByNamespace[namespace].push(member);
 				} else {
 					standaloneVariables.push(variable);
 				}
@@ -284,6 +296,7 @@ export async function crawlPineScriptReference(): Promise<CrawlResult> {
 			result.builtInVariables.standalone.items = standaloneVariables.sort();
 			result.builtInVariables.namespaces.items =
 				Array.from(variableNamespaces).sort();
+			result.builtInVariables.byNamespace = variablesByNamespace;
 
 			// Functions
 			result.functions.namespaces.items = Array.from(functionNamespaces).sort();

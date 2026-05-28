@@ -39,6 +39,18 @@ export interface TypeInfo {
 }
 
 export namespace TypeChecker {
+	// Pine's qualifier lattice is const ≤ input ≤ simple ≤ series. For
+	// type-compatibility purposes `const<T>` and `input<T>` behave exactly like
+	// `simple<T>` — they coerce up to simple/series and down to the base type the
+	// same way — so collapse those bracket forms to `simple<T>`. Without this the
+	// explicit coercion pairs and is*Type predicates below (which enumerate only
+	// series/simple/base) reject input-qualified built-ins such as
+	// `chart.bg_color` (input<color>) and `chart.left_visible_bar_time` (input<int>).
+	function canonicalizeQualifier(type: PineType): PineType {
+		const m = (type as string).match(/^(input|const)<(\w+)>$/);
+		return m ? (`simple<${m[2]}>` as PineType) : type;
+	}
+
 	// Normalize type format: "series int" -> "series<int>", "simple float" -> "simple<float>"
 	function normalizeType(type: string): PineType {
 		// Handle union types by taking the first option (e.g., "int/float" -> "int")
@@ -142,6 +154,8 @@ export namespace TypeChecker {
 
 	// Check if type1 is assignable to type2
 	export function isAssignable(from: PineType, to: PineType): boolean {
+		from = canonicalizeQualifier(from);
+		to = canonicalizeQualifier(to);
 		if (from === to) return true;
 		if (to === "unknown" || from === "unknown") return true;
 		if (isNaType(from)) return true; // na is assignable to any type (const<na>, series<na>, etc.)
@@ -278,6 +292,8 @@ export namespace TypeChecker {
 		right: PineType,
 		operator: string,
 	): PineType {
+		left = canonicalizeQualifier(left);
+		right = canonicalizeQualifier(right);
 		// String concatenation with +
 		if (operator === "+" && (isStringType(left) || isStringType(right))) {
 			// String concatenation returns string (or series<string> if either is series)
@@ -297,7 +313,15 @@ export namespace TypeChecker {
 				}
 				return "series<int>";
 			}
-			// Simple types
+			// Non-series operands: preserve a simple qualifier when present so e.g.
+			// simple<float> / int stays simple<float> instead of collapsing to bare
+			// int. Float dominates int (mirrors the series branch above).
+			if (left.startsWith("simple") || right.startsWith("simple")) {
+				if (left.includes("float") || right.includes("float")) {
+					return "simple<float>";
+				}
+				return "simple<int>";
+			}
 			if (left === "float" || right === "float") return "float";
 			return "int";
 		}
@@ -327,6 +351,8 @@ export namespace TypeChecker {
 		right: PineType,
 		operator: string,
 	): boolean {
+		left = canonicalizeQualifier(left);
+		right = canonicalizeQualifier(right);
 		// If either type is unknown, we can't verify compatibility - assume OK
 		// This prevents cascading false positives from user-defined functions
 		// and other cases where type inference fails
@@ -420,6 +446,7 @@ export namespace TypeChecker {
 	}
 
 	export function isNumericType(type: PineType): boolean {
+		type = canonicalizeQualifier(type);
 		return (
 			type === "int" ||
 			type === "float" ||
@@ -431,18 +458,21 @@ export namespace TypeChecker {
 	}
 
 	export function isColorType(type: PineType): boolean {
+		type = canonicalizeQualifier(type);
 		return (
 			type === "color" || type === "series<color>" || type === "simple<color>"
 		);
 	}
 
 	export function isBoolType(type: PineType): boolean {
+		type = canonicalizeQualifier(type);
 		return (
 			type === "bool" || type === "series<bool>" || type === "simple<bool>"
 		);
 	}
 
 	export function isStringType(type: PineType): boolean {
+		type = canonicalizeQualifier(type);
 		return (
 			type === "string" ||
 			type === "series<string>" ||

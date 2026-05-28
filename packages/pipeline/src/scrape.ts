@@ -65,6 +65,16 @@ interface FunctionDetails {
 	variadic?: boolean;
 }
 
+interface VariableDetails {
+	name: string;
+	// Full qualified type string exactly as TV renders it in the "Type"
+	// field, e.g. "series float", "simple string", "array<line>".
+	// generate.ts parses the qualifier + base type out of this.
+	type: string;
+	description: string;
+	namespace: string;
+}
+
 interface ScrapeResult {
 	metadata: {
 		extractedAt: string;
@@ -75,13 +85,17 @@ interface ScrapeResult {
 		cachedResults: number;
 		forceRefresh: boolean;
 		method: string;
+		totalVariables?: number;
 	};
 	functions: Record<string, FunctionDetails>;
+	variables: Record<string, VariableDetails>;
 }
 
-function getCacheFilePath(functionName: string): string {
-	const safeName = functionName.replace(/[^a-zA-Z0-9]/g, "_");
-	return path.join(CACHE_DIR, `${safeName}.json`);
+// `prefix` namespaces the cache key so e.g. the `time()` function and the
+// `time` variable (which share a name) don't collide on disk.
+function getCacheFilePath(name: string, prefix = ""): string {
+	const safeName = name.replace(/[^a-zA-Z0-9]/g, "_");
+	return path.join(CACHE_DIR, `${prefix}${safeName}.json`);
 }
 
 function isCacheValid(cacheFilePath: string): boolean {
@@ -94,8 +108,11 @@ function isCacheValid(cacheFilePath: string): boolean {
 	return age < CACHE_TTL;
 }
 
-function getCachedData(functionName: string): FunctionDetails | null {
-	const cacheFilePath = getCacheFilePath(functionName);
+function getCachedData<T = FunctionDetails>(
+	name: string,
+	prefix = "",
+): T | null {
+	const cacheFilePath = getCacheFilePath(name, prefix);
 
 	if (!isCacheValid(cacheFilePath)) {
 		return null;
@@ -103,20 +120,20 @@ function getCachedData(functionName: string): FunctionDetails | null {
 
 	try {
 		const cachedData = JSON.parse(fs.readFileSync(cacheFilePath, "utf8"));
-		console.log(`Using cached data for: ${functionName}`);
+		console.log(`Using cached data for: ${prefix}${name}`);
 		return cachedData;
 	} catch {
-		console.log(`Invalid cache for ${functionName}, will re-scrape`);
+		console.log(`Invalid cache for ${prefix}${name}, will re-scrape`);
 		return null;
 	}
 }
 
-function saveToCache(functionName: string, data: FunctionDetails): void {
+function saveToCache<T>(name: string, data: T, prefix = ""): void {
 	if (DRY_RUN) {
 		return;
 	}
 
-	const cacheFilePath = getCacheFilePath(functionName);
+	const cacheFilePath = getCacheFilePath(name, prefix);
 
 	// Ensure cache directory exists
 	if (!fs.existsSync(CACHE_DIR)) {
@@ -126,7 +143,9 @@ function saveToCache(functionName: string, data: FunctionDetails): void {
 	try {
 		fs.writeFileSync(cacheFilePath, JSON.stringify(data, null, 2), "utf8");
 	} catch (error) {
-		console.log(`Failed to cache ${functionName}: ${(error as Error).message}`);
+		console.log(
+			`Failed to cache ${prefix}${name}: ${(error as Error).message}`,
+		);
 	}
 }
 
@@ -513,6 +532,104 @@ export async function scrapeFunctionDetails(
 	}
 }
 
+// Scrape a built-in variable's detail page. Unlike functions, variables have
+// no syntax/params; their type lives in a dedicated "Type" sub-header whose
+// next sibling text node holds the full qualified type (e.g. "series float").
+export async function scrapeVariableDetails(
+	variableName: string,
+	useCache = true,
+): Promise<VariableDetails | null> {
+	if (useCache) {
+		const cached = getCachedData<VariableDetails>(variableName, "var__");
+		if (cached) {
+			return cached;
+		}
+	}
+
+	try {
+		const page = await getSharedPage();
+		const hashTarget = `var_${variableName}`;
+
+		await page.evaluate((hash: string) => {
+			window.location.hash = hash;
+		}, hashTarget);
+
+		await new Promise((resolve) => setTimeout(resolve, 300));
+
+		await page
+			.waitForFunction(
+				(name: string) => document.getElementById(`var_${name}`) !== null,
+				{ timeout: 5000 },
+				variableName,
+			)
+			.catch(() => {
+				// Element not found; extraction below returns null.
+			});
+
+		const details = await page.evaluate((name: string) => {
+			const el = document.getElementById(`var_${name}`);
+			if (!el) return null;
+
+			const headerEl = el.querySelector(".tv-pine-reference-item__header");
+			const resolvedName = headerEl?.textContent?.trim() || name;
+
+			// Type: the __text sibling that follows the "Type" sub-header.
+			let type = "";
+			const subHeaders = el.querySelectorAll(
+				".tv-pine-reference-item__sub-header",
+			);
+			for (const sh of subHeaders) {
+				if ((sh.textContent || "").trim() === "Type") {
+					let sibling = sh.nextElementSibling;
+					while (
+						sibling &&
+						!sibling.classList.contains("tv-pine-reference-item__text")
+					) {
+						sibling = sibling.nextElementSibling;
+					}
+					if (sibling) {
+						type = (sibling.textContent || "").replace(/\s+/g, " ").trim();
+					}
+					break;
+				}
+			}
+
+			// Description: the first __text.tv-text block that is neither an
+			// argument-type entry nor the Type value itself (it precedes Type
+			// in document order, so this resolves to the prose description).
+			let description = "";
+			const texts = el.querySelectorAll(
+				".tv-pine-reference-item__text.tv-text",
+			);
+			for (const t of texts) {
+				if (t.querySelector(".tv-pine-reference-item__arg-type")) continue;
+				const txt = (t.textContent || "").trim();
+				if (!txt || txt === type) continue;
+				description = txt;
+				break;
+			}
+
+			return {
+				name: resolvedName,
+				type,
+				description,
+				namespace: resolvedName.includes(".") ? resolvedName.split(".")[0] : "",
+			};
+		}, variableName);
+
+		if (details) {
+			saveToCache(variableName, details, "var__");
+		}
+
+		return details;
+	} catch (error) {
+		console.log(
+			`Failed to scrape variable ${variableName}: ${(error as Error).message}`,
+		);
+		return null;
+	}
+}
+
 export async function scrapeAllFunctions(
 	forceRefresh = false,
 ): Promise<ScrapeResult> {
@@ -586,6 +703,43 @@ export async function scrapeAllFunctions(
 	console.log(`   From cache: ${functionsFromCache.length}`);
 	console.log(`   To scrape: ${functionsToScrape.length}`);
 
+	// Build variable list (namespaced members + standalone) from the crawl.
+	const variableNames: string[] = [];
+	const varByNamespace = inputData.builtInVariables?.byNamespace as
+		| Record<string, string[]>
+		| undefined;
+	if (varByNamespace) {
+		for (const [namespace, members] of Object.entries(varByNamespace)) {
+			for (const member of members) {
+				variableNames.push(`${namespace}.${member}`);
+			}
+		}
+	}
+	for (const name of inputData.builtInVariables?.standalone?.items || []) {
+		variableNames.push(name);
+	}
+	variableNames.sort();
+	console.log(`Found ${variableNames.length} variables to process`);
+
+	const variablesToScrape: string[] = [];
+	const variablesFromCache: string[] = [];
+	if (!forceRefresh) {
+		for (const name of variableNames) {
+			if (isCacheValid(getCacheFilePath(name, "var__"))) {
+				variablesFromCache.push(name);
+			} else {
+				variablesToScrape.push(name);
+			}
+		}
+	} else {
+		variablesToScrape.push(...variableNames);
+	}
+	if (DRY_RUN && variablesToScrape.length > DRY_RUN_LIMIT) {
+		variablesToScrape.splice(DRY_RUN_LIMIT);
+	}
+	console.log(`   Variables from cache: ${variablesFromCache.length}`);
+	console.log(`   Variables to scrape: ${variablesToScrape.length}`);
+
 	const allDetails: ScrapeResult = {
 		metadata: {
 			extractedAt: new Date().toISOString(),
@@ -596,8 +750,10 @@ export async function scrapeAllFunctions(
 			cachedResults: functionsFromCache.length,
 			forceRefresh,
 			method: "Puppeteer",
+			totalVariables: variableNames.length,
 		},
 		functions: {},
+		variables: {},
 	};
 
 	// Load cached data first
@@ -607,6 +763,12 @@ export async function scrapeAllFunctions(
 		if (cachedData) {
 			allDetails.functions[funcName] = cachedData;
 			allDetails.metadata.successfulScrapes++;
+		}
+	}
+	for (const name of variablesFromCache) {
+		const cached = getCachedData<VariableDetails>(name, "var__");
+		if (cached) {
+			allDetails.variables[name] = cached;
 		}
 	}
 
@@ -649,7 +811,39 @@ export async function scrapeAllFunctions(
 				await new Promise((resolve) => setTimeout(resolve, 500));
 			}
 		}
+	}
 
+	// Scrape variables (shares the browser opened above, if any).
+	if (variablesToScrape.length > 0) {
+		console.log("Scraping variable details...");
+		const batchSize = 20;
+		const startTime = Date.now();
+
+		for (let i = 0; i < variablesToScrape.length; i += batchSize) {
+			const batch = variablesToScrape.slice(i, i + batchSize);
+			for (const name of batch) {
+				const details = await scrapeVariableDetails(name, !forceRefresh);
+				if (details) {
+					allDetails.variables[name] = details;
+				} else {
+					allDetails.metadata.failedScrapes++;
+				}
+				await new Promise((resolve) => setTimeout(resolve, 100));
+			}
+
+			const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+			const completed = Math.min(i + batchSize, variablesToScrape.length);
+			console.log(
+				`  Variables: ${completed}/${variablesToScrape.length} (${elapsed}s elapsed)`,
+			);
+
+			if (i + batchSize < variablesToScrape.length) {
+				await new Promise((resolve) => setTimeout(resolve, 500));
+			}
+		}
+	}
+
+	if (functionsToScrape.length > 0 || variablesToScrape.length > 0) {
 		await closeSharedBrowser();
 	}
 
@@ -685,6 +879,10 @@ export async function scrapeAllFunctions(
 	);
 	console.log(`   Successful: ${allDetails.metadata.successfulScrapes}`);
 	console.log(`   Failed: ${allDetails.metadata.failedScrapes}`);
+	console.log(`   Total variables: ${allDetails.metadata.totalVariables}`);
+	console.log(
+		`   Variables captured: ${Object.keys(allDetails.variables).length}`,
+	);
 	console.log(`   Method: ${allDetails.metadata.method}`);
 	console.log(
 		DRY_RUN

@@ -26,12 +26,16 @@ Open work items, each either deferred from an investigation or queued
 as a discrete next step. Sequential numbering matches the task-tool
 IDs so the two stay in sync.
 
-- **#3 — pine-data scraper missing v6 built-ins.** ~45 FPs across
-  `syminfo.target_price_*`, `chart.point`, `ta.accdist`,
-  `session.islastbar`, `strategy.eventrades`, etc. Verified via
-  `pine-lint --tv` that TV recognises these; pine-data was regenerated
-  recently but they're still absent, so the gap is in the scraper.
-  Fix lives in `packages/pipeline/`, not the generated files.
+- **#3 — `chart.point` flagged "Unknown property 'point' on namespace
+  'chart'" (checker bug, not data).** `chart.point` is a type with
+  constructors (`chart.point.new`/`.now`); a bare `chart.point` reference
+  trips the unknown-property check. This is type-as-namespace handling in
+  the checker, not missing data. (`barmerge.lookhead_on`, also surfaced
+  here, is a user typo TV flags too — not a bug.) The namespaced-variable
+  catalog gap formerly tracked under this item is **resolved**: variables
+  are now scraped from TV (crawl→scrape→generate), retiring the
+  hand-maintained `namespaceVars` list; `scripts/diff-tv-inventory.mjs`
+  re-runs the authoritative TOC diff.
 - **#4 — over-strict "cannot be called from a local scope" FPs.** Was
   31 across 6 files; INV008 cut it to 15. Most of the residual is in
   one file (`d40d7b52…pine`, 11 hits) whose trigger pattern resists
@@ -296,31 +300,10 @@ files) is the same shape applied to identifiers in syntactic positions.
 
 ---
 
-## pine-data — scraper missing v6 built-ins
+## pine-data — `log.info` / `log.error` arity stale
 
-We reject access to built-ins that exist in v6. Pine-data was regenerated
-2026-05-26 and these are still absent from `pine-data/v6/variables.json`
-— verified via `pine-lint --tv` that TradingView accepts code referencing
-them (`syminfo.target_price_average`, `ta.accdist`, `chart.point`, etc.).
-So the scraper is missing them; fix belongs in the pipeline scripts, not
-the generated files (which would be lost on next regen).
-
-| count | files | category |
-|---|---|---|
-| 23 | 5 | `Unknown property '*' on namespace 'syminfo'` (`target_price_*`, `mincontract`, `volumetype`, `shares_outstanding_float/total`, `cftc_code`, `sector`, `target_price_estimates`) |
-| 7 | 3 | `Unknown property '*' on namespace 'chart'` (e.g. `chart.point`) |
-| 5 | 2 | `Unknown property '*' on namespace 'ta'` (e.g. `ta.accdist`) |
-| 4 | 3 | `Unknown property '*' on namespace 'session'` (e.g. `session.islastbar`) |
-| 2 | 2 | `Unknown property '*' on namespace 'strategy'` (e.g. `strategy.eventrades`, `strategy.max_contracts_held_all`) |
-| 2 | 2 | `Unknown property '*' on namespace 'line'` (`line.all`) |
-| 1 | 1 | `Unknown property '*' on namespace 'barmerge'` (`barmerge.lookhead_on`) |
-| 1 | 1 | `Unknown property '*' on namespace 'box'` (`box.all`) |
-
-JSON has every concrete property name. Cross-check current TradingView Pine
-v6 reference, add to `pine-data/v6/*.ts`, regenerate.
-
-Also stale: `log.info` / `log.error` arity (4 hits, 3 files) — they accept
-more arguments in v6 than our signature allows.
+`log.info` / `log.error` accept more arguments in v6 than our scraped
+signature allows (4 hits, 3 files):
 
 ```
 2  Too many arguments for 'log.info'
