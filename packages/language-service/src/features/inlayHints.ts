@@ -171,7 +171,7 @@ function getCalleeName(callee: Expression): string | null {
 function parseParameterNames(syntax: string): string[] {
 	try {
 		const match = syntax.match(/\(([^)]*)\)/);
-		if (!match || !match[1].trim()) return [];
+		if (!match?.[1].trim()) return [];
 
 		const paramsString = match[1].trim();
 		const names: string[] = [];
@@ -225,7 +225,7 @@ function collectInlayHintsFromCall(
 
 	// Look up function in pine-data
 	const func = FUNCTIONS_BY_NAME.get(funcName);
-	if (!func || !func.syntax) return;
+	if (!func?.syntax) return;
 
 	// Parse parameter names from syntax
 	const paramNames = parseParameterNames(func.syntax);

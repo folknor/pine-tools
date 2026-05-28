@@ -133,7 +133,9 @@ function createCompletionItem(
 		}
 
 		if (data.examples && data.examples.length > 0) {
-			docParts.push(data.examples.length > 1 ? "**Examples:**" : "**Example:**");
+			docParts.push(
+				data.examples.length > 1 ? "**Examples:**" : "**Example:**",
+			);
 			for (const example of data.examples) {
 				docParts.push(`\`\`\`pine\n${example}\n\`\`\``);
 			}

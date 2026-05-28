@@ -119,16 +119,20 @@ function computeExpressionEnd(
 	if (expr.type === "Literal") {
 		const lit = expr as Literal;
 		const text = String(lit.raw ?? lit.value ?? "");
-		return { line: lit.line, column: lit.column + Math.max(0, text.length - 1) };
+		return {
+			line: lit.line,
+			column: lit.column + Math.max(0, text.length - 1),
+		};
 	}
 	if (expr.type === "Identifier") {
 		const id = expr as Identifier;
-		return { line: id.line, column: id.column + Math.max(0, id.name.length - 1) };
+		return {
+			line: id.line,
+			column: id.column + Math.max(0, id.name.length - 1),
+		};
 	}
 	if (expr.type === "MemberExpression") {
-		return computeExpressionEnd(
-			(expr as { property: Expression }).property,
-		);
+		return computeExpressionEnd((expr as { property: Expression }).property);
 	}
 	return undefined;
 }

@@ -253,7 +253,8 @@ export class UnifiedPineValidator {
 					version,
 					statement.params,
 				);
-				if (tupleTypes) this.udfTupleReturnTypes.set(statement.name, tupleTypes);
+				if (tupleTypes)
+					this.udfTupleReturnTypes.set(statement.name, tupleTypes);
 
 				// Register the function in the symbol table at the outer scope
 				this.symbolTable.define({
@@ -437,7 +438,8 @@ export class UnifiedPineValidator {
 					version,
 					statement.params,
 				);
-				if (tupleTypes) this.udfTupleReturnTypes.set(statement.name, tupleTypes);
+				if (tupleTypes)
+					this.udfTupleReturnTypes.set(statement.name, tupleTypes);
 
 				// Register the method in the symbol table. Use kind:"method"
 				// rather than "function" so it lives in the method namespace

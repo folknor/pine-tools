@@ -173,7 +173,8 @@ function generateFunctionsSection(): string {
 			}
 
 			if (fn.examples && fn.examples.length > 0) {
-				const heading = fn.examples.length > 1 ? "**Examples:**" : "**Example:**";
+				const heading =
+					fn.examples.length > 1 ? "**Examples:**" : "**Example:**";
 				content += `${heading}\n\n`;
 				for (const example of fn.examples) {
 					content += "```pine\n";

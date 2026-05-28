@@ -12,7 +12,14 @@ const path = require("node:path");
 const { spawnSync } = require("node:child_process");
 
 const repoRoot = path.resolve(__dirname, "..");
-const bundledCli = path.join(repoRoot, "dist", "packages", "cli", "src", "cli.js");
+const bundledCli = path.join(
+	repoRoot,
+	"dist",
+	"packages",
+	"cli",
+	"src",
+	"cli.js",
+);
 const installDir = path.join(os.homedir(), ".local", "bin");
 const installPath = path.join(installDir, "pine-lint");
 
@@ -52,7 +59,9 @@ fs.copyFileSync(bundledCli, installPath);
 fs.chmodSync(installPath, 0o755);
 
 const bytes = fs.statSync(installPath).size;
-console.log(`Installed: ${installPath} (${bytes} bytes, copied from ${bundledCli})`);
+console.log(
+	`Installed: ${installPath} (${bytes} bytes, copied from ${bundledCli})`,
+);
 if (replaced) console.log(`Replaced: ${replaced}`);
 
 const pathEntries = (process.env.PATH ?? "").split(path.delimiter);

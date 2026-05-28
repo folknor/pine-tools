@@ -12,9 +12,9 @@
 // module can call them via `this.p.X`. Mutual recursion among
 // expression methods stays on `this` (calls into ExpressionParser).
 
-import * as AST from "./ast";
+import type * as AST from "./ast";
+import { type Token, TokenType } from "./lexer";
 import type { Parser } from "./parser";
-import { TokenType, type Token } from "./lexer";
 
 export class ExpressionParser {
 	constructor(public p: Parser) {}
@@ -253,7 +253,9 @@ export class ExpressionParser {
 				}
 			}
 
-			if (this.p.match(TokenType.MULTIPLY, TokenType.DIVIDE, TokenType.MODULO)) {
+			if (
+				this.p.match(TokenType.MULTIPLY, TokenType.DIVIDE, TokenType.MODULO)
+			) {
 				const operator = this.p.previous().value;
 				// Skip newlines after operator (line continuation)
 				while (this.p.check(TokenType.NEWLINE)) {
@@ -359,7 +361,10 @@ export class ExpressionParser {
 
 				// Consume type identifier(s) - could be "float", "int", "box", "chart.point", etc.
 				// Also handles map<key, value> syntax with multiple type arguments
-				if (this.p.check(TokenType.IDENTIFIER) || this.p.check(TokenType.KEYWORD)) {
+				if (
+					this.p.check(TokenType.IDENTIFIER) ||
+					this.p.check(TokenType.KEYWORD)
+				) {
 					while (true) {
 						let typeArg = this.p.advance().value;
 
@@ -375,7 +380,10 @@ export class ExpressionParser {
 						}
 
 						// Handle nested generics like array<array<float>>
-						while (this.p.check(TokenType.COMPARE) && this.p.peek().value === "<") {
+						while (
+							this.p.check(TokenType.COMPARE) &&
+							this.p.peek().value === "<"
+						) {
 							typeArg += "<";
 							this.p.advance();
 							if (
@@ -394,7 +402,10 @@ export class ExpressionParser {
 									}
 								}
 							}
-							if (this.p.check(TokenType.COMPARE) && this.p.peek().value === ">") {
+							if (
+								this.p.check(TokenType.COMPARE) &&
+								this.p.peek().value === ">"
+							) {
 								typeArg += ">";
 								this.p.advance();
 							}
@@ -445,7 +456,9 @@ export class ExpressionParser {
 				} else if (this.p.check(TokenType.KEYWORD)) {
 					property = this.p.advance();
 				} else {
-					throw new Error(`Expected property name at line ${this.p.peek().line}`);
+					throw new Error(
+						`Expected property name at line ${this.p.peek().line}`,
+					);
 				}
 				expr = {
 					type: "MemberExpression",
@@ -510,7 +523,8 @@ export class ExpressionParser {
 					}
 				}
 				if (
-					(this.p.check(TokenType.IDENTIFIER) || this.p.check(TokenType.KEYWORD)) &&
+					(this.p.check(TokenType.IDENTIFIER) ||
+						this.p.check(TokenType.KEYWORD)) &&
 					nextTok?.type === TokenType.ASSIGN
 				) {
 					const name = this.p.advance().value;
@@ -564,7 +578,10 @@ export class ExpressionParser {
 				);
 			}
 		}
-		const rparen = this.p.consume(TokenType.RPAREN, 'Expected ")" after arguments');
+		const rparen = this.p.consume(
+			TokenType.RPAREN,
+			'Expected ")" after arguments',
+		);
 		this.p.parenDepth--; // Decrement depth when closing parenthesis
 
 		const callExpr: AST.CallExpression = {

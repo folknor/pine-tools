@@ -22,10 +22,11 @@ try {
 		const items = Array.from(
 			document.querySelectorAll(".tv-pine-reference-item"),
 		);
-		const match = items.find((el) => {
-			const header = el.querySelector(".tv-pine-reference-item__header");
-			return header?.textContent?.trim() === t.replace(/^type_/, "");
-		}) || items.find((el) => el.id === t);
+		const match =
+			items.find((el) => {
+				const header = el.querySelector(".tv-pine-reference-item__header");
+				return header?.textContent?.trim() === t.replace(/^type_/, "");
+			}) || items.find((el) => el.id === t);
 
 		if (!match) {
 			return { found: false, candidateCount: items.length };
@@ -42,27 +43,26 @@ try {
 			found: true,
 			id: match.id,
 			header:
-				match.querySelector(".tv-pine-reference-item__header")?.textContent || "",
+				match.querySelector(".tv-pine-reference-item__header")?.textContent ||
+				"",
 			exampleContainerCount: exampleContainers.length,
 			codeBlockCount: allCodes.length,
 			containers: Array.from(exampleContainers).map((c, i) => ({
 				index: i,
 				codesInside: c.querySelectorAll("code").length,
-				tagPath: (function () {
+				tagPath: (() => {
 					const tags = [];
 					let n = c;
 					while (n && n !== match) {
 						tags.unshift(
 							n.tagName.toLowerCase() +
-								(n.className ? "." + n.className.split(" ").join(".") : ""),
+								(n.className ? `.${n.className.split(" ").join(".")}` : ""),
 						);
 						n = n.parentElement;
 					}
 					return tags.join(" > ");
 				})(),
-				firstCodeSnippet: c
-					.querySelector("code")
-					?.innerText?.slice(0, 120),
+				firstCodeSnippet: c.querySelector("code")?.innerText?.slice(0, 120),
 			})),
 			outerHtmlLength: match.outerHTML.length,
 		};

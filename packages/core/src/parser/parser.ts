@@ -1595,10 +1595,7 @@ export class Parser {
 			// `timezone`. Detect the pattern by peeking: current is
 			// IDENTIFIER, next is IDENTIFIER (or KEYWORD usable as a name).
 			// see INV003.
-			if (
-				typeKeywords.length > 0 &&
-				this.check(TokenType.IDENTIFIER)
-			) {
+			if (typeKeywords.length > 0 && this.check(TokenType.IDENTIFIER)) {
 				const next = this.peekNext();
 				if (
 					next?.type === TokenType.IDENTIFIER ||
@@ -1612,10 +1609,7 @@ export class Parser {
 			// loop above already consumed `T` (the LBRACKET-aware continuation
 			// condition was extended in this same fix); now glue the `[]`
 			// onto the last collected type. see INV004.
-			if (
-				typeKeywords.length > 0 &&
-				this.check(TokenType.LBRACKET)
-			) {
+			if (typeKeywords.length > 0 && this.check(TokenType.LBRACKET)) {
 				this.advance(); // consume [
 				if (this.check(TokenType.RBRACKET)) {
 					this.advance(); // consume ]
@@ -1686,26 +1680,51 @@ export class Parser {
 	// don't have to change. The actual implementations live in the
 	// sibling file.
 
-	private expression(): AST.Expression { return this.exprs.expression(); }
-	private ternary(): AST.Expression { return this.exprs.ternary(); }
+	private expression(): AST.Expression {
+		return this.exprs.expression();
+	}
+	private ternary(): AST.Expression {
+		return this.exprs.ternary();
+	}
 
-	private logicalOr(): AST.Expression { return this.exprs.logicalOr(); }
+	private logicalOr(): AST.Expression {
+		return this.exprs.logicalOr();
+	}
 
-	private logicalAnd(): AST.Expression { return this.exprs.logicalAnd(); }
+	private logicalAnd(): AST.Expression {
+		return this.exprs.logicalAnd();
+	}
 
-	private comparison(): AST.Expression { return this.exprs.comparison(); }
+	private comparison(): AST.Expression {
+		return this.exprs.comparison();
+	}
 
-	private addition(): AST.Expression { return this.exprs.addition(); }
+	private addition(): AST.Expression {
+		return this.exprs.addition();
+	}
 
-	private multiplication(): AST.Expression { return this.exprs.multiplication(); }
+	private multiplication(): AST.Expression {
+		return this.exprs.multiplication();
+	}
 
-	private unary(): AST.Expression { return this.exprs.unary(); }
+	private unary(): AST.Expression {
+		return this.exprs.unary();
+	}
 
-	private postfix(): AST.Expression { return this.exprs.postfix(); }
+	private postfix(): AST.Expression {
+		return this.exprs.postfix();
+	}
 
-	private finishCall(callee: AST.Expression, typeArguments?: string[]): AST.CallExpression { return this.exprs.finishCall(callee, typeArguments); }
+	private finishCall(
+		callee: AST.Expression,
+		typeArguments?: string[],
+	): AST.CallExpression {
+		return this.exprs.finishCall(callee, typeArguments);
+	}
 
-	private primary(): AST.Expression { return this.exprs.primary(); }
+	private primary(): AST.Expression {
+		return this.exprs.primary();
+	}
 
 	// Utility methods
 	public match(...types: (TokenType | [TokenType, string[]])[]): boolean {
@@ -1794,9 +1813,7 @@ export class Parser {
 			// Statement-start keyword we recognise — resume here.
 			if (token.type === TokenType.KEYWORD) {
 				if (
-					["if", "for", "while", "var", "varip", "const"].includes(
-						token.value,
-					)
+					["if", "for", "while", "var", "varip", "const"].includes(token.value)
 				) {
 					return;
 				}

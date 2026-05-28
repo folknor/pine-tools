@@ -18,7 +18,7 @@ interface ParsedParameter {
 function parseParameters(syntax: string): ParsedParameter[] {
 	try {
 		const match = syntax.match(/\(([^)]*)\)/);
-		if (!match || !match[1].trim()) return [];
+		if (!match?.[1].trim()) return [];
 
 		const paramsString = match[1].trim();
 		const params: ParsedParameter[] = [];
@@ -93,7 +93,7 @@ export function getSignatureHelp(
 
 	// Look up function in pine-data
 	const func = FUNCTIONS_BY_NAME.get(functionName);
-	if (!func || !func.syntax) return null;
+	if (!func?.syntax) return null;
 
 	// Parse parameters from syntax
 	const parsedParams = parseParameters(func.syntax);
