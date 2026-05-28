@@ -29,3 +29,6 @@ found, and the lesson worth remembering.
 
 - [G001](G001-tv-pine-lint-not-spec.md) — pine-lint, --tv, TradingView,
   reference-not-spec, non-determinism, error-recovery, warning-vs-error
+- [G002](G002-reference-underdocuments-accepted-types.md) — reference vs
+  linter, overloads, accepted-types, nz/fixnan/na/int/plot,
+  under-documentation, FUNCTION_PARAM_TYPE_OVERRIDES

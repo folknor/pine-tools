@@ -45,7 +45,8 @@ file rather than renumbering.
   task #4
 - [INV009](INV009-cannot-call-fns-mostly-column-shifts/notes.md) —
   analysis, "Cannot call" FNs, column shifts, polymorphic bypass,
-  pine-data unions
+  pine-data unions. **CORRECTED 2026-05-28: all 3 claimed FNs are
+  TV-accepted (verified) — zero real FNs; see G002.**
 - [INV010](INV010-udf-tuple-return-types/notes.md) — type-inference,
   inferTupleElementTypes, UDF tuple destructure,
   bool-as-series-float

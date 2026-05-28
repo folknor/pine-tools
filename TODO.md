@@ -43,146 +43,38 @@ IDs so the two stay in sync.
   (adding the wrap-continuation line of a `plotshape(…)` call) tips
   it. Needs more bisection. The other five files have one hit each
   and probably need their own minimal repros.
-- **#8 — true argument-type-mismatch FNs, now gated on #17's Phase 2
-  blockers.** Per INV009, most of the "16 missed FNs" were column-shift
-  artefacts; only 3 looked genuine (`nz(bool)`, `plot(title=non-const)`,
-  `int(bool)`). Status after the #17 Phase 2 attempt (2026-05-28):
-  - `int(bool)` — **confirmed catchable** once the checker validates
-    union params (`int.x: series int/float`). Works in the reverted
-    Phase 2 patch; ships when #17's blockers clear.
-  - `nz(bool)` — **doubtful.** Corpus check shows `nz(<bool>)` is
-    TV-silent (see #17 blocker 2). Reconcile against INV009's original
-    repro before treating it as an FN at all.
-  - `plot(title=non-const)` — **not a union problem.** `plot.title` is
-    `const string` (no `/`); catching a `series string` arg needs
-    *const-qualifier enforcement* (qualifier narrowing), which the
-    checker strips globally today. Separate, broader change — leave open.
-  Blocker status: (a) union data ✅ (overloadArgs dump + offline union,
-  incl. universal params); (b) return-inference ✅ (#17 blocker #3,
-  `flags.returnTypeParam`); (c) `nz`/bool reconciliation — **still open**,
-  the last gate. Once (c) resolves, re-attempt the Phase 2 checker change
-  (validate union params; drop the `functionIsPolymorphic` arg-skip) and
-  triage with the regression loop.
 - **#9 — type-inference where we infer non-bool but TV infers bool.**
   Umbrella task. Several big wins landed via INV005, INV010, INV011;
   remaining FPs need a fresh corpus diff and per-category dives. The
   current top non-cascade category likely needs a new pass.
-- **#17 — pine-data scraper: emit union types for
-  polymorphic-function params.** Root cause now found (was the
-  "`simple color` for `nz.source`" mystery): `scrape.ts` navigates to
-  the **bare** `#fun_<name>` anchor, but TV's reference renders each
-  overload as an anchor element `<a href="#fun_<name>-<i>"
-  class="js-reference">` and applies a `selected` class to the active
-  one. The bare anchor resolves to **overload #0**, so the
-  `.tv-pine-reference-item__arg-type` nodes the scraper reads reflect
-  overload #0's *resolved* param types — not a union. For `nz`,
-  overload #0 is `→ simple color`, hence `source`/`replacement` scrape
-  as `simple color`. (The `series int/float` you see in a browser is
-  just whichever overload was last clicked — overload #5, `series
-  float` — *not* a consolidated-union node. There is no union node in
-  the DOM; the union must be reconstructed by visiting every
-  sub-anchor.)
-  - **Blast radius** (offline audit, `dev-tools/audit-overload-scrape.js`
-    over today's scrape): 118 multi-overload functions, **102** of them
-    spanning >1 distinct return type — all with params frozen to overload
-    #0, which is almost always the *narrowest* (`const`) qualifier. e.g.
-    `math.abs.number` froze to `const int` (would reject
-    `math.abs(close)`); `color.{b,g,r,t}.color` → `const color`;
-    `int.x`/`float.x` → `const int/float`. They don't fire as FPs *today*
-    only because of the `functionIsPolymorphic` bypass — the crutch this
-    item removes.
-  - **Two freeze shapes:** (1) `unknown` params (`array.from`,
-    `math.max`/`min`) — already skipped by `hasOverloads()`; (2)
-    concrete-but-too-narrow (`nz`, `math.abs`, `color.*`). The
-    union-across-sub-anchors approach fixes both uniformly.
-  - **STATUS — Phase 1 (scrape the unions) LANDED 2026-05-28.**
-    `scrape.ts` now visits each `#fun_<name>-<i>` sub-anchor and unions
-    per-param types (`unionParamType` + `unionOverloadParamTypes`),
-    **gated to params present in *every* overload**. That gate is
-    load-bearing: an earlier "union any collected param" version
-    promoted heterogeneous-overload params (`box.new`'s `left`/`top`,
-    `label.new`'s `x`/`y`, `input.int`'s `minval`/`maxval`/`step`) from
-    `unknown` to concrete, which flipped `hasOverloads()` off and caused
-    **628 cascade FPs** (positional validation against a merged
-    signature). With the present-in-all gate, those stay `unknown` and
-    stay bypassed. Result: accurate union params (`nz.source: series
-    int/float/color`, `math.abs.number: series int/float`, `color.b:
-    series color`, `ta.change.source: series int/float/bool`) **and −89
-    pre-existing false positives** (qualifier widening fixed
-    `str.replace`/`str.contains`/`str.tonumber` `const string`→`series
-    string`, and `ta.change` now accepts bool). Regenerated pine-data
-    committed; checker untouched this phase → regression-check 0 new
-    errors. Full `--force` re-scrape was used (475 fns, 118 overloaded
-    trigger the sub-anchor loop).
-  - **STATUS — Scraper rework LANDED 2026-05-28 (resolves blocker #1).**
-    The inline union (`unionParamType` in scrape.ts) was replaced by a
-    **capture-then-union-offline** architecture: `scrape.ts`'s
-    `collectOverloadArgs` now saves the complete per-overload arg dump as
-    `overloadArgs` in the raw JSON, and `packages/pipeline/src/union-types.ts`
-    computes per-param unions **at generate-time** (offline). The union rule
-    is structural (no thresholds): (1) all clean primitive unions → widest
-    qualifier + merged prims; (2) same collection kind → union element types
-    (`array<int/float> ∪ array<int>` → `array<int/float>`); (3) all identical
-    → keep; (4) differing/mixed (broad overload alongside narrow) → `unknown`.
-    Consequences: type/union logic is now **iterable offline** — edit
-    `union-types.ts` + `pnpm run generate`, no re-scrape (documented in
-    CLAUDE.md; `generate` is byte-deterministic); and universal params resolve
-    to `unknown` generically (8 found, see blocker #1). Regression: 0 new
-    errors, −6 `matrix.mult` FPs (params were frozen to `matrix<int>`/
-    `array<int>`, now `matrix<int/float>`/`unknown`). Behaviour-neutral for
-    the current (Phase-2-reverted) checker.
-  - **Phase 2 (let the checker validate the unions) was ATTEMPTED and
-    REVERTED 2026-05-28** — three blockers; blocker #1 is now resolved
-    (above), #2 and #3 remain:
-    1. ~~**`unionParamType` silently discards broad/universal types.**~~
-       **RESOLVED 2026-05-28** (see "Scraper rework" below). It used to
-       bail on any overload type containing `<>` and fall back to the
-       frozen overload-#0 value, leaving `na.x` at `simple int/float`
-       (would flag **721** valid `na(<series>)` calls). Now the scraper
-       captures the full per-overload dump and the offline union rule
-       resolves broad/heterogeneous params to `unknown` (accept-anything)
-       generically — `na.x` → `unknown`, and 7 other genuinely-varied
-       params (`str.tostring.value`, `array.sort.id`,
-       `matrix.{mult,sum,diff}.id2`, `matrix.sort.id`,
-       `array.sort_indices.id`). No `na` hardcode.
-    2. **Unions under-inclusive where TV's per-overload display
-       understates.** `nz(<bool>)` is **TV-silent** (verified with
-       `scripts/compare-tv.mjs`) — TV tolerates `nz` of a bool, but our
-       union (`int/float/color`) excludes bool → 71 FPs. ⚠️ This
-       *contradicts* INV009/#8's claim that `nz(bool)` is a genuine
-       missed FN — reconcile before re-attempting (the FN was likely a
-       specific construct, not all `nz(bool)`).
-    3. ~~**Polymorphic return-inference breaks on union source params.**~~
-       **RESOLVED 2026-05-28.** The real cause wasn't
-       `getPolymorphicReturnType` mis-picking a union member — `nz`/`fixnan`
-       are flagged and infer correctly. It was that **return-follows-source
-       functions like `ta.valuewhen`/`ta.change`/`ta.median`/`ta.mode`/
-       `ta.range` weren't flagged at all**, so their return fell back to the
-       static return frozen to overload #0 (`series color` for `ta.valuewhen`),
-       cascading `series<color>` into arithmetic/assignment/plot. Fix:
-       `union-types.ts` `detectReturnTypeParam` finds these offline from the
-       overload dump (return base-set == exactly one scalar param's union,
-       no collection param), `generate` emits `flags.returnTypeParam`, and
-       `getPolymorphicReturnType` resolves the return from that arg's actual
-       type (unresolved `type`/`unknown` args fall back to the static return,
-       avoiding `math.abs(<unresolved>) % 2`-style FPs). Result: **−890
-       false positives** corpus-wide, 0 new errors; real color arithmetic
-       still flagged. Regression fixture: `return-follows-source.pine`.
-    - **Reverted checker changes (re-apply when blockers clear):**
-      `mapToPineType` passes a clean primitive union (`^(const|input|
-      simple|series) <prim>/<prim>…$`) through to
-      `isAssignable`→`isUnionTypeMatch`; `checker.ts` drops
-      `functionIsPolymorphic` from the arg-validation skip while keeping
-      the `functionHasOverloads`/`unknown`-param skip. With these in
-      place `int(true)` and `nz(close>open)` *were* caught — the
-      mechanism works; the data/inference foundation isn't ready.
-  - Still relevant: **two parallel encodings of polymorphism** — the
-    *discovered* `pine-data/v6/function-behavior.json` (`returnTypeParam`
-    for `input`/`nz`, arg-ordering quirks) and the *hand-coded*
-    `polymorphic` map in `getFunctionFlags`. The JSON is regenerated only
-    by `discover:behavior` — not the main `crawl→scrape→generate` flow —
-    so it's stale (stamped 2026-05-24, 5 functions). Consolidating the
-    two encodings is part of this fix.
+- **#17 — union types for overloaded/polymorphic params (data work
+  LANDED; only consolidation pending).** The scraper captures a complete
+  per-overload `overloadArgs` dump and unions param types **offline at
+  generate-time** (`packages/pipeline/src/union-types.ts`; structural
+  rule: primitive union / collection-element union / identical / else
+  `unknown`). Return-follows-source functions are detected from the dump
+  and resolve their return from the actual argument
+  (`flags.returnTypeParam`); universal params (`na`) and
+  TV-under-documented accepted types (`nz`/`fixnan`/`int`/`plot`, see
+  [G002](gotchas/G002-reference-underdocuments-accepted-types.md)) are
+  handled. Net across the arc: accurate union/return types, **~979 false
+  positives removed**, and type logic is now iterable offline (no
+  re-scrape — see CLAUDE.md). Commits 52a7028 / 043f4f4 / c1ba9c3.
+  - **Phase 2 (drop the polymorphic bypass to validate args) is
+    ABANDONED.** It existed to catch the "3 arg-type FNs" from the old
+    #8 — but all three (`nz(bool)`, `int(true)`, `plot(title=non-const)`)
+    are **TV-accepted** (verified 2026-05-28). The bypass is *correct*;
+    removing it would only add false positives. See the corrected INV009
+    and [G002](gotchas/G002-reference-underdocuments-accepted-types.md).
+    The TV-verified accepted-type widenings (`nz`/`fixnan` all primitives,
+    `int`+bool, `plot.title` series string) are baked into pine-data via
+    `FUNCTION_PARAM_TYPE_OVERRIDES` in `generate.ts`.
+  - **Still pending — consolidate the two polymorphism encodings:** the
+    *discovered* `pine-data/v6/function-behavior.json` (`returnTypeParam`,
+    arg-ordering) vs the *hand-coded* `polymorphic` map + the new
+    `flags.returnTypeParam` in `getFunctionFlags`/generate. The JSON is
+    regenerated only by `discover:behavior` (stale — stamped 2026-05-24,
+    5 functions). Unify so return-type behavior has a single source.
 - **#18 — built-in color constants infer as `undetermined type`.**
   Surfaced by INV011. The "Ternary branches must have compatible types"
   cluster is now down to **31** (from ~117+) after the variable/constant
@@ -259,7 +151,12 @@ IDs so the two stay in sync.
 See [gotchas/README.md](gotchas/README.md) for the format and full
 index.
 
-_None yet._
+- [G001](gotchas/G001-tv-pine-lint-not-spec.md) — TV's pine-lint is an
+  unreliable comparator, not a stable spec.
+- [G002](gotchas/G002-reference-underdocuments-accepted-types.md) — TV's
+  reference under-documents accepted param types; the linter accepts more
+  (e.g. `nz`/`fixnan` take bool/string; `int` takes bool). Verify with
+  `--tv`, not just the overload list.
 
 Authoritative per-occurrence list lives in
 `lint-reports/failures-by-category.json`. For every category below the JSON

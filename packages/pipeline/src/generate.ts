@@ -150,6 +150,25 @@ function constantBaseType(raw: string): string {
 // Empty by design — populate only if the scrape surfaces such cases.
 const CONSTANT_TYPE_OVERRIDES: Record<string, string> = {};
 
+// Function params (`<fn>.<param>`) that TV's LINTER accepts more broadly than
+// its REFERENCE documents. These can't be scraped (the extra types aren't in the
+// reference at all), so we bake the TV-verified set into the generated JSON here.
+// All entries verified with `pine-lint --tv` on 2026-05-28 (see gotchas/G001 and
+// INV009): every "FN" INV009 attributed to these calls is actually TV-accepted,
+// so the values below are the true accepted sets, not guesses.
+//   - na-handling family: `nz`/`fixnan` reference only int/float/color, but the
+//     linter also accepts bool and string. (`na` is universal → "unknown" via
+//     the overload-union rule already.)
+//   - `int(<bool>)` is accepted (bool->int); `plot(title=<series string>)` is
+//     accepted (title need not be const).
+const FUNCTION_PARAM_TYPE_OVERRIDES: Record<string, string> = {
+	"nz.source": "series int/float/bool/string/color",
+	"nz.replacement": "series int/float/bool/string/color",
+	"fixnan.source": "series int/float/bool/string/color",
+	"int.x": "series int/float/bool",
+	"plot.title": "series string",
+};
+
 function getFunctionFlags(name: string): Record<string, unknown> | undefined {
 	const flags: Record<string, unknown> = {};
 
@@ -342,7 +361,11 @@ function generateFunctions(
 		const unionedParams = unionOverloadParams(detail);
 		const parameters = (detail.parameters || []).map((p) => ({
 			name: p.name,
-			type: unionedParams.get(p.name) ?? p.type ?? "unknown",
+			type:
+				FUNCTION_PARAM_TYPE_OVERRIDES[`${name}.${p.name}`] ??
+				unionedParams.get(p.name) ??
+				p.type ??
+				"unknown",
 			description: p.description || "",
 			required: !isParameterOptional(p),
 			default: p.default,
