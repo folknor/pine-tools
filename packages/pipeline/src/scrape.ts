@@ -65,11 +65,12 @@ interface FunctionDetails {
 	variadic?: boolean;
 }
 
-interface VariableDetails {
+// A built-in variable or constant detail. Both render their type the same way:
+// a "Type" sub-header whose sibling holds the full qualified type, e.g.
+// "series float", "const color", "const plot_simple_display". generate.ts
+// parses the qualifier + base type out of `type`.
+interface MemberDetails {
 	name: string;
-	// Full qualified type string exactly as TV renders it in the "Type"
-	// field, e.g. "series float", "simple string", "array<line>".
-	// generate.ts parses the qualifier + base type out of this.
 	type: string;
 	description: string;
 	namespace: string;
@@ -86,9 +87,11 @@ interface ScrapeResult {
 		forceRefresh: boolean;
 		method: string;
 		totalVariables?: number;
+		totalConstants?: number;
 	};
 	functions: Record<string, FunctionDetails>;
-	variables: Record<string, VariableDetails>;
+	variables: Record<string, MemberDetails>;
+	constants: Record<string, MemberDetails>;
 }
 
 // `prefix` namespaces the cache key so e.g. the `time()` function and the
@@ -532,15 +535,19 @@ export async function scrapeFunctionDetails(
 	}
 }
 
-// Scrape a built-in variable's detail page. Unlike functions, variables have
-// no syntax/params; their type lives in a dedicated "Type" sub-header whose
-// next sibling text node holds the full qualified type (e.g. "series float").
-export async function scrapeVariableDetails(
-	variableName: string,
+// Scrape a built-in variable or constant detail page. Unlike functions, these
+// have no syntax/params; their type lives in a dedicated "Type" sub-header
+// whose next sibling text node holds the full qualified type (e.g. "series
+// float", "const plot_simple_display"). `kind` selects the anchor (var_/const_)
+// and the cache namespace.
+export async function scrapeMemberDetails(
+	name: string,
+	kind: "var" | "const",
 	useCache = true,
-): Promise<VariableDetails | null> {
+): Promise<MemberDetails | null> {
+	const cachePrefix = `${kind}__`;
 	if (useCache) {
-		const cached = getCachedData<VariableDetails>(variableName, "var__");
+		const cached = getCachedData<MemberDetails>(name, cachePrefix);
 		if (cached) {
 			return cached;
 		}
@@ -548,84 +555,88 @@ export async function scrapeVariableDetails(
 
 	try {
 		const page = await getSharedPage();
-		const hashTarget = `var_${variableName}`;
+		const elementId = `${kind}_${name}`;
 
 		await page.evaluate((hash: string) => {
 			window.location.hash = hash;
-		}, hashTarget);
+		}, elementId);
 
 		await new Promise((resolve) => setTimeout(resolve, 300));
 
 		await page
 			.waitForFunction(
-				(name: string) => document.getElementById(`var_${name}`) !== null,
+				(id: string) => document.getElementById(id) !== null,
 				{ timeout: 5000 },
-				variableName,
+				elementId,
 			)
 			.catch(() => {
 				// Element not found; extraction below returns null.
 			});
 
-		const details = await page.evaluate((name: string) => {
-			const el = document.getElementById(`var_${name}`);
-			if (!el) return null;
+		const details = await page.evaluate(
+			(id: string, fallbackName: string) => {
+				const el = document.getElementById(id);
+				if (!el) return null;
 
-			const headerEl = el.querySelector(".tv-pine-reference-item__header");
-			const resolvedName = headerEl?.textContent?.trim() || name;
+				const headerEl = el.querySelector(".tv-pine-reference-item__header");
+				const resolvedName = headerEl?.textContent?.trim() || fallbackName;
 
-			// Type: the __text sibling that follows the "Type" sub-header.
-			let type = "";
-			const subHeaders = el.querySelectorAll(
-				".tv-pine-reference-item__sub-header",
-			);
-			for (const sh of subHeaders) {
-				if ((sh.textContent || "").trim() === "Type") {
-					let sibling = sh.nextElementSibling;
-					while (
-						sibling &&
-						!sibling.classList.contains("tv-pine-reference-item__text")
-					) {
-						sibling = sibling.nextElementSibling;
+				// Type: the __text sibling that follows the "Type" sub-header.
+				let type = "";
+				const subHeaders = el.querySelectorAll(
+					".tv-pine-reference-item__sub-header",
+				);
+				for (const sh of subHeaders) {
+					if ((sh.textContent || "").trim() === "Type") {
+						let sibling = sh.nextElementSibling;
+						while (
+							sibling &&
+							!sibling.classList.contains("tv-pine-reference-item__text")
+						) {
+							sibling = sibling.nextElementSibling;
+						}
+						if (sibling) {
+							type = (sibling.textContent || "").replace(/\s+/g, " ").trim();
+						}
+						break;
 					}
-					if (sibling) {
-						type = (sibling.textContent || "").replace(/\s+/g, " ").trim();
-					}
+				}
+
+				// Description: the first __text.tv-text block that is neither an
+				// argument-type entry nor the Type value itself (it precedes Type
+				// in document order, so this resolves to the prose description).
+				let description = "";
+				const texts = el.querySelectorAll(
+					".tv-pine-reference-item__text.tv-text",
+				);
+				for (const t of texts) {
+					if (t.querySelector(".tv-pine-reference-item__arg-type")) continue;
+					const txt = (t.textContent || "").trim();
+					if (!txt || txt === type) continue;
+					description = txt;
 					break;
 				}
-			}
 
-			// Description: the first __text.tv-text block that is neither an
-			// argument-type entry nor the Type value itself (it precedes Type
-			// in document order, so this resolves to the prose description).
-			let description = "";
-			const texts = el.querySelectorAll(
-				".tv-pine-reference-item__text.tv-text",
-			);
-			for (const t of texts) {
-				if (t.querySelector(".tv-pine-reference-item__arg-type")) continue;
-				const txt = (t.textContent || "").trim();
-				if (!txt || txt === type) continue;
-				description = txt;
-				break;
-			}
-
-			return {
-				name: resolvedName,
-				type,
-				description,
-				namespace: resolvedName.includes(".") ? resolvedName.split(".")[0] : "",
-			};
-		}, variableName);
+				return {
+					name: resolvedName,
+					type,
+					description,
+					namespace: resolvedName.includes(".")
+						? resolvedName.split(".")[0]
+						: "",
+				};
+			},
+			elementId,
+			name,
+		);
 
 		if (details) {
-			saveToCache(variableName, details, "var__");
+			saveToCache(name, details, cachePrefix);
 		}
 
 		return details;
 	} catch (error) {
-		console.log(
-			`Failed to scrape variable ${variableName}: ${(error as Error).message}`,
-		);
+		console.log(`Failed to scrape ${kind} ${name}: ${(error as Error).message}`);
 		return null;
 	}
 }
@@ -740,6 +751,40 @@ export async function scrapeAllFunctions(
 	console.log(`   Variables from cache: ${variablesFromCache.length}`);
 	console.log(`   Variables to scrape: ${variablesToScrape.length}`);
 
+	// Build constant list (namespaced members) from the crawl.
+	const constantNames: string[] = [];
+	const constByNamespace = inputData.constants?.byNamespace as
+		| Record<string, string[]>
+		| undefined;
+	if (constByNamespace) {
+		for (const [namespace, members] of Object.entries(constByNamespace)) {
+			for (const member of members) {
+				constantNames.push(`${namespace}.${member}`);
+			}
+		}
+	}
+	constantNames.sort();
+	console.log(`Found ${constantNames.length} constants to process`);
+
+	const constantsToScrape: string[] = [];
+	const constantsFromCache: string[] = [];
+	if (!forceRefresh) {
+		for (const name of constantNames) {
+			if (isCacheValid(getCacheFilePath(name, "const__"))) {
+				constantsFromCache.push(name);
+			} else {
+				constantsToScrape.push(name);
+			}
+		}
+	} else {
+		constantsToScrape.push(...constantNames);
+	}
+	if (DRY_RUN && constantsToScrape.length > DRY_RUN_LIMIT) {
+		constantsToScrape.splice(DRY_RUN_LIMIT);
+	}
+	console.log(`   Constants from cache: ${constantsFromCache.length}`);
+	console.log(`   Constants to scrape: ${constantsToScrape.length}`);
+
 	const allDetails: ScrapeResult = {
 		metadata: {
 			extractedAt: new Date().toISOString(),
@@ -751,9 +796,11 @@ export async function scrapeAllFunctions(
 			forceRefresh,
 			method: "Puppeteer",
 			totalVariables: variableNames.length,
+			totalConstants: constantNames.length,
 		},
 		functions: {},
 		variables: {},
+		constants: {},
 	};
 
 	// Load cached data first
@@ -766,9 +813,15 @@ export async function scrapeAllFunctions(
 		}
 	}
 	for (const name of variablesFromCache) {
-		const cached = getCachedData<VariableDetails>(name, "var__");
+		const cached = getCachedData<MemberDetails>(name, "var__");
 		if (cached) {
 			allDetails.variables[name] = cached;
+		}
+	}
+	for (const name of constantsFromCache) {
+		const cached = getCachedData<MemberDetails>(name, "const__");
+		if (cached) {
+			allDetails.constants[name] = cached;
 		}
 	}
 
@@ -822,7 +875,7 @@ export async function scrapeAllFunctions(
 		for (let i = 0; i < variablesToScrape.length; i += batchSize) {
 			const batch = variablesToScrape.slice(i, i + batchSize);
 			for (const name of batch) {
-				const details = await scrapeVariableDetails(name, !forceRefresh);
+				const details = await scrapeMemberDetails(name, "var", !forceRefresh);
 				if (details) {
 					allDetails.variables[name] = details;
 				} else {
@@ -843,7 +896,41 @@ export async function scrapeAllFunctions(
 		}
 	}
 
-	if (functionsToScrape.length > 0 || variablesToScrape.length > 0) {
+	// Scrape constants (shares the browser opened above, if any).
+	if (constantsToScrape.length > 0) {
+		console.log("Scraping constant details...");
+		const batchSize = 20;
+		const startTime = Date.now();
+
+		for (let i = 0; i < constantsToScrape.length; i += batchSize) {
+			const batch = constantsToScrape.slice(i, i + batchSize);
+			for (const name of batch) {
+				const details = await scrapeMemberDetails(name, "const", !forceRefresh);
+				if (details) {
+					allDetails.constants[name] = details;
+				} else {
+					allDetails.metadata.failedScrapes++;
+				}
+				await new Promise((resolve) => setTimeout(resolve, 100));
+			}
+
+			const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+			const completed = Math.min(i + batchSize, constantsToScrape.length);
+			console.log(
+				`  Constants: ${completed}/${constantsToScrape.length} (${elapsed}s elapsed)`,
+			);
+
+			if (i + batchSize < constantsToScrape.length) {
+				await new Promise((resolve) => setTimeout(resolve, 500));
+			}
+		}
+	}
+
+	if (
+		functionsToScrape.length > 0 ||
+		variablesToScrape.length > 0 ||
+		constantsToScrape.length > 0
+	) {
 		await closeSharedBrowser();
 	}
 
@@ -882,6 +969,10 @@ export async function scrapeAllFunctions(
 	console.log(`   Total variables: ${allDetails.metadata.totalVariables}`);
 	console.log(
 		`   Variables captured: ${Object.keys(allDetails.variables).length}`,
+	);
+	console.log(`   Total constants: ${allDetails.metadata.totalConstants}`);
+	console.log(
+		`   Constants captured: ${Object.keys(allDetails.constants).length}`,
 	);
 	console.log(`   Method: ${allDetails.metadata.method}`);
 	console.log(

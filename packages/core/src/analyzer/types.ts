@@ -51,6 +51,18 @@ export namespace TypeChecker {
 		return m ? (`simple<${m[2]}>` as PineType) : type;
 	}
 
+	// Display-flag enums (plot_display / plot_simple_display) are int-backed
+	// bitmask types. TV lets them combine with + / - (e.g.
+	// `display.all - display.status_line`) and treats the two as mutually
+	// assignable. Strip any leading qualifier so both the bare constant form and
+	// the "input plot_display" param form are recognised.
+	export function isDisplayFlag(type: PineType): boolean {
+		const base = (type as string)
+			.replace(/^(series|simple|input|const)\s+/, "")
+			.replace(/^(series|simple|input|const)<(.+)>$/, "$2");
+		return base === "plot_display" || base === "plot_simple_display";
+	}
+
 	// Normalize type format: "series int" -> "series<int>", "simple float" -> "simple<float>"
 	function normalizeType(type: string): PineType {
 		// Handle union types by taking the first option (e.g., "int/float" -> "int")
@@ -183,6 +195,10 @@ export namespace TypeChecker {
 		const normalizedTo = normalizeType(to as string);
 		if (normalizedFrom === normalizedTo) return true;
 
+		// Display-flag enums are mutually assignable (plot_simple_display <->
+		// plot_display) and accept the result of flag arithmetic.
+		if (isDisplayFlag(from) && isDisplayFlag(to)) return true;
+
 		// int <-> float coercion (Pine Script allows bidirectional numeric coercion)
 		if (from === "int" && to === "float") return true;
 		if (from === "float" && to === "int") return true;
@@ -303,6 +319,15 @@ export namespace TypeChecker {
 			return "string";
 		}
 
+		// Display-flag arithmetic (+ / -) yields a display value, e.g.
+		// `display.all - display.status_line` is assignable to a `display` param.
+		if (
+			(operator === "+" || operator === "-") &&
+			(isDisplayFlag(left) || isDisplayFlag(right))
+		) {
+			return "plot_display";
+		}
+
 		// Arithmetic operators
 		if (["+", "-", "*", "/", "%"].includes(operator)) {
 			// If either is series, result is series
@@ -358,6 +383,16 @@ export namespace TypeChecker {
 		// and other cases where type inference fails
 		if (left === "unknown" || right === "unknown") {
 			return true;
+		}
+
+		// Display-flag enums combine with + / - (and with int, being int-backed
+		// bitmask values), e.g. `display.all - display.status_line`.
+		if (
+			(operator === "+" || operator === "-") &&
+			(isDisplayFlag(left) || isDisplayFlag(right))
+		) {
+			const ok = (t: PineType) => isDisplayFlag(t) || isNumericType(t);
+			if (ok(left) && ok(right)) return true;
 		}
 
 		// na can be compared/operated with any type

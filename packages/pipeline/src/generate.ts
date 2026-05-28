@@ -88,7 +88,7 @@ interface GeneratedConstant {
 	type: string;
 }
 
-interface ScrapedVariable {
+interface ScrapedMember {
 	name: string;
 	type: string;
 	description: string;
@@ -97,7 +97,8 @@ interface ScrapedVariable {
 
 interface DetailsData {
 	functions: Record<string, FunctionDetail>;
-	variables?: Record<string, ScrapedVariable>;
+	variables?: Record<string, ScrapedMember>;
+	constants?: Record<string, ScrapedMember>;
 }
 
 interface ConstructsData {
@@ -136,64 +137,16 @@ const VARIABLE_TYPE_OVERRIDES: Record<
 	{ type: string; qualifier: string }
 > = {};
 
-function inferConstantType(namespace: string): string {
-	switch (namespace) {
-		case "color":
-			return "color";
-		case "shape":
-			return "string";
-		case "plot":
-			return "string";
-		case "hline":
-			return "string";
-		case "line":
-			return "string";
-		case "label":
-			return "string";
-		case "size":
-			return "string";
-		case "location":
-			return "string";
-		case "position":
-			return "string";
-		case "display":
-			return "int";
-		case "extend":
-			return "string";
-		case "xloc":
-			return "string";
-		case "yloc":
-			return "string";
-		case "alert":
-			return "string";
-		case "adjustment":
-			return "string";
-		case "barmerge":
-			return "string";
-		case "currency":
-			return "string";
-		case "dayofweek":
-			return "int";
-		case "format":
-			return "string";
-		case "order":
-			return "string";
-		case "scale":
-			return "string";
-		case "session":
-			return "string";
-		case "strategy":
-			return "string";
-		case "text":
-			return "string";
-		case "font":
-			return "string";
-		case "math":
-			return "float";
-		default:
-			return "string";
-	}
+// Strip TV's leading qualifier ("const color" -> "color", "const
+// plot_simple_display" -> "plot_simple_display") to the bare base type used by
+// the constants table. Replaces the old inferConstantType namespace-guess.
+function constantBaseType(raw: string): string {
+	return (raw || "").trim().replace(/^(const|input|simple|series)\s+/, "");
 }
+
+// Constants whose TV detail page exposes no machine-readable "Type" field.
+// Empty by design — populate only if the scrape surfaces such cases.
+const CONSTANT_TYPE_OVERRIDES: Record<string, string> = {};
 
 function getFunctionFlags(name: string): Record<string, unknown> | undefined {
 	const flags: Record<string, unknown> = {};
@@ -615,24 +568,37 @@ export const VARIABLE_NAMESPACES: Set<string> = new Set(
 }
 
 function generateConstants(
-	_details: DetailsData,
+	details: DetailsData,
 	constructs: ConstructsData,
 ): GeneratedConstant[] {
 	console.log("Generating constants.ts...");
 
 	const constants: GeneratedConstant[] = [];
+	const scraped = details.constants || {};
+	const missingType: string[] = [];
 
 	const byNamespace = constructs.constants?.byNamespace || {};
 	for (const [namespace, items] of Object.entries(byNamespace)) {
-		const type = inferConstantType(namespace);
 		for (const shortName of items) {
-			constants.push({
-				name: `${namespace}.${shortName}`,
-				namespace,
-				shortName,
-				type,
-			});
+			const name = `${namespace}.${shortName}`;
+			const sc = scraped[name];
+			let type: string;
+			if (sc?.type) {
+				type = constantBaseType(sc.type);
+			} else if (CONSTANT_TYPE_OVERRIDES[name]) {
+				type = CONSTANT_TYPE_OVERRIDES[name];
+			} else {
+				missingType.push(name);
+				type = "string";
+			}
+			constants.push({ name, namespace, shortName, type });
 		}
+	}
+
+	if (missingType.length > 0) {
+		console.warn(
+			`   ⚠ ${missingType.length} constant(s) lacked a scraped Type; defaulted to string: ${missingType.join(", ")}`,
+		);
 	}
 
 	const content = `/**

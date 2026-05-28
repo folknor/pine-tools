@@ -760,6 +760,9 @@ export class UnifiedPineValidator {
 		if (TypeChecker.isColorType(type1) && TypeChecker.isColorType(type2)) {
 			return true;
 		}
+		if (TypeChecker.isDisplayFlag(type1) && TypeChecker.isDisplayFlag(type2)) {
+			return true;
+		}
 
 		return false;
 	}

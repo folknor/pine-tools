@@ -1,7 +1,7 @@
 /**
  * Pine Script V6 Built-in Variables
  * Auto-generated from TradingView documentation
- * Generated: 2026-05-28T06:47:42.484Z
+ * Generated: 2026-05-28T07:14:59.170Z
  * Total: 161 variables
  */
 

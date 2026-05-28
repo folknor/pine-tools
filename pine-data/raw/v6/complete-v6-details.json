@@ -1,14 +1,15 @@
 {
   "metadata": {
-    "extractedAt": "2026-05-28T06:04:34.950Z",
+    "extractedAt": "2026-05-28T07:11:54.035Z",
     "source": "https://www.tradingview.com/pine-script-reference/v6/",
     "totalFunctions": 475,
     "successfulScrapes": 475,
     "failedScrapes": 0,
-    "cachedResults": 0,
+    "cachedResults": 475,
     "forceRefresh": false,
     "method": "Puppeteer",
-    "totalVariables": 161
+    "totalVariables": 161,
+    "totalConstants": 237
   },
   "functions": {
     "alert": {
@@ -16425,6 +16426,1430 @@
       "type": "series int",
       "description": "Current bar year in exchange timezone.",
       "namespace": ""
+    }
+  },
+  "constants": {
+    "adjustment.dividends": {
+      "name": "adjustment.dividends",
+      "type": "const string",
+      "description": "Constant for dividends adjustment type (dividends adjustment is applied).",
+      "namespace": "adjustment"
+    },
+    "adjustment.none": {
+      "name": "adjustment.none",
+      "type": "const string",
+      "description": "Constant for none adjustment type (no adjustment is applied).",
+      "namespace": "adjustment"
+    },
+    "adjustment.splits": {
+      "name": "adjustment.splits",
+      "type": "const string",
+      "description": "Constant for splits adjustment type (splits adjustment is applied).",
+      "namespace": "adjustment"
+    },
+    "alert.freq_all": {
+      "name": "alert.freq_all",
+      "type": "const string",
+      "description": "A named constant for use with the freq parameter of the alert() function.",
+      "namespace": "alert"
+    },
+    "alert.freq_once_per_bar": {
+      "name": "alert.freq_once_per_bar",
+      "type": "const string",
+      "description": "A named constant for use with the freq parameter of the alert() function.",
+      "namespace": "alert"
+    },
+    "alert.freq_once_per_bar_close": {
+      "name": "alert.freq_once_per_bar_close",
+      "type": "const string",
+      "description": "A named constant for use with the freq parameter of the alert() function.",
+      "namespace": "alert"
+    },
+    "backadjustment.inherit": {
+      "name": "backadjustment.inherit",
+      "type": "const backadjustment",
+      "description": "A constant to specify the value of the backadjustment parameter in ticker.new() and ticker.modify() functions.",
+      "namespace": "backadjustment"
+    },
+    "backadjustment.off": {
+      "name": "backadjustment.off",
+      "type": "const backadjustment",
+      "description": "A constant to specify the value of the backadjustment parameter in ticker.new() and ticker.modify() functions.",
+      "namespace": "backadjustment"
+    },
+    "backadjustment.on": {
+      "name": "backadjustment.on",
+      "type": "const backadjustment",
+      "description": "A constant to specify the value of the backadjustment parameter in ticker.new() and ticker.modify() functions.",
+      "namespace": "backadjustment"
+    },
+    "barmerge.gaps_off": {
+      "name": "barmerge.gaps_off",
+      "type": "const barmerge_gaps",
+      "description": "Merge strategy for requested data. Data is merged continuously without gaps, all the gaps are filled with the previous nearest existing value.",
+      "namespace": "barmerge"
+    },
+    "barmerge.gaps_on": {
+      "name": "barmerge.gaps_on",
+      "type": "const barmerge_gaps",
+      "description": "Merge strategy for requested data. Data is merged with possible gaps (na values).",
+      "namespace": "barmerge"
+    },
+    "barmerge.lookahead_off": {
+      "name": "barmerge.lookahead_off",
+      "type": "const barmerge_lookahead",
+      "description": "Merge strategy for the requested data position. Requested barset is merged with current barset in the order of sorting bars by their close time. This merge strategy disables effect of getting data from \"future\" on calculation on history.",
+      "namespace": "barmerge"
+    },
+    "barmerge.lookahead_on": {
+      "name": "barmerge.lookahead_on",
+      "type": "const barmerge_lookahead",
+      "description": "Merge strategy for the requested data position. Requested barset is merged with current barset in the order of sorting bars by their opening time. This merge strategy can lead to undesirable effect of getting data from \"future\" on calculation on history. This is unacceptable in backtesting strategies, but can be useful in indicators.",
+      "namespace": "barmerge"
+    },
+    "color.aqua": {
+      "name": "color.aqua",
+      "type": "const color",
+      "description": "Is a named constant for #00BCD4 color.",
+      "namespace": "color"
+    },
+    "color.black": {
+      "name": "color.black",
+      "type": "const color",
+      "description": "Is a named constant for #363A45 color.",
+      "namespace": "color"
+    },
+    "color.blue": {
+      "name": "color.blue",
+      "type": "const color",
+      "description": "Is a named constant for #2962ff color.",
+      "namespace": "color"
+    },
+    "color.fuchsia": {
+      "name": "color.fuchsia",
+      "type": "const color",
+      "description": "Is a named constant for #E040FB color.",
+      "namespace": "color"
+    },
+    "color.gray": {
+      "name": "color.gray",
+      "type": "const color",
+      "description": "Is a named constant for #787B86 color.",
+      "namespace": "color"
+    },
+    "color.green": {
+      "name": "color.green",
+      "type": "const color",
+      "description": "Is a named constant for #4CAF50 color.",
+      "namespace": "color"
+    },
+    "color.lime": {
+      "name": "color.lime",
+      "type": "const color",
+      "description": "Is a named constant for #00E676 color.",
+      "namespace": "color"
+    },
+    "color.maroon": {
+      "name": "color.maroon",
+      "type": "const color",
+      "description": "Is a named constant for #880E4F color.",
+      "namespace": "color"
+    },
+    "color.navy": {
+      "name": "color.navy",
+      "type": "const color",
+      "description": "Is a named constant for #311B92 color.",
+      "namespace": "color"
+    },
+    "color.olive": {
+      "name": "color.olive",
+      "type": "const color",
+      "description": "Is a named constant for #808000 color.",
+      "namespace": "color"
+    },
+    "color.orange": {
+      "name": "color.orange",
+      "type": "const color",
+      "description": "Is a named constant for #FF9800 color.",
+      "namespace": "color"
+    },
+    "color.purple": {
+      "name": "color.purple",
+      "type": "const color",
+      "description": "Is a named constant for #9C27B0 color.",
+      "namespace": "color"
+    },
+    "color.red": {
+      "name": "color.red",
+      "type": "const color",
+      "description": "Is a named constant for #F23645 color.",
+      "namespace": "color"
+    },
+    "color.silver": {
+      "name": "color.silver",
+      "type": "const color",
+      "description": "Is a named constant for #B2B5BE color.",
+      "namespace": "color"
+    },
+    "color.teal": {
+      "name": "color.teal",
+      "type": "const color",
+      "description": "Is a named constant for #089981 color.",
+      "namespace": "color"
+    },
+    "color.white": {
+      "name": "color.white",
+      "type": "const color",
+      "description": "Is a named constant for #FFFFFF color.",
+      "namespace": "color"
+    },
+    "color.yellow": {
+      "name": "color.yellow",
+      "type": "const color",
+      "description": "Is a named constant for #FDD835 color.",
+      "namespace": "color"
+    },
+    "currency.AED": {
+      "name": "currency.AED",
+      "type": "const string",
+      "description": "Arab Emirates Dirham.",
+      "namespace": "currency"
+    },
+    "currency.ARS": {
+      "name": "currency.ARS",
+      "type": "const string",
+      "description": "Argentine Pesos.",
+      "namespace": "currency"
+    },
+    "currency.AUD": {
+      "name": "currency.AUD",
+      "type": "const string",
+      "description": "Australian dollar.",
+      "namespace": "currency"
+    },
+    "currency.BDT": {
+      "name": "currency.BDT",
+      "type": "const string",
+      "description": "Bangladeshi Taka.",
+      "namespace": "currency"
+    },
+    "currency.BHD": {
+      "name": "currency.BHD",
+      "type": "const string",
+      "description": "Bahraini Dinar.",
+      "namespace": "currency"
+    },
+    "currency.BRL": {
+      "name": "currency.BRL",
+      "type": "const string",
+      "description": "Brazilian real.",
+      "namespace": "currency"
+    },
+    "currency.BTC": {
+      "name": "currency.BTC",
+      "type": "const string",
+      "description": "Bitcoin.",
+      "namespace": "currency"
+    },
+    "currency.CAD": {
+      "name": "currency.CAD",
+      "type": "const string",
+      "description": "Canadian dollar.",
+      "namespace": "currency"
+    },
+    "currency.CHF": {
+      "name": "currency.CHF",
+      "type": "const string",
+      "description": "Swiss franc.",
+      "namespace": "currency"
+    },
+    "currency.CLP": {
+      "name": "currency.CLP",
+      "type": "const string",
+      "description": "Chilean Peso.",
+      "namespace": "currency"
+    },
+    "currency.CNY": {
+      "name": "currency.CNY",
+      "type": "const string",
+      "description": "Chinese Yuan.",
+      "namespace": "currency"
+    },
+    "currency.COP": {
+      "name": "currency.COP",
+      "type": "const string",
+      "description": "Colombian Peso.",
+      "namespace": "currency"
+    },
+    "currency.CZK": {
+      "name": "currency.CZK",
+      "type": "const string",
+      "description": "Czech Koruna.",
+      "namespace": "currency"
+    },
+    "currency.DKK": {
+      "name": "currency.DKK",
+      "type": "const string",
+      "description": "Danish Krone.",
+      "namespace": "currency"
+    },
+    "currency.EGP": {
+      "name": "currency.EGP",
+      "type": "const string",
+      "description": "Egyptian pound.",
+      "namespace": "currency"
+    },
+    "currency.ETH": {
+      "name": "currency.ETH",
+      "type": "const string",
+      "description": "Ethereum.",
+      "namespace": "currency"
+    },
+    "currency.EUR": {
+      "name": "currency.EUR",
+      "type": "const string",
+      "description": "Euro.",
+      "namespace": "currency"
+    },
+    "currency.GBP": {
+      "name": "currency.GBP",
+      "type": "const string",
+      "description": "Pound sterling.",
+      "namespace": "currency"
+    },
+    "currency.HKD": {
+      "name": "currency.HKD",
+      "type": "const string",
+      "description": "Hong Kong dollar.",
+      "namespace": "currency"
+    },
+    "currency.HUF": {
+      "name": "currency.HUF",
+      "type": "const string",
+      "description": "Hungarian Forint.",
+      "namespace": "currency"
+    },
+    "currency.IDR": {
+      "name": "currency.IDR",
+      "type": "const string",
+      "description": "Indonesian Rupiah.",
+      "namespace": "currency"
+    },
+    "currency.ILS": {
+      "name": "currency.ILS",
+      "type": "const string",
+      "description": "Israeli New Shekel.",
+      "namespace": "currency"
+    },
+    "currency.INR": {
+      "name": "currency.INR",
+      "type": "const string",
+      "description": "Indian rupee.",
+      "namespace": "currency"
+    },
+    "currency.ISK": {
+      "name": "currency.ISK",
+      "type": "const string",
+      "description": "Icelandic Krona.",
+      "namespace": "currency"
+    },
+    "currency.JPY": {
+      "name": "currency.JPY",
+      "type": "const string",
+      "description": "Japanese yen.",
+      "namespace": "currency"
+    },
+    "currency.KES": {
+      "name": "currency.KES",
+      "type": "const string",
+      "description": "Kenyan Shilling.",
+      "namespace": "currency"
+    },
+    "currency.KRW": {
+      "name": "currency.KRW",
+      "type": "const string",
+      "description": "South Korean won.",
+      "namespace": "currency"
+    },
+    "currency.KWD": {
+      "name": "currency.KWD",
+      "type": "const string",
+      "description": "Kuwaiti Dinar.",
+      "namespace": "currency"
+    },
+    "currency.LKR": {
+      "name": "currency.LKR",
+      "type": "const string",
+      "description": "Sri Lankan Rupee.",
+      "namespace": "currency"
+    },
+    "currency.MAD": {
+      "name": "currency.MAD",
+      "type": "const string",
+      "description": "Moroccan Dirham.",
+      "namespace": "currency"
+    },
+    "currency.MXN": {
+      "name": "currency.MXN",
+      "type": "const string",
+      "description": "Mexican Peso.",
+      "namespace": "currency"
+    },
+    "currency.MYR": {
+      "name": "currency.MYR",
+      "type": "const string",
+      "description": "Malaysian ringgit.",
+      "namespace": "currency"
+    },
+    "currency.NGN": {
+      "name": "currency.NGN",
+      "type": "const string",
+      "description": "Nigerian Naira.",
+      "namespace": "currency"
+    },
+    "currency.NOK": {
+      "name": "currency.NOK",
+      "type": "const string",
+      "description": "Norwegian krone.",
+      "namespace": "currency"
+    },
+    "currency.NONE": {
+      "name": "currency.NONE",
+      "type": "const string",
+      "description": "Unspecified currency.",
+      "namespace": "currency"
+    },
+    "currency.NZD": {
+      "name": "currency.NZD",
+      "type": "const string",
+      "description": "New Zealand dollar.",
+      "namespace": "currency"
+    },
+    "currency.PEN": {
+      "name": "currency.PEN",
+      "type": "const string",
+      "description": "Peruvian sol.",
+      "namespace": "currency"
+    },
+    "currency.PHP": {
+      "name": "currency.PHP",
+      "type": "const string",
+      "description": "Philippine Peso.",
+      "namespace": "currency"
+    },
+    "currency.PKR": {
+      "name": "currency.PKR",
+      "type": "const string",
+      "description": "Pakistani rupee.",
+      "namespace": "currency"
+    },
+    "currency.PLN": {
+      "name": "currency.PLN",
+      "type": "const string",
+      "description": "Polish zloty.",
+      "namespace": "currency"
+    },
+    "currency.QAR": {
+      "name": "currency.QAR",
+      "type": "const string",
+      "description": "Qatari Riyal.",
+      "namespace": "currency"
+    },
+    "currency.RON": {
+      "name": "currency.RON",
+      "type": "const string",
+      "description": "Romanian Leu.",
+      "namespace": "currency"
+    },
+    "currency.RSD": {
+      "name": "currency.RSD",
+      "type": "const string",
+      "description": "Serbian Dinar.",
+      "namespace": "currency"
+    },
+    "currency.RUB": {
+      "name": "currency.RUB",
+      "type": "const string",
+      "description": "Russian ruble.",
+      "namespace": "currency"
+    },
+    "currency.SAR": {
+      "name": "currency.SAR",
+      "type": "const string",
+      "description": "Saudi Riyal.",
+      "namespace": "currency"
+    },
+    "currency.SEK": {
+      "name": "currency.SEK",
+      "type": "const string",
+      "description": "Swedish krona.",
+      "namespace": "currency"
+    },
+    "currency.SGD": {
+      "name": "currency.SGD",
+      "type": "const string",
+      "description": "Singapore dollar.",
+      "namespace": "currency"
+    },
+    "currency.THB": {
+      "name": "currency.THB",
+      "type": "const string",
+      "description": "Thai Baht.",
+      "namespace": "currency"
+    },
+    "currency.TND": {
+      "name": "currency.TND",
+      "type": "const string",
+      "description": "Tunisian Dinar.",
+      "namespace": "currency"
+    },
+    "currency.TRY": {
+      "name": "currency.TRY",
+      "type": "const string",
+      "description": "Turkish lira.",
+      "namespace": "currency"
+    },
+    "currency.TWD": {
+      "name": "currency.TWD",
+      "type": "const string",
+      "description": "New Taiwan Dollar.",
+      "namespace": "currency"
+    },
+    "currency.USD": {
+      "name": "currency.USD",
+      "type": "const string",
+      "description": "United States dollar.",
+      "namespace": "currency"
+    },
+    "currency.USDT": {
+      "name": "currency.USDT",
+      "type": "const string",
+      "description": "Tether.",
+      "namespace": "currency"
+    },
+    "currency.VES": {
+      "name": "currency.VES",
+      "type": "const string",
+      "description": "Venezuelan Bolivar.",
+      "namespace": "currency"
+    },
+    "currency.VND": {
+      "name": "currency.VND",
+      "type": "const string",
+      "description": "Vietnamese Dong.",
+      "namespace": "currency"
+    },
+    "currency.ZAR": {
+      "name": "currency.ZAR",
+      "type": "const string",
+      "description": "South African rand.",
+      "namespace": "currency"
+    },
+    "dayofweek.friday": {
+      "name": "dayofweek.friday",
+      "type": "const int",
+      "description": "Is a named constant for return value of dayofweek() function and value of dayofweek variable.",
+      "namespace": "dayofweek"
+    },
+    "dayofweek.monday": {
+      "name": "dayofweek.monday",
+      "type": "const int",
+      "description": "Is a named constant for return value of dayofweek() function and value of dayofweek variable.",
+      "namespace": "dayofweek"
+    },
+    "dayofweek.saturday": {
+      "name": "dayofweek.saturday",
+      "type": "const int",
+      "description": "Is a named constant for return value of dayofweek() function and value of dayofweek variable.",
+      "namespace": "dayofweek"
+    },
+    "dayofweek.sunday": {
+      "name": "dayofweek.sunday",
+      "type": "const int",
+      "description": "Is a named constant for return value of dayofweek() function and value of dayofweek variable.",
+      "namespace": "dayofweek"
+    },
+    "dayofweek.thursday": {
+      "name": "dayofweek.thursday",
+      "type": "const int",
+      "description": "Is a named constant for return value of dayofweek() function and value of dayofweek variable.",
+      "namespace": "dayofweek"
+    },
+    "dayofweek.tuesday": {
+      "name": "dayofweek.tuesday",
+      "type": "const int",
+      "description": "Is a named constant for return value of dayofweek() function and value of dayofweek variable.",
+      "namespace": "dayofweek"
+    },
+    "dayofweek.wednesday": {
+      "name": "dayofweek.wednesday",
+      "type": "const int",
+      "description": "Is a named constant for return value of dayofweek() function and value of dayofweek variable.",
+      "namespace": "dayofweek"
+    },
+    "display.all": {
+      "name": "display.all",
+      "type": "const plot_simple_display",
+      "description": "A named constant for use with the display parameter of the plot*(), input*(), fill(), bgcolor(), barcolor(), and hline() functions. Specifies that the values or visuals appear in all possible locations by default.",
+      "namespace": "display"
+    },
+    "display.data_window": {
+      "name": "display.data_window",
+      "type": "const plot_display",
+      "description": "A named constant for use with the display parameter of the plot*() and input*() functions. Specifies that the values are available in the Data Window by default. The Data Window tab is accessible by clicking the \"Object Tree and Data Window\" icon in the chart's right sidebar.",
+      "namespace": "display"
+    },
+    "display.none": {
+      "name": "display.none",
+      "type": "const plot_simple_display",
+      "description": "A named constant for use with the display parameter of the plot*(), input*(), fill(), bgcolor(), barcolor(), and hline() functions. Specifies that the values or visuals are not displayed anywhere by default.",
+      "namespace": "display"
+    },
+    "display.pane": {
+      "name": "display.pane",
+      "type": "const plot_display",
+      "description": "A named constant for use with the display parameter of the plot*() functions. Specifies that the plotted values are displayed in a chart pane by default.",
+      "namespace": "display"
+    },
+    "display.pine_screener": {
+      "name": "display.pine_screener",
+      "type": "const plot_display",
+      "description": "A named constant for use with the display parameter of the plot() function. Specifies that, by default, the Pine Screener displays a column for the plot's values when the user applies the indicator to the chosen watchlist.",
+      "namespace": "display"
+    },
+    "display.price_scale": {
+      "name": "display.price_scale",
+      "type": "const plot_display",
+      "description": "A named constant for use with the display parameter of the plot*() functions. Specifies that the price scale displays a label for the plot's data, but only if the chart's settings allow it.",
+      "namespace": "display"
+    },
+    "display.status_line": {
+      "name": "display.status_line",
+      "type": "const plot_display",
+      "description": "A named constant for use with the display parameter of the plot*() and input*() functions. Specifies that the values are available in the script's status line, but only if the chart's settings allow it.",
+      "namespace": "display"
+    },
+    "dividends.gross": {
+      "name": "dividends.gross",
+      "type": "const string",
+      "description": "A named constant for the request.dividends() function. Is used to request the dividends return on a stock before deductions.",
+      "namespace": "dividends"
+    },
+    "dividends.net": {
+      "name": "dividends.net",
+      "type": "const string",
+      "description": "A named constant for the request.dividends() function. Is used to request the dividends return on a stock after deductions.",
+      "namespace": "dividends"
+    },
+    "earnings.actual": {
+      "name": "earnings.actual",
+      "type": "const string",
+      "description": "A named constant for the request.earnings() function. Is used to request the earnings value as it was reported.",
+      "namespace": "earnings"
+    },
+    "earnings.estimate": {
+      "name": "earnings.estimate",
+      "type": "const string",
+      "description": "A named constant for the request.earnings() function. Is used to request the estimated earnings value.",
+      "namespace": "earnings"
+    },
+    "earnings.standardized": {
+      "name": "earnings.standardized",
+      "type": "const string",
+      "description": "A named constant for the request.earnings() function. Is used to request the standardized earnings value.",
+      "namespace": "earnings"
+    },
+    "extend.both": {
+      "name": "extend.both",
+      "type": "const string",
+      "description": "A named constant for line.new() and line.set_extend() functions.",
+      "namespace": "extend"
+    },
+    "extend.left": {
+      "name": "extend.left",
+      "type": "const string",
+      "description": "A named constant for line.new() and line.set_extend() functions.",
+      "namespace": "extend"
+    },
+    "extend.none": {
+      "name": "extend.none",
+      "type": "const string",
+      "description": "A named constant for line.new() and line.set_extend() functions.",
+      "namespace": "extend"
+    },
+    "extend.right": {
+      "name": "extend.right",
+      "type": "const string",
+      "description": "A named constant for line.new() and line.set_extend() functions.",
+      "namespace": "extend"
+    },
+    "font.family_default": {
+      "name": "font.family_default",
+      "type": "const string",
+      "description": "Default text font for box.new(), box.set_text_font_family(), label.new(), label.set_text_font_family(), table.cell() and table.cell_set_text_font_family() functions.",
+      "namespace": "font"
+    },
+    "font.family_monospace": {
+      "name": "font.family_monospace",
+      "type": "const string",
+      "description": "Monospace text font for box.new(), box.set_text_font_family(), label.new(), label.set_text_font_family(), table.cell() and table.cell_set_text_font_family() functions.",
+      "namespace": "font"
+    },
+    "format.inherit": {
+      "name": "format.inherit",
+      "type": "const string",
+      "description": "Is a named constant for selecting the formatting of the script output values from the parent series in the indicator() function.",
+      "namespace": "format"
+    },
+    "format.mintick": {
+      "name": "format.mintick",
+      "type": "const string",
+      "description": "Is a named constant to use with the str.tostring() function. Passing a number to str.tostring() with this argument rounds the number to the nearest value that can be divided by syminfo.mintick, without the remainder, with ties rounding up, and returns the string version of said value with trailing zeros.",
+      "namespace": "format"
+    },
+    "format.percent": {
+      "name": "format.percent",
+      "type": "const string",
+      "description": "Is a named constant for selecting the formatting of the script output values as a percentage in the indicator function. It adds a percent sign after values.",
+      "namespace": "format"
+    },
+    "format.price": {
+      "name": "format.price",
+      "type": "const string",
+      "description": "Is a named constant for selecting the formatting of the script output values as prices in the indicator() function.",
+      "namespace": "format"
+    },
+    "format.volume": {
+      "name": "format.volume",
+      "type": "const string",
+      "description": "Is a named constant for selecting the formatting of the script output values as volume in the indicator() function, e.g. '5183' will be formatted as '5.183K'.",
+      "namespace": "format"
+    },
+    "hline.style_dashed": {
+      "name": "hline.style_dashed",
+      "type": "const hline_style",
+      "description": "Is a named constant for dashed linestyle of hline() function.",
+      "namespace": "hline"
+    },
+    "hline.style_dotted": {
+      "name": "hline.style_dotted",
+      "type": "const hline_style",
+      "description": "Is a named constant for dotted linestyle of hline() function.",
+      "namespace": "hline"
+    },
+    "hline.style_solid": {
+      "name": "hline.style_solid",
+      "type": "const hline_style",
+      "description": "Is a named constant for solid linestyle of hline() function.",
+      "namespace": "hline"
+    },
+    "label.style_arrowdown": {
+      "name": "label.style_arrowdown",
+      "type": "const string",
+      "description": "Label style for label.new() and label.set_style() functions.",
+      "namespace": "label"
+    },
+    "label.style_arrowup": {
+      "name": "label.style_arrowup",
+      "type": "const string",
+      "description": "Label style for label.new() and label.set_style() functions.",
+      "namespace": "label"
+    },
+    "label.style_circle": {
+      "name": "label.style_circle",
+      "type": "const string",
+      "description": "Label style for label.new() and label.set_style() functions.",
+      "namespace": "label"
+    },
+    "label.style_cross": {
+      "name": "label.style_cross",
+      "type": "const string",
+      "description": "Label style for label.new() and label.set_style() functions.",
+      "namespace": "label"
+    },
+    "label.style_diamond": {
+      "name": "label.style_diamond",
+      "type": "const string",
+      "description": "Label style for label.new() and label.set_style() functions.",
+      "namespace": "label"
+    },
+    "label.style_flag": {
+      "name": "label.style_flag",
+      "type": "const string",
+      "description": "Label style for label.new() and label.set_style() functions.",
+      "namespace": "label"
+    },
+    "label.style_label_center": {
+      "name": "label.style_label_center",
+      "type": "const string",
+      "description": "Label style for label.new() and label.set_style() functions.",
+      "namespace": "label"
+    },
+    "label.style_label_down": {
+      "name": "label.style_label_down",
+      "type": "const string",
+      "description": "Label style for label.new() and label.set_style() functions.",
+      "namespace": "label"
+    },
+    "label.style_label_left": {
+      "name": "label.style_label_left",
+      "type": "const string",
+      "description": "Label style for label.new() and label.set_style() functions.",
+      "namespace": "label"
+    },
+    "label.style_label_lower_left": {
+      "name": "label.style_label_lower_left",
+      "type": "const string",
+      "description": "Label style for label.new() and label.set_style() functions.",
+      "namespace": "label"
+    },
+    "label.style_label_lower_right": {
+      "name": "label.style_label_lower_right",
+      "type": "const string",
+      "description": "Label style for label.new() and label.set_style() functions.",
+      "namespace": "label"
+    },
+    "label.style_label_right": {
+      "name": "label.style_label_right",
+      "type": "const string",
+      "description": "Label style for label.new() and label.set_style() functions.",
+      "namespace": "label"
+    },
+    "label.style_label_up": {
+      "name": "label.style_label_up",
+      "type": "const string",
+      "description": "Label style for label.new() and label.set_style() functions.",
+      "namespace": "label"
+    },
+    "label.style_label_upper_left": {
+      "name": "label.style_label_upper_left",
+      "type": "const string",
+      "description": "Label style for label.new() and label.set_style() functions.",
+      "namespace": "label"
+    },
+    "label.style_label_upper_right": {
+      "name": "label.style_label_upper_right",
+      "type": "const string",
+      "description": "Label style for label.new() and label.set_style() functions.",
+      "namespace": "label"
+    },
+    "label.style_none": {
+      "name": "label.style_none",
+      "type": "const string",
+      "description": "Label style for label.new() and label.set_style() functions.",
+      "namespace": "label"
+    },
+    "label.style_square": {
+      "name": "label.style_square",
+      "type": "const string",
+      "description": "Label style for label.new() and label.set_style() functions.",
+      "namespace": "label"
+    },
+    "label.style_text_outline": {
+      "name": "label.style_text_outline",
+      "type": "const string",
+      "description": "Label style for label.new() and label.set_style() functions.",
+      "namespace": "label"
+    },
+    "label.style_triangledown": {
+      "name": "label.style_triangledown",
+      "type": "const string",
+      "description": "Label style for label.new() and label.set_style() functions.",
+      "namespace": "label"
+    },
+    "label.style_triangleup": {
+      "name": "label.style_triangleup",
+      "type": "const string",
+      "description": "Label style for label.new() and label.set_style() functions.",
+      "namespace": "label"
+    },
+    "label.style_xcross": {
+      "name": "label.style_xcross",
+      "type": "const string",
+      "description": "Label style for label.new() and label.set_style() functions.",
+      "namespace": "label"
+    },
+    "line.style_arrow_both": {
+      "name": "line.style_arrow_both",
+      "type": "const string",
+      "description": "Line style for line.new() and line.set_style() functions. Solid line with arrows on both points.",
+      "namespace": "line"
+    },
+    "line.style_arrow_left": {
+      "name": "line.style_arrow_left",
+      "type": "const string",
+      "description": "Line style for line.new() and line.set_style() functions. Solid line with arrow on the first point.",
+      "namespace": "line"
+    },
+    "line.style_arrow_right": {
+      "name": "line.style_arrow_right",
+      "type": "const string",
+      "description": "Line style for line.new() and line.set_style() functions. Solid line with arrow on the second point.",
+      "namespace": "line"
+    },
+    "line.style_dashed": {
+      "name": "line.style_dashed",
+      "type": "const string",
+      "description": "Line style for line.new() and line.set_style() functions.",
+      "namespace": "line"
+    },
+    "line.style_dotted": {
+      "name": "line.style_dotted",
+      "type": "const string",
+      "description": "Line style for line.new() and line.set_style() functions.",
+      "namespace": "line"
+    },
+    "line.style_solid": {
+      "name": "line.style_solid",
+      "type": "const string",
+      "description": "Line style for line.new() and line.set_style() functions.",
+      "namespace": "line"
+    },
+    "location.abovebar": {
+      "name": "location.abovebar",
+      "type": "const string",
+      "description": "Location value for plotshape(), plotchar() functions. Shape is plotted above main series bars.",
+      "namespace": "location"
+    },
+    "location.absolute": {
+      "name": "location.absolute",
+      "type": "const string",
+      "description": "Location value for plotshape(), plotchar() functions. Shape is plotted on chart using indicator value as a price coordinate.",
+      "namespace": "location"
+    },
+    "location.belowbar": {
+      "name": "location.belowbar",
+      "type": "const string",
+      "description": "Location value for plotshape(), plotchar() functions. Shape is plotted below main series bars.",
+      "namespace": "location"
+    },
+    "location.bottom": {
+      "name": "location.bottom",
+      "type": "const string",
+      "description": "Location value for plotshape(), plotchar() functions. Shape is plotted near the bottom chart border.",
+      "namespace": "location"
+    },
+    "location.top": {
+      "name": "location.top",
+      "type": "const string",
+      "description": "Location value for plotshape(), plotchar() functions. Shape is plotted near the top chart border.",
+      "namespace": "location"
+    },
+    "math.e": {
+      "name": "math.e",
+      "type": "const float",
+      "description": "Is a named constant for Euler's number. It is equal to 2.7182818284590452.",
+      "namespace": "math"
+    },
+    "math.phi": {
+      "name": "math.phi",
+      "type": "const float",
+      "description": "Is a named constant for the golden ratio. It is equal to 1.6180339887498948.",
+      "namespace": "math"
+    },
+    "math.pi": {
+      "name": "math.pi",
+      "type": "const float",
+      "description": "Is a named constant for Archimedes' constant. It is equal to 3.1415926535897932.",
+      "namespace": "math"
+    },
+    "math.rphi": {
+      "name": "math.rphi",
+      "type": "const float",
+      "description": "Is a named constant for the golden ratio conjugate. It is equal to 0.6180339887498948.",
+      "namespace": "math"
+    },
+    "order.ascending": {
+      "name": "order.ascending",
+      "type": "const sort_order",
+      "description": "Determines the sort order of the array from the smallest to the largest value.",
+      "namespace": "order"
+    },
+    "order.descending": {
+      "name": "order.descending",
+      "type": "const sort_order",
+      "description": "Determines the sort order of the array from the largest to the smallest value.",
+      "namespace": "order"
+    },
+    "plot.linestyle_dashed": {
+      "name": "plot.linestyle_dashed",
+      "type": "const plot_line_style",
+      "description": "A named constant for use with the plot() function's linestyle parameter, which modifies the appearance of plotted lines. If the style argument of the function call specifies a plot style that displays a line, using this constant as the linestyle argument specifies that the plotted line is dashed.",
+      "namespace": "plot"
+    },
+    "plot.linestyle_dotted": {
+      "name": "plot.linestyle_dotted",
+      "type": "const plot_line_style",
+      "description": "A named constant for use with the plot() function's linestyle parameter, which modifies the appearance of plotted lines. If the style argument of the function call specifies a plot style that displays a line, using this constant as the linestyle argument specifies that the plotted line is dotted.",
+      "namespace": "plot"
+    },
+    "plot.linestyle_solid": {
+      "name": "plot.linestyle_solid",
+      "type": "const plot_line_style",
+      "description": "A named constant for use with the plot() function's linestyle parameter, which modifies the appearance of plotted lines. If the style argument of the function call specifies a plot style that displays a line, using this constant as the linestyle argument specifies that the plotted line is solid.",
+      "namespace": "plot"
+    },
+    "plot.style_area": {
+      "name": "plot.style_area",
+      "type": "const plot_style",
+      "description": "A named constant for the 'Area' style, to be used as an argument for the style parameter in the plot() function.",
+      "namespace": "plot"
+    },
+    "plot.style_areabr": {
+      "name": "plot.style_areabr",
+      "type": "const plot_style",
+      "description": "A named constant for the 'Area With Breaks' style, to be used as an argument for the style parameter in the plot() function. Similar to plot.style_area, except the gaps in the data are not filled.",
+      "namespace": "plot"
+    },
+    "plot.style_circles": {
+      "name": "plot.style_circles",
+      "type": "const plot_style",
+      "description": "A named constant for the 'Circles' style, to be used as an argument for the style parameter in the plot() function.",
+      "namespace": "plot"
+    },
+    "plot.style_columns": {
+      "name": "plot.style_columns",
+      "type": "const plot_style",
+      "description": "A named constant for the 'Columns' style, to be used as an argument for the style parameter in the plot() function.",
+      "namespace": "plot"
+    },
+    "plot.style_cross": {
+      "name": "plot.style_cross",
+      "type": "const plot_style",
+      "description": "A named constant for the 'Cross' style, to be used as an argument for the style parameter in the plot() function.",
+      "namespace": "plot"
+    },
+    "plot.style_histogram": {
+      "name": "plot.style_histogram",
+      "type": "const plot_style",
+      "description": "A named constant for the 'Histogram' style, to be used as an argument for the style parameter in the plot() function.",
+      "namespace": "plot"
+    },
+    "plot.style_line": {
+      "name": "plot.style_line",
+      "type": "const plot_style",
+      "description": "A named constant for the 'Line' style, to be used as an argument for the style parameter in the plot() function.",
+      "namespace": "plot"
+    },
+    "plot.style_linebr": {
+      "name": "plot.style_linebr",
+      "type": "const plot_style",
+      "description": "A named constant for the 'Line With Breaks' style, to be used as an argument for the style parameter in the plot() function. Similar to plot.style_line, except the gaps in the data are not filled.",
+      "namespace": "plot"
+    },
+    "plot.style_stepline": {
+      "name": "plot.style_stepline",
+      "type": "const plot_style",
+      "description": "A named constant for the 'Step Line' style, to be used as an argument for the style parameter in the plot() function.",
+      "namespace": "plot"
+    },
+    "plot.style_stepline_diamond": {
+      "name": "plot.style_stepline_diamond",
+      "type": "const plot_style",
+      "description": "A named constant for the 'Step Line With Diamonds' style, to be used as an argument for the style parameter in the plot() function. Similar to plot.style_stepline, except the data changes are also marked with the Diamond shapes.",
+      "namespace": "plot"
+    },
+    "plot.style_steplinebr": {
+      "name": "plot.style_steplinebr",
+      "type": "const plot_style",
+      "description": "A named constant for the 'Step line with Breaks' style, to be used as an argument for the style parameter in the plot() function.",
+      "namespace": "plot"
+    },
+    "position.bottom_center": {
+      "name": "position.bottom_center",
+      "type": "const string",
+      "description": "Table position is used in table.new(), table.cell() functions.",
+      "namespace": "position"
+    },
+    "position.bottom_left": {
+      "name": "position.bottom_left",
+      "type": "const string",
+      "description": "Table position is used in table.new(), table.cell() functions.",
+      "namespace": "position"
+    },
+    "position.bottom_right": {
+      "name": "position.bottom_right",
+      "type": "const string",
+      "description": "Table position is used in table.new(), table.cell() functions.",
+      "namespace": "position"
+    },
+    "position.middle_center": {
+      "name": "position.middle_center",
+      "type": "const string",
+      "description": "Table position is used in table.new(), table.cell() functions.",
+      "namespace": "position"
+    },
+    "position.middle_left": {
+      "name": "position.middle_left",
+      "type": "const string",
+      "description": "Table position is used in table.new(), table.cell() functions.",
+      "namespace": "position"
+    },
+    "position.middle_right": {
+      "name": "position.middle_right",
+      "type": "const string",
+      "description": "Table position is used in table.new(), table.cell() functions.",
+      "namespace": "position"
+    },
+    "position.top_center": {
+      "name": "position.top_center",
+      "type": "const string",
+      "description": "Table position is used in table.new(), table.cell() functions.",
+      "namespace": "position"
+    },
+    "position.top_left": {
+      "name": "position.top_left",
+      "type": "const string",
+      "description": "Table position is used in table.new(), table.cell() functions.",
+      "namespace": "position"
+    },
+    "position.top_right": {
+      "name": "position.top_right",
+      "type": "const string",
+      "description": "Table position is used in table.new(), table.cell() functions.",
+      "namespace": "position"
+    },
+    "scale.left": {
+      "name": "scale.left",
+      "type": "const scale_type",
+      "description": "A named constant for use as the scale argument in indicator() and strategy() declaration statements. Specifies that the script's price scale is on the left side of the pane. If the script overlays on the main chart pane or another script's pane, it adds a new price scale on the left side of the pane and scales its visuals independently to fit the pane's visual space.",
+      "namespace": "scale"
+    },
+    "scale.none": {
+      "name": "scale.none",
+      "type": "const scale_type",
+      "description": "A named constant for use as the scale argument in indicator() and strategy() declaration statements. A declaration statement can use this constant only if its overlay argument is true. Specifies that the script scales its visuals independently to fit the visual space of the main chart pane or another script's pane without displaying a separate scale. The script displays plotted numbers directly on the pane's existing price scale if the chart's settings allow it. If the user moves the script to a new pane, the script displays the values on a new scale to the left or right of that pane, depending on the chart's \"Scales placement\" setting.",
+      "namespace": "scale"
+    },
+    "scale.right": {
+      "name": "scale.right",
+      "type": "const scale_type",
+      "description": "A named constant for use as the scale argument in indicator() and strategy() declaration statements. Specifies that the script's price scale is on the right side of the pane. If the script overlays on the main chart pane or another script's pane, it adds a new price scale on the right side of the pane and scales its visuals independently to fit the pane's visual space.",
+      "namespace": "scale"
+    },
+    "session.extended": {
+      "name": "session.extended",
+      "type": "const string",
+      "description": "Constant for extended session type (with extended hours data).",
+      "namespace": "session"
+    },
+    "session.regular": {
+      "name": "session.regular",
+      "type": "const string",
+      "description": "Constant for regular session type (no extended hours data).",
+      "namespace": "session"
+    },
+    "settlement_as_close.inherit": {
+      "name": "settlement_as_close.inherit",
+      "type": "const settlement",
+      "description": "A constant to specify the value of the settlement_as_close parameter in ticker.new() and ticker.modify() functions.",
+      "namespace": "settlement_as_close"
+    },
+    "settlement_as_close.off": {
+      "name": "settlement_as_close.off",
+      "type": "const settlement",
+      "description": "A constant to specify the value of the settlement_as_close parameter in ticker.new() and ticker.modify() functions.",
+      "namespace": "settlement_as_close"
+    },
+    "settlement_as_close.on": {
+      "name": "settlement_as_close.on",
+      "type": "const settlement",
+      "description": "A constant to specify the value of the settlement_as_close parameter in ticker.new() and ticker.modify() functions.",
+      "namespace": "settlement_as_close"
+    },
+    "shape.arrowdown": {
+      "name": "shape.arrowdown",
+      "type": "const string",
+      "description": "Shape style for plotshape() function.",
+      "namespace": "shape"
+    },
+    "shape.arrowup": {
+      "name": "shape.arrowup",
+      "type": "const string",
+      "description": "Shape style for plotshape() function.",
+      "namespace": "shape"
+    },
+    "shape.circle": {
+      "name": "shape.circle",
+      "type": "const string",
+      "description": "Shape style for plotshape() function.",
+      "namespace": "shape"
+    },
+    "shape.cross": {
+      "name": "shape.cross",
+      "type": "const string",
+      "description": "Shape style for plotshape() function.",
+      "namespace": "shape"
+    },
+    "shape.diamond": {
+      "name": "shape.diamond",
+      "type": "const string",
+      "description": "Shape style for plotshape() function.",
+      "namespace": "shape"
+    },
+    "shape.flag": {
+      "name": "shape.flag",
+      "type": "const string",
+      "description": "Shape style for plotshape() function.",
+      "namespace": "shape"
+    },
+    "shape.labeldown": {
+      "name": "shape.labeldown",
+      "type": "const string",
+      "description": "Shape style for plotshape() function.",
+      "namespace": "shape"
+    },
+    "shape.labelup": {
+      "name": "shape.labelup",
+      "type": "const string",
+      "description": "Shape style for plotshape() function.",
+      "namespace": "shape"
+    },
+    "shape.square": {
+      "name": "shape.square",
+      "type": "const string",
+      "description": "Shape style for plotshape() function.",
+      "namespace": "shape"
+    },
+    "shape.triangledown": {
+      "name": "shape.triangledown",
+      "type": "const string",
+      "description": "Shape style for plotshape() function.",
+      "namespace": "shape"
+    },
+    "shape.triangleup": {
+      "name": "shape.triangleup",
+      "type": "const string",
+      "description": "Shape style for plotshape() function.",
+      "namespace": "shape"
+    },
+    "shape.xcross": {
+      "name": "shape.xcross",
+      "type": "const string",
+      "description": "Shape style for plotshape() function.",
+      "namespace": "shape"
+    },
+    "size.auto": {
+      "name": "size.auto",
+      "type": "const string",
+      "description": "A constant to specify the size of the graphics drawn by plotchar(), plotshape(), label.new(), and box.new(). Adjusts the size of the graphics automatically.",
+      "namespace": "size"
+    },
+    "size.huge": {
+      "name": "size.huge",
+      "type": "const string",
+      "description": "A constant to specify the size of the graphics drawn by plotchar(), plotshape(), label.new(), box.new(), and table.cell(). Sets the size to huge.",
+      "namespace": "size"
+    },
+    "size.large": {
+      "name": "size.large",
+      "type": "const string",
+      "description": "A constant to specify the size of the graphics drawn by plotchar(), plotshape(), label.new(), box.new(), and table.cell(). Sets the size to large.",
+      "namespace": "size"
+    },
+    "size.normal": {
+      "name": "size.normal",
+      "type": "const string",
+      "description": "A constant to specify the size of the graphics drawn by plotchar(), plotshape(), label.new(), box.new(), and table.cell(). Sets the size to normal.",
+      "namespace": "size"
+    },
+    "size.small": {
+      "name": "size.small",
+      "type": "const string",
+      "description": "A constant to specify the size of the graphics drawn by plotchar(), plotshape(), label.new(), box.new(), and table.cell(). Sets the size to small.",
+      "namespace": "size"
+    },
+    "size.tiny": {
+      "name": "size.tiny",
+      "type": "const string",
+      "description": "A constant to specify the size of the graphics drawn by plotchar(), plotshape(), label.new(), box.new(), and table.cell(). Sets the size to tiny.",
+      "namespace": "size"
+    },
+    "splits.denominator": {
+      "name": "splits.denominator",
+      "type": "const string",
+      "description": "A named constant for the request.splits() function. Is used to request the denominator (the number below the line in a fraction) of a splits.",
+      "namespace": "splits"
+    },
+    "splits.numerator": {
+      "name": "splits.numerator",
+      "type": "const string",
+      "description": "A named constant for the request.splits() function. Is used to request the numerator (the number above the line in a fraction) of a splits.",
+      "namespace": "splits"
+    },
+    "strategy.cash": {
+      "name": "strategy.cash",
+      "type": "const string",
+      "description": "This is one of the arguments that can be supplied to the default_qty_type parameter in the strategy() declaration statement. It is only relevant when no value is used for the ‘qty’ parameter in strategy.entry() or strategy.order() function calls. It specifies that an amount of cash in the strategy.account_currency will be used to enter trades.",
+      "namespace": "strategy"
+    },
+    "strategy.commission.cash_per_contract": {
+      "name": "strategy.commission.cash_per_contract",
+      "type": "const string",
+      "description": "Commission type for an order. Money displayed in the account currency per contract.",
+      "namespace": "strategy"
+    },
+    "strategy.commission.cash_per_order": {
+      "name": "strategy.commission.cash_per_order",
+      "type": "const string",
+      "description": "Commission type for an order. Money displayed in the account currency per order.",
+      "namespace": "strategy"
+    },
+    "strategy.commission.percent": {
+      "name": "strategy.commission.percent",
+      "type": "const string",
+      "description": "Commission type for an order. A percentage of the cash volume of order.",
+      "namespace": "strategy"
+    },
+    "strategy.direction.all": {
+      "name": "strategy.direction.all",
+      "type": "const string",
+      "description": "It allows strategy to open both long and short positions.",
+      "namespace": "strategy"
+    },
+    "strategy.direction.long": {
+      "name": "strategy.direction.long",
+      "type": "const string",
+      "description": "It allows strategy to open only long positions.",
+      "namespace": "strategy"
+    },
+    "strategy.direction.short": {
+      "name": "strategy.direction.short",
+      "type": "const string",
+      "description": "It allows strategy to open only short positions.",
+      "namespace": "strategy"
+    },
+    "strategy.fixed": {
+      "name": "strategy.fixed",
+      "type": "const string",
+      "description": "This is one of the arguments that can be supplied to the default_qty_type parameter in the strategy() declaration statement. It is only relevant when no value is used for the ‘qty’ parameter in strategy.entry() or strategy.order() function calls. It specifies that a number of contracts/shares/lots will be used to enter trades.",
+      "namespace": "strategy"
+    },
+    "strategy.long": {
+      "name": "strategy.long",
+      "type": "const strategy_direction",
+      "description": "A named constant for use with the direction parameter of the strategy.entry() and strategy.order() commands. It specifies that the command creates a buy order.",
+      "namespace": "strategy"
+    },
+    "strategy.oca.cancel": {
+      "name": "strategy.oca.cancel",
+      "type": "const string",
+      "description": "A named constant for use with the oca_type parameter of the strategy.entry() and strategy.order() commands. It specifies that the strategy cancels the unfilled order when another order with the same oca_name and oca_type executes.",
+      "namespace": "strategy"
+    },
+    "strategy.oca.none": {
+      "name": "strategy.oca.none",
+      "type": "const string",
+      "description": "A named constant for use with the oca_type parameter of the strategy.entry() and strategy.order() commands. It specifies that the order executes independently of all other orders, including those with the same oca_name.",
+      "namespace": "strategy"
+    },
+    "strategy.oca.reduce": {
+      "name": "strategy.oca.reduce",
+      "type": "const string",
+      "description": "A named constant for use with the oca_type parameter of the strategy.entry() and strategy.order() commands. It specifies that when another order with the same oca_name and oca_type executes, the strategy reduces the unfilled order by that order's size. If the unfilled order's size reaches 0 after reduction, it is the same as canceling the order entirely.",
+      "namespace": "strategy"
+    },
+    "strategy.percent_of_equity": {
+      "name": "strategy.percent_of_equity",
+      "type": "const string",
+      "description": "This is one of the arguments that can be supplied to the default_qty_type parameter in the strategy() declaration statement. It is only relevant when no value is used for the ‘qty’ parameter in strategy.entry() or strategy.order() function calls. It specifies that a percentage (0-100) of equity will be used to enter trades.",
+      "namespace": "strategy"
+    },
+    "strategy.short": {
+      "name": "strategy.short",
+      "type": "const strategy_direction",
+      "description": "A named constant for use with the direction parameter of the strategy.entry() and strategy.order() commands. It specifies that the command creates a sell order.",
+      "namespace": "strategy"
+    },
+    "text.align_bottom": {
+      "name": "text.align_bottom",
+      "type": "const string",
+      "description": "Vertical text alignment for box.new(), box.set_text_valign(), table.cell() and table.cell_set_text_valign() functions.",
+      "namespace": "text"
+    },
+    "text.align_center": {
+      "name": "text.align_center",
+      "type": "const string",
+      "description": "Text alignment for box.new(), box.set_text_halign(), box.set_text_valign(), label.new() and label.set_textalign() functions.",
+      "namespace": "text"
+    },
+    "text.align_left": {
+      "name": "text.align_left",
+      "type": "const string",
+      "description": "Horizontal text alignment for box.new(), box.set_text_halign(), label.new() and label.set_textalign() functions.",
+      "namespace": "text"
+    },
+    "text.align_right": {
+      "name": "text.align_right",
+      "type": "const string",
+      "description": "Horizontal text alignment for box.new(), box.set_text_halign(), label.new() and label.set_textalign() functions.",
+      "namespace": "text"
+    },
+    "text.align_top": {
+      "name": "text.align_top",
+      "type": "const string",
+      "description": "Vertical text alignment for box.new(), box.set_text_valign(), table.cell() and table.cell_set_text_valign() functions.",
+      "namespace": "text"
+    },
+    "text.format_bold": {
+      "name": "text.format_bold",
+      "type": "const text_format",
+      "description": "A named constant for use with the text_formatting parameter of the label.new(), box.new(), table.cell(), and *set_text_formatting() functions. Makes the text bold.",
+      "namespace": "text"
+    },
+    "text.format_italic": {
+      "name": "text.format_italic",
+      "type": "const text_format",
+      "description": "A named constant for use with the text_formatting parameter of the label.new(), box.new(), table.cell(), and *set_text_formatting() functions. Italicizes the text.",
+      "namespace": "text"
+    },
+    "text.format_none": {
+      "name": "text.format_none",
+      "type": "const text_format",
+      "description": "A named constant for use with the text_formatting parameter of the label.new(), box.new(), table.cell(), and *set_text_formatting() functions. Signifies no special text formatting.",
+      "namespace": "text"
+    },
+    "text.wrap_auto": {
+      "name": "text.wrap_auto",
+      "type": "const string",
+      "description": "Automatic wrapping mode for box.new() and box.set_text_wrap() functions.",
+      "namespace": "text"
+    },
+    "text.wrap_none": {
+      "name": "text.wrap_none",
+      "type": "const string",
+      "description": "Disabled wrapping mode for box.new() and box.set_text_wrap() functions.",
+      "namespace": "text"
+    },
+    "xloc.bar_index": {
+      "name": "xloc.bar_index",
+      "type": "const string",
+      "description": "A constant that specifies how functions that create and modify Pine drawings interpret x-coordinates. If xloc = xloc.bar_index, the drawing object treats each x-coordinate as a bar_index value.",
+      "namespace": "xloc"
+    },
+    "xloc.bar_time": {
+      "name": "xloc.bar_time",
+      "type": "const string",
+      "description": "A constant that specifies how functions that create and modify Pine drawings interpret x-coordinates. If xloc = xloc.bar_time, the drawing object treats each x-coordinate as a UNIX timestamp, expressed in milliseconds.",
+      "namespace": "xloc"
+    },
+    "yloc.abovebar": {
+      "name": "yloc.abovebar",
+      "type": "const string",
+      "description": "A named constant that specifies the algorithm of interpretation of y-value in function label.new().",
+      "namespace": "yloc"
+    },
+    "yloc.belowbar": {
+      "name": "yloc.belowbar",
+      "type": "const string",
+      "description": "A named constant that specifies the algorithm of interpretation of y-value in function label.new().",
+      "namespace": "yloc"
+    },
+    "yloc.price": {
+      "name": "yloc.price",
+      "type": "const string",
+      "description": "A named constant that specifies the algorithm of interpretation of y-value in function label.new().",
+      "namespace": "yloc"
     }
   }
 }
