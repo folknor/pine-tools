@@ -43,12 +43,23 @@ IDs so the two stay in sync.
   (adding the wrap-continuation line of a `plotshape(…)` call) tips
   it. Needs more bisection. The other five files have one hit each
   and probably need their own minimal repros.
-- **#8 — true argument-type-mismatch FNs gated on #17.** Per INV009,
-  most of the "16 missed FNs" turned out to be column-shift
-  artefacts; only 3 are genuinely missed (`nz(bool)`,
-  `plot(title=non-const)`, `int(bool)`). Fixing them requires
-  widening pine-data signatures before tightening the
-  `validateFunctionArguments` polymorphic bypass — gated on #17.
+- **#8 — true argument-type-mismatch FNs, now gated on #17's Phase 2
+  blockers.** Per INV009, most of the "16 missed FNs" were column-shift
+  artefacts; only 3 looked genuine (`nz(bool)`, `plot(title=non-const)`,
+  `int(bool)`). Status after the #17 Phase 2 attempt (2026-05-28):
+  - `int(bool)` — **confirmed catchable** once the checker validates
+    union params (`int.x: series int/float`). Works in the reverted
+    Phase 2 patch; ships when #17's blockers clear.
+  - `nz(bool)` — **doubtful.** Corpus check shows `nz(<bool>)` is
+    TV-silent (see #17 blocker 2). Reconcile against INV009's original
+    repro before treating it as an FN at all.
+  - `plot(title=non-const)` — **not a union problem.** `plot.title` is
+    `const string` (no `/`); catching a `series string` arg needs
+    *const-qualifier enforcement* (qualifier narrowing), which the
+    checker strips globally today. Separate, broader change — leave open.
+  Net: this item is unblocked only after #17 delivers (a) complete union
+  data via the mirror re-scrape, (b) the `getPolymorphicReturnType`
+  actual-arg fix, and (c) the `nz`/bool reconciliation.
 - **#9 — type-inference where we infer non-bool but TV infers bool.**
   Umbrella task. Several big wins landed via INV005, INV010, INV011;
   remaining FPs need a fresh corpus diff and per-category dives. The
@@ -81,21 +92,65 @@ IDs so the two stay in sync.
     `math.max`/`min`) — already skipped by `hasOverloads()`; (2)
     concrete-but-too-narrow (`nz`, `math.abs`, `color.*`). The
     union-across-sub-anchors approach fixes both uniformly.
-  - **Fix:** for `overloads.length > 1`, iterate `#fun_<name>-<i>`,
-    read each overload's `.tv-pine-reference-item__arg-type` set, and
-    union per parameter (qualifier widening `const ⊂ input ⊂ simple ⊂
-    series`; collect the type set, e.g. `{int,float,color}`). Then the
-    checker can validate against the union and drop the
-    `functionIsPolymorphic` bypass → unblocks the 3 FNs from #8.
-  - **Caveat — takes effect only after a re-scrape.** The code change
-    alone is a no-op: the scrape cache (24h TTL,
-    `.cache/function-details/`) holds overload-#0 data for all 118
-    functions, so those entries must be busted / force-refreshed or the
-    new extraction never runs.
-  - **Tooling** (uncommitted; bundle with the `scrape.ts` change):
-    `dev-tools/probe-arg-types.js` drives the sub-anchors and is the
-    reference implementation; `dev-tools/audit-overload-scrape.js`
-    measures the blast radius from the existing JSON.
+  - **STATUS — Phase 1 (scrape the unions) LANDED 2026-05-28.**
+    `scrape.ts` now visits each `#fun_<name>-<i>` sub-anchor and unions
+    per-param types (`unionParamType` + `unionOverloadParamTypes`),
+    **gated to params present in *every* overload**. That gate is
+    load-bearing: an earlier "union any collected param" version
+    promoted heterogeneous-overload params (`box.new`'s `left`/`top`,
+    `label.new`'s `x`/`y`, `input.int`'s `minval`/`maxval`/`step`) from
+    `unknown` to concrete, which flipped `hasOverloads()` off and caused
+    **628 cascade FPs** (positional validation against a merged
+    signature). With the present-in-all gate, those stay `unknown` and
+    stay bypassed. Result: accurate union params (`nz.source: series
+    int/float/color`, `math.abs.number: series int/float`, `color.b:
+    series color`, `ta.change.source: series int/float/bool`) **and −89
+    pre-existing false positives** (qualifier widening fixed
+    `str.replace`/`str.contains`/`str.tonumber` `const string`→`series
+    string`, and `ta.change` now accepts bool). Regenerated pine-data
+    committed; checker untouched this phase → regression-check 0 new
+    errors. Full `--force` re-scrape was used (475 fns, 118 overloaded
+    trigger the sub-anchor loop).
+  - **Phase 2 (let the checker validate the unions) was ATTEMPTED and
+    REVERTED 2026-05-28** — three blockers, none fixable by the union
+    data alone:
+    1. **`unionParamType` silently discards broad/universal types.** It
+       bails on any overload type containing `<>` and falls back to the
+       frozen overload-#0 value. `na()`'s `series bool` overload
+       documents `x` as *universal* (`series
+       int/float/color/string/label/line/box/table/linefill/polyline/array<>/matrix<>/map<>`),
+       but the bail left `na.x` frozen at `simple int/float`. Enforcing
+       that flagged **721** valid `na(<series>)` calls. (A
+       `generate.ts` `na.x` override was tried as a stopgap, then
+       reverted — folded into the real fix.) **Real fix:**
+       `unionParamType` must recognise a broad/universal overload type
+       and widen to accept-anything (`unknown`) instead of falling back
+       to the frozen value — needs a re-scrape (mirror first, #22).
+    2. **Unions under-inclusive where TV's per-overload display
+       understates.** `nz(<bool>)` is **TV-silent** (verified with
+       `scripts/compare-tv.mjs`) — TV tolerates `nz` of a bool, but our
+       union (`int/float/color`) excludes bool → 71 FPs. ⚠️ This
+       *contradicts* INV009/#8's claim that `nz(bool)` is a genuine
+       missed FN — reconcile before re-attempting (the FN was likely a
+       specific construct, not all `nz(bool)`).
+    3. **Polymorphic return-inference breaks on union source params.**
+       `getPolymorphicReturnType` resolves a return-follows-source
+       function's return from the *declared* source union (picks
+       `color`) instead of the actual argument. Once Phase 1 widened
+       source params to include color, `ta.valuewhen(cond, low, 1)` /
+       `fixnan` / `nz` infer their return as `series<color>`, cascading
+       "expected series int/float, got series<color>" FPs into
+       downstream `plot` / `label.set_y` / `line.set_xy*` /
+       `ta.crossover` consumers (~35 in corpus). The
+       `functionIsPolymorphic` bypass was masking this.
+    - **Reverted checker changes (re-apply when blockers clear):**
+      `mapToPineType` passes a clean primitive union (`^(const|input|
+      simple|series) <prim>/<prim>…$`) through to
+      `isAssignable`→`isUnionTypeMatch`; `checker.ts` drops
+      `functionIsPolymorphic` from the arg-validation skip while keeping
+      the `functionHasOverloads`/`unknown`-param skip. With these in
+      place `int(true)` and `nz(close>open)` *were* caught — the
+      mechanism works; the data/inference foundation isn't ready.
   - Still relevant: **two parallel encodings of polymorphism** — the
     *discovered* `pine-data/v6/function-behavior.json` (`returnTypeParam`
     for `input`/`nz`, arg-ordering quirks) and the *hand-coded*
@@ -144,6 +199,28 @@ IDs so the two stay in sync.
   `isParameterOptional` + `commonOptionalParams` — prose-matching heuristics
   for argument optionality, the last cousin of the retired
   `inferVariableType` / `inferConstantType` guessers.
+- **#22 — reduce scraper load on TradingView.** We should not hit TV's
+  reference site more than necessary; prefer targeted re-scrapes / an offline
+  mirror over repeated full `--force` runs. Note the footprint is smaller than
+  it looks: `scrape.ts` loads the SPA **once** per run, then navigates
+  client-side via `#fun_<name>` / `#fun_<name>-<i>` hash changes (not
+  per-function HTTP requests), so a full run ≈ one page-load of TV's bundle.
+  Two stacking improvements:
+  - **Targeted re-scrape (quick win):** the per-function disk cache
+    (`.cache/function-details/`, 24h TTL) already lets you delete only the
+    entries you want refreshed and run plain `scrape` (no `--force`). Add an
+    `--only <names>` / `--only-overloaded` flag so this doesn't require
+    hand-deleting cache files.
+  - **Local mirror (durable fix):** a one-time `scrape:mirror` step that
+    snapshots the rendered page + JS/data assets under
+    `pine-data/raw/v6/site-mirror/`, then points Puppeteer at `file://` / a
+    local static server so re-scrapes are fully offline (zero TV calls). The
+    overload selector is client-side (proven during the #17 work), so a mirror
+    reproduces sub-anchor navigation faithfully. **Open question:** is the
+    reference data a single fetchable JSON asset, or does it need a
+    rendered-DOM snapshot? Resolve that before building. **Policy:** if a
+    re-scrape is needed and the mirror doesn't exist yet, build the mirror
+    *first*, then scrape against it.
 
 ## Gotchas
 

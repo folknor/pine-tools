@@ -223,6 +223,118 @@ async function closeSharedBrowser(): Promise<void> {
 	}
 }
 
+// Qualifier widening order: a param accepted as `series` also accepts the
+// narrower qualifiers, so the union of overloads takes the widest seen.
+const QUALIFIER_RANK: Record<string, number> = {
+	const: 0,
+	input: 1,
+	simple: 2,
+	series: 3,
+};
+// Canonical ordering for deterministic union output; primitives first, then
+// anything else alphabetically.
+const TYPE_ORDER = ["int", "float", "bool", "string", "color"];
+
+// Union a set of per-overload type strings (e.g. ["simple color", "series
+// int", "simple int/float"]) into one `"<widestQualifier> <t1>/<t2>/...">`
+// string. Returns null when any input can't be parsed as a plain
+// `<qualifier> <type[/type...]>` (e.g. `array<...>`, `unknown`, or a bare type
+// with no qualifier) — the caller then leaves that param's type untouched.
+export function unionParamType(typeStrings: string[]): string | null {
+	let bestRank = -1;
+	let bestQualifier = "";
+	const baseTypes = new Set<string>();
+
+	for (const ts of typeStrings) {
+		const m = ts.match(/^(const|input|simple|series)\s+(.+)$/);
+		if (!m) return null;
+		const [, qualifier, remainder] = m;
+		if (/[<>]/.test(remainder)) return null; // templated/complex type
+		for (const part of remainder.split("/")) {
+			const base = part.trim();
+			if (!base || /\s/.test(base)) return null;
+			baseTypes.add(base);
+		}
+		const rank = QUALIFIER_RANK[qualifier];
+		if (rank > bestRank) {
+			bestRank = rank;
+			bestQualifier = qualifier;
+		}
+	}
+
+	if (baseTypes.size === 0) return null;
+
+	const ordered = [...baseTypes].sort((a, b) => {
+		const ia = TYPE_ORDER.indexOf(a);
+		const ib = TYPE_ORDER.indexOf(b);
+		if (ia !== -1 && ib !== -1) return ia - ib;
+		if (ia !== -1) return -1;
+		if (ib !== -1) return 1;
+		return a.localeCompare(b);
+	});
+
+	return `${bestQualifier} ${ordered.join("/")}`;
+}
+
+// TradingView renders an overloaded function's Arguments box as a live widget:
+// each overload is an `<a href="#fun_<name>-<i>">` anchor, and the bare
+// `#fun_<name>` anchor resolves to overload #0. So the single-pass extract only
+// ever sees overload #0's resolved param types. Visit each sub-anchor, collect
+// every overload's arg types, and union them per parameter. See TODO #17.
+async function unionOverloadParamTypes(
+	page: Page,
+	funcNameClean: string,
+	details: FunctionDetails,
+): Promise<void> {
+	const overloadCount = details.overloads?.length ?? 0;
+	const byName = new Map<string, { types: string[]; seen: Set<number> }>();
+
+	for (let i = 0; i < overloadCount; i++) {
+		await page.evaluate(
+			(name: string, idx: number) => {
+				window.location.hash = `#fun_${name}-${idx}`;
+			},
+			funcNameClean,
+			i,
+		);
+		await new Promise((resolve) => setTimeout(resolve, 250));
+
+		const argTypes = await page.evaluate((name: string) => {
+			const el = document.getElementById(`fun_${name}`);
+			if (!el) return [] as Array<{ name: string; type: string }>;
+			const out: Array<{ name: string; type: string }> = [];
+			for (const node of el.querySelectorAll(
+				".tv-pine-reference-item__arg-type",
+			)) {
+				const text = node.textContent?.trim() || "";
+				const match = text.match(/^(\w+)\s*\(([^)]+)\)/);
+				if (match) out.push({ name: match[1], type: match[2] });
+			}
+			return out;
+		}, funcNameClean);
+
+		for (const { name, type } of argTypes) {
+			const entry = byName.get(name) ?? { types: [], seen: new Set() };
+			entry.types.push(type);
+			entry.seen.add(i);
+			byName.set(name, entry);
+		}
+	}
+
+	for (const param of details.parameters) {
+		const entry = byName.get(param.name);
+		// Only union a param that appears in EVERY overload — i.e. the same
+		// logical param differing only in type/qualifier (e.g. nz.source).
+		// Params present in just a subset are overload-specific (e.g. box.new's
+		// `left` vs the `top_left` chart.point overload); leaving those untouched
+		// keeps them `unknown` so hasOverloads() still bypasses positional
+		// validation for genuinely heterogeneous overloads. See TODO #17.
+		if (!entry || entry.seen.size !== overloadCount) continue;
+		const unioned = unionParamType(entry.types);
+		if (unioned) param.type = unioned;
+	}
+}
+
 export async function scrapeFunctionDetails(
 	functionName: string,
 	useCache = true,
@@ -520,6 +632,13 @@ export async function scrapeFunctionDetails(
 
 			return extractFromElement(funcElement);
 		}, funcNameClean);
+
+		// Overloaded functions: the single-pass extract above only saw overload
+		// #0's resolved param types (the bare #fun_<name> anchor). Visit each
+		// #fun_<name>-<i> sub-anchor and union the per-overload arg types.
+		if (details?.overloads && details.overloads.length > 1) {
+			await unionOverloadParamTypes(page, funcNameClean, details);
+		}
 
 		// Save to cache if successful
 		if (details) {

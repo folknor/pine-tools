@@ -1,7 +1,7 @@
 /**
  * Pine Script V6 Functions
  * Auto-generated from TradingView documentation
- * Generated: 2026-05-28T07:47:07.469Z
+ * Generated: 2026-05-28T09:18:16.416Z
  * Total: 475 functions
  */
 
@@ -1482,7 +1482,7 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "x",
-        "type": "simple int/float/bool",
+        "type": "series int/float/bool",
         "description": "The value to convert to the specified type, usually na.",
         "required": false
       }
@@ -2362,7 +2362,7 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "x",
-        "type": "const color",
+        "type": "series color",
         "description": "The value to convert to the specified type, usually na.",
         "required": false
       }
@@ -2378,7 +2378,7 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "color",
-        "type": "const color",
+        "type": "series color",
         "description": "Color.",
         "required": false
       }
@@ -2438,7 +2438,7 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "color",
-        "type": "const color",
+        "type": "series color",
         "description": "Color.",
         "required": false
       }
@@ -2456,13 +2456,13 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "color",
-        "type": "const color",
+        "type": "series color",
         "description": "Color to apply transparency to.",
         "required": false
       },
       {
         "name": "transp",
-        "type": "const int/float",
+        "type": "series int/float",
         "description": "Possible values are from 0 (not transparent) to 100 (invisible).",
         "required": false
       }
@@ -2480,7 +2480,7 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "color",
-        "type": "const color",
+        "type": "series color",
         "description": "Color.",
         "required": false
       }
@@ -2498,25 +2498,25 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "red",
-        "type": "const int/float",
+        "type": "series int/float",
         "description": "Red color component. Possible values are from 0 to 255.",
         "required": false
       },
       {
         "name": "green",
-        "type": "const int/float",
+        "type": "series int/float",
         "description": "Green color component. Possible values are from 0 to 255.",
         "required": false
       },
       {
         "name": "blue",
-        "type": "const int/float",
+        "type": "series int/float",
         "description": "Blue color component. Possible values are from 0 to 255.",
         "required": false
       },
       {
         "name": "transp",
-        "type": "const int/float",
+        "type": "series int/float",
         "description": "Optional. Color transparency. Possible values are from 0 (opaque) to 100 (invisible). Default value is 0.",
         "required": false
       }
@@ -2534,7 +2534,7 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "color",
-        "type": "const color",
+        "type": "series color",
         "description": "Color.",
         "required": false
       }
@@ -2693,7 +2693,7 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "source",
-        "type": "series color",
+        "type": "series int/float/color",
         "description": "Source used for the calculation.",
         "required": false
       }
@@ -2711,7 +2711,7 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "x",
-        "type": "const int/float",
+        "type": "series int/float",
         "description": "The value to convert to the specified type, usually na.",
         "required": false
       }
@@ -3968,7 +3968,7 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "x",
-        "type": "const int/float",
+        "type": "series int/float",
         "description": "The value to convert to the specified type, usually na.",
         "required": false
       }
@@ -5556,7 +5556,7 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "number",
-        "type": "const int",
+        "type": "series int/float",
         "description": "The number to use in the calculation.",
         "required": false
       }
@@ -5575,7 +5575,7 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "angle",
-        "type": "const int/float",
+        "type": "series int/float",
         "description": "The value, in radians, to use in the calculation.",
         "required": false
       }
@@ -5591,7 +5591,7 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "angle",
-        "type": "const int/float",
+        "type": "series int/float",
         "description": "The value, in radians, to use in the calculation.",
         "required": false
       }
@@ -5607,7 +5607,7 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "angle",
-        "type": "const int/float",
+        "type": "series int/float",
         "description": "The value, in radians, to use in the calculation.",
         "required": false
       }
@@ -5650,7 +5650,7 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "number",
-        "type": "const int/float",
+        "type": "series int/float",
         "description": "The number to round.",
         "required": false
       }
@@ -5669,7 +5669,7 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "angle",
-        "type": "const int/float",
+        "type": "series int/float",
         "description": "Angle, in radians.",
         "required": false
       }
@@ -5685,7 +5685,7 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "number",
-        "type": "const int/float",
+        "type": "series int/float",
         "description": "The number to use in the calculation.",
         "required": false
       }
@@ -5701,7 +5701,7 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "number",
-        "type": "const int/float",
+        "type": "series int/float",
         "description": "The number to round.",
         "required": false
       }
@@ -5720,7 +5720,7 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "number",
-        "type": "const int/float",
+        "type": "series int/float",
         "description": "The number to use in the calculation.",
         "required": false
       }
@@ -5736,7 +5736,7 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "number",
-        "type": "const int/float",
+        "type": "series int/float",
         "description": "The number to use in the calculation.",
         "required": false
       }
@@ -5810,13 +5810,13 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "base",
-        "type": "const int/float",
+        "type": "series int/float",
         "description": "Specify the base to use.",
         "required": false
       },
       {
         "name": "exponent",
-        "type": "const int/float",
+        "type": "series int/float",
         "description": "Specifies the exponent.",
         "required": false
       }
@@ -5862,7 +5862,7 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "number",
-        "type": "const int/float",
+        "type": "series int/float",
         "description": "The value to be rounded.",
         "required": false
       },
@@ -5887,7 +5887,7 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "number",
-        "type": "simple int/float",
+        "type": "series int/float",
         "description": "The value to be rounded.",
         "required": false
       }
@@ -5903,7 +5903,7 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "number",
-        "type": "const int/float",
+        "type": "series int/float",
         "description": "The number to use in the calculation.",
         "required": false
       }
@@ -5922,7 +5922,7 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "angle",
-        "type": "const int/float",
+        "type": "series int/float",
         "description": "Angle, in radians.",
         "required": false
       }
@@ -5938,7 +5938,7 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "number",
-        "type": "const int/float",
+        "type": "series int/float",
         "description": "The number to use in the calculation.",
         "required": false
       }
@@ -5981,7 +5981,7 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "angle",
-        "type": "const int/float",
+        "type": "series int/float",
         "description": "Angle, in radians.",
         "required": false
       }
@@ -7213,13 +7213,13 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "source",
-        "type": "simple color",
+        "type": "series int/float/color",
         "description": "The source series to process.",
         "required": false
       },
       {
         "name": "replacement",
-        "type": "simple color",
+        "type": "series int/float/color",
         "description": "Optional. The value the function uses to replace na values in the source series. The default depends on the source type: 0 for \"int\", 0.0 for \"float\", or #00000000 for \"color\".",
         "required": false
       }
@@ -8426,13 +8426,13 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "source",
-        "type": "const string",
+        "type": "series string",
         "description": "Source string.",
         "required": false
       },
       {
         "name": "str",
-        "type": "const string",
+        "type": "series string",
         "description": "The substring to search for.",
         "required": false
       }
@@ -8450,13 +8450,13 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "source",
-        "type": "const string",
+        "type": "series string",
         "description": "Source string.",
         "required": false
       },
       {
         "name": "str",
-        "type": "const string",
+        "type": "series string",
         "description": "The substring to search for.",
         "required": false
       }
@@ -8472,7 +8472,7 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "formatString",
-        "type": "simple string",
+        "type": "series string",
         "description": "Format string.",
         "required": false
       },
@@ -8537,7 +8537,7 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "string",
-        "type": "const string",
+        "type": "series string",
         "description": "Source string.",
         "required": false
       }
@@ -8553,7 +8553,7 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "source",
-        "type": "const string",
+        "type": "series string",
         "description": "String to be converted.",
         "required": false
       }
@@ -8569,13 +8569,13 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "source",
-        "type": "simple string",
+        "type": "series string",
         "description": "Source string.",
         "required": false
       },
       {
         "name": "regex",
-        "type": "simple string",
+        "type": "series string",
         "description": "The regular expression to which this string is to be matched.",
         "required": false
       }
@@ -8593,13 +8593,13 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "source",
-        "type": "const string",
+        "type": "series string",
         "description": "Source string.",
         "required": false
       },
       {
         "name": "str",
-        "type": "const string",
+        "type": "series string",
         "description": "The substring to search for.",
         "required": false
       }
@@ -8615,19 +8615,19 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "source",
-        "type": "const string",
+        "type": "series string",
         "description": "String to repeat.",
         "required": false
       },
       {
         "name": "repeat",
-        "type": "const int",
+        "type": "series int",
         "description": "Number of times to repeat the source string. Must be greater than or equal to 0.",
         "required": false
       },
       {
         "name": "separator",
-        "type": "const string",
+        "type": "series string",
         "description": "String to inject between repeated values. Optional. The default is empty string.",
         "required": false
       }
@@ -8645,25 +8645,25 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "source",
-        "type": "const string",
+        "type": "series string",
         "description": "Source string.",
         "required": false
       },
       {
         "name": "target",
-        "type": "const string",
+        "type": "series string",
         "description": "String to be replaced.",
         "required": false
       },
       {
         "name": "replacement",
-        "type": "const string",
+        "type": "series string",
         "description": "String to be inserted instead of the target string.",
         "required": false
       },
       {
         "name": "occurrence",
-        "type": "const int",
+        "type": "series int",
         "description": "N-th occurrence of the target string to replace. Indexing starts at 0 for the first match. Optional. Default value is 0.",
         "required": false
       }
@@ -8681,19 +8681,19 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "source",
-        "type": "simple string",
+        "type": "series string",
         "description": "Source string.",
         "required": false
       },
       {
         "name": "target",
-        "type": "simple string",
+        "type": "series string",
         "description": "String to be replaced.",
         "required": false
       },
       {
         "name": "replacement",
-        "type": "simple string",
+        "type": "series string",
         "description": "String to be substituted for each occurrence of target string.",
         "required": false
       }
@@ -8731,13 +8731,13 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "source",
-        "type": "const string",
+        "type": "series string",
         "description": "Source string.",
         "required": false
       },
       {
         "name": "str",
-        "type": "const string",
+        "type": "series string",
         "description": "The substring to search for.",
         "required": false
       }
@@ -8753,19 +8753,19 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "source",
-        "type": "const string",
+        "type": "series string",
         "description": "Source string from which to extract the substring.",
         "required": false
       },
       {
         "name": "begin_pos",
-        "type": "const int",
+        "type": "series int",
         "description": "The beginning position of the extracted substring. It is inclusive (the extracted substring includes the character at that position).",
         "required": false
       },
       {
         "name": "end_pos",
-        "type": "const int",
+        "type": "series int",
         "description": "The ending position. It is exclusive (the extracted string does NOT include that position's character). Optional. The default is the length of the source string.",
         "required": false
       }
@@ -8783,7 +8783,7 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "string",
-        "type": "const string",
+        "type": "series string",
         "description": "String containing the representation of an integer or floating point value.",
         "required": false
       }
@@ -8821,7 +8821,7 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "source",
-        "type": "const string",
+        "type": "series string",
         "description": "String to trim.",
         "required": false
       }
@@ -8839,7 +8839,7 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "source",
-        "type": "const string",
+        "type": "series string",
         "description": "String to be converted.",
         "required": false
       }
@@ -10227,7 +10227,7 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "x",
-        "type": "const string",
+        "type": "series string",
         "description": "The value to convert to the specified type, usually na.",
         "required": false
       }
@@ -10243,7 +10243,7 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "symbol",
-        "type": "simple string",
+        "type": "series string",
         "description": "Symbol. Note that the symbol should be passed with a prefix. For example: \"NASDAQ:AAPL\" instead of \"AAPL\".",
         "required": false
       }
@@ -10261,7 +10261,7 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "symbol",
-        "type": "simple string",
+        "type": "series string",
         "description": "Symbol. Note that the symbol should be passed with a prefix. For example: \"NASDAQ:AAPL\" instead of \"AAPL\".",
         "required": false
       }
@@ -10439,7 +10439,7 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "source",
-        "type": "series int",
+        "type": "series int/float/bool",
         "description": "Source series.",
         "required": false
       },
@@ -10980,7 +10980,7 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "source",
-        "type": "series int",
+        "type": "series int/float",
         "description": "Series of values to process.",
         "required": false
       },
@@ -11042,7 +11042,7 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "source",
-        "type": "series int",
+        "type": "series int/float",
         "description": "Series of values to process.",
         "required": false
       },
@@ -11254,7 +11254,7 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "source",
-        "type": "series int",
+        "type": "series int/float",
         "description": "Series of values to process.",
         "required": false
       },
@@ -11600,7 +11600,7 @@ export const FUNCTIONS: PineFunction[] = [
       },
       {
         "name": "source",
-        "type": "series color",
+        "type": "series int/float/bool/color",
         "description": "The value to be returned from the bar where the condition is met.",
         "required": false
       },
@@ -12538,7 +12538,7 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "symbol",
-        "type": "simple string",
+        "type": "series string",
         "description": "Symbol ticker identifier.",
         "required": false
       }
@@ -12556,13 +12556,13 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "from_tickerid",
-        "type": "simple string",
+        "type": "series string",
         "description": "The ticker ID to inherit modifiers from.",
         "required": false
       },
       {
         "name": "symbol",
-        "type": "simple string",
+        "type": "series string",
         "description": "The symbol to construct the new ticker ID for.",
         "required": false
       }
@@ -12580,7 +12580,7 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "symbol",
-        "type": "simple string",
+        "type": "series string",
         "description": "Symbol ticker identifier.",
         "required": false
       },
@@ -12616,13 +12616,13 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "symbol",
-        "type": "simple string",
+        "type": "series string",
         "description": "Symbol ticker identifier.",
         "required": false
       },
       {
         "name": "number_of_lines",
-        "type": "simple int",
+        "type": "series int",
         "description": "Number of line.",
         "required": false
       }
@@ -12640,19 +12640,19 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "tickerid",
-        "type": "simple string",
+        "type": "series string",
         "description": "Symbol name with exchange prefix, e.g. 'BATS:MSFT', 'NASDAQ:MSFT' or tickerid with session and adjustment from the ticker.new() function.",
         "required": false
       },
       {
         "name": "session",
-        "type": "simple string",
+        "type": "series string",
         "description": "Session type. Optional argument. Possible values: session.regular, session.extended. Session type of the current chart is syminfo.session. If session is not given, then syminfo.session value is used.",
         "required": false
       },
       {
         "name": "adjustment",
-        "type": "simple string",
+        "type": "series string",
         "description": "Adjustment type. Optional argument. Possible values: adjustment.none, adjustment.splits, adjustment.dividends. If adjustment is not given, then default adjustment value is used (can be different depending on particular instrument).",
         "required": false
       },
@@ -12682,25 +12682,25 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "prefix",
-        "type": "simple string",
+        "type": "series string",
         "description": "Exchange prefix. For example: 'BATS', 'NYSE', 'NASDAQ'. Exchange prefix of main series is syminfo.prefix.",
         "required": false
       },
       {
         "name": "ticker",
-        "type": "simple string",
+        "type": "series string",
         "description": "Ticker name. For example 'AAPL', 'MSFT', 'EURUSD'. Ticker name of the main series is syminfo.ticker.",
         "required": false
       },
       {
         "name": "session",
-        "type": "simple string",
+        "type": "series string",
         "description": "Session type. Optional argument. Possible values: session.regular, session.extended. Session type of the current chart is syminfo.session. If session is not given, then syminfo.session value is used.",
         "required": false
       },
       {
         "name": "adjustment",
-        "type": "simple string",
+        "type": "series string",
         "description": "Adjustment type. Optional argument. Possible values: adjustment.none, adjustment.splits, adjustment.dividends. If adjustment is not given, then default adjustment value is used (can be different depending on particular instrument).",
         "required": false
       },
@@ -12730,31 +12730,31 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "symbol",
-        "type": "simple string",
+        "type": "series string",
         "description": "Symbol ticker identifier.",
         "required": false
       },
       {
         "name": "source",
-        "type": "simple string",
+        "type": "series string",
         "description": "The source for calculating Point & Figure. Possible values are: 'hl', 'close'.",
         "required": false
       },
       {
         "name": "style",
-        "type": "simple string",
+        "type": "series string",
         "description": "Specifies the ticker's box size assignment method. Possible values: \"ATR\" for Average True Range sizing, \"Traditional\" to use a fixed size, or \"PercentageLTP\" to use a percentage of the last trading price.",
         "required": false
       },
       {
         "name": "param",
-        "type": "simple int/float",
+        "type": "series int/float",
         "description": "Represents the ticker's \"ATR length\" value if the style value is \"ATR\", \"Box size\" value if the style is \"Traditional\", or \"Percentage\" value if the style is \"PercentageLTP\".",
         "required": false
       },
       {
         "name": "reversal",
-        "type": "simple int",
+        "type": "series int",
         "description": "Reversal amount.",
         "required": false
       }
@@ -12772,31 +12772,31 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "symbol",
-        "type": "simple string",
+        "type": "series string",
         "description": "Symbol ticker identifier.",
         "required": false
       },
       {
         "name": "style",
-        "type": "simple string",
+        "type": "series string",
         "description": "Specifies the ticker's box size assignment method. Possible values: \"ATR\" for Average True Range sizing, \"Traditional\" to use a fixed size, or \"PercentageLTP\" to use a percentage of the last trading price.",
         "required": false
       },
       {
         "name": "param",
-        "type": "simple int/float",
+        "type": "series int/float",
         "description": "Represents the ticker's \"ATR length\" value if the style value is \"ATR\", \"Box size\" value if the style is \"Traditional\", or \"Percentage\" value if the style is \"PercentageLTP\".",
         "required": false
       },
       {
         "name": "request_wicks",
-        "type": "simple bool",
+        "type": "series bool",
         "description": "Specifies if wick values are returned for Renko bricks. When true, high and low values requested from a symbol using the ticker formed by this function will include wick values when they are present. When false, high and low will always be equal to either open or close. Optional. The default is false. A detailed explanation of how Renko wicks are calculated can be found in our Help Center.",
         "required": false
       },
       {
         "name": "source",
-        "type": "simple string",
+        "type": "series string",
         "description": "The source used to calculate bricks. Optional. Possible values: \"Close\", \"OHLC\". The default is \"Close\".",
         "required": false
       }
@@ -12815,7 +12815,7 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "symbol",
-        "type": "simple string",
+        "type": "series string",
         "description": "A ticker ID to be converted into its standard form. Optional. The default is syminfo.tickerid.",
         "required": false
       }
@@ -12935,7 +12935,7 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "seconds",
-        "type": "simple int",
+        "type": "series int",
         "description": "The number of seconds in the timeframe.",
         "required": false
       }
@@ -12953,7 +12953,7 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "timeframe",
-        "type": "simple string",
+        "type": "series string",
         "description": "Timeframe string in timeframe string specifications format. Optional. The default is timeframe.period.",
         "required": false
       }
