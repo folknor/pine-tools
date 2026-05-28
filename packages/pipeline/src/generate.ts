@@ -401,7 +401,19 @@ function generateFunctions(
 		if (!detail) continue;
 
 		const namespace = name.includes(".") ? name.split(".")[0] : undefined;
-		const flags = getFunctionFlags(name);
+		const flags = getFunctionFlags(name) ?? {};
+
+		// Propagate the scraped variadic flag. TV signatures like
+		// `log.info(formatString, arg0, arg1, ...)` are variadic but aren't in
+		// getFunctionFlags's hardcoded list; honor the flag the scrape detected
+		// from the "..." overload so the checker doesn't cap their arity.
+		if (detail.variadic && !flags.variadic) {
+			flags.variadic = true;
+			const requiredCount = (detail.parameters || []).filter(
+				(p) => !isParameterOptional(p),
+			).length;
+			flags.minArgs = Math.max(1, requiredCount);
+		}
 
 		const parameters = (detail.parameters || []).map((p) => ({
 			name: p.name,
@@ -433,7 +445,7 @@ function generateFunctions(
 			description: detail.description || "",
 			parameters,
 			returns: detail.returns || "void",
-			flags,
+			flags: Object.keys(flags).length > 0 ? flags : undefined,
 			examples: detail.examples,
 		};
 

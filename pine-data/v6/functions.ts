@@ -1,7 +1,7 @@
 /**
  * Pine Script V6 Functions
  * Auto-generated from TradingView documentation
- * Generated: 2026-05-28T06:09:57.383Z
+ * Generated: 2026-05-28T06:47:42.480Z
  * Total: 475 functions
  */
 
@@ -5233,6 +5233,10 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
+    "flags": {
+      "variadic": true,
+      "minArgs": 1
+    },
     "examples": [
       "//@version=6\nstrategy(\"My strategy\", overlay = true, process_orders_on_close = true)\nbracketTickSizeInput = input.int(1000, \"Stoploss/Take-Profit distance (in ticks)\")\n\nlongCondition = ta.crossover(ta.sma(close, 14), ta.sma(close, 28))\nif (longCondition)\n    limitLevel = close * 1.01\n    log.info(\"Long limit order has been placed at {0}\", limitLevel)\n    strategy.order(\"My Long Entry Id\", strategy.long, limit = limitLevel)\n\n    log.info(\"Exit orders have been placed: Take-profit at {0}, Stop-loss at {1}\", close, limitLevel)\n    strategy.exit(\"Exit\", \"My Long Entry Id\", profit = bracketTickSizeInput, loss = bracketTickSizeInput)\n\nif strategy.opentrades > 10\n    log.warning(\"{0} positions opened in the same direction in a row. Try adjusting `bracketTickSizeInput`\", strategy.opentrades)\n\nlast10Perc = strategy.initial_capital / 10 > strategy.equity\nif (last10Perc and not last10Perc[1])\n    log.error(\"The strategy has lost 90% of the initial capital!\")"
     ]
@@ -5269,6 +5273,10 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
+    "flags": {
+      "variadic": true,
+      "minArgs": 1
+    },
     "examples": [
       "//@version=6\nstrategy(\"My strategy\", overlay = true, process_orders_on_close = true)\nbracketTickSizeInput = input.int(1000, \"Stoploss/Take-Profit distance (in ticks)\")\n\nlongCondition = ta.crossover(ta.sma(close, 14), ta.sma(close, 28))\nif (longCondition)\n    limitLevel = close * 1.01\n    log.info(\"Long limit order has been placed at {0}\", limitLevel)\n    strategy.order(\"My Long Entry Id\", strategy.long, limit = limitLevel)\n\n    log.info(\"Exit orders have been placed: Take-profit at {0}, Stop-loss at {1}\", close, limitLevel)\n    strategy.exit(\"Exit\", \"My Long Entry Id\", profit = bracketTickSizeInput, loss = bracketTickSizeInput)\n\nif strategy.opentrades > 10\n    log.warning(\"{0} positions opened in the same direction in a row. Try adjusting `bracketTickSizeInput`\", strategy.opentrades)\n\nlast10Perc = strategy.initial_capital / 10 > strategy.equity\nif (last10Perc and not last10Perc[1])\n    log.error(\"The strategy has lost 90% of the initial capital!\")"
     ]
@@ -5305,6 +5313,10 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
+    "flags": {
+      "variadic": true,
+      "minArgs": 1
+    },
     "examples": [
       "//@version=6\nstrategy(\"My strategy\", overlay = true, process_orders_on_close = true)\nbracketTickSizeInput = input.int(1000, \"Stoploss/Take-Profit distance (in ticks)\")\n\nlongCondition = ta.crossover(ta.sma(close, 14), ta.sma(close, 28))\nif (longCondition)\n    limitLevel = close * 1.01\n    log.info(\"Long limit order has been placed at {0}\", limitLevel)\n    strategy.order(\"My Long Entry Id\", strategy.long, limit = limitLevel)\n\n    log.info(\"Exit orders have been placed: Take-profit at {0}, Stop-loss at {1}\", close, limitLevel)\n    strategy.exit(\"Exit\", \"My Long Entry Id\", profit = bracketTickSizeInput, loss = bracketTickSizeInput)\n\nif strategy.opentrades > 10\n    log.warning(\"{0} positions opened in the same direction in a row. Try adjusting `bracketTickSizeInput`\", strategy.opentrades)\n\nlast10Perc = strategy.initial_capital / 10 > strategy.equity\nif (last10Perc and not last10Perc[1])\n    log.error(\"The strategy has lost 90% of the initial capital!\")"
     ]

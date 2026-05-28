@@ -300,16 +300,6 @@ files) is the same shape applied to identifiers in syntactic positions.
 
 ---
 
-## pine-data — `log.info` / `log.error` arity stale
-
-`log.info` / `log.error` accept more arguments in v6 than our scraped
-signature allows (4 hits, 3 files):
-
-```
-2  Too many arguments for 'log.info'
-2  Too many arguments for 'log.error'
-```
-
 ## Checker — local-scope restrictions probably too strict
 
 `Function '*' cannot be called from a local scope` fires 31 times across 6
