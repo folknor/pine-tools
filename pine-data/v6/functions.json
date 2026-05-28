@@ -1188,7 +1188,7 @@
     "parameters": [
       {
         "name": "id",
-        "type": "array<int/float/string>",
+        "type": "unknown",
         "description": "An array object.",
         "required": false
       },
@@ -1218,7 +1218,7 @@
     "parameters": [
       {
         "name": "id",
-        "type": "array<int/float/string>",
+        "type": "unknown",
         "description": "An array object.",
         "required": false
       },
@@ -6199,13 +6199,13 @@
     "parameters": [
       {
         "name": "id1",
-        "type": "matrix<int>",
+        "type": "matrix<int/float>",
         "description": "Matrix to subtract from.",
         "required": false
       },
       {
         "name": "id2",
-        "type": "series int/float/matrix<int>",
+        "type": "unknown",
         "description": "Matrix object or a scalar value to be subtracted.",
         "required": false
       }
@@ -6628,13 +6628,13 @@
     "parameters": [
       {
         "name": "id1",
-        "type": "matrix<int>",
+        "type": "matrix<int/float>",
         "description": "First matrix object.",
         "required": false
       },
       {
         "name": "id2",
-        "type": "array<int>",
+        "type": "unknown",
         "description": "Second matrix object, value or array.",
         "required": false
       }
@@ -6921,7 +6921,7 @@
     "parameters": [
       {
         "name": "id",
-        "type": "matrix<int/float/string>",
+        "type": "unknown",
         "description": "A matrix object to be sorted.",
         "required": false
       },
@@ -6999,13 +6999,13 @@
     "parameters": [
       {
         "name": "id1",
-        "type": "matrix<int>",
+        "type": "matrix<int/float>",
         "description": "First matrix object.",
         "required": false
       },
       {
         "name": "id2",
-        "type": "series int/float/matrix<int>",
+        "type": "unknown",
         "description": "Second matrix object, or scalar value.",
         "required": false
       }
@@ -7184,7 +7184,7 @@
     "parameters": [
       {
         "name": "x",
-        "type": "simple int/float",
+        "type": "unknown",
         "description": "Value to be tested.",
         "required": false
       }
@@ -8787,7 +8787,7 @@
     "parameters": [
       {
         "name": "value",
-        "type": "const enum",
+        "type": "unknown",
         "description": "Value or array ID whose elements are converted to a string.",
         "required": false
       },

@@ -13,6 +13,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
+import { unionOverloadParams } from "./union-types.ts";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -54,6 +55,7 @@ interface FunctionDetail {
 	category?: string;
 	overloads?: string[];
 	variadic?: boolean;
+	overloadArgs?: Array<Array<{ name: string; type: string }>>;
 }
 
 interface GeneratedFunction {
@@ -325,9 +327,13 @@ function generateFunctions(
 			flags.minArgs = Math.max(1, requiredCount);
 		}
 
+		// Union per-param types across overloads from the captured overloadArgs
+		// dump (offline; see union-types.ts). Only params present in every
+		// overload are unioned — others keep their scraped type.
+		const unionedParams = unionOverloadParams(detail);
 		const parameters = (detail.parameters || []).map((p) => ({
 			name: p.name,
-			type: p.type || "unknown",
+			type: unionedParams.get(p.name) ?? p.type ?? "unknown",
 			description: p.description || "",
 			required: !isParameterOptional(p),
 			default: p.default,

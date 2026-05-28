@@ -1,7 +1,7 @@
 /**
  * Pine Script V6 Functions
  * Auto-generated from TradingView documentation
- * Generated: 2026-05-28T09:18:16.416Z
+ * Generated: 2026-05-28T09:52:58.293Z
  * Total: 475 functions
  */
 
@@ -1200,7 +1200,7 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "id",
-        "type": "array<int/float/string>",
+        "type": "unknown",
         "description": "An array object.",
         "required": false
       },
@@ -1230,7 +1230,7 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "id",
-        "type": "array<int/float/string>",
+        "type": "unknown",
         "description": "An array object.",
         "required": false
       },
@@ -6211,13 +6211,13 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "id1",
-        "type": "matrix<int>",
+        "type": "matrix<int/float>",
         "description": "Matrix to subtract from.",
         "required": false
       },
       {
         "name": "id2",
-        "type": "series int/float/matrix<int>",
+        "type": "unknown",
         "description": "Matrix object or a scalar value to be subtracted.",
         "required": false
       }
@@ -6640,13 +6640,13 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "id1",
-        "type": "matrix<int>",
+        "type": "matrix<int/float>",
         "description": "First matrix object.",
         "required": false
       },
       {
         "name": "id2",
-        "type": "array<int>",
+        "type": "unknown",
         "description": "Second matrix object, value or array.",
         "required": false
       }
@@ -6933,7 +6933,7 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "id",
-        "type": "matrix<int/float/string>",
+        "type": "unknown",
         "description": "A matrix object to be sorted.",
         "required": false
       },
@@ -7011,13 +7011,13 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "id1",
-        "type": "matrix<int>",
+        "type": "matrix<int/float>",
         "description": "First matrix object.",
         "required": false
       },
       {
         "name": "id2",
-        "type": "series int/float/matrix<int>",
+        "type": "unknown",
         "description": "Second matrix object, or scalar value.",
         "required": false
       }
@@ -7196,7 +7196,7 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "x",
-        "type": "simple int/float",
+        "type": "unknown",
         "description": "Value to be tested.",
         "required": false
       }
@@ -8799,7 +8799,7 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "value",
-        "type": "const enum",
+        "type": "unknown",
         "description": "Value or array ID whose elements are converted to a string.",
         "required": false
       },

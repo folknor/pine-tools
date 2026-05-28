@@ -111,21 +111,37 @@ IDs so the two stay in sync.
     committed; checker untouched this phase → regression-check 0 new
     errors. Full `--force` re-scrape was used (475 fns, 118 overloaded
     trigger the sub-anchor loop).
+  - **STATUS — Scraper rework LANDED 2026-05-28 (resolves blocker #1).**
+    The inline union (`unionParamType` in scrape.ts) was replaced by a
+    **capture-then-union-offline** architecture: `scrape.ts`'s
+    `collectOverloadArgs` now saves the complete per-overload arg dump as
+    `overloadArgs` in the raw JSON, and `packages/pipeline/src/union-types.ts`
+    computes per-param unions **at generate-time** (offline). The union rule
+    is structural (no thresholds): (1) all clean primitive unions → widest
+    qualifier + merged prims; (2) same collection kind → union element types
+    (`array<int/float> ∪ array<int>` → `array<int/float>`); (3) all identical
+    → keep; (4) differing/mixed (broad overload alongside narrow) → `unknown`.
+    Consequences: type/union logic is now **iterable offline** — edit
+    `union-types.ts` + `pnpm run generate`, no re-scrape (documented in
+    CLAUDE.md; `generate` is byte-deterministic); and universal params resolve
+    to `unknown` generically (8 found, see blocker #1). Regression: 0 new
+    errors, −6 `matrix.mult` FPs (params were frozen to `matrix<int>`/
+    `array<int>`, now `matrix<int/float>`/`unknown`). Behaviour-neutral for
+    the current (Phase-2-reverted) checker.
   - **Phase 2 (let the checker validate the unions) was ATTEMPTED and
-    REVERTED 2026-05-28** — three blockers, none fixable by the union
-    data alone:
-    1. **`unionParamType` silently discards broad/universal types.** It
-       bails on any overload type containing `<>` and falls back to the
-       frozen overload-#0 value. `na()`'s `series bool` overload
-       documents `x` as *universal* (`series
-       int/float/color/string/label/line/box/table/linefill/polyline/array<>/matrix<>/map<>`),
-       but the bail left `na.x` frozen at `simple int/float`. Enforcing
-       that flagged **721** valid `na(<series>)` calls. (A
-       `generate.ts` `na.x` override was tried as a stopgap, then
-       reverted — folded into the real fix.) **Real fix:**
-       `unionParamType` must recognise a broad/universal overload type
-       and widen to accept-anything (`unknown`) instead of falling back
-       to the frozen value — needs a re-scrape (mirror first, #22).
+    REVERTED 2026-05-28** — three blockers; blocker #1 is now resolved
+    (above), #2 and #3 remain:
+    1. ~~**`unionParamType` silently discards broad/universal types.**~~
+       **RESOLVED 2026-05-28** (see "Scraper rework" below). It used to
+       bail on any overload type containing `<>` and fall back to the
+       frozen overload-#0 value, leaving `na.x` at `simple int/float`
+       (would flag **721** valid `na(<series>)` calls). Now the scraper
+       captures the full per-overload dump and the offline union rule
+       resolves broad/heterogeneous params to `unknown` (accept-anything)
+       generically — `na.x` → `unknown`, and 7 other genuinely-varied
+       params (`str.tostring.value`, `array.sort.id`,
+       `matrix.{mult,sum,diff}.id2`, `matrix.sort.id`,
+       `array.sort_indices.id`). No `na` hardcode.
     2. **Unions under-inclusive where TV's per-overload display
        understates.** `nz(<bool>)` is **TV-silent** (verified with
        `scripts/compare-tv.mjs`) — TV tolerates `nz` of a bool, but our
@@ -205,22 +221,29 @@ IDs so the two stay in sync.
   it looks: `scrape.ts` loads the SPA **once** per run, then navigates
   client-side via `#fun_<name>` / `#fun_<name>-<i>` hash changes (not
   per-function HTTP requests), so a full run ≈ one page-load of TV's bundle.
-  Two stacking improvements:
-  - **Targeted re-scrape (quick win):** the per-function disk cache
-    (`.cache/function-details/`, 24h TTL) already lets you delete only the
-    entries you want refreshed and run plain `scrape` (no `--force`). Add an
-    `--only <names>` / `--only-overloaded` flag so this doesn't require
-    hand-deleting cache files.
-  - **Local mirror (durable fix):** a one-time `scrape:mirror` step that
-    snapshots the rendered page + JS/data assets under
-    `pine-data/raw/v6/site-mirror/`, then points Puppeteer at `file://` / a
-    local static server so re-scrapes are fully offline (zero TV calls). The
-    overload selector is client-side (proven during the #17 work), so a mirror
-    reproduces sub-anchor navigation faithfully. **Open question:** is the
-    reference data a single fetchable JSON asset, or does it need a
-    rendered-DOM snapshot? Resolve that before building. **Policy:** if a
-    re-scrape is needed and the mirror doesn't exist yet, build the mirror
-    *first*, then scrape against it.
+  - ✅ **Type-logic iteration is already offline (2026-05-28, #17 rework).**
+    The scrape captures the full per-overload `overloadArgs` dump and the union
+    runs offline at generate-time (`union-types.ts`). So changing how param
+    types are *derived* needs only `pnpm run generate` — no scrape. Documented
+    in CLAUDE.md ("Re-running type logic WITHOUT scraping"). This covers the
+    most common reason we were re-scraping.
+  - Remaining ways to cut scraping further:
+    - **Targeted re-scrape (quick win):** the per-function disk cache
+      (`.cache/function-details/`, 24h TTL) already lets you delete only the
+      entries you want refreshed and run plain `scrape` (no `--force`). Add an
+      `--only <names>` / `--only-overloaded` flag so this doesn't require
+      hand-deleting cache files.
+    - **Local mirror (durable fix):** a one-time `scrape:mirror` step that
+      snapshots the rendered page + JS/data assets under
+      `pine-data/raw/v6/site-mirror/`, then points Puppeteer at `file://` / a
+      local static server so re-scrapes are fully offline (zero TV calls). The
+      overload selector is client-side (proven during the #17 work), so a mirror
+      reproduces sub-anchor navigation faithfully. **Open question:** is the
+      reference data a single fetchable JSON asset, or does it need a
+      rendered-DOM snapshot? Resolve that before building. **Policy:** if a
+      re-scrape is needed and the mirror doesn't exist yet, build the mirror
+      *first*, then scrape against it. Now mostly needed only for
+      DOM-*extraction* changes, since type derivation is already offline.
 
 ## Gotchas
 

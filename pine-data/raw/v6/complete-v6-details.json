@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "extractedAt": "2026-05-28T08:37:34.518Z",
+    "extractedAt": "2026-05-28T09:37:13.124Z",
     "source": "https://www.tradingview.com/pine-script-reference/v6/",
     "totalFunctions": 475,
     "successfulScrapes": 475,
@@ -93,6 +93,20 @@
       "overloads": [
         "array.abs(id) → array<float>",
         "array.abs(id) → array<int>"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "id",
+            "type": "array<int/float>"
+          }
+        ],
+        [
+          {
+            "name": "id",
+            "type": "array<int>"
+          }
+        ]
       ]
     },
     "array.avg": {
@@ -117,6 +131,20 @@
       "overloads": [
         "array.avg(id) → series float",
         "array.avg(id) → series int"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "id",
+            "type": "array<int/float>"
+          }
+        ],
+        [
+          {
+            "name": "id",
+            "type": "array<int>"
+          }
+        ]
       ]
     },
     "array.binary_search": {
@@ -422,7 +450,21 @@
         "array.from(arg0, arg1, ...) → array<float>",
         "array.from(arg0, arg1, ...) → array<bool>"
       ],
-      "variadic": true
+      "variadic": true,
+      "overloadArgs": [
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        []
+      ]
     },
     "array.get": {
       "name": "array.get()",
@@ -642,6 +684,28 @@
       "overloads": [
         "array.max(id, nth) → series float",
         "array.max(id, nth) → series int"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "id",
+            "type": "array<int/float>"
+          },
+          {
+            "name": "nth",
+            "type": "series int"
+          }
+        ],
+        [
+          {
+            "name": "id",
+            "type": "array<int>"
+          },
+          {
+            "name": "nth",
+            "type": "series int"
+          }
+        ]
       ]
     },
     "array.median": {
@@ -666,6 +730,20 @@
       "overloads": [
         "array.median(id) → series float",
         "array.median(id) → series int"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "id",
+            "type": "array<int/float>"
+          }
+        ],
+        [
+          {
+            "name": "id",
+            "type": "array<int>"
+          }
+        ]
       ]
     },
     "array.min": {
@@ -697,6 +775,28 @@
       "overloads": [
         "array.min(id, nth) → series float",
         "array.min(id, nth) → series int"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "id",
+            "type": "array<int/float>"
+          },
+          {
+            "name": "nth",
+            "type": "series int"
+          }
+        ],
+        [
+          {
+            "name": "id",
+            "type": "array<int>"
+          },
+          {
+            "name": "nth",
+            "type": "series int"
+          }
+        ]
       ]
     },
     "array.mode": {
@@ -721,6 +821,20 @@
       "overloads": [
         "array.mode(id) → series float",
         "array.mode(id) → series int"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "id",
+            "type": "array<int/float>"
+          }
+        ],
+        [
+          {
+            "name": "id",
+            "type": "array<int>"
+          }
+        ]
       ]
     },
     "array.new<type>": {
@@ -1048,6 +1162,28 @@
       "overloads": [
         "array.percentile_linear_interpolation(id, percentage) → series float",
         "array.percentile_linear_interpolation(id, percentage) → series int"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "id",
+            "type": "array<int/float>"
+          },
+          {
+            "name": "percentage",
+            "type": "series int/float"
+          }
+        ],
+        [
+          {
+            "name": "id",
+            "type": "array<int>"
+          },
+          {
+            "name": "percentage",
+            "type": "series int/float"
+          }
+        ]
       ]
     },
     "array.percentile_nearest_rank": {
@@ -1077,6 +1213,28 @@
       "overloads": [
         "array.percentile_nearest_rank(id, percentage) → series float",
         "array.percentile_nearest_rank(id, percentage) → series int"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "id",
+            "type": "array<int/float>"
+          },
+          {
+            "name": "percentage",
+            "type": "series int/float"
+          }
+        ],
+        [
+          {
+            "name": "id",
+            "type": "array<int>"
+          },
+          {
+            "name": "percentage",
+            "type": "series int/float"
+          }
+        ]
       ]
     },
     "array.percentrank": {
@@ -1106,6 +1264,28 @@
       "overloads": [
         "array.percentrank(id, index) → series float",
         "array.percentrank(id, index) → series int"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "id",
+            "type": "array<int/float>"
+          },
+          {
+            "name": "index",
+            "type": "series int"
+          }
+        ],
+        [
+          {
+            "name": "id",
+            "type": "array<int>"
+          },
+          {
+            "name": "index",
+            "type": "series int"
+          }
+        ]
       ]
     },
     "array.pop": {
@@ -1177,6 +1357,20 @@
       "overloads": [
         "array.range(id) → series float",
         "array.range(id) → series int"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "id",
+            "type": "array<int/float>"
+          }
+        ],
+        [
+          {
+            "name": "id",
+            "type": "array<int>"
+          }
+        ]
       ]
     },
     "array.remove": {
@@ -1388,6 +1582,32 @@
       "overloads": [
         "array.sort(id, order) → void",
         "array.sort(id, order, sort_field) → void"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "id",
+            "type": "array<int/float/string>"
+          },
+          {
+            "name": "order",
+            "type": "series sort_order"
+          }
+        ],
+        [
+          {
+            "name": "id",
+            "type": "any array type"
+          },
+          {
+            "name": "order",
+            "type": "series sort_order"
+          },
+          {
+            "name": "sort_field",
+            "type": "const int/string"
+          }
+        ]
       ]
     },
     "array.sort_indices": {
@@ -1426,6 +1646,32 @@
       "overloads": [
         "array.sort_indices(id, order) → array<int>",
         "array.sort_indices(id, order, sort_field) → array<int>"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "id",
+            "type": "array<int/float/string>"
+          },
+          {
+            "name": "order",
+            "type": "series sort_order"
+          }
+        ],
+        [
+          {
+            "name": "id",
+            "type": "any array type"
+          },
+          {
+            "name": "order",
+            "type": "series sort_order"
+          },
+          {
+            "name": "sort_field",
+            "type": "const int/string"
+          }
+        ]
       ]
     },
     "array.standardize": {
@@ -1450,6 +1696,20 @@
       "overloads": [
         "array.standardize(id) → array<float>",
         "array.standardize(id) → array<int>"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "id",
+            "type": "array<int/float>"
+          }
+        ],
+        [
+          {
+            "name": "id",
+            "type": "array<int>"
+          }
+        ]
       ]
     },
     "array.stdev": {
@@ -1481,6 +1741,28 @@
       "overloads": [
         "array.stdev(id, biased) → series float",
         "array.stdev(id, biased) → series int"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "id",
+            "type": "array<int/float>"
+          },
+          {
+            "name": "biased",
+            "type": "series bool"
+          }
+        ],
+        [
+          {
+            "name": "id",
+            "type": "array<int>"
+          },
+          {
+            "name": "biased",
+            "type": "series bool"
+          }
+        ]
       ]
     },
     "array.sum": {
@@ -1505,6 +1787,20 @@
       "overloads": [
         "array.sum(id) → series float",
         "array.sum(id) → series int"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "id",
+            "type": "array<int/float>"
+          }
+        ],
+        [
+          {
+            "name": "id",
+            "type": "array<int>"
+          }
+        ]
       ]
     },
     "array.unshift": {
@@ -1563,6 +1859,28 @@
       "overloads": [
         "array.variance(id, biased) → series float",
         "array.variance(id, biased) → series int"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "id",
+            "type": "array<int/float>"
+          },
+          {
+            "name": "biased",
+            "type": "series bool"
+          }
+        ],
+        [
+          {
+            "name": "id",
+            "type": "array<int>"
+          },
+          {
+            "name": "biased",
+            "type": "series bool"
+          }
+        ]
       ]
     },
     "barcolor": {
@@ -1689,7 +2007,7 @@
       "parameters": [
         {
           "name": "x",
-          "type": "series int/float/bool",
+          "type": "simple int/float/bool",
           "description": "The value to convert to the specified type, usually na.",
           "optional": true,
           "required": false
@@ -1704,6 +2022,32 @@
         "bool(x) → input bool",
         "bool(x) → simple bool",
         "bool(x) → series bool"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "x",
+            "type": "simple int/float/bool"
+          }
+        ],
+        [
+          {
+            "name": "x",
+            "type": "input bool"
+          }
+        ],
+        [
+          {
+            "name": "x",
+            "type": "simple bool"
+          }
+        ],
+        [
+          {
+            "name": "x",
+            "type": "series int/float/bool"
+          }
+        ]
       ]
     },
     "box": {
@@ -1996,6 +2340,156 @@
       "overloads": [
         "box.new(top_left, bottom_right, border_color, border_width, border_style, extend, xloc, bgcolor, text, text_size, text_color, text_halign, text_valign, text_wrap, text_font_family, force_overlay, text_formatting) → series box",
         "box.new(left, top, right, bottom, border_color, border_width, border_style, extend, xloc, bgcolor, text, text_size, text_color, text_halign, text_valign, text_wrap, text_font_family, force_overlay, text_formatting) → series box"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "top_left",
+            "type": "chart.point"
+          },
+          {
+            "name": "bottom_right",
+            "type": "chart.point"
+          },
+          {
+            "name": "border_color",
+            "type": "series color"
+          },
+          {
+            "name": "border_width",
+            "type": "series int"
+          },
+          {
+            "name": "border_style",
+            "type": "series string"
+          },
+          {
+            "name": "extend",
+            "type": "series string"
+          },
+          {
+            "name": "xloc",
+            "type": "series string"
+          },
+          {
+            "name": "bgcolor",
+            "type": "series color"
+          },
+          {
+            "name": "text",
+            "type": "series string"
+          },
+          {
+            "name": "text_size",
+            "type": "series int/string"
+          },
+          {
+            "name": "text_color",
+            "type": "series color"
+          },
+          {
+            "name": "text_halign",
+            "type": "series string"
+          },
+          {
+            "name": "text_valign",
+            "type": "series string"
+          },
+          {
+            "name": "text_wrap",
+            "type": "series string"
+          },
+          {
+            "name": "text_font_family",
+            "type": "series string"
+          },
+          {
+            "name": "force_overlay",
+            "type": "const bool"
+          },
+          {
+            "name": "text_formatting",
+            "type": "series text_format"
+          }
+        ],
+        [
+          {
+            "name": "left",
+            "type": "series int"
+          },
+          {
+            "name": "top",
+            "type": "series int/float"
+          },
+          {
+            "name": "right",
+            "type": "series int"
+          },
+          {
+            "name": "bottom",
+            "type": "series int/float"
+          },
+          {
+            "name": "border_color",
+            "type": "series color"
+          },
+          {
+            "name": "border_width",
+            "type": "series int"
+          },
+          {
+            "name": "border_style",
+            "type": "series string"
+          },
+          {
+            "name": "extend",
+            "type": "series string"
+          },
+          {
+            "name": "xloc",
+            "type": "series string"
+          },
+          {
+            "name": "bgcolor",
+            "type": "series color"
+          },
+          {
+            "name": "text",
+            "type": "series string"
+          },
+          {
+            "name": "text_size",
+            "type": "series int/string"
+          },
+          {
+            "name": "text_color",
+            "type": "series color"
+          },
+          {
+            "name": "text_halign",
+            "type": "series string"
+          },
+          {
+            "name": "text_valign",
+            "type": "series string"
+          },
+          {
+            "name": "text_wrap",
+            "type": "series string"
+          },
+          {
+            "name": "text_font_family",
+            "type": "series string"
+          },
+          {
+            "name": "force_overlay",
+            "type": "const bool"
+          },
+          {
+            "name": "text_formatting",
+            "type": "series text_format"
+          }
+        ]
       ]
     },
     "box.set_bgcolor": {
@@ -2703,7 +3197,7 @@
       "parameters": [
         {
           "name": "x",
-          "type": "series color",
+          "type": "const color",
           "description": "The value to convert to the specified type, usually na.",
           "optional": true,
           "required": false
@@ -2718,6 +3212,32 @@
         "color(x) → input color",
         "color(x) → simple color",
         "color(x) → series color"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "x",
+            "type": "const color"
+          }
+        ],
+        [
+          {
+            "name": "x",
+            "type": "input color"
+          }
+        ],
+        [
+          {
+            "name": "x",
+            "type": "simple color"
+          }
+        ],
+        [
+          {
+            "name": "x",
+            "type": "series color"
+          }
+        ]
       ]
     },
     "color.b": {
@@ -2727,7 +3247,7 @@
       "parameters": [
         {
           "name": "color",
-          "type": "series color",
+          "type": "const color",
           "description": "Color.",
           "optional": true,
           "required": false
@@ -2744,6 +3264,32 @@
         "color.b(color) → input float",
         "color.b(color) → simple float",
         "color.b(color) → series float"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "color",
+            "type": "const color"
+          }
+        ],
+        [
+          {
+            "name": "color",
+            "type": "input color"
+          }
+        ],
+        [
+          {
+            "name": "color",
+            "type": "simple color"
+          }
+        ],
+        [
+          {
+            "name": "color",
+            "type": "series color"
+          }
+        ]
       ]
     },
     "color.from_gradient": {
@@ -2801,7 +3347,7 @@
       "parameters": [
         {
           "name": "color",
-          "type": "series color",
+          "type": "const color",
           "description": "Color.",
           "optional": true,
           "required": false
@@ -2818,6 +3364,32 @@
         "color.g(color) → input float",
         "color.g(color) → simple float",
         "color.g(color) → series float"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "color",
+            "type": "const color"
+          }
+        ],
+        [
+          {
+            "name": "color",
+            "type": "input color"
+          }
+        ],
+        [
+          {
+            "name": "color",
+            "type": "simple color"
+          }
+        ],
+        [
+          {
+            "name": "color",
+            "type": "series color"
+          }
+        ]
       ]
     },
     "color.new": {
@@ -2827,14 +3399,14 @@
       "parameters": [
         {
           "name": "color",
-          "type": "series color",
+          "type": "const color",
           "description": "Color to apply transparency to.",
           "optional": true,
           "required": false
         },
         {
           "name": "transp",
-          "type": "series int/float",
+          "type": "const int/float",
           "description": "Possible values are from 0 (not transparent) to 100 (invisible).",
           "optional": true,
           "required": false
@@ -2851,6 +3423,48 @@
         "color.new(color, transp) → input color",
         "color.new(color, transp) → simple color",
         "color.new(color, transp) → series color"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "color",
+            "type": "const color"
+          },
+          {
+            "name": "transp",
+            "type": "const int/float"
+          }
+        ],
+        [
+          {
+            "name": "color",
+            "type": "input color"
+          },
+          {
+            "name": "transp",
+            "type": "input int/float"
+          }
+        ],
+        [
+          {
+            "name": "color",
+            "type": "simple color"
+          },
+          {
+            "name": "transp",
+            "type": "simple int/float"
+          }
+        ],
+        [
+          {
+            "name": "color",
+            "type": "series color"
+          },
+          {
+            "name": "transp",
+            "type": "series int/float"
+          }
+        ]
       ]
     },
     "color.r": {
@@ -2860,7 +3474,7 @@
       "parameters": [
         {
           "name": "color",
-          "type": "series color",
+          "type": "const color",
           "description": "Color.",
           "optional": true,
           "required": false
@@ -2877,6 +3491,32 @@
         "color.r(color) → input float",
         "color.r(color) → simple float",
         "color.r(color) → series float"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "color",
+            "type": "const color"
+          }
+        ],
+        [
+          {
+            "name": "color",
+            "type": "input color"
+          }
+        ],
+        [
+          {
+            "name": "color",
+            "type": "simple color"
+          }
+        ],
+        [
+          {
+            "name": "color",
+            "type": "series color"
+          }
+        ]
       ]
     },
     "color.rgb": {
@@ -2886,28 +3526,28 @@
       "parameters": [
         {
           "name": "red",
-          "type": "series int/float",
+          "type": "const int/float",
           "description": "Red color component. Possible values are from 0 to 255.",
           "optional": true,
           "required": false
         },
         {
           "name": "green",
-          "type": "series int/float",
+          "type": "const int/float",
           "description": "Green color component. Possible values are from 0 to 255.",
           "optional": true,
           "required": false
         },
         {
           "name": "blue",
-          "type": "series int/float",
+          "type": "const int/float",
           "description": "Blue color component. Possible values are from 0 to 255.",
           "optional": true,
           "required": false
         },
         {
           "name": "transp",
-          "type": "series int/float",
+          "type": "const int/float",
           "description": "Optional. Color transparency. Possible values are from 0 (opaque) to 100 (invisible). Default value is 0.",
           "optional": true,
           "required": false
@@ -2924,6 +3564,80 @@
         "color.rgb(red, green, blue, transp) → input color",
         "color.rgb(red, green, blue, transp) → simple color",
         "color.rgb(red, green, blue, transp) → series color"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "red",
+            "type": "const int/float"
+          },
+          {
+            "name": "green",
+            "type": "const int/float"
+          },
+          {
+            "name": "blue",
+            "type": "const int/float"
+          },
+          {
+            "name": "transp",
+            "type": "const int/float"
+          }
+        ],
+        [
+          {
+            "name": "red",
+            "type": "input int/float"
+          },
+          {
+            "name": "green",
+            "type": "input int/float"
+          },
+          {
+            "name": "blue",
+            "type": "input int/float"
+          },
+          {
+            "name": "transp",
+            "type": "input int/float"
+          }
+        ],
+        [
+          {
+            "name": "red",
+            "type": "simple int/float"
+          },
+          {
+            "name": "green",
+            "type": "simple int/float"
+          },
+          {
+            "name": "blue",
+            "type": "simple int/float"
+          },
+          {
+            "name": "transp",
+            "type": "simple int/float"
+          }
+        ],
+        [
+          {
+            "name": "red",
+            "type": "series int/float"
+          },
+          {
+            "name": "green",
+            "type": "series int/float"
+          },
+          {
+            "name": "blue",
+            "type": "series int/float"
+          },
+          {
+            "name": "transp",
+            "type": "series int/float"
+          }
+        ]
       ]
     },
     "color.t": {
@@ -2933,7 +3647,7 @@
       "parameters": [
         {
           "name": "color",
-          "type": "series color",
+          "type": "const color",
           "description": "Color.",
           "optional": true,
           "required": false
@@ -2950,6 +3664,32 @@
         "color.t(color) → input float",
         "color.t(color) → simple float",
         "color.t(color) → series float"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "color",
+            "type": "const color"
+          }
+        ],
+        [
+          {
+            "name": "color",
+            "type": "input color"
+          }
+        ],
+        [
+          {
+            "name": "color",
+            "type": "simple color"
+          }
+        ],
+        [
+          {
+            "name": "color",
+            "type": "series color"
+          }
+        ]
       ]
     },
     "dayofmonth": {
@@ -3118,6 +3858,114 @@
         "fill(hline1, hline2, color, title, editable, fillgaps, display) → void",
         "fill(plot1, plot2, color, title, editable, show_last, fillgaps, display) → void",
         "fill(plot1, plot2, top_value, bottom_value, top_color, bottom_color, title, display, fillgaps, editable) → void"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "hline1",
+            "type": "hline"
+          },
+          {
+            "name": "hline2",
+            "type": "hline"
+          },
+          {
+            "name": "color",
+            "type": "series color"
+          },
+          {
+            "name": "title",
+            "type": "const string"
+          },
+          {
+            "name": "editable",
+            "type": "input bool"
+          },
+          {
+            "name": "fillgaps",
+            "type": "const bool"
+          },
+          {
+            "name": "display",
+            "type": "input plot_simple_display"
+          }
+        ],
+        [
+          {
+            "name": "plot1",
+            "type": "plot"
+          },
+          {
+            "name": "plot2",
+            "type": "plot"
+          },
+          {
+            "name": "color",
+            "type": "series color"
+          },
+          {
+            "name": "title",
+            "type": "const string"
+          },
+          {
+            "name": "editable",
+            "type": "input bool"
+          },
+          {
+            "name": "show_last",
+            "type": "input int"
+          },
+          {
+            "name": "fillgaps",
+            "type": "const bool"
+          },
+          {
+            "name": "display",
+            "type": "input plot_simple_display"
+          }
+        ],
+        [
+          {
+            "name": "plot1",
+            "type": "plot"
+          },
+          {
+            "name": "plot2",
+            "type": "plot"
+          },
+          {
+            "name": "top_value",
+            "type": "series int/float"
+          },
+          {
+            "name": "bottom_value",
+            "type": "series int/float"
+          },
+          {
+            "name": "top_color",
+            "type": "series color"
+          },
+          {
+            "name": "bottom_color",
+            "type": "series color"
+          },
+          {
+            "name": "title",
+            "type": "const string"
+          },
+          {
+            "name": "display",
+            "type": "input plot_simple_display"
+          },
+          {
+            "name": "fillgaps",
+            "type": "const bool"
+          },
+          {
+            "name": "editable",
+            "type": "input bool"
+          }
+        ]
       ]
     },
     "fixnan": {
@@ -3127,7 +3975,7 @@
       "parameters": [
         {
           "name": "source",
-          "type": "series int/float/color",
+          "type": "series color",
           "description": "Source used for the calculation.",
           "optional": true,
           "required": false
@@ -3141,6 +3989,26 @@
         "fixnan(source) → series color",
         "fixnan(source) → series int",
         "fixnan(source) → series float"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "source",
+            "type": "series color"
+          }
+        ],
+        [
+          {
+            "name": "source",
+            "type": "series int"
+          }
+        ],
+        [
+          {
+            "name": "source",
+            "type": "series int/float"
+          }
+        ]
       ]
     },
     "float": {
@@ -3150,7 +4018,7 @@
       "parameters": [
         {
           "name": "x",
-          "type": "series int/float",
+          "type": "const int/float",
           "description": "The value to convert to the specified type, usually na.",
           "optional": true,
           "required": false
@@ -3165,6 +4033,32 @@
         "float(x) → input float",
         "float(x) → simple float",
         "float(x) → series float"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "x",
+            "type": "const int/float"
+          }
+        ],
+        [
+          {
+            "name": "x",
+            "type": "input int/float"
+          }
+        ],
+        [
+          {
+            "name": "x",
+            "type": "simple int/float"
+          }
+        ],
+        [
+          {
+            "name": "x",
+            "type": "series int/float"
+          }
+        ]
       ]
     },
     "footprint.buy_volume": {
@@ -3623,6 +4517,188 @@
         "input(defval, title, tooltip, inline, group, display, active) → input float",
         "input(defval, title, inline, group, tooltip, display, active) → series float",
         "input(defval, title, tooltip, inline, group, display, active) → input bool"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "defval",
+            "type": "const int/float/bool/string/color or source-type built-ins"
+          },
+          {
+            "name": "title",
+            "type": "const string"
+          },
+          {
+            "name": "tooltip",
+            "type": "const string"
+          },
+          {
+            "name": "inline",
+            "type": "const string"
+          },
+          {
+            "name": "group",
+            "type": "const string"
+          },
+          {
+            "name": "display",
+            "type": "const plot_display"
+          },
+          {
+            "name": "active",
+            "type": "input bool"
+          }
+        ],
+        [
+          {
+            "name": "defval",
+            "type": "const int/float/bool/string/color or source-type built-ins"
+          },
+          {
+            "name": "title",
+            "type": "const string"
+          },
+          {
+            "name": "tooltip",
+            "type": "const string"
+          },
+          {
+            "name": "inline",
+            "type": "const string"
+          },
+          {
+            "name": "group",
+            "type": "const string"
+          },
+          {
+            "name": "display",
+            "type": "const plot_display"
+          },
+          {
+            "name": "active",
+            "type": "input bool"
+          }
+        ],
+        [
+          {
+            "name": "defval",
+            "type": "const int/float/bool/string/color or source-type built-ins"
+          },
+          {
+            "name": "title",
+            "type": "const string"
+          },
+          {
+            "name": "tooltip",
+            "type": "const string"
+          },
+          {
+            "name": "inline",
+            "type": "const string"
+          },
+          {
+            "name": "group",
+            "type": "const string"
+          },
+          {
+            "name": "display",
+            "type": "const plot_display"
+          },
+          {
+            "name": "active",
+            "type": "input bool"
+          }
+        ],
+        [
+          {
+            "name": "defval",
+            "type": "const int/float/bool/string/color or source-type built-ins"
+          },
+          {
+            "name": "title",
+            "type": "const string"
+          },
+          {
+            "name": "tooltip",
+            "type": "const string"
+          },
+          {
+            "name": "inline",
+            "type": "const string"
+          },
+          {
+            "name": "group",
+            "type": "const string"
+          },
+          {
+            "name": "display",
+            "type": "const plot_display"
+          },
+          {
+            "name": "active",
+            "type": "input bool"
+          }
+        ],
+        [
+          {
+            "name": "defval",
+            "type": "const int/float/bool/string/color or source-type built-ins"
+          },
+          {
+            "name": "title",
+            "type": "const string"
+          },
+          {
+            "name": "tooltip",
+            "type": "const string"
+          },
+          {
+            "name": "inline",
+            "type": "const string"
+          },
+          {
+            "name": "group",
+            "type": "const string"
+          },
+          {
+            "name": "display",
+            "type": "const plot_display"
+          },
+          {
+            "name": "active",
+            "type": "input bool"
+          }
+        ],
+        [
+          {
+            "name": "defval",
+            "type": "const int/float/bool/string/color or source-type built-ins"
+          },
+          {
+            "name": "title",
+            "type": "const string"
+          },
+          {
+            "name": "tooltip",
+            "type": "const string"
+          },
+          {
+            "name": "inline",
+            "type": "const string"
+          },
+          {
+            "name": "group",
+            "type": "const string"
+          },
+          {
+            "name": "display",
+            "type": "const plot_display"
+          },
+          {
+            "name": "active",
+            "type": "input bool"
+          }
+        ]
       ]
     },
     "input.bool": {
@@ -3938,6 +5014,92 @@
       "overloads": [
         "input.float(defval, title, options, tooltip, inline, group, confirm, display, active) → input float",
         "input.float(defval, title, minval, maxval, step, tooltip, inline, group, confirm, display, active) → input float"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "defval",
+            "type": "const int/float"
+          },
+          {
+            "name": "title",
+            "type": "const string"
+          },
+          {
+            "name": "options",
+            "type": "tuple of const int/float values: [val1, val2, ...]"
+          },
+          {
+            "name": "tooltip",
+            "type": "const string"
+          },
+          {
+            "name": "inline",
+            "type": "const string"
+          },
+          {
+            "name": "group",
+            "type": "const string"
+          },
+          {
+            "name": "confirm",
+            "type": "const bool"
+          },
+          {
+            "name": "display",
+            "type": "const plot_display"
+          },
+          {
+            "name": "active",
+            "type": "input bool"
+          }
+        ],
+        [
+          {
+            "name": "defval",
+            "type": "const int/float"
+          },
+          {
+            "name": "title",
+            "type": "const string"
+          },
+          {
+            "name": "minval",
+            "type": "const int/float"
+          },
+          {
+            "name": "maxval",
+            "type": "const int/float"
+          },
+          {
+            "name": "step",
+            "type": "const int/float"
+          },
+          {
+            "name": "tooltip",
+            "type": "const string"
+          },
+          {
+            "name": "inline",
+            "type": "const string"
+          },
+          {
+            "name": "group",
+            "type": "const string"
+          },
+          {
+            "name": "confirm",
+            "type": "const bool"
+          },
+          {
+            "name": "display",
+            "type": "const plot_display"
+          },
+          {
+            "name": "active",
+            "type": "input bool"
+          }
+        ]
       ]
     },
     "input.int": {
@@ -4039,6 +5201,92 @@
       "overloads": [
         "input.int(defval, title, options, tooltip, inline, group, confirm, display, active) → input int",
         "input.int(defval, title, minval, maxval, step, tooltip, inline, group, confirm, display, active) → input int"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "defval",
+            "type": "const int"
+          },
+          {
+            "name": "title",
+            "type": "const string"
+          },
+          {
+            "name": "options",
+            "type": "tuple of const int values: [val1, val2, ...]"
+          },
+          {
+            "name": "tooltip",
+            "type": "const string"
+          },
+          {
+            "name": "inline",
+            "type": "const string"
+          },
+          {
+            "name": "group",
+            "type": "const string"
+          },
+          {
+            "name": "confirm",
+            "type": "const bool"
+          },
+          {
+            "name": "display",
+            "type": "const plot_display"
+          },
+          {
+            "name": "active",
+            "type": "input bool"
+          }
+        ],
+        [
+          {
+            "name": "defval",
+            "type": "const int"
+          },
+          {
+            "name": "title",
+            "type": "const string"
+          },
+          {
+            "name": "minval",
+            "type": "const int"
+          },
+          {
+            "name": "maxval",
+            "type": "const int"
+          },
+          {
+            "name": "step",
+            "type": "const int"
+          },
+          {
+            "name": "tooltip",
+            "type": "const string"
+          },
+          {
+            "name": "inline",
+            "type": "const string"
+          },
+          {
+            "name": "group",
+            "type": "const string"
+          },
+          {
+            "name": "confirm",
+            "type": "const bool"
+          },
+          {
+            "name": "display",
+            "type": "const plot_display"
+          },
+          {
+            "name": "active",
+            "type": "input bool"
+          }
+        ]
       ]
     },
     "input.price": {
@@ -4614,7 +5862,7 @@
       "parameters": [
         {
           "name": "x",
-          "type": "series int/float",
+          "type": "const int/float",
           "description": "The value to convert to the specified type, usually na.",
           "optional": true,
           "required": false
@@ -4629,6 +5877,32 @@
         "int(x) → input int",
         "int(x) → simple int",
         "int(x) → series int"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "x",
+            "type": "const int/float"
+          }
+        ],
+        [
+          {
+            "name": "x",
+            "type": "input int/float"
+          }
+        ],
+        [
+          {
+            "name": "x",
+            "type": "simple int/float"
+          }
+        ],
+        [
+          {
+            "name": "x",
+            "type": "series int/float"
+          }
+        ]
       ]
     },
     "label": {
@@ -4865,6 +6139,120 @@
       "overloads": [
         "label.new(point, text, xloc, yloc, color, style, textcolor, size, textalign, tooltip, text_font_family, force_overlay, text_formatting) → series label",
         "label.new(x, y, text, xloc, yloc, color, style, textcolor, size, textalign, tooltip, text_font_family, force_overlay, text_formatting) → series label"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "point",
+            "type": "chart.point"
+          },
+          {
+            "name": "text",
+            "type": "series string"
+          },
+          {
+            "name": "xloc",
+            "type": "series string"
+          },
+          {
+            "name": "yloc",
+            "type": "series string"
+          },
+          {
+            "name": "color",
+            "type": "series color"
+          },
+          {
+            "name": "style",
+            "type": "series string"
+          },
+          {
+            "name": "textcolor",
+            "type": "series color"
+          },
+          {
+            "name": "size",
+            "type": "series int/string"
+          },
+          {
+            "name": "textalign",
+            "type": "series string"
+          },
+          {
+            "name": "tooltip",
+            "type": "series string"
+          },
+          {
+            "name": "text_font_family",
+            "type": "series string"
+          },
+          {
+            "name": "force_overlay",
+            "type": "const bool"
+          },
+          {
+            "name": "text_formatting",
+            "type": "series text_format"
+          }
+        ],
+        [
+          {
+            "name": "x",
+            "type": "series int"
+          },
+          {
+            "name": "y",
+            "type": "series int/float"
+          },
+          {
+            "name": "text",
+            "type": "series string"
+          },
+          {
+            "name": "xloc",
+            "type": "series string"
+          },
+          {
+            "name": "yloc",
+            "type": "series string"
+          },
+          {
+            "name": "color",
+            "type": "series color"
+          },
+          {
+            "name": "style",
+            "type": "series string"
+          },
+          {
+            "name": "textcolor",
+            "type": "series color"
+          },
+          {
+            "name": "size",
+            "type": "series int/string"
+          },
+          {
+            "name": "textalign",
+            "type": "series string"
+          },
+          {
+            "name": "tooltip",
+            "type": "series string"
+          },
+          {
+            "name": "text_font_family",
+            "type": "series string"
+          },
+          {
+            "name": "force_overlay",
+            "type": "const bool"
+          },
+          {
+            "name": "text_formatting",
+            "type": "series text_format"
+          }
+        ]
       ]
     },
     "label.set_color": {
@@ -5548,6 +6936,84 @@
       "overloads": [
         "line.new(first_point, second_point, xloc, extend, color, style, width, force_overlay) → series line",
         "line.new(x1, y1, x2, y2, xloc, extend, color, style, width, force_overlay) → series line"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "first_point",
+            "type": "chart.point"
+          },
+          {
+            "name": "second_point",
+            "type": "chart.point"
+          },
+          {
+            "name": "xloc",
+            "type": "series string"
+          },
+          {
+            "name": "extend",
+            "type": "series string"
+          },
+          {
+            "name": "color",
+            "type": "series color"
+          },
+          {
+            "name": "style",
+            "type": "series string"
+          },
+          {
+            "name": "width",
+            "type": "series int"
+          },
+          {
+            "name": "force_overlay",
+            "type": "const bool"
+          }
+        ],
+        [
+          {
+            "name": "x1",
+            "type": "series int"
+          },
+          {
+            "name": "y1",
+            "type": "series int/float"
+          },
+          {
+            "name": "x2",
+            "type": "series int"
+          },
+          {
+            "name": "y2",
+            "type": "series int/float"
+          },
+          {
+            "name": "xloc",
+            "type": "series string"
+          },
+          {
+            "name": "extend",
+            "type": "series string"
+          },
+          {
+            "name": "color",
+            "type": "series color"
+          },
+          {
+            "name": "style",
+            "type": "series string"
+          },
+          {
+            "name": "width",
+            "type": "series int"
+          },
+          {
+            "name": "force_overlay",
+            "type": "const bool"
+          }
+        ]
       ]
     },
     "line.set_color": {
@@ -6076,7 +7542,21 @@
         "log.error(message) → void",
         "log.error(formatString, arg0, arg1, ...) → void"
       ],
-      "variadic": true
+      "variadic": true,
+      "overloadArgs": [
+        [
+          {
+            "name": "message",
+            "type": "series string"
+          }
+        ],
+        [
+          {
+            "name": "formatString",
+            "type": "series string"
+          }
+        ]
+      ]
     },
     "log.info": {
       "name": "log.info()",
@@ -6122,7 +7602,21 @@
         "log.info(message) → void",
         "log.info(formatString, arg0, arg1, ...) → void"
       ],
-      "variadic": true
+      "variadic": true,
+      "overloadArgs": [
+        [
+          {
+            "name": "message",
+            "type": "series string"
+          }
+        ],
+        [
+          {
+            "name": "formatString",
+            "type": "series string"
+          }
+        ]
+      ]
     },
     "log.warning": {
       "name": "log.warning()",
@@ -6168,7 +7662,21 @@
         "log.warning(message) → void",
         "log.warning(formatString, arg0, arg1, ...) → void"
       ],
-      "variadic": true
+      "variadic": true,
+      "overloadArgs": [
+        [
+          {
+            "name": "message",
+            "type": "series string"
+          }
+        ],
+        [
+          {
+            "name": "formatString",
+            "type": "series string"
+          }
+        ]
+      ]
     },
     "map.clear": {
       "name": "map.clear()",
@@ -6431,7 +7939,7 @@
       "parameters": [
         {
           "name": "number",
-          "type": "series int/float",
+          "type": "const int",
           "description": "The number to use in the calculation.",
           "optional": true,
           "required": false
@@ -6450,6 +7958,56 @@
         "math.abs(number) → series int",
         "math.abs(number) → simple float",
         "math.abs(number) → series float"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "number",
+            "type": "const int"
+          }
+        ],
+        [
+          {
+            "name": "number",
+            "type": "input int"
+          }
+        ],
+        [
+          {
+            "name": "number",
+            "type": "const int/float"
+          }
+        ],
+        [
+          {
+            "name": "number",
+            "type": "simple int"
+          }
+        ],
+        [
+          {
+            "name": "number",
+            "type": "input int/float"
+          }
+        ],
+        [
+          {
+            "name": "number",
+            "type": "series int"
+          }
+        ],
+        [
+          {
+            "name": "number",
+            "type": "simple int/float"
+          }
+        ],
+        [
+          {
+            "name": "number",
+            "type": "series int/float"
+          }
+        ]
       ]
     },
     "math.acos": {
@@ -6459,7 +8017,7 @@
       "parameters": [
         {
           "name": "angle",
-          "type": "series int/float",
+          "type": "const int/float",
           "description": "The value, in radians, to use in the calculation.",
           "optional": true,
           "required": false
@@ -6474,6 +8032,32 @@
         "math.acos(angle) → input float",
         "math.acos(angle) → simple float",
         "math.acos(angle) → series float"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "angle",
+            "type": "const int/float"
+          }
+        ],
+        [
+          {
+            "name": "angle",
+            "type": "input int/float"
+          }
+        ],
+        [
+          {
+            "name": "angle",
+            "type": "simple int/float"
+          }
+        ],
+        [
+          {
+            "name": "angle",
+            "type": "series int/float"
+          }
+        ]
       ]
     },
     "math.asin": {
@@ -6483,7 +8067,7 @@
       "parameters": [
         {
           "name": "angle",
-          "type": "series int/float",
+          "type": "const int/float",
           "description": "The value, in radians, to use in the calculation.",
           "optional": true,
           "required": false
@@ -6498,6 +8082,32 @@
         "math.asin(angle) → input float",
         "math.asin(angle) → simple float",
         "math.asin(angle) → series float"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "angle",
+            "type": "const int/float"
+          }
+        ],
+        [
+          {
+            "name": "angle",
+            "type": "input int/float"
+          }
+        ],
+        [
+          {
+            "name": "angle",
+            "type": "simple int/float"
+          }
+        ],
+        [
+          {
+            "name": "angle",
+            "type": "series int/float"
+          }
+        ]
       ]
     },
     "math.atan": {
@@ -6507,7 +8117,7 @@
       "parameters": [
         {
           "name": "angle",
-          "type": "series int/float",
+          "type": "const int/float",
           "description": "The value, in radians, to use in the calculation.",
           "optional": true,
           "required": false
@@ -6522,6 +8132,32 @@
         "math.atan(angle) → input float",
         "math.atan(angle) → simple float",
         "math.atan(angle) → series float"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "angle",
+            "type": "const int/float"
+          }
+        ],
+        [
+          {
+            "name": "angle",
+            "type": "input int/float"
+          }
+        ],
+        [
+          {
+            "name": "angle",
+            "type": "simple int/float"
+          }
+        ],
+        [
+          {
+            "name": "angle",
+            "type": "series int/float"
+          }
+        ]
       ]
     },
     "math.avg": {
@@ -6552,7 +8188,11 @@
         "math.avg(number0, number1, ...) → simple float",
         "math.avg(number0, number1, ...) → series float"
       ],
-      "variadic": true
+      "variadic": true,
+      "overloadArgs": [
+        [],
+        []
+      ]
     },
     "math.ceil": {
       "name": "math.ceil()",
@@ -6561,7 +8201,7 @@
       "parameters": [
         {
           "name": "number",
-          "type": "series int/float",
+          "type": "const int/float",
           "description": "The number to round.",
           "optional": true,
           "required": false
@@ -6576,6 +8216,32 @@
         "math.ceil(number) → input int",
         "math.ceil(number) → simple int",
         "math.ceil(number) → series int"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "number",
+            "type": "const int/float"
+          }
+        ],
+        [
+          {
+            "name": "number",
+            "type": "input int/float"
+          }
+        ],
+        [
+          {
+            "name": "number",
+            "type": "simple int/float"
+          }
+        ],
+        [
+          {
+            "name": "number",
+            "type": "series int/float"
+          }
+        ]
       ]
     },
     "math.cos": {
@@ -6585,7 +8251,7 @@
       "parameters": [
         {
           "name": "angle",
-          "type": "series int/float",
+          "type": "const int/float",
           "description": "Angle, in radians.",
           "optional": true,
           "required": false
@@ -6600,6 +8266,32 @@
         "math.cos(angle) → input float",
         "math.cos(angle) → simple float",
         "math.cos(angle) → series float"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "angle",
+            "type": "const int/float"
+          }
+        ],
+        [
+          {
+            "name": "angle",
+            "type": "input int/float"
+          }
+        ],
+        [
+          {
+            "name": "angle",
+            "type": "simple int/float"
+          }
+        ],
+        [
+          {
+            "name": "angle",
+            "type": "series int/float"
+          }
+        ]
       ]
     },
     "math.exp": {
@@ -6609,7 +8301,7 @@
       "parameters": [
         {
           "name": "number",
-          "type": "series int/float",
+          "type": "const int/float",
           "description": "The number to use in the calculation.",
           "optional": true,
           "required": false
@@ -6624,6 +8316,32 @@
         "math.exp(number) → input float",
         "math.exp(number) → simple float",
         "math.exp(number) → series float"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "number",
+            "type": "const int/float"
+          }
+        ],
+        [
+          {
+            "name": "number",
+            "type": "input int/float"
+          }
+        ],
+        [
+          {
+            "name": "number",
+            "type": "simple int/float"
+          }
+        ],
+        [
+          {
+            "name": "number",
+            "type": "series int/float"
+          }
+        ]
       ]
     },
     "math.floor": {
@@ -6633,7 +8351,7 @@
       "parameters": [
         {
           "name": "number",
-          "type": "series int/float",
+          "type": "const int/float",
           "description": "The number to round.",
           "optional": true,
           "required": false
@@ -6648,6 +8366,32 @@
         "math.floor(number) → input int",
         "math.floor(number) → simple int",
         "math.floor(number) → series int"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "number",
+            "type": "const int/float"
+          }
+        ],
+        [
+          {
+            "name": "number",
+            "type": "input int/float"
+          }
+        ],
+        [
+          {
+            "name": "number",
+            "type": "simple int/float"
+          }
+        ],
+        [
+          {
+            "name": "number",
+            "type": "series int/float"
+          }
+        ]
       ]
     },
     "math.log": {
@@ -6657,7 +8401,7 @@
       "parameters": [
         {
           "name": "number",
-          "type": "series int/float",
+          "type": "const int/float",
           "description": "The number to use in the calculation.",
           "optional": true,
           "required": false
@@ -6672,6 +8416,32 @@
         "math.log(number) → input float",
         "math.log(number) → simple float",
         "math.log(number) → series float"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "number",
+            "type": "const int/float"
+          }
+        ],
+        [
+          {
+            "name": "number",
+            "type": "input int/float"
+          }
+        ],
+        [
+          {
+            "name": "number",
+            "type": "simple int/float"
+          }
+        ],
+        [
+          {
+            "name": "number",
+            "type": "series int/float"
+          }
+        ]
       ]
     },
     "math.log10": {
@@ -6681,7 +8451,7 @@
       "parameters": [
         {
           "name": "number",
-          "type": "series int/float",
+          "type": "const int/float",
           "description": "The number to use in the calculation.",
           "optional": true,
           "required": false
@@ -6696,6 +8466,32 @@
         "math.log10(number) → input float",
         "math.log10(number) → simple float",
         "math.log10(number) → series float"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "number",
+            "type": "const int/float"
+          }
+        ],
+        [
+          {
+            "name": "number",
+            "type": "input int/float"
+          }
+        ],
+        [
+          {
+            "name": "number",
+            "type": "simple int/float"
+          }
+        ],
+        [
+          {
+            "name": "number",
+            "type": "series int/float"
+          }
+        ]
       ]
     },
     "math.max": {
@@ -6734,7 +8530,17 @@
         "math.max(number0, number1, ...) → simple float",
         "math.max(number0, number1, ...) → series float"
       ],
-      "variadic": true
+      "variadic": true,
+      "overloadArgs": [
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        []
+      ]
     },
     "math.min": {
       "name": "math.min()",
@@ -6772,7 +8578,17 @@
         "math.min(number0, number1, ...) → simple float",
         "math.min(number0, number1, ...) → series float"
       ],
-      "variadic": true
+      "variadic": true,
+      "overloadArgs": [
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        []
+      ]
     },
     "math.pow": {
       "name": "math.pow()",
@@ -6781,14 +8597,14 @@
       "parameters": [
         {
           "name": "base",
-          "type": "series int/float",
+          "type": "const int/float",
           "description": "Specify the base to use.",
           "optional": true,
           "required": false
         },
         {
           "name": "exponent",
-          "type": "series int/float",
+          "type": "const int/float",
           "description": "Specifies the exponent.",
           "optional": true,
           "required": false
@@ -6805,6 +8621,48 @@
         "math.pow(base, exponent) → input float",
         "math.pow(base, exponent) → simple float",
         "math.pow(base, exponent) → series float"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "base",
+            "type": "const int/float"
+          },
+          {
+            "name": "exponent",
+            "type": "const int/float"
+          }
+        ],
+        [
+          {
+            "name": "base",
+            "type": "input int/float"
+          },
+          {
+            "name": "exponent",
+            "type": "input int/float"
+          }
+        ],
+        [
+          {
+            "name": "base",
+            "type": "simple int/float"
+          },
+          {
+            "name": "exponent",
+            "type": "simple int/float"
+          }
+        ],
+        [
+          {
+            "name": "base",
+            "type": "series int/float"
+          },
+          {
+            "name": "exponent",
+            "type": "series int/float"
+          }
+        ]
       ]
     },
     "math.random": {
@@ -6846,7 +8704,7 @@
       "parameters": [
         {
           "name": "number",
-          "type": "series int/float",
+          "type": "const int/float",
           "description": "The value to be rounded.",
           "optional": true,
           "required": false
@@ -6872,6 +8730,72 @@
         "math.round(number, precision) → input float",
         "math.round(number, precision) → simple float",
         "math.round(number, precision) → series float"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "number",
+            "type": "const int/float"
+          }
+        ],
+        [
+          {
+            "name": "number",
+            "type": "input int/float"
+          }
+        ],
+        [
+          {
+            "name": "number",
+            "type": "simple int/float"
+          }
+        ],
+        [
+          {
+            "name": "number",
+            "type": "series int/float"
+          }
+        ],
+        [
+          {
+            "name": "number",
+            "type": "const int/float"
+          },
+          {
+            "name": "precision",
+            "type": "simple int"
+          }
+        ],
+        [
+          {
+            "name": "number",
+            "type": "input int/float"
+          },
+          {
+            "name": "precision",
+            "type": "simple int"
+          }
+        ],
+        [
+          {
+            "name": "number",
+            "type": "simple int/float"
+          },
+          {
+            "name": "precision",
+            "type": "simple int"
+          }
+        ],
+        [
+          {
+            "name": "number",
+            "type": "series int/float"
+          },
+          {
+            "name": "precision",
+            "type": "series int"
+          }
+        ]
       ]
     },
     "math.round_to_mintick": {
@@ -6881,7 +8805,7 @@
       "parameters": [
         {
           "name": "number",
-          "type": "series int/float",
+          "type": "simple int/float",
           "description": "The value to be rounded.",
           "optional": true,
           "required": false
@@ -6894,6 +8818,20 @@
       "overloads": [
         "math.round_to_mintick(number) → simple float",
         "math.round_to_mintick(number) → series float"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "number",
+            "type": "simple int/float"
+          }
+        ],
+        [
+          {
+            "name": "number",
+            "type": "series int/float"
+          }
+        ]
       ]
     },
     "math.sign": {
@@ -6903,7 +8841,7 @@
       "parameters": [
         {
           "name": "number",
-          "type": "series int/float",
+          "type": "const int/float",
           "description": "The number to use in the calculation.",
           "optional": true,
           "required": false
@@ -6918,6 +8856,32 @@
         "math.sign(number) → input float",
         "math.sign(number) → simple float",
         "math.sign(number) → series float"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "number",
+            "type": "const int/float"
+          }
+        ],
+        [
+          {
+            "name": "number",
+            "type": "input int/float"
+          }
+        ],
+        [
+          {
+            "name": "number",
+            "type": "simple int/float"
+          }
+        ],
+        [
+          {
+            "name": "number",
+            "type": "series int/float"
+          }
+        ]
       ]
     },
     "math.sin": {
@@ -6927,7 +8891,7 @@
       "parameters": [
         {
           "name": "angle",
-          "type": "series int/float",
+          "type": "const int/float",
           "description": "Angle, in radians.",
           "optional": true,
           "required": false
@@ -6942,6 +8906,32 @@
         "math.sin(angle) → input float",
         "math.sin(angle) → simple float",
         "math.sin(angle) → series float"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "angle",
+            "type": "const int/float"
+          }
+        ],
+        [
+          {
+            "name": "angle",
+            "type": "input int/float"
+          }
+        ],
+        [
+          {
+            "name": "angle",
+            "type": "simple int/float"
+          }
+        ],
+        [
+          {
+            "name": "angle",
+            "type": "series int/float"
+          }
+        ]
       ]
     },
     "math.sqrt": {
@@ -6951,7 +8941,7 @@
       "parameters": [
         {
           "name": "number",
-          "type": "series int/float",
+          "type": "const int/float",
           "description": "The number to use in the calculation.",
           "optional": true,
           "required": false
@@ -6966,6 +8956,32 @@
         "math.sqrt(number) → input float",
         "math.sqrt(number) → simple float",
         "math.sqrt(number) → series float"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "number",
+            "type": "const int/float"
+          }
+        ],
+        [
+          {
+            "name": "number",
+            "type": "input int/float"
+          }
+        ],
+        [
+          {
+            "name": "number",
+            "type": "simple int/float"
+          }
+        ],
+        [
+          {
+            "name": "number",
+            "type": "series int/float"
+          }
+        ]
       ]
     },
     "math.sum": {
@@ -7000,7 +9016,7 @@
       "parameters": [
         {
           "name": "angle",
-          "type": "series int/float",
+          "type": "const int/float",
           "description": "Angle, in radians.",
           "optional": true,
           "required": false
@@ -7015,6 +9031,32 @@
         "math.tan(angle) → input float",
         "math.tan(angle) → simple float",
         "math.tan(angle) → series float"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "angle",
+            "type": "const int/float"
+          }
+        ],
+        [
+          {
+            "name": "angle",
+            "type": "input int/float"
+          }
+        ],
+        [
+          {
+            "name": "angle",
+            "type": "simple int/float"
+          }
+        ],
+        [
+          {
+            "name": "angle",
+            "type": "series int/float"
+          }
+        ]
       ]
     },
     "math.todegrees": {
@@ -7145,6 +9187,20 @@
       "overloads": [
         "matrix.avg(id) → series float",
         "matrix.avg(id) → series int"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "id",
+            "type": "matrix<int/float>"
+          }
+        ],
+        [
+          {
+            "name": "id",
+            "type": "matrix<int>"
+          }
+        ]
       ]
     },
     "matrix.col": {
@@ -7263,6 +9319,20 @@
       "overloads": [
         "matrix.det(id) → series float",
         "matrix.det(id) → series int"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "id",
+            "type": "matrix<int/float>"
+          }
+        ],
+        [
+          {
+            "name": "id",
+            "type": "matrix<int>"
+          }
+        ]
       ]
     },
     "matrix.diff": {
@@ -7295,6 +9365,28 @@
       "overloads": [
         "matrix.diff(id1, id2) → matrix<int>",
         "matrix.diff(id1, id2) → matrix<float>"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "id1",
+            "type": "matrix<int>"
+          },
+          {
+            "name": "id2",
+            "type": "series int/float/matrix<int>"
+          }
+        ],
+        [
+          {
+            "name": "id1",
+            "type": "matrix<int/float>"
+          },
+          {
+            "name": "id2",
+            "type": "series int/float/matrix<int/float>"
+          }
+        ]
       ]
     },
     "matrix.eigenvalues": {
@@ -7319,6 +9411,20 @@
       "overloads": [
         "matrix.eigenvalues(id) → array<float>",
         "matrix.eigenvalues(id) → array<int>"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "id",
+            "type": "matrix<int/float>"
+          }
+        ],
+        [
+          {
+            "name": "id",
+            "type": "matrix<int>"
+          }
+        ]
       ]
     },
     "matrix.eigenvectors": {
@@ -7343,6 +9449,20 @@
       "overloads": [
         "matrix.eigenvectors(id) → matrix<float>",
         "matrix.eigenvectors(id) → matrix<int>"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "id",
+            "type": "matrix<int/float>"
+          }
+        ],
+        [
+          {
+            "name": "id",
+            "type": "matrix<int>"
+          }
+        ]
       ]
     },
     "matrix.elements_count": {
@@ -7474,6 +9594,20 @@
       "overloads": [
         "matrix.inv(id) → matrix<float>",
         "matrix.inv(id) → matrix<int>"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "id",
+            "type": "matrix<int/float>"
+          }
+        ],
+        [
+          {
+            "name": "id",
+            "type": "matrix<int>"
+          }
+        ]
       ]
     },
     "matrix.is_antidiagonal": {
@@ -7685,6 +9819,28 @@
       "overloads": [
         "matrix.kron(id1, id2) → matrix<float>",
         "matrix.kron(id1, id2) → matrix<int>"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "id1",
+            "type": "matrix<int/float>"
+          },
+          {
+            "name": "id2",
+            "type": "matrix<int/float>"
+          }
+        ],
+        [
+          {
+            "name": "id1",
+            "type": "matrix<int>"
+          },
+          {
+            "name": "id2",
+            "type": "matrix<int>"
+          }
+        ]
       ]
     },
     "matrix.max": {
@@ -7709,6 +9865,20 @@
       "overloads": [
         "matrix.max(id) → series float",
         "matrix.max(id) → series int"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "id",
+            "type": "matrix<int/float>"
+          }
+        ],
+        [
+          {
+            "name": "id",
+            "type": "matrix<int>"
+          }
+        ]
       ]
     },
     "matrix.median": {
@@ -7733,6 +9903,20 @@
       "overloads": [
         "matrix.median(id) → series float",
         "matrix.median(id) → series int"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "id",
+            "type": "matrix<int/float>"
+          }
+        ],
+        [
+          {
+            "name": "id",
+            "type": "matrix<int>"
+          }
+        ]
       ]
     },
     "matrix.min": {
@@ -7757,6 +9941,20 @@
       "overloads": [
         "matrix.min(id) → series float",
         "matrix.min(id) → series int"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "id",
+            "type": "matrix<int/float>"
+          }
+        ],
+        [
+          {
+            "name": "id",
+            "type": "matrix<int>"
+          }
+        ]
       ]
     },
     "matrix.mode": {
@@ -7781,6 +9979,20 @@
       "overloads": [
         "matrix.mode(id) → series float",
         "matrix.mode(id) → series int"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "id",
+            "type": "matrix<int/float>"
+          }
+        ],
+        [
+          {
+            "name": "id",
+            "type": "matrix<int>"
+          }
+        ]
       ]
     },
     "matrix.mult": {
@@ -7816,6 +10028,48 @@
         "matrix.mult(id1, id2) → array<float>",
         "matrix.mult(id1, id2) → matrix<int>",
         "matrix.mult(id1, id2) → matrix<float>"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "id1",
+            "type": "matrix<int>"
+          },
+          {
+            "name": "id2",
+            "type": "array<int>"
+          }
+        ],
+        [
+          {
+            "name": "id1",
+            "type": "matrix<int/float>"
+          },
+          {
+            "name": "id2",
+            "type": "array<int/float>"
+          }
+        ],
+        [
+          {
+            "name": "id1",
+            "type": "matrix<int>"
+          },
+          {
+            "name": "id2",
+            "type": "series int/float/matrix<int>"
+          }
+        ],
+        [
+          {
+            "name": "id1",
+            "type": "matrix<int/float>"
+          },
+          {
+            "name": "id2",
+            "type": "series int/float/matrix<int/float>"
+          }
+        ]
       ]
     },
     "matrix.new<type>": {
@@ -7877,6 +10131,20 @@
       "overloads": [
         "matrix.pinv(id) → matrix<float>",
         "matrix.pinv(id) → matrix<int>"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "id",
+            "type": "matrix<int/float>"
+          }
+        ],
+        [
+          {
+            "name": "id",
+            "type": "matrix<int>"
+          }
+        ]
       ]
     },
     "matrix.pow": {
@@ -7908,6 +10176,28 @@
       "overloads": [
         "matrix.pow(id, power) → matrix<float>",
         "matrix.pow(id, power) → matrix<int>"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "id",
+            "type": "matrix<int/float>"
+          },
+          {
+            "name": "power",
+            "type": "series int"
+          }
+        ],
+        [
+          {
+            "name": "id",
+            "type": "matrix<int>"
+          },
+          {
+            "name": "power",
+            "type": "series int"
+          }
+        ]
       ]
     },
     "matrix.rank": {
@@ -8169,6 +10459,40 @@
       "overloads": [
         "matrix.sort(id, column, order) → void",
         "matrix.sort(id, column, order, sort_field) → void"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "id",
+            "type": "matrix<int/float/string>"
+          },
+          {
+            "name": "column",
+            "type": "series int"
+          },
+          {
+            "name": "order",
+            "type": "series sort_order"
+          }
+        ],
+        [
+          {
+            "name": "id",
+            "type": "any matrix type"
+          },
+          {
+            "name": "column",
+            "type": "series int"
+          },
+          {
+            "name": "order",
+            "type": "series sort_order"
+          },
+          {
+            "name": "sort_field",
+            "type": "const int/string"
+          }
+        ]
       ]
     },
     "matrix.submatrix": {
@@ -8249,6 +10573,28 @@
       "overloads": [
         "matrix.sum(id1, id2) → matrix<int>",
         "matrix.sum(id1, id2) → matrix<float>"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "id1",
+            "type": "matrix<int>"
+          },
+          {
+            "name": "id2",
+            "type": "series int/float/matrix<int>"
+          }
+        ],
+        [
+          {
+            "name": "id1",
+            "type": "matrix<int/float>"
+          },
+          {
+            "name": "id2",
+            "type": "series int/float/matrix<int/float>"
+          }
+        ]
       ]
     },
     "matrix.swap_columns": {
@@ -8341,6 +10687,20 @@
       "overloads": [
         "matrix.trace(id) → series float",
         "matrix.trace(id) → series int"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "id",
+            "type": "matrix<int/float>"
+          }
+        ],
+        [
+          {
+            "name": "id",
+            "type": "matrix<int>"
+          }
+        ]
       ]
     },
     "matrix.transpose": {
@@ -8462,6 +10822,20 @@
       "overloads": [
         "na(x) → simple bool",
         "na(x) → series bool"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "x",
+            "type": "simple int/float"
+          }
+        ],
+        [
+          {
+            "name": "x",
+            "type": "series int/float/color/string/label/line/box/table/linefill/polyline/array<>/matrix<>/map<>"
+          }
+        ]
       ]
     },
     "nz": {
@@ -8471,14 +10845,14 @@
       "parameters": [
         {
           "name": "source",
-          "type": "series int/float/color",
+          "type": "simple color",
           "description": "The source series to process.",
           "optional": true,
           "required": false
         },
         {
           "name": "replacement",
-          "type": "series int/float/color",
+          "type": "simple color",
           "description": "Optional. The value the function uses to replace na values in the source series. The default depends on the source type: 0 for \"int\", 0.0 for \"float\", or #00000000 for \"color\".",
           "optional": true,
           "required": false
@@ -8497,6 +10871,68 @@
         "nz(source, replacement) → series int",
         "nz(source, replacement) → simple float",
         "nz(source, replacement) → series float"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "source",
+            "type": "simple color"
+          },
+          {
+            "name": "replacement",
+            "type": "simple color"
+          }
+        ],
+        [
+          {
+            "name": "source",
+            "type": "simple int"
+          },
+          {
+            "name": "replacement",
+            "type": "simple int"
+          }
+        ],
+        [
+          {
+            "name": "source",
+            "type": "series color"
+          },
+          {
+            "name": "replacement",
+            "type": "series color"
+          }
+        ],
+        [
+          {
+            "name": "source",
+            "type": "series int"
+          },
+          {
+            "name": "replacement",
+            "type": "series int"
+          }
+        ],
+        [
+          {
+            "name": "source",
+            "type": "simple int/float"
+          },
+          {
+            "name": "replacement",
+            "type": "simple int/float"
+          }
+        ],
+        [
+          {
+            "name": "source",
+            "type": "series int/float"
+          },
+          {
+            "name": "replacement",
+            "type": "series int/float"
+          }
+        ]
       ]
     },
     "plot": {
@@ -9857,14 +12293,14 @@
       "parameters": [
         {
           "name": "source",
-          "type": "series string",
+          "type": "const string",
           "description": "Source string.",
           "optional": true,
           "required": false
         },
         {
           "name": "str",
-          "type": "series string",
+          "type": "const string",
           "description": "The substring to search for.",
           "optional": true,
           "required": false
@@ -9880,6 +12316,38 @@
         "str.contains(source, str) → const bool",
         "str.contains(source, str) → simple bool",
         "str.contains(source, str) → series bool"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "source",
+            "type": "const string"
+          },
+          {
+            "name": "str",
+            "type": "const string"
+          }
+        ],
+        [
+          {
+            "name": "source",
+            "type": "simple string"
+          },
+          {
+            "name": "str",
+            "type": "simple string"
+          }
+        ],
+        [
+          {
+            "name": "source",
+            "type": "series string"
+          },
+          {
+            "name": "str",
+            "type": "series string"
+          }
+        ]
       ]
     },
     "str.endswith": {
@@ -9889,14 +12357,14 @@
       "parameters": [
         {
           "name": "source",
-          "type": "series string",
+          "type": "const string",
           "description": "Source string.",
           "optional": true,
           "required": false
         },
         {
           "name": "str",
-          "type": "series string",
+          "type": "const string",
           "description": "The substring to search for.",
           "optional": true,
           "required": false
@@ -9910,6 +12378,38 @@
         "str.endswith(source, str) → const bool",
         "str.endswith(source, str) → simple bool",
         "str.endswith(source, str) → series bool"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "source",
+            "type": "const string"
+          },
+          {
+            "name": "str",
+            "type": "const string"
+          }
+        ],
+        [
+          {
+            "name": "source",
+            "type": "simple string"
+          },
+          {
+            "name": "str",
+            "type": "simple string"
+          }
+        ],
+        [
+          {
+            "name": "source",
+            "type": "series string"
+          },
+          {
+            "name": "str",
+            "type": "series string"
+          }
+        ]
       ]
     },
     "str.format": {
@@ -9919,7 +12419,7 @@
       "parameters": [
         {
           "name": "formatString",
-          "type": "series string",
+          "type": "simple string",
           "description": "Format string.",
           "optional": true,
           "required": false
@@ -9950,7 +12450,21 @@
         "str.format(formatString, arg0, arg1, ...) → simple string",
         "str.format(formatString, arg0, arg1, ...) → series string"
       ],
-      "variadic": true
+      "variadic": true,
+      "overloadArgs": [
+        [
+          {
+            "name": "formatString",
+            "type": "simple string"
+          }
+        ],
+        [
+          {
+            "name": "formatString",
+            "type": "series string"
+          }
+        ]
+      ]
     },
     "str.format_time": {
       "name": "str.format_time()",
@@ -9993,7 +12507,7 @@
       "parameters": [
         {
           "name": "string",
-          "type": "series string",
+          "type": "const string",
           "description": "Source string.",
           "optional": true,
           "required": false
@@ -10007,6 +12521,26 @@
         "str.length(string) → const int",
         "str.length(string) → simple int",
         "str.length(string) → series int"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "string",
+            "type": "const string"
+          }
+        ],
+        [
+          {
+            "name": "string",
+            "type": "simple string"
+          }
+        ],
+        [
+          {
+            "name": "string",
+            "type": "series string"
+          }
+        ]
       ]
     },
     "str.lower": {
@@ -10016,7 +12550,7 @@
       "parameters": [
         {
           "name": "source",
-          "type": "series string",
+          "type": "const string",
           "description": "String to be converted.",
           "optional": true,
           "required": false
@@ -10030,6 +12564,26 @@
         "str.lower(source) → const string",
         "str.lower(source) → simple string",
         "str.lower(source) → series string"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "source",
+            "type": "const string"
+          }
+        ],
+        [
+          {
+            "name": "source",
+            "type": "simple string"
+          }
+        ],
+        [
+          {
+            "name": "source",
+            "type": "series string"
+          }
+        ]
       ]
     },
     "str.match": {
@@ -10039,14 +12593,14 @@
       "parameters": [
         {
           "name": "source",
-          "type": "series string",
+          "type": "simple string",
           "description": "Source string.",
           "optional": true,
           "required": false
         },
         {
           "name": "regex",
-          "type": "series string",
+          "type": "simple string",
           "description": "The regular expression to which this string is to be matched.",
           "optional": true,
           "required": false
@@ -10061,6 +12615,28 @@
       "overloads": [
         "str.match(source, regex) → simple string",
         "str.match(source, regex) → series string"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "source",
+            "type": "simple string"
+          },
+          {
+            "name": "regex",
+            "type": "simple string"
+          }
+        ],
+        [
+          {
+            "name": "source",
+            "type": "series string"
+          },
+          {
+            "name": "regex",
+            "type": "series string"
+          }
+        ]
       ]
     },
     "str.pos": {
@@ -10070,14 +12646,14 @@
       "parameters": [
         {
           "name": "source",
-          "type": "series string",
+          "type": "const string",
           "description": "Source string.",
           "optional": true,
           "required": false
         },
         {
           "name": "str",
-          "type": "series string",
+          "type": "const string",
           "description": "The substring to search for.",
           "optional": true,
           "required": false
@@ -10091,6 +12667,38 @@
         "str.pos(source, str) → const int",
         "str.pos(source, str) → simple int",
         "str.pos(source, str) → series int"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "source",
+            "type": "const string"
+          },
+          {
+            "name": "str",
+            "type": "const string"
+          }
+        ],
+        [
+          {
+            "name": "source",
+            "type": "simple string"
+          },
+          {
+            "name": "str",
+            "type": "simple string"
+          }
+        ],
+        [
+          {
+            "name": "source",
+            "type": "series string"
+          },
+          {
+            "name": "str",
+            "type": "series string"
+          }
+        ]
       ]
     },
     "str.repeat": {
@@ -10100,21 +12708,21 @@
       "parameters": [
         {
           "name": "source",
-          "type": "series string",
+          "type": "const string",
           "description": "String to repeat.",
           "optional": true,
           "required": false
         },
         {
           "name": "repeat",
-          "type": "series int",
+          "type": "const int",
           "description": "Number of times to repeat the source string. Must be greater than or equal to 0.",
           "optional": true,
           "required": false
         },
         {
           "name": "separator",
-          "type": "series string",
+          "type": "const string",
           "description": "String to inject between repeated values. Optional. The default is empty string.",
           "optional": true,
           "required": false
@@ -10131,6 +12739,64 @@
         "str.repeat(source, repeat, separator) → input string",
         "str.repeat(source, repeat, separator) → simple string",
         "str.repeat(source, repeat, separator) → series string"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "source",
+            "type": "const string"
+          },
+          {
+            "name": "repeat",
+            "type": "const int"
+          },
+          {
+            "name": "separator",
+            "type": "const string"
+          }
+        ],
+        [
+          {
+            "name": "source",
+            "type": "input string"
+          },
+          {
+            "name": "repeat",
+            "type": "input int"
+          },
+          {
+            "name": "separator",
+            "type": "input string"
+          }
+        ],
+        [
+          {
+            "name": "source",
+            "type": "simple string"
+          },
+          {
+            "name": "repeat",
+            "type": "simple int"
+          },
+          {
+            "name": "separator",
+            "type": "simple string"
+          }
+        ],
+        [
+          {
+            "name": "source",
+            "type": "series string"
+          },
+          {
+            "name": "repeat",
+            "type": "series int"
+          },
+          {
+            "name": "separator",
+            "type": "series string"
+          }
+        ]
       ]
     },
     "str.replace": {
@@ -10140,28 +12806,28 @@
       "parameters": [
         {
           "name": "source",
-          "type": "series string",
+          "type": "const string",
           "description": "Source string.",
           "optional": true,
           "required": false
         },
         {
           "name": "target",
-          "type": "series string",
+          "type": "const string",
           "description": "String to be replaced.",
           "optional": true,
           "required": false
         },
         {
           "name": "replacement",
-          "type": "series string",
+          "type": "const string",
           "description": "String to be inserted instead of the target string.",
           "optional": true,
           "required": false
         },
         {
           "name": "occurrence",
-          "type": "series int",
+          "type": "const int",
           "description": "N-th occurrence of the target string to replace. Indexing starts at 0 for the first match. Optional. Default value is 0.",
           "optional": true,
           "required": false
@@ -10177,6 +12843,62 @@
         "str.replace(source, target, replacement, occurrence) → const string",
         "str.replace(source, target, replacement, occurrence) → simple string",
         "str.replace(source, target, replacement, occurrence) → series string"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "source",
+            "type": "const string"
+          },
+          {
+            "name": "target",
+            "type": "const string"
+          },
+          {
+            "name": "replacement",
+            "type": "const string"
+          },
+          {
+            "name": "occurrence",
+            "type": "const int"
+          }
+        ],
+        [
+          {
+            "name": "source",
+            "type": "simple string"
+          },
+          {
+            "name": "target",
+            "type": "simple string"
+          },
+          {
+            "name": "replacement",
+            "type": "simple string"
+          },
+          {
+            "name": "occurrence",
+            "type": "simple int"
+          }
+        ],
+        [
+          {
+            "name": "source",
+            "type": "series string"
+          },
+          {
+            "name": "target",
+            "type": "series string"
+          },
+          {
+            "name": "replacement",
+            "type": "series string"
+          },
+          {
+            "name": "occurrence",
+            "type": "series int"
+          }
+        ]
       ]
     },
     "str.replace_all": {
@@ -10186,21 +12908,21 @@
       "parameters": [
         {
           "name": "source",
-          "type": "series string",
+          "type": "simple string",
           "description": "Source string.",
           "optional": true,
           "required": false
         },
         {
           "name": "target",
-          "type": "series string",
+          "type": "simple string",
           "description": "String to be replaced.",
           "optional": true,
           "required": false
         },
         {
           "name": "replacement",
-          "type": "series string",
+          "type": "simple string",
           "description": "String to be substituted for each occurrence of target string.",
           "optional": true,
           "required": false
@@ -10213,6 +12935,36 @@
       "overloads": [
         "str.replace_all(source, target, replacement) → simple string",
         "str.replace_all(source, target, replacement) → series string"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "source",
+            "type": "simple string"
+          },
+          {
+            "name": "target",
+            "type": "simple string"
+          },
+          {
+            "name": "replacement",
+            "type": "simple string"
+          }
+        ],
+        [
+          {
+            "name": "source",
+            "type": "series string"
+          },
+          {
+            "name": "target",
+            "type": "series string"
+          },
+          {
+            "name": "replacement",
+            "type": "series string"
+          }
+        ]
       ]
     },
     "str.split": {
@@ -10247,14 +12999,14 @@
       "parameters": [
         {
           "name": "source",
-          "type": "series string",
+          "type": "const string",
           "description": "Source string.",
           "optional": true,
           "required": false
         },
         {
           "name": "str",
-          "type": "series string",
+          "type": "const string",
           "description": "The substring to search for.",
           "optional": true,
           "required": false
@@ -10268,6 +13020,38 @@
         "str.startswith(source, str) → const bool",
         "str.startswith(source, str) → simple bool",
         "str.startswith(source, str) → series bool"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "source",
+            "type": "const string"
+          },
+          {
+            "name": "str",
+            "type": "const string"
+          }
+        ],
+        [
+          {
+            "name": "source",
+            "type": "simple string"
+          },
+          {
+            "name": "str",
+            "type": "simple string"
+          }
+        ],
+        [
+          {
+            "name": "source",
+            "type": "series string"
+          },
+          {
+            "name": "str",
+            "type": "series string"
+          }
+        ]
       ]
     },
     "str.substring": {
@@ -10277,21 +13061,21 @@
       "parameters": [
         {
           "name": "source",
-          "type": "series string",
+          "type": "const string",
           "description": "Source string from which to extract the substring.",
           "optional": true,
           "required": false
         },
         {
           "name": "begin_pos",
-          "type": "series int",
+          "type": "const int",
           "description": "The beginning position of the extracted substring. It is inclusive (the extracted substring includes the character at that position).",
           "optional": true,
           "required": false
         },
         {
           "name": "end_pos",
-          "type": "series int",
+          "type": "const int",
           "description": "The ending position. It is exclusive (the extracted string does NOT include that position's character). Optional. The default is the length of the source string.",
           "optional": true,
           "required": false
@@ -10307,6 +13091,50 @@
         "str.substring(source, begin_pos, end_pos) → const string",
         "str.substring(source, begin_pos, end_pos) → simple string",
         "str.substring(source, begin_pos, end_pos) → series string"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "source",
+            "type": "const string"
+          },
+          {
+            "name": "begin_pos",
+            "type": "const int"
+          },
+          {
+            "name": "end_pos",
+            "type": "const int"
+          }
+        ],
+        [
+          {
+            "name": "source",
+            "type": "simple string"
+          },
+          {
+            "name": "begin_pos",
+            "type": "simple int"
+          },
+          {
+            "name": "end_pos",
+            "type": "simple int"
+          }
+        ],
+        [
+          {
+            "name": "source",
+            "type": "series string"
+          },
+          {
+            "name": "begin_pos",
+            "type": "series int"
+          },
+          {
+            "name": "end_pos",
+            "type": "series int"
+          }
+        ]
       ]
     },
     "str.tonumber": {
@@ -10316,7 +13144,7 @@
       "parameters": [
         {
           "name": "string",
-          "type": "series string",
+          "type": "const string",
           "description": "String containing the representation of an integer or floating point value.",
           "optional": true,
           "required": false
@@ -10331,6 +13159,32 @@
         "str.tonumber(string) → input float",
         "str.tonumber(string) → simple float",
         "str.tonumber(string) → series float"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "string",
+            "type": "const string"
+          }
+        ],
+        [
+          {
+            "name": "string",
+            "type": "input string"
+          }
+        ],
+        [
+          {
+            "name": "string",
+            "type": "simple string"
+          }
+        ],
+        [
+          {
+            "name": "string",
+            "type": "series string"
+          }
+        ]
       ]
     },
     "str.tostring": {
@@ -10363,6 +13217,46 @@
         "str.tostring(value, format) → series string",
         "str.tostring(value) → simple string",
         "str.tostring(value) → series string"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "value",
+            "type": "const enum"
+          }
+        ],
+        [
+          {
+            "name": "value",
+            "type": "simple int/float"
+          },
+          {
+            "name": "format",
+            "type": "simple string"
+          }
+        ],
+        [
+          {
+            "name": "value",
+            "type": "series int/float/array<int/float>/matrix<int/float>"
+          },
+          {
+            "name": "format",
+            "type": "series string"
+          }
+        ],
+        [
+          {
+            "name": "value",
+            "type": "simple int/float/bool/string/enum"
+          }
+        ],
+        [
+          {
+            "name": "value",
+            "type": "series int/float/bool/string/enum/array<int/float/bool/string>/matrix<int/float/bool/string>"
+          }
+        ]
       ]
     },
     "str.trim": {
@@ -10372,7 +13266,7 @@
       "parameters": [
         {
           "name": "source",
-          "type": "series string",
+          "type": "const string",
           "description": "String to trim.",
           "optional": true,
           "required": false
@@ -10389,6 +13283,32 @@
         "str.trim(source) → input string",
         "str.trim(source) → simple string",
         "str.trim(source) → series string"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "source",
+            "type": "const string"
+          }
+        ],
+        [
+          {
+            "name": "source",
+            "type": "input string"
+          }
+        ],
+        [
+          {
+            "name": "source",
+            "type": "simple string"
+          }
+        ],
+        [
+          {
+            "name": "source",
+            "type": "series string"
+          }
+        ]
       ]
     },
     "str.upper": {
@@ -10398,7 +13318,7 @@
       "parameters": [
         {
           "name": "source",
-          "type": "series string",
+          "type": "const string",
           "description": "String to be converted.",
           "optional": true,
           "required": false
@@ -10412,6 +13332,26 @@
         "str.upper(source) → const string",
         "str.upper(source) → simple string",
         "str.upper(source) → series string"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "source",
+            "type": "const string"
+          }
+        ],
+        [
+          {
+            "name": "source",
+            "type": "simple string"
+          }
+        ],
+        [
+          {
+            "name": "source",
+            "type": "series string"
+          }
+        ]
       ]
     },
     "strategy": {
@@ -11972,7 +14912,7 @@
       "parameters": [
         {
           "name": "x",
-          "type": "series string",
+          "type": "const string",
           "description": "The value to convert to the specified type, usually na.",
           "optional": true,
           "required": false
@@ -11987,6 +14927,32 @@
         "string(x) → input string",
         "string(x) → simple string",
         "string(x) → series string"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "x",
+            "type": "const string"
+          }
+        ],
+        [
+          {
+            "name": "x",
+            "type": "input string"
+          }
+        ],
+        [
+          {
+            "name": "x",
+            "type": "simple string"
+          }
+        ],
+        [
+          {
+            "name": "x",
+            "type": "series string"
+          }
+        ]
       ]
     },
     "syminfo.prefix": {
@@ -11996,7 +14962,7 @@
       "parameters": [
         {
           "name": "symbol",
-          "type": "series string",
+          "type": "simple string",
           "description": "Symbol. Note that the symbol should be passed with a prefix. For example: \"NASDAQ:AAPL\" instead of \"AAPL\".",
           "optional": true,
           "required": false
@@ -12011,6 +14977,20 @@
       "overloads": [
         "syminfo.prefix(symbol) → simple string",
         "syminfo.prefix(symbol) → series string"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "symbol",
+            "type": "simple string"
+          }
+        ],
+        [
+          {
+            "name": "symbol",
+            "type": "series string"
+          }
+        ]
       ]
     },
     "syminfo.ticker": {
@@ -12020,7 +15000,7 @@
       "parameters": [
         {
           "name": "symbol",
-          "type": "series string",
+          "type": "simple string",
           "description": "Symbol. Note that the symbol should be passed with a prefix. For example: \"NASDAQ:AAPL\" instead of \"AAPL\".",
           "optional": true,
           "required": false
@@ -12035,6 +15015,20 @@
       "overloads": [
         "syminfo.ticker(symbol) → simple string",
         "syminfo.ticker(symbol) → series string"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "symbol",
+            "type": "simple string"
+          }
+        ],
+        [
+          {
+            "name": "symbol",
+            "type": "series string"
+          }
+        ]
       ]
     },
     "ta.alma": {
@@ -12225,7 +15219,7 @@
       "parameters": [
         {
           "name": "source",
-          "type": "series int/float/bool",
+          "type": "series int",
           "description": "Source series.",
           "optional": true,
           "required": false
@@ -12248,6 +15242,38 @@
         "ta.change(source, length) → series int",
         "ta.change(source, length) → series float",
         "ta.change(source, length) → series bool"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "source",
+            "type": "series int"
+          },
+          {
+            "name": "length",
+            "type": "series int"
+          }
+        ],
+        [
+          {
+            "name": "source",
+            "type": "series int/float"
+          },
+          {
+            "name": "length",
+            "type": "series int"
+          }
+        ],
+        [
+          {
+            "name": "source",
+            "type": "series bool"
+          },
+          {
+            "name": "length",
+            "type": "series int"
+          }
+        ]
       ]
     },
     "ta.cmo": {
@@ -12843,7 +15869,7 @@
       "parameters": [
         {
           "name": "source",
-          "type": "series int/float",
+          "type": "series int",
           "description": "Series of values to process.",
           "optional": true,
           "required": false
@@ -12863,6 +15889,28 @@
       "overloads": [
         "ta.median(source, length) → series int",
         "ta.median(source, length) → series float"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "source",
+            "type": "series int"
+          },
+          {
+            "name": "length",
+            "type": "series int"
+          }
+        ],
+        [
+          {
+            "name": "source",
+            "type": "series int/float"
+          },
+          {
+            "name": "length",
+            "type": "series int"
+          }
+        ]
       ]
     },
     "ta.mfi": {
@@ -12917,7 +15965,7 @@
       "parameters": [
         {
           "name": "source",
-          "type": "series int/float",
+          "type": "series int",
           "description": "Series of values to process.",
           "optional": true,
           "required": false
@@ -12937,6 +15985,28 @@
       "overloads": [
         "ta.mode(source, length) → series int",
         "ta.mode(source, length) → series float"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "source",
+            "type": "series int"
+          },
+          {
+            "name": "length",
+            "type": "series int"
+          }
+        ],
+        [
+          {
+            "name": "source",
+            "type": "series int/float"
+          },
+          {
+            "name": "length",
+            "type": "series int"
+          }
+        ]
       ]
     },
     "ta.mom": {
@@ -13123,6 +16193,32 @@
       "overloads": [
         "ta.pivothigh(leftbars, rightbars) → series float",
         "ta.pivothigh(source, leftbars, rightbars) → series float"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "leftbars",
+            "type": "series int/float"
+          },
+          {
+            "name": "rightbars",
+            "type": "series int/float"
+          }
+        ],
+        [
+          {
+            "name": "source",
+            "type": "series int/float"
+          },
+          {
+            "name": "leftbars",
+            "type": "series int/float"
+          },
+          {
+            "name": "rightbars",
+            "type": "series int/float"
+          }
+        ]
       ]
     },
     "ta.pivotlow": {
@@ -13161,6 +16257,32 @@
       "overloads": [
         "ta.pivotlow(leftbars, rightbars) → series float",
         "ta.pivotlow(source, leftbars, rightbars) → series float"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "leftbars",
+            "type": "series int/float"
+          },
+          {
+            "name": "rightbars",
+            "type": "series int/float"
+          }
+        ],
+        [
+          {
+            "name": "source",
+            "type": "series int/float"
+          },
+          {
+            "name": "leftbars",
+            "type": "series int/float"
+          },
+          {
+            "name": "rightbars",
+            "type": "series int/float"
+          }
+        ]
       ]
     },
     "ta.range": {
@@ -13170,7 +16292,7 @@
       "parameters": [
         {
           "name": "source",
-          "type": "series int/float",
+          "type": "series int",
           "description": "Series of values to process.",
           "optional": true,
           "required": false
@@ -13190,6 +16312,28 @@
       "overloads": [
         "ta.range(source, length) → series int",
         "ta.range(source, length) → series float"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "source",
+            "type": "series int"
+          },
+          {
+            "name": "length",
+            "type": "series int"
+          }
+        ],
+        [
+          {
+            "name": "source",
+            "type": "series int/float"
+          },
+          {
+            "name": "length",
+            "type": "series int"
+          }
+        ]
       ]
     },
     "ta.rci": {
@@ -13566,7 +16710,7 @@
         },
         {
           "name": "source",
-          "type": "series int/float/bool/color",
+          "type": "series color",
           "description": "The value to be returned from the bar where the condition is met.",
           "optional": true,
           "required": false
@@ -13590,6 +16734,64 @@
         "ta.valuewhen(condition, source, occurrence) → series int",
         "ta.valuewhen(condition, source, occurrence) → series float",
         "ta.valuewhen(condition, source, occurrence) → series bool"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "condition",
+            "type": "series bool"
+          },
+          {
+            "name": "source",
+            "type": "series color"
+          },
+          {
+            "name": "occurrence",
+            "type": "simple int"
+          }
+        ],
+        [
+          {
+            "name": "condition",
+            "type": "series bool"
+          },
+          {
+            "name": "source",
+            "type": "series int"
+          },
+          {
+            "name": "occurrence",
+            "type": "simple int"
+          }
+        ],
+        [
+          {
+            "name": "condition",
+            "type": "series bool"
+          },
+          {
+            "name": "source",
+            "type": "series int/float"
+          },
+          {
+            "name": "occurrence",
+            "type": "simple int"
+          }
+        ],
+        [
+          {
+            "name": "condition",
+            "type": "series bool"
+          },
+          {
+            "name": "source",
+            "type": "series bool"
+          },
+          {
+            "name": "occurrence",
+            "type": "simple int"
+          }
+        ]
       ]
     },
     "ta.variance": {
@@ -13661,6 +16863,32 @@
       "overloads": [
         "ta.vwap(source, anchor) → series float",
         "ta.vwap(source, anchor, stdev_mult) → [series float, series float, series float]"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "source",
+            "type": "series int/float"
+          },
+          {
+            "name": "anchor",
+            "type": "series bool"
+          }
+        ],
+        [
+          {
+            "name": "source",
+            "type": "series int/float"
+          },
+          {
+            "name": "anchor",
+            "type": "series bool"
+          },
+          {
+            "name": "stdev_mult",
+            "type": "series int/float"
+          }
+        ]
       ]
     },
     "ta.vwma": {
@@ -14648,7 +17876,7 @@
       "parameters": [
         {
           "name": "symbol",
-          "type": "series string",
+          "type": "simple string",
           "description": "Symbol ticker identifier.",
           "optional": true,
           "required": false
@@ -14663,6 +17891,20 @@
       "overloads": [
         "ticker.heikinashi(symbol) → simple string",
         "ticker.heikinashi(symbol) → series string"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "symbol",
+            "type": "simple string"
+          }
+        ],
+        [
+          {
+            "name": "symbol",
+            "type": "series string"
+          }
+        ]
       ]
     },
     "ticker.inherit": {
@@ -14672,14 +17914,14 @@
       "parameters": [
         {
           "name": "from_tickerid",
-          "type": "series string",
+          "type": "simple string",
           "description": "The ticker ID to inherit modifiers from.",
           "optional": true,
           "required": false
         },
         {
           "name": "symbol",
-          "type": "series string",
+          "type": "simple string",
           "description": "The symbol to construct the new ticker ID for.",
           "optional": true,
           "required": false
@@ -14694,6 +17936,28 @@
       "overloads": [
         "ticker.inherit(from_tickerid, symbol) → simple string",
         "ticker.inherit(from_tickerid, symbol) → series string"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "from_tickerid",
+            "type": "simple string"
+          },
+          {
+            "name": "symbol",
+            "type": "simple string"
+          }
+        ],
+        [
+          {
+            "name": "from_tickerid",
+            "type": "series string"
+          },
+          {
+            "name": "symbol",
+            "type": "series string"
+          }
+        ]
       ]
     },
     "ticker.kagi": {
@@ -14703,7 +17967,7 @@
       "parameters": [
         {
           "name": "symbol",
-          "type": "series string",
+          "type": "simple string",
           "description": "Symbol ticker identifier.",
           "optional": true,
           "required": false
@@ -14741,6 +18005,56 @@
         "ticker.kagi(symbol, reversal) → series string",
         "ticker.kagi(symbol, param, style) → simple string",
         "ticker.kagi(symbol, param, style) → series string"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "symbol",
+            "type": "simple string"
+          },
+          {
+            "name": "reversal",
+            "type": "simple int/float"
+          }
+        ],
+        [
+          {
+            "name": "symbol",
+            "type": "series string"
+          },
+          {
+            "name": "reversal",
+            "type": "series int/float"
+          }
+        ],
+        [
+          {
+            "name": "symbol",
+            "type": "simple string"
+          },
+          {
+            "name": "param",
+            "type": "simple int/float"
+          },
+          {
+            "name": "style",
+            "type": "series string"
+          }
+        ],
+        [
+          {
+            "name": "symbol",
+            "type": "series string"
+          },
+          {
+            "name": "param",
+            "type": "series int/float"
+          },
+          {
+            "name": "style",
+            "type": "series string"
+          }
+        ]
       ]
     },
     "ticker.linebreak": {
@@ -14750,14 +18064,14 @@
       "parameters": [
         {
           "name": "symbol",
-          "type": "series string",
+          "type": "simple string",
           "description": "Symbol ticker identifier.",
           "optional": true,
           "required": false
         },
         {
           "name": "number_of_lines",
-          "type": "series int",
+          "type": "simple int",
           "description": "Number of line.",
           "optional": true,
           "required": false
@@ -14772,6 +18086,28 @@
       "overloads": [
         "ticker.linebreak(symbol, number_of_lines) → simple string",
         "ticker.linebreak(symbol, number_of_lines) → series string"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "symbol",
+            "type": "simple string"
+          },
+          {
+            "name": "number_of_lines",
+            "type": "simple int"
+          }
+        ],
+        [
+          {
+            "name": "symbol",
+            "type": "series string"
+          },
+          {
+            "name": "number_of_lines",
+            "type": "series int"
+          }
+        ]
       ]
     },
     "ticker.modify": {
@@ -14781,21 +18117,21 @@
       "parameters": [
         {
           "name": "tickerid",
-          "type": "series string",
+          "type": "simple string",
           "description": "Symbol name with exchange prefix, e.g. 'BATS:MSFT', 'NASDAQ:MSFT' or tickerid with session and adjustment from the ticker.new() function.",
           "optional": true,
           "required": false
         },
         {
           "name": "session",
-          "type": "series string",
+          "type": "simple string",
           "description": "Session type. Optional argument. Possible values: session.regular, session.extended. Session type of the current chart is syminfo.session. If session is not given, then syminfo.session value is used.",
           "optional": true,
           "required": false
         },
         {
           "name": "adjustment",
-          "type": "series string",
+          "type": "simple string",
           "description": "Adjustment type. Optional argument. Possible values: adjustment.none, adjustment.splits, adjustment.dividends. If adjustment is not given, then default adjustment value is used (can be different depending on particular instrument).",
           "optional": true,
           "required": false
@@ -14824,6 +18160,52 @@
       "overloads": [
         "ticker.modify(tickerid, session, adjustment, backadjustment, settlement_as_close) → simple string",
         "ticker.modify(tickerid, session, adjustment, backadjustment, settlement_as_close) → series string"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "tickerid",
+            "type": "simple string"
+          },
+          {
+            "name": "session",
+            "type": "simple string"
+          },
+          {
+            "name": "adjustment",
+            "type": "simple string"
+          },
+          {
+            "name": "backadjustment",
+            "type": "simple backadjustment"
+          },
+          {
+            "name": "settlement_as_close",
+            "type": "simple settlement"
+          }
+        ],
+        [
+          {
+            "name": "tickerid",
+            "type": "series string"
+          },
+          {
+            "name": "session",
+            "type": "series string"
+          },
+          {
+            "name": "adjustment",
+            "type": "series string"
+          },
+          {
+            "name": "backadjustment",
+            "type": "simple backadjustment"
+          },
+          {
+            "name": "settlement_as_close",
+            "type": "simple settlement"
+          }
+        ]
       ]
     },
     "ticker.new": {
@@ -14833,28 +18215,28 @@
       "parameters": [
         {
           "name": "prefix",
-          "type": "series string",
+          "type": "simple string",
           "description": "Exchange prefix. For example: 'BATS', 'NYSE', 'NASDAQ'. Exchange prefix of main series is syminfo.prefix.",
           "optional": true,
           "required": false
         },
         {
           "name": "ticker",
-          "type": "series string",
+          "type": "simple string",
           "description": "Ticker name. For example 'AAPL', 'MSFT', 'EURUSD'. Ticker name of the main series is syminfo.ticker.",
           "optional": true,
           "required": false
         },
         {
           "name": "session",
-          "type": "series string",
+          "type": "simple string",
           "description": "Session type. Optional argument. Possible values: session.regular, session.extended. Session type of the current chart is syminfo.session. If session is not given, then syminfo.session value is used.",
           "optional": true,
           "required": false
         },
         {
           "name": "adjustment",
-          "type": "series string",
+          "type": "simple string",
           "description": "Adjustment type. Optional argument. Possible values: adjustment.none, adjustment.splits, adjustment.dividends. If adjustment is not given, then default adjustment value is used (can be different depending on particular instrument).",
           "optional": true,
           "required": false
@@ -14883,6 +18265,60 @@
       "overloads": [
         "ticker.new(prefix, ticker, session, adjustment, backadjustment, settlement_as_close) → simple string",
         "ticker.new(prefix, ticker, session, adjustment, backadjustment, settlement_as_close) → series string"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "prefix",
+            "type": "simple string"
+          },
+          {
+            "name": "ticker",
+            "type": "simple string"
+          },
+          {
+            "name": "session",
+            "type": "simple string"
+          },
+          {
+            "name": "adjustment",
+            "type": "simple string"
+          },
+          {
+            "name": "backadjustment",
+            "type": "simple backadjustment"
+          },
+          {
+            "name": "settlement_as_close",
+            "type": "simple settlement"
+          }
+        ],
+        [
+          {
+            "name": "prefix",
+            "type": "series string"
+          },
+          {
+            "name": "ticker",
+            "type": "series string"
+          },
+          {
+            "name": "session",
+            "type": "series string"
+          },
+          {
+            "name": "adjustment",
+            "type": "series string"
+          },
+          {
+            "name": "backadjustment",
+            "type": "simple backadjustment"
+          },
+          {
+            "name": "settlement_as_close",
+            "type": "simple settlement"
+          }
+        ]
       ]
     },
     "ticker.pointfigure": {
@@ -14892,35 +18328,35 @@
       "parameters": [
         {
           "name": "symbol",
-          "type": "series string",
+          "type": "simple string",
           "description": "Symbol ticker identifier.",
           "optional": true,
           "required": false
         },
         {
           "name": "source",
-          "type": "series string",
+          "type": "simple string",
           "description": "The source for calculating Point & Figure. Possible values are: 'hl', 'close'.",
           "optional": true,
           "required": false
         },
         {
           "name": "style",
-          "type": "series string",
+          "type": "simple string",
           "description": "Specifies the ticker's box size assignment method. Possible values: \"ATR\" for Average True Range sizing, \"Traditional\" to use a fixed size, or \"PercentageLTP\" to use a percentage of the last trading price.",
           "optional": true,
           "required": false
         },
         {
           "name": "param",
-          "type": "series int/float",
+          "type": "simple int/float",
           "description": "Represents the ticker's \"ATR length\" value if the style value is \"ATR\", \"Box size\" value if the style is \"Traditional\", or \"Percentage\" value if the style is \"PercentageLTP\".",
           "optional": true,
           "required": false
         },
         {
           "name": "reversal",
-          "type": "series int",
+          "type": "simple int",
           "description": "Reversal amount.",
           "optional": true,
           "required": false
@@ -14935,6 +18371,52 @@
       "overloads": [
         "ticker.pointfigure(symbol, source, style, param, reversal) → simple string",
         "ticker.pointfigure(symbol, source, style, param, reversal) → series string"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "symbol",
+            "type": "simple string"
+          },
+          {
+            "name": "source",
+            "type": "simple string"
+          },
+          {
+            "name": "style",
+            "type": "simple string"
+          },
+          {
+            "name": "param",
+            "type": "simple int/float"
+          },
+          {
+            "name": "reversal",
+            "type": "simple int"
+          }
+        ],
+        [
+          {
+            "name": "symbol",
+            "type": "series string"
+          },
+          {
+            "name": "source",
+            "type": "series string"
+          },
+          {
+            "name": "style",
+            "type": "series string"
+          },
+          {
+            "name": "param",
+            "type": "series int/float"
+          },
+          {
+            "name": "reversal",
+            "type": "series int"
+          }
+        ]
       ]
     },
     "ticker.renko": {
@@ -14944,35 +18426,35 @@
       "parameters": [
         {
           "name": "symbol",
-          "type": "series string",
+          "type": "simple string",
           "description": "Symbol ticker identifier.",
           "optional": true,
           "required": false
         },
         {
           "name": "style",
-          "type": "series string",
+          "type": "simple string",
           "description": "Specifies the ticker's box size assignment method. Possible values: \"ATR\" for Average True Range sizing, \"Traditional\" to use a fixed size, or \"PercentageLTP\" to use a percentage of the last trading price.",
           "optional": true,
           "required": false
         },
         {
           "name": "param",
-          "type": "series int/float",
+          "type": "simple int/float",
           "description": "Represents the ticker's \"ATR length\" value if the style value is \"ATR\", \"Box size\" value if the style is \"Traditional\", or \"Percentage\" value if the style is \"PercentageLTP\".",
           "optional": true,
           "required": false
         },
         {
           "name": "request_wicks",
-          "type": "series bool",
+          "type": "simple bool",
           "description": "Specifies if wick values are returned for Renko bricks. When true, high and low values requested from a symbol using the ticker formed by this function will include wick values when they are present. When false, high and low will always be equal to either open or close. Optional. The default is false. A detailed explanation of how Renko wicks are calculated can be found in our Help Center.",
           "optional": true,
           "required": false
         },
         {
           "name": "source",
-          "type": "series string",
+          "type": "simple string",
           "description": "The source used to calculate bricks. Optional. Possible values: \"Close\", \"OHLC\". The default is \"Close\".",
           "optional": true,
           "required": false
@@ -14988,6 +18470,52 @@
       "overloads": [
         "ticker.renko(symbol, style, param, request_wicks, source) → simple string",
         "ticker.renko(symbol, style, param, request_wicks, source) → series string"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "symbol",
+            "type": "simple string"
+          },
+          {
+            "name": "style",
+            "type": "simple string"
+          },
+          {
+            "name": "param",
+            "type": "simple int/float"
+          },
+          {
+            "name": "request_wicks",
+            "type": "simple bool"
+          },
+          {
+            "name": "source",
+            "type": "simple string"
+          }
+        ],
+        [
+          {
+            "name": "symbol",
+            "type": "series string"
+          },
+          {
+            "name": "style",
+            "type": "series string"
+          },
+          {
+            "name": "param",
+            "type": "series int/float"
+          },
+          {
+            "name": "request_wicks",
+            "type": "series bool"
+          },
+          {
+            "name": "source",
+            "type": "series string"
+          }
+        ]
       ]
     },
     "ticker.standard": {
@@ -14997,7 +18525,7 @@
       "parameters": [
         {
           "name": "symbol",
-          "type": "series string",
+          "type": "simple string",
           "description": "A ticker ID to be converted into its standard form. Optional. The default is syminfo.tickerid.",
           "optional": true,
           "required": false
@@ -15012,6 +18540,20 @@
       "overloads": [
         "ticker.standard(symbol) → simple string",
         "ticker.standard(symbol) → series string"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "symbol",
+            "type": "simple string"
+          }
+        ],
+        [
+          {
+            "name": "symbol",
+            "type": "series string"
+          }
+        ]
       ]
     },
     "time": {
@@ -15066,6 +18608,48 @@
       "overloads": [
         "time(timeframe, session, bars_back, timeframe_bars_back) → series int",
         "time(timeframe, session, timezone, bars_back, timeframe_bars_back) → series int"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "timeframe",
+            "type": "series string"
+          },
+          {
+            "name": "session",
+            "type": "series string"
+          },
+          {
+            "name": "bars_back",
+            "type": "series int"
+          },
+          {
+            "name": "timeframe_bars_back",
+            "type": "series int"
+          }
+        ],
+        [
+          {
+            "name": "timeframe",
+            "type": "series string"
+          },
+          {
+            "name": "session",
+            "type": "series string"
+          },
+          {
+            "name": "timezone",
+            "type": "series string"
+          },
+          {
+            "name": "bars_back",
+            "type": "series int"
+          },
+          {
+            "name": "timeframe_bars_back",
+            "type": "series int"
+          }
+        ]
       ]
     },
     "time_close": {
@@ -15118,6 +18702,48 @@
       "overloads": [
         "time_close(timeframe, session, bars_back, timeframe_bars_back) → series int",
         "time_close(timeframe, session, timezone, bars_back, timeframe_bars_back) → series int"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "timeframe",
+            "type": "series string"
+          },
+          {
+            "name": "session",
+            "type": "series string"
+          },
+          {
+            "name": "bars_back",
+            "type": "series int"
+          },
+          {
+            "name": "timeframe_bars_back",
+            "type": "series int"
+          }
+        ],
+        [
+          {
+            "name": "timeframe",
+            "type": "series string"
+          },
+          {
+            "name": "session",
+            "type": "series string"
+          },
+          {
+            "name": "timezone",
+            "type": "series string"
+          },
+          {
+            "name": "bars_back",
+            "type": "series int"
+          },
+          {
+            "name": "timeframe_bars_back",
+            "type": "series int"
+          }
+        ]
       ]
     },
     "timeframe.change": {
@@ -15147,7 +18773,7 @@
       "parameters": [
         {
           "name": "seconds",
-          "type": "series int",
+          "type": "simple int",
           "description": "The number of seconds in the timeframe.",
           "optional": true,
           "required": false
@@ -15162,6 +18788,20 @@
       "overloads": [
         "timeframe.from_seconds(seconds) → simple string",
         "timeframe.from_seconds(seconds) → series string"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "seconds",
+            "type": "simple int"
+          }
+        ],
+        [
+          {
+            "name": "seconds",
+            "type": "series int"
+          }
+        ]
       ]
     },
     "timeframe.in_seconds": {
@@ -15171,7 +18811,7 @@
       "parameters": [
         {
           "name": "timeframe",
-          "type": "series string",
+          "type": "simple string",
           "description": "Timeframe string in timeframe string specifications format. Optional. The default is timeframe.period.",
           "optional": true,
           "required": false
@@ -15186,6 +18826,20 @@
       "overloads": [
         "timeframe.in_seconds(timeframe) → simple int",
         "timeframe.in_seconds(timeframe) → series int"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "timeframe",
+            "type": "simple string"
+          }
+        ],
+        [
+          {
+            "name": "timeframe",
+            "type": "series string"
+          }
+        ]
       ]
     },
     "timestamp": {
@@ -15263,6 +18917,132 @@
         "timestamp(year, month, day, hour, minute, second) → series int",
         "timestamp(timezone, year, month, day, hour, minute, second) → simple int",
         "timestamp(timezone, year, month, day, hour, minute, second) → series int"
+      ],
+      "overloadArgs": [
+        [
+          {
+            "name": "dateString",
+            "type": "const string"
+          }
+        ],
+        [
+          {
+            "name": "dateString",
+            "type": "series string"
+          }
+        ],
+        [
+          {
+            "name": "year",
+            "type": "simple int"
+          },
+          {
+            "name": "month",
+            "type": "simple int"
+          },
+          {
+            "name": "day",
+            "type": "simple int"
+          },
+          {
+            "name": "hour",
+            "type": "simple int"
+          },
+          {
+            "name": "minute",
+            "type": "simple int"
+          },
+          {
+            "name": "second",
+            "type": "simple int"
+          }
+        ],
+        [
+          {
+            "name": "year",
+            "type": "series int"
+          },
+          {
+            "name": "month",
+            "type": "series int"
+          },
+          {
+            "name": "day",
+            "type": "series int"
+          },
+          {
+            "name": "hour",
+            "type": "series int"
+          },
+          {
+            "name": "minute",
+            "type": "series int"
+          },
+          {
+            "name": "second",
+            "type": "series int"
+          }
+        ],
+        [
+          {
+            "name": "timezone",
+            "type": "simple string"
+          },
+          {
+            "name": "year",
+            "type": "simple int"
+          },
+          {
+            "name": "month",
+            "type": "simple int"
+          },
+          {
+            "name": "day",
+            "type": "simple int"
+          },
+          {
+            "name": "hour",
+            "type": "simple int"
+          },
+          {
+            "name": "minute",
+            "type": "simple int"
+          },
+          {
+            "name": "second",
+            "type": "simple int"
+          }
+        ],
+        [
+          {
+            "name": "timezone",
+            "type": "series string"
+          },
+          {
+            "name": "year",
+            "type": "series int"
+          },
+          {
+            "name": "month",
+            "type": "series int"
+          },
+          {
+            "name": "day",
+            "type": "series int"
+          },
+          {
+            "name": "hour",
+            "type": "series int"
+          },
+          {
+            "name": "minute",
+            "type": "series int"
+          },
+          {
+            "name": "second",
+            "type": "series int"
+          }
+        ]
       ]
     },
     "volume_row.buy_volume": {

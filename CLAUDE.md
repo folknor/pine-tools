@@ -176,6 +176,29 @@ All API data is scraped from TradingView docs and generated:
 refresh unless you re-run `discover:behavior`. (Its `.ts` sibling is a
 hand-written loader that embeds the JSON — see INV011.)
 
+### Re-running type logic WITHOUT scraping
+
+**Be sparing with `scrape` — it hits TradingView's site.** Most type work does
+**not** need a re-scrape. The scrape captures every overloaded function's
+*per-overload* argument types into `overloadArgs` (the "overload dump") inside
+`pine-data/raw/v6/complete-v6-details.json`. The union of those into a single
+type per parameter is computed **offline at generate-time** by
+`packages/pipeline/src/union-types.ts`. So to iterate the union / type-derivation
+rules:
+
+```bash
+# 1. edit packages/pipeline/src/union-types.ts (the offline union rule)
+pnpm run generate          # recompute pine-data from the existing dump — NO network
+pnpm run install:cli       # rebuild the CLI bundle
+node scripts/regression-check.mjs   # verify against the snapshot baseline
+```
+
+`pnpm run generate` is deterministic and offline — re-running it produces a
+byte-identical `functions.json`. **Only `scrape` (or `scrape -- --force`) when
+you need to change what is *extracted* from TradingView's DOM** (new fields,
+new selectors), not when changing how param types are *derived* from the dump.
+A full site mirror to make even DOM-extraction offline is tracked in TODO #22.
+
 ### Polymorphic Functions
 
 Discovered automatically via `discover:behavior`:
