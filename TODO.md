@@ -54,18 +54,55 @@ IDs so the two stay in sync.
   remaining FPs need a fresh corpus diff and per-category dives. The
   current top non-cascade category likely needs a new pass.
 - **#17 — pine-data scraper: emit union types for
-  polymorphic-function params.** Right now polymorphic functions list
-  one overload's parameter types ("`simple color`" for `nz.source`),
-  forcing the checker to bypass type validation entirely via
-  `functionIsPolymorphic`. Goal: union of types across overloads, so
-  the checker can validate against the union and unblock the 3 FNs
-  from #8. Note there are **two parallel encodings of polymorphism**:
-  the *discovered* `pine-data/v6/function-behavior.json` (`returnTypeParam`
-  for `input`/`nz`, arg-ordering quirks) and the *hand-coded*
-  `polymorphic` map in `getFunctionFlags`. The JSON is regenerated only
-  by `discover:behavior` — not the main `crawl→scrape→generate` flow — so
-  it's stale (stamped 2026-05-24, 5 functions). Consolidating the two
-  encodings is part of this fix.
+  polymorphic-function params.** Root cause now found (was the
+  "`simple color` for `nz.source`" mystery): `scrape.ts` navigates to
+  the **bare** `#fun_<name>` anchor, but TV's reference renders each
+  overload as an anchor element `<a href="#fun_<name>-<i>"
+  class="js-reference">` and applies a `selected` class to the active
+  one. The bare anchor resolves to **overload #0**, so the
+  `.tv-pine-reference-item__arg-type` nodes the scraper reads reflect
+  overload #0's *resolved* param types — not a union. For `nz`,
+  overload #0 is `→ simple color`, hence `source`/`replacement` scrape
+  as `simple color`. (The `series int/float` you see in a browser is
+  just whichever overload was last clicked — overload #5, `series
+  float` — *not* a consolidated-union node. There is no union node in
+  the DOM; the union must be reconstructed by visiting every
+  sub-anchor.)
+  - **Blast radius** (offline audit, `dev-tools/audit-overload-scrape.js`
+    over today's scrape): 118 multi-overload functions, **102** of them
+    spanning >1 distinct return type — all with params frozen to overload
+    #0, which is almost always the *narrowest* (`const`) qualifier. e.g.
+    `math.abs.number` froze to `const int` (would reject
+    `math.abs(close)`); `color.{b,g,r,t}.color` → `const color`;
+    `int.x`/`float.x` → `const int/float`. They don't fire as FPs *today*
+    only because of the `functionIsPolymorphic` bypass — the crutch this
+    item removes.
+  - **Two freeze shapes:** (1) `unknown` params (`array.from`,
+    `math.max`/`min`) — already skipped by `hasOverloads()`; (2)
+    concrete-but-too-narrow (`nz`, `math.abs`, `color.*`). The
+    union-across-sub-anchors approach fixes both uniformly.
+  - **Fix:** for `overloads.length > 1`, iterate `#fun_<name>-<i>`,
+    read each overload's `.tv-pine-reference-item__arg-type` set, and
+    union per parameter (qualifier widening `const ⊂ input ⊂ simple ⊂
+    series`; collect the type set, e.g. `{int,float,color}`). Then the
+    checker can validate against the union and drop the
+    `functionIsPolymorphic` bypass → unblocks the 3 FNs from #8.
+  - **Caveat — takes effect only after a re-scrape.** The code change
+    alone is a no-op: the scrape cache (24h TTL,
+    `.cache/function-details/`) holds overload-#0 data for all 118
+    functions, so those entries must be busted / force-refreshed or the
+    new extraction never runs.
+  - **Tooling** (uncommitted; bundle with the `scrape.ts` change):
+    `dev-tools/probe-arg-types.js` drives the sub-anchors and is the
+    reference implementation; `dev-tools/audit-overload-scrape.js`
+    measures the blast radius from the existing JSON.
+  - Still relevant: **two parallel encodings of polymorphism** — the
+    *discovered* `pine-data/v6/function-behavior.json` (`returnTypeParam`
+    for `input`/`nz`, arg-ordering quirks) and the *hand-coded*
+    `polymorphic` map in `getFunctionFlags`. The JSON is regenerated only
+    by `discover:behavior` — not the main `crawl→scrape→generate` flow —
+    so it's stale (stamped 2026-05-24, 5 functions). Consolidating the
+    two encodings is part of this fix.
 - **#18 — built-in color constants infer as `undetermined type`.**
   Surfaced by INV011. The "Ternary branches must have compatible types"
   cluster is now down to **31** (from ~117+) after the variable/constant
