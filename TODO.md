@@ -145,6 +145,23 @@ IDs so the two stay in sync.
       re-scrape is needed and the mirror doesn't exist yet, build the mirror
       *first*, then scrape against it. Now mostly needed only for
       DOM-*extraction* changes, since type derivation is already offline.
+- **#23 — move all hardcoded data transmogrifications pre-JSON.** Any
+  hardcoded correction, addition, or transformation of the scraped language
+  data (type overrides, accepted-type widenings, flag maps, polymorphism /
+  return-type derivation, optionality heuristics, deprecation lists, etc.)
+  must run at **generate time and be baked into `pine-data/v6/*.json`** -
+  never applied downstream in `packages/core` (the checker) or other
+  consumers after the JSON is loaded. **Goal:** `pine-data/v6/*.json` is a
+  complete, self-contained source of truth that external consumers (e.g. a
+  Rust port) can use cleanly without replicating any TypeScript logic.
+  Already pre-JSON and correct: `FUNCTION_PARAM_TYPE_OVERRIDES`,
+  `getFunctionFlags` maps, `detectReturnTypeParam` -> `flags.returnTypeParam`,
+  the offline union in `union-types.ts`. **Audit & relocate:** walk
+  `packages/core` (esp. `builtins.ts`, `checker.ts`, `types.ts`) for any
+  table or rule that *derives or corrects language data* after load (vs.
+  merely mapping the JSON into the checker's internal representation, which
+  is fine) and move the data-deriving part into the pipeline. See the
+  "Architecture: Data vs Syntax" principle in CLAUDE.md and G002.
 
 ## Gotchas
 
