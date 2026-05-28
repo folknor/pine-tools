@@ -14,6 +14,7 @@ export interface OverloadArg {
 
 export interface OverloadCapture {
 	parameters?: Array<{ name: string }>;
+	overloads?: string[];
 	overloadArgs?: OverloadArg[][];
 }
 
@@ -154,4 +155,57 @@ export function unionOverloadParams(detail: OverloadCapture): Map<string, string
 	}
 
 	return result;
+}
+
+// Strip a leading qualifier to the bare base type ("series color" -> "color").
+function baseType(s: string): string {
+	return (s || "").trim().replace(/^(const|input|simple|series)\s+/, "");
+}
+
+/**
+ * Detect a "return-follows-source" parameter: an overloaded function whose
+ * return type varies in lockstep with ONE scalar parameter (e.g. ta.valuewhen,
+ * ta.change — the return is the type of `source`, but the scraped static return
+ * is frozen to overload #0). Returns that param's name, or null.
+ *
+ * Conservative on purpose: requires the return to vary over primitives, NO
+ * collection (array/matrix/map) param present (those are element-followers,
+ * already covered by the "element" flag), and EXACTLY ONE scalar param whose
+ * primitive-union set equals the set of overload return base types. Ambiguous
+ * cases (two matching params, or a coincidental config param) return null.
+ */
+export function detectReturnTypeParam(detail: OverloadCapture): string | null {
+	const overloads = detail.overloads;
+	if (!overloads || overloads.length < 2) return null;
+
+	const returnBases = new Set<string>();
+	for (const o of overloads) {
+		const ret = o.match(/→\s*(.+)$/)?.[1];
+		if (!ret) return null;
+		returnBases.add(baseType(ret));
+	}
+	if (returnBases.size < 2) return null;
+	if (![...returnBases].every((b) => PRIMITIVES.has(b))) return null;
+
+	const unioned = unionOverloadParams(detail);
+
+	// Any collection param → element-follower territory; leave to the "element"
+	// flag rather than risk a wrong scalar match.
+	for (const t of unioned.values()) {
+		if (/[<>]/.test(t)) return null;
+	}
+
+	let match: string | null = null;
+	for (const [name, type] of unioned) {
+		if (type === "unknown") continue;
+		const bases = new Set(baseType(type).split("/"));
+		if (
+			bases.size === returnBases.size &&
+			[...returnBases].every((b) => bases.has(b))
+		) {
+			if (match) return null; // ambiguous — more than one scalar match
+			match = name;
+		}
+	}
+	return match;
 }

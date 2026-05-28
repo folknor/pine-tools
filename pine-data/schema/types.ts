@@ -99,6 +99,13 @@ export interface FunctionFlags {
 	 * - "numeric": returns same numeric type as arguments (math.abs, math.max)
 	 */
 	polymorphic?: "input" | "element" | "numeric";
+	/**
+	 * Name of the parameter whose type the return type follows, for
+	 * return-follows-source functions detected from the overload dump (e.g.
+	 * ta.valuewhen -> "source"). The checker resolves the return from that
+	 * argument's actual type instead of the static return. See union-types.ts.
+	 */
+	returnTypeParam?: string;
 }
 
 /**
@@ -163,8 +170,9 @@ export interface PineConstant {
 	namespace: string;
 	/** Short name without namespace (e.g., "red", "circle") */
 	shortName: string;
-	/** Constant type */
-	type: PineType;
+	/** Constant type — string, since constants carry scraped enum type names
+	 * (e.g. "scale_type", "text_format") that aren't in the PineType union. */
+	type: string;
 	/** Description */
 	description?: string;
 }

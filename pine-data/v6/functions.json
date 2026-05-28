@@ -2688,7 +2688,8 @@
     ],
     "returns": "series color",
     "flags": {
-      "polymorphic": "input"
+      "polymorphic": "input",
+      "returnTypeParam": "source"
     },
     "examples": []
   },
@@ -5551,7 +5552,8 @@
     ],
     "returns": "const int",
     "flags": {
-      "polymorphic": "numeric"
+      "polymorphic": "numeric",
+      "returnTypeParam": "number"
     },
     "examples": []
   },
@@ -5863,7 +5865,8 @@
     ],
     "returns": "const int",
     "flags": {
-      "polymorphic": "numeric"
+      "polymorphic": "numeric",
+      "returnTypeParam": "number"
     },
     "examples": []
   },
@@ -10439,6 +10442,9 @@
       }
     ],
     "returns": "series int",
+    "flags": {
+      "returnTypeParam": "source"
+    },
     "examples": [
       "//@version=6\nindicator('Day and Direction Change', overlay = true)\ndailyBarTime = time('1D')\nisNewDay = ta.change(dailyBarTime) != 0\nbgcolor(isNewDay ? color.new(color.green, 80) : na)\n\nisGreenBar = close >= open\ncolorChange = ta.change(isGreenBar)\nplotshape(colorChange, 'Direction Change')"
     ]
@@ -10980,6 +10986,9 @@
       }
     ],
     "returns": "series int",
+    "flags": {
+      "returnTypeParam": "source"
+    },
     "examples": []
   },
   {
@@ -11042,6 +11051,9 @@
       }
     ],
     "returns": "series int",
+    "flags": {
+      "returnTypeParam": "source"
+    },
     "examples": []
   },
   {
@@ -11254,6 +11266,9 @@
       }
     ],
     "returns": "series int",
+    "flags": {
+      "returnTypeParam": "source"
+    },
     "examples": []
   },
   {
@@ -11600,6 +11615,9 @@
       }
     ],
     "returns": "series color",
+    "flags": {
+      "returnTypeParam": "source"
+    },
     "examples": [
       "//@version=6\nindicator(\"ta.valuewhen\")\nslow = ta.sma(close, 7)\nfast = ta.sma(close, 14)\n// Get value of `close` on second most recent cross\nplot(ta.valuewhen(ta.cross(slow, fast), close, 1))"
     ]

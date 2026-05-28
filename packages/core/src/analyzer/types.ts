@@ -325,7 +325,7 @@ export namespace TypeChecker {
 			(operator === "+" || operator === "-") &&
 			(isDisplayFlag(left) || isDisplayFlag(right))
 		) {
-			return "plot_display";
+			return "plot_display" as PineType;
 		}
 
 		// Arithmetic operators

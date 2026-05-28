@@ -13,7 +13,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
-import { unionOverloadParams } from "./union-types.ts";
+import { detectReturnTypeParam, unionOverloadParams } from "./union-types.ts";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -325,6 +325,15 @@ function generateFunctions(
 				(p) => !isParameterOptional(p),
 			).length;
 			flags.minArgs = Math.max(1, requiredCount);
+		}
+
+		// Detect return-follows-source functions from the overload dump (offline)
+		// so the checker infers their return from the actual argument instead of
+		// the static return frozen to overload #0 (e.g. ta.valuewhen, which is
+		// otherwise stuck at "series color"). See union-types.ts / TODO #17.
+		const returnTypeParam = detectReturnTypeParam(detail);
+		if (returnTypeParam) {
+			flags.returnTypeParam = returnTypeParam;
 		}
 
 		// Union per-param types across overloads from the captured overloadArgs

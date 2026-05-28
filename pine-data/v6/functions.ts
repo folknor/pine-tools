@@ -1,7 +1,7 @@
 /**
  * Pine Script V6 Functions
  * Auto-generated from TradingView documentation
- * Generated: 2026-05-28T09:52:58.293Z
+ * Generated: 2026-05-28T10:14:33.792Z
  * Total: 475 functions
  */
 
@@ -2700,7 +2700,8 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "returns": "series color",
     "flags": {
-      "polymorphic": "input"
+      "polymorphic": "input",
+      "returnTypeParam": "source"
     },
     "examples": []
   },
@@ -5563,7 +5564,8 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "returns": "const int",
     "flags": {
-      "polymorphic": "numeric"
+      "polymorphic": "numeric",
+      "returnTypeParam": "number"
     },
     "examples": []
   },
@@ -5875,7 +5877,8 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "returns": "const int",
     "flags": {
-      "polymorphic": "numeric"
+      "polymorphic": "numeric",
+      "returnTypeParam": "number"
     },
     "examples": []
   },
@@ -10451,6 +10454,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series int",
+    "flags": {
+      "returnTypeParam": "source"
+    },
     "examples": [
       "//@version=6\nindicator('Day and Direction Change', overlay = true)\ndailyBarTime = time('1D')\nisNewDay = ta.change(dailyBarTime) != 0\nbgcolor(isNewDay ? color.new(color.green, 80) : na)\n\nisGreenBar = close >= open\ncolorChange = ta.change(isGreenBar)\nplotshape(colorChange, 'Direction Change')"
     ]
@@ -10992,6 +10998,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series int",
+    "flags": {
+      "returnTypeParam": "source"
+    },
     "examples": []
   },
   {
@@ -11054,6 +11063,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series int",
+    "flags": {
+      "returnTypeParam": "source"
+    },
     "examples": []
   },
   {
@@ -11266,6 +11278,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series int",
+    "flags": {
+      "returnTypeParam": "source"
+    },
     "examples": []
   },
   {
@@ -11612,6 +11627,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series color",
+    "flags": {
+      "returnTypeParam": "source"
+    },
     "examples": [
       "//@version=6\nindicator(\"ta.valuewhen\")\nslow = ta.sma(close, 7)\nfast = ta.sma(close, 14)\n// Get value of `close` on second most recent cross\nplot(ta.valuewhen(ta.cross(slow, fast), close, 1))"
     ]

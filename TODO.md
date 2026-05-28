@@ -57,9 +57,12 @@ IDs so the two stay in sync.
     `const string` (no `/`); catching a `series string` arg needs
     *const-qualifier enforcement* (qualifier narrowing), which the
     checker strips globally today. Separate, broader change — leave open.
-  Net: this item is unblocked only after #17 delivers (a) complete union
-  data via the mirror re-scrape, (b) the `getPolymorphicReturnType`
-  actual-arg fix, and (c) the `nz`/bool reconciliation.
+  Blocker status: (a) union data ✅ (overloadArgs dump + offline union,
+  incl. universal params); (b) return-inference ✅ (#17 blocker #3,
+  `flags.returnTypeParam`); (c) `nz`/bool reconciliation — **still open**,
+  the last gate. Once (c) resolves, re-attempt the Phase 2 checker change
+  (validate union params; drop the `functionIsPolymorphic` arg-skip) and
+  triage with the regression loop.
 - **#9 — type-inference where we infer non-bool but TV infers bool.**
   Umbrella task. Several big wins landed via INV005, INV010, INV011;
   remaining FPs need a fresh corpus diff and per-category dives. The
@@ -149,16 +152,22 @@ IDs so the two stay in sync.
        *contradicts* INV009/#8's claim that `nz(bool)` is a genuine
        missed FN — reconcile before re-attempting (the FN was likely a
        specific construct, not all `nz(bool)`).
-    3. **Polymorphic return-inference breaks on union source params.**
-       `getPolymorphicReturnType` resolves a return-follows-source
-       function's return from the *declared* source union (picks
-       `color`) instead of the actual argument. Once Phase 1 widened
-       source params to include color, `ta.valuewhen(cond, low, 1)` /
-       `fixnan` / `nz` infer their return as `series<color>`, cascading
-       "expected series int/float, got series<color>" FPs into
-       downstream `plot` / `label.set_y` / `line.set_xy*` /
-       `ta.crossover` consumers (~35 in corpus). The
-       `functionIsPolymorphic` bypass was masking this.
+    3. ~~**Polymorphic return-inference breaks on union source params.**~~
+       **RESOLVED 2026-05-28.** The real cause wasn't
+       `getPolymorphicReturnType` mis-picking a union member — `nz`/`fixnan`
+       are flagged and infer correctly. It was that **return-follows-source
+       functions like `ta.valuewhen`/`ta.change`/`ta.median`/`ta.mode`/
+       `ta.range` weren't flagged at all**, so their return fell back to the
+       static return frozen to overload #0 (`series color` for `ta.valuewhen`),
+       cascading `series<color>` into arithmetic/assignment/plot. Fix:
+       `union-types.ts` `detectReturnTypeParam` finds these offline from the
+       overload dump (return base-set == exactly one scalar param's union,
+       no collection param), `generate` emits `flags.returnTypeParam`, and
+       `getPolymorphicReturnType` resolves the return from that arg's actual
+       type (unresolved `type`/`unknown` args fall back to the static return,
+       avoiding `math.abs(<unresolved>) % 2`-style FPs). Result: **−890
+       false positives** corpus-wide, 0 new errors; real color arithmetic
+       still flagged. Regression fixture: `return-follows-source.pine`.
     - **Reverted checker changes (re-apply when blockers clear):**
       `mapToPineType` passes a clean primitive union (`^(const|input|
       simple|series) <prim>/<prim>…$`) through to

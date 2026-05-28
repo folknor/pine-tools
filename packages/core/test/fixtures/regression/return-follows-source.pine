@@ -1,0 +1,11 @@
+// @test regression/return-follows-source
+// @description Return-follows-source functions (ta.valuewhen, ta.change, ta.median/mode/range) must infer their return from the actual argument, not the static return frozen to overload #0 (which is "series color" for ta.valuewhen). Before the fix, the frozen color return cascaded into arithmetic/plot/comparison as ~890 false positives corpus-wide. See TODO #17 blocker #3; detection in packages/pipeline/src/union-types.ts (detectReturnTypeParam), applied via flags.returnTypeParam in getPolymorphicReturnType.
+// @expects parse: success
+//@version=6
+indicator("return-follows-source")
+// ta.valuewhen follows `source` (low -> float), not overload #0's color
+v = ta.valuewhen(close > open, low, 1)
+plot(v * 2)
+// ta.change follows `source` (close -> float)
+c = ta.change(close)
+plot(c > 0 ? 1 : 0)

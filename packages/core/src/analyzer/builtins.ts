@@ -328,12 +328,20 @@ export function getPolymorphicReturnType(
 	argTypes: PineType[],
 	argInfos?: ArgumentInfo[],
 ): PineType | null {
-	// Try data-driven approach first using function-behavior.json
+	// Resolve a return-follows-source param from either function-behavior.json
+	// or the generated flags.returnTypeParam (detected offline from the overload
+	// dump — see union-types.ts; e.g. ta.valuewhen -> source). Without this, such
+	// functions fall back to the static return frozen to overload #0 (color).
 	const behavior = _getFunctionBehavior(functionName);
+	const returnTypeParam =
+		(behavior && behavior.polymorphic
+			? behavior.polymorphic.returnTypeParam
+			: undefined) ??
+		(FUNCTIONS_BY_NAME.get(functionName)?.flags?.returnTypeParam as
+			| string
+			| undefined);
 
-	if (behavior?.polymorphic) {
-		const returnTypeParam = behavior.polymorphic.returnTypeParam;
-
+	if (returnTypeParam) {
 		// Find the argument that determines return type
 		let determiningType: PineType | null = null;
 
@@ -377,7 +385,15 @@ export function getPolymorphicReturnType(
 			}
 		}
 
-		if (determiningType && determiningType !== "unknown") {
+		// "type" is our placeholder for an unresolved / user-defined-type arg —
+		// treat it like "unknown" and fall through to the static return rather
+		// than propagating "type" into downstream arithmetic (avoids FPs like
+		// `math.abs(<unresolved>) % 2`).
+		if (
+			determiningType &&
+			determiningType !== "unknown" &&
+			(determiningType as string) !== "type"
+		) {
 			return determiningType;
 		}
 	}
