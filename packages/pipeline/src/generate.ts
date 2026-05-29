@@ -95,6 +95,7 @@ interface GeneratedFunction {
 		}>;
 		returns: string;
 	}>;
+	deprecated?: string;
 	examples?: string[];
 }
 
@@ -550,6 +551,13 @@ function generateFunctions(
 		// (authoritative for overloaded functions) — unioning them up to the top
 		// level instead widens qualifiers (const->series) and regressed 104
 		// fixtures / introduced FPs. see TODO #26
+		// Deprecation note, when the description flags it (rare in v6 — e.g.
+		// request.quandl). Capture the sentence mentioning "deprecated". see #27
+		const depMatch = (detail.description || "").match(
+			/([^.]*\bdeprecated\b[^.]*\.)/i,
+		);
+		const deprecated = depMatch ? depMatch[1].trim() : undefined;
+
 		const func: GeneratedFunction = {
 			name,
 			namespace,
@@ -559,6 +567,7 @@ function generateFunctions(
 			returns: detail.returns || "void",
 			flags: Object.keys(flags).length > 0 ? flags : undefined,
 			overloads: buildOverloads(detail),
+			deprecated,
 			examples: detail.examples,
 		};
 

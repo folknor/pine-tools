@@ -1,7 +1,7 @@
 /**
  * Pine Script V6 Functions
  * Auto-generated from TradingView documentation
- * Generated: 2026-05-29T18:29:45.760Z
+ * Generated: 2026-05-29T18:36:46.352Z
  * Total: 475 functions
  */
 
@@ -13726,6 +13726,7 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
+    "deprecated": "Note: This function has been deprecated due to the API change from NASDAQ Data Link.",
     "examples": [
       "//@version=6\nindicator(\"request.quandl\")\nf = request.quandl(\"CFTC/SB_FO_ALL\", barmerge.gaps_off, 0)\nplot(f)"
     ]

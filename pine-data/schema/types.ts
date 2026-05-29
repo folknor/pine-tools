@@ -171,10 +171,13 @@ export interface PineFunction {
 	 * preserving detail the merged top-level fields above flatten away.
 	 */
 	overloads?: PineOverload[];
-	/** Deprecation message if deprecated */
+	/**
+	 * Deprecation note, when the reference flags the function as deprecated
+	 * (rare in v6 — e.g. request.quandl). Parsed from the description; absent
+	 * otherwise. (There is no `since`/version field: TV's v6 reference does not
+	 * document when a symbol was introduced.)
+	 */
 	deprecated?: string;
-	/** Version when introduced */
-	since?: "v4" | "v5" | "v6";
 	/** Example code snippets (TradingView lists one or more per function) */
 	examples?: string[];
 }
@@ -253,8 +256,6 @@ export interface PineVariable {
 	qualifier: TypeQualifier;
 	/** Variable description */
 	description: string;
-	/** Version when introduced */
-	since?: "v4" | "v5" | "v6";
 }
 
 // =============================================================================

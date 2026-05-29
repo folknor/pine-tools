@@ -87,23 +87,6 @@ IDs so the two stay in sync.
   + `reextract:dom` (see CLAUDE.md "Re-running type logic WITHOUT scraping"),
   so full `--force` re-scrapes should be rare — only when TV's DOM *structure*
   changes.
-- **#23 — move all hardcoded data transmogrifications pre-JSON.** Any
-  hardcoded correction, addition, or transformation of the scraped language
-  data (type overrides, accepted-type widenings, flag maps, polymorphism /
-  return-type derivation, optionality heuristics, deprecation lists, etc.)
-  must run at **generate time and be baked into `pine-data/v6/*.json`** -
-  never applied downstream in `packages/core` (the checker) or other
-  consumers after the JSON is loaded. **Goal:** `pine-data/v6/*.json` is a
-  complete, self-contained source of truth that external consumers (e.g. a
-  Rust port) can use cleanly without replicating any TypeScript logic.
-  Already pre-JSON and correct: `FUNCTION_PARAM_TYPE_OVERRIDES`,
-  `getFunctionFlags` maps, `detectReturnTypeParam` -> `flags.returnTypeParam`,
-  the offline union in `union-types.ts`. **Audit & relocate:** walk
-  `packages/core` (esp. `builtins.ts`, `checker.ts`, `types.ts`) for any
-  table or rule that *derives or corrects language data* after load (vs.
-  merely mapping the JSON into the checker's internal representation, which
-  is fine) and move the data-deriving part into the pipeline. See the
-  "Architecture: Data vs Syntax" principle in CLAUDE.md and G002.
 - **#24 — relax the polymorphic arg-validation bypass now that param types
   are accurate.** The variadic / nested-overload data work (#17, #22)
   resolved real param types for `math.max`/`min`/`avg`/`round` (no more
@@ -119,18 +102,12 @@ IDs so the two stay in sync.
   removed ~real FPs when pine-data listed only overload #0's types — that
   premise is now weaker, but verify per-function with `--tv` before
   tightening). Likely catches several of the "16 missed arg-type FNs".
-- **#27 — `since` / `deprecated` are never populated** (0/475 functions,
-  0/161 variables). The `PineFunction` / `PineVariable` schema declares
-  `since?: "v4" | "v5" | "v6"` and `deprecated?: string`, but nothing fills
-  them. **Investigate availability first:** TV's v6 reference may not expose
-  "version introduced" cleanly, and deprecation is usually prose in the
-  description ("deprecated", "use X instead"). If extractable, parse at
-  generate-time; if not, drop the dead schema fields rather than leave them
-  permanently empty. Low-to-moderate value.
-  - **Minor residue (record-only, low value):** type/annotation page "See
-    also" cross-references aren't captured; `ta.vwap.anchor`'s default and the
-    "X by default" phrasing are deliberately unparsed (see `parse-default.ts`).
-    Skip unless a consumer needs them.
+- **Minor data residue (record-only, low value):** type/annotation page "See
+  also" cross-references aren't captured; `ta.vwap.anchor`'s default and the
+  "X by default" phrasing are deliberately unparsed (see `parse-default.ts`).
+  Skip unless a consumer needs them. (`since`/`deprecated`, formerly #27,
+  resolved: TV exposes no version-introduced data so `since` was dropped;
+  `deprecated` is parsed from the description — only `request.quandl` in v6.)
 
 ## Gotchas
 
