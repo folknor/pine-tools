@@ -109,6 +109,20 @@ export interface FunctionFlags {
 }
 
 /**
+ * A single overload of an overloaded function. The top-level PineFunction
+ * fields (parameters/syntax/returns) are a MERGED view across all overloads
+ * (param types unioned, syntax/returns frozen to the first form); this preserves
+ * each overload's exact, non-unioned parameter types and its own return type so
+ * a consumer can resolve overloads precisely.
+ */
+export interface PineOverload {
+	/** This overload's parameters, with their exact per-overload types. */
+	parameters: PineParameter[];
+	/** This overload's return type (e.g. "series float"). */
+	returns: string;
+}
+
+/**
  * Complete function definition
  */
 export interface PineFunction {
@@ -126,6 +140,12 @@ export interface PineFunction {
 	returns: string;
 	/** Behavior flags */
 	flags?: FunctionFlags;
+	/**
+	 * Per-overload signatures, present only for overloaded functions (>1 form).
+	 * Each entry has that overload's exact parameter types and return type,
+	 * preserving detail the merged top-level fields above flatten away.
+	 */
+	overloads?: PineOverload[];
 	/** Deprecation message if deprecated */
 	deprecated?: string;
 	/** Version when introduced */

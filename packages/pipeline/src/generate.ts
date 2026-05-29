@@ -72,6 +72,15 @@ interface GeneratedFunction {
 	}>;
 	returns: string;
 	flags?: Record<string, unknown>;
+	overloads?: Array<{
+		parameters: Array<{
+			name: string;
+			type: string;
+			description: string;
+			required: boolean;
+		}>;
+		returns: string;
+	}>;
 	examples?: string[];
 }
 
@@ -320,6 +329,68 @@ function isParameterOptional(param: Parameter): boolean {
 	return false;
 }
 
+// Parse the return type out of an overload signature string, e.g.
+// "math.round(number, precision) → series float" -> "series float".
+function parseReturnFromSignature(sig: string): string {
+	const m = sig.match(/→\s*(.+)$/);
+	return m ? m[1].trim() : "";
+}
+
+// Parse the parameter names out of a signature, e.g.
+// "ta.sma(source, length) → ..." -> ["source", "length"]. Drops the "..."
+// variadic marker. Used only as a fallback when overloadArgs is empty.
+function parseParamNamesFromSignature(sig: string): string[] {
+	const m = sig.match(/^[^(]+\(([^)]*)\)/);
+	if (!m) return [];
+	return m[1]
+		.split(",")
+		.map((s) => s.trim())
+		.filter((s) => s && s !== "...");
+}
+
+// Build the per-overload signature list for an overloaded function from the
+// scraped dump. Each overload carries its EXACT (non-unioned) param types from
+// `overloadArgs` and its own return type from the overload signature string —
+// detail the merged top-level fields flatten away. Returns undefined for
+// non-overloaded functions (the merged view fully describes them).
+//
+// description/required are looked up from the merged param list by name, so
+// params that appear only in a later overload currently get an empty
+// description (recovering those from the DOM mirror is a follow-up; see TODO
+// #25). Per-overload types are kept RAW (no FUNCTION_PARAM_TYPE_OVERRIDES) so
+// each overload faithfully reflects what TV's reference documents for it.
+function buildOverloads(
+	detail: FunctionDetail,
+): GeneratedFunction["overloads"] {
+	const sigs = detail.overloads;
+	if (!sigs || sigs.length < 2) return undefined;
+
+	const merged = new Map((detail.parameters || []).map((p) => [p.name, p]));
+	const overloadArgs = detail.overloadArgs || [];
+
+	return sigs.map((sig, i) => {
+		const args =
+			overloadArgs[i] && overloadArgs[i].length > 0
+				? overloadArgs[i]
+				: parseParamNamesFromSignature(sig).map((name) => ({
+						name,
+						type: "unknown",
+					}));
+		return {
+			parameters: args.map(({ name, type }) => {
+				const m = merged.get(name);
+				return {
+					name,
+					type,
+					description: m?.description || "",
+					required: m ? !isParameterOptional(m) : true,
+				};
+			}),
+			returns: parseReturnFromSignature(sig),
+		};
+	});
+}
+
 function generateFunctions(
 	details: DetailsData,
 	_constructs: ConstructsData,
@@ -379,6 +450,7 @@ function generateFunctions(
 			parameters,
 			returns: detail.returns || "void",
 			flags: Object.keys(flags).length > 0 ? flags : undefined,
+			overloads: buildOverloads(detail),
 			examples: detail.examples,
 		};
 

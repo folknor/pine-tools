@@ -183,6 +183,51 @@ IDs so the two stay in sync.
   removed ~real FPs when pine-data listed only overload #0's types — that
   premise is now weaker, but verify per-function with `--tv` before
   tightening). Likely catches several of the "16 missed arg-type FNs".
+- **#25 — make `pine-data/v6/*.json` complete for EXTERNAL consumers, not
+  just our checker.** pine-data is a *published* dataset (the JSON is the
+  vendor snapshot for downstream Rust/non-node consumers — see CLAUDE.md).
+  Completeness must be judged by "is this a faithful, self-contained Pine
+  API description for any consumer", **not** by "does our checker read this
+  field". Today the generated JSON delivers *less* than the raw dump we
+  already capture. Gaps found 2026-05-29 (counts vs the 475-function set):
+  - **Overload structure is flattened away (headline).** 0 functions expose
+    an `overloads` array, yet **118 functions are overloaded**. `syntax` and
+    `returns` are frozen to overload #0, so e.g. `math.round`'s
+    `(number, precision) → float` form is invisible. The raw
+    `complete-v6-details.json` has every overload's signature
+    (`overloads`) + per-overload typed args (`overloadArgs`); generate drops
+    it for a single lossy merged signature. **Fix:** expose
+    `overloads: [{ parameters: [{name, type, description}], returns }]` per
+    function, built offline from the dump + mirror. Additive — keep the
+    existing merged `parameters`/`syntax`/`returns` so current consumers
+    (incl. our checker) don't break.
+  - **61/1292 params have empty `description`** — lost in the merge (params
+    that only appear in a later overload: `box.new.left/top/right/bottom`,
+    `fill.plot1/plot2`, …). The text is in the mirror DOM but `overloadArgs`
+    only captures `{name, type}`, not the trailing description. Extend
+    `arg-parse.ts` to also capture description; re-extract from the mirror.
+  - **No `default` values** (0/1292; ~332 optional params document one in
+    prose like "The default is …"). Parse offline at generate-time. Note the
+    prose is messy — values with dots (`alert.freq_once_per_bar`), words for
+    numbers ("zero"), inconsistent quoting — so parse carefully and treat as
+    best-effort, not authoritative.
+  - **No argument constraints / allowed values.** `input.int`/`input.float`
+    carry `minval`/`maxval`/`step` as params but there's no structured
+    constraint; params accepting a fixed enum set (`alert.freq` →
+    `alert.freq_all` / `freq_once_per_bar` / `freq_once_per_bar_close`,
+    `display`, `xloc`, …) don't expose the allowed values.
+  - **Polymorphic `returns` frozen/wrong** (subset of the overload gap):
+    `nz → "simple color"`, `fixnan → "series color"`, `math.max →
+    "const int"`. Exposing per-overload returns (above) covers this; a
+    unioned top-level `returns` (`nz → series int/float/color`) is an
+    optional extra.
+  - **No built-in types/enums catalog** — only functions/variables/
+    constants/keywords are generated. Confirm whether v6 built-in types
+    (`chart.point`, `line`, `label`, `box`, `table`, …) and any built-in
+    enums warrant their own catalog for consumers.
+  **Principle:** additive, non-breaking schema changes; everything derived
+  offline (dump + `.cache/dom` mirror via `reextract:dom`), baked into the
+  JSON at generate-time (#23). No new TV scrapes needed.
 
 ## Gotchas
 
