@@ -3,7 +3,6 @@
 
 export {
 	buildFunctionSignatures,
-	DEPRECATED_V5_CONSTANTS,
 	type FunctionSignature,
 	getMinArgsForVariadic,
 	isTopLevelOnly,

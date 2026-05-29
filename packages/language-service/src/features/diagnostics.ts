@@ -65,8 +65,13 @@ function getPatternWarnings(doc: ParsedDocument): Diagnostic[] {
 	const warnings: Diagnostic[] = [];
 	const text = doc.content;
 
+	// v6-specific nudges below are skipped for scripts that deliberately
+	// declare an older version (lenient editor for declared v4/v5). A script
+	// with no/unparseable directive defaults to "6" and still gets nudged.
+	const isV6 = doc.detectedVersion === "6";
+
 	// 1. Version header check
-	if (!/^\s*\/\/@version=6/m.test(text)) {
+	if (isV6 && !/^\s*\/\/@version=6/m.test(text)) {
 		warnings.push({
 			range: {
 				start: { line: 0, character: 0 },
@@ -80,6 +85,7 @@ function getPatternWarnings(doc: ParsedDocument): Diagnostic[] {
 
 	// 2. input.timeframe suggestion
 	if (
+		isV6 &&
 		/input\.string\s*\(\s*"\d+"\s*,\s*"HTF/m.test(text) &&
 		!/input\.timeframe/m.test(text)
 	) {
@@ -156,7 +162,7 @@ function getPatternWarnings(doc: ParsedDocument): Diagnostic[] {
 	}
 
 	// 6. Invalid functions (e.g., math.clamp)
-	if (/\bmath\.clamp\b/.test(text)) {
+	if (isV6 && /\bmath\.clamp\b/.test(text)) {
 		const match = /math\.clamp/.exec(text);
 		if (match) {
 			const pos = doc.positionAt(match.index);

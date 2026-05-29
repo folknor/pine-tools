@@ -25,7 +25,6 @@ import type {
 import {
 	type ArgumentInfo,
 	buildFunctionSignatures,
-	DEPRECATED_V5_CONSTANTS,
 	type FunctionSignature,
 	getFunctionBehavior,
 	getMinArgsForVariadic,
@@ -1482,20 +1481,6 @@ export class UnifiedPineValidator {
 				) {
 					const propertyName = `${memberExpr.object.name}.${memberExpr.property.name}`;
 					const namespaceName = memberExpr.object.name;
-
-					// Check for deprecated v5 constants (only warn in v6)
-					if (version === "6" && propertyName in DEPRECATED_V5_CONSTANTS) {
-						const replacement = DEPRECATED_V5_CONSTANTS[propertyName];
-						this.addError(
-							memberExpr.line || 0,
-							memberExpr.column || 0,
-							propertyName.length,
-							`Deprecated Pine Script v5 constant '${propertyName}'. Use '${replacement}' instead.`,
-							DiagnosticSeverity.Warning,
-						);
-						type = "string";
-						break;
-					}
 
 					// Check if it's a known namespace property
 					if (propertyName in NAMESPACE_PROPERTIES) {

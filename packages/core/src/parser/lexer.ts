@@ -282,11 +282,20 @@ export class Lexer {
 		}
 		const value = this.source.substring(start, this.pos);
 		this.addToken(TokenType.COMMENT, value, value.length);
+
+		// A version directive written with whitespace (`// @version=5`,
+		// `//@version = 5`) lands here as a COMMENT rather than an ANNOTATION.
+		// Still scan it for the version so detection is whitespace-tolerant,
+		// but DON'T reclassify it as an annotation: doing so would turn every
+		// `// @param` / `// @function` doc comment into an annotation token and
+		// cascade the parser. see G004
+		this.extractVersionFromAnnotation(value);
 	}
 
 	private extractVersionFromAnnotation(annotation: string): void {
-		// Parse //@version=X where X is 2, 4, 5, or 6
-		const match = annotation.match(/\/\/@version=(\d+)/);
+		// Parse //@version=X where X is 2, 4, 5, or 6. Tolerate whitespace
+		// between // and @version and around the = (e.g. `// @version = 5`).
+		const match = annotation.match(/\/\/\s*@version\s*=\s*(\d+)/);
 		if (match) {
 			this.detectedVersion = match[1];
 		}

@@ -32,3 +32,7 @@ found, and the lesson worth remembering.
 - [G002](G002-reference-underdocuments-accepted-types.md) — reference vs
   linter, overloads, accepted-types, nz/fixnan/na/int/plot,
   under-documentation, FUNCTION_PARAM_TYPE_OVERRIDES
+- [G004](G004-version-detection-leniency.md) — version detection,
+  //@version directive, whitespace tolerance, default-to-v6, declared
+  v4/v5 leniency, NAMESPACE_PROPERTIES, DEPRECATED_V5_CONSTANTS
+  (G003 intentionally unused)

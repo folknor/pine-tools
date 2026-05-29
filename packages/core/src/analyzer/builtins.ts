@@ -22,16 +22,6 @@ export function isTopLevelOnly(functionName: string): boolean {
 	return func?.flags?.topLevelOnly === true;
 }
 
-// Deprecated v5 constants with their v6 replacements.
-// NOTE: This is intentionally hardcoded rather than in pine-data because:
-// 1. Only 2 items - not worth the pipeline complexity
-// 2. Deprecation info isn't available in TradingView's structured docs
-// 3. These are Pine Script v5→v6 migration specific, not general API data
-export const DEPRECATED_V5_CONSTANTS: Record<string, string> = {
-	"plot.style_dashed": "plot.style_linebr",
-	"plot.style_circles": "plot.style_circles", // Actually valid, but often confused
-};
-
 // Build namespace properties from pine-data
 function buildNamespaceProperties(): Record<string, PineType> {
 	const props: Record<string, PineType> = {};
@@ -51,30 +41,16 @@ function buildNamespaceProperties(): Record<string, PineType> {
 	return props;
 }
 
-// Namespace properties for property access type inference
-// Built from pine-data with minimal backward-compatibility additions
-export const NAMESPACE_PROPERTIES: Record<string, PineType> = {
-	// Build from pine-data at initialization time
-	...buildNamespaceProperties(),
-
-	// Backward compatibility only (v4/v5 input type constants - not in v6 data)
-	"input.source": "string",
-	"input.resolution": "string",
-	"input.bool": "string",
-	"input.integer": "string",
-	"input.float": "string",
-	"input.string": "string",
-	"input.color": "string",
-	"input.timeframe": "string",
-	"input.symbol": "string",
-	"input.session": "string",
-	"input.price": "string",
-	"input.time": "string",
-
-	// Aliases not in TradingView docs
-	"color.grey": "color", // British spelling alias for color.gray
-	"color.transparent": "color", // Not in scraped data
-};
+// Namespace properties for property access type inference, built entirely
+// from scraped pine-data. The former hand-coded additions (v4/v5 `input.*`
+// type constants, `color.grey`, `color.transparent`) were removed: in v6 the
+// `input.*` are functions (functions.json) and TV rejects the rest as
+// undeclared identifiers, so every addition only suppressed a real v6 error.
+// Pre-v6 leniency now comes from correct version detection + the existing
+// `version === "6"` gates in the checker, not from masking these for all
+// versions. see G004
+export const NAMESPACE_PROPERTIES: Record<string, PineType> =
+	buildNamespaceProperties();
 
 // Build known namespaces from pine-data
 function buildKnownNamespaces(): string[] {
