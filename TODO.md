@@ -43,15 +43,6 @@ IDs so the two stay in sync.
   Umbrella task. Several big wins landed via INV005, INV010, INV011;
   remaining FPs need a fresh corpus diff and per-category dives. The
   current top non-cascade category likely needs a new pass.
-- **#17 — consolidate the two polymorphism encodings.** Return-type
-  behavior is described in two places: the *discovered*
-  `pine-data/v6/function-behavior.json` (`returnTypeParam`, arg-ordering)
-  vs the *hand-coded* `polymorphic` map + `flags.returnTypeParam` in
-  `getFunctionFlags`/generate. The JSON is regenerated only by
-  `discover:behavior` (stale — stamped 2026-05-24, 5 functions). Unify so
-  return-type behavior has a single source. (The union/return-type data work
-  itself landed — see git log and CLAUDE.md; Phase 2 / the polymorphic
-  arg-validation bypass is now tracked under #24.)
 - **#18 — built-in color constants infer as `undetermined type`.**
   Surfaced by INV011. The "Ternary branches must have compatible types"
   cluster is now down to **31** (from ~117+) after the variable/constant

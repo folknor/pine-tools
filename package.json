@@ -130,7 +130,6 @@
     "debug:diff": "node dev-tools/differential-test.js",
     "debug:internals": "node dev-tools/debug-internals.js",
     "debug:tokens": "node dev-tools/debug-internals.js tokens",
-    "discover:behavior": "node --experimental-strip-types packages/pipeline/src/discover-function-behavior.ts",
     "generate": "node --experimental-strip-types packages/pipeline/src/generate.ts",
     "generate:markdown": "node --experimental-strip-types packages/pipeline/src/generate-markdown.ts",
     "generate:syntax": "node --experimental-strip-types packages/pipeline/src/generate-syntax.ts",

@@ -217,7 +217,6 @@ pnpm run scrape           # Scrape details + build .cache/dom mirror
 pnpm run reextract:dom    # Re-derive overloadArgs from the mirror (offline; run after scrape)
 pnpm run generate         # Generate pine-data/v6/*.{ts,json}
 pnpm run generate:syntax  # Generate syntaxes/pine.tmLanguage.json
-pnpm run discover:behavior # Discover polymorphism → function-behavior.json
 
 # CLI
 pnpm run install:cli                          # build bundle + install to ~/.local/bin/pine-lint
@@ -286,7 +285,6 @@ All API data is scraped from TradingView docs and generated:
 | `reextract:dom` | re-derives `overloadArgs` from the mirror, **offline** — run after every `scrape` (see below) |
 | `generate` | `pine-data/v6/*.ts` + `*.json` (vendor-friendly snapshot for downstream Rust/non-node consumers) |
 | `generate:syntax` | `syntaxes/pine.tmLanguage.json` |
-| `discover:behavior` | `pine-data/v6/function-behavior.json` |
 
 `generate` emits one catalog per reference section: `functions`, `variables`,
 `constants`, `types`, `annotations`, `keywords` (`.ts` + `.json` each). The
@@ -307,11 +305,6 @@ the offline re-derivation. Skipping reextract reverts the variadic
 `overloadArgs` (e.g. `math.max` → empty) and per-overload descriptions to the
 cache's pre-fix state. The standard refresh is: `crawl` → `scrape` →
 `reextract:dom` → `generate` → `install:cli` → `regression-check`.
-
-⚠️ `function-behavior.json` is regenerated **only** by `discover:behavior`,
-*not* by `generate` — so it goes stale after a `crawl`/`scrape`/`generate`
-refresh unless you re-run `discover:behavior`. (Its `.ts` sibling is a
-hand-written loader that embeds the JSON — see INV011.)
 
 ### Re-running type logic WITHOUT scraping
 
@@ -355,16 +348,24 @@ separately (`scrape.ts` `saveDomSnapshot`). See TODO #22.
 
 ### Polymorphic Functions
 
-Discovered automatically via `discover:behavior`:
+Return-type/polymorphism behavior has a **single source**: the generated
+`flags` on each function in `pine-data/v6/functions.json` —
+`flags.polymorphic` (`"input"` | `"element"` | `"numeric"`, from the hardcoded
+map in `generate.ts`) and `flags.returnTypeParam` (auto-detected offline by
+`detectReturnTypeParam` in `union-types.ts`, with the small
+`RETURN_TYPE_PARAM_OVERRIDES` map for cases the detector can't derive, e.g.
+`input` → `defval`). The checker reads only these (`getPolymorphicReturnType` /
+`getPolymorphicType` in `builtins.ts`).
 
-```json
-{
-  "input": { "polymorphic": { "returnTypeParam": "defval" } },
-  "nz": { "polymorphic": { "returnTypeParam": "source" } }
-}
+```jsonc
+// functions.json
+{ "name": "input", "flags": { "polymorphic": "input", "returnTypeParam": "defval" } }
+{ "name": "ta.valuewhen", "flags": { "returnTypeParam": "source" } }
 ```
 
-`input(defval=42)` → `input int`, `input(defval=2.0)` → `input float`
+`input(defval=42)` → `input int`, `input(defval=2.0)` → `input float`. (The
+former discovered `function-behavior.json` second source was retired — see
+TODO #17 / git log.)
 
 ---
 

@@ -2,16 +2,12 @@
 // This module contains data about built-in functions, namespace properties, and validation rules
 
 import {
-	getFunctionBehavior as _getFunctionBehavior,
 	CONSTANTS_BY_NAME,
 	FUNCTIONS_BY_NAME,
 	type PineFunction,
 	VARIABLES_BY_NAME,
 } from "../../../../pine-data/v6";
 import type { PineType } from "./types";
-
-// Re-export getFunctionBehavior for use in checker
-export const getFunctionBehavior = _getFunctionBehavior;
 
 /**
  * Check if a function can only be called at the top level (not in local scopes).
@@ -297,25 +293,21 @@ export interface ArgumentInfo {
 	type: PineType;
 }
 
-// Get the return type for a polymorphic function based on argument types
-// Supports both positional and named arguments using function-behavior.json data
+// Get the return type for a polymorphic function based on argument types.
+// Supports both positional and named arguments.
 export function getPolymorphicReturnType(
 	functionName: string,
 	argTypes: PineType[],
 	argInfos?: ArgumentInfo[],
 ): PineType | null {
-	// Resolve a return-follows-source param from either function-behavior.json
-	// or the generated flags.returnTypeParam (detected offline from the overload
-	// dump — see union-types.ts; e.g. ta.valuewhen -> source). Without this, such
-	// functions fall back to the static return frozen to overload #0 (color).
-	const behavior = _getFunctionBehavior(functionName);
-	const returnTypeParam =
-		(behavior && behavior.polymorphic
-			? behavior.polymorphic.returnTypeParam
-			: undefined) ??
-		(FUNCTIONS_BY_NAME.get(functionName)?.flags?.returnTypeParam as
-			| string
-			| undefined);
+	// Resolve a return-follows-source param from the generated
+	// flags.returnTypeParam (the single source — detected offline from the
+	// overload dump, with a small override map; see union-types.ts / generate.ts
+	// RETURN_TYPE_PARAM_OVERRIDES; e.g. ta.valuewhen -> source, input -> defval).
+	// Without this, such functions fall back to the static return frozen to
+	// overload #0 (color). see TODO #17.
+	const returnTypeParam = FUNCTIONS_BY_NAME.get(functionName)?.flags
+		?.returnTypeParam as string | undefined;
 
 	if (returnTypeParam) {
 		// Find the argument that determines return type

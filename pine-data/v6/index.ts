@@ -1,7 +1,7 @@
 /**
  * Pine Script V6 Language Data
  * Auto-generated - single entry point for all v6 data
- * Generated: 2026-05-29T17:59:07.467Z
+ * Generated: 2026-05-29T18:29:45.765Z
  */
 
 // Re-export everything
@@ -11,7 +11,6 @@ export * from "./constants";
 export * from "./types";
 export * from "./annotations";
 export * from "./keywords";
-export * from "./function-behavior";
 
 // Re-export types
 export type {

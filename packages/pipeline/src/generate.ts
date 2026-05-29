@@ -227,6 +227,16 @@ const FUNCTION_PARAM_TYPE_OVERRIDES: Record<string, string> = {
 	"plot.title": "series string",
 };
 
+// Return-follows-param functions that `detectReturnTypeParam` can't auto-derive
+// from the overload dump. `input`'s return follows `defval`, but its defval type
+// is documented as un-parseable prose ("const int/float/bool/string/color or
+// source-type built-ins"), so the structural detector can't match it. This
+// override is the single generate-time source for these — it replaces the stale
+// discovered `function-behavior.json` (retired). see TODO #17.
+const RETURN_TYPE_PARAM_OVERRIDES: Record<string, string> = {
+	input: "defval",
+};
+
 function getFunctionFlags(name: string): Record<string, unknown> | undefined {
 	const flags: Record<string, unknown> = {};
 
@@ -267,6 +277,9 @@ function getFunctionFlags(name: string): Record<string, unknown> | undefined {
 
 	// Polymorphic functions
 	const polymorphic: Record<string, string> = {
+		// input() returns the type of its first arg (defval); the returnTypeParam
+		// override (defval) additionally resolves named calls. see TODO #17.
+		input: "input",
 		nz: "input",
 		fixnan: "input",
 		"array.get": "element",
@@ -494,7 +507,8 @@ function generateFunctions(
 		// so the checker infers their return from the actual argument instead of
 		// the static return frozen to overload #0 (e.g. ta.valuewhen, which is
 		// otherwise stuck at "series color"). See union-types.ts / TODO #17.
-		const returnTypeParam = detectReturnTypeParam(detail);
+		const returnTypeParam =
+			RETURN_TYPE_PARAM_OVERRIDES[name] ?? detectReturnTypeParam(detail);
 		if (returnTypeParam) {
 			flags.returnTypeParam = returnTypeParam;
 		}
@@ -1033,7 +1047,6 @@ export * from "./constants";
 export * from "./types";
 export * from "./annotations";
 export * from "./keywords";
-export * from "./function-behavior";
 
 // Re-export types
 export type {

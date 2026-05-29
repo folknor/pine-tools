@@ -1,7 +1,7 @@
 /**
  * Pine Script V6 Functions
  * Auto-generated from TradingView documentation
- * Generated: 2026-05-29T17:59:07.461Z
+ * Generated: 2026-05-29T18:29:45.760Z
  * Total: 475 functions
  */
 
@@ -5099,6 +5099,10 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "input color",
+    "flags": {
+      "polymorphic": "input",
+      "returnTypeParam": "defval"
+    },
     "overloads": [
       {
         "parameters": [

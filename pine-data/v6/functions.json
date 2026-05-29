@@ -5087,6 +5087,10 @@
       }
     ],
     "returns": "input color",
+    "flags": {
+      "polymorphic": "input",
+      "returnTypeParam": "defval"
+    },
     "overloads": [
       {
         "parameters": [

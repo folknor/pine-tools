@@ -26,7 +26,6 @@ import {
 	type ArgumentInfo,
 	buildFunctionSignatures,
 	type FunctionSignature,
-	getFunctionBehavior,
 	getMinArgsForVariadic,
 	getPolymorphicReturnType,
 	getPolymorphicType,
@@ -918,9 +917,7 @@ export class UnifiedPineValidator {
 		// corpus. Both bypasses must be retained until pine-data emits
 		// union types for these params.
 		const functionHasOverloads = hasOverloads(functionName);
-		const functionIsPolymorphic =
-			getPolymorphicType(functionName) !== undefined ||
-			getFunctionBehavior(functionName)?.polymorphic !== undefined;
+		const functionIsPolymorphic = getPolymorphicType(functionName) !== undefined;
 
 		// Validate each parameter
 		for (let i = 0; i < signature.parameters.length; i++) {
