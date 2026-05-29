@@ -55,3 +55,6 @@ file rather than renumbering.
   polymorphic-resolution-disabled
 - [INV012](INV012-parser-sync-column-1/notes.md) — parser, error
   recovery, synchronize, cascade, column-1 anchor
+- [INV013](INV013-polymorphic-arg-validation/notes.md) — polymorphic
+  arg-validation bypass removed, union param types, v6-only arg checks,
+  v4/v5 leniency

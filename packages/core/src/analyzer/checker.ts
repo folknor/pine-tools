@@ -28,7 +28,6 @@ import {
 	type FunctionSignature,
 	getMinArgsForVariadic,
 	getPolymorphicReturnType,
-	getPolymorphicType,
 	hasOverloads,
 	isTopLevelOnly,
 	isVariadicFunction,
@@ -909,15 +908,20 @@ export class UnifiedPineValidator {
 			return; // Skip further parameter validation for variadic functions
 		}
 
-		// Two bypasses below — read INV009 before tightening either of them.
-		// pine-data lists only one overload's types for polymorphic /
-		// overloaded functions, so removing these bypasses without first
-		// widening the data (see task #17) would turn the 3 real argument-
-		// type-mismatch FNs documented in INV009 into many FPs across the
-		// corpus. Both bypasses must be retained until pine-data emits
-		// union types for these params.
+		// #17 landed: pine-data now emits union types for overloaded/polymorphic
+		// params, so the old polymorphic arg-validation bypass (INV009) is gone
+		// (#24). Safety nets: (1) union types (e.g. "series int/float", nz's
+		// widened "series int/float/bool/string/color") collapse to "unknown"
+		// via mapToPineType and are skipped by the `!== "unknown"` guard, so only
+		// CLEAN-typed params are checked (catches e.g. math.round(close, "x"));
+		// (2) arg-type checks are v6-only — pine-data ships v6 signatures, and
+		// validating v4/v5 calls against them is unsound (e.g. input's removed
+		// `type` param), so legacy scripts are left lenient. see G004 / #24.
+		// `functionHasOverloads` (any still-unknown param) still bypasses
+		// positional checks; return-type inference uses the polymorphic flag
+		// separately (getPolymorphicReturnType).
 		const functionHasOverloads = hasOverloads(functionName);
-		const functionIsPolymorphic = getPolymorphicType(functionName) !== undefined;
+		const checkArgTypes = version === "6";
 
 		// Validate each parameter
 		for (let i = 0; i < signature.parameters.length; i++) {
@@ -926,12 +930,9 @@ export class UnifiedPineValidator {
 			// Check named argument
 			const namedArg = providedArgs.get(param.name);
 			if (namedArg) {
-				// Skip type validation for polymorphic functions (type depends on input)
-				if (functionIsPolymorphic) {
-					continue;
-				}
-				// Validate type (named args are unambiguous, so we can check them)
-				if (param.type && param.type !== "unknown") {
+				// Validate type (named args are unambiguous, so we can check them).
+				// Union/polymorphic params map to "unknown" and fall through here.
+				if (checkArgTypes && param.type && param.type !== "unknown") {
 					if (!TypeChecker.isAssignable(namedArg.type, param.type)) {
 						this.addError(
 							call.line,
@@ -945,14 +946,16 @@ export class UnifiedPineValidator {
 				continue;
 			}
 
-			// Check positional argument (skip for overloaded/polymorphic functions)
+			// Check positional argument. Functions with any still-unknown param
+			// (overloaded) skip positional checking — positions are ambiguous
+			// across overload forms. Cleanly-typed params (incl. ex-polymorphic
+			// ones) are validated on v6 scripts.
 			if (i < positionalArgs.length) {
-				// Skip type checking for overloaded/polymorphic functions
-				if (functionHasOverloads || functionIsPolymorphic) {
+				if (functionHasOverloads) {
 					continue;
 				}
 				const posArg = positionalArgs[i];
-				if (param.type && param.type !== "unknown") {
+				if (checkArgTypes && param.type && param.type !== "unknown") {
 					if (!TypeChecker.isAssignable(posArg.type, param.type)) {
 						this.addError(
 							call.line,

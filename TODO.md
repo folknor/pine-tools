@@ -87,21 +87,6 @@ IDs so the two stay in sync.
   + `reextract:dom` (see CLAUDE.md "Re-running type logic WITHOUT scraping"),
   so full `--force` re-scrapes should be rare — only when TV's DOM *structure*
   changes.
-- **#24 — relax the polymorphic arg-validation bypass now that param types
-  are accurate.** The variadic / nested-overload data work (#17, #22)
-  resolved real param types for `math.max`/`min`/`avg`/`round` (no more
-  `unknown` params), so `hasOverloads()` no longer bypasses them. But
-  `validateFunctionArguments` (checker.ts ~933/954) ALSO skips arg type
-  checking whenever `flags.polymorphic` is set — and these carry
-  `polymorphic: "numeric"` for *return-type* inference. So the FN-catching
-  benefit (e.g. `math.round(close, "x")` should error) is still masked.
-  The `polymorphic` flag conflates two concerns: return-type-follows-input
-  (keep) and "args untyped, don't validate" (no longer true). Gate the
-  arg-validation skip on actually-unknown param types, not on the
-  polymorphic flag. **Read INV009 first** (checker.ts:913 warns the bypass
-  removed ~real FPs when pine-data listed only overload #0's types — that
-  premise is now weaker, but verify per-function with `--tv` before
-  tightening). Likely catches several of the "16 missed arg-type FNs".
 - **Minor data residue (record-only, low value):** type/annotation page "See
   also" cross-references aren't captured; `ta.vwap.anchor`'s default and the
   "X by default" phrasing are deliberately unparsed (see `parse-default.ts`).

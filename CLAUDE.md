@@ -389,6 +389,7 @@ TODO #17 / git log.)
 
 - **Legacy color constants** - v4/v5 scripts use bare `red`, `green`, etc. In v6, must use `color.red`. Not fixing since these are pre-v6 scripts.
 - **Invalid parameter names** - Some scripts use deprecated params like `type` (input) and `when` (strategy). These are v5 params not valid in v6.
+- **Argument type-checking is v6-only** - pine-data ships only v6 signatures, so we don't validate argument *types* on `//@version=4`/`5` scripts (their signatures differ — e.g. v4 `input`'s `type` param). Legacy scripts are left lenient; arg-type mismatches are flagged only for v6. See INV013 / G004.
 - **Nested inline switches with tuples** - Deeply nested inline switches with tuple assignments inside case bodies are not yet fully supported. Basic inline switch with tuples works.
 - **Built-in unused variable warnings** - The core validator (`UnifiedPineValidator`) incorrectly reports built-in variables/keywords as "declared but never used". This is a bug in the unused variable detection logic that needs to exclude built-ins from the check. Location: `packages/core/src/analyzer/checker.ts`.
 
