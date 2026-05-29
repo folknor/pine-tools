@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "extractedAt": "2026-05-28T06:04:19.761Z",
+    "extractedAt": "2026-05-29T17:56:15.605Z",
     "source": "https://www.tradingview.com/pine-script-reference/v6/",
     "totalItems": 888,
     "extractionMethod": "dynamic_discovery",
@@ -13,6 +13,10 @@
       "typesDiscovered": 20,
       "keywordsDiscovered": 25,
       "operatorsDiscovered": 33
+    },
+    "unclassifiedPrefixes": {
+      "kw": 15,
+      "op": 21
     }
   },
   "keywords": {
@@ -1224,6 +1228,21 @@
       "string",
       "table",
       "volume_row"
+    ]
+  },
+  "annotations": {
+    "count": 10,
+    "items": [
+      "@description",
+      "@enum",
+      "@field",
+      "@function",
+      "@param",
+      "@returns",
+      "@strategy_alert_message",
+      "@type",
+      "@variable",
+      "@version="
     ]
   }
 }

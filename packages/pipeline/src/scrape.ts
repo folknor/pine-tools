@@ -122,6 +122,16 @@ interface TypeDetails {
 	namespace?: string;
 }
 
+// A compiler/doc annotation detail page (`//@version`, `//@param`, `//@type`,
+// …), reached via the `an_<name>` anchor. Carries a description, an optional
+// syntax line, and examples. See TODO #25.
+interface AnnotationDetails {
+	name: string;
+	description: string;
+	syntax?: string;
+	examples: string[];
+}
+
 interface ScrapeResult {
 	metadata: {
 		extractedAt: string;
@@ -135,11 +145,13 @@ interface ScrapeResult {
 		totalVariables?: number;
 		totalConstants?: number;
 		totalTypes?: number;
+		totalAnnotations?: number;
 	};
 	functions: Record<string, FunctionDetails>;
 	variables: Record<string, MemberDetails>;
 	constants: Record<string, MemberDetails>;
 	types?: Record<string, TypeDetails>;
+	annotations?: Record<string, AnnotationDetails>;
 }
 
 // `prefix` namespaces the cache key so e.g. the `time()` function and the
@@ -864,6 +876,91 @@ export async function scrapeTypeDetails(
 	}
 }
 
+// Scrape a compiler/doc annotation page via its `an_<name>` anchor (name keeps
+// its leading "@" and any trailing "=", e.g. "@version="). Captures description,
+// an optional syntax line, and examples; mirrors the DOM. See TODO #25.
+export async function scrapeAnnotationDetails(
+	name: string,
+	useCache = true,
+): Promise<AnnotationDetails | null> {
+	if (useCache) {
+		const cached = getCachedData<AnnotationDetails>(name, "an__");
+		if (cached) return cached;
+	}
+
+	try {
+		const page = await getSharedPage();
+		const elementId = `an_${name}`;
+
+		await page.evaluate((hash: string) => {
+			window.location.hash = hash;
+		}, elementId);
+		await new Promise((resolve) => setTimeout(resolve, 300));
+		await page
+			.waitForFunction(
+				(id: string) => document.getElementById(id) !== null,
+				{ timeout: 5000 },
+				elementId,
+			)
+			.catch(() => {});
+
+		const result = await page.evaluate(
+			(id: string, fallbackName: string) => {
+				const el = document.getElementById(id);
+				if (!el) return null;
+				const headerEl = el.querySelector(".tv-pine-reference-item__header");
+				const resolvedName = headerEl?.textContent?.trim() || fallbackName;
+
+				const syntaxEl = el.querySelector(".tv-pine-reference-item__syntax");
+				const syntax = syntaxEl?.textContent?.trim() || "";
+
+				let description = "";
+				for (const t of el.querySelectorAll(
+					".tv-pine-reference-item__text.tv-text",
+				)) {
+					if (t.querySelector(".tv-pine-reference-item__arg-type")) continue;
+					const txt = (t.textContent || "").trim();
+					if (txt) {
+						description = txt;
+						break;
+					}
+				}
+
+				const examples: string[] = [];
+				for (const ex of el.querySelectorAll(
+					".tv-pine-reference-item__example code",
+				)) {
+					const text = ((ex as HTMLElement).innerText || "")
+						.replace(/ /g, " ")
+						.trim();
+					if (text) examples.push(text);
+				}
+
+				return { resolvedName, syntax, description, examples, html: el.outerHTML };
+			},
+			elementId,
+			name,
+		);
+
+		if (!result) return null;
+		if (result.html) saveDomSnapshot(`an__${name}`, "base", result.html);
+
+		const details: AnnotationDetails = {
+			name: result.resolvedName,
+			description: result.description,
+			syntax: result.syntax || undefined,
+			examples: result.examples,
+		};
+		saveToCache(name, details, "an__");
+		return details;
+	} catch (error) {
+		console.log(
+			`Failed to scrape annotation ${name}: ${(error as Error).message}`,
+		);
+		return null;
+	}
+}
+
 export async function scrapeAllFunctions(
 	forceRefresh = false,
 ): Promise<ScrapeResult> {
@@ -1031,6 +1128,29 @@ export async function scrapeAllFunctions(
 	console.log(`   Types from cache: ${typesFromCache.length}`);
 	console.log(`   Types to scrape: ${typesToScrape.length}`);
 
+	// Build annotation list from the crawl (its own reference section).
+	const annotationNames: string[] = [...(inputData.annotations?.items || [])];
+	console.log(`Found ${annotationNames.length} annotations to process`);
+
+	const annotationsToScrape: string[] = [];
+	const annotationsFromCache: string[] = [];
+	if (!forceRefresh) {
+		for (const name of annotationNames) {
+			if (isCacheValid(getCacheFilePath(name, "an__"))) {
+				annotationsFromCache.push(name);
+			} else {
+				annotationsToScrape.push(name);
+			}
+		}
+	} else {
+		annotationsToScrape.push(...annotationNames);
+	}
+	if (DRY_RUN && annotationsToScrape.length > DRY_RUN_LIMIT) {
+		annotationsToScrape.splice(DRY_RUN_LIMIT);
+	}
+	console.log(`   Annotations from cache: ${annotationsFromCache.length}`);
+	console.log(`   Annotations to scrape: ${annotationsToScrape.length}`);
+
 	const allDetails: ScrapeResult = {
 		metadata: {
 			extractedAt: new Date().toISOString(),
@@ -1044,11 +1164,13 @@ export async function scrapeAllFunctions(
 			totalVariables: variableNames.length,
 			totalConstants: constantNames.length,
 			totalTypes: typeNames.length,
+			totalAnnotations: annotationNames.length,
 		},
 		functions: {},
 		variables: {},
 		constants: {},
 		types: {},
+		annotations: {},
 	};
 
 	// Load cached data first
@@ -1076,6 +1198,12 @@ export async function scrapeAllFunctions(
 		const cached = getCachedData<TypeDetails>(name, "type__");
 		if (cached && allDetails.types) {
 			allDetails.types[name] = cached;
+		}
+	}
+	for (const name of annotationsFromCache) {
+		const cached = getCachedData<AnnotationDetails>(name, "an__");
+		if (cached && allDetails.annotations) {
+			allDetails.annotations[name] = cached;
 		}
 	}
 
@@ -1195,11 +1323,29 @@ export async function scrapeAllFunctions(
 		console.log(`  Types: ${typesToScrape.length}/${typesToScrape.length}`);
 	}
 
+	// Scrape annotations (shares the browser opened above, if any).
+	if (annotationsToScrape.length > 0 && allDetails.annotations) {
+		console.log("Scraping annotation details...");
+		for (const name of annotationsToScrape) {
+			const details = await scrapeAnnotationDetails(name, !forceRefresh);
+			if (details) {
+				allDetails.annotations[name] = details;
+			} else {
+				allDetails.metadata.failedScrapes++;
+			}
+			await new Promise((resolve) => setTimeout(resolve, 100));
+		}
+		console.log(
+			`  Annotations: ${annotationsToScrape.length}/${annotationsToScrape.length}`,
+		);
+	}
+
 	if (
 		functionsToScrape.length > 0 ||
 		variablesToScrape.length > 0 ||
 		constantsToScrape.length > 0 ||
-		typesToScrape.length > 0
+		typesToScrape.length > 0 ||
+		annotationsToScrape.length > 0
 	) {
 		await closeSharedBrowser();
 	}
@@ -1246,6 +1392,12 @@ export async function scrapeAllFunctions(
 	);
 	console.log(`   Total types: ${allDetails.metadata.totalTypes}`);
 	console.log(`   Types captured: ${Object.keys(allDetails.types || {}).length}`);
+	console.log(
+		`   Total annotations: ${allDetails.metadata.totalAnnotations}`,
+	);
+	console.log(
+		`   Annotations captured: ${Object.keys(allDetails.annotations || {}).length}`,
+	);
 	console.log(`   Method: ${allDetails.metadata.method}`);
 	console.log(
 		DRY_RUN

@@ -252,12 +252,14 @@ IDs so the two stay in sync.
     mis-parsed artifacts). Operators are grammar fundamentals the parser
     hardcodes (CLAUDE.md Data-vs-Syntax), so probably do NOT emit them as data;
     at most clean up the buggy crawl extraction separately. Low priority.
-  - **Annotations** — `//@version`, `//@function`, `//@param`, `//@type`,
-    `//@enum`, `//@field`, `//@strategy_alert_message`, … The reference has an
-    Annotations section but the **crawl doesn't capture it** (no `annotations`
-    key in `v6-language-constructs.json`). Needs a crawl pass to discover the
-    `an_<name>` anchors + a scrape for their detail pages. Directly relevant to
-    our own lexer/annotation handling (see G004). Worth its own follow-up.
+  - ✅ **Annotations catalog generated (2026-05-29).** The crawl now classifies
+    `#an_` TOC links (10 found: `@version=`, `@param`, `@function`, `@returns`,
+    `@type`, `@field`, `@enum`, `@variable`, `@description`,
+    `@strategy_alert_message`), `scrape` fetches each `an_<name>` page
+    (description + examples; mirrored), and `generate` emits `annotations.json`
+    + `annotations.ts` (`PineAnnotation`). The crawl also reports
+    `metadata.unclassifiedPrefixes` as a one-run safety net for finding new
+    section anchors (confirmed only `kw`/`op` remain, both handled elsewhere).
   **Principle:** additive, non-breaking schema changes; derived offline (dump +
   `.cache/dom` mirror via `reextract:dom`) and baked into the JSON at
   generate-time (#23). New reference *sections* (types, and a future

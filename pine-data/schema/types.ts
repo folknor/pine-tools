@@ -212,6 +212,26 @@ export interface PineBuiltinType {
 }
 
 // =============================================================================
+// ANNOTATION SCHEMA
+// =============================================================================
+
+/**
+ * A Pine compiler/doc annotation (`//@version`, `//@param`, `//@type`, …) — its
+ * own reference entry. These direct the compiler or document library code; they
+ * are not callable, so there are no parameters/return.
+ */
+export interface PineAnnotation {
+	/** Name including the leading "@" (e.g. "@param", "@version="). */
+	name: string;
+	/** Description from the annotation's reference page. */
+	description: string;
+	/** Syntax line, if the page documents one. */
+	syntax?: string;
+	/** Example snippets from the reference page. */
+	examples?: string[];
+}
+
+// =============================================================================
 // VARIABLE SCHEMA
 // =============================================================================
 

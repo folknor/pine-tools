@@ -122,6 +122,13 @@ interface GeneratedType {
 	fields?: Array<{ name: string; type: string; description: string }>;
 }
 
+interface GeneratedAnnotation {
+	name: string;
+	description: string;
+	syntax?: string;
+	examples?: string[];
+}
+
 interface ScrapedMember {
 	name: string;
 	type: string;
@@ -137,11 +144,19 @@ interface ScrapedType {
 	namespace?: string;
 }
 
+interface ScrapedAnnotation {
+	name: string;
+	description?: string;
+	syntax?: string;
+	examples?: string[];
+}
+
 interface DetailsData {
 	functions: Record<string, FunctionDetail>;
 	variables?: Record<string, ScrapedMember>;
 	constants?: Record<string, ScrapedMember>;
 	types?: Record<string, ScrapedType>;
+	annotations?: Record<string, ScrapedAnnotation>;
 }
 
 interface ConstructsData {
@@ -152,6 +167,7 @@ interface ConstructsData {
 	};
 	constants?: { byNamespace?: Record<string, string[]> };
 	types?: { items?: string[] };
+	annotations?: { items?: string[] };
 }
 
 // =============================================================================
@@ -843,6 +859,57 @@ export const TYPE_NAMES: Set<string> = new Set(TYPES.map(t => t.name));
 	return types;
 }
 
+function generateAnnotations(
+	details: DetailsData,
+	constructs: ConstructsData,
+): GeneratedAnnotation[] {
+	console.log("Generating annotations.ts...");
+
+	const scraped = details.annotations || {};
+	const names = constructs.annotations?.items || [];
+
+	const annotations: GeneratedAnnotation[] = names.map((name) => {
+		const sc = scraped[name];
+		return {
+			name,
+			description: sc?.description || "",
+			syntax: sc?.syntax || undefined,
+			examples: sc?.examples && sc.examples.length > 0 ? sc.examples : undefined,
+		};
+	});
+
+	const content = `/**
+ * Pine Script ${VERSION.toUpperCase()} Annotations
+ * Auto-generated from TradingView documentation
+ * Generated: ${new Date().toISOString()}
+ * Total: ${annotations.length} annotations
+ */
+
+import type { PineAnnotation } from "../schema/types";
+
+/**
+ * All ${VERSION} compiler/doc annotations
+ */
+export const ANNOTATIONS: PineAnnotation[] = ${JSON.stringify(annotations, null, 2)};
+
+/**
+ * Annotations indexed by name for O(1) lookup
+ */
+export const ANNOTATIONS_BY_NAME: Map<string, PineAnnotation> = new Map(
+	ANNOTATIONS.map(a => [a.name, a])
+);
+
+/**
+ * All annotation names as a Set for fast membership check
+ */
+export const ANNOTATION_NAMES: Set<string> = new Set(ANNOTATIONS.map(a => a.name));
+`;
+
+	fs.writeFileSync(path.join(OUTPUT_DIR, "annotations.ts"), content);
+	console.log(`   ${annotations.length} annotations`);
+	return annotations;
+}
+
 function generateKeywords(constructs: ConstructsData): string[] {
 	console.log("Generating keywords.ts...");
 
@@ -957,6 +1024,7 @@ export * from "./functions";
 export * from "./variables";
 export * from "./constants";
 export * from "./types";
+export * from "./annotations";
 export * from "./keywords";
 export * from "./function-behavior";
 
@@ -1074,6 +1142,7 @@ function main(): void {
 	const variables = generateVariables(details, constructs);
 	const constants = generateConstants(details, constructs);
 	const types = generateTypes(details, constructs);
+	const annotations = generateAnnotations(details, constructs);
 	const keywords = generateKeywords(constructs);
 	generateVersionIndex(functions, variables, constants, keywords);
 
@@ -1088,6 +1157,7 @@ function main(): void {
 	writeJson("variables", variables);
 	writeJson("constants", constants);
 	writeJson("types", types);
+	writeJson("annotations", annotations);
 	writeJson("keywords", keywords);
 
 	console.log(`\nPine Script ${VERSION} data generated successfully!`);
@@ -1095,6 +1165,7 @@ function main(): void {
 	console.log(`   ${variables.length} variables`);
 	console.log(`   ${constants.length} constants`);
 	console.log(`   ${types.length} types`);
+	console.log(`   ${annotations.length} annotations`);
 	console.log(`   ${keywords.length} keywords\n`);
 }
 

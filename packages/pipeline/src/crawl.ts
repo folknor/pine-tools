@@ -56,6 +56,7 @@ interface CrawlResult {
 		totalItems: number;
 		extractionMethod: string;
 		discoveryStats: DiscoveryStats;
+		unclassifiedPrefixes?: Record<string, number>;
 	};
 	keywords: { count: number; items: string[] };
 	operators: { count: number; items: string[] };
@@ -73,6 +74,7 @@ interface CrawlResult {
 		byNamespace: Record<string, string[]>;
 	};
 	types: { count: number; items: string[] };
+	annotations: { count: number; items: string[] };
 }
 
 export async function crawlPineScriptReference(): Promise<CrawlResult> {
@@ -159,6 +161,7 @@ export async function crawlPineScriptReference(): Promise<CrawlResult> {
 					byNamespace: {} as Record<string, string[]>,
 				},
 				types: { count: 0, items: [] as string[] },
+				annotations: { count: 0, items: [] as string[] },
 			};
 
 			// Extract all TOC items (this is where all language constructs are listed)
@@ -168,9 +171,14 @@ export async function crawlPineScriptReference(): Promise<CrawlResult> {
 				functions: [] as string[],
 				constants: [] as string[],
 				types: [] as string[],
+				annotations: [] as string[],
 				keywords: new Set<string>(),
 				operators: new Set<string>(),
 			};
+			// One-run safety net: tally TOC href prefixes (#<prefix>_) we DON'T
+			// classify, so a single crawl reveals the real annotation anchor prefix
+			// if it isn't `an_`.
+			const unclassifiedPrefixes: Record<string, number> = {};
 
 			// Categorize TOC items by their URL patterns
 			tocLinks.forEach((link) => {
@@ -186,6 +194,14 @@ export async function crawlPineScriptReference(): Promise<CrawlResult> {
 						allDiscoveredItems.constants.push(text);
 					} else if (href.includes("#type_")) {
 						allDiscoveredItems.types.push(text);
+					} else if (href.includes("#an_")) {
+						allDiscoveredItems.annotations.push(text);
+					} else {
+						const m = href.match(/#([a-z]+)_/i);
+						if (m) {
+							unclassifiedPrefixes[m[1]] =
+								(unclassifiedPrefixes[m[1]] || 0) + 1;
+						}
 					}
 				}
 			});
@@ -291,6 +307,10 @@ export async function crawlPineScriptReference(): Promise<CrawlResult> {
 			result.keywords.items = Array.from(allDiscoveredItems.keywords).sort();
 			result.operators.items = Array.from(allDiscoveredItems.operators).sort();
 			result.types.items = allDiscoveredItems.types.sort();
+			result.annotations.items = allDiscoveredItems.annotations.sort();
+			result.annotations.count = result.annotations.items.length;
+			(result.metadata as Record<string, unknown>).unclassifiedPrefixes =
+				unclassifiedPrefixes;
 
 			// Variables
 			result.builtInVariables.standalone.items = standaloneVariables.sort();
@@ -390,6 +410,10 @@ export async function crawlPineScriptReference(): Promise<CrawlResult> {
 			`   Functions - Namespaces: ${constructs.functions.namespaces.count}`,
 		);
 		console.log(`   Types: ${constructs.types.count}`);
+		console.log(`   Annotations: ${constructs.annotations.count}`);
+		console.log(
+			`   Unclassified TOC prefixes: ${JSON.stringify(constructs.metadata.unclassifiedPrefixes)}`,
+		);
 		console.log(`   Total: ${constructs.metadata.totalItems}`);
 		console.log(`Discovery Stats:`);
 		console.log(
