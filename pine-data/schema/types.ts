@@ -157,7 +157,11 @@ export interface PineFunction {
 	description: string;
 	/** Function parameters */
 	parameters: PineParameter[];
-	/** Return type */
+	/**
+	 * Return type. For OVERLOADED functions this is the first (primary) overload
+	 * form only — see `overloads[].returns` for the accurate per-overload return
+	 * types, which are authoritative when `overloads` is present.
+	 */
 	returns: string;
 	/** Behavior flags */
 	flags?: FunctionFlags;

@@ -128,6 +128,18 @@ IDs so the two stay in sync.
   removed ~real FPs when pine-data listed only overload #0's types — that
   premise is now weaker, but verify per-function with `--tv` before
   tightening). Likely catches several of the "16 missed arg-type FNs".
+- **#27 — `since` / `deprecated` are never populated** (0/475 functions,
+  0/161 variables). The `PineFunction` / `PineVariable` schema declares
+  `since?: "v4" | "v5" | "v6"` and `deprecated?: string`, but nothing fills
+  them. **Investigate availability first:** TV's v6 reference may not expose
+  "version introduced" cleanly, and deprecation is usually prose in the
+  description ("deprecated", "use X instead"). If extractable, parse at
+  generate-time; if not, drop the dead schema fields rather than leave them
+  permanently empty. Low-to-moderate value.
+  - **Minor residue (record-only, low value):** type/annotation page "See
+    also" cross-references aren't captured; `ta.vwap.anchor`'s default and the
+    "X by default" phrasing are deliberately unparsed (see `parse-default.ts`).
+    Skip unless a consumer needs them.
 
 ## Gotchas
 

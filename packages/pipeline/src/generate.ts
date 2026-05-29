@@ -529,6 +529,13 @@ function generateFunctions(
 			};
 		});
 
+		// Top-level `returns` stays frozen to overload #0 (TV's primary form): it
+		// is the single type the checker consumes, and overload #0's weak
+		// qualifier (const) coerces everywhere, so it's the permissive/safe
+		// choice. The full, accurate per-overload returns live in `overloads[]`
+		// (authoritative for overloaded functions) — unioning them up to the top
+		// level instead widens qualifiers (const->series) and regressed 104
+		// fixtures / introduced FPs. see TODO #26
 		const func: GeneratedFunction = {
 			name,
 			namespace,
