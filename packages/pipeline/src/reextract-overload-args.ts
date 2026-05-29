@@ -41,14 +41,27 @@ function decodeEntities(s: string): string {
 		.replace(/&amp;/g, "&");
 }
 
-function argTypesFromHtml(html: string): Array<{ name: string; type: string }> {
-	const out: Array<{ name: string; type: string }> = [];
-	const re = /tv-pine-reference-item__arg-type">([^<]*)</g;
+function stripTags(s: string): string {
+	return s.replace(/<[^>]+>/g, "");
+}
+
+function argTypesFromHtml(
+	html: string,
+): Array<{ name: string; type: string; description: string }> {
+	const out: Array<{ name: string; type: string; description: string }> = [];
+	// Each arg row is a `__text tv-text` div whose inner content is
+	// `<span class="...arg-type">name (type)</span>description`. Match those
+	// divs, keep only the ones holding an arg-type span, then strip inline tags
+	// (<a>/<code>/<em>/<strong>) and decode entities so the text equals the live
+	// scrape's parentElement.textContent. (No arg row nests a <div>, verified.)
+	const re =
+		/<div class="tv-pine-reference-item__text tv-text">([\s\S]*?)<\/div>/g;
 	let m: RegExpExecArray | null;
 	while ((m = re.exec(html))) {
-		for (const entry of parseArgTypeText(decodeEntities(m[1].trim()))) {
-			out.push(entry);
-		}
+		const inner = m[1];
+		if (!inner.includes("tv-pine-reference-item__arg-type")) continue;
+		const text = decodeEntities(stripTags(inner));
+		for (const entry of parseArgTypeText(text)) out.push(entry);
 	}
 	return out;
 }

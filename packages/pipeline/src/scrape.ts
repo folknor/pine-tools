@@ -91,7 +91,11 @@ interface FunctionDetails {
 	// Complete per-overload argument capture (index = overload index). The
 	// offline union step (union-types.ts) turns this into per-param types, so
 	// type/union logic can be iterated without re-scraping. See TODO #17.
-	overloadArgs?: Array<Array<{ name: string; type: string }>>;
+	// description recovers per-overload arg text the merged param list drops for
+	// later-overload-only params. See TODO #25.
+	overloadArgs?: Array<
+		Array<{ name: string; type: string; description?: string }>
+	>;
 }
 
 // A built-in variable or constant detail. Both render their type the same way:
@@ -285,7 +289,12 @@ async function collectOverloadArgs(
 			for (const node of el.querySelectorAll(
 				".tv-pine-reference-item__arg-type",
 			)) {
-				texts.push(node.textContent?.trim() || "");
+				// The arg-type span holds only "name (type)"; the description is
+				// sibling text in the parent __text div. Capture the parent's full
+				// textContent ("name (type) description") so parseArgTypeText gets
+				// the description too. see TODO #25
+				const row = node.parentElement ?? node;
+				texts.push(row.textContent?.trim() || "");
 			}
 			return { argTexts: texts, html: el.outerHTML };
 		}, funcNameClean);

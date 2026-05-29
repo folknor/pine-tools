@@ -55,7 +55,9 @@ interface FunctionDetail {
 	category?: string;
 	overloads?: string[];
 	variadic?: boolean;
-	overloadArgs?: Array<Array<{ name: string; type: string }>>;
+	overloadArgs?: Array<
+		Array<{ name: string; type: string; description?: string }>
+	>;
 }
 
 interface GeneratedFunction {
@@ -375,20 +377,37 @@ function buildOverloads(
 				: parseParamNamesFromSignature(sig).map((name) => ({
 						name,
 						type: "unknown",
+						description: "",
 					}));
 		return {
-			parameters: args.map(({ name, type }) => {
+			parameters: args.map(({ name, type, description }) => {
 				const m = merged.get(name);
 				return {
 					name,
 					type,
-					description: m?.description || "",
+					// Prefer this overload's own captured description; fall back to
+					// the merged param's (overload #0's). see TODO #25
+					description: description || m?.description || "",
 					required: m ? !isParameterOptional(m) : true,
 				};
 			}),
 			returns: parseReturnFromSignature(sig),
 		};
 	});
+}
+
+// Build a name -> description map from a function's overload dump, so the merged
+// parameter list can backfill descriptions for params that appear only in a
+// later overload (absent from overload #0, hence blank in the merged view).
+// First non-empty description per name wins. see TODO #25
+function overloadDescriptions(detail: FunctionDetail): Map<string, string> {
+	const out = new Map<string, string>();
+	for (const args of detail.overloadArgs || []) {
+		for (const { name, description } of args) {
+			if (description && !out.get(name)) out.set(name, description);
+		}
+	}
+	return out;
 }
 
 function generateFunctions(
@@ -430,6 +449,9 @@ function generateFunctions(
 		// dump (offline; see union-types.ts). Only params present in every
 		// overload are unioned — others keep their scraped type.
 		const unionedParams = unionOverloadParams(detail);
+		// Backfill descriptions for params that appear only in a later overload
+		// (blank in the merged view scraped from overload #0). see TODO #25
+		const descByName = overloadDescriptions(detail);
 		const parameters = (detail.parameters || []).map((p) => ({
 			name: p.name,
 			type:
@@ -437,7 +459,7 @@ function generateFunctions(
 				unionedParams.get(p.name) ??
 				p.type ??
 				"unknown",
-			description: p.description || "",
+			description: p.description || descByName.get(p.name) || "",
 			required: !isParameterOptional(p),
 			default: p.default,
 		}));

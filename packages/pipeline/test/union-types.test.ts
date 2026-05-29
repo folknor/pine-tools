@@ -3,24 +3,33 @@ import { parseArgTypeText } from "../src/arg-parse.ts";
 import { unionOverloadParams, unionTypes } from "../src/union-types.ts";
 
 describe("parseArgTypeText", () => {
-	it("parses a standard single-arg row", () => {
+	it("parses a standard single-arg row with its description", () => {
 		expect(parseArgTypeText("id (array<int/float>) An array object.")).toEqual([
-			{ name: "id", type: "array<int/float>" },
+			{ name: "id", type: "array<int/float>", description: "An array object." },
 		]);
 	});
 
 	it("expands a variadic row into one entry per name, dropping the ellipsis", () => {
 		// math.max renders all args in one node: "number0, number1, ... (type)".
+		// The shared type and description apply to every listed name.
 		expect(
 			parseArgTypeText("number0, number1, ... (const int) A sequence."),
 		).toEqual([
-			{ name: "number0", type: "const int" },
-			{ name: "number1", type: "const int" },
+			{ name: "number0", type: "const int", description: "A sequence." },
+			{ name: "number1", type: "const int", description: "A sequence." },
 		]);
 	});
 
 	it("returns nothing when there is no parenthesised type", () => {
 		expect(parseArgTypeText("just some prose")).toEqual([]);
+	});
+
+	it("collapses whitespace so live and offline extraction agree", () => {
+		expect(
+			parseArgTypeText("number  (series int)\n   The   length."),
+		).toEqual([
+			{ name: "number", type: "series int", description: "The length." },
+		]);
 	});
 });
 

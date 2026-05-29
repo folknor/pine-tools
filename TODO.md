@@ -201,11 +201,14 @@ IDs so the two stay in sync.
     function, built offline from the dump + mirror. Additive — keep the
     existing merged `parameters`/`syntax`/`returns` so current consumers
     (incl. our checker) don't break.
-  - **61/1292 params have empty `description`** — lost in the merge (params
-    that only appear in a later overload: `box.new.left/top/right/bottom`,
-    `fill.plot1/plot2`, …). The text is in the mirror DOM but `overloadArgs`
-    only captures `{name, type}`, not the trailing description. Extend
-    `arg-parse.ts` to also capture description; re-extract from the mirror.
+  - ✅ **Empty param descriptions recovered (2026-05-29).** Was 61/1292 flat
+    params (and the per-overload params) with no description — lost in the
+    merge for params appearing only in a later overload (`box.new.left/top/
+    right/bottom`, `fill.plot1/plot2`, …). `arg-parse.ts` now captures the
+    trailing description from each arg row, `overloadArgs` carries it, and
+    `reextract:dom` re-derived it from the mirror (offline, tags stripped).
+    Now 0/1292 flat and 0/784 overload params empty; backfilled into both the
+    merged `parameters` and the per-overload `overloads[].parameters`.
   - **No `default` values** (0/1292; ~332 optional params document one in
     prose like "The default is …"). Parse offline at generate-time. Note the
     prose is messy — values with dots (`alert.freq_once_per_bar`), words for

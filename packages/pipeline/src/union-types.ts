@@ -10,6 +10,9 @@
 export interface OverloadArg {
 	name: string;
 	type: string;
+	// Per-overload arg description (used by generate's buildOverloads / flat-
+	// description backfill; the union itself only reads `type`). See TODO #25.
+	description?: string;
 }
 
 export interface OverloadCapture {

@@ -54,4 +54,14 @@ describe("generated functions.json — overload exposure (TODO #25)", () => {
 			}
 		}
 	});
+
+	it("no parameter has an empty description (recovered from the mirror, #25)", () => {
+		const blank: string[] = [];
+		for (const fn of functions as Fn[]) {
+			for (const p of fn.parameters as { name: string; description?: string }[]) {
+				if (!p.description) blank.push(`${fn.name}.${p.name}`);
+			}
+		}
+		expect(blank, `params missing description: ${blank.join(", ")}`).toEqual([]);
+	});
 });
