@@ -212,8 +212,9 @@ pnpm run build            # Build extension
 pnpm test                 # Run tests
 
 # Data Pipeline (packages/pipeline/src/)
-pnpm run crawl            # Crawl TradingView docs
-pnpm run scrape           # Scrape function details
+pnpm run crawl            # Crawl TradingView docs (TOC inventory)
+pnpm run scrape           # Scrape details + build .cache/dom mirror
+pnpm run reextract:dom    # Re-derive overloadArgs from the mirror (offline; run after scrape)
 pnpm run generate         # Generate pine-data/v6/*.{ts,json}
 pnpm run generate:syntax  # Generate syntaxes/pine.tmLanguage.json
 pnpm run discover:behavior # Discover polymorphism → function-behavior.json
@@ -280,13 +281,32 @@ All API data is scraped from TradingView docs and generated:
 
 | Command | Output |
 |---------|--------|
-| `crawl` | `pine-data/raw/v6/v6-language-constructs.json` |
-| `scrape` | `pine-data/raw/v6/complete-v6-details.json` |
+| `crawl` | `pine-data/raw/v6/v6-language-constructs.json` (TOC inventory of every reference section) |
+| `scrape` | `pine-data/raw/v6/complete-v6-details.json` (+ DOM mirror under `.cache/dom/`) |
+| `reextract:dom` | re-derives `overloadArgs` from the mirror, **offline** — run after every `scrape` (see below) |
 | `generate` | `pine-data/v6/*.ts` + `*.json` (vendor-friendly snapshot for downstream Rust/non-node consumers) |
 | `generate:syntax` | `syntaxes/pine.tmLanguage.json` |
 | `discover:behavior` | `pine-data/v6/function-behavior.json` |
 
+`generate` emits one catalog per reference section: `functions`, `variables`,
+`constants`, `types`, `annotations`, `keywords` (`.ts` + `.json` each). The
+`functions` entries carry an `overloads[]` array (exact per-overload param
+types + returns) alongside the merged view, and params carry `default`
+(literal or a magic sentinel like `CHART_SYMBOL`/`ARG:<name>`), `allowedValues`,
+and `min`/`max`. `types` includes `chart.point`'s fields; the opaque ID types
+have none. **Operators are intentionally NOT emitted** — they're grammar the
+parser hardcodes (Data-vs-Syntax); the crawl still records the accurate set in
+the raw constructs (from `#op_` TOC links) but nothing generates them.
+
 **Regenerating is safe** - customizations are in the scripts, not output files.
+
+⚠️ **Always run `pnpm run reextract:dom` after any `scrape`.** A `scrape`
+rebuilds `complete-v6-details.json` from the per-function cache
+(`.cache/function-details/`), which holds the scrape's *own* extraction — NOT
+the offline re-derivation. Skipping reextract reverts the variadic
+`overloadArgs` (e.g. `math.max` → empty) and per-overload descriptions to the
+cache's pre-fix state. The standard refresh is: `crawl` → `scrape` →
+`reextract:dom` → `generate` → `install:cli` → `regression-check`.
 
 ⚠️ `function-behavior.json` is regenerated **only** by `discover:behavior`,
 *not* by `generate` — so it goes stale after a `crawl`/`scrape`/`generate`

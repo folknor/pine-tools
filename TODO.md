@@ -31,11 +31,7 @@ IDs so the two stay in sync.
   constructors (`chart.point.new`/`.now`); a bare `chart.point` reference
   trips the unknown-property check. This is type-as-namespace handling in
   the checker, not missing data. (`barmerge.lookhead_on`, also surfaced
-  here, is a user typo TV flags too — not a bug.) The namespaced-variable
-  catalog gap formerly tracked under this item is **resolved**: variables
-  are now scraped from TV (crawl→scrape→generate), retiring the
-  hand-maintained `namespaceVars` list; `scripts/diff-tv-inventory.mjs`
-  re-runs the authoritative TOC diff.
+  here, is a user typo TV flags too — not a bug.)
 - **#4 — over-strict "cannot be called from a local scope" FPs.** Was
   31 across 6 files; INV008 cut it to 15. Most of the residual is in
   one file (`d40d7b52…pine`, 11 hits) whose trigger pattern resists
@@ -47,34 +43,15 @@ IDs so the two stay in sync.
   Umbrella task. Several big wins landed via INV005, INV010, INV011;
   remaining FPs need a fresh corpus diff and per-category dives. The
   current top non-cascade category likely needs a new pass.
-- **#17 — union types for overloaded/polymorphic params (data work
-  LANDED; only consolidation pending).** The scraper captures a complete
-  per-overload `overloadArgs` dump and unions param types **offline at
-  generate-time** (`packages/pipeline/src/union-types.ts`; structural
-  rule: primitive union / collection-element union / identical / else
-  `unknown`). Return-follows-source functions are detected from the dump
-  and resolve their return from the actual argument
-  (`flags.returnTypeParam`); universal params (`na`) and
-  TV-under-documented accepted types (`nz`/`fixnan`/`int`/`plot`, see
-  [G002](gotchas/G002-reference-underdocuments-accepted-types.md)) are
-  handled. Net across the arc: accurate union/return types, **~979 false
-  positives removed**, and type logic is now iterable offline (no
-  re-scrape — see CLAUDE.md). Commits 52a7028 / 043f4f4 / c1ba9c3.
-  - **Phase 2 (drop the polymorphic bypass to validate args) is
-    ABANDONED.** It existed to catch the "3 arg-type FNs" from the old
-    #8 — but all three (`nz(bool)`, `int(true)`, `plot(title=non-const)`)
-    are **TV-accepted** (verified 2026-05-28). The bypass is *correct*;
-    removing it would only add false positives. See the corrected INV009
-    and [G002](gotchas/G002-reference-underdocuments-accepted-types.md).
-    The TV-verified accepted-type widenings (`nz`/`fixnan` all primitives,
-    `int`+bool, `plot.title` series string) are baked into pine-data via
-    `FUNCTION_PARAM_TYPE_OVERRIDES` in `generate.ts`.
-  - **Still pending — consolidate the two polymorphism encodings:** the
-    *discovered* `pine-data/v6/function-behavior.json` (`returnTypeParam`,
-    arg-ordering) vs the *hand-coded* `polymorphic` map + the new
-    `flags.returnTypeParam` in `getFunctionFlags`/generate. The JSON is
-    regenerated only by `discover:behavior` (stale — stamped 2026-05-24,
-    5 functions). Unify so return-type behavior has a single source.
+- **#17 — consolidate the two polymorphism encodings.** Return-type
+  behavior is described in two places: the *discovered*
+  `pine-data/v6/function-behavior.json` (`returnTypeParam`, arg-ordering)
+  vs the *hand-coded* `polymorphic` map + `flags.returnTypeParam` in
+  `getFunctionFlags`/generate. The JSON is regenerated only by
+  `discover:behavior` (stale — stamped 2026-05-24, 5 functions). Unify so
+  return-type behavior has a single source. (The union/return-type data work
+  itself landed — see git log and CLAUDE.md; Phase 2 / the polymorphic
+  arg-validation bypass is now tracked under #24.)
 - **#18 — built-in color constants infer as `undetermined type`.**
   Surfaced by INV011. The "Ternary branches must have compatible types"
   cluster is now down to **31** (from ~117+) after the variable/constant
@@ -102,55 +79,23 @@ IDs so the two stay in sync.
   body" and a sync that skips to the end of *that* context, not the
   next column-1. Bigger refactor; defer until someone has appetite
   for the stack-threading work.
-- **#21 — retire/scrape the remaining hardcoded function metadata in
-  `generate.ts`.** `MISSING_PARAMETERS` is **done** — removed (the
-  re-scrape now carries `input.int`/`input.float`'s `minval`/`maxval`/`step`,
-  the merge deduped, regression-check confirmed a no-op). The `variadic`
-  map turned out **not** safe to delete: the scrape sets `variadic: true`
-  for most of them, but its required-param count overcounts `minArgs` for
-  `array.from` and `str.format` (both valid with 1 arg, scrape says 2), and
-  `math.sum` isn't variadic at all — so the map's `minArgs` values are
-  authoritative and stay. Still hand-coded and harder (TV doesn't expose
-  these cleanly): `getFunctionFlags.topLevelOnly` (15 fns, "global scope
-  only"), the `polymorphic` category map (~25 fns → see #17), and
-  `isParameterOptional` + `commonOptionalParams` — prose-matching heuristics
-  for argument optionality, the last cousin of the retired
-  `inferVariableType` / `inferConstantType` guessers.
-- **#22 — reduce scraper load on TradingView.** We should not hit TV's
-  reference site more than necessary; prefer targeted re-scrapes / an offline
-  mirror over repeated full `--force` runs. Note the footprint is smaller than
-  it looks: `scrape.ts` loads the SPA **once** per run, then navigates
-  client-side via `#fun_<name>` / `#fun_<name>-<i>` hash changes (not
-  per-function HTTP requests), so a full run ≈ one page-load of TV's bundle.
-  - ✅ **Type-logic iteration is already offline (2026-05-28, #17 rework).**
-    The scrape captures the full per-overload `overloadArgs` dump and the union
-    runs offline at generate-time (`union-types.ts`). So changing how param
-    types are *derived* needs only `pnpm run generate` — no scrape. Documented
-    in CLAUDE.md ("Re-running type logic WITHOUT scraping"). This covers the
-    most common reason we were re-scraping.
-  - Remaining ways to cut scraping further:
-    - **Targeted re-scrape (quick win):** the per-function disk cache
-      (`.cache/function-details/`, 24h TTL) already lets you delete only the
-      entries you want refreshed and run plain `scrape` (no `--force`). Add an
-      `--only <names>` / `--only-overloaded` flag so this doesn't require
-      hand-deleting cache files.
-    - ✅ **DOM-extraction iteration is now offline too (2026-05-29).** The
-      **open question is resolved**: the overload arg widget is rendered
-      *dynamically* per sub-anchor (`#fun_<name>-<i>`), so a flat page dump is
-      insufficient — a per-overload rendered-DOM snapshot is required. `scrape`
-      now captures that snapshot (`saveDomSnapshot` -> `.cache/dom/<name>/{base,
-      overload-<i>}.html`, gitignored — a local build artifact, never committed
-      so we don't republish TV's HTML). `pnpm run reextract:dom`
-      (`reextract-overload-args.ts`) re-derives every `overloadArgs` from that
-      mirror with no network, sharing the arg-type parser (`arg-parse.ts`) with
-      the live scrape. So a DOM-*extraction* change is now: edit `arg-parse.ts`
-      -> `reextract:dom` -> `generate` -> `regression-check`, zero TV calls.
-      The mirror is built as a byproduct of any normal `scrape`, so no separate
-      `scrape:mirror` step is needed.
-    - **Targeted `--only` re-scrape** is still the one remaining quick win
-      (delete-cache-and-rescrape works today; a flag would be nicer). With the
-      mirror + offline reextract in place, full `--force` re-scrapes should now
-      be rare — only when TV's DOM *structure* itself changes.
+- **#21 — retire the remaining hardcoded function metadata in
+  `generate.ts`.** Still hand-coded because TV doesn't expose them cleanly:
+  `getFunctionFlags.topLevelOnly` (15 fns, "global scope only"), the
+  `polymorphic` category map (~25 fns → see #17), and `isParameterOptional`
+  + `commonOptionalParams` — prose-matching heuristics for argument
+  optionality, the last cousin of the retired `inferVariableType` /
+  `inferConstantType` guessers. (The `variadic` map stays: its `minArgs`
+  values are authoritative where the scrape over/under-counts —
+  `array.from`/`str.format` valid with 1 arg, `math.sum` not variadic.)
+- **#22 — `--only <names>` / `--only-overloaded` scrape flag.** The only
+  remaining scrape-load reduction: a flag for a targeted re-scrape of just
+  the named entries, instead of hand-deleting their `.cache/function-details/`
+  files and running plain `scrape`. Lower priority now that both type-logic
+  and DOM-extraction iteration are fully offline via the `.cache/dom` mirror
+  + `reextract:dom` (see CLAUDE.md "Re-running type logic WITHOUT scraping"),
+  so full `--force` re-scrapes should be rare — only when TV's DOM *structure*
+  changes.
 - **#23 — move all hardcoded data transmogrifications pre-JSON.** Any
   hardcoded correction, addition, or transformation of the scraped language
   data (type overrides, accepted-type widenings, flag maps, polymorphism /
@@ -183,95 +128,6 @@ IDs so the two stay in sync.
   removed ~real FPs when pine-data listed only overload #0's types — that
   premise is now weaker, but verify per-function with `--tv` before
   tightening). Likely catches several of the "16 missed arg-type FNs".
-- **#25 — make `pine-data/v6/*.json` complete for EXTERNAL consumers, not
-  just our checker.** pine-data is a *published* dataset (the JSON is the
-  vendor snapshot for downstream Rust/non-node consumers — see CLAUDE.md).
-  Completeness must be judged by "is this a faithful, self-contained Pine
-  API description for any consumer", **not** by "does our checker read this
-  field". Today the generated JSON delivers *less* than the raw dump we
-  already capture. Gaps found 2026-05-29 (counts vs the 475-function set):
-  - **Overload structure is flattened away (headline).** 0 functions expose
-    an `overloads` array, yet **118 functions are overloaded**. `syntax` and
-    `returns` are frozen to overload #0, so e.g. `math.round`'s
-    `(number, precision) → float` form is invisible. The raw
-    `complete-v6-details.json` has every overload's signature
-    (`overloads`) + per-overload typed args (`overloadArgs`); generate drops
-    it for a single lossy merged signature. **Fix:** expose
-    `overloads: [{ parameters: [{name, type, description}], returns }]` per
-    function, built offline from the dump + mirror. Additive — keep the
-    existing merged `parameters`/`syntax`/`returns` so current consumers
-    (incl. our checker) don't break.
-  - ✅ **Empty param descriptions recovered (2026-05-29).** Was 61/1292 flat
-    params (and the per-overload params) with no description — lost in the
-    merge for params appearing only in a later overload (`box.new.left/top/
-    right/bottom`, `fill.plot1/plot2`, …). `arg-parse.ts` now captures the
-    trailing description from each arg row, `overloadArgs` carries it, and
-    `reextract:dom` re-derived it from the mirror (offline, tags stripped).
-    Now 0/1292 flat and 0/784 overload params empty; backfilled into both the
-    merged `parameters` and the per-overload `overloads[].parameters`.
-  - ✅ **Default values parsed (2026-05-29).** Was 0/1292. `parse-default.ts`
-    extracts the value after "the default (value) is" at generate-time —
-    handling namespaced consts (`alert.freq_once_per_bar`), booleans/`na`,
-    numbers, quoted literals (incl. embedded quotes like
-    `"yyyy-MM-dd'T'HH:mm:ssZ"`), word-numbers (`zero`), empty-string phrasings
-    (→ `""`), and "no color" (→ `na`). 285 flat params + 112 overload params
-    now carry `default`. Dynamic/inherited defaults that have no literal value
-    use a MAGIC SENTINEL (CHART_SYMBOL, CHART_BARS, SCRIPT_FORMAT,
-    SCRIPT_PRECISION, SOURCE_LENGTH, or `ARG:<sibling>`) — distinguished by
-    that set/prefix, not casing (some literals are uppercase, e.g. "FIFO").
-    Only `ta.vwap.anchor` is left undefined (its expr prose is too awkward to
-    reconstruct). Best-effort, not authoritative (the "X by default" phrasing
-    is skipped: ambiguous). Sentinel set documented in schema/types.ts.
-  - ✅ **Allowed values & numeric ranges parsed (2026-05-29).**
-    `parse-constraints.ts` reads "Possible values are: …" prose at
-    generate-time. 116 params now expose `allowedValues: string[]` (namespaced
-    constants like `alert.freq_all`/`display.none`, or quoted-string enums like
-    `"TTM"`/`'open'`) and 11 expose an inclusive `{min, max}` numeric range
-    (`color.rgb.*` 0-255, `strategy.max_*_count` 1-500). A param is an enum XOR
-    a range (enforced in generate + a contract test); free-prose value
-    descriptions ("a string representing a valid currency code") are skipped.
-    Both surfaced on the merged `parameters` and per-overload `overloads[]`.
-  - **Polymorphic `returns` frozen/wrong** (subset of the overload gap):
-    `nz → "simple color"`, `fixnan → "series color"`, `math.max →
-    "const int"`. Exposing per-overload returns (above) covers this; a
-    unioned top-level `returns` (`nz → series int/float/color`) is an
-    optional extra.
-  - ✅ **Built-in types catalog generated (2026-05-29).** TV's reference has
-    its own "Types" section (`type_<name>` anchors); the crawl already
-    discovered 20. `scrape` now scrapes each type page (description, examples,
-    and a Fields list where present), mirrors the DOM, and `generate` emits
-    `types.json` + `types.ts` (`PineBuiltinType`): `name`/`namespace`/`kind`
-    (primitive · qualifier · container · object) + description/examples, plus
-    `fields` for the one non-opaque object type that has them — `chart.point`
-    (index/time/price). The opaque ID types (line/label/box/table/footprint/…)
-    have no fields (manipulated via their `.*()` functions), confirmed from the
-    pages. No built-in enums in v6 (enums are user-defined).
-  **Remaining reference sections (the dataset still omits 2 of 7):**
-  - **Operators** — the reference documents an Operators section and the crawl
-    captured 33 items, but the list is CORRUPT (`=-`, `><`, `=|:=`, `://` are
-    mis-parsed artifacts). Operators are grammar fundamentals the parser
-    hardcodes (CLAUDE.md Data-vs-Syntax), so probably do NOT emit them as data;
-    at most clean up the buggy crawl extraction separately. Low priority.
-  - ✅ **Annotations catalog generated (2026-05-29).** The crawl now classifies
-    `#an_` TOC links (10 found: `@version=`, `@param`, `@function`, `@returns`,
-    `@type`, `@field`, `@enum`, `@variable`, `@description`,
-    `@strategy_alert_message`), `scrape` fetches each `an_<name>` page
-    (description + examples; mirrored), and `generate` emits `annotations.json`
-    + `annotations.ts` (`PineAnnotation`). The crawl also reports
-    `metadata.unclassifiedPrefixes` as a one-run safety net for finding new
-    section anchors (confirmed only `kw`/`op` remain, both handled elsewhere).
-  **Principle:** additive, non-breaking schema changes; derived offline (dump +
-  `.cache/dom` mirror via `reextract:dom`) and baked into the JSON at
-  generate-time (#23). New reference *sections* (types, and a future
-  annotations) need one targeted scrape to capture their pages; type/param
-  *derivation* from already-captured data stays offline.
-  **⚠ Workflow gotcha:** a re-`scrape` rebuilds `complete-v6-details.json` from
-  the per-function cache (`.cache/function-details/`), which is written by the
-  scrape's *own* extraction — it does NOT carry `reextract:dom`'s offline
-  re-derivation. So **always run `pnpm run reextract:dom` after any `scrape`**
-  to restore the variadic `overloadArgs` + per-overload descriptions, else they
-  revert to the cache's (pre-fix) state. (Caught when the type scrape clobbered
-  `math.max`'s unioned args back to empty.)
 
 ## Gotchas
 

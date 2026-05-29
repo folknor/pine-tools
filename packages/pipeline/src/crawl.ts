@@ -196,6 +196,12 @@ export async function crawlPineScriptReference(): Promise<CrawlResult> {
 						allDiscoveredItems.types.push(text);
 					} else if (href.includes("#an_")) {
 						allDiscoveredItems.annotations.push(text);
+					} else if (href.includes("#op_")) {
+						// Operators are grammar the parser hardcodes (we don't emit an
+						// operators.json), but discover them from the TOC so the raw
+						// constructs hold the accurate documented set rather than the
+						// garbage a code-block regex produced (`=-`, `><`, `=|:=`, …).
+						allDiscoveredItems.operators.add(text);
 					} else {
 						const m = href.match(/#([a-z]+)_/i);
 						if (m) {
@@ -206,15 +212,14 @@ export async function crawlPineScriptReference(): Promise<CrawlResult> {
 				}
 			});
 
-			// Extract keywords and operators from code blocks throughout the page
+			// Extract keywords from code blocks throughout the page. (Operators are
+			// discovered from the #op_ TOC links above, not here — a char-class
+			// regex over code produced garbage like `=-`, `><`, `=|:=`.)
 			const codeBlocks = document.querySelectorAll("code, pre");
 
 			// Pine Script keywords pattern
 			const keywordRegex =
 				/\b(and|or|not|if|else|for|while|do|switch|case|default|break|continue|return|var|let|const|import|export|true|false|na|null|enum|method|type|varip)\b/g;
-
-			// Operators pattern
-			const operatorRegex = /[+\-*/%=<>!&|^?:]+|[=!]=|[<>]=|\[\]/g;
 
 			codeBlocks.forEach((block) => {
 				const text = block.textContent || "";
@@ -226,14 +231,6 @@ export async function crawlPineScriptReference(): Promise<CrawlResult> {
 					match = keywordRegex.exec(text);
 					if (match === null) break;
 					allDiscoveredItems.keywords.add(match[1]);
-				}
-
-				// Extract operators
-				const operatorMatches = text.match(operatorRegex);
-				if (operatorMatches) {
-					operatorMatches.forEach((op) => {
-						allDiscoveredItems.operators.add(op);
-					});
 				}
 			});
 

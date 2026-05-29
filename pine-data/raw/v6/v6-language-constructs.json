@@ -1,8 +1,8 @@
 {
   "metadata": {
-    "extractedAt": "2026-05-29T17:56:15.605Z",
+    "extractedAt": "2026-05-29T18:02:53.029Z",
     "source": "https://www.tradingview.com/pine-script-reference/v6/",
-    "totalItems": 888,
+    "totalItems": 876,
     "extractionMethod": "dynamic_discovery",
     "discoveryStats": {
       "tocItemsFound": 941,
@@ -12,11 +12,10 @@
       "constantsDiscovered": 239,
       "typesDiscovered": 20,
       "keywordsDiscovered": 25,
-      "operatorsDiscovered": 33
+      "operatorsDiscovered": 21
     },
     "unclassifiedPrefixes": {
-      "kw": 15,
-      "op": 21
+      "kw": 15
     }
   },
   "keywords": {
@@ -50,41 +49,29 @@
     ]
   },
   "operators": {
-    "count": 33,
+    "count": 21,
     "items": [
-      "!",
       "!=",
       "%",
       "%=",
       "*",
       "*=",
       "+",
-      "+:",
       "+=",
       "-",
       "-=",
       "/",
-      "//",
       "/=",
-      ":",
-      "://",
       ":=",
       "<",
       "<=",
-      "<>",
       "=",
-      "=-",
-      "=<",
       "==",
       "=>",
-      "=|:=",
       ">",
-      "></",
       ">=",
-      "?",
       "?:",
-      "[]",
-      "|"
+      "[]"
     ]
   },
   "builtInVariables": {
