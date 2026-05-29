@@ -113,6 +113,15 @@ interface GeneratedConstant {
 	type: string;
 }
 
+interface GeneratedType {
+	name: string;
+	namespace?: string;
+	kind: "primitive" | "qualifier" | "container" | "object";
+	description?: string;
+	examples?: string[];
+	fields?: Array<{ name: string; type: string; description: string }>;
+}
+
 interface ScrapedMember {
 	name: string;
 	type: string;
@@ -120,10 +129,19 @@ interface ScrapedMember {
 	namespace: string;
 }
 
+interface ScrapedType {
+	name: string;
+	description?: string;
+	examples?: string[];
+	fields?: Array<{ name: string; type: string; description: string }>;
+	namespace?: string;
+}
+
 interface DetailsData {
 	functions: Record<string, FunctionDetail>;
 	variables?: Record<string, ScrapedMember>;
 	constants?: Record<string, ScrapedMember>;
+	types?: Record<string, ScrapedType>;
 }
 
 interface ConstructsData {
@@ -133,6 +151,7 @@ interface ConstructsData {
 		byNamespace?: Record<string, string[]>;
 	};
 	constants?: { byNamespace?: Record<string, string[]> };
+	types?: { items?: string[] };
 }
 
 // =============================================================================
@@ -754,6 +773,76 @@ export const CONSTANT_NAMESPACES: Set<string> = new Set(CONSTANTS.map(c => c.nam
 	return constants;
 }
 
+// Classify a built-in type name by kind. Primitives, type qualifiers, and
+// generic containers are fixed sets; everything else the crawl discovers is a
+// composite object type (chart.point, line, label, box, table, …).
+const TYPE_KINDS: Record<string, GeneratedType["kind"]> = {
+	int: "primitive",
+	float: "primitive",
+	bool: "primitive",
+	string: "primitive",
+	color: "primitive",
+	const: "qualifier",
+	simple: "qualifier",
+	series: "qualifier",
+	array: "container",
+	matrix: "container",
+	map: "container",
+};
+
+function generateTypes(
+	details: DetailsData,
+	constructs: ConstructsData,
+): GeneratedType[] {
+	console.log("Generating types.ts...");
+
+	const scraped = details.types || {};
+	const names = constructs.types?.items || [];
+
+	const types: GeneratedType[] = names.map((name) => {
+		const sc = scraped[name];
+		return {
+			name,
+			namespace: name.includes(".") ? name.split(".")[0] : undefined,
+			kind: TYPE_KINDS[name] ?? "object",
+			description: sc?.description || undefined,
+			examples: sc?.examples && sc.examples.length > 0 ? sc.examples : undefined,
+			fields: sc?.fields && sc.fields.length > 0 ? sc.fields : undefined,
+		};
+	});
+
+	const content = `/**
+ * Pine Script ${VERSION.toUpperCase()} Built-in Types
+ * Auto-generated from TradingView documentation
+ * Generated: ${new Date().toISOString()}
+ * Total: ${types.length} types
+ */
+
+import type { PineBuiltinType } from "../schema/types";
+
+/**
+ * All ${VERSION} built-in types
+ */
+export const TYPES: PineBuiltinType[] = ${JSON.stringify(types, null, 2)};
+
+/**
+ * Types indexed by name for O(1) lookup
+ */
+export const TYPES_BY_NAME: Map<string, PineBuiltinType> = new Map(
+	TYPES.map(t => [t.name, t])
+);
+
+/**
+ * All built-in type names as a Set for fast membership check
+ */
+export const TYPE_NAMES: Set<string> = new Set(TYPES.map(t => t.name));
+`;
+
+	fs.writeFileSync(path.join(OUTPUT_DIR, "types.ts"), content);
+	console.log(`   ${types.length} types`);
+	return types;
+}
+
 function generateKeywords(constructs: ConstructsData): string[] {
 	console.log("Generating keywords.ts...");
 
@@ -867,6 +956,7 @@ function generateVersionIndex(
 export * from "./functions";
 export * from "./variables";
 export * from "./constants";
+export * from "./types";
 export * from "./keywords";
 export * from "./function-behavior";
 
@@ -983,6 +1073,7 @@ function main(): void {
 	const functions = generateFunctions(details, constructs);
 	const variables = generateVariables(details, constructs);
 	const constants = generateConstants(details, constructs);
+	const types = generateTypes(details, constructs);
 	const keywords = generateKeywords(constructs);
 	generateVersionIndex(functions, variables, constants, keywords);
 
@@ -996,12 +1087,14 @@ function main(): void {
 	writeJson("functions", functions);
 	writeJson("variables", variables);
 	writeJson("constants", constants);
+	writeJson("types", types);
 	writeJson("keywords", keywords);
 
 	console.log(`\nPine Script ${VERSION} data generated successfully!`);
 	console.log(`   ${functions.length} functions`);
 	console.log(`   ${variables.length} variables`);
 	console.log(`   ${constants.length} constants`);
+	console.log(`   ${types.length} types`);
 	console.log(`   ${keywords.length} keywords\n`);
 }
 

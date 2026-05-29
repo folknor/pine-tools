@@ -176,6 +176,42 @@ export interface PineFunction {
 }
 
 // =============================================================================
+// BUILT-IN TYPE SCHEMA
+// =============================================================================
+
+/**
+ * A built-in Pine type name, classified so consumers can recognize it without
+ * a hardcoded list. Covers primitives, type qualifiers, generic containers, and
+ * composite object types.
+ */
+export interface PineBuiltinType {
+	/** Type name (e.g. "int", "array", "chart.point", "line"). */
+	name: string;
+	/** Namespace if the name is qualified (e.g. "chart" for "chart.point"). */
+	namespace?: string;
+	/**
+	 * Classification:
+	 * - "primitive": int, float, bool, string, color
+	 * - "qualifier": const, simple, series (type-qualifier keywords)
+	 * - "container": array, matrix, map (generic collection types)
+	 * - "object": composite reference types (chart.point, line, label, box,
+	 *   table, linefill, polyline, …)
+	 */
+	kind: "primitive" | "qualifier" | "container" | "object";
+	/** Description from the type's reference page. */
+	description?: string;
+	/** Example snippets from the type's reference page. */
+	examples?: string[];
+	/**
+	 * Accessible fields, present only for non-opaque object types (e.g.
+	 * chart.point's index/time/price). The opaque ID types (line, label, box,
+	 * table, footprint, …) expose no fields — they are manipulated via their
+	 * `.*()` functions — so this is absent for them.
+	 */
+	fields?: Array<{ name: string; type: string; description: string }>;
+}
+
+// =============================================================================
 // VARIABLE SCHEMA
 // =============================================================================
 

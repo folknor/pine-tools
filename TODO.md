@@ -236,13 +236,40 @@ IDs so the two stay in sync.
     "const int"`. Exposing per-overload returns (above) covers this; a
     unioned top-level `returns` (`nz → series int/float/color`) is an
     optional extra.
-  - **No built-in types/enums catalog** — only functions/variables/
-    constants/keywords are generated. Confirm whether v6 built-in types
-    (`chart.point`, `line`, `label`, `box`, `table`, …) and any built-in
-    enums warrant their own catalog for consumers.
-  **Principle:** additive, non-breaking schema changes; everything derived
-  offline (dump + `.cache/dom` mirror via `reextract:dom`), baked into the
-  JSON at generate-time (#23). No new TV scrapes needed.
+  - ✅ **Built-in types catalog generated (2026-05-29).** TV's reference has
+    its own "Types" section (`type_<name>` anchors); the crawl already
+    discovered 20. `scrape` now scrapes each type page (description, examples,
+    and a Fields list where present), mirrors the DOM, and `generate` emits
+    `types.json` + `types.ts` (`PineBuiltinType`): `name`/`namespace`/`kind`
+    (primitive · qualifier · container · object) + description/examples, plus
+    `fields` for the one non-opaque object type that has them — `chart.point`
+    (index/time/price). The opaque ID types (line/label/box/table/footprint/…)
+    have no fields (manipulated via their `.*()` functions), confirmed from the
+    pages. No built-in enums in v6 (enums are user-defined).
+  **Remaining reference sections (the dataset still omits 2 of 7):**
+  - **Operators** — the reference documents an Operators section and the crawl
+    captured 33 items, but the list is CORRUPT (`=-`, `><`, `=|:=`, `://` are
+    mis-parsed artifacts). Operators are grammar fundamentals the parser
+    hardcodes (CLAUDE.md Data-vs-Syntax), so probably do NOT emit them as data;
+    at most clean up the buggy crawl extraction separately. Low priority.
+  - **Annotations** — `//@version`, `//@function`, `//@param`, `//@type`,
+    `//@enum`, `//@field`, `//@strategy_alert_message`, … The reference has an
+    Annotations section but the **crawl doesn't capture it** (no `annotations`
+    key in `v6-language-constructs.json`). Needs a crawl pass to discover the
+    `an_<name>` anchors + a scrape for their detail pages. Directly relevant to
+    our own lexer/annotation handling (see G004). Worth its own follow-up.
+  **Principle:** additive, non-breaking schema changes; derived offline (dump +
+  `.cache/dom` mirror via `reextract:dom`) and baked into the JSON at
+  generate-time (#23). New reference *sections* (types, and a future
+  annotations) need one targeted scrape to capture their pages; type/param
+  *derivation* from already-captured data stays offline.
+  **⚠ Workflow gotcha:** a re-`scrape` rebuilds `complete-v6-details.json` from
+  the per-function cache (`.cache/function-details/`), which is written by the
+  scrape's *own* extraction — it does NOT carry `reextract:dom`'s offline
+  re-derivation. So **always run `pnpm run reextract:dom` after any `scrape`**
+  to restore the variadic `overloadArgs` + per-overload descriptions, else they
+  revert to the cache's (pre-fix) state. (Caught when the type scrape clobbered
+  `math.max`'s unioned args back to empty.)
 
 ## Gotchas
 

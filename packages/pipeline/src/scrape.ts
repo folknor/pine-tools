@@ -109,6 +109,19 @@ interface MemberDetails {
 	namespace: string;
 }
 
+// A built-in TYPE detail page (its own reference entry, e.g. `chart.point`,
+// `line`, `int`). Unlike functions these have no syntax/params; they carry a
+// description, examples, and — only for the few non-opaque types like
+// chart.point — a Fields list. The opaque ID types (line/label/box/table/…) are
+// manipulated via `.*()` functions and expose no fields. See TODO #25.
+interface TypeDetails {
+	name: string;
+	description: string;
+	examples: string[];
+	fields?: Array<{ name: string; type: string; description: string }>;
+	namespace?: string;
+}
+
 interface ScrapeResult {
 	metadata: {
 		extractedAt: string;
@@ -121,10 +134,12 @@ interface ScrapeResult {
 		method: string;
 		totalVariables?: number;
 		totalConstants?: number;
+		totalTypes?: number;
 	};
 	functions: Record<string, FunctionDetails>;
 	variables: Record<string, MemberDetails>;
 	constants: Record<string, MemberDetails>;
+	types?: Record<string, TypeDetails>;
 }
 
 // `prefix` namespaces the cache key so e.g. the `time()` function and the
@@ -749,6 +764,106 @@ export async function scrapeMemberDetails(
 	}
 }
 
+// Scrape a built-in TYPE detail page via its `type_<name>` anchor. Captures
+// description, examples, and any Fields rows (rendered like argument rows;
+// present for non-opaque types such as chart.point). Mirrors the DOM so field
+// extraction can be iterated offline. See TODO #25.
+export async function scrapeTypeDetails(
+	name: string,
+	useCache = true,
+): Promise<TypeDetails | null> {
+	if (useCache) {
+		const cached = getCachedData<TypeDetails>(name, "type__");
+		if (cached) return cached;
+	}
+
+	try {
+		const page = await getSharedPage();
+		const elementId = `type_${name}`;
+
+		await page.evaluate((hash: string) => {
+			window.location.hash = hash;
+		}, elementId);
+		await new Promise((resolve) => setTimeout(resolve, 300));
+		await page
+			.waitForFunction(
+				(id: string) => document.getElementById(id) !== null,
+				{ timeout: 5000 },
+				elementId,
+			)
+			.catch(() => {});
+
+		const result = await page.evaluate(
+			(id: string, fallbackName: string) => {
+				const el = document.getElementById(id);
+				if (!el) return null;
+				const headerEl = el.querySelector(".tv-pine-reference-item__header");
+				const resolvedName = headerEl?.textContent?.trim() || fallbackName;
+
+				let description = "";
+				for (const t of el.querySelectorAll(
+					".tv-pine-reference-item__text.tv-text",
+				)) {
+					if (t.querySelector(".tv-pine-reference-item__arg-type")) continue;
+					const txt = (t.textContent || "").trim();
+					if (txt) {
+						description = txt;
+						break;
+					}
+				}
+
+				const examples: string[] = [];
+				for (const ex of el.querySelectorAll(
+					".tv-pine-reference-item__example code",
+				)) {
+					const text = ((ex as HTMLElement).innerText || "")
+						.replace(/ /g, " ")
+						.trim();
+					if (text) examples.push(text);
+				}
+
+				// Field rows render like argument rows ("name (type) description").
+				const fieldTexts: string[] = [];
+				for (const node of el.querySelectorAll(
+					".tv-pine-reference-item__arg-type",
+				)) {
+					const row = node.parentElement ?? node;
+					fieldTexts.push(row.textContent?.trim() || "");
+				}
+
+				return {
+					resolvedName,
+					description,
+					examples,
+					fieldTexts,
+					html: el.outerHTML,
+				};
+			},
+			elementId,
+			name,
+		);
+
+		if (!result) return null;
+		if (result.html) saveDomSnapshot(`type__${name}`, "base", result.html);
+
+		const fields = result.fieldTexts.flatMap(parseArgTypeText);
+		const details: TypeDetails = {
+			name: result.resolvedName,
+			description: result.description,
+			examples: result.examples,
+			fields: fields.length > 0 ? fields : undefined,
+			namespace: result.resolvedName.includes(".")
+				? result.resolvedName.split(".")[0]
+				: undefined,
+		};
+		saveToCache(name, details, "type__");
+		return details;
+	} catch (error) {
+		console.log(`Failed to scrape type ${name}: ${(error as Error).message}`);
+		return null;
+	}
+}
+
 export async function scrapeAllFunctions(
 	forceRefresh = false,
 ): Promise<ScrapeResult> {
@@ -893,6 +1008,29 @@ export async function scrapeAllFunctions(
 	console.log(`   Constants from cache: ${constantsFromCache.length}`);
 	console.log(`   Constants to scrape: ${constantsToScrape.length}`);
 
+	// Build built-in type list from the crawl (its own reference section).
+	const typeNames: string[] = [...(inputData.types?.items || [])].sort();
+	console.log(`Found ${typeNames.length} types to process`);
+
+	const typesToScrape: string[] = [];
+	const typesFromCache: string[] = [];
+	if (!forceRefresh) {
+		for (const name of typeNames) {
+			if (isCacheValid(getCacheFilePath(name, "type__"))) {
+				typesFromCache.push(name);
+			} else {
+				typesToScrape.push(name);
+			}
+		}
+	} else {
+		typesToScrape.push(...typeNames);
+	}
+	if (DRY_RUN && typesToScrape.length > DRY_RUN_LIMIT) {
+		typesToScrape.splice(DRY_RUN_LIMIT);
+	}
+	console.log(`   Types from cache: ${typesFromCache.length}`);
+	console.log(`   Types to scrape: ${typesToScrape.length}`);
+
 	const allDetails: ScrapeResult = {
 		metadata: {
 			extractedAt: new Date().toISOString(),
@@ -905,10 +1043,12 @@ export async function scrapeAllFunctions(
 			method: "Puppeteer",
 			totalVariables: variableNames.length,
 			totalConstants: constantNames.length,
+			totalTypes: typeNames.length,
 		},
 		functions: {},
 		variables: {},
 		constants: {},
+		types: {},
 	};
 
 	// Load cached data first
@@ -930,6 +1070,12 @@ export async function scrapeAllFunctions(
 		const cached = getCachedData<MemberDetails>(name, "const__");
 		if (cached) {
 			allDetails.constants[name] = cached;
+		}
+	}
+	for (const name of typesFromCache) {
+		const cached = getCachedData<TypeDetails>(name, "type__");
+		if (cached && allDetails.types) {
+			allDetails.types[name] = cached;
 		}
 	}
 
@@ -1034,10 +1180,26 @@ export async function scrapeAllFunctions(
 		}
 	}
 
+	// Scrape built-in types (shares the browser opened above, if any).
+	if (typesToScrape.length > 0 && allDetails.types) {
+		console.log("Scraping type details...");
+		for (const name of typesToScrape) {
+			const details = await scrapeTypeDetails(name, !forceRefresh);
+			if (details) {
+				allDetails.types[name] = details;
+			} else {
+				allDetails.metadata.failedScrapes++;
+			}
+			await new Promise((resolve) => setTimeout(resolve, 100));
+		}
+		console.log(`  Types: ${typesToScrape.length}/${typesToScrape.length}`);
+	}
+
 	if (
 		functionsToScrape.length > 0 ||
 		variablesToScrape.length > 0 ||
-		constantsToScrape.length > 0
+		constantsToScrape.length > 0 ||
+		typesToScrape.length > 0
 	) {
 		await closeSharedBrowser();
 	}
@@ -1082,6 +1244,8 @@ export async function scrapeAllFunctions(
 	console.log(
 		`   Constants captured: ${Object.keys(allDetails.constants).length}`,
 	);
+	console.log(`   Total types: ${allDetails.metadata.totalTypes}`);
+	console.log(`   Types captured: ${Object.keys(allDetails.types || {}).length}`);
 	console.log(`   Method: ${allDetails.metadata.method}`);
 	console.log(
 		DRY_RUN

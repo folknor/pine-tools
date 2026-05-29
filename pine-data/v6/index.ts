@@ -1,13 +1,14 @@
 /**
  * Pine Script V6 Language Data
  * Auto-generated - single entry point for all v6 data
- * Generated: 2026-05-29T17:35:49.214Z
+ * Generated: 2026-05-29T17:48:50.135Z
  */
 
 // Re-export everything
 export * from "./functions";
 export * from "./variables";
 export * from "./constants";
+export * from "./types";
 export * from "./keywords";
 export * from "./function-behavior";
 
