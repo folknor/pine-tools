@@ -209,11 +209,16 @@ IDs so the two stay in sync.
     `reextract:dom` re-derived it from the mirror (offline, tags stripped).
     Now 0/1292 flat and 0/784 overload params empty; backfilled into both the
     merged `parameters` and the per-overload `overloads[].parameters`.
-  - **No `default` values** (0/1292; ~332 optional params document one in
-    prose like "The default is …"). Parse offline at generate-time. Note the
-    prose is messy — values with dots (`alert.freq_once_per_bar`), words for
-    numbers ("zero"), inconsistent quoting — so parse carefully and treat as
-    best-effort, not authoritative.
+  - ✅ **Default values parsed (2026-05-29).** Was 0/1292. `parse-default.ts`
+    extracts the value after "the default (value) is" at generate-time —
+    handling namespaced consts (`alert.freq_once_per_bar`), booleans/`na`,
+    numbers, quoted literals (incl. embedded quotes like
+    `"yyyy-MM-dd'T'HH:mm:ssZ"`), word-numbers (`zero`), empty-string phrasings
+    (→ `""`), and "no color" (→ `na`). 285 flat params + 112 overload params
+    now carry `default`; the ~25 genuinely referential/approximate ones ("the
+    format value used by indicator()", "~50 lines", "inherited from …") are
+    deliberately left undefined — no literal to capture. Best-effort, not
+    authoritative (the "X by default" phrasing is skipped: ambiguous).
   - **No argument constraints / allowed values.** `input.int`/`input.float`
     carry `minval`/`maxval`/`step` as params but there's no structured
     constraint; params accepting a fixed enum set (`alert.freq` →

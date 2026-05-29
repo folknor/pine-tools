@@ -13,6 +13,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
+import { parseDefault } from "./parse-default.ts";
 import { detectReturnTypeParam, unionOverloadParams } from "./union-types.ts";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -80,6 +81,7 @@ interface GeneratedFunction {
 			type: string;
 			description: string;
 			required: boolean;
+			default?: string;
 		}>;
 		returns: string;
 	}>;
@@ -382,13 +384,15 @@ function buildOverloads(
 		return {
 			parameters: args.map(({ name, type, description }) => {
 				const m = merged.get(name);
+				// Prefer this overload's own captured description; fall back to the
+				// merged param's (overload #0's). see TODO #25
+				const desc = description || m?.description || "";
 				return {
 					name,
 					type,
-					// Prefer this overload's own captured description; fall back to
-					// the merged param's (overload #0's). see TODO #25
-					description: description || m?.description || "",
+					description: desc,
 					required: m ? !isParameterOptional(m) : true,
+					default: parseDefault(desc),
 				};
 			}),
 			returns: parseReturnFromSignature(sig),
@@ -452,17 +456,21 @@ function generateFunctions(
 		// Backfill descriptions for params that appear only in a later overload
 		// (blank in the merged view scraped from overload #0). see TODO #25
 		const descByName = overloadDescriptions(detail);
-		const parameters = (detail.parameters || []).map((p) => ({
-			name: p.name,
-			type:
-				FUNCTION_PARAM_TYPE_OVERRIDES[`${name}.${p.name}`] ??
-				unionedParams.get(p.name) ??
-				p.type ??
-				"unknown",
-			description: p.description || descByName.get(p.name) || "",
-			required: !isParameterOptional(p),
-			default: p.default,
-		}));
+		const parameters = (detail.parameters || []).map((p) => {
+			const description = p.description || descByName.get(p.name) || "";
+			return {
+				name: p.name,
+				type:
+					FUNCTION_PARAM_TYPE_OVERRIDES[`${name}.${p.name}`] ??
+					unionedParams.get(p.name) ??
+					p.type ??
+					"unknown",
+				description,
+				required: !isParameterOptional(p),
+				// Parsed from the description prose (best-effort). see TODO #25
+				default: p.default ?? parseDefault(description),
+			};
+		});
 
 		const func: GeneratedFunction = {
 			name,
