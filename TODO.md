@@ -215,10 +215,13 @@ IDs so the two stay in sync.
     numbers, quoted literals (incl. embedded quotes like
     `"yyyy-MM-dd'T'HH:mm:ssZ"`), word-numbers (`zero`), empty-string phrasings
     (→ `""`), and "no color" (→ `na`). 285 flat params + 112 overload params
-    now carry `default`; the ~25 genuinely referential/approximate ones ("the
-    format value used by indicator()", "~50 lines", "inherited from …") are
-    deliberately left undefined — no literal to capture. Best-effort, not
-    authoritative (the "X by default" phrasing is skipped: ambiguous).
+    now carry `default`. Dynamic/inherited defaults that have no literal value
+    use a MAGIC SENTINEL (CHART_SYMBOL, CHART_BARS, SCRIPT_FORMAT,
+    SCRIPT_PRECISION, SOURCE_LENGTH, or `ARG:<sibling>`) — distinguished by
+    that set/prefix, not casing (some literals are uppercase, e.g. "FIFO").
+    Only `ta.vwap.anchor` is left undefined (its expr prose is too awkward to
+    reconstruct). Best-effort, not authoritative (the "X by default" phrasing
+    is skipped: ambiguous). Sentinel set documented in schema/types.ts.
   - **No argument constraints / allowed values.** `input.int`/`input.float`
     carry `minval`/`maxval`/`step` as params but there's no structured
     constraint; params accepting a fixed enum set (`alert.freq` →

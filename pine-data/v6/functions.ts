@@ -1,7 +1,7 @@
 /**
  * Pine Script V6 Functions
  * Auto-generated from TradingView documentation
- * Generated: 2026-05-29T13:47:17.776Z
+ * Generated: 2026-05-29T14:00:31.660Z
  * Total: 475 functions
  */
 
@@ -4767,19 +4767,22 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "max_lines_count",
         "type": "const int",
         "description": "Optional. Determines the maximum number of line objects that remain available to the script. The system automatically deletes the oldest line objects when the number of lines exceeds the limit. The limit specified by the argument is approximate; the script might display more drawings than specified. The default is ~50 lines.",
-        "required": false
+        "required": false,
+        "default": "50"
       },
       {
         "name": "max_labels_count",
         "type": "const int",
         "description": "Optional. Determines the maximum number of label objects that remain available to the script. The system automatically deletes the oldest label objects when the number of labels exceeds the limit. The limit specified by the argument is approximate; the script might display more drawings than specified. The default is ~50 labels.",
-        "required": false
+        "required": false,
+        "default": "50"
       },
       {
         "name": "max_boxes_count",
         "type": "const int",
         "description": "Optional. Determines the maximum number of box objects that remain available to the script. The system automatically deletes the oldest box objects when the number of boxes exceeds the limit. The limit specified by the argument is approximate; the script might display more drawings than specified. The default is ~50 boxes.",
-        "required": false
+        "required": false,
+        "default": "50"
       },
       {
         "name": "calc_bars_count",
@@ -4792,7 +4795,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "max_polylines_count",
         "type": "const int",
         "description": "Optional. Determines the maximum number of polyline objects that remain available to the script. The system automatically deletes the oldest polyline objects when the number of polylines exceeds the limit. The limit specified by the argument is approximate; the script might display more drawings than specified. The default is ~50 polylines.",
-        "required": false
+        "required": false,
+        "default": "50"
       },
       {
         "name": "dynamic_requests",
@@ -12025,13 +12029,15 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "format",
         "type": "input string",
         "description": "Determines whether the script formats the plot's values as prices, percentages, or volume values. The argument passed to this parameter supersedes the format parameter of the indicator(), and strategy() functions. Optional. The default is the format value used by the indicator()/strategy() function. Possible values: format.price, format.percent, format.volume.",
-        "required": false
+        "required": false,
+        "default": "SCRIPT_FORMAT"
       },
       {
         "name": "precision",
         "type": "input int",
         "description": "The number of digits after the decimal point the plot's values show on the chart pane's y-axis, the script's status line, and the Data Window. Accepts a non-negative integer less than or equal to 16. The argument passed to this parameter supersedes the precision parameter of the indicator() and strategy() functions. When the function's format parameter uses format.volume, the precision parameter will not affect the result, as the decimal precision rules defined by format.volume supersede other precision settings. Optional. The default is the precision value used by the indicator()/strategy() function.",
-        "required": false
+        "required": false,
+        "default": "SCRIPT_PRECISION"
       },
       {
         "name": "force_overlay",
@@ -12126,13 +12132,15 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "format",
         "type": "input string",
         "description": "Determines whether the script formats the plot's values as prices, percentages, or volume values. The argument passed to this parameter supersedes the format parameter of the indicator(), and strategy() functions. Optional. The default is the format value used by the indicator()/strategy() function. Possible values: format.price, format.percent, format.volume.",
-        "required": false
+        "required": false,
+        "default": "SCRIPT_FORMAT"
       },
       {
         "name": "precision",
         "type": "input int",
         "description": "The number of digits after the decimal point the plot's values show on the chart pane's y-axis, the script's status line, and the Data Window. Accepts a non-negative integer less than or equal to 16. The argument passed to this parameter supersedes the precision parameter of the indicator() and strategy() functions. When the function's format parameter uses format.volume, the precision parameter will not affect the result, as the decimal precision rules defined by format.volume supersede other precision settings. Optional. The default is the precision value used by the indicator()/strategy() function.",
-        "required": false
+        "required": false,
+        "default": "SCRIPT_PRECISION"
       },
       {
         "name": "force_overlay",
@@ -12214,13 +12222,15 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "format",
         "type": "input string",
         "description": "Determines whether the script formats the plot's values as prices, percentages, or volume values. The argument passed to this parameter supersedes the format parameter of the indicator(), and strategy() functions. Optional. The default is the format value used by the indicator()/strategy() function. Possible values: format.price, format.percent, format.volume.",
-        "required": false
+        "required": false,
+        "default": "SCRIPT_FORMAT"
       },
       {
         "name": "precision",
         "type": "input int",
         "description": "The number of digits after the decimal point the plot's values show on the chart pane's y-axis, the script's status line, and the Data Window. Accepts a non-negative integer less than or equal to 16. The argument passed to this parameter supersedes the precision parameter of the indicator() and strategy() functions. When the function's format parameter uses format.volume, the precision parameter will not affect the result, as the decimal precision rules defined by format.volume supersede other precision settings. Optional. The default is the precision value used by the indicator()/strategy() function.",
-        "required": false
+        "required": false,
+        "default": "SCRIPT_PRECISION"
       },
       {
         "name": "force_overlay",
@@ -12314,13 +12324,15 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "format",
         "type": "input string",
         "description": "Determines whether the script formats the plot's values as prices, percentages, or volume values. The argument passed to this parameter supersedes the format parameter of the indicator(), and strategy() functions. Optional. The default is the format value used by the indicator()/strategy() function. Possible values: format.price, format.percent, format.volume.",
-        "required": false
+        "required": false,
+        "default": "SCRIPT_FORMAT"
       },
       {
         "name": "precision",
         "type": "input int",
         "description": "The number of digits after the decimal point the plot's values show on the chart pane's y-axis, the script's status line, and the Data Window. Accepts a non-negative integer less than or equal to 16. The argument passed to this parameter supersedes the precision parameter of the indicator() and strategy() functions. When the function's format parameter uses format.volume, the precision parameter will not affect the result, as the decimal precision rules defined by format.volume supersede other precision settings. Optional. The default is the precision value used by the indicator()/strategy() function.",
-        "required": false
+        "required": false,
+        "default": "SCRIPT_PRECISION"
       },
       {
         "name": "force_overlay",
@@ -12420,13 +12432,15 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "format",
         "type": "input string",
         "description": "Determines whether the script formats the plot's values as prices, percentages, or volume values. The argument passed to this parameter supersedes the format parameter of the indicator(), and strategy() functions. Optional. The default is the format value used by the indicator()/strategy() function. Possible values: format.price, format.percent, format.volume.",
-        "required": false
+        "required": false,
+        "default": "SCRIPT_FORMAT"
       },
       {
         "name": "precision",
         "type": "input int",
         "description": "The number of digits after the decimal point the plot's values show on the chart pane's y-axis, the script's status line, and the Data Window. Accepts a non-negative integer less than or equal to 16. The argument passed to this parameter supersedes the precision parameter of the indicator() and strategy() functions. When the function's format parameter uses format.volume, the precision parameter will not affect the result, as the decimal precision rules defined by format.volume supersede other precision settings. Optional. The default is the precision value used by the indicator()/strategy() function.",
-        "required": false
+        "required": false,
+        "default": "SCRIPT_PRECISION"
       },
       {
         "name": "force_overlay",
@@ -12526,13 +12540,15 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "format",
         "type": "input string",
         "description": "Determines whether the script formats the plot's values as prices, percentages, or volume values. The argument passed to this parameter supersedes the format parameter of the indicator(), and strategy() functions. Optional. The default is the format value used by the indicator()/strategy() function. Possible values: format.price, format.percent, format.volume.",
-        "required": false
+        "required": false,
+        "default": "SCRIPT_FORMAT"
       },
       {
         "name": "precision",
         "type": "input int",
         "description": "The number of digits after the decimal point the plot's values show on the chart pane's y-axis, the script's status line, and the Data Window. Accepts a non-negative integer less than or equal to 16. The argument passed to this parameter supersedes the precision parameter of the indicator() and strategy() functions. When the function's format parameter uses format.volume, the precision parameter will not affect the result, as the decimal precision rules defined by format.volume supersede other precision settings. Optional. The default is the precision value used by the indicator()/strategy() function.",
-        "required": false
+        "required": false,
+        "default": "SCRIPT_PRECISION"
       },
       {
         "name": "force_overlay",
@@ -12982,7 +12998,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "calc_bars_count",
         "type": "simple int",
         "description": "Optional. Determines the maximum number of recent historical bars that the function can request. If specified, the function evaluates the expression argument starting from that number of bars behind the last historical bar in the requested dataset, treating those bars as the only available data. Limiting the number of historical bars in a request can help improve calculation efficiency in some cases. The default is the same as the number of chart bars available for the symbol and timeframe. The maximum number of bars that the function can attempt to retrieve depends on the intrabar limit of the user's plan. However, the request cannot retrieve more bars than are available in the dataset.",
-        "required": false
+        "required": false,
+        "default": "CHART_BARS"
       }
     ],
     "returns": "series <type>",
@@ -13040,7 +13057,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "calc_bars_count",
         "type": "simple int",
         "description": "Optional. Determines the maximum number of recent historical bars that the function can request. If specified, the function evaluates the expression argument starting from that number of bars behind the last historical bar in the requested dataset, treating those bars as the only available data. Limiting the number of historical bars in a request can help improve calculation efficiency in some cases. The default is the same as the number of chart bars available for the symbol and timeframe. The maximum number of bars that the function can attempt to retrieve depends on the intrabar limit of the user's plan. However, the request cannot retrieve more bars than are available in the dataset.",
-        "required": false
+        "required": false,
+        "default": "CHART_BARS"
       }
     ],
     "returns": "array<type>",
@@ -13083,7 +13101,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "calc_bars_count",
         "type": "simple int",
         "description": "Optional. If specified, the function requests only this number of values from the end of the symbol's history and calculates expression as if these values are the only available data, which might improve calculation speed in some cases. The default is the same as the number of chart bars available for the symbol and timeframe. The maximum number of bars that the function can attempt to retrieve depends on the intrabar limit of the user's plan. However, the request cannot retrieve more bars than are available in the dataset.",
-        "required": false
+        "required": false,
+        "default": "CHART_BARS"
       }
     ],
     "returns": "series <type>",
@@ -14125,7 +14144,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "end_pos",
         "type": "series int",
         "description": "The ending position. It is exclusive (the extracted string does NOT include that position's character). Optional. The default is the length of the source string.",
-        "required": false
+        "required": false,
+        "default": "SOURCE_LENGTH"
       }
     ],
     "returns": "const string",
@@ -14148,7 +14168,8 @@ export const FUNCTIONS: PineFunction[] = [
             "name": "end_pos",
             "type": "const int",
             "description": "The ending position. It is exclusive (the extracted string does NOT include that position's character). Optional. The default is the length of the source string.",
-            "required": false
+            "required": false,
+            "default": "SOURCE_LENGTH"
           }
         ],
         "returns": "const string"
@@ -14171,7 +14192,8 @@ export const FUNCTIONS: PineFunction[] = [
             "name": "end_pos",
             "type": "simple int",
             "description": "The ending position. It is exclusive (the extracted string does NOT include that position's character). Optional. The default is the length of the source string.",
-            "required": false
+            "required": false,
+            "default": "SOURCE_LENGTH"
           }
         ],
         "returns": "simple string"
@@ -14194,7 +14216,8 @@ export const FUNCTIONS: PineFunction[] = [
             "name": "end_pos",
             "type": "series int",
             "description": "The ending position. It is exclusive (the extracted string does NOT include that position's character). Optional. The default is the length of the source string.",
-            "required": false
+            "required": false,
+            "default": "SOURCE_LENGTH"
           }
         ],
         "returns": "series string"
@@ -14490,7 +14513,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "shorttitle",
         "type": "const string",
         "description": "The script's display name on charts. If specified, it will replace the title argument in most chart-related windows. Optional. The default is the argument used for title.",
-        "required": false
+        "required": false,
+        "default": "ARG:title"
       },
       {
         "name": "overlay",
@@ -14510,7 +14534,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "precision",
         "type": "const int",
         "description": "Specifies the number of digits after the floating point of the script's displayed values. Must be a non-negative integer no greater than 16. If format is set to format.inherit and precision is specified, the format will instead be set to format.price. When the function's format parameter uses format.volume, the precision parameter will not affect the result, as the decimal precision rules defined by format.volume supersede other precision settings. Optional. The default is inherited from the precision of the chart's symbol.",
-        "required": false
+        "required": false,
+        "default": "CHART_SYMBOL"
       },
       {
         "name": "scale",
@@ -18470,13 +18495,15 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "end_column",
         "type": "series int",
         "description": "The index of the column of the last cell to delete. Optional. The default is the argument used for start_column. Numbering starts at 0.",
-        "required": false
+        "required": false,
+        "default": "ARG:start_column"
       },
       {
         "name": "end_row",
         "type": "series int",
         "description": "The index of the row of the last cell to delete. Optional. The default is the argument used for start_row. Numbering starts at 0.",
-        "required": false
+        "required": false,
+        "default": "ARG:start_row"
       }
     ],
     "returns": "void",

@@ -74,7 +74,17 @@ export interface PineParameter {
 	description: string;
 	/** Whether this parameter is required */
 	required: boolean;
-	/** Default value if optional */
+	/**
+	 * Default value if optional, as the Pine expression written in the docs
+	 * (e.g. "0", "true", "na", "alert.freq_once_per_bar", "\"FIFO\"" -> "FIFO",
+	 * "" for an empty string). DYNAMIC/inherited defaults that have no literal
+	 * value use a MAGIC SENTINEL instead — recognized iff the value is one of
+	 * CHART_SYMBOL | CHART_BARS | SCRIPT_FORMAT | SCRIPT_PRECISION |
+	 * SOURCE_LENGTH, or starts with "ARG:" (the value of a sibling argument,
+	 * e.g. "ARG:start_column"). Distinguish by that set/prefix, NOT by casing
+	 * (some literals are uppercase, e.g. "FIFO"). Absent when no default is
+	 * documented or it could not be parsed.
+	 */
 	default?: string;
 }
 

@@ -40,17 +40,34 @@ describe("parseDefault", () => {
 		expect(parseDefault("Source. The default is close.")).toBe("close");
 	});
 
-	it("returns undefined for referential / approximate defaults (no literal)", () => {
+	it("maps dynamic/inherited defaults to magic sentinels", () => {
 		expect(
 			parseDefault("The default is the format value used by the indicator()."),
-		).toBeUndefined();
-		expect(parseDefault("The default is ~50 lines.")).toBeUndefined();
+		).toBe("SCRIPT_FORMAT");
+		expect(
+			parseDefault("The default is the precision value used by the strategy()."),
+		).toBe("SCRIPT_PRECISION");
 		expect(
 			parseDefault("The default is the same as the number of chart bars."),
-		).toBeUndefined();
+		).toBe("CHART_BARS");
 		expect(
-			parseDefault("The default is inherited from the chart's symbol."),
-		).toBeUndefined();
+			parseDefault("The default is inherited from the precision of the chart's symbol."),
+		).toBe("CHART_SYMBOL");
+		expect(
+			parseDefault("The default is the length of the source string."),
+		).toBe("SOURCE_LENGTH");
+		expect(parseDefault("The default is the argument used for start_column.")).toBe(
+			"ARG:start_column",
+		);
+	});
+
+	it("captures an approximate count as the literal number (drops the ~)", () => {
+		expect(parseDefault("The default is ~50 lines.")).toBe("50");
+	});
+
+	it("keeps an uppercase literal value as a literal, not a sentinel", () => {
+		// strategy.close_entries_rule defaults to the literal string "FIFO".
+		expect(parseDefault('The default is "FIFO".')).toBe("FIFO");
 	});
 
 	it("returns undefined when no default is documented", () => {

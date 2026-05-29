@@ -8,13 +8,32 @@
  * written (e.g. "0", "true", "na", "alert.freq_once_per_bar", "" for an empty
  * string) — not a typed value.
  *
- * Best-effort by design (see TODO #25): referential / approximate defaults that
- * have no literal value ("the format value used by indicator()", "~50 lines",
- * "inherited from the chart's symbol", "the same as the number of chart bars")
- * return undefined rather than capturing prose. The "X by default" phrasing is
- * intentionally NOT handled — its few literal cases (ta.pivothigh's "'High'")
- * are ambiguous (the `high` built-in vs the label "High").
+ * Dynamic / inherited defaults that have no literal value are represented by a
+ * MAGIC SENTINEL. A default is a sentinel iff it is in MAGIC_DEFAULTS or starts
+ * with "ARG:" — NOT merely by being uppercase, since some literal Pine values
+ * are uppercase too (e.g. strategy.close_entries_rule defaults to the literal
+ * "FIFO"). Everything else is a literal Pine expression (`na`, `true`, `0`,
+ * `alert.freq_once_per_bar`, `"FIFO"`, `""`). See MAGIC_DEFAULTS / TODO #25:
+ *   CHART_SYMBOL    inherited from the chart symbol (e.g. its precision)
+ *   CHART_BARS      the number of chart bars available
+ *   SCRIPT_FORMAT   the format declared on indicator()/strategy()
+ *   SCRIPT_PRECISION the precision declared on indicator()/strategy()
+ *   SOURCE_LENGTH   the length of the source string
+ *   ARG:<name>      the value of a sibling argument (e.g. ARG:start_column)
+ *
+ * The "X by default" phrasing is intentionally NOT handled — its few literal
+ * cases (ta.pivothigh's "'High'") are ambiguous (the `high` built-in vs the
+ * label "High"). Anything still unrecognized returns undefined.
  */
+
+/** Magic sentinels for dynamic/inherited defaults (no literal value). */
+export const MAGIC_DEFAULTS = [
+	"CHART_SYMBOL",
+	"CHART_BARS",
+	"SCRIPT_FORMAT",
+	"SCRIPT_PRECISION",
+	"SOURCE_LENGTH",
+] as const;
 
 const WORDNUM: Record<string, string> = {
 	zero: "0",
@@ -60,8 +79,8 @@ export function parseDefault(description: string): string | undefined {
 	const id = rest.match(/^([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z0-9_]+)+)/);
 	if (id) return id[1];
 
-	// Numeric literal.
-	const num = rest.match(/^(-?\d+(?:\.\d+)?)/);
+	// Numeric literal (tolerate a leading "~", e.g. "~50 lines" -> "50").
+	const num = rest.match(/^~?\s*(-?\d+(?:\.\d+)?)/);
 	if (num) return num[1];
 
 	// Empty-string phrasings ("an empty string", "empty string").
@@ -83,5 +102,26 @@ export function parseDefault(description: string): string | undefined {
 		if (!STOP.has(lw) && /^[.)]/.test(after)) return w[1];
 	}
 
+	// Dynamic / inherited default -> magic sentinel (see TODO #25).
+	return parseDynamicDefault(rest);
+}
+
+// Map the recognized referential phrasings to their magic sentinel. Returns
+// undefined for anything still unrecognized (genuinely free prose).
+function parseDynamicDefault(rest: string): string | undefined {
+	if (/the chart'?s symbol/i.test(rest)) return "CHART_SYMBOL";
+	if (/number of chart bars/i.test(rest)) return "CHART_BARS";
+	if (/the format value used by the (?:indicator|strategy)/i.test(rest)) {
+		return "SCRIPT_FORMAT";
+	}
+	if (/the precision value used by the (?:indicator|strategy)/i.test(rest)) {
+		return "SCRIPT_PRECISION";
+	}
+	const arg = rest.match(/the argument used for (\w+)/i);
+	if (arg) return `ARG:${arg[1]}`;
+	if (/the length of the source string/i.test(rest)) return "SOURCE_LENGTH";
+	// Anything else (e.g. ta.vwap.anchor's "equivalent to passing
+	// timeframe.change() with \"1D\" as its argument" — too awkward to
+	// reconstruct faithfully) is left undefined rather than captured wrong.
 	return undefined;
 }
