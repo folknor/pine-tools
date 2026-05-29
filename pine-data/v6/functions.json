@@ -1200,7 +1200,7 @@
       },
       {
         "name": "sort_field",
-        "type": "unknown",
+        "type": "const int/string",
         "description": "",
         "required": false
       }
@@ -1230,7 +1230,7 @@
       },
       {
         "name": "sort_field",
-        "type": "unknown",
+        "type": "const int/string",
         "description": "",
         "required": false
       }
@@ -5613,13 +5613,13 @@
     "parameters": [
       {
         "name": "number0",
-        "type": "unknown",
+        "type": "series int/float",
         "description": "",
         "required": true
       },
       {
         "name": "number1",
-        "type": "unknown",
+        "type": "series int/float",
         "description": "",
         "required": true
       }
@@ -5742,13 +5742,13 @@
     "parameters": [
       {
         "name": "number0",
-        "type": "unknown",
+        "type": "series int/float",
         "description": "",
         "required": true
       },
       {
         "name": "number1",
-        "type": "unknown",
+        "type": "series int/float",
         "description": "",
         "required": true
       }
@@ -5771,13 +5771,13 @@
     "parameters": [
       {
         "name": "number0",
-        "type": "unknown",
+        "type": "series int/float",
         "description": "",
         "required": true
       },
       {
         "name": "number1",
-        "type": "unknown",
+        "type": "series int/float",
         "description": "",
         "required": true
       }
@@ -5858,7 +5858,7 @@
       },
       {
         "name": "precision",
-        "type": "unknown",
+        "type": "series int",
         "description": "",
         "required": false
       }
@@ -6942,7 +6942,7 @@
       },
       {
         "name": "sort_field",
-        "type": "unknown",
+        "type": "const int/string",
         "description": "",
         "required": false
       }
@@ -8796,7 +8796,7 @@
       },
       {
         "name": "format",
-        "type": "unknown",
+        "type": "series string",
         "description": "",
         "required": false
       }
@@ -11670,7 +11670,7 @@
       },
       {
         "name": "stdev_mult",
-        "type": "unknown",
+        "type": "series int/float",
         "description": "",
         "required": false
       }

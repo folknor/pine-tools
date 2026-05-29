@@ -17,6 +17,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import puppeteer, { type Browser, type Page } from "puppeteer";
+import { parseArgTypeText } from "./arg-parse.ts";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -45,6 +46,30 @@ const OUTPUT_FILE =
 	path.join(PROJECT_ROOT, "pine-data/raw/v6/complete-v6-details.json");
 const CACHE_DIR = path.join(PROJECT_ROOT, ".cache/function-details");
 const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+
+// Local raw-DOM mirror. The overloaded-function arg widget is rendered
+// dynamically per overload sub-anchor, so a flat page dump can't capture it;
+// instead we snapshot the `#fun_<name>` element's HTML at each sub-anchor we
+// already visit in collectOverloadArgs. This lets DOM-extraction logic be
+// iterated fully offline against the mirror, with no further TradingView hits.
+// Kept under .cache/ (gitignored) on purpose: it is a local build artifact,
+// not vendor data, and must never be committed to a public repo. See TODO #22.
+const MIRROR_DIR = path.join(PROJECT_ROOT, ".cache/dom");
+
+function saveDomSnapshot(name: string, label: string, html: string): void {
+	try {
+		const safeName = name.replace(/[^a-zA-Z0-9_.-]/g, "_");
+		const dir = path.join(MIRROR_DIR, safeName);
+		if (!fs.existsSync(dir)) {
+			fs.mkdirSync(dir, { recursive: true });
+		}
+		fs.writeFileSync(path.join(dir, `${label}.html`), html, "utf8");
+	} catch (error) {
+		console.warn(
+			`Failed to mirror DOM for ${name}/${label}: ${(error as Error).message}`,
+		);
+	}
+}
 
 interface FunctionDetails {
 	name: string;
@@ -253,21 +278,26 @@ async function collectOverloadArgs(
 		);
 		await new Promise((resolve) => setTimeout(resolve, 250));
 
-		const argTypes = await page.evaluate((name: string) => {
+		const { argTexts, html } = await page.evaluate((name: string) => {
 			const el = document.getElementById(`fun_${name}`);
-			if (!el) return [] as Array<{ name: string; type: string }>;
-			const out: Array<{ name: string; type: string }> = [];
+			if (!el) return { argTexts: [] as string[], html: "" };
+			const texts: string[] = [];
 			for (const node of el.querySelectorAll(
 				".tv-pine-reference-item__arg-type",
 			)) {
-				const text = node.textContent?.trim() || "";
-				const match = text.match(/^(\w+)\s*\(([^)]+)\)/);
-				if (match) out.push({ name: match[1], type: match[2] });
+				texts.push(node.textContent?.trim() || "");
 			}
-			return out;
+			return { argTexts: texts, html: el.outerHTML };
 		}, funcNameClean);
 
-		overloadArgs.push(argTypes);
+		// Snapshot the rendered element for this overload so the arg-type
+		// extraction can be re-derived offline. see TODO #22
+		if (html) saveDomSnapshot(funcNameClean, `overload-${i}`, html);
+
+		// Parse in Node via the shared parser so the live scrape and the offline
+		// mirror re-extractor stay byte-identical. Handles the variadic
+		// "name0, name1, ... (type)" rows. see TODO #22
+		overloadArgs.push(argTexts.flatMap(parseArgTypeText));
 	}
 
 	details.overloadArgs = overloadArgs;
@@ -570,6 +600,17 @@ export async function scrapeFunctionDetails(
 
 			return extractFromElement(funcElement);
 		}, funcNameClean);
+
+		// Snapshot the base (#fun_<name>, overload #0) element so even
+		// non-overloaded functions land in the offline mirror. see TODO #22
+		const baseHtml = await page.evaluate((name: string) => {
+			const el =
+				document.getElementById(`fun_${name}`) ||
+				document.getElementById(`var_${name}`) ||
+				document.getElementById(`type_${name}`);
+			return el ? el.outerHTML : "";
+		}, funcNameClean);
+		if (baseHtml) saveDomSnapshot(funcNameClean, "base", baseHtml);
 
 		// Overloaded functions: the single-pass extract above only saw overload
 		// #0's resolved param types (the bare #fun_<name> anchor). Visit each

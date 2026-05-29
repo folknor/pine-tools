@@ -126,10 +126,35 @@ export function unionTypes(typeStrings: string[]): string {
 }
 
 /**
+ * Are the overloads NESTED — i.e. does every overload's ordered parameter-name
+ * list match a prefix of the longest overload's list? If so, the overloads
+ * differ only by trailing OPTIONAL parameters (e.g. math.round's `precision`,
+ * input.int's `minval`/`maxval`/`step`): the 1-arg form is a prefix of the
+ * 2-arg form. Such a subset parameter has a real, unionable type.
+ *
+ * If NOT nested, the overloads are genuinely DIVERGENT alternative forms whose
+ * parameter sets disagree by position (e.g. box.new / line.new point-vs-scalar
+ * coordinates, ta.pivothigh's prepended `source`). There a subset parameter is
+ * overload-specific and must stay "unknown" so `hasOverloads()` keeps bypassing
+ * positional validation rather than checking a call against the wrong form.
+ */
+function overloadsAreNested(overloadArgs: OverloadArg[][]): boolean {
+	const nameLists = overloadArgs.map((args) => args.map((a) => a.name));
+	const longest = nameLists.reduce(
+		(a, b) => (b.length > a.length ? b : a),
+		[] as string[],
+	);
+	return nameLists.every((list) => list.every((n, i) => longest[i] === n));
+}
+
+/**
  * Compute union types for an overloaded function's parameters from its
- * `overloadArgs` capture. Only parameters present in EVERY overload are
- * unioned — params appearing in just a subset are overload-specific (e.g.
- * box.new's coordinate form) and are left out so the caller keeps them
+ * `overloadArgs` capture.
+ *
+ * For NESTED overloads (prefix-chain — see overloadsAreNested) every captured
+ * parameter is unioned over the overloads where it appears, because trailing
+ * params are simply optional. For DIVERGENT overloads only parameters present
+ * in EVERY overload are unioned; the rest are left out so the caller keeps them
  * "unknown" and `hasOverloads()` still bypasses positional validation.
  */
 export function unionOverloadParams(detail: OverloadCapture): Map<string, string> {
@@ -138,6 +163,7 @@ export function unionOverloadParams(detail: OverloadCapture): Map<string, string
 	if (!overloadArgs || overloadArgs.length < 2) return result;
 
 	const overloadCount = overloadArgs.length;
+	const nested = overloadsAreNested(overloadArgs);
 	const byName = new Map<string, { types: string[]; seen: Set<number> }>();
 
 	overloadArgs.forEach((args, i) => {
@@ -150,7 +176,7 @@ export function unionOverloadParams(detail: OverloadCapture): Map<string, string
 	});
 
 	for (const [name, entry] of byName) {
-		if (entry.seen.size !== overloadCount) continue;
+		if (!nested && entry.seen.size !== overloadCount) continue;
 		result.set(name, unionTypes(entry.types));
 	}
 

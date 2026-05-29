@@ -1,7 +1,7 @@
 /**
  * Pine Script V6 Functions
  * Auto-generated from TradingView documentation
- * Generated: 2026-05-28T10:43:44.008Z
+ * Generated: 2026-05-29T13:08:54.481Z
  * Total: 475 functions
  */
 
@@ -1212,7 +1212,7 @@ export const FUNCTIONS: PineFunction[] = [
       },
       {
         "name": "sort_field",
-        "type": "unknown",
+        "type": "const int/string",
         "description": "",
         "required": false
       }
@@ -1242,7 +1242,7 @@ export const FUNCTIONS: PineFunction[] = [
       },
       {
         "name": "sort_field",
-        "type": "unknown",
+        "type": "const int/string",
         "description": "",
         "required": false
       }
@@ -5625,13 +5625,13 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "number0",
-        "type": "unknown",
+        "type": "series int/float",
         "description": "",
         "required": true
       },
       {
         "name": "number1",
-        "type": "unknown",
+        "type": "series int/float",
         "description": "",
         "required": true
       }
@@ -5754,13 +5754,13 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "number0",
-        "type": "unknown",
+        "type": "series int/float",
         "description": "",
         "required": true
       },
       {
         "name": "number1",
-        "type": "unknown",
+        "type": "series int/float",
         "description": "",
         "required": true
       }
@@ -5783,13 +5783,13 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "number0",
-        "type": "unknown",
+        "type": "series int/float",
         "description": "",
         "required": true
       },
       {
         "name": "number1",
-        "type": "unknown",
+        "type": "series int/float",
         "description": "",
         "required": true
       }
@@ -5870,7 +5870,7 @@ export const FUNCTIONS: PineFunction[] = [
       },
       {
         "name": "precision",
-        "type": "unknown",
+        "type": "series int",
         "description": "",
         "required": false
       }
@@ -6954,7 +6954,7 @@ export const FUNCTIONS: PineFunction[] = [
       },
       {
         "name": "sort_field",
-        "type": "unknown",
+        "type": "const int/string",
         "description": "",
         "required": false
       }
@@ -8808,7 +8808,7 @@ export const FUNCTIONS: PineFunction[] = [
       },
       {
         "name": "format",
-        "type": "unknown",
+        "type": "series string",
         "description": "",
         "required": false
       }
@@ -11682,7 +11682,7 @@ export const FUNCTIONS: PineFunction[] = [
       },
       {
         "name": "stdev_mult",
-        "type": "unknown",
+        "type": "series int/float",
         "description": "",
         "required": false
       }

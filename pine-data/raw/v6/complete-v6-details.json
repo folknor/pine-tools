@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "extractedAt": "2026-05-28T09:37:13.124Z",
+    "extractedAt": "2026-05-29T12:56:19.113Z",
     "source": "https://www.tradingview.com/pine-script-reference/v6/",
     "totalFunctions": 475,
     "successfulScrapes": 475,
@@ -452,18 +452,126 @@
       ],
       "variadic": true,
       "overloadArgs": [
-        [],
-        [],
-        [],
-        [],
-        [],
-        [],
-        [],
-        [],
-        [],
-        [],
-        [],
-        []
+        [
+          {
+            "name": "arg0",
+            "type": "<arg..._type>"
+          },
+          {
+            "name": "arg1",
+            "type": "<arg..._type>"
+          }
+        ],
+        [
+          {
+            "name": "arg0",
+            "type": "series enum"
+          },
+          {
+            "name": "arg1",
+            "type": "series enum"
+          }
+        ],
+        [
+          {
+            "name": "arg0",
+            "type": "series label"
+          },
+          {
+            "name": "arg1",
+            "type": "series label"
+          }
+        ],
+        [
+          {
+            "name": "arg0",
+            "type": "series line"
+          },
+          {
+            "name": "arg1",
+            "type": "series line"
+          }
+        ],
+        [
+          {
+            "name": "arg0",
+            "type": "series box"
+          },
+          {
+            "name": "arg1",
+            "type": "series box"
+          }
+        ],
+        [
+          {
+            "name": "arg0",
+            "type": "series table"
+          },
+          {
+            "name": "arg1",
+            "type": "series table"
+          }
+        ],
+        [
+          {
+            "name": "arg0",
+            "type": "series linefill"
+          },
+          {
+            "name": "arg1",
+            "type": "series linefill"
+          }
+        ],
+        [
+          {
+            "name": "arg0",
+            "type": "series string"
+          },
+          {
+            "name": "arg1",
+            "type": "series string"
+          }
+        ],
+        [
+          {
+            "name": "arg0",
+            "type": "series color"
+          },
+          {
+            "name": "arg1",
+            "type": "series color"
+          }
+        ],
+        [
+          {
+            "name": "arg0",
+            "type": "series int"
+          },
+          {
+            "name": "arg1",
+            "type": "series int"
+          }
+        ],
+        [
+          {
+            "name": "arg0",
+            "type": "series int/float"
+          },
+          {
+            "name": "arg1",
+            "type": "series int/float"
+          }
+        ],
+        [
+          {
+            "name": "arg0",
+            "type": "series bool"
+          },
+          {
+            "name": "arg1",
+            "type": "series bool"
+          }
+        ]
       ]
     },
     "array.get": {
@@ -7554,6 +7662,14 @@
           {
             "name": "formatString",
             "type": "series string"
+          },
+          {
+            "name": "arg0",
+            "type": "series int/float/bool/string/array<int/float/bool/string>"
+          },
+          {
+            "name": "arg1",
+            "type": "series int/float/bool/string/array<int/float/bool/string>"
           }
         ]
       ]
@@ -7614,6 +7730,14 @@
           {
             "name": "formatString",
             "type": "series string"
+          },
+          {
+            "name": "arg0",
+            "type": "series int/float/bool/string/array<int/float/bool/string>"
+          },
+          {
+            "name": "arg1",
+            "type": "series int/float/bool/string/array<int/float/bool/string>"
           }
         ]
       ]
@@ -7674,6 +7798,14 @@
           {
             "name": "formatString",
             "type": "series string"
+          },
+          {
+            "name": "arg0",
+            "type": "series int/float/bool/string/array<int/float/bool/string>"
+          },
+          {
+            "name": "arg1",
+            "type": "series int/float/bool/string/array<int/float/bool/string>"
           }
         ]
       ]
@@ -8190,8 +8322,26 @@
       ],
       "variadic": true,
       "overloadArgs": [
-        [],
-        []
+        [
+          {
+            "name": "number0",
+            "type": "simple int/float"
+          },
+          {
+            "name": "number1",
+            "type": "simple int/float"
+          }
+        ],
+        [
+          {
+            "name": "number0",
+            "type": "series int/float"
+          },
+          {
+            "name": "number1",
+            "type": "series int/float"
+          }
+        ]
       ]
     },
     "math.ceil": {
@@ -8532,14 +8682,86 @@
       ],
       "variadic": true,
       "overloadArgs": [
-        [],
-        [],
-        [],
-        [],
-        [],
-        [],
-        [],
-        []
+        [
+          {
+            "name": "number0",
+            "type": "const int"
+          },
+          {
+            "name": "number1",
+            "type": "const int"
+          }
+        ],
+        [
+          {
+            "name": "number0",
+            "type": "const int/float"
+          },
+          {
+            "name": "number1",
+            "type": "const int/float"
+          }
+        ],
+        [
+          {
+            "name": "number0",
+            "type": "input int"
+          },
+          {
+            "name": "number1",
+            "type": "input int"
+          }
+        ],
+        [
+          {
+            "name": "number0",
+            "type": "simple int"
+          },
+          {
+            "name": "number1",
+            "type": "simple int"
+          }
+        ],
+        [
+          {
+            "name": "number0",
+            "type": "input int/float"
+          },
+          {
+            "name": "number1",
+            "type": "input int/float"
+          }
+        ],
+        [
+          {
+            "name": "number0",
+            "type": "series int"
+          },
+          {
+            "name": "number1",
+            "type": "series int"
+          }
+        ],
+        [
+          {
+            "name": "number0",
+            "type": "simple int/float"
+          },
+          {
+            "name": "number1",
+            "type": "simple int/float"
+          }
+        ],
+        [
+          {
+            "name": "number0",
+            "type": "series int/float"
+          },
+          {
+            "name": "number1",
+            "type": "series int/float"
+          }
+        ]
       ]
     },
     "math.min": {
@@ -8580,14 +8802,86 @@
       ],
       "variadic": true,
       "overloadArgs": [
-        [],
-        [],
-        [],
-        [],
-        [],
-        [],
-        [],
-        []
+        [
+          {
+            "name": "number0",
+            "type": "const int"
+          },
+          {
+            "name": "number1",
+            "type": "const int"
+          }
+        ],
+        [
+          {
+            "name": "number0",
+            "type": "const int/float"
+          },
+          {
+            "name": "number1",
+            "type": "const int/float"
+          }
+        ],
+        [
+          {
+            "name": "number0",
+            "type": "input int"
+          },
+          {
+            "name": "number1",
+            "type": "input int"
+          }
+        ],
+        [
+          {
+            "name": "number0",
+            "type": "simple int"
+          },
+          {
+            "name": "number1",
+            "type": "simple int"
+          }
+        ],
+        [
+          {
+            "name": "number0",
+            "type": "input int/float"
+          },
+          {
+            "name": "number1",
+            "type": "input int/float"
+          }
+        ],
+        [
+          {
+            "name": "number0",
+            "type": "series int"
+          },
+          {
+            "name": "number1",
+            "type": "series int"
+          }
+        ],
+        [
+          {
+            "name": "number0",
+            "type": "simple int/float"
+          },
+          {
+            "name": "number1",
+            "type": "simple int/float"
+          }
+        ],
+        [
+          {
+            "name": "number0",
+            "type": "series int/float"
+          },
+          {
+            "name": "number1",
+            "type": "series int/float"
+          }
+        ]
       ]
     },
     "math.pow": {
@@ -12456,12 +12750,28 @@
           {
             "name": "formatString",
             "type": "simple string"
+          },
+          {
+            "name": "arg0",
+            "type": "simple int/float/bool/string"
+          },
+          {
+            "name": "arg1",
+            "type": "simple int/float/bool/string"
           }
         ],
         [
           {
             "name": "formatString",
             "type": "series string"
+          },
+          {
+            "name": "arg0",
+            "type": "series int/float/bool/string/array<int/float/bool/string>"
+          },
+          {
+            "name": "arg1",
+            "type": "series int/float/bool/string/array<int/float/bool/string>"
           }
         ]
       ]

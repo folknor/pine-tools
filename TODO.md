@@ -134,17 +134,23 @@ IDs so the two stay in sync.
       entries you want refreshed and run plain `scrape` (no `--force`). Add an
       `--only <names>` / `--only-overloaded` flag so this doesn't require
       hand-deleting cache files.
-    - **Local mirror (durable fix):** a one-time `scrape:mirror` step that
-      snapshots the rendered page + JS/data assets under
-      `pine-data/raw/v6/site-mirror/`, then points Puppeteer at `file://` / a
-      local static server so re-scrapes are fully offline (zero TV calls). The
-      overload selector is client-side (proven during the #17 work), so a mirror
-      reproduces sub-anchor navigation faithfully. **Open question:** is the
-      reference data a single fetchable JSON asset, or does it need a
-      rendered-DOM snapshot? Resolve that before building. **Policy:** if a
-      re-scrape is needed and the mirror doesn't exist yet, build the mirror
-      *first*, then scrape against it. Now mostly needed only for
-      DOM-*extraction* changes, since type derivation is already offline.
+    - ✅ **DOM-extraction iteration is now offline too (2026-05-29).** The
+      **open question is resolved**: the overload arg widget is rendered
+      *dynamically* per sub-anchor (`#fun_<name>-<i>`), so a flat page dump is
+      insufficient — a per-overload rendered-DOM snapshot is required. `scrape`
+      now captures that snapshot (`saveDomSnapshot` -> `.cache/dom/<name>/{base,
+      overload-<i>}.html`, gitignored — a local build artifact, never committed
+      so we don't republish TV's HTML). `pnpm run reextract:dom`
+      (`reextract-overload-args.ts`) re-derives every `overloadArgs` from that
+      mirror with no network, sharing the arg-type parser (`arg-parse.ts`) with
+      the live scrape. So a DOM-*extraction* change is now: edit `arg-parse.ts`
+      -> `reextract:dom` -> `generate` -> `regression-check`, zero TV calls.
+      The mirror is built as a byproduct of any normal `scrape`, so no separate
+      `scrape:mirror` step is needed.
+    - **Targeted `--only` re-scrape** is still the one remaining quick win
+      (delete-cache-and-rescrape works today; a flag would be nicer). With the
+      mirror + offline reextract in place, full `--force` re-scrapes should now
+      be rare — only when TV's DOM *structure* itself changes.
 - **#23 — move all hardcoded data transmogrifications pre-JSON.** Any
   hardcoded correction, addition, or transformation of the scraped language
   data (type overrides, accepted-type widenings, flag maps, polymorphism /
@@ -162,6 +168,21 @@ IDs so the two stay in sync.
   merely mapping the JSON into the checker's internal representation, which
   is fine) and move the data-deriving part into the pipeline. See the
   "Architecture: Data vs Syntax" principle in CLAUDE.md and G002.
+- **#24 — relax the polymorphic arg-validation bypass now that param types
+  are accurate.** The variadic / nested-overload data work (#17, #22)
+  resolved real param types for `math.max`/`min`/`avg`/`round` (no more
+  `unknown` params), so `hasOverloads()` no longer bypasses them. But
+  `validateFunctionArguments` (checker.ts ~933/954) ALSO skips arg type
+  checking whenever `flags.polymorphic` is set — and these carry
+  `polymorphic: "numeric"` for *return-type* inference. So the FN-catching
+  benefit (e.g. `math.round(close, "x")` should error) is still masked.
+  The `polymorphic` flag conflates two concerns: return-type-follows-input
+  (keep) and "args untyped, don't validate" (no longer true). Gate the
+  arg-validation skip on actually-unknown param types, not on the
+  polymorphic flag. **Read INV009 first** (checker.ts:913 warns the bypass
+  removed ~real FPs when pine-data listed only overload #0's types — that
+  premise is now weaker, but verify per-function with `--tv` before
+  tightening). Likely catches several of the "16 missed arg-type FNs".
 
 ## Gotchas
 

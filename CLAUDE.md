@@ -311,10 +311,27 @@ node scripts/regression-check.mjs   # verify against the snapshot baseline
 ```
 
 `pnpm run generate` is deterministic and offline — re-running it produces a
-byte-identical `functions.json`. **Only `scrape` (or `scrape -- --force`) when
-you need to change what is *extracted* from TradingView's DOM** (new fields,
-new selectors), not when changing how param types are *derived* from the dump.
-A full site mirror to make even DOM-extraction offline is tracked in TODO #22.
+byte-identical `functions.json`.
+
+**Changing what is *extracted* from the DOM is also offline now.** Every
+`scrape` mirrors each function's rendered element to `.cache/dom/<name>/{base,
+overload-<i>}.html` (gitignored — a local build artifact; we never commit TV's
+HTML to this public repo). So a DOM-*extraction* change does **not** need a
+re-scrape either:
+
+```bash
+# 1. edit packages/pipeline/src/arg-parse.ts (the shared arg-type parser)
+pnpm run reextract:dom     # re-derive overloadArgs from .cache/dom — NO network
+pnpm run generate          # recompute pine-data from the corrected dump
+pnpm run install:cli
+node scripts/regression-check.mjs
+```
+
+The mirror is built as a byproduct of any normal `scrape`. **Only re-scrape
+(hitting TV) when the mirror is missing or TV's DOM *structure* itself changed**
+— e.g. a new field that isn't captured in the snapshot at all. The overload arg
+widget renders dynamically per sub-anchor, so the mirror snapshots each overload
+separately (`scrape.ts` `saveDomSnapshot`). See TODO #22.
 
 ### Polymorphic Functions
 
