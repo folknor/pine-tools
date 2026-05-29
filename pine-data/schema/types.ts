@@ -86,6 +86,17 @@ export interface PineParameter {
 	 * documented or it could not be parsed.
 	 */
 	default?: string;
+	/**
+	 * The fixed set of values this parameter accepts, when documented as an
+	 * enumeration — namespaced constants ("display.none", "display.all") or
+	 * quoted-string literals ("TTM", "FY"). Absent when the parameter is not
+	 * enumerated. See TODO #25.
+	 */
+	allowedValues?: string[];
+	/** Inclusive lower bound of an accepted numeric range, when documented. */
+	min?: number;
+	/** Inclusive upper bound of an accepted numeric range, when documented. */
+	max?: number;
 }
 
 /**

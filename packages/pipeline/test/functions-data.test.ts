@@ -64,4 +64,26 @@ describe("generated functions.json — overload exposure (TODO #25)", () => {
 		}
 		expect(blank, `params missing description: ${blank.join(", ")}`).toEqual([]);
 	});
+
+	it("exposes allowedValues and numeric ranges where documented (#25)", () => {
+		type P = { name: string; allowedValues?: string[]; min?: number; max?: number };
+		const param = (fn: string, name: string) =>
+			(byName.get(fn)?.parameters as P[])?.find((p) => p.name === name);
+
+		expect(param("alert", "freq")?.allowedValues).toEqual([
+			"alert.freq_all",
+			"alert.freq_once_per_bar",
+			"alert.freq_once_per_bar_close",
+		]);
+		expect(param("color.rgb", "red")).toMatchObject({ min: 0, max: 255 });
+
+		// A parameter is an enum XOR a numeric range, never both.
+		for (const fn of functions as Fn[]) {
+			for (const p of fn.parameters as P[]) {
+				if (p.allowedValues && (p.min !== undefined || p.max !== undefined)) {
+					throw new Error(`${fn.name}.${p.name} has both allowedValues and a range`);
+				}
+			}
+		}
+	});
 });

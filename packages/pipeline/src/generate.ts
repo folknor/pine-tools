@@ -13,6 +13,10 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+	parseAllowedValues,
+	parseNumericRange,
+} from "./parse-constraints.ts";
 import { parseDefault } from "./parse-default.ts";
 import { detectReturnTypeParam, unionOverloadParams } from "./union-types.ts";
 
@@ -72,6 +76,9 @@ interface GeneratedFunction {
 		description: string;
 		required: boolean;
 		default?: string;
+		allowedValues?: string[];
+		min?: number;
+		max?: number;
 	}>;
 	returns: string;
 	flags?: Record<string, unknown>;
@@ -82,6 +89,9 @@ interface GeneratedFunction {
 			description: string;
 			required: boolean;
 			default?: string;
+			allowedValues?: string[];
+			min?: number;
+			max?: number;
 		}>;
 		returns: string;
 	}>;
@@ -387,12 +397,17 @@ function buildOverloads(
 				// Prefer this overload's own captured description; fall back to the
 				// merged param's (overload #0's). see TODO #25
 				const desc = description || m?.description || "";
+				const allowed = parseAllowedValues(desc);
+				const range = allowed ? undefined : parseNumericRange(desc);
 				return {
 					name,
 					type,
 					description: desc,
 					required: m ? !isParameterOptional(m) : true,
 					default: parseDefault(desc),
+					allowedValues: allowed,
+					min: range?.min,
+					max: range?.max,
 				};
 			}),
 			returns: parseReturnFromSignature(sig),
@@ -458,6 +473,10 @@ function generateFunctions(
 		const descByName = overloadDescriptions(detail);
 		const parameters = (detail.parameters || []).map((p) => {
 			const description = p.description || descByName.get(p.name) || "";
+			const allowed = parseAllowedValues(description);
+			// A param is either an enum or a numeric range, never both — skip the
+			// range scan when an enum was found (its prose can contain stray digits).
+			const range = allowed ? undefined : parseNumericRange(description);
 			return {
 				name: p.name,
 				type:
@@ -469,6 +488,9 @@ function generateFunctions(
 				required: !isParameterOptional(p),
 				// Parsed from the description prose (best-effort). see TODO #25
 				default: p.default ?? parseDefault(description),
+				allowedValues: allowed,
+				min: range?.min,
+				max: range?.max,
 			};
 		});
 

@@ -222,11 +222,15 @@ IDs so the two stay in sync.
     Only `ta.vwap.anchor` is left undefined (its expr prose is too awkward to
     reconstruct). Best-effort, not authoritative (the "X by default" phrasing
     is skipped: ambiguous). Sentinel set documented in schema/types.ts.
-  - **No argument constraints / allowed values.** `input.int`/`input.float`
-    carry `minval`/`maxval`/`step` as params but there's no structured
-    constraint; params accepting a fixed enum set (`alert.freq` →
-    `alert.freq_all` / `freq_once_per_bar` / `freq_once_per_bar_close`,
-    `display`, `xloc`, …) don't expose the allowed values.
+  - ✅ **Allowed values & numeric ranges parsed (2026-05-29).**
+    `parse-constraints.ts` reads "Possible values are: …" prose at
+    generate-time. 116 params now expose `allowedValues: string[]` (namespaced
+    constants like `alert.freq_all`/`display.none`, or quoted-string enums like
+    `"TTM"`/`'open'`) and 11 expose an inclusive `{min, max}` numeric range
+    (`color.rgb.*` 0-255, `strategy.max_*_count` 1-500). A param is an enum XOR
+    a range (enforced in generate + a contract test); free-prose value
+    descriptions ("a string representing a valid currency code") are skipped.
+    Both surfaced on the merged `parameters` and per-overload `overloads[]`.
   - **Polymorphic `returns` frozen/wrong** (subset of the overload gap):
     `nz → "simple color"`, `fixnan → "series color"`, `math.max →
     "const int"`. Exposing per-overload returns (above) covers this; a

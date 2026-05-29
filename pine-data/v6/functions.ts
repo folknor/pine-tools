@@ -1,7 +1,7 @@
 /**
  * Pine Script V6 Functions
  * Auto-generated from TradingView documentation
- * Generated: 2026-05-29T14:00:31.660Z
+ * Generated: 2026-05-29T17:35:49.203Z
  * Total: 475 functions
  */
 
@@ -27,7 +27,12 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "input string",
         "description": "Optional. Determines the allowed frequency of the alert trigger. Possible values are: alert.freq_all (allows an alert on any realtime update), alert.freq_once_per_bar (allows an alert only on the first execution for each realtime bar), or alert.freq_once_per_bar_close (allows an alert only when a realtime bar closes). The default is alert.freq_once_per_bar.",
         "required": false,
-        "default": "alert.freq_once_per_bar"
+        "default": "alert.freq_once_per_bar",
+        "allowedValues": [
+          "alert.freq_all",
+          "alert.freq_once_per_bar",
+          "alert.freq_once_per_bar_close"
+        ]
       }
     ],
     "returns": "void",
@@ -2159,7 +2164,11 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "display",
         "type": "input plot_simple_display",
         "description": "Controls where the barcolor is displayed. Possible values are: display.none, display.all. Default is display.all.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "display.none",
+          "display.all"
+        ]
       }
     ],
     "returns": "void",
@@ -2209,7 +2218,11 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "display",
         "type": "input plot_simple_display",
         "description": "Controls where the bgcolor is displayed. Possible values are: display.none, display.all. Default is display.all.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "display.none",
+          "display.all"
+        ]
       },
       {
         "name": "force_overlay",
@@ -2438,7 +2451,12 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "series string",
         "description": "Style of the four borders. Possible values: line.style_solid, line.style_dotted, line.style_dashed. Optional. The default value is line.style_solid.",
         "required": false,
-        "default": "line.style_solid"
+        "default": "line.style_solid",
+        "allowedValues": [
+          "line.style_solid",
+          "line.style_dotted",
+          "line.style_dashed"
+        ]
       },
       {
         "name": "extend",
@@ -2452,7 +2470,11 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "series string",
         "description": "Determines whether the arguments to 'left' and 'right' are a bar index or a time value. If xloc = xloc.bar_index, the arguments must be a bar index. If xloc = xloc.bar_time, the arguments must be a UNIX time. Possible values: xloc.bar_index and xloc.bar_time. Optional. The default is xloc.bar_index.",
         "required": false,
-        "default": "xloc.bar_index"
+        "default": "xloc.bar_index",
+        "allowedValues": [
+          "xloc.bar_index",
+          "xloc.bar_time"
+        ]
       },
       {
         "name": "bgcolor",
@@ -2487,28 +2509,46 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "series string",
         "description": "The horizontal alignment of the box's text. Optional. The default value is text.align_center. Possible values: text.align_left, text.align_center, text.align_right.",
         "required": false,
-        "default": "text.align_center"
+        "default": "text.align_center",
+        "allowedValues": [
+          "text.align_left",
+          "text.align_center",
+          "text.align_right"
+        ]
       },
       {
         "name": "text_valign",
         "type": "series string",
         "description": "The vertical alignment of the box's text. Optional. The default value is text.align_center. Possible values: text.align_top, text.align_center, text.align_bottom.",
         "required": false,
-        "default": "text.align_center"
+        "default": "text.align_center",
+        "allowedValues": [
+          "text.align_top",
+          "text.align_center",
+          "text.align_bottom"
+        ]
       },
       {
         "name": "text_wrap",
         "type": "series string",
         "description": "Optional. Whether to wrap text. Wrapped text starts a new line when it reaches the side of the box. Wrapped text lower than the bottom of the box is not displayed. Unwrapped text stays on a single line and is displayed past the width of the box if it is too long. If the text_size is 0 or text.wrap_auto, this setting has no effect. The default value is text.wrap_none. Possible values: text.wrap_none, text.wrap_auto.",
         "required": false,
-        "default": "text.wrap_none"
+        "default": "text.wrap_none",
+        "allowedValues": [
+          "text.wrap_none",
+          "text.wrap_auto"
+        ]
       },
       {
         "name": "text_font_family",
         "type": "series string",
         "description": "The font family of the text. Optional. The default value is font.family_default. Possible values: font.family_default, font.family_monospace.",
         "required": false,
-        "default": "font.family_default"
+        "default": "font.family_default",
+        "allowedValues": [
+          "font.family_default",
+          "font.family_monospace"
+        ]
       },
       {
         "name": "force_overlay",
@@ -2522,7 +2562,12 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "series text_format",
         "description": "The formatting of the displayed text. Formatting options support addition. For example, text.format_bold + text.format_italic will make the text both bold and italicized. Possible values: text.format_none, text.format_bold, text.format_italic. Optional. The default is text.format_none.",
         "required": false,
-        "default": "text.format_none"
+        "default": "text.format_none",
+        "allowedValues": [
+          "text.format_none",
+          "text.format_bold",
+          "text.format_italic"
+        ]
       },
       {
         "name": "left",
@@ -2584,7 +2629,12 @@ export const FUNCTIONS: PineFunction[] = [
             "type": "series string",
             "description": "Style of the four borders. Possible values: line.style_solid, line.style_dotted, line.style_dashed. Optional. The default value is line.style_solid.",
             "required": false,
-            "default": "line.style_solid"
+            "default": "line.style_solid",
+            "allowedValues": [
+              "line.style_solid",
+              "line.style_dotted",
+              "line.style_dashed"
+            ]
           },
           {
             "name": "extend",
@@ -2598,7 +2648,11 @@ export const FUNCTIONS: PineFunction[] = [
             "type": "series string",
             "description": "Determines whether the arguments to 'left' and 'right' are a bar index or a time value. If xloc = xloc.bar_index, the arguments must be a bar index. If xloc = xloc.bar_time, the arguments must be a UNIX time. Possible values: xloc.bar_index and xloc.bar_time. Optional. The default is xloc.bar_index.",
             "required": false,
-            "default": "xloc.bar_index"
+            "default": "xloc.bar_index",
+            "allowedValues": [
+              "xloc.bar_index",
+              "xloc.bar_time"
+            ]
           },
           {
             "name": "bgcolor",
@@ -2633,28 +2687,46 @@ export const FUNCTIONS: PineFunction[] = [
             "type": "series string",
             "description": "The horizontal alignment of the box's text. Optional. The default value is text.align_center. Possible values: text.align_left, text.align_center, text.align_right.",
             "required": false,
-            "default": "text.align_center"
+            "default": "text.align_center",
+            "allowedValues": [
+              "text.align_left",
+              "text.align_center",
+              "text.align_right"
+            ]
           },
           {
             "name": "text_valign",
             "type": "series string",
             "description": "The vertical alignment of the box's text. Optional. The default value is text.align_center. Possible values: text.align_top, text.align_center, text.align_bottom.",
             "required": false,
-            "default": "text.align_center"
+            "default": "text.align_center",
+            "allowedValues": [
+              "text.align_top",
+              "text.align_center",
+              "text.align_bottom"
+            ]
           },
           {
             "name": "text_wrap",
             "type": "series string",
             "description": "Optional. Whether to wrap text. Wrapped text starts a new line when it reaches the side of the box. Wrapped text lower than the bottom of the box is not displayed. Unwrapped text stays on a single line and is displayed past the width of the box if it is too long. If the text_size is 0 or text.wrap_auto, this setting has no effect. The default value is text.wrap_none. Possible values: text.wrap_none, text.wrap_auto.",
             "required": false,
-            "default": "text.wrap_none"
+            "default": "text.wrap_none",
+            "allowedValues": [
+              "text.wrap_none",
+              "text.wrap_auto"
+            ]
           },
           {
             "name": "text_font_family",
             "type": "series string",
             "description": "The font family of the text. Optional. The default value is font.family_default. Possible values: font.family_default, font.family_monospace.",
             "required": false,
-            "default": "font.family_default"
+            "default": "font.family_default",
+            "allowedValues": [
+              "font.family_default",
+              "font.family_monospace"
+            ]
           },
           {
             "name": "force_overlay",
@@ -2668,7 +2740,12 @@ export const FUNCTIONS: PineFunction[] = [
             "type": "series text_format",
             "description": "The formatting of the displayed text. Formatting options support addition. For example, text.format_bold + text.format_italic will make the text both bold and italicized. Possible values: text.format_none, text.format_bold, text.format_italic. Optional. The default is text.format_none.",
             "required": false,
-            "default": "text.format_none"
+            "default": "text.format_none",
+            "allowedValues": [
+              "text.format_none",
+              "text.format_bold",
+              "text.format_italic"
+            ]
           }
         ],
         "returns": "series box"
@@ -2718,7 +2795,12 @@ export const FUNCTIONS: PineFunction[] = [
             "type": "series string",
             "description": "Style of the four borders. Possible values: line.style_solid, line.style_dotted, line.style_dashed. Optional. The default value is line.style_solid.",
             "required": false,
-            "default": "line.style_solid"
+            "default": "line.style_solid",
+            "allowedValues": [
+              "line.style_solid",
+              "line.style_dotted",
+              "line.style_dashed"
+            ]
           },
           {
             "name": "extend",
@@ -2732,7 +2814,11 @@ export const FUNCTIONS: PineFunction[] = [
             "type": "series string",
             "description": "Determines whether the arguments to 'left' and 'right' are a bar index or a time value. If xloc = xloc.bar_index, the arguments must be a bar index. If xloc = xloc.bar_time, the arguments must be a UNIX time. Possible values: xloc.bar_index and xloc.bar_time. Optional. The default is xloc.bar_index.",
             "required": false,
-            "default": "xloc.bar_index"
+            "default": "xloc.bar_index",
+            "allowedValues": [
+              "xloc.bar_index",
+              "xloc.bar_time"
+            ]
           },
           {
             "name": "bgcolor",
@@ -2767,28 +2853,46 @@ export const FUNCTIONS: PineFunction[] = [
             "type": "series string",
             "description": "The horizontal alignment of the box's text. Optional. The default value is text.align_center. Possible values: text.align_left, text.align_center, text.align_right.",
             "required": false,
-            "default": "text.align_center"
+            "default": "text.align_center",
+            "allowedValues": [
+              "text.align_left",
+              "text.align_center",
+              "text.align_right"
+            ]
           },
           {
             "name": "text_valign",
             "type": "series string",
             "description": "The vertical alignment of the box's text. Optional. The default value is text.align_center. Possible values: text.align_top, text.align_center, text.align_bottom.",
             "required": false,
-            "default": "text.align_center"
+            "default": "text.align_center",
+            "allowedValues": [
+              "text.align_top",
+              "text.align_center",
+              "text.align_bottom"
+            ]
           },
           {
             "name": "text_wrap",
             "type": "series string",
             "description": "Optional. Whether to wrap text. Wrapped text starts a new line when it reaches the side of the box. Wrapped text lower than the bottom of the box is not displayed. Unwrapped text stays on a single line and is displayed past the width of the box if it is too long. If the text_size is 0 or text.wrap_auto, this setting has no effect. The default value is text.wrap_none. Possible values: text.wrap_none, text.wrap_auto.",
             "required": false,
-            "default": "text.wrap_none"
+            "default": "text.wrap_none",
+            "allowedValues": [
+              "text.wrap_none",
+              "text.wrap_auto"
+            ]
           },
           {
             "name": "text_font_family",
             "type": "series string",
             "description": "The font family of the text. Optional. The default value is font.family_default. Possible values: font.family_default, font.family_monospace.",
             "required": false,
-            "default": "font.family_default"
+            "default": "font.family_default",
+            "allowedValues": [
+              "font.family_default",
+              "font.family_monospace"
+            ]
           },
           {
             "name": "force_overlay",
@@ -2802,7 +2906,12 @@ export const FUNCTIONS: PineFunction[] = [
             "type": "series text_format",
             "description": "The formatting of the displayed text. Formatting options support addition. For example, text.format_bold + text.format_italic will make the text both bold and italicized. Possible values: text.format_none, text.format_bold, text.format_italic. Optional. The default is text.format_none.",
             "required": false,
-            "default": "text.format_none"
+            "default": "text.format_none",
+            "allowedValues": [
+              "text.format_none",
+              "text.format_bold",
+              "text.format_italic"
+            ]
           }
         ],
         "returns": "series box"
@@ -3126,7 +3235,11 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "text_font_family",
         "type": "series string",
         "description": "The font family of the text. Possible values: font.family_default, font.family_monospace.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "font.family_default",
+          "font.family_monospace"
+        ]
       }
     ],
     "returns": "void",
@@ -3151,7 +3264,12 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "series text_format",
         "description": "The formatting of the displayed text. Formatting options support addition. For example, text.format_bold + text.format_italic will make the text both bold and italicized. Possible values: text.format_none, text.format_bold, text.format_italic. Optional. The default is text.format_none.",
         "required": false,
-        "default": "text.format_none"
+        "default": "text.format_none",
+        "allowedValues": [
+          "text.format_none",
+          "text.format_bold",
+          "text.format_italic"
+        ]
       }
     ],
     "returns": "void",
@@ -3173,7 +3291,12 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "text_halign",
         "type": "series string",
         "description": "The horizontal alignment of a box's text. Possible values: text.align_left, text.align_center, text.align_right.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "text.align_left",
+          "text.align_center",
+          "text.align_right"
+        ]
       }
     ],
     "returns": "void",
@@ -3217,7 +3340,12 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "text_valign",
         "type": "series string",
         "description": "The vertical alignment of the box's text. Possible values: text.align_top, text.align_center, text.align_bottom.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "text.align_top",
+          "text.align_center",
+          "text.align_bottom"
+        ]
       }
     ],
     "returns": "void",
@@ -3239,7 +3367,11 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "text_wrap",
         "type": "series string",
         "description": "Whether to wrap text. Wrapped text starts a new line when it reaches the side of the box. Wrapped text lower than the bottom of the box is not displayed. Unwrapped text stays on a single line and is displayed past the width of the box if it is too long. If the text_size is 0 or text.wrap_auto, this setting has no effect. Possible values: text.wrap_none, text.wrap_auto.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "text.wrap_none",
+          "text.wrap_auto"
+        ]
       }
     ],
     "returns": "void",
@@ -3317,7 +3449,11 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "xloc",
         "type": "series string",
         "description": "Determines whether the box treats the left and right arguments as bar indices or timestamps. Possible values: xloc.bar_index and xloc.bar_time. If the value is xloc.bar_index, the arguments represent bar indices. If xloc.bar_time, the arguments represent UNIX timestamps.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "xloc.bar_index",
+          "xloc.bar_time"
+        ]
       }
     ],
     "returns": "void",
@@ -3675,7 +3811,9 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "transp",
         "type": "series int/float",
         "description": "Possible values are from 0 (not transparent) to 100 (invisible).",
-        "required": false
+        "required": false,
+        "min": 0,
+        "max": 100
       }
     ],
     "returns": "const color",
@@ -3692,7 +3830,9 @@ export const FUNCTIONS: PineFunction[] = [
             "name": "transp",
             "type": "const int/float",
             "description": "Possible values are from 0 (not transparent) to 100 (invisible).",
-            "required": false
+            "required": false,
+            "min": 0,
+            "max": 100
           }
         ],
         "returns": "const color"
@@ -3709,7 +3849,9 @@ export const FUNCTIONS: PineFunction[] = [
             "name": "transp",
             "type": "input int/float",
             "description": "Possible values are from 0 (not transparent) to 100 (invisible).",
-            "required": false
+            "required": false,
+            "min": 0,
+            "max": 100
           }
         ],
         "returns": "input color"
@@ -3726,7 +3868,9 @@ export const FUNCTIONS: PineFunction[] = [
             "name": "transp",
             "type": "simple int/float",
             "description": "Possible values are from 0 (not transparent) to 100 (invisible).",
-            "required": false
+            "required": false,
+            "min": 0,
+            "max": 100
           }
         ],
         "returns": "simple color"
@@ -3743,7 +3887,9 @@ export const FUNCTIONS: PineFunction[] = [
             "name": "transp",
             "type": "series int/float",
             "description": "Possible values are from 0 (not transparent) to 100 (invisible).",
-            "required": false
+            "required": false,
+            "min": 0,
+            "max": 100
           }
         ],
         "returns": "series color"
@@ -3827,25 +3973,33 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "red",
         "type": "series int/float",
         "description": "Red color component. Possible values are from 0 to 255.",
-        "required": false
+        "required": false,
+        "min": 0,
+        "max": 255
       },
       {
         "name": "green",
         "type": "series int/float",
         "description": "Green color component. Possible values are from 0 to 255.",
-        "required": false
+        "required": false,
+        "min": 0,
+        "max": 255
       },
       {
         "name": "blue",
         "type": "series int/float",
         "description": "Blue color component. Possible values are from 0 to 255.",
-        "required": false
+        "required": false,
+        "min": 0,
+        "max": 255
       },
       {
         "name": "transp",
         "type": "series int/float",
         "description": "Optional. Color transparency. Possible values are from 0 (opaque) to 100 (invisible). Default value is 0.",
-        "required": false
+        "required": false,
+        "min": 0,
+        "max": 100
       }
     ],
     "returns": "const color",
@@ -3856,25 +4010,33 @@ export const FUNCTIONS: PineFunction[] = [
             "name": "red",
             "type": "const int/float",
             "description": "Red color component. Possible values are from 0 to 255.",
-            "required": false
+            "required": false,
+            "min": 0,
+            "max": 255
           },
           {
             "name": "green",
             "type": "const int/float",
             "description": "Green color component. Possible values are from 0 to 255.",
-            "required": false
+            "required": false,
+            "min": 0,
+            "max": 255
           },
           {
             "name": "blue",
             "type": "const int/float",
             "description": "Blue color component. Possible values are from 0 to 255.",
-            "required": false
+            "required": false,
+            "min": 0,
+            "max": 255
           },
           {
             "name": "transp",
             "type": "const int/float",
             "description": "Optional. Color transparency. Possible values are from 0 (opaque) to 100 (invisible). Default value is 0.",
-            "required": false
+            "required": false,
+            "min": 0,
+            "max": 100
           }
         ],
         "returns": "const color"
@@ -3885,25 +4047,33 @@ export const FUNCTIONS: PineFunction[] = [
             "name": "red",
             "type": "input int/float",
             "description": "Red color component. Possible values are from 0 to 255.",
-            "required": false
+            "required": false,
+            "min": 0,
+            "max": 255
           },
           {
             "name": "green",
             "type": "input int/float",
             "description": "Green color component. Possible values are from 0 to 255.",
-            "required": false
+            "required": false,
+            "min": 0,
+            "max": 255
           },
           {
             "name": "blue",
             "type": "input int/float",
             "description": "Blue color component. Possible values are from 0 to 255.",
-            "required": false
+            "required": false,
+            "min": 0,
+            "max": 255
           },
           {
             "name": "transp",
             "type": "input int/float",
             "description": "Optional. Color transparency. Possible values are from 0 (opaque) to 100 (invisible). Default value is 0.",
-            "required": false
+            "required": false,
+            "min": 0,
+            "max": 100
           }
         ],
         "returns": "input color"
@@ -3914,25 +4084,33 @@ export const FUNCTIONS: PineFunction[] = [
             "name": "red",
             "type": "simple int/float",
             "description": "Red color component. Possible values are from 0 to 255.",
-            "required": false
+            "required": false,
+            "min": 0,
+            "max": 255
           },
           {
             "name": "green",
             "type": "simple int/float",
             "description": "Green color component. Possible values are from 0 to 255.",
-            "required": false
+            "required": false,
+            "min": 0,
+            "max": 255
           },
           {
             "name": "blue",
             "type": "simple int/float",
             "description": "Blue color component. Possible values are from 0 to 255.",
-            "required": false
+            "required": false,
+            "min": 0,
+            "max": 255
           },
           {
             "name": "transp",
             "type": "simple int/float",
             "description": "Optional. Color transparency. Possible values are from 0 (opaque) to 100 (invisible). Default value is 0.",
-            "required": false
+            "required": false,
+            "min": 0,
+            "max": 100
           }
         ],
         "returns": "simple color"
@@ -3943,25 +4121,33 @@ export const FUNCTIONS: PineFunction[] = [
             "name": "red",
             "type": "series int/float",
             "description": "Red color component. Possible values are from 0 to 255.",
-            "required": false
+            "required": false,
+            "min": 0,
+            "max": 255
           },
           {
             "name": "green",
             "type": "series int/float",
             "description": "Green color component. Possible values are from 0 to 255.",
-            "required": false
+            "required": false,
+            "min": 0,
+            "max": 255
           },
           {
             "name": "blue",
             "type": "series int/float",
             "description": "Blue color component. Possible values are from 0 to 255.",
-            "required": false
+            "required": false,
+            "min": 0,
+            "max": 255
           },
           {
             "name": "transp",
             "type": "series int/float",
             "description": "Optional. Color transparency. Possible values are from 0 (opaque) to 100 (invisible). Default value is 0.",
-            "required": false
+            "required": false,
+            "min": 0,
+            "max": 100
           }
         ],
         "returns": "series color"
@@ -4125,7 +4311,11 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "display",
         "type": "input plot_simple_display",
         "description": "Controls where the fill is displayed. Possible values are: display.none, display.all. Default is display.all.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "display.none",
+          "display.all"
+        ]
       },
       {
         "name": "plot1",
@@ -4218,7 +4408,11 @@ export const FUNCTIONS: PineFunction[] = [
             "name": "display",
             "type": "input plot_simple_display",
             "description": "Controls where the fill is displayed. Possible values are: display.none, display.all. Default is display.all.",
-            "required": false
+            "required": false,
+            "allowedValues": [
+              "display.none",
+              "display.all"
+            ]
           }
         ],
         "returns": "void"
@@ -4272,7 +4466,11 @@ export const FUNCTIONS: PineFunction[] = [
             "name": "display",
             "type": "input plot_simple_display",
             "description": "Controls where the fill is displayed. Possible values are: display.none, display.all. Default is display.all.",
-            "required": false
+            "required": false,
+            "allowedValues": [
+              "display.none",
+              "display.all"
+            ]
           }
         ],
         "returns": "void"
@@ -4325,7 +4523,11 @@ export const FUNCTIONS: PineFunction[] = [
             "name": "display",
             "type": "input plot_simple_display",
             "description": "Controls where the fill is displayed. Possible values are: display.none, display.all. Default is display.all.",
-            "required": false
+            "required": false,
+            "allowedValues": [
+              "display.none",
+              "display.all"
+            ]
           },
           {
             "name": "fillgaps",
@@ -4642,7 +4844,12 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "linestyle",
         "type": "input hline_style",
         "description": "Style of the rendered line. Possible values are: hline.style_solid, hline.style_dotted, hline.style_dashed. Optional argument.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "hline.style_solid",
+          "hline.style_dotted",
+          "hline.style_dashed"
+        ]
       },
       {
         "name": "linewidth",
@@ -4660,7 +4867,11 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "display",
         "type": "input plot_simple_display",
         "description": "Controls where the hline is displayed. Possible values are: display.none, display.all. Default is display.all.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "display.none",
+          "display.all"
+        ]
       }
     ],
     "returns": "hline",
@@ -4723,7 +4934,13 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "const string",
         "description": "Optional. Specifies the format of the script's plotted values. Possible values are format.inherit, format.price, format.volume, and format.percent. The default is format.inherit.",
         "required": false,
-        "default": "format.inherit"
+        "default": "format.inherit",
+        "allowedValues": [
+          "format.inherit",
+          "format.price",
+          "format.volume",
+          "format.percent"
+        ]
       },
       {
         "name": "precision",
@@ -4735,7 +4952,12 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "scale",
         "type": "const scale_type",
         "description": "Optional. Determines the location of the script's price scale and the scaling behavior of the script's visuals. Possible values are scale.right, scale.left, and scale.none. If specified and the script overlays on the main chart pane or another script's pane, the script scales its visuals independently to fit the pane's visual space. If the script occupies the same pane as the main chart or another script, scale.right or scale.left adds a separate price scale for the script to the left or right side of that pane. If the script occupies a separate pane, either argument positions the price scale for that pane on the left or right side without adding a new scale. If the argument is scale.none, which is valid only if the overlay argument is true, the script displays plotted numbers directly on the scale of the existing pane, or displays values on a new price scale if the user moves it to a new pane. Changes to the argument apply only after the user adds the script to the chart again. If not specified, the script uses the main price scale for the pane it occupies, and it does not scale its visuals separately if it overlays on an existing pane.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "scale.right",
+          "scale.left",
+          "scale.none"
+        ]
       },
       {
         "name": "max_bars_back",
@@ -4860,7 +5082,13 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "display",
         "type": "const plot_display",
         "description": "Controls where the script will display the input's information, aside from within the script's settings. This option allows one to remove a specific input from the script's status line or the Data Window to ensure only the most necessary inputs are displayed there. Possible values: display.none, display.data_window, display.status_line, display.all. Optional. The default depends on the type of the value passed to defval: display.none for bool and color values, display.all for everything else.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "display.none",
+          "display.data_window",
+          "display.status_line",
+          "display.all"
+        ]
       },
       {
         "name": "active",
@@ -4908,7 +5136,13 @@ export const FUNCTIONS: PineFunction[] = [
             "name": "display",
             "type": "const plot_display",
             "description": "Controls where the script will display the input's information, aside from within the script's settings. This option allows one to remove a specific input from the script's status line or the Data Window to ensure only the most necessary inputs are displayed there. Possible values: display.none, display.data_window, display.status_line, display.all. Optional. The default depends on the type of the value passed to defval: display.none for bool and color values, display.all for everything else.",
-            "required": false
+            "required": false,
+            "allowedValues": [
+              "display.none",
+              "display.data_window",
+              "display.status_line",
+              "display.all"
+            ]
           },
           {
             "name": "active",
@@ -4956,7 +5190,13 @@ export const FUNCTIONS: PineFunction[] = [
             "name": "display",
             "type": "const plot_display",
             "description": "Controls where the script will display the input's information, aside from within the script's settings. This option allows one to remove a specific input from the script's status line or the Data Window to ensure only the most necessary inputs are displayed there. Possible values: display.none, display.data_window, display.status_line, display.all. Optional. The default depends on the type of the value passed to defval: display.none for bool and color values, display.all for everything else.",
-            "required": false
+            "required": false,
+            "allowedValues": [
+              "display.none",
+              "display.data_window",
+              "display.status_line",
+              "display.all"
+            ]
           },
           {
             "name": "active",
@@ -5004,7 +5244,13 @@ export const FUNCTIONS: PineFunction[] = [
             "name": "display",
             "type": "const plot_display",
             "description": "Controls where the script will display the input's information, aside from within the script's settings. This option allows one to remove a specific input from the script's status line or the Data Window to ensure only the most necessary inputs are displayed there. Possible values: display.none, display.data_window, display.status_line, display.all. Optional. The default depends on the type of the value passed to defval: display.none for bool and color values, display.all for everything else.",
-            "required": false
+            "required": false,
+            "allowedValues": [
+              "display.none",
+              "display.data_window",
+              "display.status_line",
+              "display.all"
+            ]
           },
           {
             "name": "active",
@@ -5052,7 +5298,13 @@ export const FUNCTIONS: PineFunction[] = [
             "name": "display",
             "type": "const plot_display",
             "description": "Controls where the script will display the input's information, aside from within the script's settings. This option allows one to remove a specific input from the script's status line or the Data Window to ensure only the most necessary inputs are displayed there. Possible values: display.none, display.data_window, display.status_line, display.all. Optional. The default depends on the type of the value passed to defval: display.none for bool and color values, display.all for everything else.",
-            "required": false
+            "required": false,
+            "allowedValues": [
+              "display.none",
+              "display.data_window",
+              "display.status_line",
+              "display.all"
+            ]
           },
           {
             "name": "active",
@@ -5100,7 +5352,13 @@ export const FUNCTIONS: PineFunction[] = [
             "name": "display",
             "type": "const plot_display",
             "description": "Controls where the script will display the input's information, aside from within the script's settings. This option allows one to remove a specific input from the script's status line or the Data Window to ensure only the most necessary inputs are displayed there. Possible values: display.none, display.data_window, display.status_line, display.all. Optional. The default depends on the type of the value passed to defval: display.none for bool and color values, display.all for everything else.",
-            "required": false
+            "required": false,
+            "allowedValues": [
+              "display.none",
+              "display.data_window",
+              "display.status_line",
+              "display.all"
+            ]
           },
           {
             "name": "active",
@@ -5148,7 +5406,13 @@ export const FUNCTIONS: PineFunction[] = [
             "name": "display",
             "type": "const plot_display",
             "description": "Controls where the script will display the input's information, aside from within the script's settings. This option allows one to remove a specific input from the script's status line or the Data Window to ensure only the most necessary inputs are displayed there. Possible values: display.none, display.data_window, display.status_line, display.all. Optional. The default depends on the type of the value passed to defval: display.none for bool and color values, display.all for everything else.",
-            "required": false
+            "required": false,
+            "allowedValues": [
+              "display.none",
+              "display.data_window",
+              "display.status_line",
+              "display.all"
+            ]
           },
           {
             "name": "active",
@@ -5212,7 +5476,13 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "const plot_display",
         "description": "Controls where the script will display the input's information, aside from within the script's settings. This option allows one to remove a specific input from the script's status line or the Data Window to ensure only the most necessary inputs are displayed there. Possible values: display.none, display.data_window, display.status_line, display.all. Optional. The default is display.none.",
         "required": false,
-        "default": "display.none"
+        "default": "display.none",
+        "allowedValues": [
+          "display.none",
+          "display.data_window",
+          "display.status_line",
+          "display.all"
+        ]
       },
       {
         "name": "active",
@@ -5274,7 +5544,13 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "const plot_display",
         "description": "Controls where the script will display the input's information, aside from within the script's settings. This option allows one to remove a specific input from the script's status line or the Data Window to ensure only the most necessary inputs are displayed there. Possible values: display.none, display.data_window, display.status_line, display.all. Optional. The default is display.none.",
         "required": false,
-        "default": "display.none"
+        "default": "display.none",
+        "allowedValues": [
+          "display.none",
+          "display.data_window",
+          "display.status_line",
+          "display.all"
+        ]
       },
       {
         "name": "active",
@@ -5342,7 +5618,13 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "const plot_display",
         "description": "Controls where the script will display the input's information, aside from within the script's settings. This option allows one to remove a specific input from the script's status line or the Data Window to ensure only the most necessary inputs are displayed there. Possible values: display.none, display.data_window, display.status_line, display.all. Optional. The default is display.all.",
         "required": false,
-        "default": "display.all"
+        "default": "display.all",
+        "allowedValues": [
+          "display.none",
+          "display.data_window",
+          "display.status_line",
+          "display.all"
+        ]
       },
       {
         "name": "active",
@@ -5410,7 +5692,13 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "const plot_display",
         "description": "Controls where the script will display the input's information, aside from within the script's settings. This option allows one to remove a specific input from the script's status line or the Data Window to ensure only the most necessary inputs are displayed there. Possible values: display.none, display.data_window, display.status_line, display.all. Optional. The default is display.all.",
         "required": false,
-        "default": "display.all"
+        "default": "display.all",
+        "allowedValues": [
+          "display.none",
+          "display.data_window",
+          "display.status_line",
+          "display.all"
+        ]
       },
       {
         "name": "active",
@@ -5490,7 +5778,13 @@ export const FUNCTIONS: PineFunction[] = [
             "type": "const plot_display",
             "description": "Controls where the script will display the input's information, aside from within the script's settings. This option allows one to remove a specific input from the script's status line or the Data Window to ensure only the most necessary inputs are displayed there. Possible values: display.none, display.data_window, display.status_line, display.all. Optional. The default is display.all.",
             "required": false,
-            "default": "display.all"
+            "default": "display.all",
+            "allowedValues": [
+              "display.none",
+              "display.data_window",
+              "display.status_line",
+              "display.all"
+            ]
           },
           {
             "name": "active",
@@ -5564,7 +5858,13 @@ export const FUNCTIONS: PineFunction[] = [
             "type": "const plot_display",
             "description": "Controls where the script will display the input's information, aside from within the script's settings. This option allows one to remove a specific input from the script's status line or the Data Window to ensure only the most necessary inputs are displayed there. Possible values: display.none, display.data_window, display.status_line, display.all. Optional. The default is display.all.",
             "required": false,
-            "default": "display.all"
+            "default": "display.all",
+            "allowedValues": [
+              "display.none",
+              "display.data_window",
+              "display.status_line",
+              "display.all"
+            ]
           },
           {
             "name": "active",
@@ -5634,7 +5934,13 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "const plot_display",
         "description": "Controls where the script will display the input's information, aside from within the script's settings. This option allows one to remove a specific input from the script's status line or the Data Window to ensure only the most necessary inputs are displayed there. Possible values: display.none, display.data_window, display.status_line, display.all. Optional. The default is display.all.",
         "required": false,
-        "default": "display.all"
+        "default": "display.all",
+        "allowedValues": [
+          "display.none",
+          "display.data_window",
+          "display.status_line",
+          "display.all"
+        ]
       },
       {
         "name": "active",
@@ -5714,7 +6020,13 @@ export const FUNCTIONS: PineFunction[] = [
             "type": "const plot_display",
             "description": "Controls where the script will display the input's information, aside from within the script's settings. This option allows one to remove a specific input from the script's status line or the Data Window to ensure only the most necessary inputs are displayed there. Possible values: display.none, display.data_window, display.status_line, display.all. Optional. The default is display.all.",
             "required": false,
-            "default": "display.all"
+            "default": "display.all",
+            "allowedValues": [
+              "display.none",
+              "display.data_window",
+              "display.status_line",
+              "display.all"
+            ]
           },
           {
             "name": "active",
@@ -5788,7 +6100,13 @@ export const FUNCTIONS: PineFunction[] = [
             "type": "const plot_display",
             "description": "Controls where the script will display the input's information, aside from within the script's settings. This option allows one to remove a specific input from the script's status line or the Data Window to ensure only the most necessary inputs are displayed there. Possible values: display.none, display.data_window, display.status_line, display.all. Optional. The default is display.all.",
             "required": false,
-            "default": "display.all"
+            "default": "display.all",
+            "allowedValues": [
+              "display.none",
+              "display.data_window",
+              "display.status_line",
+              "display.all"
+            ]
           },
           {
             "name": "active",
@@ -5853,7 +6171,13 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "const plot_display",
         "description": "Controls where the script will display the input's information, aside from within the script's settings. This option allows one to remove a specific input from the script's status line or the Data Window to ensure only the most necessary inputs are displayed there. Possible values: display.none, display.data_window, display.status_line, display.all. Optional. The default is display.all.",
         "required": false,
-        "default": "display.all"
+        "default": "display.all",
+        "allowedValues": [
+          "display.none",
+          "display.data_window",
+          "display.status_line",
+          "display.all"
+        ]
       },
       {
         "name": "active",
@@ -5921,7 +6245,13 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "const plot_display",
         "description": "Controls where the script will display the input's information, aside from within the script's settings. This option allows one to remove a specific input from the script's status line or the Data Window to ensure only the most necessary inputs are displayed there. Possible values: display.none, display.data_window, display.status_line, display.all. Optional. The default is display.all.",
         "required": false,
-        "default": "display.all"
+        "default": "display.all",
+        "allowedValues": [
+          "display.none",
+          "display.data_window",
+          "display.status_line",
+          "display.all"
+        ]
       },
       {
         "name": "active",
@@ -5977,7 +6307,13 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "const plot_display",
         "description": "Controls where the script will display the input's information, aside from within the script's settings. This option allows one to remove a specific input from the script's status line or the Data Window to ensure only the most necessary inputs are displayed there. Possible values: display.none, display.data_window, display.status_line, display.all. Optional. The default is display.all.",
         "required": false,
-        "default": "display.all"
+        "default": "display.all",
+        "allowedValues": [
+          "display.none",
+          "display.data_window",
+          "display.status_line",
+          "display.all"
+        ]
       },
       {
         "name": "active",
@@ -6051,7 +6387,13 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "const plot_display",
         "description": "Controls where the script will display the input's information, aside from within the script's settings. This option allows one to remove a specific input from the script's status line or the Data Window to ensure only the most necessary inputs are displayed there. Possible values: display.none, display.data_window, display.status_line, display.all. Optional. The default is display.all.",
         "required": false,
-        "default": "display.all"
+        "default": "display.all",
+        "allowedValues": [
+          "display.none",
+          "display.data_window",
+          "display.status_line",
+          "display.all"
+        ]
       },
       {
         "name": "active",
@@ -6113,7 +6455,13 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "const plot_display",
         "description": "Controls where the script will display the input's information, aside from within the script's settings. This option allows one to remove a specific input from the script's status line or the Data Window to ensure only the most necessary inputs are displayed there. Possible values: display.none, display.data_window, display.status_line, display.all. Optional. The default is display.all.",
         "required": false,
-        "default": "display.all"
+        "default": "display.all",
+        "allowedValues": [
+          "display.none",
+          "display.data_window",
+          "display.status_line",
+          "display.all"
+        ]
       },
       {
         "name": "active",
@@ -6169,7 +6517,13 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "const plot_display",
         "description": "Controls where the script will display the input's information, aside from within the script's settings. This option allows one to remove a specific input from the script's status line or the Data Window to ensure only the most necessary inputs are displayed there. Possible values: display.none, display.data_window, display.status_line, display.all. Optional. The default is display.none.",
         "required": false,
-        "default": "display.none"
+        "default": "display.none",
+        "allowedValues": [
+          "display.none",
+          "display.data_window",
+          "display.status_line",
+          "display.all"
+        ]
       },
       {
         "name": "active",
@@ -6232,7 +6586,13 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "const plot_display",
         "description": "Controls where the script will display the input's information, aside from within the script's settings. This option allows one to remove a specific input from the script's status line or the Data Window to ensure only the most necessary inputs are displayed there. Possible values: display.none, display.data_window, display.status_line, display.all. Optional. The default is display.none.",
         "required": false,
-        "default": "display.none"
+        "default": "display.none",
+        "allowedValues": [
+          "display.none",
+          "display.data_window",
+          "display.status_line",
+          "display.all"
+        ]
       },
       {
         "name": "active",
@@ -6300,7 +6660,13 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "const plot_display",
         "description": "Controls where the script will display the input's information, aside from within the script's settings. This option allows one to remove a specific input from the script's status line or the Data Window to ensure only the most necessary inputs are displayed there. Possible values: display.none, display.data_window, display.status_line, display.all. Optional. The default is display.all.",
         "required": false,
-        "default": "display.all"
+        "default": "display.all",
+        "allowedValues": [
+          "display.none",
+          "display.data_window",
+          "display.status_line",
+          "display.all"
+        ]
       },
       {
         "name": "active",
@@ -6499,13 +6865,22 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "xloc",
         "type": "series string",
         "description": "See description of x argument. Possible values: xloc.bar_index and xloc.bar_time. Default is xloc.bar_index.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "xloc.bar_index",
+          "xloc.bar_time"
+        ]
       },
       {
         "name": "yloc",
         "type": "series string",
         "description": "Possible values are yloc.price, yloc.abovebar, yloc.belowbar. If yloc=yloc.price, y argument specifies the price of the label position. If yloc=yloc.abovebar, label is located above bar. If yloc=yloc.belowbar, label is located below bar. Default is yloc.price.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "yloc.price",
+          "yloc.abovebar",
+          "yloc.belowbar"
+        ]
       },
       {
         "name": "color",
@@ -6517,7 +6892,30 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "style",
         "type": "series string",
         "description": "Label style. Possible values: label.style_none, label.style_xcross, label.style_cross, label.style_triangleup, label.style_triangledown, label.style_flag, label.style_circle, label.style_arrowup, label.style_arrowdown, label.style_label_up, label.style_label_down, label.style_label_left, label.style_label_right, label.style_label_lower_left, label.style_label_lower_right, label.style_label_upper_left, label.style_label_upper_right, label.style_label_center, label.style_square, label.style_diamond, label.style_text_outline. Default is label.style_label_down.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "label.style_none",
+          "label.style_xcross",
+          "label.style_cross",
+          "label.style_triangleup",
+          "label.style_triangledown",
+          "label.style_flag",
+          "label.style_circle",
+          "label.style_arrowup",
+          "label.style_arrowdown",
+          "label.style_label_up",
+          "label.style_label_down",
+          "label.style_label_left",
+          "label.style_label_right",
+          "label.style_label_lower_left",
+          "label.style_label_lower_right",
+          "label.style_label_upper_left",
+          "label.style_label_upper_right",
+          "label.style_label_center",
+          "label.style_square",
+          "label.style_diamond",
+          "label.style_text_outline"
+        ]
       },
       {
         "name": "textcolor",
@@ -6536,7 +6934,12 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "textalign",
         "type": "series string",
         "description": "Label text alignment. Possible values: text.align_left, text.align_center, text.align_right. Default value is text.align_center.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "text.align_left",
+          "text.align_center",
+          "text.align_right"
+        ]
       },
       {
         "name": "tooltip",
@@ -6549,7 +6952,11 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "series string",
         "description": "The font family of the text. Optional. The default value is font.family_default. Possible values: font.family_default, font.family_monospace.",
         "required": false,
-        "default": "font.family_default"
+        "default": "font.family_default",
+        "allowedValues": [
+          "font.family_default",
+          "font.family_monospace"
+        ]
       },
       {
         "name": "force_overlay",
@@ -6563,7 +6970,12 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "series text_format",
         "description": "The formatting of the displayed text. Formatting options support addition. For example, text.format_bold + text.format_italic will make the text both bold and italicized. Possible values: text.format_none, text.format_bold, text.format_italic. Optional. The default is text.format_none.",
         "required": false,
-        "default": "text.format_none"
+        "default": "text.format_none",
+        "allowedValues": [
+          "text.format_none",
+          "text.format_bold",
+          "text.format_italic"
+        ]
       },
       {
         "name": "x",
@@ -6598,13 +7010,22 @@ export const FUNCTIONS: PineFunction[] = [
             "name": "xloc",
             "type": "series string",
             "description": "See description of x argument. Possible values: xloc.bar_index and xloc.bar_time. Default is xloc.bar_index.",
-            "required": false
+            "required": false,
+            "allowedValues": [
+              "xloc.bar_index",
+              "xloc.bar_time"
+            ]
           },
           {
             "name": "yloc",
             "type": "series string",
             "description": "Possible values are yloc.price, yloc.abovebar, yloc.belowbar. If yloc=yloc.price, y argument specifies the price of the label position. If yloc=yloc.abovebar, label is located above bar. If yloc=yloc.belowbar, label is located below bar. Default is yloc.price.",
-            "required": false
+            "required": false,
+            "allowedValues": [
+              "yloc.price",
+              "yloc.abovebar",
+              "yloc.belowbar"
+            ]
           },
           {
             "name": "color",
@@ -6616,7 +7037,30 @@ export const FUNCTIONS: PineFunction[] = [
             "name": "style",
             "type": "series string",
             "description": "Label style. Possible values: label.style_none, label.style_xcross, label.style_cross, label.style_triangleup, label.style_triangledown, label.style_flag, label.style_circle, label.style_arrowup, label.style_arrowdown, label.style_label_up, label.style_label_down, label.style_label_left, label.style_label_right, label.style_label_lower_left, label.style_label_lower_right, label.style_label_upper_left, label.style_label_upper_right, label.style_label_center, label.style_square, label.style_diamond, label.style_text_outline. Default is label.style_label_down.",
-            "required": false
+            "required": false,
+            "allowedValues": [
+              "label.style_none",
+              "label.style_xcross",
+              "label.style_cross",
+              "label.style_triangleup",
+              "label.style_triangledown",
+              "label.style_flag",
+              "label.style_circle",
+              "label.style_arrowup",
+              "label.style_arrowdown",
+              "label.style_label_up",
+              "label.style_label_down",
+              "label.style_label_left",
+              "label.style_label_right",
+              "label.style_label_lower_left",
+              "label.style_label_lower_right",
+              "label.style_label_upper_left",
+              "label.style_label_upper_right",
+              "label.style_label_center",
+              "label.style_square",
+              "label.style_diamond",
+              "label.style_text_outline"
+            ]
           },
           {
             "name": "textcolor",
@@ -6635,7 +7079,12 @@ export const FUNCTIONS: PineFunction[] = [
             "name": "textalign",
             "type": "series string",
             "description": "Label text alignment. Possible values: text.align_left, text.align_center, text.align_right. Default value is text.align_center.",
-            "required": false
+            "required": false,
+            "allowedValues": [
+              "text.align_left",
+              "text.align_center",
+              "text.align_right"
+            ]
           },
           {
             "name": "tooltip",
@@ -6648,7 +7097,11 @@ export const FUNCTIONS: PineFunction[] = [
             "type": "series string",
             "description": "The font family of the text. Optional. The default value is font.family_default. Possible values: font.family_default, font.family_monospace.",
             "required": false,
-            "default": "font.family_default"
+            "default": "font.family_default",
+            "allowedValues": [
+              "font.family_default",
+              "font.family_monospace"
+            ]
           },
           {
             "name": "force_overlay",
@@ -6662,7 +7115,12 @@ export const FUNCTIONS: PineFunction[] = [
             "type": "series text_format",
             "description": "The formatting of the displayed text. Formatting options support addition. For example, text.format_bold + text.format_italic will make the text both bold and italicized. Possible values: text.format_none, text.format_bold, text.format_italic. Optional. The default is text.format_none.",
             "required": false,
-            "default": "text.format_none"
+            "default": "text.format_none",
+            "allowedValues": [
+              "text.format_none",
+              "text.format_bold",
+              "text.format_italic"
+            ]
           }
         ],
         "returns": "series label"
@@ -6691,13 +7149,22 @@ export const FUNCTIONS: PineFunction[] = [
             "name": "xloc",
             "type": "series string",
             "description": "See description of x argument. Possible values: xloc.bar_index and xloc.bar_time. Default is xloc.bar_index.",
-            "required": false
+            "required": false,
+            "allowedValues": [
+              "xloc.bar_index",
+              "xloc.bar_time"
+            ]
           },
           {
             "name": "yloc",
             "type": "series string",
             "description": "Possible values are yloc.price, yloc.abovebar, yloc.belowbar. If yloc=yloc.price, y argument specifies the price of the label position. If yloc=yloc.abovebar, label is located above bar. If yloc=yloc.belowbar, label is located below bar. Default is yloc.price.",
-            "required": false
+            "required": false,
+            "allowedValues": [
+              "yloc.price",
+              "yloc.abovebar",
+              "yloc.belowbar"
+            ]
           },
           {
             "name": "color",
@@ -6709,7 +7176,30 @@ export const FUNCTIONS: PineFunction[] = [
             "name": "style",
             "type": "series string",
             "description": "Label style. Possible values: label.style_none, label.style_xcross, label.style_cross, label.style_triangleup, label.style_triangledown, label.style_flag, label.style_circle, label.style_arrowup, label.style_arrowdown, label.style_label_up, label.style_label_down, label.style_label_left, label.style_label_right, label.style_label_lower_left, label.style_label_lower_right, label.style_label_upper_left, label.style_label_upper_right, label.style_label_center, label.style_square, label.style_diamond, label.style_text_outline. Default is label.style_label_down.",
-            "required": false
+            "required": false,
+            "allowedValues": [
+              "label.style_none",
+              "label.style_xcross",
+              "label.style_cross",
+              "label.style_triangleup",
+              "label.style_triangledown",
+              "label.style_flag",
+              "label.style_circle",
+              "label.style_arrowup",
+              "label.style_arrowdown",
+              "label.style_label_up",
+              "label.style_label_down",
+              "label.style_label_left",
+              "label.style_label_right",
+              "label.style_label_lower_left",
+              "label.style_label_lower_right",
+              "label.style_label_upper_left",
+              "label.style_label_upper_right",
+              "label.style_label_center",
+              "label.style_square",
+              "label.style_diamond",
+              "label.style_text_outline"
+            ]
           },
           {
             "name": "textcolor",
@@ -6728,7 +7218,12 @@ export const FUNCTIONS: PineFunction[] = [
             "name": "textalign",
             "type": "series string",
             "description": "Label text alignment. Possible values: text.align_left, text.align_center, text.align_right. Default value is text.align_center.",
-            "required": false
+            "required": false,
+            "allowedValues": [
+              "text.align_left",
+              "text.align_center",
+              "text.align_right"
+            ]
           },
           {
             "name": "tooltip",
@@ -6741,7 +7236,11 @@ export const FUNCTIONS: PineFunction[] = [
             "type": "series string",
             "description": "The font family of the text. Optional. The default value is font.family_default. Possible values: font.family_default, font.family_monospace.",
             "required": false,
-            "default": "font.family_default"
+            "default": "font.family_default",
+            "allowedValues": [
+              "font.family_default",
+              "font.family_monospace"
+            ]
           },
           {
             "name": "force_overlay",
@@ -6755,7 +7254,12 @@ export const FUNCTIONS: PineFunction[] = [
             "type": "series text_format",
             "description": "The formatting of the displayed text. Formatting options support addition. For example, text.format_bold + text.format_italic will make the text both bold and italicized. Possible values: text.format_none, text.format_bold, text.format_italic. Optional. The default is text.format_none.",
             "required": false,
-            "default": "text.format_none"
+            "default": "text.format_none",
+            "allowedValues": [
+              "text.format_none",
+              "text.format_bold",
+              "text.format_italic"
+            ]
           }
         ],
         "returns": "series label"
@@ -6848,7 +7352,30 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "style",
         "type": "series string",
         "description": "New label style. Possible values: label.style_none, label.style_xcross, label.style_cross, label.style_triangleup, label.style_triangledown, label.style_flag, label.style_circle, label.style_arrowup, label.style_arrowdown, label.style_label_up, label.style_label_down, label.style_label_left, label.style_label_right, label.style_label_lower_left, label.style_label_lower_right, label.style_label_upper_left, label.style_label_upper_right, label.style_label_center, label.style_square, label.style_diamond, label.style_text_outline.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "label.style_none",
+          "label.style_xcross",
+          "label.style_cross",
+          "label.style_triangleup",
+          "label.style_triangledown",
+          "label.style_flag",
+          "label.style_circle",
+          "label.style_arrowup",
+          "label.style_arrowdown",
+          "label.style_label_up",
+          "label.style_label_down",
+          "label.style_label_left",
+          "label.style_label_right",
+          "label.style_label_lower_left",
+          "label.style_label_lower_right",
+          "label.style_label_upper_left",
+          "label.style_label_upper_right",
+          "label.style_label_center",
+          "label.style_square",
+          "label.style_diamond",
+          "label.style_text_outline"
+        ]
       }
     ],
     "returns": "void",
@@ -6892,7 +7419,11 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "text_font_family",
         "type": "series string",
         "description": "The font family of the text. Possible values: font.family_default, font.family_monospace.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "font.family_default",
+          "font.family_monospace"
+        ]
       }
     ],
     "returns": "void",
@@ -6917,7 +7448,12 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "series text_format",
         "description": "The formatting of the displayed text. Formatting options support addition. For example, text.format_bold + text.format_italic will make the text both bold and italicized. Possible values: text.format_none, text.format_bold, text.format_italic. Optional. The default is text.format_none.",
         "required": false,
-        "default": "text.format_none"
+        "default": "text.format_none",
+        "allowedValues": [
+          "text.format_none",
+          "text.format_bold",
+          "text.format_italic"
+        ]
       }
     ],
     "returns": "void",
@@ -6939,7 +7475,12 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "textalign",
         "type": "series string",
         "description": "Label text alignment. Possible values: text.align_left, text.align_center, text.align_right.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "text.align_left",
+          "text.align_center",
+          "text.align_right"
+        ]
       }
     ],
     "returns": "void",
@@ -7306,7 +7847,11 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "xloc",
         "type": "series string",
         "description": "See description of x1 argument. Possible values: xloc.bar_index and xloc.bar_time. Default is xloc.bar_index.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "xloc.bar_index",
+          "xloc.bar_time"
+        ]
       },
       {
         "name": "extend",
@@ -7324,7 +7869,15 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "style",
         "type": "series string",
         "description": "Line style. Possible values: line.style_solid, line.style_dotted, line.style_dashed, line.style_arrow_left, line.style_arrow_right, line.style_arrow_both.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "line.style_solid",
+          "line.style_dotted",
+          "line.style_dashed",
+          "line.style_arrow_left",
+          "line.style_arrow_right",
+          "line.style_arrow_both"
+        ]
       },
       {
         "name": "width",
@@ -7384,7 +7937,11 @@ export const FUNCTIONS: PineFunction[] = [
             "name": "xloc",
             "type": "series string",
             "description": "See description of x1 argument. Possible values: xloc.bar_index and xloc.bar_time. Default is xloc.bar_index.",
-            "required": false
+            "required": false,
+            "allowedValues": [
+              "xloc.bar_index",
+              "xloc.bar_time"
+            ]
           },
           {
             "name": "extend",
@@ -7402,7 +7959,15 @@ export const FUNCTIONS: PineFunction[] = [
             "name": "style",
             "type": "series string",
             "description": "Line style. Possible values: line.style_solid, line.style_dotted, line.style_dashed, line.style_arrow_left, line.style_arrow_right, line.style_arrow_both.",
-            "required": false
+            "required": false,
+            "allowedValues": [
+              "line.style_solid",
+              "line.style_dotted",
+              "line.style_dashed",
+              "line.style_arrow_left",
+              "line.style_arrow_right",
+              "line.style_arrow_both"
+            ]
           },
           {
             "name": "width",
@@ -7450,7 +8015,11 @@ export const FUNCTIONS: PineFunction[] = [
             "name": "xloc",
             "type": "series string",
             "description": "See description of x1 argument. Possible values: xloc.bar_index and xloc.bar_time. Default is xloc.bar_index.",
-            "required": false
+            "required": false,
+            "allowedValues": [
+              "xloc.bar_index",
+              "xloc.bar_time"
+            ]
           },
           {
             "name": "extend",
@@ -7468,7 +8037,15 @@ export const FUNCTIONS: PineFunction[] = [
             "name": "style",
             "type": "series string",
             "description": "Line style. Possible values: line.style_solid, line.style_dotted, line.style_dashed, line.style_arrow_left, line.style_arrow_right, line.style_arrow_both.",
-            "required": false
+            "required": false,
+            "allowedValues": [
+              "line.style_solid",
+              "line.style_dotted",
+              "line.style_dashed",
+              "line.style_arrow_left",
+              "line.style_arrow_right",
+              "line.style_arrow_both"
+            ]
           },
           {
             "name": "width",
@@ -11410,7 +11987,11 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "order",
         "type": "series sort_order",
         "description": "The sort order. Possible values: order.ascending (default), order.descending.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "order.ascending",
+          "order.descending"
+        ]
       },
       {
         "name": "sort_field",
@@ -11441,7 +12022,11 @@ export const FUNCTIONS: PineFunction[] = [
             "name": "order",
             "type": "series sort_order",
             "description": "The sort order. Possible values: order.ascending (default), order.descending.",
-            "required": false
+            "required": false,
+            "allowedValues": [
+              "order.ascending",
+              "order.descending"
+            ]
           }
         ],
         "returns": "void"
@@ -11465,7 +12050,11 @@ export const FUNCTIONS: PineFunction[] = [
             "name": "order",
             "type": "series sort_order",
             "description": "The sort order. Possible values: order.ascending (default), order.descending.",
-            "required": false
+            "required": false,
+            "allowedValues": [
+              "order.ascending",
+              "order.descending"
+            ]
           },
           {
             "name": "sort_field",
@@ -11718,7 +12307,15 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "var",
         "type": "series int/float/bool/color/label/line",
         "description": "Series variable identifier for which history buffer should be resized. Possible values are: 'open', 'high', 'low', 'close', 'volume', 'time', or any user defined variable id.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "open",
+          "high",
+          "low",
+          "close",
+          "volume",
+          "time"
+        ]
       },
       {
         "name": "num",
@@ -11980,7 +12577,20 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "style",
         "type": "input plot_style",
         "description": "Type of plot. Possible values are: plot.style_line, plot.style_stepline, plot.style_stepline_diamond, plot.style_histogram, plot.style_cross, plot.style_area, plot.style_columns, plot.style_circles, plot.style_linebr, plot.style_areabr, plot.style_steplinebr. Default value is plot.style_line.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "plot.style_line",
+          "plot.style_stepline",
+          "plot.style_stepline_diamond",
+          "plot.style_histogram",
+          "plot.style_cross",
+          "plot.style_area",
+          "plot.style_columns",
+          "plot.style_circles",
+          "plot.style_linebr",
+          "plot.style_areabr",
+          "plot.style_steplinebr"
+        ]
       },
       {
         "name": "trackprice",
@@ -12023,14 +12633,27 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "input plot_display",
         "description": "Controls where the plot's information is displayed. Display options support addition and subtraction, meaning that using display.all - display.status_line will display the plot's information everywhere except in the script's status line. display.price_scale + display.status_line will display the plot only in the price scale and status line. When display arguments such as display.price_scale have user-controlled chart settings equivalents, the relevant plot information will only appear when all settings allow for it. Possible values: display.none, display.pane, display.data_window, display.price_scale, display.status_line, display.all. Optional. The default is display.all.",
         "required": false,
-        "default": "display.all"
+        "default": "display.all",
+        "allowedValues": [
+          "display.none",
+          "display.pane",
+          "display.data_window",
+          "display.price_scale",
+          "display.status_line",
+          "display.all"
+        ]
       },
       {
         "name": "format",
         "type": "input string",
         "description": "Determines whether the script formats the plot's values as prices, percentages, or volume values. The argument passed to this parameter supersedes the format parameter of the indicator(), and strategy() functions. Optional. The default is the format value used by the indicator()/strategy() function. Possible values: format.price, format.percent, format.volume.",
         "required": false,
-        "default": "SCRIPT_FORMAT"
+        "default": "SCRIPT_FORMAT",
+        "allowedValues": [
+          "format.price",
+          "format.percent",
+          "format.volume"
+        ]
       },
       {
         "name": "precision",
@@ -12126,14 +12749,27 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "input plot_display",
         "description": "Controls where the plot's information is displayed. Display options support addition and subtraction, meaning that using display.all - display.status_line will display the plot's information everywhere except in the script's status line. display.price_scale + display.status_line will display the plot only in the price scale and status line. When display arguments such as display.price_scale have user-controlled chart settings equivalents, the relevant plot information will only appear when all settings allow for it. Possible values: display.none, display.pane, display.data_window, display.price_scale, display.status_line, display.all. Optional. The default is display.all.",
         "required": false,
-        "default": "display.all"
+        "default": "display.all",
+        "allowedValues": [
+          "display.none",
+          "display.pane",
+          "display.data_window",
+          "display.price_scale",
+          "display.status_line",
+          "display.all"
+        ]
       },
       {
         "name": "format",
         "type": "input string",
         "description": "Determines whether the script formats the plot's values as prices, percentages, or volume values. The argument passed to this parameter supersedes the format parameter of the indicator(), and strategy() functions. Optional. The default is the format value used by the indicator()/strategy() function. Possible values: format.price, format.percent, format.volume.",
         "required": false,
-        "default": "SCRIPT_FORMAT"
+        "default": "SCRIPT_FORMAT",
+        "allowedValues": [
+          "format.price",
+          "format.percent",
+          "format.volume"
+        ]
       },
       {
         "name": "precision",
@@ -12216,14 +12852,27 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "input plot_display",
         "description": "Controls where the plot's information is displayed. Display options support addition and subtraction, meaning that using display.all - display.status_line will display the plot's information everywhere except in the script's status line. display.price_scale + display.status_line will display the plot only in the price scale and status line. When display arguments such as display.price_scale have user-controlled chart settings equivalents, the relevant plot information will only appear when all settings allow for it. Possible values: display.none, display.pane, display.data_window, display.price_scale, display.status_line, display.all. Optional. The default is display.all.",
         "required": false,
-        "default": "display.all"
+        "default": "display.all",
+        "allowedValues": [
+          "display.none",
+          "display.pane",
+          "display.data_window",
+          "display.price_scale",
+          "display.status_line",
+          "display.all"
+        ]
       },
       {
         "name": "format",
         "type": "input string",
         "description": "Determines whether the script formats the plot's values as prices, percentages, or volume values. The argument passed to this parameter supersedes the format parameter of the indicator(), and strategy() functions. Optional. The default is the format value used by the indicator()/strategy() function. Possible values: format.price, format.percent, format.volume.",
         "required": false,
-        "default": "SCRIPT_FORMAT"
+        "default": "SCRIPT_FORMAT",
+        "allowedValues": [
+          "format.price",
+          "format.percent",
+          "format.volume"
+        ]
       },
       {
         "name": "precision",
@@ -12318,14 +12967,27 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "input plot_display",
         "description": "Controls where the plot's information is displayed. Display options support addition and subtraction, meaning that using display.all - display.status_line will display the plot's information everywhere except in the script's status line. display.price_scale + display.status_line will display the plot only in the price scale and status line. When display arguments such as display.price_scale have user-controlled chart settings equivalents, the relevant plot information will only appear when all settings allow for it. Possible values: display.none, display.pane, display.data_window, display.price_scale, display.status_line, display.all. Optional. The default is display.all.",
         "required": false,
-        "default": "display.all"
+        "default": "display.all",
+        "allowedValues": [
+          "display.none",
+          "display.pane",
+          "display.data_window",
+          "display.price_scale",
+          "display.status_line",
+          "display.all"
+        ]
       },
       {
         "name": "format",
         "type": "input string",
         "description": "Determines whether the script formats the plot's values as prices, percentages, or volume values. The argument passed to this parameter supersedes the format parameter of the indicator(), and strategy() functions. Optional. The default is the format value used by the indicator()/strategy() function. Possible values: format.price, format.percent, format.volume.",
         "required": false,
-        "default": "SCRIPT_FORMAT"
+        "default": "SCRIPT_FORMAT",
+        "allowedValues": [
+          "format.price",
+          "format.percent",
+          "format.volume"
+        ]
       },
       {
         "name": "precision",
@@ -12377,7 +13039,14 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "location",
         "type": "input string",
         "description": "Location of shapes on the chart. Possible values are: location.abovebar, location.belowbar, location.top, location.bottom, location.absolute. Default value is location.abovebar.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "location.abovebar",
+          "location.belowbar",
+          "location.top",
+          "location.bottom",
+          "location.absolute"
+        ]
       },
       {
         "name": "color",
@@ -12413,7 +13082,15 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "size",
         "type": "const string",
         "description": "Size of characters on the chart. Possible values are: size.auto, size.tiny, size.small, size.normal, size.large, size.huge. Default is size.auto.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "size.auto",
+          "size.tiny",
+          "size.small",
+          "size.normal",
+          "size.large",
+          "size.huge"
+        ]
       },
       {
         "name": "show_last",
@@ -12426,14 +13103,27 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "input plot_display",
         "description": "Controls where the plot's information is displayed. Display options support addition and subtraction, meaning that using display.all - display.status_line will display the plot's information everywhere except in the script's status line. display.price_scale + display.status_line will display the plot only in the price scale and status line. When display arguments such as display.price_scale have user-controlled chart settings equivalents, the relevant plot information will only appear when all settings allow for it. Possible values: display.none, display.pane, display.data_window, display.price_scale, display.status_line, display.all. Optional. The default is display.all.",
         "required": false,
-        "default": "display.all"
+        "default": "display.all",
+        "allowedValues": [
+          "display.none",
+          "display.pane",
+          "display.data_window",
+          "display.price_scale",
+          "display.status_line",
+          "display.all"
+        ]
       },
       {
         "name": "format",
         "type": "input string",
         "description": "Determines whether the script formats the plot's values as prices, percentages, or volume values. The argument passed to this parameter supersedes the format parameter of the indicator(), and strategy() functions. Optional. The default is the format value used by the indicator()/strategy() function. Possible values: format.price, format.percent, format.volume.",
         "required": false,
-        "default": "SCRIPT_FORMAT"
+        "default": "SCRIPT_FORMAT",
+        "allowedValues": [
+          "format.price",
+          "format.percent",
+          "format.volume"
+        ]
       },
       {
         "name": "precision",
@@ -12479,13 +13169,34 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "style",
         "type": "input string",
         "description": "Type of plot. Possible values are: shape.xcross, shape.cross, shape.triangleup, shape.triangledown, shape.flag, shape.circle, shape.arrowup, shape.arrowdown, shape.labelup, shape.labeldown, shape.square, shape.diamond. Default value is shape.xcross.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "shape.xcross",
+          "shape.cross",
+          "shape.triangleup",
+          "shape.triangledown",
+          "shape.flag",
+          "shape.circle",
+          "shape.arrowup",
+          "shape.arrowdown",
+          "shape.labelup",
+          "shape.labeldown",
+          "shape.square",
+          "shape.diamond"
+        ]
       },
       {
         "name": "location",
         "type": "input string",
         "description": "Location of shapes on the chart. Possible values are: location.abovebar, location.belowbar, location.top, location.bottom, location.absolute. Default value is location.abovebar.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "location.abovebar",
+          "location.belowbar",
+          "location.top",
+          "location.bottom",
+          "location.absolute"
+        ]
       },
       {
         "name": "color",
@@ -12521,7 +13232,15 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "size",
         "type": "const string",
         "description": "Size of shapes on the chart. Possible values are: size.auto, size.tiny, size.small, size.normal, size.large, size.huge. Default is size.auto.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "size.auto",
+          "size.tiny",
+          "size.small",
+          "size.normal",
+          "size.large",
+          "size.huge"
+        ]
       },
       {
         "name": "show_last",
@@ -12534,14 +13253,27 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "input plot_display",
         "description": "Controls where the plot's information is displayed. Display options support addition and subtraction, meaning that using display.all - display.status_line will display the plot's information everywhere except in the script's status line. display.price_scale + display.status_line will display the plot only in the price scale and status line. When display arguments such as display.price_scale have user-controlled chart settings equivalents, the relevant plot information will only appear when all settings allow for it. Possible values: display.none, display.pane, display.data_window, display.price_scale, display.status_line, display.all. Optional. The default is display.all.",
         "required": false,
-        "default": "display.all"
+        "default": "display.all",
+        "allowedValues": [
+          "display.none",
+          "display.pane",
+          "display.data_window",
+          "display.price_scale",
+          "display.status_line",
+          "display.all"
+        ]
       },
       {
         "name": "format",
         "type": "input string",
         "description": "Determines whether the script formats the plot's values as prices, percentages, or volume values. The argument passed to this parameter supersedes the format parameter of the indicator(), and strategy() functions. Optional. The default is the format value used by the indicator()/strategy() function. Possible values: format.price, format.percent, format.volume.",
         "required": false,
-        "default": "SCRIPT_FORMAT"
+        "default": "SCRIPT_FORMAT",
+        "allowedValues": [
+          "format.price",
+          "format.percent",
+          "format.volume"
+        ]
       },
       {
         "name": "precision",
@@ -12634,7 +13366,15 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "series string",
         "description": "The style of the polyline. Possible values: line.style_solid, line.style_dotted, line.style_dashed, line.style_arrow_left, line.style_arrow_right, line.style_arrow_both. Optional. The default is line.style_solid.",
         "required": false,
-        "default": "line.style_solid"
+        "default": "line.style_solid",
+        "allowedValues": [
+          "line.style_solid",
+          "line.style_dotted",
+          "line.style_dashed",
+          "line.style_arrow_left",
+          "line.style_arrow_right",
+          "line.style_arrow_both"
+        ]
       },
       {
         "name": "line_width",
@@ -12703,19 +13443,31 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "field",
         "type": "series string",
         "description": "Input string. Possible values include: dividends.net, dividends.gross. Default value is dividends.gross.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "dividends.net",
+          "dividends.gross"
+        ]
       },
       {
         "name": "gaps",
         "type": "simple barmerge_gaps",
         "description": "Merge strategy for the requested data (requested data automatically merges with the main series OHLC data). Possible values: barmerge.gaps_on, barmerge.gaps_off. barmerge.gaps_on - requested data is merged with possible gaps (na values). barmerge.gaps_off - requested data is merged continuously without gaps, all the gaps are filled with the previous nearest existing values. Default value is barmerge.gaps_off.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "barmerge.gaps_on",
+          "barmerge.gaps_off"
+        ]
       },
       {
         "name": "lookahead",
         "type": "simple barmerge_lookahead",
         "description": "Merge strategy for the requested data position. Possible values: barmerge.lookahead_on, barmerge.lookahead_off. Default value is barmerge.lookahead_off starting from version 3. Note that behavour is the same on real-time, and differs only on history.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "barmerge.lookahead_on",
+          "barmerge.lookahead_off"
+        ]
       },
       {
         "name": "ignore_invalid_symbol",
@@ -12753,19 +13505,32 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "field",
         "type": "series string",
         "description": "Input string. Possible values include: earnings.actual, earnings.estimate, earnings.standardized. Default value is earnings.actual.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "earnings.actual",
+          "earnings.estimate",
+          "earnings.standardized"
+        ]
       },
       {
         "name": "gaps",
         "type": "simple barmerge_gaps",
         "description": "Merge strategy for the requested data (requested data automatically merges with the main series OHLC data). Possible values: barmerge.gaps_on, barmerge.gaps_off. barmerge.gaps_on - requested data is merged with possible gaps (na values). barmerge.gaps_off - requested data is merged continuously without gaps, all the gaps are filled with the previous nearest existing values. Default value is barmerge.gaps_off.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "barmerge.gaps_on",
+          "barmerge.gaps_off"
+        ]
       },
       {
         "name": "lookahead",
         "type": "simple barmerge_lookahead",
         "description": "Merge strategy for the requested data position. Possible values: barmerge.lookahead_on, barmerge.lookahead_off. Default value is barmerge.lookahead_off starting from version 3. Note that behavour is the same on real-time, and differs only on history.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "barmerge.lookahead_on",
+          "barmerge.lookahead_off"
+        ]
       },
       {
         "name": "ignore_invalid_symbol",
@@ -12810,7 +13575,11 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "simple barmerge_gaps",
         "description": "Specifies how the returned values are merged on chart bars. Possible values: barmerge.gaps_off, barmerge.gaps_on. With barmerge.gaps_on, a value only appears on the current chart bar when it first becomes available from the function's context, otherwise na is returned (thus a \"gap\" occurs). With barmerge.gaps_off, what would otherwise be gaps are filled with the latest known value returned, avoiding na values. Optional. The default is barmerge.gaps_off.",
         "required": false,
-        "default": "barmerge.gaps_off"
+        "default": "barmerge.gaps_off",
+        "allowedValues": [
+          "barmerge.gaps_off",
+          "barmerge.gaps_on"
+        ]
       },
       {
         "name": "ignore_invalid_symbol",
@@ -12847,13 +13616,24 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "period",
         "type": "series string",
         "description": "Reporting period. Possible values are \"TTM\", \"FY\", \"FQ\", \"FH\", \"D\".",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "TTM",
+          "FY",
+          "FQ",
+          "FH",
+          "D"
+        ]
       },
       {
         "name": "gaps",
         "type": "simple barmerge_gaps",
         "description": "Merge strategy for the requested data (requested data automatically merges with the main series: OHLC data). Possible values include: barmerge.gaps_on, barmerge.gaps_off. barmerge.gaps_on - requested data is merged with possible gaps (na values). barmerge.gaps_off - requested data is merged continuously without gaps, all the gaps are filled with the previous, nearest existing values. Default value is barmerge.gaps_off.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "barmerge.gaps_on",
+          "barmerge.gaps_off"
+        ]
       },
       {
         "name": "ignore_invalid_symbol",
@@ -12921,7 +13701,11 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "gaps",
         "type": "simple barmerge_gaps",
         "description": "Merge strategy for the requested data (requested data automatically merges with the main series: OHLC data). Possible values include: barmerge.gaps_on, barmerge.gaps_off. barmerge.gaps_on - requested data is merged with possible gaps (na values). barmerge.gaps_off - requested data is merged continuously without gaps, all the gaps are filled with the previous, nearest existing values. Default value is barmerge.gaps_off.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "barmerge.gaps_on",
+          "barmerge.gaps_off"
+        ]
       },
       {
         "name": "index",
@@ -12971,14 +13755,22 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "simple barmerge_gaps",
         "description": "Specifies how the returned values are merged on chart bars. Possible values: barmerge.gaps_on, barmerge.gaps_off. With barmerge.gaps_on a value only appears on the current chart bar when it first becomes available from the function's context, otherwise na is returned (thus a \"gap\" occurs). With barmerge.gaps_off what would otherwise be gaps are filled with the latest known value returned, avoiding na values. Optional. The default is barmerge.gaps_off.",
         "required": false,
-        "default": "barmerge.gaps_off"
+        "default": "barmerge.gaps_off",
+        "allowedValues": [
+          "barmerge.gaps_on",
+          "barmerge.gaps_off"
+        ]
       },
       {
         "name": "lookahead",
         "type": "simple barmerge_lookahead",
         "description": "On historical bars only, returns data from the timeframe before it elapses. Possible values: barmerge.lookahead_on, barmerge.lookahead_off. Has no effect on realtime values. Optional. The default is barmerge.lookahead_off starting from Pine Script® v3. The default is barmerge.lookahead_on in v1 and v2. WARNING: Using barmerge.lookahead_on at timeframes higher than the chart's without offsetting the expression argument like in close[1] will introduce future leak in scripts, as the function will then return the close price before it is actually known in the current context. As is explained in the User Manual's page on Repainting this will produce misleading results.",
         "required": false,
-        "default": "barmerge.lookahead_off"
+        "default": "barmerge.lookahead_off",
+        "allowedValues": [
+          "barmerge.lookahead_on",
+          "barmerge.lookahead_off"
+        ]
       },
       {
         "name": "ignore_invalid_symbol",
@@ -13126,19 +13918,31 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "field",
         "type": "series string",
         "description": "Input string. Possible values include: splits.denominator, splits.numerator.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "splits.denominator",
+          "splits.numerator"
+        ]
       },
       {
         "name": "gaps",
         "type": "simple barmerge_gaps",
         "description": "Merge strategy for the requested data (requested data automatically merges with the main series OHLC data). Possible values: barmerge.gaps_on, barmerge.gaps_off. barmerge.gaps_on - requested data is merged with possible gaps (na values). barmerge.gaps_off - requested data is merged continuously without gaps, all the gaps are filled with the previous nearest existing values. Default value is barmerge.gaps_off.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "barmerge.gaps_on",
+          "barmerge.gaps_off"
+        ]
       },
       {
         "name": "lookahead",
         "type": "simple barmerge_lookahead",
         "description": "Merge strategy for the requested data position. Possible values: barmerge.lookahead_on, barmerge.lookahead_off. Default value is barmerge.lookahead_off starting from version 3. Note that behavour is the same on real-time, and differs only on history.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "barmerge.lookahead_on",
+          "barmerge.lookahead_off"
+        ]
       },
       {
         "name": "ignore_invalid_symbol",
@@ -14528,7 +15332,13 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "const string",
         "description": "Specifies the formatting of the script's displayed values. Possible values: format.inherit, format.price, format.volume, format.percent. Optional. The default is format.inherit.",
         "required": false,
-        "default": "format.inherit"
+        "default": "format.inherit",
+        "allowedValues": [
+          "format.inherit",
+          "format.price",
+          "format.volume",
+          "format.percent"
+        ]
       },
       {
         "name": "precision",
@@ -14541,7 +15351,12 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "scale",
         "type": "const scale_type",
         "description": "Optional. Determines the location of the script's price scale and the scaling behavior of the script's visuals. Possible values are scale.right, scale.left, and scale.none. If specified and the script overlays on the main chart pane or another script's pane, the script scales its visuals independently to fit the pane's visual space. If the script occupies the same pane as the main chart or another script, scale.right or scale.left adds a separate price scale for the script to the left or right side of that pane. If the script occupies a separate pane, either argument positions the price scale for that pane on the left or right side without adding a new scale. If the argument is scale.none, which is valid only if the overlay argument is true, the script displays plotted numbers directly on the scale of the existing pane, or displays values on a new price scale if the user moves it to a new pane. Changes to the argument apply only after the user adds the script to the chart again. If not specified, the script uses the main price scale for the pane it occupies, and it does not scale its visuals separately if it overlays on an existing pane.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "scale.right",
+          "scale.left",
+          "scale.none"
+        ]
       },
       {
         "name": "pyramiding",
@@ -14583,7 +15398,12 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "const string",
         "description": "Specifies the units used for default_qty_value. Possible values are: strategy.fixed for contracts/shares/lots, strategy.cash for currency amounts, or strategy.percent_of_equity for a percentage of available equity. This setting can also be changed in the strategy's \"Settings/Properties\" tab. Optional. The default is strategy.fixed.",
         "required": false,
-        "default": "strategy.fixed"
+        "default": "strategy.fixed",
+        "allowedValues": [
+          "strategy.fixed",
+          "strategy.cash",
+          "strategy.percent_of_equity"
+        ]
       },
       {
         "name": "default_qty_value",
@@ -14639,7 +15459,10 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "const string",
         "description": "Determines the order in which trades are closed. Possible values are: \"FIFO\" (First-In, First-Out) if the earliest exit order must close the earliest entry order, or \"ANY\" if the orders are closed based on the from_entry parameter of the strategy.exit() function. \"FIFO\" can only be used with stocks, futures and US forex (NFA Compliance Rule 2-43b), while \"ANY\" is allowed in non-US forex. Optional. The default is \"FIFO\".",
         "required": false,
-        "default": "FIFO"
+        "default": "FIFO",
+        "allowedValues": [
+          "strategy.exit"
+        ]
       },
       {
         "name": "margin_long",
@@ -14667,21 +15490,27 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "const int",
         "description": "The number of last line drawings displayed. Possible values: 1-500. Optional. The default is 50.",
         "required": false,
-        "default": "50"
+        "default": "50",
+        "min": 1,
+        "max": 500
       },
       {
         "name": "max_labels_count",
         "type": "const int",
         "description": "The number of last label drawings displayed. Possible values: 1-500. Optional. The default is 50.",
         "required": false,
-        "default": "50"
+        "default": "50",
+        "min": 1,
+        "max": 500
       },
       {
         "name": "max_boxes_count",
         "type": "const int",
         "description": "The number of last box drawings displayed. Possible values: 1-500. Optional. The default is 50.",
         "required": false,
-        "default": "50"
+        "default": "50",
+        "min": 1,
+        "max": 500
       },
       {
         "name": "calc_bars_count",
@@ -14716,7 +15545,9 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "const int",
         "description": "The number of last polyline drawings displayed. Possible values: 1-100. The count is approximate; more drawings than the specified count may be displayed. Optional. The default is 50.",
         "required": false,
-        "default": "50"
+        "default": "50",
+        "min": 1,
+        "max": 100
       },
       {
         "name": "dynamic_requests",
@@ -15264,7 +16095,11 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "direction",
         "type": "series strategy_direction",
         "description": "The direction of the trade. Possible values: strategy.long for a long trade, strategy.short for a short one.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "strategy.long",
+          "strategy.short"
+        ]
       },
       {
         "name": "qty",
@@ -15299,7 +16134,10 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "input string",
         "description": "Optional. Specifies how an unfilled order behaves when another pending order with the same oca_name and oca_type values executes. Possible values: strategy.oca.cancel, strategy.oca.reduce, strategy.oca.none. The default is strategy.oca.none.",
         "required": false,
-        "default": "strategy.oca.none"
+        "default": "strategy.oca.none",
+        "allowedValues": [
+          "strategy.oca"
+        ]
       },
       {
         "name": "comment",
@@ -15737,7 +16575,11 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "direction",
         "type": "series strategy_direction",
         "description": "The direction of the trade. Possible values: strategy.long for a long trade, strategy.short for a short one.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "strategy.long",
+          "strategy.short"
+        ]
       },
       {
         "name": "qty",
@@ -15772,7 +16614,10 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "input string",
         "description": "Optional. Specifies how an unfilled order behaves when another pending order with the same oca_name and oca_type values executes. Possible values: strategy.oca.cancel, strategy.oca.reduce, strategy.oca.none. The default is strategy.oca.none.",
         "required": false,
-        "default": "strategy.oca.none"
+        "default": "strategy.oca.none",
+        "allowedValues": [
+          "strategy.oca"
+        ]
       },
       {
         "name": "comment",
@@ -15812,7 +16657,10 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "value",
         "type": "simple string",
         "description": "The allowed direction. Possible values: strategy.direction.all, strategy.direction.long, strategy.direction.short",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "strategy.direction"
+        ]
       }
     ],
     "returns": "void",
@@ -15854,7 +16702,9 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "value",
         "type": "simple int/float",
         "description": "A required parameter. The maximum drawdown value. It is specified either in money (base currency), or in percentage of maximum equity. For % of equity the range of allowed values is from 0 to 100.",
-        "required": false
+        "required": false,
+        "min": 0,
+        "max": 100
       },
       {
         "name": "type",
@@ -15909,7 +16759,9 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "value",
         "type": "simple int/float",
         "description": "A required parameter. The maximum loss value. It is specified either in money (base currency), or in percentage of maximum intraday equity. For % of equity the range of allowed values is from 0 to 100.",
-        "required": false
+        "required": false,
+        "min": 0,
+        "max": 100
       },
       {
         "name": "type",
@@ -17126,7 +17978,15 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "type",
         "type": "series string",
         "description": "The type of pivot point levels. Possible values: \"Traditional\", \"Fibonacci\", \"Woodie\", \"Classic\", \"DM\", \"Camarilla\".",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "Traditional",
+          "Fibonacci",
+          "Woodie",
+          "Classic",
+          "DM",
+          "Camarilla"
+        ]
       },
       {
         "name": "anchor",
@@ -18038,14 +18898,24 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "series string",
         "description": "The horizontal alignment of the cell's text. Optional. The default value is text.align_center. Possible values: text.align_left, text.align_center, text.align_right.",
         "required": false,
-        "default": "text.align_center"
+        "default": "text.align_center",
+        "allowedValues": [
+          "text.align_left",
+          "text.align_center",
+          "text.align_right"
+        ]
       },
       {
         "name": "text_valign",
         "type": "series string",
         "description": "The vertical alignment of the cell's text. Optional. The default value is text.align_center. Possible values: text.align_top, text.align_center, text.align_bottom.",
         "required": false,
-        "default": "text.align_center"
+        "default": "text.align_center",
+        "allowedValues": [
+          "text.align_top",
+          "text.align_center",
+          "text.align_bottom"
+        ]
       },
       {
         "name": "text_size",
@@ -18072,14 +18942,23 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "series string",
         "description": "The font family of the text. Optional. The default value is font.family_default. Possible values: font.family_default, font.family_monospace.",
         "required": false,
-        "default": "font.family_default"
+        "default": "font.family_default",
+        "allowedValues": [
+          "font.family_default",
+          "font.family_monospace"
+        ]
       },
       {
         "name": "text_formatting",
         "type": "series text_format",
         "description": "The formatting of the displayed text. Formatting options support addition. For example, text.format_bold + text.format_italic will make the text both bold and italicized. Possible values: text.format_none, text.format_bold, text.format_italic. Optional. The default is text.format_none.",
         "required": false,
-        "default": "text.format_none"
+        "default": "text.format_none",
+        "allowedValues": [
+          "text.format_none",
+          "text.format_bold",
+          "text.format_italic"
+        ]
       }
     ],
     "returns": "void",
@@ -18251,7 +19130,11 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "text_font_family",
         "type": "series string",
         "description": "The font family of the text. Possible values: font.family_default, font.family_monospace.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "font.family_default",
+          "font.family_monospace"
+        ]
       }
     ],
     "returns": "void",
@@ -18288,7 +19171,12 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "series text_format",
         "description": "The formatting of the displayed text. Formatting options support addition. For example, text.format_bold + text.format_italic will make the text both bold and italicized. Possible values: text.format_none, text.format_bold, text.format_italic. Optional. The default is text.format_none.",
         "required": false,
-        "default": "text.format_none"
+        "default": "text.format_none",
+        "allowedValues": [
+          "text.format_none",
+          "text.format_bold",
+          "text.format_italic"
+        ]
       }
     ],
     "returns": "void",
@@ -18322,7 +19210,12 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "text_halign",
         "type": "series string",
         "description": "The horizontal alignment of a cell's text. Possible values: text.align_left, text.align_center, text.align_right.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "text.align_left",
+          "text.align_center",
+          "text.align_right"
+        ]
       }
     ],
     "returns": "void",
@@ -18391,7 +19284,12 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "text_valign",
         "type": "series string",
         "description": "The vertical alignment of the cell's text. Possible values: text.align_top, text.align_center, text.align_bottom.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "text.align_top",
+          "text.align_center",
+          "text.align_bottom"
+        ]
       }
     ],
     "returns": "void",
@@ -18581,7 +19479,18 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "position",
         "type": "series string",
         "description": "Position of the table. Possible values are: position.top_left, position.top_center, position.top_right, position.middle_left, position.middle_center, position.middle_right, position.bottom_left, position.bottom_center, position.bottom_right.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "position.top_left",
+          "position.top_center",
+          "position.top_right",
+          "position.middle_left",
+          "position.middle_center",
+          "position.middle_right",
+          "position.bottom_left",
+          "position.bottom_center",
+          "position.bottom_right"
+        ]
       },
       {
         "name": "columns",
@@ -18774,7 +19683,18 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "position",
         "type": "series string",
         "description": "Position of the table. Possible values are: position.top_left, position.top_center, position.top_right, position.middle_left, position.middle_center, position.middle_right, position.bottom_left, position.bottom_center, position.bottom_right.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "position.top_left",
+          "position.top_center",
+          "position.top_right",
+          "position.middle_left",
+          "position.middle_center",
+          "position.middle_right",
+          "position.bottom_left",
+          "position.bottom_center",
+          "position.bottom_right"
+        ]
       }
     ],
     "returns": "void",
@@ -18910,7 +19830,12 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "style",
         "type": "unknown",
         "description": "Specifies the ticker's box size assignment method. Possible values: \"ATR\" for Average True Range sizing, \"Traditional\" to use a fixed size, or \"PercentageLTP\" to use a percentage of the last trading price.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "ATR",
+          "Traditional",
+          "PercentageLTP"
+        ]
       }
     ],
     "returns": "simple string",
@@ -18967,7 +19892,12 @@ export const FUNCTIONS: PineFunction[] = [
             "name": "style",
             "type": "series string",
             "description": "Specifies the ticker's box size assignment method. Possible values: \"ATR\" for Average True Range sizing, \"Traditional\" to use a fixed size, or \"PercentageLTP\" to use a percentage of the last trading price.",
-            "required": false
+            "required": false,
+            "allowedValues": [
+              "ATR",
+              "Traditional",
+              "PercentageLTP"
+            ]
           }
         ],
         "returns": "simple string"
@@ -18990,7 +19920,12 @@ export const FUNCTIONS: PineFunction[] = [
             "name": "style",
             "type": "series string",
             "description": "Specifies the ticker's box size assignment method. Possible values: \"ATR\" for Average True Range sizing, \"Traditional\" to use a fixed size, or \"PercentageLTP\" to use a percentage of the last trading price.",
-            "required": false
+            "required": false,
+            "allowedValues": [
+              "ATR",
+              "Traditional",
+              "PercentageLTP"
+            ]
           }
         ],
         "returns": "series string"
@@ -19076,27 +20011,47 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "session",
         "type": "series string",
         "description": "Session type. Optional argument. Possible values: session.regular, session.extended. Session type of the current chart is syminfo.session. If session is not given, then syminfo.session value is used.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "session.regular",
+          "session.extended",
+          "syminfo.session"
+        ]
       },
       {
         "name": "adjustment",
         "type": "series string",
         "description": "Adjustment type. Optional argument. Possible values: adjustment.none, adjustment.splits, adjustment.dividends. If adjustment is not given, then default adjustment value is used (can be different depending on particular instrument).",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "adjustment.none",
+          "adjustment.splits",
+          "adjustment.dividends"
+        ]
       },
       {
         "name": "backadjustment",
         "type": "simple backadjustment",
         "description": "Specifies whether past contract data on continuous futures symbols is back-adjusted. This setting only affects the data from symbols with this option available on their charts. Optional. The default is backadjustment.inherit, meaning that the modified ticker ID inherits the setting from the ticker ID passed to the tickerid parameter, or it inherits the symbol's default if the tickerid does not specify this setting. Possible values: backadjustment.inherit, backadjustment.on, backadjustment.off.",
         "required": false,
-        "default": "backadjustment.inherit"
+        "default": "backadjustment.inherit",
+        "allowedValues": [
+          "backadjustment.inherit",
+          "backadjustment.on",
+          "backadjustment.off"
+        ]
       },
       {
         "name": "settlement_as_close",
         "type": "simple settlement",
         "description": "Specifies whether a futures symbol's close value represents the actual closing price or the settlement price on \"1D\" and higher timeframes. This setting only affects the data from symbols with this option available on their charts. Optional. The default is settlement_as_close.inherit, meaning that the modified ticker ID inherits the setting from the tickerid passed into the function, or it inherits the chart symbol's default if the tickerid does not specify this setting. Possible values: settlement_as_close.inherit, settlement_as_close.on, settlement_as_close.off.",
         "required": false,
-        "default": "settlement_as_close.inherit"
+        "default": "settlement_as_close.inherit",
+        "allowedValues": [
+          "settlement_as_close.inherit",
+          "settlement_as_close.on",
+          "settlement_as_close.off"
+        ]
       }
     ],
     "returns": "simple string",
@@ -19113,27 +20068,47 @@ export const FUNCTIONS: PineFunction[] = [
             "name": "session",
             "type": "simple string",
             "description": "Session type. Optional argument. Possible values: session.regular, session.extended. Session type of the current chart is syminfo.session. If session is not given, then syminfo.session value is used.",
-            "required": false
+            "required": false,
+            "allowedValues": [
+              "session.regular",
+              "session.extended",
+              "syminfo.session"
+            ]
           },
           {
             "name": "adjustment",
             "type": "simple string",
             "description": "Adjustment type. Optional argument. Possible values: adjustment.none, adjustment.splits, adjustment.dividends. If adjustment is not given, then default adjustment value is used (can be different depending on particular instrument).",
-            "required": false
+            "required": false,
+            "allowedValues": [
+              "adjustment.none",
+              "adjustment.splits",
+              "adjustment.dividends"
+            ]
           },
           {
             "name": "backadjustment",
             "type": "simple backadjustment",
             "description": "Specifies whether past contract data on continuous futures symbols is back-adjusted. This setting only affects the data from symbols with this option available on their charts. Optional. The default is backadjustment.inherit, meaning that the modified ticker ID inherits the setting from the ticker ID passed to the tickerid parameter, or it inherits the symbol's default if the tickerid does not specify this setting. Possible values: backadjustment.inherit, backadjustment.on, backadjustment.off.",
             "required": false,
-            "default": "backadjustment.inherit"
+            "default": "backadjustment.inherit",
+            "allowedValues": [
+              "backadjustment.inherit",
+              "backadjustment.on",
+              "backadjustment.off"
+            ]
           },
           {
             "name": "settlement_as_close",
             "type": "simple settlement",
             "description": "Specifies whether a futures symbol's close value represents the actual closing price or the settlement price on \"1D\" and higher timeframes. This setting only affects the data from symbols with this option available on their charts. Optional. The default is settlement_as_close.inherit, meaning that the modified ticker ID inherits the setting from the tickerid passed into the function, or it inherits the chart symbol's default if the tickerid does not specify this setting. Possible values: settlement_as_close.inherit, settlement_as_close.on, settlement_as_close.off.",
             "required": false,
-            "default": "settlement_as_close.inherit"
+            "default": "settlement_as_close.inherit",
+            "allowedValues": [
+              "settlement_as_close.inherit",
+              "settlement_as_close.on",
+              "settlement_as_close.off"
+            ]
           }
         ],
         "returns": "simple string"
@@ -19150,27 +20125,47 @@ export const FUNCTIONS: PineFunction[] = [
             "name": "session",
             "type": "series string",
             "description": "Session type. Optional argument. Possible values: session.regular, session.extended. Session type of the current chart is syminfo.session. If session is not given, then syminfo.session value is used.",
-            "required": false
+            "required": false,
+            "allowedValues": [
+              "session.regular",
+              "session.extended",
+              "syminfo.session"
+            ]
           },
           {
             "name": "adjustment",
             "type": "series string",
             "description": "Adjustment type. Optional argument. Possible values: adjustment.none, adjustment.splits, adjustment.dividends. If adjustment is not given, then default adjustment value is used (can be different depending on particular instrument).",
-            "required": false
+            "required": false,
+            "allowedValues": [
+              "adjustment.none",
+              "adjustment.splits",
+              "adjustment.dividends"
+            ]
           },
           {
             "name": "backadjustment",
             "type": "simple backadjustment",
             "description": "Specifies whether past contract data on continuous futures symbols is back-adjusted. This setting only affects the data from symbols with this option available on their charts. Optional. The default is backadjustment.inherit, meaning that the modified ticker ID inherits the setting from the ticker ID passed to the tickerid parameter, or it inherits the symbol's default if the tickerid does not specify this setting. Possible values: backadjustment.inherit, backadjustment.on, backadjustment.off.",
             "required": false,
-            "default": "backadjustment.inherit"
+            "default": "backadjustment.inherit",
+            "allowedValues": [
+              "backadjustment.inherit",
+              "backadjustment.on",
+              "backadjustment.off"
+            ]
           },
           {
             "name": "settlement_as_close",
             "type": "simple settlement",
             "description": "Specifies whether a futures symbol's close value represents the actual closing price or the settlement price on \"1D\" and higher timeframes. This setting only affects the data from symbols with this option available on their charts. Optional. The default is settlement_as_close.inherit, meaning that the modified ticker ID inherits the setting from the tickerid passed into the function, or it inherits the chart symbol's default if the tickerid does not specify this setting. Possible values: settlement_as_close.inherit, settlement_as_close.on, settlement_as_close.off.",
             "required": false,
-            "default": "settlement_as_close.inherit"
+            "default": "settlement_as_close.inherit",
+            "allowedValues": [
+              "settlement_as_close.inherit",
+              "settlement_as_close.on",
+              "settlement_as_close.off"
+            ]
           }
         ],
         "returns": "series string"
@@ -19202,27 +20197,47 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "session",
         "type": "series string",
         "description": "Session type. Optional argument. Possible values: session.regular, session.extended. Session type of the current chart is syminfo.session. If session is not given, then syminfo.session value is used.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "session.regular",
+          "session.extended",
+          "syminfo.session"
+        ]
       },
       {
         "name": "adjustment",
         "type": "series string",
         "description": "Adjustment type. Optional argument. Possible values: adjustment.none, adjustment.splits, adjustment.dividends. If adjustment is not given, then default adjustment value is used (can be different depending on particular instrument).",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "adjustment.none",
+          "adjustment.splits",
+          "adjustment.dividends"
+        ]
       },
       {
         "name": "backadjustment",
         "type": "simple backadjustment",
         "description": "Specifies whether past contract data on continuous futures symbols is back-adjusted. This setting only affects the data from symbols with this option available on their charts. Optional. The default is backadjustment.inherit, meaning that the new ticker ID inherits the symbol's default setting. Possible values: backadjustment.inherit, backadjustment.on, backadjustment.off.",
         "required": false,
-        "default": "backadjustment.inherit"
+        "default": "backadjustment.inherit",
+        "allowedValues": [
+          "backadjustment.inherit",
+          "backadjustment.on",
+          "backadjustment.off"
+        ]
       },
       {
         "name": "settlement_as_close",
         "type": "simple settlement",
         "description": "Specifies whether a futures symbol's close value represents the actual closing price or the settlement price on \"1D\" and higher timeframes. This setting only affects the data from symbols with this option available on their charts. Optional. The default is settlement_as_close.inherit, meaning that the new ticker ID inherits the chart symbol's default setting. Possible values: settlement_as_close.inherit, settlement_as_close.on, settlement_as_close.off.",
         "required": false,
-        "default": "settlement_as_close.inherit"
+        "default": "settlement_as_close.inherit",
+        "allowedValues": [
+          "settlement_as_close.inherit",
+          "settlement_as_close.on",
+          "settlement_as_close.off"
+        ]
       }
     ],
     "returns": "simple string",
@@ -19245,27 +20260,47 @@ export const FUNCTIONS: PineFunction[] = [
             "name": "session",
             "type": "simple string",
             "description": "Session type. Optional argument. Possible values: session.regular, session.extended. Session type of the current chart is syminfo.session. If session is not given, then syminfo.session value is used.",
-            "required": false
+            "required": false,
+            "allowedValues": [
+              "session.regular",
+              "session.extended",
+              "syminfo.session"
+            ]
           },
           {
             "name": "adjustment",
             "type": "simple string",
             "description": "Adjustment type. Optional argument. Possible values: adjustment.none, adjustment.splits, adjustment.dividends. If adjustment is not given, then default adjustment value is used (can be different depending on particular instrument).",
-            "required": false
+            "required": false,
+            "allowedValues": [
+              "adjustment.none",
+              "adjustment.splits",
+              "adjustment.dividends"
+            ]
           },
           {
             "name": "backadjustment",
             "type": "simple backadjustment",
             "description": "Specifies whether past contract data on continuous futures symbols is back-adjusted. This setting only affects the data from symbols with this option available on their charts. Optional. The default is backadjustment.inherit, meaning that the new ticker ID inherits the symbol's default setting. Possible values: backadjustment.inherit, backadjustment.on, backadjustment.off.",
             "required": false,
-            "default": "backadjustment.inherit"
+            "default": "backadjustment.inherit",
+            "allowedValues": [
+              "backadjustment.inherit",
+              "backadjustment.on",
+              "backadjustment.off"
+            ]
           },
           {
             "name": "settlement_as_close",
             "type": "simple settlement",
             "description": "Specifies whether a futures symbol's close value represents the actual closing price or the settlement price on \"1D\" and higher timeframes. This setting only affects the data from symbols with this option available on their charts. Optional. The default is settlement_as_close.inherit, meaning that the new ticker ID inherits the chart symbol's default setting. Possible values: settlement_as_close.inherit, settlement_as_close.on, settlement_as_close.off.",
             "required": false,
-            "default": "settlement_as_close.inherit"
+            "default": "settlement_as_close.inherit",
+            "allowedValues": [
+              "settlement_as_close.inherit",
+              "settlement_as_close.on",
+              "settlement_as_close.off"
+            ]
           }
         ],
         "returns": "simple string"
@@ -19288,27 +20323,47 @@ export const FUNCTIONS: PineFunction[] = [
             "name": "session",
             "type": "series string",
             "description": "Session type. Optional argument. Possible values: session.regular, session.extended. Session type of the current chart is syminfo.session. If session is not given, then syminfo.session value is used.",
-            "required": false
+            "required": false,
+            "allowedValues": [
+              "session.regular",
+              "session.extended",
+              "syminfo.session"
+            ]
           },
           {
             "name": "adjustment",
             "type": "series string",
             "description": "Adjustment type. Optional argument. Possible values: adjustment.none, adjustment.splits, adjustment.dividends. If adjustment is not given, then default adjustment value is used (can be different depending on particular instrument).",
-            "required": false
+            "required": false,
+            "allowedValues": [
+              "adjustment.none",
+              "adjustment.splits",
+              "adjustment.dividends"
+            ]
           },
           {
             "name": "backadjustment",
             "type": "simple backadjustment",
             "description": "Specifies whether past contract data on continuous futures symbols is back-adjusted. This setting only affects the data from symbols with this option available on their charts. Optional. The default is backadjustment.inherit, meaning that the new ticker ID inherits the symbol's default setting. Possible values: backadjustment.inherit, backadjustment.on, backadjustment.off.",
             "required": false,
-            "default": "backadjustment.inherit"
+            "default": "backadjustment.inherit",
+            "allowedValues": [
+              "backadjustment.inherit",
+              "backadjustment.on",
+              "backadjustment.off"
+            ]
           },
           {
             "name": "settlement_as_close",
             "type": "simple settlement",
             "description": "Specifies whether a futures symbol's close value represents the actual closing price or the settlement price on \"1D\" and higher timeframes. This setting only affects the data from symbols with this option available on their charts. Optional. The default is settlement_as_close.inherit, meaning that the new ticker ID inherits the chart symbol's default setting. Possible values: settlement_as_close.inherit, settlement_as_close.on, settlement_as_close.off.",
             "required": false,
-            "default": "settlement_as_close.inherit"
+            "default": "settlement_as_close.inherit",
+            "allowedValues": [
+              "settlement_as_close.inherit",
+              "settlement_as_close.on",
+              "settlement_as_close.off"
+            ]
           }
         ],
         "returns": "series string"
@@ -19334,13 +20389,22 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series string",
         "description": "The source for calculating Point & Figure. Possible values are: 'hl', 'close'.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "hl",
+          "close"
+        ]
       },
       {
         "name": "style",
         "type": "series string",
         "description": "Specifies the ticker's box size assignment method. Possible values: \"ATR\" for Average True Range sizing, \"Traditional\" to use a fixed size, or \"PercentageLTP\" to use a percentage of the last trading price.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "ATR",
+          "Traditional",
+          "PercentageLTP"
+        ]
       },
       {
         "name": "param",
@@ -19369,13 +20433,22 @@ export const FUNCTIONS: PineFunction[] = [
             "name": "source",
             "type": "simple string",
             "description": "The source for calculating Point & Figure. Possible values are: 'hl', 'close'.",
-            "required": false
+            "required": false,
+            "allowedValues": [
+              "hl",
+              "close"
+            ]
           },
           {
             "name": "style",
             "type": "simple string",
             "description": "Specifies the ticker's box size assignment method. Possible values: \"ATR\" for Average True Range sizing, \"Traditional\" to use a fixed size, or \"PercentageLTP\" to use a percentage of the last trading price.",
-            "required": false
+            "required": false,
+            "allowedValues": [
+              "ATR",
+              "Traditional",
+              "PercentageLTP"
+            ]
           },
           {
             "name": "param",
@@ -19404,13 +20477,22 @@ export const FUNCTIONS: PineFunction[] = [
             "name": "source",
             "type": "series string",
             "description": "The source for calculating Point & Figure. Possible values are: 'hl', 'close'.",
-            "required": false
+            "required": false,
+            "allowedValues": [
+              "hl",
+              "close"
+            ]
           },
           {
             "name": "style",
             "type": "series string",
             "description": "Specifies the ticker's box size assignment method. Possible values: \"ATR\" for Average True Range sizing, \"Traditional\" to use a fixed size, or \"PercentageLTP\" to use a percentage of the last trading price.",
-            "required": false
+            "required": false,
+            "allowedValues": [
+              "ATR",
+              "Traditional",
+              "PercentageLTP"
+            ]
           },
           {
             "name": "param",
@@ -19448,7 +20530,12 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "style",
         "type": "series string",
         "description": "Specifies the ticker's box size assignment method. Possible values: \"ATR\" for Average True Range sizing, \"Traditional\" to use a fixed size, or \"PercentageLTP\" to use a percentage of the last trading price.",
-        "required": false
+        "required": false,
+        "allowedValues": [
+          "ATR",
+          "Traditional",
+          "PercentageLTP"
+        ]
       },
       {
         "name": "param",
@@ -19468,7 +20555,11 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "series string",
         "description": "The source used to calculate bricks. Optional. Possible values: \"Close\", \"OHLC\". The default is \"Close\".",
         "required": false,
-        "default": "Close"
+        "default": "Close",
+        "allowedValues": [
+          "Close",
+          "OHLC"
+        ]
       }
     ],
     "returns": "simple string",
@@ -19485,7 +20576,12 @@ export const FUNCTIONS: PineFunction[] = [
             "name": "style",
             "type": "simple string",
             "description": "Specifies the ticker's box size assignment method. Possible values: \"ATR\" for Average True Range sizing, \"Traditional\" to use a fixed size, or \"PercentageLTP\" to use a percentage of the last trading price.",
-            "required": false
+            "required": false,
+            "allowedValues": [
+              "ATR",
+              "Traditional",
+              "PercentageLTP"
+            ]
           },
           {
             "name": "param",
@@ -19505,7 +20601,11 @@ export const FUNCTIONS: PineFunction[] = [
             "type": "simple string",
             "description": "The source used to calculate bricks. Optional. Possible values: \"Close\", \"OHLC\". The default is \"Close\".",
             "required": false,
-            "default": "Close"
+            "default": "Close",
+            "allowedValues": [
+              "Close",
+              "OHLC"
+            ]
           }
         ],
         "returns": "simple string"
@@ -19522,7 +20622,12 @@ export const FUNCTIONS: PineFunction[] = [
             "name": "style",
             "type": "series string",
             "description": "Specifies the ticker's box size assignment method. Possible values: \"ATR\" for Average True Range sizing, \"Traditional\" to use a fixed size, or \"PercentageLTP\" to use a percentage of the last trading price.",
-            "required": false
+            "required": false,
+            "allowedValues": [
+              "ATR",
+              "Traditional",
+              "PercentageLTP"
+            ]
           },
           {
             "name": "param",
@@ -19542,7 +20647,11 @@ export const FUNCTIONS: PineFunction[] = [
             "type": "series string",
             "description": "The source used to calculate bricks. Optional. Possible values: \"Close\", \"OHLC\". The default is \"Close\".",
             "required": false,
-            "default": "Close"
+            "default": "Close",
+            "allowedValues": [
+              "Close",
+              "OHLC"
+            ]
           }
         ],
         "returns": "series string"
