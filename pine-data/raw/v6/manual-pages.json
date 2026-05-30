@@ -1,0 +1,541 @@
+{
+  "metadata": {
+    "source": "https://www.tradingview.com/pine-script-docs/welcome/",
+    "scrapedAt": "2026-05-30T23:22:37.709Z",
+    "pageCount": 76
+  },
+  "pages": [
+    {
+      "path": "welcome",
+      "title": "Welcome to Pine Script® v6",
+      "section": "(root)",
+      "url": "https://www.tradingview.com/pine-script-docs/welcome/",
+      "cacheFile": "welcome.html"
+    },
+    {
+      "path": "primer/first-steps",
+      "title": "First steps",
+      "section": "primer",
+      "url": "https://www.tradingview.com/pine-script-docs/primer/first-steps/",
+      "cacheFile": "primer__first-steps.html"
+    },
+    {
+      "path": "primer/first-indicator",
+      "title": "First indicator",
+      "section": "primer",
+      "url": "https://www.tradingview.com/pine-script-docs/primer/first-indicator/",
+      "cacheFile": "primer__first-indicator.html"
+    },
+    {
+      "path": "primer/next-steps",
+      "title": "Next steps",
+      "section": "primer",
+      "url": "https://www.tradingview.com/pine-script-docs/primer/next-steps/",
+      "cacheFile": "primer__next-steps.html"
+    },
+    {
+      "path": "language/execution-model",
+      "title": "Execution model",
+      "section": "language",
+      "url": "https://www.tradingview.com/pine-script-docs/language/execution-model/",
+      "cacheFile": "language__execution-model.html"
+    },
+    {
+      "path": "language/type-system",
+      "title": "Type system",
+      "section": "language",
+      "url": "https://www.tradingview.com/pine-script-docs/language/type-system/",
+      "cacheFile": "language__type-system.html"
+    },
+    {
+      "path": "language/script-structure",
+      "title": "Script structure",
+      "section": "language",
+      "url": "https://www.tradingview.com/pine-script-docs/language/script-structure/",
+      "cacheFile": "language__script-structure.html"
+    },
+    {
+      "path": "language/identifiers",
+      "title": "Identifiers",
+      "section": "language",
+      "url": "https://www.tradingview.com/pine-script-docs/language/identifiers/",
+      "cacheFile": "language__identifiers.html"
+    },
+    {
+      "path": "language/declaration-statements",
+      "title": "Declaration statements",
+      "section": "language",
+      "url": "https://www.tradingview.com/pine-script-docs/language/declaration-statements/",
+      "cacheFile": "language__declaration-statements.html"
+    },
+    {
+      "path": "language/variable-declarations",
+      "title": "Variable declarations",
+      "section": "language",
+      "url": "https://www.tradingview.com/pine-script-docs/language/variable-declarations/",
+      "cacheFile": "language__variable-declarations.html"
+    },
+    {
+      "path": "language/operators",
+      "title": "Operators",
+      "section": "language",
+      "url": "https://www.tradingview.com/pine-script-docs/language/operators/",
+      "cacheFile": "language__operators.html"
+    },
+    {
+      "path": "language/conditional-structures",
+      "title": "Conditional structures",
+      "section": "language",
+      "url": "https://www.tradingview.com/pine-script-docs/language/conditional-structures/",
+      "cacheFile": "language__conditional-structures.html"
+    },
+    {
+      "path": "language/loops",
+      "title": "Loops",
+      "section": "language",
+      "url": "https://www.tradingview.com/pine-script-docs/language/loops/",
+      "cacheFile": "language__loops.html"
+    },
+    {
+      "path": "language/built-ins",
+      "title": "Built-ins",
+      "section": "language",
+      "url": "https://www.tradingview.com/pine-script-docs/language/built-ins/",
+      "cacheFile": "language__built-ins.html"
+    },
+    {
+      "path": "language/user-defined-functions",
+      "title": "User-defined functions",
+      "section": "language",
+      "url": "https://www.tradingview.com/pine-script-docs/language/user-defined-functions/",
+      "cacheFile": "language__user-defined-functions.html"
+    },
+    {
+      "path": "language/objects",
+      "title": "Objects",
+      "section": "language",
+      "url": "https://www.tradingview.com/pine-script-docs/language/objects/",
+      "cacheFile": "language__objects.html"
+    },
+    {
+      "path": "language/enums",
+      "title": "Enums",
+      "section": "language",
+      "url": "https://www.tradingview.com/pine-script-docs/language/enums/",
+      "cacheFile": "language__enums.html"
+    },
+    {
+      "path": "language/methods",
+      "title": "Methods",
+      "section": "language",
+      "url": "https://www.tradingview.com/pine-script-docs/language/methods/",
+      "cacheFile": "language__methods.html"
+    },
+    {
+      "path": "language/arrays",
+      "title": "Arrays",
+      "section": "language",
+      "url": "https://www.tradingview.com/pine-script-docs/language/arrays/",
+      "cacheFile": "language__arrays.html"
+    },
+    {
+      "path": "language/matrices",
+      "title": "Matrices",
+      "section": "language",
+      "url": "https://www.tradingview.com/pine-script-docs/language/matrices/",
+      "cacheFile": "language__matrices.html"
+    },
+    {
+      "path": "language/maps",
+      "title": "Maps",
+      "section": "language",
+      "url": "https://www.tradingview.com/pine-script-docs/language/maps/",
+      "cacheFile": "language__maps.html"
+    },
+    {
+      "path": "visuals/overview",
+      "title": "Overview",
+      "section": "visuals",
+      "url": "https://www.tradingview.com/pine-script-docs/visuals/overview/",
+      "cacheFile": "visuals__overview.html"
+    },
+    {
+      "path": "visuals/backgrounds",
+      "title": "Backgrounds",
+      "section": "visuals",
+      "url": "https://www.tradingview.com/pine-script-docs/visuals/backgrounds/",
+      "cacheFile": "visuals__backgrounds.html"
+    },
+    {
+      "path": "visuals/bar-coloring",
+      "title": "Bar coloring",
+      "section": "visuals",
+      "url": "https://www.tradingview.com/pine-script-docs/visuals/bar-coloring/",
+      "cacheFile": "visuals__bar-coloring.html"
+    },
+    {
+      "path": "visuals/bar-plotting",
+      "title": "Bar plotting",
+      "section": "visuals",
+      "url": "https://www.tradingview.com/pine-script-docs/visuals/bar-plotting/",
+      "cacheFile": "visuals__bar-plotting.html"
+    },
+    {
+      "path": "visuals/colors",
+      "title": "Colors",
+      "section": "visuals",
+      "url": "https://www.tradingview.com/pine-script-docs/visuals/colors/",
+      "cacheFile": "visuals__colors.html"
+    },
+    {
+      "path": "visuals/fills",
+      "title": "Fills",
+      "section": "visuals",
+      "url": "https://www.tradingview.com/pine-script-docs/visuals/fills/",
+      "cacheFile": "visuals__fills.html"
+    },
+    {
+      "path": "visuals/levels",
+      "title": "Levels",
+      "section": "visuals",
+      "url": "https://www.tradingview.com/pine-script-docs/visuals/levels/",
+      "cacheFile": "visuals__levels.html"
+    },
+    {
+      "path": "visuals/lines-and-boxes",
+      "title": "Lines and boxes",
+      "section": "visuals",
+      "url": "https://www.tradingview.com/pine-script-docs/visuals/lines-and-boxes/",
+      "cacheFile": "visuals__lines-and-boxes.html"
+    },
+    {
+      "path": "visuals/plots",
+      "title": "Plots",
+      "section": "visuals",
+      "url": "https://www.tradingview.com/pine-script-docs/visuals/plots/",
+      "cacheFile": "visuals__plots.html"
+    },
+    {
+      "path": "visuals/tables",
+      "title": "Tables",
+      "section": "visuals",
+      "url": "https://www.tradingview.com/pine-script-docs/visuals/tables/",
+      "cacheFile": "visuals__tables.html"
+    },
+    {
+      "path": "visuals/text-and-shapes",
+      "title": "Text and shapes",
+      "section": "visuals",
+      "url": "https://www.tradingview.com/pine-script-docs/visuals/text-and-shapes/",
+      "cacheFile": "visuals__text-and-shapes.html"
+    },
+    {
+      "path": "concepts/alerts",
+      "title": "Alerts",
+      "section": "concepts",
+      "url": "https://www.tradingview.com/pine-script-docs/concepts/alerts/",
+      "cacheFile": "concepts__alerts.html"
+    },
+    {
+      "path": "concepts/bar-states",
+      "title": "Bar states",
+      "section": "concepts",
+      "url": "https://www.tradingview.com/pine-script-docs/concepts/bar-states/",
+      "cacheFile": "concepts__bar-states.html"
+    },
+    {
+      "path": "concepts/chart-information",
+      "title": "Chart information",
+      "section": "concepts",
+      "url": "https://www.tradingview.com/pine-script-docs/concepts/chart-information/",
+      "cacheFile": "concepts__chart-information.html"
+    },
+    {
+      "path": "concepts/inputs",
+      "title": "Inputs",
+      "section": "concepts",
+      "url": "https://www.tradingview.com/pine-script-docs/concepts/inputs/",
+      "cacheFile": "concepts__inputs.html"
+    },
+    {
+      "path": "concepts/libraries",
+      "title": "Libraries",
+      "section": "concepts",
+      "url": "https://www.tradingview.com/pine-script-docs/concepts/libraries/",
+      "cacheFile": "concepts__libraries.html"
+    },
+    {
+      "path": "concepts/non-standard-charts-data",
+      "title": "Non-standard charts data",
+      "section": "concepts",
+      "url": "https://www.tradingview.com/pine-script-docs/concepts/non-standard-charts-data/",
+      "cacheFile": "concepts__non-standard-charts-data.html"
+    },
+    {
+      "path": "concepts/other-timeframes-and-data",
+      "title": "Other timeframes and data",
+      "section": "concepts",
+      "url": "https://www.tradingview.com/pine-script-docs/concepts/other-timeframes-and-data/",
+      "cacheFile": "concepts__other-timeframes-and-data.html"
+    },
+    {
+      "path": "concepts/repainting",
+      "title": "Repainting",
+      "section": "concepts",
+      "url": "https://www.tradingview.com/pine-script-docs/concepts/repainting/",
+      "cacheFile": "concepts__repainting.html"
+    },
+    {
+      "path": "concepts/sessions",
+      "title": "Sessions",
+      "section": "concepts",
+      "url": "https://www.tradingview.com/pine-script-docs/concepts/sessions/",
+      "cacheFile": "concepts__sessions.html"
+    },
+    {
+      "path": "concepts/strategies",
+      "title": "Strategies",
+      "section": "concepts",
+      "url": "https://www.tradingview.com/pine-script-docs/concepts/strategies/",
+      "cacheFile": "concepts__strategies.html"
+    },
+    {
+      "path": "concepts/strings",
+      "title": "Strings",
+      "section": "concepts",
+      "url": "https://www.tradingview.com/pine-script-docs/concepts/strings/",
+      "cacheFile": "concepts__strings.html"
+    },
+    {
+      "path": "concepts/time",
+      "title": "Time",
+      "section": "concepts",
+      "url": "https://www.tradingview.com/pine-script-docs/concepts/time/",
+      "cacheFile": "concepts__time.html"
+    },
+    {
+      "path": "concepts/timeframes",
+      "title": "Timeframes",
+      "section": "concepts",
+      "url": "https://www.tradingview.com/pine-script-docs/concepts/timeframes/",
+      "cacheFile": "concepts__timeframes.html"
+    },
+    {
+      "path": "writing/style-guide",
+      "title": "Style guide",
+      "section": "writing",
+      "url": "https://www.tradingview.com/pine-script-docs/writing/style-guide/",
+      "cacheFile": "writing__style-guide.html"
+    },
+    {
+      "path": "writing/debugging",
+      "title": "Debugging",
+      "section": "writing",
+      "url": "https://www.tradingview.com/pine-script-docs/writing/debugging/",
+      "cacheFile": "writing__debugging.html"
+    },
+    {
+      "path": "writing/profiling-and-optimization",
+      "title": "Profiling and optimization",
+      "section": "writing",
+      "url": "https://www.tradingview.com/pine-script-docs/writing/profiling-and-optimization/",
+      "cacheFile": "writing__profiling-and-optimization.html"
+    },
+    {
+      "path": "writing/publishing",
+      "title": "Publishing scripts",
+      "section": "writing",
+      "url": "https://www.tradingview.com/pine-script-docs/writing/publishing/",
+      "cacheFile": "writing__publishing.html"
+    },
+    {
+      "path": "writing/limitations",
+      "title": "Limitations",
+      "section": "writing",
+      "url": "https://www.tradingview.com/pine-script-docs/writing/limitations/",
+      "cacheFile": "writing__limitations.html"
+    },
+    {
+      "path": "errors/overview",
+      "title": "Overview",
+      "section": "errors",
+      "url": "https://www.tradingview.com/pine-script-docs/errors/overview/",
+      "cacheFile": "errors__overview.html"
+    },
+    {
+      "path": "errors/CE10101",
+      "title": "CE10101",
+      "section": "errors",
+      "url": "https://www.tradingview.com/pine-script-docs/errors/CE10101/",
+      "cacheFile": "errors__CE10101.html"
+    },
+    {
+      "path": "errors/CW10003",
+      "title": "CW10003",
+      "section": "errors",
+      "url": "https://www.tradingview.com/pine-script-docs/errors/CW10003/",
+      "cacheFile": "errors__CW10003.html"
+    },
+    {
+      "path": "errors/RE10139",
+      "title": "RE10139",
+      "section": "errors",
+      "url": "https://www.tradingview.com/pine-script-docs/errors/RE10139/",
+      "cacheFile": "errors__RE10139.html"
+    },
+    {
+      "path": "errors/RE10143",
+      "title": "RE10143",
+      "section": "errors",
+      "url": "https://www.tradingview.com/pine-script-docs/errors/RE10143/",
+      "cacheFile": "errors__RE10143.html"
+    },
+    {
+      "path": "faq/general",
+      "title": "General",
+      "section": "faq",
+      "url": "https://www.tradingview.com/pine-script-docs/faq/general/",
+      "cacheFile": "faq__general.html"
+    },
+    {
+      "path": "faq/alerts",
+      "title": "Alerts",
+      "section": "faq",
+      "url": "https://www.tradingview.com/pine-script-docs/faq/alerts/",
+      "cacheFile": "faq__alerts.html"
+    },
+    {
+      "path": "faq/data-structures",
+      "title": "Data structures",
+      "section": "faq",
+      "url": "https://www.tradingview.com/pine-script-docs/faq/data-structures/",
+      "cacheFile": "faq__data-structures.html"
+    },
+    {
+      "path": "faq/functions",
+      "title": "Functions",
+      "section": "faq",
+      "url": "https://www.tradingview.com/pine-script-docs/faq/functions/",
+      "cacheFile": "faq__functions.html"
+    },
+    {
+      "path": "faq/indicators",
+      "title": "Indicators",
+      "section": "faq",
+      "url": "https://www.tradingview.com/pine-script-docs/faq/indicators/",
+      "cacheFile": "faq__indicators.html"
+    },
+    {
+      "path": "faq/other-data-and-timeframes",
+      "title": "Other data and timeframes",
+      "section": "faq",
+      "url": "https://www.tradingview.com/pine-script-docs/faq/other-data-and-timeframes/",
+      "cacheFile": "faq__other-data-and-timeframes.html"
+    },
+    {
+      "path": "faq/programming",
+      "title": "Programming",
+      "section": "faq",
+      "url": "https://www.tradingview.com/pine-script-docs/faq/programming/",
+      "cacheFile": "faq__programming.html"
+    },
+    {
+      "path": "faq/strategies",
+      "title": "Strategies",
+      "section": "faq",
+      "url": "https://www.tradingview.com/pine-script-docs/faq/strategies/",
+      "cacheFile": "faq__strategies.html"
+    },
+    {
+      "path": "faq/strings-and-formatting",
+      "title": "Strings and formatting",
+      "section": "faq",
+      "url": "https://www.tradingview.com/pine-script-docs/faq/strings-and-formatting/",
+      "cacheFile": "faq__strings-and-formatting.html"
+    },
+    {
+      "path": "faq/techniques",
+      "title": "Techniques",
+      "section": "faq",
+      "url": "https://www.tradingview.com/pine-script-docs/faq/techniques/",
+      "cacheFile": "faq__techniques.html"
+    },
+    {
+      "path": "faq/times-dates-and-sessions",
+      "title": "Times, dates, and sessions",
+      "section": "faq",
+      "url": "https://www.tradingview.com/pine-script-docs/faq/times-dates-and-sessions/",
+      "cacheFile": "faq__times-dates-and-sessions.html"
+    },
+    {
+      "path": "faq/variables-and-operators",
+      "title": "Variables and operators",
+      "section": "faq",
+      "url": "https://www.tradingview.com/pine-script-docs/faq/variables-and-operators/",
+      "cacheFile": "faq__variables-and-operators.html"
+    },
+    {
+      "path": "faq/visuals",
+      "title": "Visuals",
+      "section": "faq",
+      "url": "https://www.tradingview.com/pine-script-docs/faq/visuals/",
+      "cacheFile": "faq__visuals.html"
+    },
+    {
+      "path": "release-notes",
+      "title": "Release notes",
+      "section": "(root)",
+      "url": "https://www.tradingview.com/pine-script-docs/release-notes/",
+      "cacheFile": "release-notes.html"
+    },
+    {
+      "path": "migration-guides/overview",
+      "title": "Overview",
+      "section": "migration-guides",
+      "url": "https://www.tradingview.com/pine-script-docs/migration-guides/overview/",
+      "cacheFile": "migration-guides__overview.html"
+    },
+    {
+      "path": "migration-guides/to-pine-version-6",
+      "title": "To Pine Script® version 6",
+      "section": "migration-guides",
+      "url": "https://www.tradingview.com/pine-script-docs/migration-guides/to-pine-version-6/",
+      "cacheFile": "migration-guides__to-pine-version-6.html"
+    },
+    {
+      "path": "migration-guides/to-pine-version-5",
+      "title": "To Pine Script® version 5",
+      "section": "migration-guides",
+      "url": "https://www.tradingview.com/pine-script-docs/migration-guides/to-pine-version-5/",
+      "cacheFile": "migration-guides__to-pine-version-5.html"
+    },
+    {
+      "path": "migration-guides/to-pine-version-4",
+      "title": "To Pine Script® version 4",
+      "section": "migration-guides",
+      "url": "https://www.tradingview.com/pine-script-docs/migration-guides/to-pine-version-4/",
+      "cacheFile": "migration-guides__to-pine-version-4.html"
+    },
+    {
+      "path": "migration-guides/to-pine-version-3",
+      "title": "To Pine Script® version 3",
+      "section": "migration-guides",
+      "url": "https://www.tradingview.com/pine-script-docs/migration-guides/to-pine-version-3/",
+      "cacheFile": "migration-guides__to-pine-version-3.html"
+    },
+    {
+      "path": "migration-guides/to-pine-version-2",
+      "title": "To Pine Script® version 2",
+      "section": "migration-guides",
+      "url": "https://www.tradingview.com/pine-script-docs/migration-guides/to-pine-version-2/",
+      "cacheFile": "migration-guides__to-pine-version-2.html"
+    },
+    {
+      "path": "where-can-i-get-more-information",
+      "title": "Where can I get more information?",
+      "section": "(root)",
+      "url": "https://www.tradingview.com/pine-script-docs/where-can-i-get-more-information/",
+      "cacheFile": "where-can-i-get-more-information.html"
+    }
+  ]
+}

@@ -219,6 +219,10 @@ pnpm run reextract:sections # Re-derive returnsDescription/remarks/seeAlso from 
 pnpm run generate         # Generate pine-data/v6/*.{ts,json}
 pnpm run generate:syntax  # Generate syntaxes/pine.tmLanguage.json
 
+# Manual (the prose guide, separate from the reference above)
+pnpm run scrape:manual    # Fetch the Pine Script Manual -> .cache/manual/v6 HTML mirror (network)
+pnpm run generate:manual  # Convert the mirror -> pine-manual/v6/**.md + README.md (offline)
+
 # CLI
 pnpm run install:cli                          # build bundle + install to ~/.local/bin/pine-lint
 pine-lint <file.pine>                         # run the installed CLI (re-run install:cli after src changes)
@@ -287,6 +291,25 @@ All API data is scraped from TradingView docs and generated:
 | `reextract:sections` | re-derives `returnsDescription`/`remarks`/`seeAlso` from the mirror, **offline** — run after every `scrape` (see below) |
 | `generate` | `pine-data/v6/*.ts` + `*.json` (vendor-friendly snapshot for downstream Rust/non-node consumers) |
 | `generate:syntax` | `syntaxes/pine.tmLanguage.json` |
+| `scrape:manual` | `pine-data/raw/v6/manual-pages.json` (page inventory) + `.cache/manual/v6/*.html` mirror |
+| `generate:manual` | `pine-manual/v6/**.md` (per-page tree mirroring the Manual's URLs) + `README.md` index |
+
+### Manual (prose guide) vs Reference (API data)
+
+The commands above the `scrape:manual` row build the **reference** (`pine-data`):
+structured API facts the linter consumes. `scrape:manual`/`generate:manual` are a
+**separate, parallel pipeline** for the prose **Manual**
+(`https://www.tradingview.com/pine-script-docs/`). It is documentation output
+only — Markdown for humans/RAG, **not** consumed by the checker, and it touches
+nothing in `pine-data` or the reference flow.
+
+It mirrors the reference pipeline's split: `scrape:manual` is the only network
+step (the Manual is a static Astro site — plain `fetch`, no Puppeteer; it reads
+the full page list from any page's sidebar), and `generate:manual` is offline and
+deterministic, so the converter (`manual-to-markdown.ts`, Turndown + GFM + a few
+custom rules for `div.pine-colorizer` / `div.expressive-code` / heading anchors)
+can be re-run freely against the cache. Refresh from TV only with
+`pnpm run scrape:manual --force`.
 
 `generate` emits one catalog per reference section: `functions`, `variables`,
 `constants`, `types`, `annotations`, `operators`, `keywords` (`.ts` + `.json`

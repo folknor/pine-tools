@@ -77,6 +77,7 @@
   "devDependencies": {
     "@biomejs/biome": "^2.4.15",
     "@types/node": "^25.9.1",
+    "@types/turndown": "^5.0.6",
     "@types/vscode": "^1.120.0",
     "@vitest/ui": "^4.1.7",
     "@vscode/vsce": "^3.9.1",
@@ -87,6 +88,8 @@
     "keytar": "^7.9.0",
     "puppeteer": "^25.0.4",
     "tslib": "^2.8.1",
+    "turndown": "^7.2.4",
+    "turndown-plugin-gfm": "^1.0.2",
     "typescript": "^6.0.3",
     "vitest": "^4.1.7"
   },
@@ -132,6 +135,7 @@
     "debug:tokens": "node dev-tools/debug-internals.js tokens",
     "generate": "node --experimental-strip-types packages/pipeline/src/generate.ts",
     "generate:markdown": "node --experimental-strip-types packages/pipeline/src/generate-markdown.ts",
+    "generate:manual": "node --experimental-strip-types packages/pipeline/src/generate-manual.ts",
     "generate:syntax": "node --experimental-strip-types packages/pipeline/src/generate-syntax.ts",
     "generate:tests": "node --experimental-strip-types packages/pipeline/src/generate-function-tests.ts",
     "lint": "pnpm exec biome check --max-diagnostics=none --reporter=github --formatter-enabled=true --linter-enabled=true --assist-enabled=true",
@@ -143,6 +147,7 @@
     "rebuild:skip-tests": "pnpm run clean && pnpm run build:prod && pnpm run package",
     "scrape": "node --experimental-strip-types packages/pipeline/src/scrape.ts",
     "scrape:force": "node --experimental-strip-types packages/pipeline/src/scrape.ts --force",
+    "scrape:manual": "node --experimental-strip-types packages/pipeline/src/scrape-manual.ts",
     "reextract:dom": "node --experimental-strip-types packages/pipeline/src/reextract-overload-args.ts",
     "reextract:sections": "node --experimental-strip-types packages/pipeline/src/reextract-sections.ts",
     "test": "pnpm run build:tsc && vitest run",
