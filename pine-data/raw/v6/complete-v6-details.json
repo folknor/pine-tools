@@ -4617,6 +4617,7 @@
       "returnsDescription": "The calculated day of the month, expressed in the specified time zone.",
       "remarks": "A UNIX timestamp represents the number of milliseconds elapsed since 00:00 UTC on 1970-01-01. The meaning of a UNIX timestamp does not change relative to any time zone.",
       "seeAlso": [
+        "dayofmonth",
         "dayofweek",
         "weekofyear",
         "time",
@@ -4654,6 +4655,7 @@
       "returnsDescription": "The calculated day number, expressed in the specified time zone.",
       "remarks": "A UNIX timestamp represents the number of milliseconds elapsed since 00:00 UTC on 1970-01-01. The meaning of a UNIX timestamp does not change relative to any time zone.",
       "seeAlso": [
+        "dayofweek",
         "dayofmonth",
         "weekofyear",
         "time",
@@ -5308,6 +5310,7 @@
       "returnsDescription": "Hour (in exchange timezone) for provided UNIX time.",
       "remarks": "UNIX time is the number of milliseconds that have elapsed since 00:00:00 UTC, 1 January 1970.",
       "seeAlso": [
+        "hour",
         "time",
         "year",
         "month",
@@ -13263,6 +13266,7 @@
       "returnsDescription": "Minute (in exchange timezone) for provided UNIX time.",
       "remarks": "UNIX time is the number of milliseconds that have elapsed since 00:00:00 UTC, 1 January 1970.",
       "seeAlso": [
+        "minute",
         "time",
         "year",
         "month",
@@ -13299,6 +13303,7 @@
       "returnsDescription": "Month (in exchange timezone) for provided UNIX time.",
       "remarks": "UNIX time is the number of milliseconds that have elapsed since 00:00:00 UTC, 1 January 1970.\nNote that this function returns the month based on the time of the bar's open. For overnight sessions (e.g. EURUSD, where Monday session starts on Sunday, 17:00 UTC-4) this value can be lower by 1 than the month of the trading day.",
       "seeAlso": [
+        "month",
         "time",
         "year",
         "dayofmonth",
@@ -13349,6 +13354,7 @@
       ],
       "returnsDescription": "Returns true if x is na, false otherwise.",
       "seeAlso": [
+        "na",
         "fixnan",
         "nz"
       ]
@@ -14933,6 +14939,7 @@
       "returnsDescription": "Second (in exchange timezone) for provided UNIX time.",
       "remarks": "UNIX time is the number of milliseconds that have elapsed since 00:00:00 UTC, 1 January 1970.",
       "seeAlso": [
+        "second",
         "time",
         "year",
         "month",
@@ -18003,6 +18010,7 @@
       "seeAlso": [
         "syminfo.tickerid",
         "syminfo.ticker",
+        "syminfo.prefix",
         "syminfo.ticker",
         "ticker.new"
       ]
@@ -18050,6 +18058,7 @@
       "remarks": "The result of the function is used in the ticker.new()/ticker.modify() and request.security().",
       "seeAlso": [
         "syminfo.tickerid",
+        "syminfo.ticker",
         "syminfo.prefix",
         "syminfo.prefix",
         "ticker.new"
@@ -19984,6 +19993,7 @@
       "returnsDescription": "True range. It is math.max(high - low, math.abs(high - close[1]), math.abs(low - close[1])).",
       "remarks": "ta.tr(false) is exactly the same as ta.tr.",
       "seeAlso": [
+        "ta.tr",
         "ta.atr"
       ]
     },
@@ -20247,7 +20257,10 @@
         ]
       ],
       "returnsDescription": "A VWAP series, or a tuple [vwap, upper_band, lower_band] if stdev_mult is specified.",
-      "remarks": "Calculations only begin the first time the anchor condition becomes true. Until then, the function returns na."
+      "remarks": "Calculations only begin the first time the anchor condition becomes true. Until then, the function returns na.",
+      "seeAlso": [
+        "ta.vwap"
+      ]
     },
     "ta.vwma": {
       "name": "ta.vwma()",
@@ -22417,7 +22430,10 @@
         ]
       ],
       "returnsDescription": "The opening UNIX timestamp.",
-      "remarks": "UNIX time is a standardized date and time representation that measures the number of non-leap seconds elapsed since January 1, 1970 at 00:00:00 UTC. Pine Script expresses UNIX time values in milliseconds. See the UNIX timestamps section of the User Manual's Time page to learn more."
+      "remarks": "UNIX time is a standardized date and time representation that measures the number of non-leap seconds elapsed since January 1, 1970 at 00:00:00 UTC. Pine Script expresses UNIX time values in milliseconds. See the UNIX timestamps section of the User Manual's Time page to learn more.",
+      "seeAlso": [
+        "time"
+      ]
     },
     "time_close": {
       "name": "time_close()",
@@ -22522,7 +22538,10 @@
         ]
       ],
       "returnsDescription": "The closing UNIX timestamp.",
-      "remarks": "UNIX time is a standardized date and time representation that measures the number of non-leap seconds elapsed since January 1, 1970 at 00:00:00 UTC. Pine Script expresses UNIX time values in milliseconds. See the UNIX timestamps section of the User Manual's Time page to learn more."
+      "remarks": "UNIX time is a standardized date and time representation that measures the number of non-leap seconds elapsed since January 1, 1970 at 00:00:00 UTC. Pine Script expresses UNIX time values in milliseconds. See the UNIX timestamps section of the User Manual's Time page to learn more.",
+      "seeAlso": [
+        "time_close"
+      ]
     },
     "timeframe.change": {
       "name": "timeframe.change()",
@@ -23057,6 +23076,7 @@
       "returnsDescription": "The calculated week number, expressed in the specified time zone.",
       "remarks": "A UNIX timestamp represents the number of milliseconds elapsed since 00:00 UTC on 1970-01-01. The meaning of a UNIX timestamp does not change relative to any time zone.",
       "seeAlso": [
+        "weekofyear",
         "dayofmonth",
         "dayofweek",
         "time",
@@ -23094,6 +23114,7 @@
       "returnsDescription": "Year (in exchange timezone) for provided UNIX time.",
       "remarks": "UNIX time is the number of milliseconds that have elapsed since 00:00:00 UTC, 1 January 1970.\nNote that this function returns the year based on the time of the bar's open. For overnight sessions (e.g. EURUSD, where Monday session starts on Sunday, 17:00 UTC-4) this value can be lower by 1 than the year of the trading day.",
       "seeAlso": [
+        "year",
         "time",
         "month",
         "dayofmonth",
@@ -23437,6 +23458,7 @@
       "namespace": "",
       "remarks": "This variable always references the day number corresponding to the bar's opening time. Consequently, for symbols with overnight sessions (e.g., \"EURUSD\", where the \"Monday\" session starts on Sunday at 17:00 in exchange time), the value may represent a day from the previous week rather than the session's primary trading day.",
       "seeAlso": [
+        "dayofmonth",
         "dayofweek",
         "weekofyear",
         "time",
@@ -23454,6 +23476,7 @@
       "namespace": "",
       "remarks": "This variable always references the day number corresponding to the bar's opening time. Consequently, for symbols with overnight sessions (e.g., \"EURUSD\", where the \"Monday\" session starts on Sunday at 17:00 in exchange time), the value may represent a day from the previous week rather than the session's primary trading day.\nYou can use dayofweek.sunday, dayofweek.monday, dayofweek.tuesday, dayofweek.wednesday, dayofweek.thursday, dayofweek.friday and dayofweek.saturday variables for comparisons.",
       "seeAlso": [
+        "dayofweek",
         "time",
         "year",
         "month",
@@ -23612,6 +23635,7 @@
       "description": "Current bar hour in exchange timezone.",
       "namespace": "",
       "seeAlso": [
+        "hour",
         "time",
         "year",
         "month",
@@ -23708,6 +23732,7 @@
       "description": "Current bar minute in exchange timezone.",
       "namespace": "",
       "seeAlso": [
+        "minute",
         "time",
         "year",
         "month",
@@ -23725,6 +23750,7 @@
       "namespace": "",
       "remarks": "Note that this variable returns the month based on the time of the bar's open. For overnight sessions (e.g. EURUSD, where Monday session starts on Sunday, 17:00) this value can be lower by 1 than the month of the trading day.",
       "seeAlso": [
+        "month",
         "time",
         "year",
         "weekofyear",
@@ -23742,6 +23768,7 @@
       "namespace": "",
       "remarks": "Do not use this variable with comparison operators to test values for na, as it might lead to unexpected behavior. Instead, use the na() function. Note that na can be used to initialize variables when the initialization statement also specifies the variable's type.",
       "seeAlso": [
+        "na",
         "nz",
         "fixnan"
       ]
@@ -23796,6 +23823,7 @@
       "description": "Current bar second in exchange timezone.",
       "namespace": "",
       "seeAlso": [
+        "second",
         "time",
         "year",
         "month",
@@ -24734,6 +24762,7 @@
       "description": "True range, equivalent to ta.tr(handle_na = false). It is calculated as math.max(high - low, math.abs(high - close[1]), math.abs(low - close[1])).",
       "namespace": "ta",
       "seeAlso": [
+        "ta.tr",
         "ta.atr"
       ]
     },
@@ -24741,7 +24770,10 @@
       "name": "ta.vwap",
       "type": "series float",
       "description": "Volume Weighted Average Price. It uses hlc3 as its source series.",
-      "namespace": "ta"
+      "namespace": "ta",
+      "seeAlso": [
+        "ta.vwap"
+      ]
     },
     "ta.wad": {
       "name": "ta.wad",
@@ -24775,6 +24807,7 @@
       "namespace": "",
       "remarks": "Note that this variable returns the timestamp based on the time of the bar's open. Because of that, for overnight sessions (e.g. EURUSD, where Monday session starts on Sunday, 17:00) this variable can return time before the specified date of the trading day. For example, on EURUSD, dayofmonth(time) can be lower by 1 than the date of the trading day, because the bar for the current day actually opens one day prior.",
       "seeAlso": [
+        "time",
         "time_close",
         "timenow",
         "year",
@@ -25021,6 +25054,7 @@
       "namespace": "",
       "remarks": "This variable always references the week number corresponding to the bar's opening time. Consequently, for symbols with overnight sessions (e.g., \"EURUSD\", where the \"Monday\" session starts on Sunday at 17:00 in exchange time), the value may represent a previous calendar week rather than the week of the session's primary trading day.",
       "seeAlso": [
+        "weekofyear",
         "dayofmonth",
         "dayofweek",
         "time",
@@ -25038,6 +25072,7 @@
       "namespace": "",
       "remarks": "Note that this variable returns the year based on the time of the bar's open. For overnight sessions (e.g. EURUSD, where Monday session starts on Sunday, 17:00) this value can be lower by 1 than the year of the trading day.",
       "seeAlso": [
+        "year",
         "time",
         "month",
         "weekofyear",

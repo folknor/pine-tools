@@ -1,7 +1,7 @@
 /**
  * Pine Script V6 Functions
  * Auto-generated from TradingView documentation
- * Generated: 2026-05-30T22:34:09.153Z
+ * Generated: 2026-05-30T22:49:01.816Z
  * Total: 475 functions
  */
 
@@ -4871,6 +4871,7 @@ export const FUNCTIONS: PineFunction[] = [
     "returnsDescription": "The calculated day of the month, expressed in the specified time zone.",
     "remarks": "A UNIX timestamp represents the number of milliseconds elapsed since 00:00 UTC on 1970-01-01. The meaning of a UNIX timestamp does not change relative to any time zone.",
     "seeAlso": [
+      "dayofmonth",
       "dayofweek",
       "weekofyear",
       "time",
@@ -4905,6 +4906,7 @@ export const FUNCTIONS: PineFunction[] = [
     "returnsDescription": "The calculated day number, expressed in the specified time zone.",
     "remarks": "A UNIX timestamp represents the number of milliseconds elapsed since 00:00 UTC on 1970-01-01. The meaning of a UNIX timestamp does not change relative to any time zone.",
     "seeAlso": [
+      "dayofweek",
       "dayofmonth",
       "weekofyear",
       "time",
@@ -5591,6 +5593,7 @@ export const FUNCTIONS: PineFunction[] = [
     "returnsDescription": "Hour (in exchange timezone) for provided UNIX time.",
     "remarks": "UNIX time is the number of milliseconds that have elapsed since 00:00:00 UTC, 1 January 1970.",
     "seeAlso": [
+      "hour",
       "time",
       "year",
       "month",
@@ -14039,6 +14042,7 @@ export const FUNCTIONS: PineFunction[] = [
     "returnsDescription": "Minute (in exchange timezone) for provided UNIX time.",
     "remarks": "UNIX time is the number of milliseconds that have elapsed since 00:00:00 UTC, 1 January 1970.",
     "seeAlso": [
+      "minute",
       "time",
       "year",
       "month",
@@ -14072,6 +14076,7 @@ export const FUNCTIONS: PineFunction[] = [
     "returnsDescription": "Month (in exchange timezone) for provided UNIX time.",
     "remarks": "UNIX time is the number of milliseconds that have elapsed since 00:00:00 UTC, 1 January 1970.\nNote that this function returns the month based on the time of the bar's open. For overnight sessions (e.g. EURUSD, where Monday session starts on Sunday, 17:00 UTC-4) this value can be lower by 1 than the month of the trading day.",
     "seeAlso": [
+      "month",
       "time",
       "year",
       "dayofmonth",
@@ -14123,6 +14128,7 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "returnsDescription": "Returns true if x is na, false otherwise.",
     "seeAlso": [
+      "na",
       "fixnan",
       "nz"
     ]
@@ -15829,6 +15835,7 @@ export const FUNCTIONS: PineFunction[] = [
     "returnsDescription": "Second (in exchange timezone) for provided UNIX time.",
     "remarks": "UNIX time is the number of milliseconds that have elapsed since 00:00:00 UTC, 1 January 1970.",
     "seeAlso": [
+      "second",
       "time",
       "year",
       "month",
@@ -18981,6 +18988,7 @@ export const FUNCTIONS: PineFunction[] = [
     "seeAlso": [
       "syminfo.tickerid",
       "syminfo.ticker",
+      "syminfo.prefix",
       "syminfo.ticker",
       "ticker.new"
     ]
@@ -19030,6 +19038,7 @@ export const FUNCTIONS: PineFunction[] = [
     "remarks": "The result of the function is used in the ticker.new()/ticker.modify() and request.security().",
     "seeAlso": [
       "syminfo.tickerid",
+      "syminfo.ticker",
       "syminfo.prefix",
       "syminfo.prefix",
       "ticker.new"
@@ -20861,6 +20870,7 @@ export const FUNCTIONS: PineFunction[] = [
     "returnsDescription": "True range. It is math.max(high - low, math.abs(high - close[1]), math.abs(low - close[1])).",
     "remarks": "ta.tr(false) is exactly the same as ta.tr.",
     "seeAlso": [
+      "ta.tr",
       "ta.atr"
     ]
   },
@@ -21139,7 +21149,10 @@ export const FUNCTIONS: PineFunction[] = [
       "//@version=6\nindicator(\"Advanced VWAP\")\nvwapAnchorInput = input.string(\"Daily\", \"Anchor\", options = [\"Daily\", \"Weekly\", \"Monthly\"])\nstdevMultiplierInput = input.float(1.0, \"Standard Deviation Multiplier\")\nanchorTimeframe = switch vwapAnchorInput\n    \"Daily\"   => \"1D\"\n    \"Weekly\"  => \"1W\"\n    \"Monthly\" => \"1M\"\nanchor = timeframe.change(anchorTimeframe)\n[vwap, upper, lower] = ta.vwap(open, anchor, stdevMultiplierInput)\nplot(vwap)\nplot(upper, color = color.green)\nplot(lower, color = color.green)"
     ],
     "returnsDescription": "A VWAP series, or a tuple [vwap, upper_band, lower_band] if stdev_mult is specified.",
-    "remarks": "Calculations only begin the first time the anchor condition becomes true. Until then, the function returns na."
+    "remarks": "Calculations only begin the first time the anchor condition becomes true. Until then, the function returns na.",
+    "seeAlso": [
+      "ta.vwap"
+    ]
   },
   {
     "name": "ta.vwma",
@@ -23537,7 +23550,10 @@ export const FUNCTIONS: PineFunction[] = [
       "//@version=6\nindicator(\"Time\", overlay=true)\nt1 = time(timeframe.period, \"1000-1100,1400-1500:23456\")\nbgcolor(not na(t1) ? color.new(color.blue, 90) : na)"
     ],
     "returnsDescription": "The opening UNIX timestamp.",
-    "remarks": "UNIX time is a standardized date and time representation that measures the number of non-leap seconds elapsed since January 1, 1970 at 00:00:00 UTC. Pine Script expresses UNIX time values in milliseconds. See the UNIX timestamps section of the User Manual's Time page to learn more."
+    "remarks": "UNIX time is a standardized date and time representation that measures the number of non-leap seconds elapsed since January 1, 1970 at 00:00:00 UTC. Pine Script expresses UNIX time values in milliseconds. See the UNIX timestamps section of the User Manual's Time page to learn more.",
+    "seeAlso": [
+      "time"
+    ]
   },
   {
     "name": "time_close",
@@ -23654,7 +23670,10 @@ export const FUNCTIONS: PineFunction[] = [
       "//@version=6\nindicator(\"Time\", overlay=true)\nt1 = time_close(timeframe.period, \"1200-1300\", \"America/New_York\")\nbgcolor(not na(t1) ? color.new(color.blue, 90) : na)"
     ],
     "returnsDescription": "The closing UNIX timestamp.",
-    "remarks": "UNIX time is a standardized date and time representation that measures the number of non-leap seconds elapsed since January 1, 1970 at 00:00:00 UTC. Pine Script expresses UNIX time values in milliseconds. See the UNIX timestamps section of the User Manual's Time page to learn more."
+    "remarks": "UNIX time is a standardized date and time representation that measures the number of non-leap seconds elapsed since January 1, 1970 at 00:00:00 UTC. Pine Script expresses UNIX time values in milliseconds. See the UNIX timestamps section of the User Manual's Time page to learn more.",
+    "seeAlso": [
+      "time_close"
+    ]
   },
   {
     "name": "timeframe.change",
@@ -24206,6 +24225,7 @@ export const FUNCTIONS: PineFunction[] = [
     "returnsDescription": "The calculated week number, expressed in the specified time zone.",
     "remarks": "A UNIX timestamp represents the number of milliseconds elapsed since 00:00 UTC on 1970-01-01. The meaning of a UNIX timestamp does not change relative to any time zone.",
     "seeAlso": [
+      "weekofyear",
       "dayofmonth",
       "dayofweek",
       "time",
@@ -24240,6 +24260,7 @@ export const FUNCTIONS: PineFunction[] = [
     "returnsDescription": "Year (in exchange timezone) for provided UNIX time.",
     "remarks": "UNIX time is the number of milliseconds that have elapsed since 00:00:00 UTC, 1 January 1970.\nNote that this function returns the year based on the time of the bar's open. For overnight sessions (e.g. EURUSD, where Monday session starts on Sunday, 17:00 UTC-4) this value can be lower by 1 than the year of the trading day.",
     "seeAlso": [
+      "year",
       "time",
       "month",
       "dayofmonth",

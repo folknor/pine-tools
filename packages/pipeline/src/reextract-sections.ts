@@ -58,14 +58,20 @@ function applySections(
 	name: string,
 	detail: Record<string, unknown>,
 	html: string,
+	isSelfReference: (seeAlsoName: string) => boolean,
 ): boolean {
 	const sections = extractSections(html);
 
-	// Drop a self-reference in See-also: a symbol linking to its own name is
-	// useless to a lookup consumer (and where a keyword/variable shares a name
-	// with a function, e.g. `na`, TV's page links the function back to itself).
+	// Drop a true self-reference in See-also: a symbol linking to its own
+	// (name, kind) is useless to a lookup consumer. But ~12 names exist in two
+	// catalogs at once (e.g. the `time` variable and `time()` function); there
+	// a seeAlso of that name is a genuine cross-catalog pointer to the sibling,
+	// so keep it. `isSelfReference` is true only when the name occurs in no
+	// other catalog than this one.
 	if (sections.seeAlso) {
-		sections.seeAlso = sections.seeAlso.filter((s) => s !== name);
+		sections.seeAlso = sections.seeAlso.filter(
+			(s) => !(s === name && isSelfReference(s)),
+		);
 		if (sections.seeAlso.length === 0) sections.seeAlso = undefined;
 	}
 	const before = JSON.stringify([
@@ -101,11 +107,35 @@ function main(): void {
 
 	const details = JSON.parse(fs.readFileSync(DETAILS_FILE, "utf8"));
 
+	// Index every name to the set of catalogs it appears in. A seeAlso entry is
+	// a true self-reference (safe to strip) only when its name lives in no
+	// catalog other than the symbol's own — otherwise it points to a same-named
+	// sibling in a different catalog and must be kept.
+	const nameToCatalogs = new Map<string, Set<string>>();
+	for (const { key } of CATALOGS) {
+		const catalog = details[key] as Record<string, unknown> | undefined;
+		if (!catalog) continue;
+		for (const name of Object.keys(catalog)) {
+			let set = nameToCatalogs.get(name);
+			if (!set) {
+				set = new Set();
+				nameToCatalogs.set(name, set);
+			}
+			set.add(key);
+		}
+	}
+
 	for (const { key, dir } of CATALOGS) {
 		const catalog = details[key] as
 			| Record<string, Record<string, unknown>>
 			| undefined;
 		if (!catalog) continue;
+
+		const isSelfReference = (seeAlsoName: string): boolean => {
+			const catalogs = nameToCatalogs.get(seeAlsoName);
+			// True self-ref: name occurs only in this catalog (no cross-catalog twin).
+			return !catalogs || (catalogs.size === 1 && catalogs.has(key));
+		};
 
 		let changed = 0;
 		let missing = 0;
@@ -115,7 +145,10 @@ function main(): void {
 				missing++;
 				continue;
 			}
-			if (applySections(name, detail, fs.readFileSync(file, "utf8"))) changed++;
+			if (
+				applySections(name, detail, fs.readFileSync(file, "utf8"), isSelfReference)
+			)
+				changed++;
 		}
 		console.log(
 			`${key}: ${changed} changed, ${missing} missing mirror (of ${Object.keys(catalog).length}).`,
