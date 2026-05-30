@@ -1,10 +1,10 @@
 {
   "metadata": {
-    "extractedAt": "2026-05-30T21:51:00.642Z",
+    "extractedAt": "2026-05-30T22:29:25.408Z",
     "source": "https://www.tradingview.com/pine-script-reference/v6/",
     "totalFunctions": 475,
     "successfulScrapes": 475,
-    "failedScrapes": 0,
+    "failedScrapes": 9,
     "cachedResults": 475,
     "forceRefresh": false,
     "method": "Puppeteer",
@@ -12,7 +12,8 @@
     "totalConstants": 237,
     "totalTypes": 20,
     "totalAnnotations": 10,
-    "totalOperators": 21
+    "totalOperators": 21,
+    "totalKeywords": 25
   },
   "functions": {
     "alert": {
@@ -1049,7 +1050,6 @@
       "returnsDescription": "The median of the array's elements.",
       "remarks": "Returns na if the id array is empty.",
       "seeAlso": [
-        "array.median",
         "array.avg",
         "array.variance",
         "array.min"
@@ -4617,7 +4617,6 @@
       "returnsDescription": "The calculated day of the month, expressed in the specified time zone.",
       "remarks": "A UNIX timestamp represents the number of milliseconds elapsed since 00:00 UTC on 1970-01-01. The meaning of a UNIX timestamp does not change relative to any time zone.",
       "seeAlso": [
-        "dayofmonth",
         "dayofweek",
         "weekofyear",
         "time",
@@ -4655,7 +4654,6 @@
       "returnsDescription": "The calculated day number, expressed in the specified time zone.",
       "remarks": "A UNIX timestamp represents the number of milliseconds elapsed since 00:00 UTC on 1970-01-01. The meaning of a UNIX timestamp does not change relative to any time zone.",
       "seeAlso": [
-        "dayofweek",
         "dayofmonth",
         "weekofyear",
         "time",
@@ -5310,7 +5308,6 @@
       "returnsDescription": "Hour (in exchange timezone) for provided UNIX time.",
       "remarks": "UNIX time is the number of milliseconds that have elapsed since 00:00:00 UTC, 1 January 1970.",
       "seeAlso": [
-        "hour",
         "time",
         "year",
         "month",
@@ -9318,7 +9315,7 @@
       "namespace": "map",
       "category": "",
       "seeAlso": [
-        "map.new<type,type>",
+        "map.new",
         "map.put_all",
         "map.keys",
         "map.values",
@@ -9352,7 +9349,7 @@
       "namespace": "map",
       "category": "",
       "seeAlso": [
-        "map.new<type,type>",
+        "map.new",
         "map.put",
         "map.keys",
         "map.values",
@@ -9380,7 +9377,7 @@
       "category": "",
       "returnsDescription": "A copy of the id map.",
       "seeAlso": [
-        "map.new<type,type>",
+        "map.new",
         "map.put",
         "map.keys",
         "map.values",
@@ -9415,7 +9412,7 @@
       "namespace": "map",
       "category": "",
       "seeAlso": [
-        "map.new<type,type>",
+        "map.new",
         "map.put",
         "map.keys",
         "map.values",
@@ -9443,7 +9440,7 @@
       "category": "",
       "remarks": "Maps maintain insertion order. The elements within the array returned by this function will also be in the insertion order.",
       "seeAlso": [
-        "map.new<type,type>",
+        "map.new",
         "map.put",
         "map.get",
         "map.values",
@@ -9468,7 +9465,7 @@
         "map.keys",
         "map.values",
         "map.get",
-        "array.new<type>"
+        "array.new"
       ]
     },
     "map.put": {
@@ -9507,7 +9504,7 @@
       "returnsDescription": "The previous value associated with key if the key was already present in the map, or na if the key is new.",
       "remarks": "Maps maintain insertion order. Note that the order does not change when inserting a pair with a key that's already in the map. The new pair replaces the existing pair with the key in such cases.",
       "seeAlso": [
-        "map.new<type,type>",
+        "map.new",
         "map.put_all",
         "map.keys",
         "map.values",
@@ -9541,7 +9538,7 @@
       "namespace": "map",
       "category": "",
       "seeAlso": [
-        "map.new<type,type>",
+        "map.new",
         "map.put",
         "map.keys",
         "map.values",
@@ -9576,7 +9573,7 @@
       "category": "",
       "returnsDescription": "The previous value associated with key if the key was present in the map, or na if there was no such key.",
       "seeAlso": [
-        "map.new<type,type>",
+        "map.new",
         "map.put",
         "map.keys",
         "map.values",
@@ -9603,7 +9600,7 @@
       "namespace": "map",
       "category": "",
       "seeAlso": [
-        "map.new<type,type>",
+        "map.new",
         "map.put",
         "map.keys",
         "map.values",
@@ -9631,7 +9628,7 @@
       "category": "",
       "remarks": "Maps maintain insertion order. The elements within the array returned by this function will also be in the insertion order.",
       "seeAlso": [
-        "map.new<type,type>",
+        "map.new",
         "map.put",
         "map.get",
         "map.keys",
@@ -11191,7 +11188,7 @@
       "category": "",
       "remarks": "Rather than add columns to an empty matrix, it is far more efficient to declare a matrix with explicit dimensions and fill it with values. Adding a column is also much slower than adding a row with the matrix.add_row() function.",
       "seeAlso": [
-        "matrix.new<type>",
+        "matrix.new",
         "matrix.get",
         "matrix.set",
         "matrix.columns",
@@ -11235,7 +11232,7 @@
       "category": "",
       "remarks": "Indexing of rows and columns starts at zero. Rather than add rows to an empty matrix, it is far more efficient to declare a matrix with explicit dimensions and fill it with values.",
       "seeAlso": [
-        "matrix.new<type>",
+        "matrix.new",
         "matrix.get",
         "matrix.set",
         "matrix.columns",
@@ -11284,7 +11281,7 @@
       ],
       "returnsDescription": "The average value from the id matrix.",
       "seeAlso": [
-        "matrix.new<type>",
+        "matrix.new",
         "matrix.get",
         "matrix.set",
         "matrix.columns",
@@ -11320,10 +11317,9 @@
       "returnsDescription": "An array ID containing the column values of the id matrix.",
       "remarks": "Indexing of rows starts at 0.",
       "seeAlso": [
-        "matrix.new<type>",
+        "matrix.new",
         "matrix.get",
         "array.get",
-        "matrix.col",
         "matrix.columns"
       ]
     },
@@ -11348,7 +11344,7 @@
       "category": "",
       "returnsDescription": "The number of columns in the matrix id.",
       "seeAlso": [
-        "matrix.new<type>",
+        "matrix.new",
         "matrix.get",
         "matrix.set",
         "matrix.col",
@@ -11385,7 +11381,7 @@
       "returnsDescription": "Returns the id1 matrix concatenated with the id2 matrix.",
       "remarks": "The number of columns in both matrices must be identical.",
       "seeAlso": [
-        "matrix.new<type>",
+        "matrix.new",
         "matrix.get",
         "matrix.set",
         "matrix.columns",
@@ -11413,7 +11409,7 @@
       "category": "",
       "returnsDescription": "A new matrix object of the copied id matrix.",
       "seeAlso": [
-        "matrix.new<type>",
+        "matrix.new",
         "matrix.get",
         "matrix.set",
         "matrix.columns",
@@ -11462,7 +11458,7 @@
       "returnsDescription": "The determinant value of the id matrix.",
       "remarks": "Function calculation based on the LU decomposition algorithm.",
       "seeAlso": [
-        "matrix.new<type>",
+        "matrix.new",
         "matrix.set",
         "matrix.is_square"
       ]
@@ -11526,7 +11522,7 @@
       ],
       "returnsDescription": "A new matrix object containing the difference between id2 and id1.",
       "seeAlso": [
-        "matrix.new<type>",
+        "matrix.new",
         "matrix.get",
         "matrix.set",
         "matrix.columns",
@@ -11575,7 +11571,7 @@
       "returnsDescription": "An array containing the eigenvalues of the id matrix.",
       "remarks": "The function is calculated using \"The Implicit QL Algorithm\".",
       "seeAlso": [
-        "matrix.new<type>",
+        "matrix.new",
         "matrix.set",
         "matrix.eigenvectors"
       ]
@@ -11622,7 +11618,7 @@
       "returnsDescription": "A new matrix containing the eigenvectors of the id matrix.",
       "remarks": "The function is calculated using \"The Implicit QL Algorithm\".",
       "seeAlso": [
-        "matrix.new<type>",
+        "matrix.new",
         "matrix.get",
         "matrix.set",
         "matrix.eigenvalues"
@@ -11646,7 +11642,7 @@
       "namespace": "matrix",
       "category": "",
       "seeAlso": [
-        "matrix.new<type>",
+        "matrix.new",
         "matrix.columns",
         "matrix.rows"
       ]
@@ -11706,7 +11702,7 @@
       "namespace": "matrix",
       "category": "",
       "seeAlso": [
-        "matrix.new<type>",
+        "matrix.new",
         "matrix.get",
         "matrix.set",
         "matrix.columns",
@@ -11749,7 +11745,7 @@
       "returnsDescription": "The value of the element at the row and column index of the id matrix.",
       "remarks": "Indexing of the rows and columns starts at zero.",
       "seeAlso": [
-        "matrix.new<type>",
+        "matrix.new",
         "matrix.set",
         "matrix.columns",
         "matrix.rows"
@@ -11797,7 +11793,7 @@
       "returnsDescription": "A new matrix, which is the inverse of the id matrix.",
       "remarks": "The function is calculated using the LU decomposition algorithm.",
       "seeAlso": [
-        "matrix.new<type>",
+        "matrix.new",
         "matrix.set",
         "matrix.pinv",
         "matrix.copy",
@@ -11824,7 +11820,7 @@
       "returnsDescription": "Returns true if the id matrix is ​​anti-diagonal, false otherwise.",
       "remarks": "Returns false with non-square matrices.",
       "seeAlso": [
-        "matrix.new<type>",
+        "matrix.new",
         "matrix.set",
         "matrix.is_square",
         "matrix.is_identity",
@@ -11851,7 +11847,7 @@
       "returnsDescription": "Returns true, if the id matrix is antisymmetric, false otherwise.",
       "remarks": "Returns false with non-square matrices.",
       "seeAlso": [
-        "matrix.new<type>",
+        "matrix.new",
         "matrix.get",
         "matrix.set",
         "matrix.is_square"
@@ -11876,7 +11872,7 @@
       "category": "",
       "returnsDescription": "Returns true if the id matrix is binary, false otherwise.",
       "seeAlso": [
-        "matrix.new<type>",
+        "matrix.new",
         "matrix.get",
         "matrix.set"
       ]
@@ -11901,7 +11897,7 @@
       "returnsDescription": "Returns true if the id matrix is diagonal, false otherwise.",
       "remarks": "Returns false with non-square matrices.",
       "seeAlso": [
-        "matrix.new<type>",
+        "matrix.new",
         "matrix.set",
         "matrix.is_square",
         "matrix.is_identity",
@@ -11928,7 +11924,7 @@
       "returnsDescription": "Returns true if id is an identity matrix, false otherwise.",
       "remarks": "Returns false with non-square matrices.",
       "seeAlso": [
-        "matrix.new<type>",
+        "matrix.new",
         "matrix.is_square",
         "matrix.is_diagonal"
       ]
@@ -11952,7 +11948,7 @@
       "category": "",
       "returnsDescription": "Returns true if the id matrix is square, false otherwise.",
       "seeAlso": [
-        "matrix.new<type>",
+        "matrix.new",
         "matrix.get",
         "matrix.set",
         "matrix.columns",
@@ -11978,7 +11974,7 @@
       "category": "",
       "returnsDescription": "Returns true if the id matrix is stochastic, false otherwise.",
       "seeAlso": [
-        "matrix.new<type>",
+        "matrix.new",
         "matrix.set"
       ]
     },
@@ -12002,7 +11998,7 @@
       "returnsDescription": "Returns true if the id matrix is symmetric, false otherwise.",
       "remarks": "Returns false with non-square matrices.",
       "seeAlso": [
-        "matrix.new<type>",
+        "matrix.new",
         "matrix.get",
         "matrix.set",
         "matrix.is_square"
@@ -12028,7 +12024,7 @@
       "returnsDescription": "Returns true if the id matrix is triangular, false otherwise.",
       "remarks": "Returns false with non-square matrices.",
       "seeAlso": [
-        "matrix.new<type>",
+        "matrix.new",
         "matrix.set",
         "matrix.is_square"
       ]
@@ -12052,7 +12048,7 @@
       "category": "",
       "returnsDescription": "Returns true if all elements of the id matrix are zero, false otherwise.",
       "seeAlso": [
-        "matrix.new<type>",
+        "matrix.new",
         "matrix.get",
         "matrix.set"
       ]
@@ -12115,7 +12111,7 @@
       ],
       "returnsDescription": "A new matrix containing the Kronecker product of id1 and id2.",
       "seeAlso": [
-        "matrix.new<type>",
+        "matrix.new",
         "matrix.mult",
         "str.tostring",
         "table.new"
@@ -12162,7 +12158,7 @@
       ],
       "returnsDescription": "The maximum value from the id matrix.",
       "seeAlso": [
-        "matrix.new<type>",
+        "matrix.new",
         "matrix.min",
         "matrix.avg",
         "matrix.sort"
@@ -12209,7 +12205,7 @@
       ],
       "remarks": "Note that na elements of the matrix are not considered when calculating the median.",
       "seeAlso": [
-        "matrix.new<type>",
+        "matrix.new",
         "matrix.mode",
         "matrix.sort",
         "matrix.avg"
@@ -12256,7 +12252,7 @@
       ],
       "returnsDescription": "The smallest value from the id matrix.",
       "seeAlso": [
-        "matrix.new<type>",
+        "matrix.new",
         "matrix.max",
         "matrix.avg",
         "matrix.sort"
@@ -12304,7 +12300,7 @@
       "returnsDescription": "The most frequently occurring value from the id matrix. If none exists, returns the smallest value instead.",
       "remarks": "Note that na elements of the matrix are not considered when calculating the mode.",
       "seeAlso": [
-        "matrix.new<type>",
+        "matrix.new",
         "matrix.set",
         "matrix.median",
         "matrix.sort",
@@ -12397,7 +12393,7 @@
       ],
       "returnsDescription": "A new matrix object containing the product of id2 and id1.",
       "seeAlso": [
-        "matrix.new<type>",
+        "matrix.new",
         "matrix.sum",
         "matrix.diff"
       ]
@@ -12444,7 +12440,7 @@
         "matrix.fill",
         "matrix.columns",
         "matrix.rows",
-        "array.new<type>"
+        "array.new"
       ]
     },
     "matrix.pinv": {
@@ -12489,7 +12485,7 @@
       "returnsDescription": "A new matrix containing the pseudoinverse of the id matrix.",
       "remarks": "The function is calculated using a Moore–Penrose inverse formula based on singular-value decomposition of a matrix. For non-singular square matrices this function returns the result of matrix.inv().",
       "seeAlso": [
-        "matrix.new<type>",
+        "matrix.new",
         "matrix.set",
         "matrix.inv"
       ]
@@ -12552,7 +12548,7 @@
       ],
       "returnsDescription": "The product of the id matrix by itself power times.",
       "seeAlso": [
-        "matrix.new<type>",
+        "matrix.new",
         "matrix.set",
         "matrix.mult"
       ]
@@ -12578,7 +12574,7 @@
       "category": "",
       "returnsDescription": "The rank of the id matrix.",
       "seeAlso": [
-        "matrix.new<type>",
+        "matrix.new",
         "matrix.set",
         "str.tostring"
       ]
@@ -12612,7 +12608,7 @@
       "returnsDescription": "An array containing the elements of the column removed from the id matrix.",
       "remarks": "Indexing of rows and columns starts at zero. It is far more efficient to declare matrices with explicit dimensions than to build them by adding or removing columns. Deleting a column is also much slower than deleting a row with the matrix.remove_row() function.",
       "seeAlso": [
-        "matrix.new<type>",
+        "matrix.new",
         "matrix.set",
         "matrix.copy",
         "matrix.remove_row"
@@ -12647,7 +12643,7 @@
       "returnsDescription": "An array containing the elements of the row removed from the id matrix.",
       "remarks": "Indexing of rows and columns starts at zero. It is far more efficient to declare matrices with explicit dimensions than to build them by adding or removing rows.",
       "seeAlso": [
-        "matrix.new<type>",
+        "matrix.new",
         "matrix.set",
         "matrix.copy",
         "matrix.remove_col"
@@ -12687,7 +12683,7 @@
       "namespace": "matrix",
       "category": "",
       "seeAlso": [
-        "matrix.new<type>",
+        "matrix.new",
         "matrix.get",
         "matrix.set",
         "matrix.add_row",
@@ -12714,7 +12710,7 @@
       "namespace": "matrix",
       "category": "",
       "seeAlso": [
-        "matrix.new<type>",
+        "matrix.new",
         "matrix.set",
         "matrix.columns",
         "matrix.rows",
@@ -12750,7 +12746,7 @@
       "returnsDescription": "An array ID containing the row values of the id matrix.",
       "remarks": "Indexing of rows starts at 0.",
       "seeAlso": [
-        "matrix.new<type>",
+        "matrix.new",
         "matrix.get",
         "array.get",
         "matrix.col",
@@ -12778,7 +12774,7 @@
       "category": "",
       "returnsDescription": "The number of rows in the matrix id.",
       "seeAlso": [
-        "matrix.new<type>",
+        "matrix.new",
         "matrix.get",
         "matrix.set",
         "matrix.columns",
@@ -12826,7 +12822,7 @@
       "namespace": "matrix",
       "category": "",
       "seeAlso": [
-        "matrix.new<type>",
+        "matrix.new",
         "matrix.get",
         "matrix.columns",
         "matrix.rows"
@@ -12918,7 +12914,7 @@
         ]
       ],
       "seeAlso": [
-        "matrix.new<type>",
+        "matrix.new",
         "matrix.max",
         "matrix.min",
         "matrix.avg"
@@ -12974,7 +12970,7 @@
       "returnsDescription": "A new matrix object containing the submatrix of the id matrix defined by the from_row, to_row, from_column and to_column indices.",
       "remarks": "Indexing of the rows and columns starts at zero.",
       "seeAlso": [
-        "matrix.new<type>",
+        "matrix.new",
         "matrix.set",
         "matrix.row",
         "matrix.col",
@@ -13040,7 +13036,7 @@
       ],
       "returnsDescription": "A new matrix object containing the sum of id2 and id1.",
       "seeAlso": [
-        "matrix.new<type>",
+        "matrix.new",
         "matrix.get",
         "matrix.set",
         "matrix.columns",
@@ -13082,7 +13078,7 @@
       "category": "",
       "remarks": "Indexing of the rows and columns starts at zero.",
       "seeAlso": [
-        "matrix.new<type>",
+        "matrix.new",
         "matrix.get",
         "matrix.set",
         "matrix.columns",
@@ -13124,7 +13120,7 @@
       "category": "",
       "remarks": "Indexing of the rows and columns starts at zero.",
       "seeAlso": [
-        "matrix.new<type>",
+        "matrix.new",
         "matrix.get",
         "matrix.set",
         "matrix.columns",
@@ -13172,7 +13168,7 @@
       ],
       "returnsDescription": "The trace of the id matrix.",
       "seeAlso": [
-        "matrix.new<type>",
+        "matrix.new",
         "matrix.get",
         "matrix.set",
         "matrix.columns",
@@ -13200,7 +13196,7 @@
       "category": "",
       "returnsDescription": "A new matrix containing the transposed version of the id matrix.",
       "seeAlso": [
-        "matrix.new<type>",
+        "matrix.new",
         "matrix.set",
         "matrix.columns",
         "matrix.rows",
@@ -13267,7 +13263,6 @@
       "returnsDescription": "Minute (in exchange timezone) for provided UNIX time.",
       "remarks": "UNIX time is the number of milliseconds that have elapsed since 00:00:00 UTC, 1 January 1970.",
       "seeAlso": [
-        "minute",
         "time",
         "year",
         "month",
@@ -13304,7 +13299,6 @@
       "returnsDescription": "Month (in exchange timezone) for provided UNIX time.",
       "remarks": "UNIX time is the number of milliseconds that have elapsed since 00:00:00 UTC, 1 January 1970.\nNote that this function returns the month based on the time of the bar's open. For overnight sessions (e.g. EURUSD, where Monday session starts on Sunday, 17:00 UTC-4) this value can be lower by 1 than the month of the trading day.",
       "seeAlso": [
-        "month",
         "time",
         "year",
         "dayofmonth",
@@ -13355,7 +13349,6 @@
       ],
       "returnsDescription": "Returns true if x is na, false otherwise.",
       "seeAlso": [
-        "na",
         "fixnan",
         "nz"
       ]
@@ -14940,7 +14933,6 @@
       "returnsDescription": "Second (in exchange timezone) for provided UNIX time.",
       "remarks": "UNIX time is the number of milliseconds that have elapsed since 00:00:00 UTC, 1 January 1970.",
       "seeAlso": [
-        "second",
         "time",
         "year",
         "month",
@@ -16695,7 +16687,6 @@
       "namespace": "strategy",
       "category": "",
       "seeAlso": [
-        "strategy.closedtrades.entry_price",
         "strategy.closedtrades.exit_price",
         "strategy.closedtrades.size",
         "strategy.closedtrades"
@@ -18012,7 +18003,6 @@
       "seeAlso": [
         "syminfo.tickerid",
         "syminfo.ticker",
-        "syminfo.prefix",
         "syminfo.ticker",
         "ticker.new"
       ]
@@ -18060,7 +18050,6 @@
       "remarks": "The result of the function is used in the ticker.new()/ticker.modify() and request.security().",
       "seeAlso": [
         "syminfo.tickerid",
-        "syminfo.ticker",
         "syminfo.prefix",
         "syminfo.prefix",
         "ticker.new"
@@ -19995,7 +19984,6 @@
       "returnsDescription": "True range. It is math.max(high - low, math.abs(high - close[1]), math.abs(low - close[1])).",
       "remarks": "ta.tr(false) is exactly the same as ta.tr.",
       "seeAlso": [
-        "ta.tr",
         "ta.atr"
       ]
     },
@@ -20259,10 +20247,7 @@
         ]
       ],
       "returnsDescription": "A VWAP series, or a tuple [vwap, upper_band, lower_band] if stdev_mult is specified.",
-      "remarks": "Calculations only begin the first time the anchor condition becomes true. Until then, the function returns na.",
-      "seeAlso": [
-        "ta.vwap"
-      ]
+      "remarks": "Calculations only begin the first time the anchor condition becomes true. Until then, the function returns na."
     },
     "ta.vwma": {
       "name": "ta.vwma()",
@@ -22432,10 +22417,7 @@
         ]
       ],
       "returnsDescription": "The opening UNIX timestamp.",
-      "remarks": "UNIX time is a standardized date and time representation that measures the number of non-leap seconds elapsed since January 1, 1970 at 00:00:00 UTC. Pine Script expresses UNIX time values in milliseconds. See the UNIX timestamps section of the User Manual's Time page to learn more.",
-      "seeAlso": [
-        "time"
-      ]
+      "remarks": "UNIX time is a standardized date and time representation that measures the number of non-leap seconds elapsed since January 1, 1970 at 00:00:00 UTC. Pine Script expresses UNIX time values in milliseconds. See the UNIX timestamps section of the User Manual's Time page to learn more."
     },
     "time_close": {
       "name": "time_close()",
@@ -22540,10 +22522,7 @@
         ]
       ],
       "returnsDescription": "The closing UNIX timestamp.",
-      "remarks": "UNIX time is a standardized date and time representation that measures the number of non-leap seconds elapsed since January 1, 1970 at 00:00:00 UTC. Pine Script expresses UNIX time values in milliseconds. See the UNIX timestamps section of the User Manual's Time page to learn more.",
-      "seeAlso": [
-        "time_close"
-      ]
+      "remarks": "UNIX time is a standardized date and time representation that measures the number of non-leap seconds elapsed since January 1, 1970 at 00:00:00 UTC. Pine Script expresses UNIX time values in milliseconds. See the UNIX timestamps section of the User Manual's Time page to learn more."
     },
     "timeframe.change": {
       "name": "timeframe.change()",
@@ -23078,7 +23057,6 @@
       "returnsDescription": "The calculated week number, expressed in the specified time zone.",
       "remarks": "A UNIX timestamp represents the number of milliseconds elapsed since 00:00 UTC on 1970-01-01. The meaning of a UNIX timestamp does not change relative to any time zone.",
       "seeAlso": [
-        "weekofyear",
         "dayofmonth",
         "dayofweek",
         "time",
@@ -23116,7 +23094,6 @@
       "returnsDescription": "Year (in exchange timezone) for provided UNIX time.",
       "remarks": "UNIX time is the number of milliseconds that have elapsed since 00:00:00 UTC, 1 January 1970.\nNote that this function returns the year based on the time of the bar's open. For overnight sessions (e.g. EURUSD, where Monday session starts on Sunday, 17:00 UTC-4) this value can be lower by 1 than the year of the trading day.",
       "seeAlso": [
-        "year",
         "time",
         "month",
         "dayofmonth",
@@ -23460,7 +23437,6 @@
       "namespace": "",
       "remarks": "This variable always references the day number corresponding to the bar's opening time. Consequently, for symbols with overnight sessions (e.g., \"EURUSD\", where the \"Monday\" session starts on Sunday at 17:00 in exchange time), the value may represent a day from the previous week rather than the session's primary trading day.",
       "seeAlso": [
-        "dayofmonth",
         "dayofweek",
         "weekofyear",
         "time",
@@ -23478,7 +23454,6 @@
       "namespace": "",
       "remarks": "This variable always references the day number corresponding to the bar's opening time. Consequently, for symbols with overnight sessions (e.g., \"EURUSD\", where the \"Monday\" session starts on Sunday at 17:00 in exchange time), the value may represent a day from the previous week rather than the session's primary trading day.\nYou can use dayofweek.sunday, dayofweek.monday, dayofweek.tuesday, dayofweek.wednesday, dayofweek.thursday, dayofweek.friday and dayofweek.saturday variables for comparisons.",
       "seeAlso": [
-        "dayofweek",
         "time",
         "year",
         "month",
@@ -23637,7 +23612,6 @@
       "description": "Current bar hour in exchange timezone.",
       "namespace": "",
       "seeAlso": [
-        "hour",
         "time",
         "year",
         "month",
@@ -23734,7 +23708,6 @@
       "description": "Current bar minute in exchange timezone.",
       "namespace": "",
       "seeAlso": [
-        "minute",
         "time",
         "year",
         "month",
@@ -23752,7 +23725,6 @@
       "namespace": "",
       "remarks": "Note that this variable returns the month based on the time of the bar's open. For overnight sessions (e.g. EURUSD, where Monday session starts on Sunday, 17:00) this value can be lower by 1 than the month of the trading day.",
       "seeAlso": [
-        "month",
         "time",
         "year",
         "weekofyear",
@@ -23770,7 +23742,6 @@
       "namespace": "",
       "remarks": "Do not use this variable with comparison operators to test values for na, as it might lead to unexpected behavior. Instead, use the na() function. Note that na can be used to initialize variables when the initialization statement also specifies the variable's type.",
       "seeAlso": [
-        "na",
         "nz",
         "fixnan"
       ]
@@ -23825,7 +23796,6 @@
       "description": "Current bar second in exchange timezone.",
       "namespace": "",
       "seeAlso": [
-        "second",
         "time",
         "year",
         "month",
@@ -24764,7 +24734,6 @@
       "description": "True range, equivalent to ta.tr(handle_na = false). It is calculated as math.max(high - low, math.abs(high - close[1]), math.abs(low - close[1])).",
       "namespace": "ta",
       "seeAlso": [
-        "ta.tr",
         "ta.atr"
       ]
     },
@@ -24772,10 +24741,7 @@
       "name": "ta.vwap",
       "type": "series float",
       "description": "Volume Weighted Average Price. It uses hlc3 as its source series.",
-      "namespace": "ta",
-      "seeAlso": [
-        "ta.vwap"
-      ]
+      "namespace": "ta"
     },
     "ta.wad": {
       "name": "ta.wad",
@@ -24809,7 +24775,6 @@
       "namespace": "",
       "remarks": "Note that this variable returns the timestamp based on the time of the bar's open. Because of that, for overnight sessions (e.g. EURUSD, where Monday session starts on Sunday, 17:00) this variable can return time before the specified date of the trading day. For example, on EURUSD, dayofmonth(time) can be lower by 1 than the date of the trading day, because the bar for the current day actually opens one day prior.",
       "seeAlso": [
-        "time",
         "time_close",
         "timenow",
         "year",
@@ -25056,7 +25021,6 @@
       "namespace": "",
       "remarks": "This variable always references the week number corresponding to the bar's opening time. Consequently, for symbols with overnight sessions (e.g., \"EURUSD\", where the \"Monday\" session starts on Sunday at 17:00 in exchange time), the value may represent a previous calendar week rather than the week of the session's primary trading day.",
       "seeAlso": [
-        "weekofyear",
         "dayofmonth",
         "dayofweek",
         "time",
@@ -25074,7 +25038,6 @@
       "namespace": "",
       "remarks": "Note that this variable returns the year based on the time of the bar's open. For overnight sessions (e.g. EURUSD, where Monday session starts on Sunday, 17:00) this value can be lower by 1 than the year of the trading day.",
       "seeAlso": [
-        "year",
         "time",
         "month",
         "weekofyear",
@@ -28459,7 +28422,7 @@
         "label",
         "table",
         "box",
-        "array.new<type>",
+        "array.new",
         "array.from"
       ]
     },
@@ -28654,7 +28617,7 @@
       ],
       "remarks": "Map objects are always of series form.",
       "seeAlso": [
-        "map.new<type,type>"
+        "map.new"
       ]
     },
     "matrix": {
@@ -28666,7 +28629,7 @@
       "remarks": "Matrix objects are always of \"series\" form.",
       "seeAlso": [
         "var",
-        "matrix.new<type>",
+        "matrix.new",
         "array"
       ]
     },
@@ -29005,6 +28968,170 @@
       "seeAlso": [
         "math.floor"
       ]
+    }
+  },
+  "keywords": {
+    "and": {
+      "name": "and",
+      "syntax": "expr1 and expr2",
+      "description": "Logical AND. Applicable to boolean expressions.",
+      "examples": [],
+      "returnsDescription": "Boolean value, or series of boolean values.",
+      "remarks": "If expr1 evaluates to false, the and operator returns false without evaluating expr2."
+    },
+    "enum": {
+      "name": "enum",
+      "syntax": "[export ]enum <enumName> \n<field_1> [= <title_1>] \n<field_2> [= <title_2>] \n... \n<field_N> [= <title_N>]",
+      "description": "This keyword allows the creation of an enumeration, enum for short. Enums are unique constructs that hold groups of predefined constants.",
+      "examples": [
+        "//@version=6\nindicator(\"Session highlight\", overlay = true)\n\n//@enum       Contains fields with popular timezones as titles.\n//@field exch Has an empty string as the title to represent the chart timezone.\nenum tz\n    utc  = \"UTC\"\n    exch = \"\"\n    ny   = \"America/New_York\"\n    chi  = \"America/Chicago\"\n    lon  = \"Europe/London\"\n    tok  = \"Asia/Tokyo\"\n\n//@variable The session string.\nselectedSession = input.session(\"1200-1500\", \"Session\")\n//@variable The selected timezone. The input's dropdown contains the fields in the `tz` enum.\nselectedTimezone = input.enum(tz.utc, \"Session Timezone\")\n\n//@variable Is `true` if the current bar's time is in the specified session.\nbool inSession = false\nif not na(time(\"\", selectedSession, str.tostring(selectedTimezone)))\n    inSession := true\n\n// Highlight the background when `inSession` is `true`.\nbgcolor(inSession ? color.new(color.green, 90) : na, title = \"Active session highlight\")",
+        "//@version=6\nindicator(\"Map with enum keys\")\n\n//@enum        Contains fields with titles representing ticker IDs.\n//@field aapl  Has an Apple ticker ID as its title.\n//@field tsla  Has a Tesla ticker ID as its title.\n//@field amzn  Has an Amazon ticker ID as its title.\nenum symbols\n    aapl = \"NASDAQ:AAPL\"\n    tsla = \"NASDAQ:TSLA\"\n    amzn = \"NASDAQ:AMZN\"\n\n//@variable A map that accepts fields from the `symbols` enum as keys and \"float\" values.\nmap<symbols, float> data = map.new<symbols, float>()\n// Put key-value pairs into the `data` map.\ndata.put(symbols.aapl, request.security(str.tostring(symbols.aapl), timeframe.period, close))\ndata.put(symbols.tsla, request.security(str.tostring(symbols.tsla), timeframe.period, close))\ndata.put(symbols.amzn, request.security(str.tostring(symbols.amzn), timeframe.period, close))\n// Plot the value from the `data` map accessed by the `symbols.aapl` key.\nplot(data.get(symbols.aapl))"
+      ]
+    },
+    "export": {
+      "name": "export",
+      "description": "Used in libraries to prefix the declaration of functions or user-defined type definitions that will be available from other scripts importing the library.",
+      "examples": [
+        "//@version=6\n//@description Library of debugging functions.\nlibrary(\"Debugging_library\", overlay = true)\n//@function Displays a string as a table cell for debugging purposes.\n//@param txt String to display.\n//@returns Void.\nexport print(string txt) =>\n    var table t = table.new(position.middle_right, 1, 1)\n    table.cell(t, 0, 0, txt, bgcolor = color.yellow)\n// Using the function from inside the library to show an example on the published chart.\n// This has no impact on scripts using the library.\nprint(\"Library Test\")"
+      ],
+      "remarks": "Each library must have at least one exported function or user-defined type (UDT).\nExported functions cannot use variables from the global scope if they are arrays, mutable variables (reassigned with :=), or variables of 'input' form.\nExported functions cannot use request.*() functions.\nExported functions must explicitly declare each parameter's type and all parameters must be used in the function's body. By default, all arguments passed to exported functions are of the series form, unless they are explicitly specified as simple in the function's signature.\nThe @description, @function, @param, @type, @field, and @returns compiler annotations are used to automatically generate the library's description and release notes, and in the Pine Script® Editor's tooltips.",
+      "seeAlso": [
+        "library",
+        "import",
+        "simple",
+        "series",
+        "type"
+      ]
+    },
+    "false": {
+      "name": "false",
+      "description": "Literal representing a bool value, and result of a comparison operation.",
+      "examples": [],
+      "remarks": "See the User Manual for comparison operators and logical operators.",
+      "seeAlso": [
+        "bool"
+      ]
+    },
+    "for": {
+      "name": "for",
+      "syntax": "[variables =|:=] for counter = from_num to to_num [by step_num]\n    statements | continue | break\n    return_expression",
+      "description": "Creates a count-controlled loop, which uses a counter variable to manage the iterative executions of its local code block. The loop continues new iterations until the counter reaches a specified final value.",
+      "examples": [
+        "//@version=6\nindicator(\"Basic `for` loop\")\n\n//@function Calculates the number of bars in the last `length` bars that have their `close` above the current `close`.\n//@param length The number of bars used in the calculation.\ngreaterCloseCount(length) =>\n    int result = 0\n    for i = 1 to length\n        if close[i] > close\n            result += 1\n    result\n\nplot(greaterCloseCount(14))",
+        "//@version=6\nindicator(\"`for` loop with a step\")\n\na = array.from(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)\nsum = 0.0\n\nfor i = 0 to 9 by 5\n    // Because the step is set to 5, we are adding only the first (0) and the sixth (5) value from the array `a`.\n    sum += array.get(a, i)\n\nplot(sum)"
+      ],
+      "remarks": "Modifying a loop's to_num value during an iteration does not change the direction of the loop's counter. For a loop that counts upward, setting the to_num to a value less than the from_num value on an iteration stops the loop immediately after that iteration ends. Likewise, a loop that counts downward stops after an iteration where the to_num value becomes greater than the from_num value.\nIf a script initializes a variable declared with var or varip using a loop's result, the loop stops after the first iteration, even if the header's criteria allow more iterations. Instead of initializing the variable with the result of this structure directly, declare the variable first and use := to update it with the result. Alternatively, move the loop into a Declaring functions and initialize the variable using a call to that function.\nSee the Loops page of our User Manual to learn more about loops and how they work.",
+      "seeAlso": [
+        "for...in",
+        "while"
+      ]
+    },
+    "if": {
+      "name": "if",
+      "syntax": "var_declarationX = if condition\n    var_decl_then0\n    var_decl_then1\n    …\n    var_decl_thenN\nelse if [optional block]\n    var_decl_else0\n    var_decl_else1\n    …\n    var_decl_elseN\nelse\n    var_decl_else0\n    var_decl_else1\n    …\n    var_decl_elseN\n    return_expression_else",
+      "description": "If statement defines what block of statements must be executed when conditions of the expression are satisfied.",
+      "examples": [
+        "//@version=6\nindicator(\"if\")\n// This code compiles\nx = if close > open\n    close\nelse\n    open\n\n// This code doesn’t compile\n// y = if close > open\n//     close\n// else\n//     \"open\"\nplot(x)",
+        "//@version=6\nindicator(\"if\")\nx = if close > open\n    close\n// If current close > current open, then x = close.\n// Otherwise the x = na.\nplot(x)",
+        "//@version=6\nindicator(\"if\")\nx = if open > close\n    5\nelse if high > low\n    close\nelse\n    open\nplot(x)",
+        "//@version=6\nstrategy(\"if\")\nif (ta.crossover(high, low))\n    strategy.entry(\"BBandLE\", strategy.long, stop=low, oca_name=\"BollingerBands\", oca_type=strategy.oca.cancel, comment=\"BBandLE\")\nelse\n    strategy.cancel(id=\"BBandLE\")",
+        "//@version=6\nindicator(\"if\")\nfloat x = na\nif close > open\n    if close > close[1]\n        x := close\n    else\n        x := close[1]\nelse\n    x := open\nplot(x)"
+      ]
+    },
+    "import": {
+      "name": "import",
+      "syntax": "import {username}/{libraryName}/{libraryVersion} as {alias}",
+      "description": "Used to load an external library() into a script and bind its functions to a namespace. The importing script can be an indicator, a strategy, or another library. A library must be published (privately or publicly) before it can be imported.",
+      "examples": [
+        "//@version=6\nindicator(\"num_methods import\")\n// Import the first version of the username’s \"num_methods\" library and assign it to the \"m\" namespace\",\nimport username/num_methods/1 as m\n// Call the “sinh()” function from the imported library\ny = m.sinh(3.14)\n// Plot value returned by the \"sinh()\" function\",\nplot(y)"
+      ],
+      "remarks": "Using an alias that replaces a built-in namespace such as math.* or strategy.* is allowed, but if the library contains function names that shadow Pine Script®'s built-in functions, the built-ins will become unavailable. The same version of a library can only be imported once. Aliases must be distinct for each imported library. When calling library functions, casting their arguments to types other than their declared type is not allowed. An import statement cannot use 'as' or 'import' as username, libraryName, or alias identifiers.",
+      "seeAlso": [
+        "library",
+        "export"
+      ]
+    },
+    "method": {
+      "name": "method",
+      "syntax": "[export] method <functionName>(<paramType> <paramName> [= <defaultValue>], …) =>\n    <functionBlock>",
+      "description": "This keyword is used to prefix a function declaration, indicating it can then be invoked using dot notation by appending its name to a variable of the type of its first parameter and omitting that first parameter. Alternatively, functions declared as methods can also be invoked like normal user-defined functions. In that case, an argument must be supplied for its first parameter.",
+      "examples": [
+        "//@version=6\nindicator(\"\")\n\nvar prices = array.new<float>()\n\n//@function Pushes a new value into the array and removes the first one if the resulting array is greater than `maxSize`. Can be used as a method.\nmethod maintainArray(array<float> id, maxSize, value) =>\n    id.push(value)\n    if id.size() > maxSize\n        id.shift()\n\nprices.maintainArray(50, close)\n// The method can also be called like a function, without using dot notation.\n// In this case an argument must be supplied for its first parameter.\n// maintainArray(prices, 50, close)\n\n// This calls the `array.avg()` built-in using dot notation with the `prices` array.\n// It is possible because built-in functions belonging to some namespaces that are a special Pine type\n// can be invoked with method notation when the function's first parameter is an ID of that type.\n// Those namespaces are: `array`, `matrix`, `line`, `linefill`, `label`, `box`, and `table`.\nplot(prices.avg())"
+      ]
+    },
+    "not": {
+      "name": "not",
+      "syntax": "not expr1",
+      "description": "Logical negation (NOT). Applicable to boolean expressions.",
+      "examples": [],
+      "returnsDescription": "Boolean value, or series of boolean values."
+    },
+    "or": {
+      "name": "or",
+      "syntax": "expr1 or expr2",
+      "description": "Logical OR. Applicable to boolean expressions.",
+      "examples": [],
+      "returnsDescription": "Boolean value, or series of boolean values.",
+      "remarks": "If expr1 evaluates to true, the or operator returns true without evaluating expr2."
+    },
+    "switch": {
+      "name": "switch",
+      "syntax": "[variable_declaration = ] switch expression\n    value1 => local_block\n    value2 => local_block\n    …\n    => default_local_block\n\n[variable_declaration = ] switch\n    condition1 => local_block\n    condition2 => local_block\n    …\n    => default_local_block",
+      "description": "The switch operator transfers control to one of the several statements, depending on the values of a condition and expressions.",
+      "examples": [
+        "//@version=6\nindicator(\"Switch using an expression\")\n\nstring i_maType = input.string(\"EMA\", \"MA type\", options = [\"EMA\", \"SMA\", \"RMA\", \"WMA\"])\n\nfloat ma = switch i_maType\n    \"EMA\" => ta.ema(close, 10)\n    \"SMA\" => ta.sma(close, 10)\n    \"RMA\" => ta.rma(close, 10)\n    // Default used when the three first cases do not match.\n    => ta.wma(close, 10)\n\nplot(ma)",
+        "//@version=6\nstrategy(\"Switch without an expression\", overlay = true)\n\nbool longCondition  = ta.crossover( ta.sma(close, 14), ta.sma(close, 28))\nbool shortCondition = ta.crossunder(ta.sma(close, 14), ta.sma(close, 28))\n\nswitch\n    longCondition  => strategy.entry(\"Long ID\", strategy.long)\n    shortCondition => strategy.entry(\"Short ID\", strategy.short)"
+      ],
+      "returnsDescription": "The value of the last expression in the local block of statements that is executed.",
+      "remarks": "Only one of the local_block instances or the default_local_block can be executed. The default_local_block is introduced with the => token alone and is only executed when none of the preceding blocks are executed. If the result of the switch statement is assigned to a variable and a default_local_block is not specified, the statement returns na if no local_block is executed. When assigning the result of the switch statement to a variable, all local_block instances must return the same type of value.",
+      "seeAlso": [
+        "if",
+        "?:"
+      ]
+    },
+    "true": {
+      "name": "true",
+      "description": "Literal representing one of the values a bool variable can hold, or an expression can evaluate to when it uses comparison or logical operators.",
+      "examples": [],
+      "remarks": "See the User Manual for comparison operators and logical operators.",
+      "seeAlso": [
+        "bool"
+      ]
+    },
+    "type": {
+      "name": "type",
+      "syntax": "[export ]type <UDT_identifier>\n    [varip ]<field_type> <field_name> [= <value>]\n    …",
+      "description": "This keyword allows the declaration of user-defined types (UDT) from which scripts can instantiate objects. UDTs are composite types that contain an arbitrary number of fields of any built-in or user-defined type, including the defined UDT itself. The syntax to define a UDT is:",
+      "examples": [
+        "//@version=6\nindicator(\"Multi Time Period Chart\", overlay = true)\n\ntimeframeInput = input.timeframe(\"1D\")\n\ntype bar\n    float o = open\n    float h = high\n    float l = low\n    float c = close\n    int   t = time\n\ndrawBox(bar b, right) =>\n    color boxColor = b.c >= b.o ? color.green : color.red\n    box.new(b.t, b.h, right, b.l, boxColor, xloc = xloc.bar_time, bgcolor = color.new(boxColor, 90))\n\nupdateBox(box boxId, bar b) =>\n    color boxColor = b.c >= b.o ? color.green : color.red\n    box.set_border_color(boxId, boxColor)\n    box.set_bgcolor(boxId, color.new(boxColor, 90))\n    box.set_top(boxId, b.h)\n    box.set_bottom(boxId, b.l)\n    box.set_right(boxId, time)\n\nsecBar = request.security(syminfo.tickerid, timeframeInput, bar.new())\n\nif not na(secBar)\n    // To avoid a runtime error, only process data when an object exists.\n    if not barstate.islast\n        if timeframe.change(timeframeInput)\n            // On historical bars, draw a new box in the past when the HTF closes.\n            drawBox(secBar, time[1])\n    else\n        var box lastBox = na\n        if na(lastBox) or timeframe.change(timeframeInput)\n            // On the last bar, only draw a new current box the first time we get there or when HTF changes.\n            lastBox := drawBox(secBar, time)\n        else\n            // On other chart updates, use setters to modify the current box.\n            updateBox(lastBox, secBar)"
+      ]
+    },
+    "var": {
+      "name": "var",
+      "syntax": "var variable_name = expression",
+      "description": "var is the keyword used for assigning and one-time initializing of the variable.",
+      "examples": [
+        "//@version=6\nindicator(\"Var keyword example\")\nvar a = close\nvar b = 0.0\nvar c = 0.0\nvar green_bars_count = 0\nif close > open\n    var x = close\n    b := x\n    green_bars_count := green_bars_count + 1\n    if green_bars_count >= 10\n        var y = close\n        c := y\nplot(a)\nplot(b)\nplot(c)"
+      ]
+    },
+    "varip": {
+      "name": "varip",
+      "syntax": "varip [<variable_type> ]<variable_name> = <expression>\n\n[export ]type <UDT_identifier>\n    varip <field_type> <field_name> [= <value>]",
+      "description": "varip (var intrabar persist) is the keyword used for the assignment and one-time initialization of a variable or a field of a user-defined type. It’s similar to the var keyword, but variables and fields declared with varip retain their values between executions of the script on the same bar.",
+      "examples": [
+        "//@version=6\nindicator(\"varip\")\nvarip int v = -1\nv := v + 1\nplot(v)",
+        "//@version=6\nindicator(\"varip with types\")\ntype barData\n    int index = -1\n    varip int ticks = -1\n\nvar currBar = barData.new()\ncurrBar.index += 1\ncurrBar.ticks += 1\n\n// Will be equal to bar_index on all bars\nplot(currBar.index)\n// In real time, will increment per every tick on the chart\nplot(currBar.ticks)"
+      ],
+      "remarks": "When using varip to declare variables in strategies that may execute more than once per historical chart bar, the values of such variables are preserved across successive iterations of the script on the same bar.\nThe effect of varip eliminates the rollback of variables before each successive execution of a script on the same bar."
+    },
+    "while": {
+      "name": "while",
+      "syntax": "[variables = | :=] while condition\n    statements | continue | break\n    return_expression",
+      "description": "Creates a condition-controlled loop whose local code block executes repeatedly while the value of a conditional expression remains true. The loop's iterations end after the condition's value becomes false.",
+      "examples": [
+        "//@version=6\nindicator(\"`while` demo\")\n\n//@variable The number for which to calculate the factorial (N!).\n//          The factorial is the product of all integers from 1 to `n`, with the exception (0! == 1).\nint n = input.int(10, \"N\", 0)\n\n//@variable The current value to multiply in the factorial calculation. \nvar int counter = n\n//@variable The factorial value.\nvar int factorial = 1\n\nif barstate.isfirst\n    // Repeatedly multiply `factorial` by `counter` and decrease the `counter` value by 1.\n    // The loop ends after the value of `counter` becomes 0.  \n    while counter > 0\n        factorial *= counter\n        counter   -= 1\n\nplot(factorial, \"N!\")"
+      ],
+      "remarks": "If a script initializes a variable declared with var or varip using a loop's result, the loop stops after the first iteration, even if the header's criteria allow more iterations. Instead of initializing the variable with the result of this structure directly, declare the variable first and use := to update it with the result. Alternatively, move the loop into a Declaring functions and initialize the variable using a call to that function.\nSee the Loops page of our User Manual to learn more about loops and how they work."
     }
   }
 }

@@ -349,15 +349,24 @@ export interface PineOperator {
 // =============================================================================
 
 /**
- * Language keyword definition
+ * Language keyword definition.
+ *
+ * Reference data only: keywords are grammar the parser hardcodes (see the
+ * Data-vs-Syntax split in CLAUDE.md), so the checker reads the KEYWORDS Set in
+ * keywords.ts, not this catalog. The JSON snapshot exists for downstream/external
+ * consumers (e.g. pine-oracle) that want the documented keyword set with prose.
  */
 export interface PineKeyword {
 	/** Keyword name */
 	name: string;
-	/** Keyword category */
-	category: "control" | "declaration" | "operator" | "literal" | "type";
-	/** Description */
+	/** Keyword category, when classified */
+	category?: "control" | "declaration" | "operator" | "literal" | "type";
+	/** Prose description, when the reference page documents one */
 	description?: string;
+	/** Free-text "Remarks" caveats, when the page documents them */
+	remarks?: string;
+	/** "See also" cross-references, as bare symbol names */
+	seeAlso?: string[];
 }
 
 // =============================================================================

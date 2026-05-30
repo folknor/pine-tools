@@ -1,7 +1,7 @@
 /**
  * Pine Script V6 Built-in Types
  * Auto-generated from TradingView documentation
- * Generated: 2026-05-30T21:51:35.371Z
+ * Generated: 2026-05-30T22:34:09.159Z
  * Total: 20 types
  */
 
@@ -25,7 +25,7 @@ export const TYPES: PineBuiltinType[] = [
       "label",
       "table",
       "box",
-      "array.new<type>",
+      "array.new",
       "array.from"
     ]
   },
@@ -230,7 +230,7 @@ export const TYPES: PineBuiltinType[] = [
     ],
     "remarks": "Map objects are always of series form.",
     "seeAlso": [
-      "map.new<type,type>"
+      "map.new"
     ]
   },
   {
@@ -243,7 +243,7 @@ export const TYPES: PineBuiltinType[] = [
     "remarks": "Matrix objects are always of \"series\" form.",
     "seeAlso": [
       "var",
-      "matrix.new<type>",
+      "matrix.new",
       "array"
     ]
   },

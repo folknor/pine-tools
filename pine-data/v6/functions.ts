@@ -1,7 +1,7 @@
 /**
  * Pine Script V6 Functions
  * Auto-generated from TradingView documentation
- * Generated: 2026-05-30T21:51:35.365Z
+ * Generated: 2026-05-30T22:34:09.153Z
  * Total: 475 functions
  */
 
@@ -1072,7 +1072,6 @@ export const FUNCTIONS: PineFunction[] = [
     "returnsDescription": "The median of the array's elements.",
     "remarks": "Returns na if the id array is empty.",
     "seeAlso": [
-      "array.median",
       "array.avg",
       "array.variance",
       "array.min"
@@ -4872,7 +4871,6 @@ export const FUNCTIONS: PineFunction[] = [
     "returnsDescription": "The calculated day of the month, expressed in the specified time zone.",
     "remarks": "A UNIX timestamp represents the number of milliseconds elapsed since 00:00 UTC on 1970-01-01. The meaning of a UNIX timestamp does not change relative to any time zone.",
     "seeAlso": [
-      "dayofmonth",
       "dayofweek",
       "weekofyear",
       "time",
@@ -4907,7 +4905,6 @@ export const FUNCTIONS: PineFunction[] = [
     "returnsDescription": "The calculated day number, expressed in the specified time zone.",
     "remarks": "A UNIX timestamp represents the number of milliseconds elapsed since 00:00 UTC on 1970-01-01. The meaning of a UNIX timestamp does not change relative to any time zone.",
     "seeAlso": [
-      "dayofweek",
       "dayofmonth",
       "weekofyear",
       "time",
@@ -5594,7 +5591,6 @@ export const FUNCTIONS: PineFunction[] = [
     "returnsDescription": "Hour (in exchange timezone) for provided UNIX time.",
     "remarks": "UNIX time is the number of milliseconds that have elapsed since 00:00:00 UTC, 1 January 1970.",
     "seeAlso": [
-      "hour",
       "time",
       "year",
       "month",
@@ -9891,7 +9887,7 @@ export const FUNCTIONS: PineFunction[] = [
       "//@version=6\nindicator(\"map.clear example\")\noddMap = map.new<int, bool>()\noddMap.put(1, true)\noddMap.put(2, false)\noddMap.put(3, true)\nmap.clear(oddMap)\nplot(oddMap.size())"
     ],
     "seeAlso": [
-      "map.new<type,type>",
+      "map.new",
       "map.put_all",
       "map.keys",
       "map.values",
@@ -9922,7 +9918,7 @@ export const FUNCTIONS: PineFunction[] = [
       "//@version=6\nindicator(\"map.includes example\")\na = map.new<string, float>()\na.put(\"open\", open)\np = close\nif map.contains(a, \"open\")\n    p := a.get(\"open\")\nplot(p)"
     ],
     "seeAlso": [
-      "map.new<type,type>",
+      "map.new",
       "map.put",
       "map.keys",
       "map.values",
@@ -9948,7 +9944,7 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "returnsDescription": "A copy of the id map.",
     "seeAlso": [
-      "map.new<type,type>",
+      "map.new",
       "map.put",
       "map.keys",
       "map.values",
@@ -9980,7 +9976,7 @@ export const FUNCTIONS: PineFunction[] = [
       "//@version=6\nindicator(\"map.get example\")\na = map.new<int, int>()\nsize = 10\nfor i = 0 to size\n    a.put(i, size-i)\nplot(map.get(a, 1))"
     ],
     "seeAlso": [
-      "map.new<type,type>",
+      "map.new",
       "map.put",
       "map.keys",
       "map.values",
@@ -10006,7 +10002,7 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "remarks": "Maps maintain insertion order. The elements within the array returned by this function will also be in the insertion order.",
     "seeAlso": [
-      "map.new<type,type>",
+      "map.new",
       "map.put",
       "map.get",
       "map.values",
@@ -10030,7 +10026,7 @@ export const FUNCTIONS: PineFunction[] = [
       "map.keys",
       "map.values",
       "map.get",
-      "array.new<type>"
+      "array.new"
     ]
   },
   {
@@ -10065,7 +10061,7 @@ export const FUNCTIONS: PineFunction[] = [
     "returnsDescription": "The previous value associated with key if the key was already present in the map, or na if the key is new.",
     "remarks": "Maps maintain insertion order. Note that the order does not change when inserting a pair with a key that's already in the map. The new pair replaces the existing pair with the key in such cases.",
     "seeAlso": [
-      "map.new<type,type>",
+      "map.new",
       "map.put_all",
       "map.keys",
       "map.values",
@@ -10096,7 +10092,7 @@ export const FUNCTIONS: PineFunction[] = [
       "//@version=6\nindicator(\"map.put_all example\")\na = map.new<string, float>()\nb = map.new<string, float>()\na.put(\"first\", 10)\na.put(\"second\", 15)\nb.put(\"third\", 20)\nmap.put_all(a, b)\nplot(a.get(\"third\"))"
     ],
     "seeAlso": [
-      "map.new<type,type>",
+      "map.new",
       "map.put",
       "map.keys",
       "map.values",
@@ -10128,7 +10124,7 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "returnsDescription": "The previous value associated with key if the key was present in the map, or na if there was no such key.",
     "seeAlso": [
-      "map.new<type,type>",
+      "map.new",
       "map.put",
       "map.keys",
       "map.values",
@@ -10153,7 +10149,7 @@ export const FUNCTIONS: PineFunction[] = [
       "//@version=6\nindicator(\"map.size example\")\na = map.new<int, int>()\nsize = 10\nfor i = 0 to size\n    a.put(i, size-i)\nplot(map.size(a))"
     ],
     "seeAlso": [
-      "map.new<type,type>",
+      "map.new",
       "map.put",
       "map.keys",
       "map.values",
@@ -10179,7 +10175,7 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "remarks": "Maps maintain insertion order. The elements within the array returned by this function will also be in the insertion order.",
     "seeAlso": [
-      "map.new<type,type>",
+      "map.new",
       "map.put",
       "map.get",
       "map.keys",
@@ -11978,7 +11974,7 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "remarks": "Rather than add columns to an empty matrix, it is far more efficient to declare a matrix with explicit dimensions and fill it with values. Adding a column is also much slower than adding a row with the matrix.add_row() function.",
     "seeAlso": [
-      "matrix.new<type>",
+      "matrix.new",
       "matrix.get",
       "matrix.set",
       "matrix.columns",
@@ -12019,7 +12015,7 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "remarks": "Indexing of rows and columns starts at zero. Rather than add rows to an empty matrix, it is far more efficient to declare a matrix with explicit dimensions and fill it with values.",
     "seeAlso": [
-      "matrix.new<type>",
+      "matrix.new",
       "matrix.get",
       "matrix.set",
       "matrix.columns",
@@ -12070,7 +12066,7 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "returnsDescription": "The average value from the id matrix.",
     "seeAlso": [
-      "matrix.new<type>",
+      "matrix.new",
       "matrix.get",
       "matrix.set",
       "matrix.columns",
@@ -12103,10 +12099,9 @@ export const FUNCTIONS: PineFunction[] = [
     "returnsDescription": "An array ID containing the column values of the id matrix.",
     "remarks": "Indexing of rows starts at 0.",
     "seeAlso": [
-      "matrix.new<type>",
+      "matrix.new",
       "matrix.get",
       "array.get",
-      "matrix.col",
       "matrix.columns"
     ]
   },
@@ -12129,7 +12124,7 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "returnsDescription": "The number of columns in the matrix id.",
     "seeAlso": [
-      "matrix.new<type>",
+      "matrix.new",
       "matrix.get",
       "matrix.set",
       "matrix.col",
@@ -12163,7 +12158,7 @@ export const FUNCTIONS: PineFunction[] = [
     "returnsDescription": "Returns the id1 matrix concatenated with the id2 matrix.",
     "remarks": "The number of columns in both matrices must be identical.",
     "seeAlso": [
-      "matrix.new<type>",
+      "matrix.new",
       "matrix.get",
       "matrix.set",
       "matrix.columns",
@@ -12189,7 +12184,7 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "returnsDescription": "A new matrix object of the copied id matrix.",
     "seeAlso": [
-      "matrix.new<type>",
+      "matrix.new",
       "matrix.get",
       "matrix.set",
       "matrix.columns",
@@ -12240,7 +12235,7 @@ export const FUNCTIONS: PineFunction[] = [
     "returnsDescription": "The determinant value of the id matrix.",
     "remarks": "Function calculation based on the LU decomposition algorithm.",
     "seeAlso": [
-      "matrix.new<type>",
+      "matrix.new",
       "matrix.set",
       "matrix.is_square"
     ]
@@ -12307,7 +12302,7 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "returnsDescription": "A new matrix object containing the difference between id2 and id1.",
     "seeAlso": [
-      "matrix.new<type>",
+      "matrix.new",
       "matrix.get",
       "matrix.set",
       "matrix.columns",
@@ -12358,7 +12353,7 @@ export const FUNCTIONS: PineFunction[] = [
     "returnsDescription": "An array containing the eigenvalues of the id matrix.",
     "remarks": "The function is calculated using \"The Implicit QL Algorithm\".",
     "seeAlso": [
-      "matrix.new<type>",
+      "matrix.new",
       "matrix.set",
       "matrix.eigenvectors"
     ]
@@ -12407,7 +12402,7 @@ export const FUNCTIONS: PineFunction[] = [
     "returnsDescription": "A new matrix containing the eigenvectors of the id matrix.",
     "remarks": "The function is calculated using \"The Implicit QL Algorithm\".",
     "seeAlso": [
-      "matrix.new<type>",
+      "matrix.new",
       "matrix.get",
       "matrix.set",
       "matrix.eigenvalues"
@@ -12429,7 +12424,7 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series int",
     "examples": [],
     "seeAlso": [
-      "matrix.new<type>",
+      "matrix.new",
       "matrix.columns",
       "matrix.rows"
     ]
@@ -12486,7 +12481,7 @@ export const FUNCTIONS: PineFunction[] = [
       "//@version=6\nindicator(\"`matrix.fill()` Example\")\n\n// Create a 4x5 \"int\" matrix containing values `0`.\nm = matrix.new<float>(4, 5, 0)\n\n// Fill the intersection of rows 1 to 2 and columns 2 to 3 of the matrix with `hl2` values.\nmatrix.fill(m, hl2, 0, 2, 1, 3)\n\n// Display using a label.\nif barstate.islastconfirmedhistory\n    label.new(bar_index, high, str.tostring(m))"
     ],
     "seeAlso": [
-      "matrix.new<type>",
+      "matrix.new",
       "matrix.get",
       "matrix.set",
       "matrix.columns",
@@ -12525,7 +12520,7 @@ export const FUNCTIONS: PineFunction[] = [
     "returnsDescription": "The value of the element at the row and column index of the id matrix.",
     "remarks": "Indexing of the rows and columns starts at zero.",
     "seeAlso": [
-      "matrix.new<type>",
+      "matrix.new",
       "matrix.set",
       "matrix.columns",
       "matrix.rows"
@@ -12575,7 +12570,7 @@ export const FUNCTIONS: PineFunction[] = [
     "returnsDescription": "A new matrix, which is the inverse of the id matrix.",
     "remarks": "The function is calculated using the LU decomposition algorithm.",
     "seeAlso": [
-      "matrix.new<type>",
+      "matrix.new",
       "matrix.set",
       "matrix.pinv",
       "matrix.copy",
@@ -12600,7 +12595,7 @@ export const FUNCTIONS: PineFunction[] = [
     "returnsDescription": "Returns true if the id matrix is ​​anti-diagonal, false otherwise.",
     "remarks": "Returns false with non-square matrices.",
     "seeAlso": [
-      "matrix.new<type>",
+      "matrix.new",
       "matrix.set",
       "matrix.is_square",
       "matrix.is_identity",
@@ -12625,7 +12620,7 @@ export const FUNCTIONS: PineFunction[] = [
     "returnsDescription": "Returns true, if the id matrix is antisymmetric, false otherwise.",
     "remarks": "Returns false with non-square matrices.",
     "seeAlso": [
-      "matrix.new<type>",
+      "matrix.new",
       "matrix.get",
       "matrix.set",
       "matrix.is_square"
@@ -12648,7 +12643,7 @@ export const FUNCTIONS: PineFunction[] = [
     "examples": [],
     "returnsDescription": "Returns true if the id matrix is binary, false otherwise.",
     "seeAlso": [
-      "matrix.new<type>",
+      "matrix.new",
       "matrix.get",
       "matrix.set"
     ]
@@ -12671,7 +12666,7 @@ export const FUNCTIONS: PineFunction[] = [
     "returnsDescription": "Returns true if the id matrix is diagonal, false otherwise.",
     "remarks": "Returns false with non-square matrices.",
     "seeAlso": [
-      "matrix.new<type>",
+      "matrix.new",
       "matrix.set",
       "matrix.is_square",
       "matrix.is_identity",
@@ -12696,7 +12691,7 @@ export const FUNCTIONS: PineFunction[] = [
     "returnsDescription": "Returns true if id is an identity matrix, false otherwise.",
     "remarks": "Returns false with non-square matrices.",
     "seeAlso": [
-      "matrix.new<type>",
+      "matrix.new",
       "matrix.is_square",
       "matrix.is_diagonal"
     ]
@@ -12718,7 +12713,7 @@ export const FUNCTIONS: PineFunction[] = [
     "examples": [],
     "returnsDescription": "Returns true if the id matrix is square, false otherwise.",
     "seeAlso": [
-      "matrix.new<type>",
+      "matrix.new",
       "matrix.get",
       "matrix.set",
       "matrix.columns",
@@ -12742,7 +12737,7 @@ export const FUNCTIONS: PineFunction[] = [
     "examples": [],
     "returnsDescription": "Returns true if the id matrix is stochastic, false otherwise.",
     "seeAlso": [
-      "matrix.new<type>",
+      "matrix.new",
       "matrix.set"
     ]
   },
@@ -12764,7 +12759,7 @@ export const FUNCTIONS: PineFunction[] = [
     "returnsDescription": "Returns true if the id matrix is symmetric, false otherwise.",
     "remarks": "Returns false with non-square matrices.",
     "seeAlso": [
-      "matrix.new<type>",
+      "matrix.new",
       "matrix.get",
       "matrix.set",
       "matrix.is_square"
@@ -12788,7 +12783,7 @@ export const FUNCTIONS: PineFunction[] = [
     "returnsDescription": "Returns true if the id matrix is triangular, false otherwise.",
     "remarks": "Returns false with non-square matrices.",
     "seeAlso": [
-      "matrix.new<type>",
+      "matrix.new",
       "matrix.set",
       "matrix.is_square"
     ]
@@ -12810,7 +12805,7 @@ export const FUNCTIONS: PineFunction[] = [
     "examples": [],
     "returnsDescription": "Returns true if all elements of the id matrix are zero, false otherwise.",
     "seeAlso": [
-      "matrix.new<type>",
+      "matrix.new",
       "matrix.get",
       "matrix.set"
     ]
@@ -12876,7 +12871,7 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "returnsDescription": "A new matrix containing the Kronecker product of id1 and id2.",
     "seeAlso": [
-      "matrix.new<type>",
+      "matrix.new",
       "matrix.mult",
       "str.tostring",
       "table.new"
@@ -12925,7 +12920,7 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "returnsDescription": "The maximum value from the id matrix.",
     "seeAlso": [
-      "matrix.new<type>",
+      "matrix.new",
       "matrix.min",
       "matrix.avg",
       "matrix.sort"
@@ -12974,7 +12969,7 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "remarks": "Note that na elements of the matrix are not considered when calculating the median.",
     "seeAlso": [
-      "matrix.new<type>",
+      "matrix.new",
       "matrix.mode",
       "matrix.sort",
       "matrix.avg"
@@ -13023,7 +13018,7 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "returnsDescription": "The smallest value from the id matrix.",
     "seeAlso": [
-      "matrix.new<type>",
+      "matrix.new",
       "matrix.max",
       "matrix.avg",
       "matrix.sort"
@@ -13073,7 +13068,7 @@ export const FUNCTIONS: PineFunction[] = [
     "returnsDescription": "The most frequently occurring value from the id matrix. If none exists, returns the smallest value instead.",
     "remarks": "Note that na elements of the matrix are not considered when calculating the mode.",
     "seeAlso": [
-      "matrix.new<type>",
+      "matrix.new",
       "matrix.set",
       "matrix.median",
       "matrix.sort",
@@ -13177,7 +13172,7 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "returnsDescription": "A new matrix object containing the product of id2 and id1.",
     "seeAlso": [
-      "matrix.new<type>",
+      "matrix.new",
       "matrix.sum",
       "matrix.diff"
     ]
@@ -13223,7 +13218,7 @@ export const FUNCTIONS: PineFunction[] = [
       "matrix.fill",
       "matrix.columns",
       "matrix.rows",
-      "array.new<type>"
+      "array.new"
     ]
   },
   {
@@ -13270,7 +13265,7 @@ export const FUNCTIONS: PineFunction[] = [
     "returnsDescription": "A new matrix containing the pseudoinverse of the id matrix.",
     "remarks": "The function is calculated using a Moore–Penrose inverse formula based on singular-value decomposition of a matrix. For non-singular square matrices this function returns the result of matrix.inv().",
     "seeAlso": [
-      "matrix.new<type>",
+      "matrix.new",
       "matrix.set",
       "matrix.inv"
     ]
@@ -13336,7 +13331,7 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "returnsDescription": "The product of the id matrix by itself power times.",
     "seeAlso": [
-      "matrix.new<type>",
+      "matrix.new",
       "matrix.set",
       "matrix.mult"
     ]
@@ -13360,7 +13355,7 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "returnsDescription": "The rank of the id matrix.",
     "seeAlso": [
-      "matrix.new<type>",
+      "matrix.new",
       "matrix.set",
       "str.tostring"
     ]
@@ -13392,7 +13387,7 @@ export const FUNCTIONS: PineFunction[] = [
     "returnsDescription": "An array containing the elements of the column removed from the id matrix.",
     "remarks": "Indexing of rows and columns starts at zero. It is far more efficient to declare matrices with explicit dimensions than to build them by adding or removing columns. Deleting a column is also much slower than deleting a row with the matrix.remove_row() function.",
     "seeAlso": [
-      "matrix.new<type>",
+      "matrix.new",
       "matrix.set",
       "matrix.copy",
       "matrix.remove_row"
@@ -13425,7 +13420,7 @@ export const FUNCTIONS: PineFunction[] = [
     "returnsDescription": "An array containing the elements of the row removed from the id matrix.",
     "remarks": "Indexing of rows and columns starts at zero. It is far more efficient to declare matrices with explicit dimensions than to build them by adding or removing rows.",
     "seeAlso": [
-      "matrix.new<type>",
+      "matrix.new",
       "matrix.set",
       "matrix.copy",
       "matrix.remove_col"
@@ -13461,7 +13456,7 @@ export const FUNCTIONS: PineFunction[] = [
       "//@version=6\nindicator(\"`matrix.reshape()` Example\")\n\n// For efficiency, execute this code only once.\nif barstate.islastconfirmedhistory\n    // Create a 2x3 matrix.\n    var m1 = matrix.new<float>(2, 3)\n    // Fill the matrix with values.\n    matrix.set(m1, 0, 0, 1)\n    matrix.set(m1, 0, 1, 2)\n    matrix.set(m1, 0, 2, 3)\n    matrix.set(m1, 1, 0, 4)\n    matrix.set(m1, 1, 1, 5)\n    matrix.set(m1, 1, 2, 6)\n\n    // Copy the matrix to a new one.\n    var m2 = matrix.copy(m1)\n\n    // Reshape the copy to a 3x2.\n    matrix.reshape(m2, 3, 2)\n\n    // Display using a table.\n    var t = table.new(position.top_right, 2, 2, color.green)\n    table.cell(t, 0, 0, \"Original matrix:\")\n    table.cell(t, 0, 1, str.tostring(m1))\n    table.cell(t, 1, 0, \"Reshaped matrix:\")\n    table.cell(t, 1, 1, str.tostring(m2))"
     ],
     "seeAlso": [
-      "matrix.new<type>",
+      "matrix.new",
       "matrix.get",
       "matrix.set",
       "matrix.add_row",
@@ -13486,7 +13481,7 @@ export const FUNCTIONS: PineFunction[] = [
       "//@version=6\nindicator(\"`matrix.reverse()` Example\")\n\n// For efficiency, execute this code only once.\nif barstate.islastconfirmedhistory\n    // Copy the matrix to a new one.\n    var m1 = matrix.new<int>(2, 2, na)\n    // Fill the matrix with values.\n    matrix.set(m1, 0, 0, 1)\n    matrix.set(m1, 0, 1, 2)\n    matrix.set(m1, 1, 0, 3)\n    matrix.set(m1, 1, 1, 4)\n\n    // Copy matrix elements to a new matrix.\n    var m2 = matrix.copy(m1)\n\n    // Reverse the `m2` copy of the original matrix.\n    matrix.reverse(m2)\n\n    // Display using a table.\n    var t = table.new(position.top_right, 2, 2, color.green)\n    table.cell(t, 0, 0, \"Original matrix:\")\n    table.cell(t, 0, 1, str.tostring(m1))\n    table.cell(t, 1, 0, \"Reversed matrix:\")\n    table.cell(t, 1, 1, str.tostring(m2))"
     ],
     "seeAlso": [
-      "matrix.new<type>",
+      "matrix.new",
       "matrix.set",
       "matrix.columns",
       "matrix.rows",
@@ -13519,7 +13514,7 @@ export const FUNCTIONS: PineFunction[] = [
     "returnsDescription": "An array ID containing the row values of the id matrix.",
     "remarks": "Indexing of rows starts at 0.",
     "seeAlso": [
-      "matrix.new<type>",
+      "matrix.new",
       "matrix.get",
       "array.get",
       "matrix.col",
@@ -13545,7 +13540,7 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "returnsDescription": "The number of rows in the matrix id.",
     "seeAlso": [
-      "matrix.new<type>",
+      "matrix.new",
       "matrix.get",
       "matrix.set",
       "matrix.columns",
@@ -13588,7 +13583,7 @@ export const FUNCTIONS: PineFunction[] = [
       "//@version=6\nindicator(\"`matrix.set()` Example\")\n\n// Create a 2x3 \"int\" matrix containing values `4`.\nm = matrix.new<int>(2, 3, 4)\n\n// Replace the value of element at row 1 and column 2 with value `3`.\nmatrix.set(m, 0, 1, 3)\n\n// Display using a label.\nif barstate.islastconfirmedhistory\n    label.new(bar_index, high, str.tostring(m))"
     ],
     "seeAlso": [
-      "matrix.new<type>",
+      "matrix.new",
       "matrix.get",
       "matrix.columns",
       "matrix.rows"
@@ -13701,7 +13696,7 @@ export const FUNCTIONS: PineFunction[] = [
       "//@version=6\nindicator(\"`matrix.sort()` Example\")\n\n// For efficiency, execute this code only once.\nif barstate.islastconfirmedhistory\n    // Create a 2x2 matrix.\n    var m1 = matrix.new<float>(2, 2, na)\n    // Fill the matrix with values.\n    matrix.set(m1, 0, 0, 3)\n    matrix.set(m1, 0, 1, 4)\n    matrix.set(m1, 1, 0, 1)\n    matrix.set(m1, 1, 1, 2)\n\n    // Copy the matrix to a new one.\n    var m2 = matrix.copy(m1)\n    // Sort the rows of `m2` using the default arguments (first column and ascending order).\n    matrix.sort(m2)\n\n    // Display using a table.\n    if barstate.islastconfirmedhistory\n        var t = table.new(position.top_right, 2, 2, color.green)\n        table.cell(t, 0, 0, \"Original matrix:\")\n        table.cell(t, 0, 1, str.tostring(m1))\n        table.cell(t, 1, 0, \"Sorted matrix:\")\n        table.cell(t, 1, 1, str.tostring(m2))"
     ],
     "seeAlso": [
-      "matrix.new<type>",
+      "matrix.new",
       "matrix.max",
       "matrix.min",
       "matrix.avg"
@@ -13755,7 +13750,7 @@ export const FUNCTIONS: PineFunction[] = [
     "returnsDescription": "A new matrix object containing the submatrix of the id matrix defined by the from_row, to_row, from_column and to_column indices.",
     "remarks": "Indexing of the rows and columns starts at zero.",
     "seeAlso": [
-      "matrix.new<type>",
+      "matrix.new",
       "matrix.set",
       "matrix.row",
       "matrix.col",
@@ -13824,7 +13819,7 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "returnsDescription": "A new matrix object containing the sum of id2 and id1.",
     "seeAlso": [
-      "matrix.new<type>",
+      "matrix.new",
       "matrix.get",
       "matrix.set",
       "matrix.columns",
@@ -13862,7 +13857,7 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "remarks": "Indexing of the rows and columns starts at zero.",
     "seeAlso": [
-      "matrix.new<type>",
+      "matrix.new",
       "matrix.get",
       "matrix.set",
       "matrix.columns",
@@ -13900,7 +13895,7 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "remarks": "Indexing of the rows and columns starts at zero.",
     "seeAlso": [
-      "matrix.new<type>",
+      "matrix.new",
       "matrix.get",
       "matrix.set",
       "matrix.columns",
@@ -13950,7 +13945,7 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "returnsDescription": "The trace of the id matrix.",
     "seeAlso": [
-      "matrix.new<type>",
+      "matrix.new",
       "matrix.get",
       "matrix.set",
       "matrix.columns",
@@ -13976,7 +13971,7 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "returnsDescription": "A new matrix containing the transposed version of the id matrix.",
     "seeAlso": [
-      "matrix.new<type>",
+      "matrix.new",
       "matrix.set",
       "matrix.columns",
       "matrix.rows",
@@ -14044,7 +14039,6 @@ export const FUNCTIONS: PineFunction[] = [
     "returnsDescription": "Minute (in exchange timezone) for provided UNIX time.",
     "remarks": "UNIX time is the number of milliseconds that have elapsed since 00:00:00 UTC, 1 January 1970.",
     "seeAlso": [
-      "minute",
       "time",
       "year",
       "month",
@@ -14078,7 +14072,6 @@ export const FUNCTIONS: PineFunction[] = [
     "returnsDescription": "Month (in exchange timezone) for provided UNIX time.",
     "remarks": "UNIX time is the number of milliseconds that have elapsed since 00:00:00 UTC, 1 January 1970.\nNote that this function returns the month based on the time of the bar's open. For overnight sessions (e.g. EURUSD, where Monday session starts on Sunday, 17:00 UTC-4) this value can be lower by 1 than the month of the trading day.",
     "seeAlso": [
-      "month",
       "time",
       "year",
       "dayofmonth",
@@ -14130,7 +14123,6 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "returnsDescription": "Returns true if x is na, false otherwise.",
     "seeAlso": [
-      "na",
       "fixnan",
       "nz"
     ]
@@ -15837,7 +15829,6 @@ export const FUNCTIONS: PineFunction[] = [
     "returnsDescription": "Second (in exchange timezone) for provided UNIX time.",
     "remarks": "UNIX time is the number of milliseconds that have elapsed since 00:00:00 UTC, 1 January 1970.",
     "seeAlso": [
-      "second",
       "time",
       "year",
       "month",
@@ -17728,7 +17719,6 @@ export const FUNCTIONS: PineFunction[] = [
       "// Calculates the average profit percentage for all closed trades.\n//@version=6\nstrategy(\"strategy.closedtrades.entry_price Example 2\")\n\n// Strategy calls to create single short and long trades\nif bar_index == last_bar_index - 15\n    strategy.entry(\"Long Entry\", strategy.long)\nelse if bar_index == last_bar_index - 10\n    strategy.close(\"Long Entry\")\n    strategy.entry(\"Short\", strategy.short)\nelse if bar_index == last_bar_index - 5\n    strategy.close(\"Short\")\n\n// Calculate profit for both closed trades.\nprofitPct = 0.0\nfor tradeNo = 0 to strategy.closedtrades - 1\n    entryP = strategy.closedtrades.entry_price(tradeNo)\n    exitP = strategy.closedtrades.exit_price(tradeNo)\n    profitPct += (exitP - entryP) / entryP * strategy.closedtrades.size(tradeNo) * 100\n\n// Calculate average profit percent for both closed trades.\navgProfitPct = nz(profitPct / strategy.closedtrades)\n\nplot(avgProfitPct)"
     ],
     "seeAlso": [
-      "strategy.closedtrades.entry_price",
       "strategy.closedtrades.exit_price",
       "strategy.closedtrades.size",
       "strategy.closedtrades"
@@ -18991,7 +18981,6 @@ export const FUNCTIONS: PineFunction[] = [
     "seeAlso": [
       "syminfo.tickerid",
       "syminfo.ticker",
-      "syminfo.prefix",
       "syminfo.ticker",
       "ticker.new"
     ]
@@ -19041,7 +19030,6 @@ export const FUNCTIONS: PineFunction[] = [
     "remarks": "The result of the function is used in the ticker.new()/ticker.modify() and request.security().",
     "seeAlso": [
       "syminfo.tickerid",
-      "syminfo.ticker",
       "syminfo.prefix",
       "syminfo.prefix",
       "ticker.new"
@@ -20873,7 +20861,6 @@ export const FUNCTIONS: PineFunction[] = [
     "returnsDescription": "True range. It is math.max(high - low, math.abs(high - close[1]), math.abs(low - close[1])).",
     "remarks": "ta.tr(false) is exactly the same as ta.tr.",
     "seeAlso": [
-      "ta.tr",
       "ta.atr"
     ]
   },
@@ -21152,10 +21139,7 @@ export const FUNCTIONS: PineFunction[] = [
       "//@version=6\nindicator(\"Advanced VWAP\")\nvwapAnchorInput = input.string(\"Daily\", \"Anchor\", options = [\"Daily\", \"Weekly\", \"Monthly\"])\nstdevMultiplierInput = input.float(1.0, \"Standard Deviation Multiplier\")\nanchorTimeframe = switch vwapAnchorInput\n    \"Daily\"   => \"1D\"\n    \"Weekly\"  => \"1W\"\n    \"Monthly\" => \"1M\"\nanchor = timeframe.change(anchorTimeframe)\n[vwap, upper, lower] = ta.vwap(open, anchor, stdevMultiplierInput)\nplot(vwap)\nplot(upper, color = color.green)\nplot(lower, color = color.green)"
     ],
     "returnsDescription": "A VWAP series, or a tuple [vwap, upper_band, lower_band] if stdev_mult is specified.",
-    "remarks": "Calculations only begin the first time the anchor condition becomes true. Until then, the function returns na.",
-    "seeAlso": [
-      "ta.vwap"
-    ]
+    "remarks": "Calculations only begin the first time the anchor condition becomes true. Until then, the function returns na."
   },
   {
     "name": "ta.vwma",
@@ -23553,10 +23537,7 @@ export const FUNCTIONS: PineFunction[] = [
       "//@version=6\nindicator(\"Time\", overlay=true)\nt1 = time(timeframe.period, \"1000-1100,1400-1500:23456\")\nbgcolor(not na(t1) ? color.new(color.blue, 90) : na)"
     ],
     "returnsDescription": "The opening UNIX timestamp.",
-    "remarks": "UNIX time is a standardized date and time representation that measures the number of non-leap seconds elapsed since January 1, 1970 at 00:00:00 UTC. Pine Script expresses UNIX time values in milliseconds. See the UNIX timestamps section of the User Manual's Time page to learn more.",
-    "seeAlso": [
-      "time"
-    ]
+    "remarks": "UNIX time is a standardized date and time representation that measures the number of non-leap seconds elapsed since January 1, 1970 at 00:00:00 UTC. Pine Script expresses UNIX time values in milliseconds. See the UNIX timestamps section of the User Manual's Time page to learn more."
   },
   {
     "name": "time_close",
@@ -23673,10 +23654,7 @@ export const FUNCTIONS: PineFunction[] = [
       "//@version=6\nindicator(\"Time\", overlay=true)\nt1 = time_close(timeframe.period, \"1200-1300\", \"America/New_York\")\nbgcolor(not na(t1) ? color.new(color.blue, 90) : na)"
     ],
     "returnsDescription": "The closing UNIX timestamp.",
-    "remarks": "UNIX time is a standardized date and time representation that measures the number of non-leap seconds elapsed since January 1, 1970 at 00:00:00 UTC. Pine Script expresses UNIX time values in milliseconds. See the UNIX timestamps section of the User Manual's Time page to learn more.",
-    "seeAlso": [
-      "time_close"
-    ]
+    "remarks": "UNIX time is a standardized date and time representation that measures the number of non-leap seconds elapsed since January 1, 1970 at 00:00:00 UTC. Pine Script expresses UNIX time values in milliseconds. See the UNIX timestamps section of the User Manual's Time page to learn more."
   },
   {
     "name": "timeframe.change",
@@ -24228,7 +24206,6 @@ export const FUNCTIONS: PineFunction[] = [
     "returnsDescription": "The calculated week number, expressed in the specified time zone.",
     "remarks": "A UNIX timestamp represents the number of milliseconds elapsed since 00:00 UTC on 1970-01-01. The meaning of a UNIX timestamp does not change relative to any time zone.",
     "seeAlso": [
-      "weekofyear",
       "dayofmonth",
       "dayofweek",
       "time",
@@ -24263,7 +24240,6 @@ export const FUNCTIONS: PineFunction[] = [
     "returnsDescription": "Year (in exchange timezone) for provided UNIX time.",
     "remarks": "UNIX time is the number of milliseconds that have elapsed since 00:00:00 UTC, 1 January 1970.\nNote that this function returns the year based on the time of the bar's open. For overnight sessions (e.g. EURUSD, where Monday session starts on Sunday, 17:00 UTC-4) this value can be lower by 1 than the year of the trading day.",
     "seeAlso": [
-      "year",
       "time",
       "month",
       "dayofmonth",

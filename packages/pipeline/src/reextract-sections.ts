@@ -11,10 +11,10 @@
  * generate.ts emits them into the per-catalog JSON. Always run after `scrape`
  * (alongside reextract:dom) and before `generate`.
  *
- * Mirror coverage note: functions, types, and annotations are snapshotted by
- * `scrape`; variables and constants are NOT (scrapeMemberDetails has no
- * saveDomSnapshot). Those entries are skipped here and reported as "missing
- * mirror" until a member scrape mirrors them.
+ * Mirror coverage note: `scrape` snapshots every catalog — functions, types,
+ * annotations, variables, constants, operators, and keywords. An entry with no
+ * `base.html` yet (e.g. a member scraped before mirroring existed) is skipped
+ * here and reported as "missing mirror" until a re-scrape backfills it.
  *
  * Usage: node --experimental-strip-types packages/pipeline/src/reextract-sections.ts
  */
@@ -51,13 +51,23 @@ const CATALOGS: Array<{ key: string; dir: (name: string) => string }> = [
 	{ key: "variables", dir: (n) => safeName(`var__${n}`) },
 	{ key: "constants", dir: (n) => safeName(`const__${n}`) },
 	{ key: "operators", dir: (n) => safeName(`op__${operatorSlug(n)}`) },
+	{ key: "keywords", dir: (n) => safeName(`kw__${n}`) },
 ];
 
 function applySections(
+	name: string,
 	detail: Record<string, unknown>,
 	html: string,
 ): boolean {
 	const sections = extractSections(html);
+
+	// Drop a self-reference in See-also: a symbol linking to its own name is
+	// useless to a lookup consumer (and where a keyword/variable shares a name
+	// with a function, e.g. `na`, TV's page links the function back to itself).
+	if (sections.seeAlso) {
+		sections.seeAlso = sections.seeAlso.filter((s) => s !== name);
+		if (sections.seeAlso.length === 0) sections.seeAlso = undefined;
+	}
 	const before = JSON.stringify([
 		detail.returnsDescription,
 		detail.remarks,
@@ -105,7 +115,7 @@ function main(): void {
 				missing++;
 				continue;
 			}
-			if (applySections(detail, fs.readFileSync(file, "utf8"))) changed++;
+			if (applySections(name, detail, fs.readFileSync(file, "utf8"))) changed++;
 		}
 		console.log(
 			`${key}: ${changed} changed, ${missing} missing mirror (of ${Object.keys(catalog).length}).`,

@@ -140,10 +140,13 @@ export function extractSections(html: string): ReferenceSections {
 		let m: RegExpExecArray | null;
 		while ((m = re.exec(seeAlsoSlice))) {
 			// Cross-ref labels render as "array.max()" / "na" — drop the trailing
-			// "()" so the value is the bare symbol consumers can look up.
+			// "()" so the value is the bare symbol consumers can look up. Generic
+			// constructors render with placeholder type args ("map.new<type,type>",
+			// "array.new<type>"); strip those too so the value is the bare lookup key.
 			const name = decodeEntities(stripTags(m[1]))
 				.trim()
-				.replace(/\(\)$/, "");
+				.replace(/\(\)$/, "")
+				.replace(/<[^>]*>$/, "");
 			if (name) names.push(name);
 		}
 		if (names.length) out.seeAlso = names;

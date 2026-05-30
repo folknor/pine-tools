@@ -1,7 +1,7 @@
 /**
  * Pine Script V6 Built-in Variables
  * Auto-generated from TradingView documentation
- * Generated: 2026-05-30T21:51:35.370Z
+ * Generated: 2026-05-30T22:34:09.158Z
  * Total: 161 variables
  */
 
@@ -362,7 +362,6 @@ export const VARIABLES: PineVariable[] = [
     "description": "The day number of the month, in the exchange time zone, calculated from the bar's opening UNIX timestamp.",
     "remarks": "This variable always references the day number corresponding to the bar's opening time. Consequently, for symbols with overnight sessions (e.g., \"EURUSD\", where the \"Monday\" session starts on Sunday at 17:00 in exchange time), the value may represent a day from the previous week rather than the session's primary trading day.",
     "seeAlso": [
-      "dayofmonth",
       "dayofweek",
       "weekofyear",
       "time",
@@ -380,7 +379,6 @@ export const VARIABLES: PineVariable[] = [
     "description": "The day number of the week, in the exchange time zone, calculated from the bar's opening UNIX timestamp.",
     "remarks": "This variable always references the day number corresponding to the bar's opening time. Consequently, for symbols with overnight sessions (e.g., \"EURUSD\", where the \"Monday\" session starts on Sunday at 17:00 in exchange time), the value may represent a day from the previous week rather than the session's primary trading day.\nYou can use dayofweek.sunday, dayofweek.monday, dayofweek.tuesday, dayofweek.wednesday, dayofweek.thursday, dayofweek.friday and dayofweek.saturday variables for comparisons.",
     "seeAlso": [
-      "dayofweek",
       "time",
       "year",
       "month",
@@ -546,7 +544,6 @@ export const VARIABLES: PineVariable[] = [
     "qualifier": "series",
     "description": "Current bar hour in exchange timezone.",
     "seeAlso": [
-      "hour",
       "time",
       "year",
       "month",
@@ -646,7 +643,6 @@ export const VARIABLES: PineVariable[] = [
     "qualifier": "series",
     "description": "Current bar minute in exchange timezone.",
     "seeAlso": [
-      "minute",
       "time",
       "year",
       "month",
@@ -664,7 +660,6 @@ export const VARIABLES: PineVariable[] = [
     "description": "Current bar month in exchange timezone.",
     "remarks": "Note that this variable returns the month based on the time of the bar's open. For overnight sessions (e.g. EURUSD, where Monday session starts on Sunday, 17:00) this value can be lower by 1 than the month of the trading day.",
     "seeAlso": [
-      "month",
       "time",
       "year",
       "weekofyear",
@@ -682,7 +677,6 @@ export const VARIABLES: PineVariable[] = [
     "description": "A keyword signifying \"not available\", indicating that a variable has no assigned value.",
     "remarks": "Do not use this variable with comparison operators to test values for na, as it might lead to unexpected behavior. Instead, use the na() function. Note that na can be used to initialize variables when the initialization statement also specifies the variable's type.",
     "seeAlso": [
-      "na",
       "nz",
       "fixnan"
     ]
@@ -738,7 +732,6 @@ export const VARIABLES: PineVariable[] = [
     "qualifier": "series",
     "description": "Current bar second in exchange timezone.",
     "seeAlso": [
-      "second",
       "time",
       "year",
       "month",
@@ -1766,7 +1759,6 @@ export const VARIABLES: PineVariable[] = [
     "qualifier": "series",
     "description": "True range, equivalent to ta.tr(handle_na = false). It is calculated as math.max(high - low, math.abs(high - close[1]), math.abs(low - close[1])).",
     "seeAlso": [
-      "ta.tr",
       "ta.atr"
     ]
   },
@@ -1775,10 +1767,7 @@ export const VARIABLES: PineVariable[] = [
     "namespace": "ta",
     "type": "series<float>",
     "qualifier": "series",
-    "description": "Volume Weighted Average Price. It uses hlc3 as its source series.",
-    "seeAlso": [
-      "ta.vwap"
-    ]
+    "description": "Volume Weighted Average Price. It uses hlc3 as its source series."
   },
   {
     "name": "ta.wad",
@@ -1815,7 +1804,6 @@ export const VARIABLES: PineVariable[] = [
     "description": "Current bar time in UNIX format. It is the number of milliseconds that have elapsed since 00:00:00 UTC, 1 January 1970.",
     "remarks": "Note that this variable returns the timestamp based on the time of the bar's open. Because of that, for overnight sessions (e.g. EURUSD, where Monday session starts on Sunday, 17:00) this variable can return time before the specified date of the trading day. For example, on EURUSD, dayofmonth(time) can be lower by 1 than the date of the trading day, because the bar for the current day actually opens one day prior.",
     "seeAlso": [
-      "time",
       "time_close",
       "timenow",
       "year",
@@ -2073,7 +2061,6 @@ export const VARIABLES: PineVariable[] = [
     "description": "The week number of the year, in the exchange time zone, calculated from the bar's opening UNIX timestamp.",
     "remarks": "This variable always references the week number corresponding to the bar's opening time. Consequently, for symbols with overnight sessions (e.g., \"EURUSD\", where the \"Monday\" session starts on Sunday at 17:00 in exchange time), the value may represent a previous calendar week rather than the week of the session's primary trading day.",
     "seeAlso": [
-      "weekofyear",
       "dayofmonth",
       "dayofweek",
       "time",
@@ -2091,7 +2078,6 @@ export const VARIABLES: PineVariable[] = [
     "description": "Current bar year in exchange timezone.",
     "remarks": "Note that this variable returns the year based on the time of the bar's open. For overnight sessions (e.g. EURUSD, where Monday session starts on Sunday, 17:00) this value can be lower by 1 than the year of the trading day.",
     "seeAlso": [
-      "year",
       "time",
       "month",
       "weekofyear",

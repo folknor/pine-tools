@@ -145,6 +145,18 @@ interface OperatorDetails {
 	examples: string[];
 }
 
+// A language keyword detail page (`for`, `and`, `import`, …), reached via the
+// `kw_<name>` anchor — with a `const_<name>` fallback for the literal keywords
+// `true`/`false`, which TV documents under the constants anchor. Carries a
+// description and (rarely) a syntax line; Remarks/See-also prose are re-derived
+// offline from the mirror by reextract-sections.ts, same as every other catalog.
+interface KeywordDetails {
+	name: string;
+	syntax?: string;
+	description: string;
+	examples: string[];
+}
+
 interface ScrapeResult {
 	metadata: {
 		extractedAt: string;
@@ -160,6 +172,7 @@ interface ScrapeResult {
 		totalTypes?: number;
 		totalAnnotations?: number;
 		totalOperators?: number;
+		totalKeywords?: number;
 	};
 	functions: Record<string, FunctionDetails>;
 	variables: Record<string, MemberDetails>;
@@ -167,6 +180,7 @@ interface ScrapeResult {
 	types?: Record<string, TypeDetails>;
 	annotations?: Record<string, AnnotationDetails>;
 	operators?: Record<string, OperatorDetails>;
+	keywords?: Record<string, KeywordDetails>;
 }
 
 // `prefix` namespaces the cache key so e.g. the `time()` function and the
@@ -1085,6 +1099,101 @@ export async function scrapeOperatorDetails(
 	}
 }
 
+export async function scrapeKeywordDetails(
+	name: string,
+	useCache = true,
+): Promise<KeywordDetails | null> {
+	if (useCache) {
+		const cached = getCachedData<KeywordDetails>(name, "kw__");
+		if (cached) return cached;
+	}
+
+	try {
+		const page = await getSharedPage();
+		// `true`/`false` are documented under the constants anchor, not `kw_`.
+		const anchorIds = [`kw_${name}`, `const_${name}`];
+
+		let result: {
+			resolvedName: string;
+			syntax: string;
+			description: string;
+			examples: string[];
+			html: string;
+		} | null = null;
+
+		for (const elementId of anchorIds) {
+			await page.evaluate((hash: string) => {
+				window.location.hash = hash;
+			}, elementId);
+			await new Promise((resolve) => setTimeout(resolve, 300));
+			await page
+				.waitForFunction(
+					(id: string) => document.getElementById(id) !== null,
+					{ timeout: 5000 },
+					elementId,
+				)
+				.catch(() => {});
+
+			result = await page.evaluate(
+				(id: string, fallbackName: string) => {
+					const el = document.getElementById(id);
+					if (!el) return null;
+					const headerEl = el.querySelector(".tv-pine-reference-item__header");
+					const resolvedName = headerEl?.textContent?.trim() || fallbackName;
+
+					const syntaxEl = el.querySelector(".tv-pine-reference-item__syntax");
+					const syntax = syntaxEl?.textContent?.trim() || "";
+
+					let description = "";
+					for (const t of el.querySelectorAll(
+						".tv-pine-reference-item__text.tv-text",
+					)) {
+						if (t.querySelector(".tv-pine-reference-item__arg-type")) continue;
+						const txt = (t.textContent || "").trim();
+						if (txt) {
+							description = txt;
+							break;
+						}
+					}
+
+					const examples: string[] = [];
+					for (const ex of el.querySelectorAll(
+						".tv-pine-reference-item__example code",
+					)) {
+						const text = ((ex as HTMLElement).innerText || "")
+							.replace(/ /g, " ")
+							.trim();
+						if (text) examples.push(text);
+					}
+
+					return { resolvedName, syntax, description, examples, html: el.outerHTML };
+				},
+				elementId,
+				name,
+			);
+
+			if (result) break;
+		}
+
+		if (!result) return null;
+		if (result.html) saveDomSnapshot(`kw__${name}`, "base", result.html);
+
+		const details: KeywordDetails = {
+			name: result.resolvedName,
+			syntax: result.syntax || undefined,
+			description: result.description,
+			examples: result.examples,
+		};
+		saveToCache(name, details, "kw__");
+		return details;
+	} catch (error) {
+		console.log(
+			`Failed to scrape keyword ${name}: ${(error as Error).message}`,
+		);
+		return null;
+	}
+}
+
 export async function scrapeAllFunctions(
 	forceRefresh = false,
 ): Promise<ScrapeResult> {
@@ -1313,6 +1422,34 @@ export async function scrapeAllFunctions(
 	console.log(`   Operators from cache: ${operatorsFromCache.length}`);
 	console.log(`   Operators to scrape: ${operatorsToScrape.length}`);
 
+	// Build keyword list from the crawl (the bare names documented under `#kw_`).
+	const keywordNames: string[] = [
+		...((inputData.keywords?.items as string[] | undefined) || []),
+	].sort();
+	console.log(`Found ${keywordNames.length} keywords to process`);
+
+	const keywordsToScrape: string[] = [];
+	const keywordsFromCache: string[] = [];
+	if (!forceRefresh) {
+		for (const name of keywordNames) {
+			if (
+				isCacheValid(getCacheFilePath(name, "kw__")) &&
+				hasMirror(name, "kw__")
+			) {
+				keywordsFromCache.push(name);
+			} else {
+				keywordsToScrape.push(name);
+			}
+		}
+	} else {
+		keywordsToScrape.push(...keywordNames);
+	}
+	if (DRY_RUN && keywordsToScrape.length > DRY_RUN_LIMIT) {
+		keywordsToScrape.splice(DRY_RUN_LIMIT);
+	}
+	console.log(`   Keywords from cache: ${keywordsFromCache.length}`);
+	console.log(`   Keywords to scrape: ${keywordsToScrape.length}`);
+
 	const allDetails: ScrapeResult = {
 		metadata: {
 			extractedAt: new Date().toISOString(),
@@ -1328,6 +1465,7 @@ export async function scrapeAllFunctions(
 			totalTypes: typeNames.length,
 			totalAnnotations: annotationNames.length,
 			totalOperators: operatorNames.length,
+			totalKeywords: keywordNames.length,
 		},
 		functions: {},
 		variables: {},
@@ -1335,6 +1473,7 @@ export async function scrapeAllFunctions(
 		types: {},
 		annotations: {},
 		operators: {},
+		keywords: {},
 	};
 
 	// Load cached data first
@@ -1374,6 +1513,12 @@ export async function scrapeAllFunctions(
 		const cached = getCachedData<OperatorDetails>(operatorSlug(name), "op__");
 		if (cached && allDetails.operators) {
 			allDetails.operators[name] = cached;
+		}
+	}
+	for (const name of keywordsFromCache) {
+		const cached = getCachedData<KeywordDetails>(name, "kw__");
+		if (cached && allDetails.keywords) {
+			allDetails.keywords[name] = cached;
 		}
 	}
 
@@ -1529,13 +1674,31 @@ export async function scrapeAllFunctions(
 		);
 	}
 
+	// Scrape keywords (shares the browser opened above, if any).
+	if (keywordsToScrape.length > 0 && allDetails.keywords) {
+		console.log("Scraping keyword details...");
+		for (const name of keywordsToScrape) {
+			const details = await scrapeKeywordDetails(name, !forceRefresh);
+			if (details) {
+				allDetails.keywords[name] = details;
+			} else {
+				allDetails.metadata.failedScrapes++;
+			}
+			await new Promise((resolve) => setTimeout(resolve, 100));
+		}
+		console.log(
+			`  Keywords: ${keywordsToScrape.length}/${keywordsToScrape.length}`,
+		);
+	}
+
 	if (
 		functionsToScrape.length > 0 ||
 		variablesToScrape.length > 0 ||
 		constantsToScrape.length > 0 ||
 		typesToScrape.length > 0 ||
 		annotationsToScrape.length > 0 ||
-		operatorsToScrape.length > 0
+		operatorsToScrape.length > 0 ||
+		keywordsToScrape.length > 0
 	) {
 		await closeSharedBrowser();
 	}

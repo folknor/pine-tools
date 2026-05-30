@@ -191,6 +191,18 @@ interface GeneratedOperator extends ReferenceProse {
 	examples?: string[];
 }
 
+interface ScrapedKeyword extends ReferenceProse {
+	name: string;
+	syntax?: string;
+	description?: string;
+	examples?: string[];
+}
+
+interface GeneratedKeyword extends ReferenceProse {
+	name: string;
+	description?: string;
+}
+
 interface DetailsData {
 	functions: Record<string, FunctionDetail>;
 	variables?: Record<string, ScrapedMember>;
@@ -198,6 +210,7 @@ interface DetailsData {
 	types?: Record<string, ScrapedType>;
 	annotations?: Record<string, ScrapedAnnotation>;
 	operators?: Record<string, ScrapedOperator>;
+	keywords?: Record<string, ScrapedKeyword>;
 }
 
 interface ConstructsData {
@@ -1047,7 +1060,10 @@ export const OPERATOR_NAMES: Set<string> = new Set(OPERATORS.map(o => o.name));
 	return operators;
 }
 
-function generateKeywords(constructs: ConstructsData): string[] {
+function generateKeywords(
+	details: DetailsData,
+	constructs: ConstructsData,
+): GeneratedKeyword[] {
 	console.log("Generating keywords.ts...");
 
 	const keywords = constructs.keywords?.items || [];
@@ -1138,15 +1154,30 @@ export const TYPE_KEYWORDS: Set<string> = new Set([
 `;
 
 	fs.writeFileSync(path.join(OUTPUT_DIR, "keywords.ts"), content);
+
+	// The JSON snapshot carries prose (description/remarks/seeAlso) for external
+	// consumers; the .ts KEYWORDS Set above stays a bare name set for the checker.
+	// Prose comes from the `kw_`/`const_` reference pages scraped into
+	// details.keywords; keywords with no reference page (e.g. the function-style
+	// `indicator`/`library`/`strategy`) land as name-only entries.
+	const scraped = details.keywords || {};
+	const keywordObjects: GeneratedKeyword[] = keywordList.map((name) => {
+		const sc = scraped[name];
+		const out: GeneratedKeyword = { name };
+		if (sc?.description) out.description = sc.description;
+		Object.assign(out, sc ? pickProse(sc) : {});
+		return out;
+	});
+
 	console.log(`   ${keywordList.length} keywords`);
-	return keywordList;
+	return keywordObjects;
 }
 
 function generateVersionIndex(
 	_functions: GeneratedFunction[],
 	_variables: GeneratedVariable[],
 	_constants: GeneratedConstant[],
-	_keywords: string[],
+	_keywords: GeneratedKeyword[],
 ): void {
 	console.log("Generating index.ts...");
 
@@ -1281,7 +1312,7 @@ function main(): void {
 	const types = generateTypes(details, constructs);
 	const annotations = generateAnnotations(details, constructs);
 	const operators = generateOperators(details, constructs);
-	const keywords = generateKeywords(constructs);
+	const keywords = generateKeywords(details, constructs);
 	generateVersionIndex(functions, variables, constants, keywords);
 
 	// Emit JSON snapshots for downstream consumers (e.g. pine-oracle)
