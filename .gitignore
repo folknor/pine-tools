@@ -55,5 +55,8 @@ lint-reports/
 # Generated reference
 PINE_REFERENCE.md
 
+# Local TV reference dump (verification aid, never committed)
+v6.md
+
 # Local MCP config (contains absolute paths)
 .mcp.json

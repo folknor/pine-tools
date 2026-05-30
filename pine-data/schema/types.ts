@@ -180,6 +180,20 @@ export interface PineFunction {
 	deprecated?: string;
 	/** Example code snippets (TradingView lists one or more per function) */
 	examples?: string[];
+	/**
+	 * Prose "Returns" sentence from the reference page, distinct from the typed
+	 * `returns` above (e.g. "Mean of array's elements."). Reference text for
+	 * downstream consumers; the checker uses `returns`/`overloads[].returns`.
+	 */
+	returnsDescription?: string;
+	/**
+	 * Free-text "Remarks" caveats from the reference page (na-handling,
+	 * every-bar-calling requirements, side effects, …). Present only when the
+	 * page documents them.
+	 */
+	remarks?: string;
+	/** "See also" cross-references, as bare symbol names (e.g. "array.max"). */
+	seeAlso?: string[];
 }
 
 // =============================================================================
@@ -216,6 +230,12 @@ export interface PineBuiltinType {
 	 * `.*()` functions — so this is absent for them.
 	 */
 	fields?: Array<{ name: string; type: string; description: string }>;
+	/** Prose "Returns" sentence, when the type's page documents one. */
+	returnsDescription?: string;
+	/** Free-text "Remarks" caveats from the type's reference page. */
+	remarks?: string;
+	/** "See also" cross-references, as bare symbol names. */
+	seeAlso?: string[];
 }
 
 // =============================================================================
@@ -236,6 +256,12 @@ export interface PineAnnotation {
 	syntax?: string;
 	/** Example snippets from the reference page. */
 	examples?: string[];
+	/** Prose "Returns" sentence, when the page documents one. */
+	returnsDescription?: string;
+	/** Free-text "Remarks" caveats, when the page documents them. */
+	remarks?: string;
+	/** "See also" cross-references, as bare symbol names. */
+	seeAlso?: string[];
 }
 
 // =============================================================================
@@ -256,6 +282,12 @@ export interface PineVariable {
 	qualifier: TypeQualifier;
 	/** Variable description */
 	description: string;
+	/** Prose "Returns" sentence, when the variable's page documents one. */
+	returnsDescription?: string;
+	/** Free-text "Remarks" caveats from the variable's reference page. */
+	remarks?: string;
+	/** "See also" cross-references, as bare symbol names. */
+	seeAlso?: string[];
 }
 
 // =============================================================================
@@ -277,6 +309,39 @@ export interface PineConstant {
 	type: string;
 	/** Description */
 	description?: string;
+	/** Free-text "Remarks" caveats, when the constant's page documents them. */
+	remarks?: string;
+	/** "See also" cross-references, as bare symbol names. */
+	seeAlso?: string[];
+}
+
+// =============================================================================
+// OPERATOR SCHEMA
+// =============================================================================
+
+/**
+ * A Pine operator (`+`, `?:`, `[]`, …) as documented in the reference.
+ *
+ * Reference data only: operators are grammar the parser hardcodes (the
+ * Data-vs-Syntax split), so the checker does not consume this. It exists for
+ * downstream/external consumers of pine-data that want the documented operator
+ * set with its prose.
+ */
+export interface PineOperator {
+	/** Operator symbol (e.g. "+", "?:", "[]", "+="). */
+	name: string;
+	/** Syntax form from the reference (e.g. "expr1 - expr2"), if documented. */
+	syntax?: string;
+	/** Prose description. */
+	description: string;
+	/** Example snippets from the reference page. */
+	examples?: string[];
+	/** Prose "Returns" sentence (operators carry no typed return). */
+	returnsDescription?: string;
+	/** Free-text "Remarks" caveats, when the page documents them. */
+	remarks?: string;
+	/** "See also" cross-references, as bare symbol names. */
+	seeAlso?: string[];
 }
 
 // =============================================================================

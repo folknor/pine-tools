@@ -87,12 +87,16 @@ IDs so the two stay in sync.
   + `reextract:dom` (see CLAUDE.md "Re-running type logic WITHOUT scraping"),
   so full `--force` re-scrapes should be rare — only when TV's DOM *structure*
   changes.
-- **Minor data residue (record-only, low value):** type/annotation page "See
-  also" cross-references aren't captured; `ta.vwap.anchor`'s default and the
-  "X by default" phrasing are deliberately unparsed (see `parse-default.ts`).
-  Skip unless a consumer needs them. (`since`/`deprecated`, formerly #27,
-  resolved: TV exposes no version-introduced data so `since` was dropped;
-  `deprecated` is parsed from the description — only `request.quandl` in v6.)
+- **Minor data residue (record-only, low value):** `ta.vwap.anchor`'s default
+  and the "X by default" phrasing are deliberately unparsed (see
+  `parse-default.ts`). Skip unless a consumer needs them. (`since`/`deprecated`,
+  formerly #27, resolved: TV exposes no version-introduced data so `since` was
+  dropped; `deprecated` is parsed from the description — only `request.quandl`
+  in v6.) The "Returns" prose, "Remarks", and "See also" cross-references — once
+  uncaptured — now ship on every catalog as `returnsDescription`/`remarks`/
+  `seeAlso`, and operators ship as their own `operators.{ts,json}` catalog
+  (reference data for external consumers; the checker ignores both — see the
+  Data Pipeline section in CLAUDE.md).
 
 ## Gotchas
 

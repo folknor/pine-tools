@@ -18,6 +18,7 @@ import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import puppeteer, { type Browser, type Page } from "puppeteer";
 import { parseArgTypeText } from "./arg-parse.ts";
+import { operatorSlug } from "./section-parse.ts";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -132,6 +133,18 @@ interface AnnotationDetails {
 	examples: string[];
 }
 
+// A Pine operator detail page (`+`, `?:`, `[]`, …), reached via the `op_<sym>`
+// anchor. Rendered like the other reference items: a prose description, a
+// Syntax line (`expr1 - expr2`, not a typed `→` signature), and optional
+// examples. Returns/Remarks/See-also prose are re-derived offline from the
+// mirror by reextract-sections.ts, same as every other catalog.
+interface OperatorDetails {
+	name: string;
+	syntax?: string;
+	description: string;
+	examples: string[];
+}
+
 interface ScrapeResult {
 	metadata: {
 		extractedAt: string;
@@ -146,12 +159,14 @@ interface ScrapeResult {
 		totalConstants?: number;
 		totalTypes?: number;
 		totalAnnotations?: number;
+		totalOperators?: number;
 	};
 	functions: Record<string, FunctionDetails>;
 	variables: Record<string, MemberDetails>;
 	constants: Record<string, MemberDetails>;
 	types?: Record<string, TypeDetails>;
 	annotations?: Record<string, AnnotationDetails>;
+	operators?: Record<string, OperatorDetails>;
 }
 
 // `prefix` namespaces the cache key so e.g. the `time()` function and the
@@ -169,6 +184,16 @@ function isCacheValid(cacheFilePath: string): boolean {
 	const stats = fs.statSync(cacheFilePath);
 	const age = Date.now() - stats.mtime.getTime();
 	return age < CACHE_TTL;
+}
+
+// Whether a DOM mirror snapshot exists for an item. The mirror dir uses the
+// saveDomSnapshot safeName (keeps dots), distinct from the cache key. Members
+// (var/const) were not mirrored historically, so a valid details cache can
+// coexist with a missing mirror — the orchestrator re-scrapes those to backfill
+// the snapshot the offline reextract passes need.
+function hasMirror(name: string, mirrorPrefix = ""): boolean {
+	const safeName = `${mirrorPrefix}${name}`.replace(/[^a-zA-Z0-9_.-]/g, "_");
+	return fs.existsSync(path.join(MIRROR_DIR, safeName, "base.html"));
 }
 
 function getCachedData<T = FunctionDetails>(
@@ -759,6 +784,7 @@ export async function scrapeMemberDetails(
 					namespace: resolvedName.includes(".")
 						? resolvedName.split(".")[0]
 						: "",
+					html: el.outerHTML,
 				};
 			},
 			elementId,
@@ -766,7 +792,16 @@ export async function scrapeMemberDetails(
 		);
 
 		if (details) {
-			saveToCache(name, details, cachePrefix);
+			// Mirror the rendered element so the prose sub-sections (Returns /
+			// Remarks / See also) can be re-derived offline by reextract-sections.
+			// Namespaced by kind (var__/const__) to avoid colliding with the
+			// function mirror of a same-named symbol (e.g. `time`/`time()`).
+			if (details.html) {
+				saveDomSnapshot(`${cachePrefix}${name}`, "base", details.html);
+			}
+			const { html: _html, ...member } = details;
+			saveToCache(name, member, cachePrefix);
+			return member;
 		}
 
 		return details;
@@ -961,6 +996,95 @@ export async function scrapeAnnotationDetails(
 	}
 }
 
+// Scrape an operator detail page via its `op_<symbol>` anchor (the symbol is
+// kept verbatim, e.g. "op_?:", "op_[]", "op_+="). Captures the prose
+// description, the Syntax line, and any examples; mirrors the DOM so the
+// Returns/Remarks/See-also prose is re-derived offline like every other catalog.
+export async function scrapeOperatorDetails(
+	symbol: string,
+	useCache = true,
+): Promise<OperatorDetails | null> {
+	// Cache/mirror under a hex slug so symbols like `?:`/`+=`/`==` don't collide
+	// on disk; the DOM anchor still uses the raw symbol.
+	const slug = operatorSlug(symbol);
+	if (useCache) {
+		const cached = getCachedData<OperatorDetails>(slug, "op__");
+		if (cached) return cached;
+	}
+
+	try {
+		const page = await getSharedPage();
+		const elementId = `op_${symbol}`;
+
+		await page.evaluate((hash: string) => {
+			window.location.hash = hash;
+		}, elementId);
+		await new Promise((resolve) => setTimeout(resolve, 300));
+		await page
+			.waitForFunction(
+				(id: string) => document.getElementById(id) !== null,
+				{ timeout: 5000 },
+				elementId,
+			)
+			.catch(() => {});
+
+		const result = await page.evaluate(
+			(id: string, fallbackName: string) => {
+				const el = document.getElementById(id);
+				if (!el) return null;
+				const headerEl = el.querySelector(".tv-pine-reference-item__header");
+				const resolvedName = headerEl?.textContent?.trim() || fallbackName;
+
+				const syntaxEl = el.querySelector(".tv-pine-reference-item__syntax");
+				const syntax = syntaxEl?.textContent?.trim() || "";
+
+				let description = "";
+				for (const t of el.querySelectorAll(
+					".tv-pine-reference-item__text.tv-text",
+				)) {
+					if (t.querySelector(".tv-pine-reference-item__arg-type")) continue;
+					const txt = (t.textContent || "").trim();
+					if (txt) {
+						description = txt;
+						break;
+					}
+				}
+
+				const examples: string[] = [];
+				for (const ex of el.querySelectorAll(
+					".tv-pine-reference-item__example code",
+				)) {
+					const text = ((ex as HTMLElement).innerText || "")
+						.replace(/ /g, " ")
+						.trim();
+					if (text) examples.push(text);
+				}
+
+				return { resolvedName, syntax, description, examples, html: el.outerHTML };
+			},
+			elementId,
+			symbol,
+		);
+
+		if (!result) return null;
+		if (result.html) saveDomSnapshot(`op__${slug}`, "base", result.html);
+
+		const details: OperatorDetails = {
+			name: result.resolvedName,
+			syntax: result.syntax || undefined,
+			description: result.description,
+			examples: result.examples,
+		};
+		saveToCache(slug, details, "op__");
+		return details;
+	} catch (error) {
+		console.log(
+			`Failed to scrape operator ${symbol}: ${(error as Error).message}`,
+		);
+		return null;
+	}
+}
+
 export async function scrapeAllFunctions(
 	forceRefresh = false,
 ): Promise<ScrapeResult> {
@@ -1056,7 +1180,12 @@ export async function scrapeAllFunctions(
 	const variablesFromCache: string[] = [];
 	if (!forceRefresh) {
 		for (const name of variableNames) {
-			if (isCacheValid(getCacheFilePath(name, "var__"))) {
+			// Re-scrape when the details cache is stale OR the DOM mirror is absent
+			// (members were not mirrored before reextract-sections existed).
+			if (
+				isCacheValid(getCacheFilePath(name, "var__")) &&
+				hasMirror(name, "var__")
+			) {
 				variablesFromCache.push(name);
 			} else {
 				variablesToScrape.push(name);
@@ -1090,7 +1219,10 @@ export async function scrapeAllFunctions(
 	const constantsFromCache: string[] = [];
 	if (!forceRefresh) {
 		for (const name of constantNames) {
-			if (isCacheValid(getCacheFilePath(name, "const__"))) {
+			if (
+				isCacheValid(getCacheFilePath(name, "const__")) &&
+				hasMirror(name, "const__")
+			) {
 				constantsFromCache.push(name);
 			} else {
 				constantsToScrape.push(name);
@@ -1151,6 +1283,36 @@ export async function scrapeAllFunctions(
 	console.log(`   Annotations from cache: ${annotationsFromCache.length}`);
 	console.log(`   Annotations to scrape: ${annotationsToScrape.length}`);
 
+	// Build operator list from the crawl (its own reference section — the bare
+	// symbols documented under `#op_`).
+	const operatorNames: string[] = [
+		...((inputData.operators?.items as string[] | undefined) || []),
+	];
+	console.log(`Found ${operatorNames.length} operators to process`);
+
+	const operatorsToScrape: string[] = [];
+	const operatorsFromCache: string[] = [];
+	if (!forceRefresh) {
+		for (const name of operatorNames) {
+			const slug = operatorSlug(name);
+			if (
+				isCacheValid(getCacheFilePath(slug, "op__")) &&
+				hasMirror(slug, "op__")
+			) {
+				operatorsFromCache.push(name);
+			} else {
+				operatorsToScrape.push(name);
+			}
+		}
+	} else {
+		operatorsToScrape.push(...operatorNames);
+	}
+	if (DRY_RUN && operatorsToScrape.length > DRY_RUN_LIMIT) {
+		operatorsToScrape.splice(DRY_RUN_LIMIT);
+	}
+	console.log(`   Operators from cache: ${operatorsFromCache.length}`);
+	console.log(`   Operators to scrape: ${operatorsToScrape.length}`);
+
 	const allDetails: ScrapeResult = {
 		metadata: {
 			extractedAt: new Date().toISOString(),
@@ -1165,12 +1327,14 @@ export async function scrapeAllFunctions(
 			totalConstants: constantNames.length,
 			totalTypes: typeNames.length,
 			totalAnnotations: annotationNames.length,
+			totalOperators: operatorNames.length,
 		},
 		functions: {},
 		variables: {},
 		constants: {},
 		types: {},
 		annotations: {},
+		operators: {},
 	};
 
 	// Load cached data first
@@ -1204,6 +1368,12 @@ export async function scrapeAllFunctions(
 		const cached = getCachedData<AnnotationDetails>(name, "an__");
 		if (cached && allDetails.annotations) {
 			allDetails.annotations[name] = cached;
+		}
+	}
+	for (const name of operatorsFromCache) {
+		const cached = getCachedData<OperatorDetails>(operatorSlug(name), "op__");
+		if (cached && allDetails.operators) {
+			allDetails.operators[name] = cached;
 		}
 	}
 
@@ -1257,7 +1427,9 @@ export async function scrapeAllFunctions(
 		for (let i = 0; i < variablesToScrape.length; i += batchSize) {
 			const batch = variablesToScrape.slice(i, i + batchSize);
 			for (const name of batch) {
-				const details = await scrapeMemberDetails(name, "var", !forceRefresh);
+				// useCache=false: items reach this loop only when they need a fetch
+				// (stale cache OR missing mirror), so always hit the page.
+				const details = await scrapeMemberDetails(name, "var", false);
 				if (details) {
 					allDetails.variables[name] = details;
 				} else {
@@ -1287,7 +1459,7 @@ export async function scrapeAllFunctions(
 		for (let i = 0; i < constantsToScrape.length; i += batchSize) {
 			const batch = constantsToScrape.slice(i, i + batchSize);
 			for (const name of batch) {
-				const details = await scrapeMemberDetails(name, "const", !forceRefresh);
+				const details = await scrapeMemberDetails(name, "const", false);
 				if (details) {
 					allDetails.constants[name] = details;
 				} else {
@@ -1340,12 +1512,30 @@ export async function scrapeAllFunctions(
 		);
 	}
 
+	// Scrape operators (shares the browser opened above, if any).
+	if (operatorsToScrape.length > 0 && allDetails.operators) {
+		console.log("Scraping operator details...");
+		for (const name of operatorsToScrape) {
+			const details = await scrapeOperatorDetails(name, !forceRefresh);
+			if (details) {
+				allDetails.operators[name] = details;
+			} else {
+				allDetails.metadata.failedScrapes++;
+			}
+			await new Promise((resolve) => setTimeout(resolve, 100));
+		}
+		console.log(
+			`  Operators: ${operatorsToScrape.length}/${operatorsToScrape.length}`,
+		);
+	}
+
 	if (
 		functionsToScrape.length > 0 ||
 		variablesToScrape.length > 0 ||
 		constantsToScrape.length > 0 ||
 		typesToScrape.length > 0 ||
-		annotationsToScrape.length > 0
+		annotationsToScrape.length > 0 ||
+		operatorsToScrape.length > 0
 	) {
 		await closeSharedBrowser();
 	}
@@ -1397,6 +1587,10 @@ export async function scrapeAllFunctions(
 	);
 	console.log(
 		`   Annotations captured: ${Object.keys(allDetails.annotations || {}).length}`,
+	);
+	console.log(`   Total operators: ${allDetails.metadata.totalOperators}`);
+	console.log(
+		`   Operators captured: ${Object.keys(allDetails.operators || {}).length}`,
 	);
 	console.log(`   Method: ${allDetails.metadata.method}`);
 	console.log(

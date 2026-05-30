@@ -1,7 +1,7 @@
 /**
  * Pine Script V6 Functions
  * Auto-generated from TradingView documentation
- * Generated: 2026-05-29T18:36:46.352Z
+ * Generated: 2026-05-30T21:51:35.365Z
  * Total: 475 functions
  */
 
@@ -38,6 +38,10 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "void",
     "examples": [
       "//@version=6\nindicator(\"`alert()` example\", \"\", true)\nma = ta.sma(close, 14)\nxUp = ta.crossover(close, ma)\nif xUp\n    // Trigger the alert the first time a cross occurs during the real-time bar.\n    alert(\"Price (\" + str.tostring(close) + \") crossed over MA (\" + str.tostring(ma) + \").\", alert.freq_once_per_bar)\nplot(ma)\nplotchar(xUp, \"xUp\", \"▲\", location.top, size = size.tiny)"
+    ],
+    "remarks": "The alert() function does not display information on the chart.\nIn contrast to alertcondition(), calls to this function do not count toward a script's plot count. Additionally, alert() calls are allowed in local scopes, including the scopes of exported library functions.\nSee this article in our Help Center to learn more about activating alerts from alert() calls.",
+    "seeAlso": [
+      "alertcondition"
     ]
   },
   {
@@ -70,6 +74,10 @@ export const FUNCTIONS: PineFunction[] = [
     },
     "examples": [
       "//@version=6\nindicator(\"alertcondition\", overlay=true)\nalertcondition(close >= open, title='Alert on Green Bar', message='Green Bar!')"
+    ],
+    "remarks": "Please note that an alertcondition call generates an additional plot. All such calls are taken into account when we calculate the number of the output series per script.",
+    "seeAlso": [
+      "alert"
     ]
   },
   {
@@ -110,7 +118,15 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "array<int>"
       }
     ],
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "array.new_float",
+      "array.insert",
+      "array.slice",
+      "array.reverse",
+      "order.ascending",
+      "order.descending"
+    ]
   },
   {
     "name": "array.avg",
@@ -155,6 +171,14 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"array.avg example\")\na = array.new_float(0)\nfor i = 0 to 9\n    array.push(a, close[i])\nplot(array.avg(a))"
+    ],
+    "returnsDescription": "Mean of array's elements.",
+    "remarks": "Returns na if the id array is empty.",
+    "seeAlso": [
+      "array.new_float",
+      "array.max",
+      "array.min",
+      "array.stdev"
     ]
   },
   {
@@ -179,6 +203,15 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series int",
     "examples": [
       "//@version=6\nindicator(\"array.binary_search\")\na = array.from(5, -2, 0, 9, 1)\narray.sort(a) // [-2, 0, 1, 5, 9]\nposition = array.binary_search(a, 0) // 1\nplot(position)"
+    ],
+    "remarks": "A binary search works on arrays pre-sorted in ascending order. It begins by comparing an element in the middle of the array with the target value. If the element matches the target value, its position in the array is returned. If the element's value is greater than the target value, the search continues in the lower half of the array. If the element's value is less than the target value, the search continues in the upper half of the array. By doing this recursively, the algorithm progressively eliminates smaller and smaller portions of the array in which the target value cannot lie.",
+    "seeAlso": [
+      "array.new_float",
+      "array.insert",
+      "array.slice",
+      "array.reverse",
+      "order.ascending",
+      "order.descending"
     ]
   },
   {
@@ -204,6 +237,15 @@ export const FUNCTIONS: PineFunction[] = [
     "examples": [
       "//@version=6\nindicator(\"array.binary_search_leftmost\")\na = array.from(5, -2, 0, 9, 1)\narray.sort(a) // [-2, 0, 1, 5, 9]\nposition = array.binary_search_leftmost(a, 3) // 2\nplot(position)",
       "//@version=6\nindicator(\"array.binary_search_leftmost, repetitive elements\")\na = array.from(4, 5, 5, 5)\n// Returns the index of the first instance.\nposition = array.binary_search_leftmost(a, 5)\nplot(position) // Plots 1"
+    ],
+    "remarks": "A binary search works on arrays pre-sorted in ascending order. It begins by comparing an element in the middle of the array with the target value. If the element matches the target value, its position in the array is returned. If the element's value is greater than the target value, the search continues in the lower half of the array. If the element's value is less than the target value, the search continues in the upper half of the array. By doing this recursively, the algorithm progressively eliminates smaller and smaller portions of the array in which the target value cannot lie.",
+    "seeAlso": [
+      "array.new_float",
+      "array.insert",
+      "array.slice",
+      "array.reverse",
+      "order.ascending",
+      "order.descending"
     ]
   },
   {
@@ -229,6 +271,15 @@ export const FUNCTIONS: PineFunction[] = [
     "examples": [
       "//@version=6\nindicator(\"array.binary_search_rightmost\")\na = array.from(5, -2, 0, 9, 1)\narray.sort(a) // [-2, 0, 1, 5, 9]\nposition = array.binary_search_rightmost(a, 3) // 3\nplot(position)",
       "//@version=6\nindicator(\"array.binary_search_rightmost, repetitive elements\")\na = array.from(4, 5, 5, 5)\n// Returns the index of the last instance.\nposition = array.binary_search_rightmost(a, 5)\nplot(position) // Plots 3"
+    ],
+    "remarks": "A binary search works on sorted arrays in ascending order. It begins by comparing an element in the middle of the array with the target value. If the element matches the target value, its position in the array is returned. If the element's value is greater than the target value, the search continues in the lower half of the array. If the element's value is less than the target value, the search continues in the upper half of the array. By doing this recursively, the algorithm progressively eliminates smaller and smaller portions of the array in which the target value cannot lie.",
+    "seeAlso": [
+      "array.new_float",
+      "array.insert",
+      "array.slice",
+      "array.reverse",
+      "order.ascending",
+      "order.descending"
     ]
   },
   {
@@ -247,6 +298,13 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "void",
     "examples": [
       "//@version=6\nindicator(\"array.clear example\")\na = array.new_float(5,high)\narray.clear(a)\narray.push(a, close)\nplot(array.get(a,0))\nplot(array.size(a))"
+    ],
+    "seeAlso": [
+      "array.new_float",
+      "array.insert",
+      "array.push",
+      "array.remove",
+      "array.pop"
     ]
   },
   {
@@ -271,6 +329,12 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "array<type>",
     "examples": [
       "//@version=6\nindicator(\"array.concat example\")\na = array.new_float(0,0)\nb = array.new_float(0,0)\nfor i = 0 to 4\n    array.push(a, high[i])\n    array.push(b, low[i])\nc = array.concat(a,b)\nplot(array.size(a))\nplot(array.size(b))\nplot(array.size(c))"
+    ],
+    "returnsDescription": "The first array with merged elements from the second array.",
+    "seeAlso": [
+      "array.new_float",
+      "array.insert",
+      "array.slice"
     ]
   },
   {
@@ -289,6 +353,13 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "array<type>",
     "examples": [
       "//@version=6\nindicator(\"array.copy example\")\nlength = 5\na = array.new_float(length, close)\nb = array.copy(a)\na := array.new_float(length, open)\nplot(array.sum(a) / length)\nplot(array.sum(b) / length)"
+    ],
+    "returnsDescription": "A copy of an array.",
+    "seeAlso": [
+      "array.new_float",
+      "array.get",
+      "array.slice",
+      "array.sort"
     ]
   },
   {
@@ -320,6 +391,15 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series float",
     "examples": [
       "//@version=6\nindicator(\"array.covariance example\")\na = array.new_float(0)\nb = array.new_float(0)\nfor i = 0 to 9\n    array.push(a, close[i])\n    array.push(b, open[i])\nplot(array.covariance(a, b))"
+    ],
+    "returnsDescription": "The covariance of two arrays.",
+    "remarks": "If biased is true, function will calculate using a biased estimate of the entire population, if false - unbiased estimate of a sample. Returns na if both arrays are empty.",
+    "seeAlso": [
+      "array.new_float",
+      "array.max",
+      "array.stdev",
+      "array.avg",
+      "array.variance"
     ]
   },
   {
@@ -336,7 +416,12 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series bool",
-    "examples": []
+    "examples": [],
+    "remarks": "This function also works with arrays of int and float types, in which case zero values are considered false, and all others true.",
+    "seeAlso": [
+      "array.some",
+      "array.get"
+    ]
   },
   {
     "name": "array.fill",
@@ -372,6 +457,11 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "void",
     "examples": [
       "//@version=6\nindicator(\"array.fill example\")\na = array.new_float(10)\narray.fill(a, close)\nplot(array.sum(a))"
+    ],
+    "seeAlso": [
+      "array.new_float",
+      "array.set",
+      "array.slice"
     ]
   },
   {
@@ -393,6 +483,10 @@ export const FUNCTIONS: PineFunction[] = [
     },
     "examples": [
       "//@version=6\nindicator(\"array.first example\")\narr = array.new_int(3, 10)\nplot(array.first(arr))"
+    ],
+    "seeAlso": [
+      "array.last",
+      "array.get"
     ]
   },
   {
@@ -627,7 +721,9 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"array.from_example\", overlay = false)\narr = array.from(\"Hello\", \"World!\") // arr (array<string>) will contain 2 elements: {Hello}, {World!}.\nplot(close)"
-    ]
+    ],
+    "returnsDescription": "The array element's value.",
+    "remarks": "This function can accept up to 4,000 'int', 'float', 'bool', or 'color' arguments. For all other types, including user-defined types, the limit is 999."
   },
   {
     "name": "array.get",
@@ -654,6 +750,14 @@ export const FUNCTIONS: PineFunction[] = [
     },
     "examples": [
       "//@version=6\nindicator(\"array.get example\")\na = array.new_float(0)\nfor i = 0 to 9\n    array.push(a, close[i] - open[i])\nplot(array.get(a, 9))"
+    ],
+    "returnsDescription": "The array element's value.",
+    "remarks": "If the index is positive, the function counts forwards from the beginning of the array to the end. The index of the first element is 0, and the index of the last element is array.size() - 1. If the index is negative, the function counts backwards from the end of the array to the beginning. In this case, the index of the last element is -1, and the index of the first element is negative array.size(). For example, for an array that contains three elements, all of the following are valid arguments for the index parameter: 0, 1, 2, -1, -2, -3.",
+    "seeAlso": [
+      "array.new_float",
+      "array.set",
+      "array.slice",
+      "array.sort"
     ]
   },
   {
@@ -678,6 +782,14 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series bool",
     "examples": [
       "//@version=6\nindicator(\"array.includes example\")\na = array.new_float(5,high)\np = close\nif array.includes(a, high)\n    p := open\nplot(p)"
+    ],
+    "returnsDescription": "True if the value was found in the array, false otherwise.",
+    "seeAlso": [
+      "array.new_float",
+      "array.indexof",
+      "array.shift",
+      "array.remove",
+      "array.insert"
     ]
   },
   {
@@ -702,6 +814,14 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series int",
     "examples": [
       "//@version=6\nindicator(\"array.indexof example\")\na = array.new_float(5,high)\nindex = array.indexof(a, high)\nplot(index)"
+    ],
+    "returnsDescription": "The index of an element.",
+    "seeAlso": [
+      "array.lastindexof",
+      "array.get",
+      "array.lastindexof",
+      "array.remove",
+      "array.insert"
     ]
   },
   {
@@ -732,6 +852,15 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "void",
     "examples": [
       "//@version=6\nindicator(\"array.insert example\")\na = array.new_float(5, close)\narray.insert(a, 0, open)\nplot(array.get(a, 5))"
+    ],
+    "remarks": "If the index is positive, the function counts forwards from the beginning of the array to the end. The index of the first element is 0, and the index of the last element is array.size() - 1. If the index is negative, the function counts backwards from the end of the array to the beginning. In this case, the index of the last element is -1, and the index of the first element is negative array.size(). For example, for an array that contains three elements, all of the following are valid arguments for the index parameter: 0, 1, 2, -1, -2, -3.",
+    "seeAlso": [
+      "array.new_float",
+      "array.set",
+      "array.push",
+      "array.remove",
+      "array.pop",
+      "array.unshift"
     ]
   },
   {
@@ -756,6 +885,14 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series string",
     "examples": [
       "//@version=6\nindicator(\"array.join example\")\na = array.new_float(5, 5)\nlabel.new(bar_index, close, array.join(a, \",\"))"
+    ],
+    "seeAlso": [
+      "array.new_float",
+      "array.set",
+      "array.insert",
+      "array.remove",
+      "array.pop",
+      "array.unshift"
     ]
   },
   {
@@ -777,6 +914,10 @@ export const FUNCTIONS: PineFunction[] = [
     },
     "examples": [
       "//@version=6\nindicator(\"array.last example\")\narr = array.new_int(3, 10)\nplot(array.last(arr))"
+    ],
+    "seeAlso": [
+      "array.first",
+      "array.get"
     ]
   },
   {
@@ -801,6 +942,14 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series int",
     "examples": [
       "//@version=6\nindicator(\"array.lastindexof example\")\na = array.new_float(5,high)\nindex = array.lastindexof(a, high)\nplot(index)"
+    ],
+    "returnsDescription": "The index of an element.",
+    "seeAlso": [
+      "array.new_float",
+      "array.set",
+      "array.push",
+      "array.remove",
+      "array.insert"
     ]
   },
   {
@@ -867,6 +1016,13 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"array.max\")\na = array.from(5, -2, 0, 9, 1)\nthirdHighest = array.max(a, 2) // 1\nplot(thirdHighest)"
+    ],
+    "returnsDescription": "The greatest or the nth greatest value in the array.",
+    "remarks": "Returns na if the id array is empty.",
+    "seeAlso": [
+      "array.new_float",
+      "array.min",
+      "array.sum"
     ]
   },
   {
@@ -912,6 +1068,14 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"array.median example\")\na = array.new_float(0)\nfor i = 0 to 9\n    array.push(a, close[i])\nplot(array.median(a))"
+    ],
+    "returnsDescription": "The median of the array's elements.",
+    "remarks": "Returns na if the id array is empty.",
+    "seeAlso": [
+      "array.median",
+      "array.avg",
+      "array.variance",
+      "array.min"
     ]
   },
   {
@@ -978,6 +1142,13 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"array.min\")\na = array.from(5, -2, 0, 9, 1)\nsecondLowest = array.min(a, 1) // 0\nplot(secondLowest)"
+    ],
+    "returnsDescription": "The smallest or the nth smallest value in the array.",
+    "remarks": "Returns na if the id array is empty.",
+    "seeAlso": [
+      "array.new_float",
+      "array.max",
+      "array.sum"
     ]
   },
   {
@@ -1023,6 +1194,16 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"array.mode example\")\na = array.new_float(0)\nfor i = 0 to 9\n    array.push(a, close[i])\nplot(array.mode(a))"
+    ],
+    "returnsDescription": "The most frequently occurring value from the id array. If none exists, returns the smallest value instead.",
+    "remarks": "Returns na if the id array is empty.",
+    "seeAlso": [
+      "array.new_float",
+      "ta.mode",
+      "matrix.mode",
+      "array.avg",
+      "array.variance",
+      "array.min"
     ]
   },
   {
@@ -1052,6 +1233,17 @@ export const FUNCTIONS: PineFunction[] = [
       "//@version=6\nindicator(\"array.new<color> example\")\na = array.new<color>()\narray.push(a, color.red)\narray.push(a, color.green)\nplot(close, color = array.get(a, close > open ? 1 : 0))",
       "//@version=6\nindicator(\"array.new<float> example\")\nlength = 5\nvar a = array.new<float>(length, close)\nif array.size(a) == length\n    array.remove(a, 0)\n    array.push(a, close)\nplot(array.sum(a) / length, \"SMA\")",
       "//@version=6\nindicator(\"array.new<line> example\")\n// draw last 15 lines\nvar a = array.new<line>()\narray.push(a, line.new(bar_index - 1, close[1], bar_index, close))\nif array.size(a) > 15\n    ln = array.shift(a)\n    line.delete(ln)"
+    ],
+    "returnsDescription": "The ID of an array object which may be used in other array.*() functions.",
+    "remarks": "An array index starts from 0.\nIf you want to initialize an array and specify all its elements at the same time, then use the function array.from.",
+    "seeAlso": [
+      "array.from",
+      "array.push",
+      "array.get",
+      "array.size",
+      "array.remove",
+      "array.shift",
+      "array.sum"
     ]
   },
   {
@@ -1078,6 +1270,14 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "array<bool>",
     "examples": [
       "//@version=6\nindicator(\"array.new_bool example\")\nlength = 5\na = array.new_bool(length, close > open)\nplot(array.get(a, 0) ? close : open)"
+    ],
+    "returnsDescription": "The ID of an array object which may be used in other array.*() functions.",
+    "remarks": "An array index starts from 0.",
+    "seeAlso": [
+      "array.new_float",
+      "array.get",
+      "array.slice",
+      "array.sort"
     ]
   },
   {
@@ -1104,6 +1304,13 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "array<box>",
     "examples": [
       "//@version=6\nindicator(\"array.new_box example\")\nboxes = array.new_box()\narray.push(boxes, box.new(time, close, time+2, low, xloc=xloc.bar_time))\nplot(1)"
+    ],
+    "returnsDescription": "The ID of an array object which may be used in other array.*() functions.",
+    "remarks": "An array index starts from 0.",
+    "seeAlso": [
+      "array.new_float",
+      "array.get",
+      "array.slice"
     ]
   },
   {
@@ -1130,6 +1337,14 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "array<color>",
     "examples": [
       "//@version=6\nindicator(\"array.new_color example\")\nlength = 5\na = array.new_color(length, color.red)\nplot(close, color = array.get(a, 0))"
+    ],
+    "returnsDescription": "The ID of an array object which may be used in other array.*() functions.",
+    "remarks": "An array index starts from 0.",
+    "seeAlso": [
+      "array.new_float",
+      "array.get",
+      "array.slice",
+      "array.sort"
     ]
   },
   {
@@ -1156,6 +1371,15 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "array<float>",
     "examples": [
       "//@version=6\nindicator(\"array.new_float example\")\nlength = 5\na = array.new_float(length, close)\nplot(array.sum(a) / length)"
+    ],
+    "returnsDescription": "The ID of an array object which may be used in other array.*() functions.",
+    "remarks": "An array index starts from 0.",
+    "seeAlso": [
+      "array.new_color",
+      "array.new_bool",
+      "array.get",
+      "array.slice",
+      "array.sort"
     ]
   },
   {
@@ -1182,6 +1406,14 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "array<int>",
     "examples": [
       "//@version=6\nindicator(\"array.new_int example\")\nlength = 5\na = array.new_int(length, int(close))\nplot(array.sum(a) / length)"
+    ],
+    "returnsDescription": "The ID of an array object which may be used in other array.*() functions.",
+    "remarks": "An array index starts from 0.",
+    "seeAlso": [
+      "array.new_float",
+      "array.get",
+      "array.slice",
+      "array.sort"
     ]
   },
   {
@@ -1208,6 +1440,13 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "array<label>",
     "examples": [
       "//@version=6\nindicator(\"array.new_label example\", overlay = true, max_labels_count = 500)\n\n//@variable The number of labels to show on the chart.\nint labelCount = input.int(50, \"Labels to show\", 1, 500)\n\n//@variable An array of `label` objects.\nvar array<label> labelArray = array.new_label()\n\n//@variable A `chart.point` for the new label.\nlabelPoint = chart.point.from_index(bar_index, close)\n//@variable The text in the new label.\nstring labelText = na\n//@variable The color of the new label.\ncolor labelColor = na\n//@variable The style of the new label.\nstring labelStyle = na\n\n// Set the label attributes for rising bars.\nif close > open\n    labelText  := \"Rising\"\n    labelColor := color.green\n    labelStyle := label.style_label_down\n// Set the label attributes for falling bars.\nelse if close < open\n    labelText  := \"Falling\"\n    labelColor := color.red\n    labelStyle := label.style_label_up\n\n// Add a new label to the `labelArray` when the chart bar closed at a new value.\nif close != open\n    labelArray.push(label.new(labelPoint, labelText, color = labelColor, style = labelStyle))\n// Remove the first element and delete its label when the size of the `labelArray` exceeds the `labelCount`.\nif labelArray.size() > labelCount\n    label.delete(labelArray.shift())"
+    ],
+    "returnsDescription": "The ID of an array object which may be used in other array.*() functions.",
+    "remarks": "An array index starts from 0.",
+    "seeAlso": [
+      "array.new_float",
+      "array.get",
+      "array.slice"
     ]
   },
   {
@@ -1234,6 +1473,13 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "array<line>",
     "examples": [
       "//@version=6\nindicator(\"array.new_line example\")\n// draw last 15 lines\nvar a = array.new_line()\narray.push(a, line.new(bar_index - 1, close[1], bar_index, close))\nif array.size(a) > 15\n    ln = array.shift(a)\n    line.delete(ln)"
+    ],
+    "returnsDescription": "The ID of an array object which may be used in other array.*() functions.",
+    "remarks": "An array index starts from 0.",
+    "seeAlso": [
+      "array.new_float",
+      "array.get",
+      "array.slice"
     ]
   },
   {
@@ -1256,7 +1502,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "array<linefill>",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The ID of an array object which may be used in other array.*() functions.",
+    "remarks": "An array index starts from 0."
   },
   {
     "name": "array.new_string",
@@ -1282,6 +1530,13 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "array<string>",
     "examples": [
       "//@version=6\nindicator(\"array.new_string example\")\nlength = 5\na = array.new_string(length, \"text\")\nlabel.new(bar_index, close, array.get(a, 0))"
+    ],
+    "returnsDescription": "The ID of an array object which may be used in other array.*() functions.",
+    "remarks": "An array index starts from 0.",
+    "seeAlso": [
+      "array.new_float",
+      "array.get",
+      "array.slice"
     ]
   },
   {
@@ -1308,6 +1563,13 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "array<table>",
     "examples": [
       "//@version=6\nindicator(\"table array\")\ntables = array.new_table()\narray.push(tables, table.new(position = position.top_left, rows = 1, columns = 2, bgcolor = color.yellow, border_width=1))\nplot(1)"
+    ],
+    "returnsDescription": "The ID of an array object which may be used in other array.*() functions.",
+    "remarks": "An array index starts from 0.",
+    "seeAlso": [
+      "array.new_float",
+      "array.get",
+      "array.slice"
     ]
   },
   {
@@ -1366,7 +1628,16 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series int"
       }
     ],
-    "examples": []
+    "examples": [],
+    "remarks": "In statistics, the percentile is the percent of ranking items that appear at or below a certain score. This measurement shows the percentage of scores within a standard frequency distribution that is lower than the percentile rank being measured. Linear interpolation estimates the value between two ranks.\nReturns na if the id array is empty.",
+    "seeAlso": [
+      "array.new_float",
+      "array.insert",
+      "array.slice",
+      "array.reverse",
+      "order.ascending",
+      "order.descending"
+    ]
   },
   {
     "name": "array.percentile_nearest_rank",
@@ -1424,7 +1695,16 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series int"
       }
     ],
-    "examples": []
+    "examples": [],
+    "remarks": "In statistics, the percentile is the percent of ranking items that appear at or below a certain score. This measurement shows the percentage of scores within a standard frequency distribution that is lower than the percentile rank you're measuring.\nReturns na if the id array is empty.",
+    "seeAlso": [
+      "array.new_float",
+      "array.insert",
+      "array.slice",
+      "array.reverse",
+      "order.ascending",
+      "order.descending"
+    ]
   },
   {
     "name": "array.percentrank",
@@ -1482,7 +1762,16 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series int"
       }
     ],
-    "examples": []
+    "examples": [],
+    "remarks": "Percentile rank is the number of elements in the array that are less than or equal to the reference value, expressed as a percentage.\nReturns na if the id array is empty.",
+    "seeAlso": [
+      "array.new_float",
+      "array.insert",
+      "array.slice",
+      "array.reverse",
+      "order.ascending",
+      "order.descending"
+    ]
   },
   {
     "name": "array.pop",
@@ -1503,6 +1792,15 @@ export const FUNCTIONS: PineFunction[] = [
     },
     "examples": [
       "//@version=6\nindicator(\"array.pop example\")\na = array.new_float(5,high)\nremovedEl = array.pop(a)\nplot(array.size(a))\nplot(removedEl)"
+    ],
+    "returnsDescription": "The value of the removed element.",
+    "seeAlso": [
+      "array.new_float",
+      "array.set",
+      "array.push",
+      "array.remove",
+      "array.insert",
+      "array.shift"
     ]
   },
   {
@@ -1527,6 +1825,14 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "void",
     "examples": [
       "//@version=6\nindicator(\"array.push example\")\na = array.new_float(5, 0)\narray.push(a, open)\nplot(array.get(a, 5))"
+    ],
+    "seeAlso": [
+      "array.new_float",
+      "array.set",
+      "array.insert",
+      "array.remove",
+      "array.pop",
+      "array.unshift"
     ]
   },
   {
@@ -1569,6 +1875,14 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"array.range example\")\na = array.new_float(0)\nfor i = 0 to 9\n    array.push(a, close[i])\nplot(array.range(a))"
+    ],
+    "returnsDescription": "The difference between the min and max values in the array.",
+    "remarks": "Returns na if the id array is empty.",
+    "seeAlso": [
+      "array.new_float",
+      "array.min",
+      "array.max",
+      "array.sum"
     ]
   },
   {
@@ -1596,6 +1910,16 @@ export const FUNCTIONS: PineFunction[] = [
     },
     "examples": [
       "//@version=6\nindicator(\"array.remove example\")\na = array.new_float(5,high)\nremovedEl = array.remove(a, 0)\nplot(array.size(a))\nplot(removedEl)"
+    ],
+    "returnsDescription": "The value of the removed element.",
+    "remarks": "If the index is positive, the function counts forwards from the beginning of the array to the end. The index of the first element is 0, and the index of the last element is array.size() - 1. If the index is negative, the function counts backwards from the end of the array to the beginning. In this case, the index of the last element is -1, and the index of the first element is negative array.size(). For example, for an array that contains three elements, all of the following are valid arguments for the index parameter: 0, 1, 2, -1, -2, -3.",
+    "seeAlso": [
+      "array.new_float",
+      "array.set",
+      "array.push",
+      "array.insert",
+      "array.pop",
+      "array.shift"
     ]
   },
   {
@@ -1614,6 +1938,13 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "void",
     "examples": [
       "//@version=6\nindicator(\"array.reverse example\")\na = array.new_float(0)\nfor i = 0 to 9\n    array.push(a, close[i])\nplot(array.get(a, 0))\narray.reverse(a)\nplot(array.get(a, 0))"
+    ],
+    "seeAlso": [
+      "array.new_float",
+      "array.sort",
+      "array.push",
+      "array.set",
+      "array.avg"
     ]
   },
   {
@@ -1644,6 +1975,12 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "void",
     "examples": [
       "//@version=6\nindicator(\"array.set example\")\na = array.new_float(10)\nfor i = 0 to 9\n    array.set(a, i, close[i])\nplot(array.sum(a) / 10)"
+    ],
+    "remarks": "If the index is positive, the function counts forwards from the beginning of the array to the end. The index of the first element is 0, and the index of the last element is array.size() - 1. If the index is negative, the function counts backwards from the end of the array to the beginning. In this case, the index of the last element is -1, and the index of the first element is negative array.size(). For example, for an array that contains three elements, all of the following are valid arguments for the index parameter: 0, 1, 2, -1, -2, -3.",
+    "seeAlso": [
+      "array.new_float",
+      "array.get",
+      "array.slice"
     ]
   },
   {
@@ -1665,6 +2002,14 @@ export const FUNCTIONS: PineFunction[] = [
     },
     "examples": [
       "//@version=6\nindicator(\"array.shift example\")\na = array.new_float(5,high)\nremovedEl = array.shift(a)\nplot(array.size(a))\nplot(removedEl)"
+    ],
+    "returnsDescription": "The value of the removed element.",
+    "seeAlso": [
+      "array.unshift",
+      "array.set",
+      "array.push",
+      "array.remove",
+      "array.includes"
     ]
   },
   {
@@ -1683,6 +2028,13 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series int",
     "examples": [
       "//@version=6\nindicator(\"array.size example\")\na = array.new_float(0)\nfor i = 0 to 9\n    array.push(a, close[i])\n// note that changes in slice also modify original array\nslice = array.slice(a, 0, 5)\narray.push(slice, open)\n// size was changed in slice and in original array\nplot(array.size(a))\nplot(array.size(slice))"
+    ],
+    "returnsDescription": "The number of elements in the array.",
+    "seeAlso": [
+      "array.new_float",
+      "array.sum",
+      "array.slice",
+      "array.sort"
     ]
   },
   {
@@ -1713,6 +2065,13 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "array<type>",
     "examples": [
       "//@version=6\nindicator(\"array.slice example\")\na = array.new_float(0)\nfor i = 0 to 9\n    array.push(a, close[i])\n// take elements from 0 to 4\n// *note that changes in slice also modify original array\nslice = array.slice(a, 0, 5)\nplot(array.sum(a) / 10)\nplot(array.sum(slice) / 5)"
+    ],
+    "returnsDescription": "The ID of an array representing a slice of the id array.",
+    "remarks": "The indices in the resulting slice range from zero to one less than the slice's size. These indices do not directly represent the same element indices as the original array. For example, if the index_from value is 5, the slice's element at index 1 refers to the id array's element at index 6.\nScripts cannot modify the elements of a historical array. Therefore, they cannot modify historical array slices created by this function. Instead of modifying an array referenced by an ID retrieved with the [] operator, use array.copy() to create a shallow copy of the historical array, then modify the copy or a slice of that copy instead.",
+    "seeAlso": [
+      "array.new_float",
+      "array.get",
+      "array.sort"
     ]
   },
   {
@@ -1729,7 +2088,12 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series bool",
-    "examples": []
+    "examples": [],
+    "remarks": "This function also works with arrays of int and float types, in which case zero values are considered false, and all others true.",
+    "seeAlso": [
+      "array.every",
+      "array.get"
+    ]
   },
   {
     "name": "array.sort",
@@ -1803,6 +2167,14 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"array.sort example\")\na = array.new_float(0,0)\nfor i = 0 to 5\n    array.push(a, high[i])\narray.sort(a, order.descending)\nif barstate.islast\n    label.new(bar_index, close, str.tostring(a))"
+    ],
+    "seeAlso": [
+      "array.new_float",
+      "array.insert",
+      "array.slice",
+      "array.reverse",
+      "order.ascending",
+      "order.descending"
     ]
   },
   {
@@ -1880,6 +2252,14 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"array.sort_indices\")\na = array.from(5, -2, 0, 9, 1)\nsortedIndices = array.sort_indices(a) // [1, 2, 4, 0, 3]\nindexOfSmallestValue = array.get(sortedIndices, 0) // 1\nsmallestValue = array.get(a, indexOfSmallestValue) // -2\nplot(smallestValue)"
+    ],
+    "seeAlso": [
+      "array.new_float",
+      "array.insert",
+      "array.slice",
+      "array.reverse",
+      "order.ascending",
+      "order.descending"
     ]
   },
   {
@@ -1922,6 +2302,15 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"array.standardize example\")\na = array.new_float(0)\nfor i = 0 to 9\n    array.push(a, close[i])\nb = array.standardize(a)\nplot(array.min(b))\nplot(array.max(b))"
+    ],
+    "returnsDescription": "The array of standardized elements.",
+    "seeAlso": [
+      "array.max",
+      "array.min",
+      "array.mode",
+      "array.avg",
+      "array.variance",
+      "array.stdev"
     ]
   },
   {
@@ -1988,6 +2377,14 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"array.stdev example\")\na = array.new_float(0)\nfor i = 0 to 9\n    array.push(a, close[i])\nplot(array.stdev(a))"
+    ],
+    "returnsDescription": "The standard deviation of the array's elements.",
+    "remarks": "If biased is true, the function calculates using a biased estimate of the entire population. If biased is false, it uses an unbiased estimate of a sample.\nReturns na if the id array is empty.",
+    "seeAlso": [
+      "array.new_float",
+      "array.max",
+      "array.min",
+      "array.avg"
     ]
   },
   {
@@ -2033,6 +2430,13 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"array.sum example\")\na = array.new_float(0)\nfor i = 0 to 9\n    array.push(a, close[i])\nplot(array.sum(a))"
+    ],
+    "returnsDescription": "The sum of the array's elements.",
+    "remarks": "Returns na if the id array is empty.",
+    "seeAlso": [
+      "array.new_float",
+      "array.max",
+      "array.min"
     ]
   },
   {
@@ -2057,6 +2461,13 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "void",
     "examples": [
       "//@version=6\nindicator(\"array.unshift example\")\na = array.new_float(5, 0)\narray.unshift(a, open)\nplot(array.get(a, 0))"
+    ],
+    "seeAlso": [
+      "array.shift",
+      "array.set",
+      "array.insert",
+      "array.remove",
+      "array.indexof"
     ]
   },
   {
@@ -2123,6 +2534,15 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"array.variance example\")\na = array.new_float(0)\nfor i = 0 to 9\n    array.push(a, close[i])\nplot(array.variance(a))"
+    ],
+    "returnsDescription": "The variance of the array's elements.",
+    "remarks": "If biased is true, function will calculate using a biased estimate of the entire population, if false - unbiased estimate of a sample.\nReturns na if the id array is empty.",
+    "seeAlso": [
+      "array.new_float",
+      "array.stdev",
+      "array.min",
+      "array.avg",
+      "array.covariance"
     ]
   },
   {
@@ -2177,6 +2597,11 @@ export const FUNCTIONS: PineFunction[] = [
     },
     "examples": [
       "//@version=6\nindicator(\"barcolor example\", overlay=true)\nbarcolor(close < open ? color.black : color.white)"
+    ],
+    "seeAlso": [
+      "bgcolor",
+      "plot",
+      "fill"
     ]
   },
   {
@@ -2238,6 +2663,11 @@ export const FUNCTIONS: PineFunction[] = [
     },
     "examples": [
       "//@version=6\nindicator(\"bgcolor example\", overlay=true)\nbgcolor(close < open ? color.new(color.red,70) : color.new(color.green, 70))"
+    ],
+    "seeAlso": [
+      "barcolor",
+      "plot",
+      "fill"
     ]
   },
   {
@@ -2299,7 +2729,16 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series bool"
       }
     ],
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The value of the argument after casting to bool.",
+    "seeAlso": [
+      "float",
+      "int",
+      "color",
+      "string",
+      "line",
+      "label"
+    ]
   },
   {
     "name": "box",
@@ -2314,7 +2753,17 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series box",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The value of the argument after casting to box.",
+    "seeAlso": [
+      "float",
+      "int",
+      "bool",
+      "color",
+      "string",
+      "line",
+      "label"
+    ]
   },
   {
     "name": "box.copy",
@@ -2332,6 +2781,10 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series box",
     "examples": [
       "//@version=6\nindicator('Last 50 bars price ranges', overlay = true)\nLOOKBACK = 50\nhighest = ta.highest(LOOKBACK)\nlowest = ta.lowest(LOOKBACK)\nif barstate.islastconfirmedhistory\n    var BoxLast = box.new(bar_index[LOOKBACK], highest, bar_index, lowest, bgcolor = color.new(color.green, 80))\n    var BoxPrev = box.copy(BoxLast)\n    box.set_lefttop(BoxPrev, bar_index[LOOKBACK * 2], highest[50])\n    box.set_rightbottom(BoxPrev, bar_index[LOOKBACK], lowest[50])\n    box.set_bgcolor(BoxPrev, color.new(color.red, 80))"
+    ],
+    "seeAlso": [
+      "box.new",
+      "box.delete"
     ]
   },
   {
@@ -2348,7 +2801,10 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "box.new"
+    ]
   },
   {
     "name": "box.get_bottom",
@@ -2364,7 +2820,12 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The price value.",
+    "seeAlso": [
+      "box.new",
+      "box.set_bottom"
+    ]
   },
   {
     "name": "box.get_left",
@@ -2380,7 +2841,12 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series int",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "A bar index or a UNIX timestamp (in milliseconds).",
+    "seeAlso": [
+      "box.new",
+      "box.set_left"
+    ]
   },
   {
     "name": "box.get_right",
@@ -2396,7 +2862,12 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series int",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "A bar index or a UNIX timestamp (in milliseconds).",
+    "seeAlso": [
+      "box.new",
+      "box.set_right"
+    ]
   },
   {
     "name": "box.get_top",
@@ -2412,7 +2883,12 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The price value.",
+    "seeAlso": [
+      "box.new",
+      "box.set_top"
+    ]
   },
   {
     "name": "box.new",
@@ -2919,6 +3395,28 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"box.new\")\nvar b = box.new(time, open, time + 60 * 60 * 24, close, xloc=xloc.bar_time, border_style=line.style_dashed)\nbox.set_lefttop(b, time, 100)\nbox.set_rightbottom(b, time + 60 * 60 * 24, 500)\nbox.set_bgcolor(b, color.green)"
+    ],
+    "returnsDescription": "The ID of a box object which may be used in box.set_*() and box.get_*() functions.",
+    "seeAlso": [
+      "box.delete",
+      "box.get_left",
+      "box.get_top",
+      "box.get_right",
+      "box.get_bottom",
+      "box.set_top_left_point",
+      "box.set_left",
+      "box.set_top",
+      "box.set_bottom_right_point",
+      "box.set_right",
+      "box.set_bottom",
+      "box.set_border_color",
+      "box.set_bgcolor",
+      "box.set_border_width",
+      "box.set_border_style",
+      "box.set_extend",
+      "box.set_text",
+      "box.set_text_formatting",
+      "box.set_xloc"
     ]
   },
   {
@@ -2941,7 +3439,10 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "box.new"
+    ]
   },
   {
     "name": "box.set_border_color",
@@ -2963,7 +3464,10 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "box.new"
+    ]
   },
   {
     "name": "box.set_border_style",
@@ -2985,7 +3489,13 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "box.new",
+      "line.style_solid",
+      "line.style_dotted",
+      "line.style_dashed"
+    ]
   },
   {
     "name": "box.set_border_width",
@@ -3007,7 +3517,10 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "box.new"
+    ]
   },
   {
     "name": "box.set_bottom",
@@ -3029,7 +3542,11 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "box.new",
+      "box.get_bottom"
+    ]
   },
   {
     "name": "box.set_bottom_right_point",
@@ -3073,7 +3590,14 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "box.new",
+      "extend.none",
+      "extend.right",
+      "extend.left",
+      "extend.both"
+    ]
   },
   {
     "name": "box.set_left",
@@ -3095,7 +3619,11 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "box.new",
+      "box.get_left"
+    ]
   },
   {
     "name": "box.set_lefttop",
@@ -3123,7 +3651,12 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "box.new",
+      "box.get_left",
+      "box.get_top"
+    ]
   },
   {
     "name": "box.set_right",
@@ -3145,7 +3678,11 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "box.new",
+      "box.get_right"
+    ]
   },
   {
     "name": "box.set_rightbottom",
@@ -3173,7 +3710,12 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "box.new",
+      "box.get_right",
+      "box.get_bottom"
+    ]
   },
   {
     "name": "box.set_text",
@@ -3195,7 +3737,14 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "box.set_text_color",
+      "box.set_text_size",
+      "box.set_text_valign",
+      "box.set_text_halign",
+      "box.set_text_formatting"
+    ]
   },
   {
     "name": "box.set_text_color",
@@ -3217,7 +3766,13 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "box.set_text",
+      "box.set_text_size",
+      "box.set_text_valign",
+      "box.set_text_halign"
+    ]
   },
   {
     "name": "box.set_text_font_family",
@@ -3245,6 +3800,11 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "void",
     "examples": [
       "//@version=6\nindicator(\"Example of setting the box font\")\nif barstate.islastconfirmedhistory\n    b = box.new(bar_index, open-ta.tr, bar_index-50, open-ta.tr*5, text=\"monospace\")\n    box.set_text_font_family(b, font.family_monospace)"
+    ],
+    "seeAlso": [
+      "box.new",
+      "font.family_default",
+      "font.family_monospace"
     ]
   },
   {
@@ -3273,7 +3833,14 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "box.set_text_color",
+      "box.set_text_size",
+      "box.set_text_valign",
+      "box.set_text_halign",
+      "box.set_text"
+    ]
   },
   {
     "name": "box.set_text_halign",
@@ -3300,7 +3867,13 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "box.set_text",
+      "box.set_text_size",
+      "box.set_text_valign",
+      "box.set_text_color"
+    ]
   },
   {
     "name": "box.set_text_size",
@@ -3322,7 +3895,13 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "box.set_text",
+      "box.set_text_color",
+      "box.set_text_valign",
+      "box.set_text_halign"
+    ]
   },
   {
     "name": "box.set_text_valign",
@@ -3349,7 +3928,13 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "box.set_text",
+      "box.set_text_size",
+      "box.set_text_color",
+      "box.set_text_halign"
+    ]
   },
   {
     "name": "box.set_text_wrap",
@@ -3375,7 +3960,14 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "box.set_text",
+      "box.set_text_size",
+      "box.set_text_valign",
+      "box.set_text_halign",
+      "box.set_text_color"
+    ]
   },
   {
     "name": "box.set_top",
@@ -3397,7 +3989,11 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "box.new",
+      "box.get_top"
+    ]
   },
   {
     "name": "box.set_top_left_point",
@@ -3457,7 +4053,12 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "box.new",
+      "xloc.bar_index",
+      "xloc.bar_time"
+    ]
   },
   {
     "name": "chart.point.copy",
@@ -3495,7 +4096,8 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "chart.point",
-    "examples": []
+    "examples": [],
+    "remarks": "The time field values of chart.point instances returned from this function will be na, meaning drawing objects with xloc values set to xloc.bar_time will not work with them."
   },
   {
     "name": "chart.point.from_time",
@@ -3517,7 +4119,8 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "chart.point",
-    "examples": []
+    "examples": [],
+    "remarks": "The index field values of chart.point instances returned from this function will be na, meaning drawing objects with xloc values set to xloc.bar_index will not work with them."
   },
   {
     "name": "chart.point.new",
@@ -3545,7 +4148,11 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "chart.point",
-    "examples": []
+    "examples": [],
+    "remarks": "Whether a drawing object uses a point's time or index field as an x-coordinate depends on the xloc type used in the function call that returned the drawing.\nIt's important to note that this function does not verify that the time and index values refer to the same bar.",
+    "seeAlso": [
+      "polyline.new"
+    ]
   },
   {
     "name": "chart.point.now",
@@ -3562,7 +4169,8 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "chart.point",
-    "examples": []
+    "examples": [],
+    "remarks": "The chart.point instance returned from this function records values for its index and time fields on the bar it executed on, making it suitable for use with drawing objects of any xloc type."
   },
   {
     "name": "color",
@@ -3623,7 +4231,16 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series color"
       }
     ],
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The value of the argument after casting to color.",
+    "seeAlso": [
+      "float",
+      "int",
+      "bool",
+      "string",
+      "line",
+      "label"
+    ]
   },
   {
     "name": "color.b",
@@ -3687,7 +4304,8 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"color.b\", overlay=true)\nplot(color.b(color.blue))"
-    ]
+    ],
+    "returnsDescription": "The value (0 to 255) of the color's blue component."
   },
   {
     "name": "color.from_gradient",
@@ -3729,7 +4347,9 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series color",
     "examples": [
       "//@version=6\nindicator(\"color.from_gradient\", overlay=true)\ncolor1 = color.from_gradient(close, low, high, color.yellow, color.lime)\ncolor2 = color.from_gradient(ta.rsi(close, 7), 0, 100, color.rgb(255, 0, 0), color.rgb(0, 255, 0, 50))\nplot(close, color=color1)\nplot(ta.rsi(close,7), color=color2)"
-    ]
+    ],
+    "returnsDescription": "A color calculated from the linear gradient between bottom_color to top_color.",
+    "remarks": "Using this function will have an impact on the colors displayed in the script's \"Settings/Style\" tab. See the User Manual for more information."
   },
   {
     "name": "color.g",
@@ -3793,7 +4413,8 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"color.g\", overlay=true)\nplot(color.g(color.green))"
-    ]
+    ],
+    "returnsDescription": "The value (0 to 255) of the color's green component."
   },
   {
     "name": "color.new",
@@ -3897,7 +4518,9 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"color.new\", overlay=true)\nplot(close, color=color.new(color.red, 50))"
-    ]
+    ],
+    "returnsDescription": "Color with specified transparency.",
+    "remarks": "Using arguments that are not constants (e.g., 'simple', 'input' or 'series') will have an impact on the colors displayed in the script's \"Settings/Style\" tab. See the User Manual for more information."
   },
   {
     "name": "color.r",
@@ -3961,7 +4584,8 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"color.r\", overlay=true)\nplot(color.r(color.red))"
-    ]
+    ],
+    "returnsDescription": "The value (0 to 255) of the color's red component."
   },
   {
     "name": "color.rgb",
@@ -4155,7 +4779,9 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"color.rgb\", overlay=true)\nplot(close, color=color.rgb(255, 0, 0, 50))"
-    ]
+    ],
+    "returnsDescription": "Color with specified transparency.",
+    "remarks": "Using arguments that are not constants (e.g., 'simple', 'input' or 'series') will have an impact on the colors displayed in the script's \"Settings/Style\" tab. See the User Manual for more information."
   },
   {
     "name": "color.t",
@@ -4219,7 +4845,8 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"color.t\", overlay=true)\nplot(color.t(color.new(color.red, 50)))"
-    ]
+    ],
+    "returnsDescription": "The value (0-100) of the color's transparency."
   },
   {
     "name": "dayofmonth",
@@ -4241,7 +4868,20 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series int",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The calculated day of the month, expressed in the specified time zone.",
+    "remarks": "A UNIX timestamp represents the number of milliseconds elapsed since 00:00 UTC on 1970-01-01. The meaning of a UNIX timestamp does not change relative to any time zone.",
+    "seeAlso": [
+      "dayofmonth",
+      "dayofweek",
+      "weekofyear",
+      "time",
+      "year",
+      "month",
+      "hour",
+      "minute",
+      "second"
+    ]
   },
   {
     "name": "dayofweek",
@@ -4263,7 +4903,20 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series int",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The calculated day number, expressed in the specified time zone.",
+    "remarks": "A UNIX timestamp represents the number of milliseconds elapsed since 00:00 UTC on 1970-01-01. The meaning of a UNIX timestamp does not change relative to any time zone.",
+    "seeAlso": [
+      "dayofweek",
+      "dayofmonth",
+      "weekofyear",
+      "time",
+      "year",
+      "month",
+      "hour",
+      "minute",
+      "second"
+    ]
   },
   {
     "name": "fill",
@@ -4550,6 +5203,13 @@ export const FUNCTIONS: PineFunction[] = [
       "//@version=6\nindicator(\"Fill between hlines\", overlay = false)\nh1 = hline(20)\nh2 = hline(10)\nfill(h1, h2, color = color.new(color.blue, 90))",
       "//@version=6\nindicator(\"Fill between plots\", overlay = true)\np1 = plot(open)\np2 = plot(close)\nfill(p1, p2, color = color.new(color.green, 90))",
       "//@version=6\nindicator(\"Gradient Fill between hlines\", overlay = false)\ntopVal = input.int(100)\nbotVal = input.int(0)\ntopCol = input.color(color.red)\nbotCol = input.color(color.blue)\ntopLine = hline(100, color = topCol, linestyle = hline.style_solid)\nbotLine = hline(0,   color = botCol, linestyle = hline.style_solid)\nfill(topLine, botLine, topVal, botVal, topCol, botCol)"
+    ],
+    "seeAlso": [
+      "plot",
+      "barcolor",
+      "bgcolor",
+      "hline",
+      "color.new"
     ]
   },
   {
@@ -4604,7 +5264,13 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series float"
       }
     ],
-    "examples": []
+    "examples": [],
+    "returnsDescription": "Series without na gaps.",
+    "seeAlso": [
+      "na",
+      "na",
+      "nz"
+    ]
   },
   {
     "name": "float",
@@ -4665,7 +5331,16 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series float"
       }
     ],
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The value of the argument after casting to float.",
+    "seeAlso": [
+      "int",
+      "bool",
+      "color",
+      "string",
+      "line",
+      "label"
+    ]
   },
   {
     "name": "footprint.buy_volume",
@@ -4681,7 +5356,8 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The total \"buy\" volume measured by the footprint."
   },
   {
     "name": "footprint.delta",
@@ -4697,7 +5373,8 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The overall volume delta for the footprint."
   },
   {
     "name": "footprint.get_row_by_price",
@@ -4719,7 +5396,8 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "volume_row",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The ID of a volume_row object representing the footprint row that contains the specified price, or na if the price is outside the footprint's price range."
   },
   {
     "name": "footprint.poc",
@@ -4735,7 +5413,8 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "volume_row",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The ID of a volume_row object representing the footprint's POC row."
   },
   {
     "name": "footprint.rows",
@@ -4751,7 +5430,8 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "array<volume_row>",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The ID of an array containing a volume_row ID for each row in the footprint."
   },
   {
     "name": "footprint.sell_volume",
@@ -4767,7 +5447,8 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The total \"sell\" volume measured by the footprint."
   },
   {
     "name": "footprint.total_volume",
@@ -4783,7 +5464,8 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The total volume measured by the footprint."
   },
   {
     "name": "footprint.vah",
@@ -4799,7 +5481,8 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "volume_row",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The ID of a volume_row object representing the footprint's VAH row."
   },
   {
     "name": "footprint.val",
@@ -4815,7 +5498,8 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "volume_row",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The ID of a volume_row object representing the footprint's VAL row."
   },
   {
     "name": "hline",
@@ -4880,6 +5564,10 @@ export const FUNCTIONS: PineFunction[] = [
     },
     "examples": [
       "//@version=6\nindicator(\"input.hline\", overlay=true)\nhline(3.14, title='Pi', color=color.blue, linestyle=hline.style_dotted, linewidth=2)\n\n// You may fill the background between any two hlines with a fill() function:\nh1 = hline(20)\nh2 = hline(10)\nfill(h1, h2, color=color.new(color.green, 90))"
+    ],
+    "returnsDescription": "An hline object, that can be used in fill()",
+    "seeAlso": [
+      "fill"
     ]
   },
   {
@@ -4902,7 +5590,19 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series int",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "Hour (in exchange timezone) for provided UNIX time.",
+    "remarks": "UNIX time is the number of milliseconds that have elapsed since 00:00:00 UTC, 1 January 1970.",
+    "seeAlso": [
+      "hour",
+      "time",
+      "year",
+      "month",
+      "dayofmonth",
+      "dayofweek",
+      "minute",
+      "second"
+    ]
   },
   {
     "name": "indicator",
@@ -5041,6 +5741,11 @@ export const FUNCTIONS: PineFunction[] = [
     },
     "examples": [
       "//@version=6\nindicator(\"My script\", shorttitle=\"Script\")\nplot(close)"
+    ],
+    "remarks": "Every indicator script must include exactly one indicator() statement in the code.",
+    "seeAlso": [
+      "strategy",
+      "library"
     ]
   },
   {
@@ -5431,6 +6136,21 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"input\", overlay=true)\ni_switch = input(true, \"On/Off\")\nplot(i_switch ? open : na)\n\ni_len = input(7, \"Length\")\ni_src = input(close, \"Source\")\nplot(ta.sma(i_src, i_len))\n\ni_border = input(142.50, \"Price Border\")\nhline(i_border)\nbgcolor(close > i_border ? color.green : color.red)\n\ni_col = input(color.red, \"Plot Color\")\nplot(close, color=i_col)\n\ni_text = input(\"Hello!\", \"Message\")\nl = label.new(bar_index, high, text=i_text)\nlabel.delete(l[1])"
+    ],
+    "returnsDescription": "Value of input variable.",
+    "remarks": "Result of input() function always should be assigned to a variable, see examples above.",
+    "seeAlso": [
+      "input.bool",
+      "input.color",
+      "input.int",
+      "input.float",
+      "input.string",
+      "input.symbol",
+      "input.timeframe",
+      "input.text_area",
+      "input.session",
+      "input.source",
+      "input.time"
     ]
   },
   {
@@ -5499,6 +6219,21 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "input bool",
     "examples": [
       "//@version=6\nindicator(\"input.bool\", overlay=true)\ni_switch = input.bool(true, \"On/Off\")\nplot(i_switch ? open : na)"
+    ],
+    "returnsDescription": "Value of input variable.",
+    "remarks": "Result of input.bool() function always should be assigned to a variable, see examples above.",
+    "seeAlso": [
+      "input.int",
+      "input.float",
+      "input.string",
+      "input.text_area",
+      "input.symbol",
+      "input.timeframe",
+      "input.session",
+      "input.source",
+      "input.color",
+      "input.time",
+      "input"
     ]
   },
   {
@@ -5567,6 +6302,21 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "input color",
     "examples": [
       "//@version=6\nindicator(\"input.color\", overlay=true)\ni_col = input.color(color.red, \"Plot Color\")\nplot(close, color=i_col)"
+    ],
+    "returnsDescription": "Value of input variable.",
+    "remarks": "Result of input.color() function always should be assigned to a variable, see examples above.",
+    "seeAlso": [
+      "input.bool",
+      "input.int",
+      "input.float",
+      "input.string",
+      "input.text_area",
+      "input.symbol",
+      "input.timeframe",
+      "input.session",
+      "input.source",
+      "input.time",
+      "input"
     ]
   },
   {
@@ -5641,6 +6391,21 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "input enum",
     "examples": [
       "//@version=6\nindicator(\"Session highlight\", overlay = true)\n\n//@enum        Contains fields with popular timezones as titles.\n//@field exch  Has an empty string as the title to represent the chart timezone.\nenum tz\n    utc  = \"UTC\"\n    exch = \"\"\n    ny   = \"America/New_York\"\n    chi  = \"America/Chicago\"\n    lon  = \"Europe/London\"\n    tok  = \"Asia/Tokyo\"\n\n//@variable The session string.\nselectedSession = input.session(\"1200-1500\", \"Session\")\n//@variable The selected timezone. The input's dropdown contains the fields in the `tz` enum.\nselectedTimezone = input.enum(tz.utc, \"Session Timezone\")\n\n//@variable Is `true` if the current bar's time is in the specified session.\nbool inSession = false\nif not na(time(\"\", selectedSession, str.tostring(selectedTimezone)))\n    inSession := true\n\n// Highlight the background when `inSession` is `true`.\nbgcolor(inSession ? color.new(color.green, 90) : na, title = \"Active session highlight\")"
+    ],
+    "returnsDescription": "Value of input variable.",
+    "remarks": "All fields included in the defval and options arguments must belong to the same enum.",
+    "seeAlso": [
+      "input.text_area",
+      "input.bool",
+      "input.int",
+      "input.float",
+      "input.symbol",
+      "input.timeframe",
+      "input.session",
+      "input.source",
+      "input.color",
+      "input.time",
+      "input"
     ]
   },
   {
@@ -5883,6 +6648,21 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"input.float\", overlay=true)\ni_angle1 = input.float(0.5, \"Sin Angle\", minval=-3.14, maxval=3.14, step=0.02)\nplot(math.sin(i_angle1) > 0 ? close : open, \"sin\", color=color.green)\n\ni_angle2 = input.float(0, \"Cos Angle\", options=[-3.14, -1.57, 0, 1.57, 3.14])\nplot(math.cos(i_angle2) > 0 ? close : open, \"cos\", color=color.red)"
+    ],
+    "returnsDescription": "Value of input variable.",
+    "remarks": "Result of input.float() function always should be assigned to a variable, see examples above.",
+    "seeAlso": [
+      "input.bool",
+      "input.int",
+      "input.string",
+      "input.text_area",
+      "input.symbol",
+      "input.timeframe",
+      "input.session",
+      "input.source",
+      "input.color",
+      "input.time",
+      "input"
     ]
   },
   {
@@ -6125,6 +6905,21 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"input.int\", overlay=true)\ni_len1 = input.int(10, \"Length 1\", minval=5, maxval=21, step=1)\nplot(ta.sma(close, i_len1))\n\ni_len2 = input.int(10, \"Length 2\", options=[5, 10, 21])\nplot(ta.sma(close, i_len2))"
+    ],
+    "returnsDescription": "Value of input variable.",
+    "remarks": "Result of input.int() function always should be assigned to a variable, see examples above.",
+    "seeAlso": [
+      "input.bool",
+      "input.float",
+      "input.string",
+      "input.text_area",
+      "input.symbol",
+      "input.timeframe",
+      "input.session",
+      "input.source",
+      "input.color",
+      "input.time",
+      "input"
     ]
   },
   {
@@ -6194,6 +6989,21 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "input float",
     "examples": [
       "//@version=6\nindicator(\"input.price\", overlay=true)\nprice1 = input.price(title=\"Date\", defval=42)\nplot(price1)\n\nprice2 = input.price(54, title=\"Date\")\nplot(price2)"
+    ],
+    "returnsDescription": "Value of input variable.",
+    "remarks": "The user can change the input's value by specifying a new value in the \"Settings/Inputs\" tab, or by moving the input's marker on the chart. Alternatively, they can select \"Reset points\" from the script's \"More\" menu and set a new input value by clicking a point on the chart.\nIf an input.time() and input.price() function call in the script share a unique inline argument and have matching group arguments, those calls create a single interactive point marker on the chart. The user can move that marker to adjust the input time and price values simultaneously.",
+    "seeAlso": [
+      "input.bool",
+      "input.int",
+      "input.float",
+      "input.string",
+      "input.text_area",
+      "input.symbol",
+      "input.resolution",
+      "input.session",
+      "input.source",
+      "input.color",
+      "input"
     ]
   },
   {
@@ -6268,6 +7078,21 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "input string",
     "examples": [
       "//@version=6\nindicator(\"input.session\", overlay=true)\ni_sess = input.session(\"1300-1700\", \"Session\", options=[\"0930-1600\", \"1300-1700\", \"1700-2100\"])\nt = time(timeframe.period, i_sess)\nbgcolor(time == t ? color.green : na)"
+    ],
+    "returnsDescription": "Value of input variable.",
+    "remarks": "Result of input.session() function always should be assigned to a variable, see examples above.",
+    "seeAlso": [
+      "input.bool",
+      "input.int",
+      "input.float",
+      "input.string",
+      "input.text_area",
+      "input.symbol",
+      "input.timeframe",
+      "input.source",
+      "input.color",
+      "input.time",
+      "input"
     ]
   },
   {
@@ -6336,6 +7161,21 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series float",
     "examples": [
       "//@version=6\nindicator(\"input.source\", overlay=true)\ni_src = input.source(close, \"Source\")\nplot(i_src)"
+    ],
+    "returnsDescription": "Value of input variable.",
+    "remarks": "Result of input.source() function always should be assigned to a variable, see examples above.",
+    "seeAlso": [
+      "input.bool",
+      "input.int",
+      "input.float",
+      "input.string",
+      "input.text_area",
+      "input.symbol",
+      "input.timeframe",
+      "input.session",
+      "input.color",
+      "input.time",
+      "input"
     ]
   },
   {
@@ -6410,6 +7250,21 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "input string",
     "examples": [
       "//@version=6\nindicator(\"input.string\", overlay=true)\ni_text = input.string(\"Hello!\", \"Message\")\nl = label.new(bar_index, high, i_text)\nlabel.delete(l[1])"
+    ],
+    "returnsDescription": "Value of input variable.",
+    "remarks": "Result of input.string() function always should be assigned to a variable, see examples above.",
+    "seeAlso": [
+      "input.text_area",
+      "input.bool",
+      "input.int",
+      "input.float",
+      "input.symbol",
+      "input.timeframe",
+      "input.session",
+      "input.source",
+      "input.color",
+      "input.time",
+      "input"
     ]
   },
   {
@@ -6478,6 +7333,21 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "input string",
     "examples": [
       "//@version=6\nindicator(\"input.symbol\", overlay=true)\ni_sym = input.symbol(\"DELL\", \"Symbol\")\ns = request.security(i_sym, 'D', close)\nplot(s)"
+    ],
+    "returnsDescription": "Value of input variable.",
+    "remarks": "Result of input.symbol() function always should be assigned to a variable, see examples above.",
+    "seeAlso": [
+      "input.bool",
+      "input.int",
+      "input.float",
+      "input.string",
+      "input.text_area",
+      "input.timeframe",
+      "input.session",
+      "input.source",
+      "input.color",
+      "input.time",
+      "input"
     ]
   },
   {
@@ -6540,6 +7410,21 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "input string",
     "examples": [
       "//@version=6\nindicator(\"input.text_area\")\ni_text = input.text_area(defval = \"Hello \\nWorld!\", title = \"Message\")\nplot(close)"
+    ],
+    "returnsDescription": "Value of input variable.",
+    "remarks": "Result of input.text_area() function always should be assigned to a variable, see examples above.",
+    "seeAlso": [
+      "input.string",
+      "input.bool",
+      "input.int",
+      "input.float",
+      "input.symbol",
+      "input.timeframe",
+      "input.session",
+      "input.source",
+      "input.color",
+      "input.time",
+      "input"
     ]
   },
   {
@@ -6609,6 +7494,21 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "input int",
     "examples": [
       "//@version=6\nindicator(\"input.time\", overlay=true)\ni_date = input.time(timestamp(\"20 Jul 2021 00:00 +0300\"), \"Date\")\nl = label.new(i_date, high, \"Date\", xloc=xloc.bar_time)\nlabel.delete(l[1])"
+    ],
+    "returnsDescription": "Value of input variable.",
+    "remarks": "The user can change the input's value by specifying a new value in the \"Settings/Inputs\" tab, or by moving the input's marker on the chart. Alternatively, they can select \"Reset points\" from the script's \"More\" menu and set a new input value by clicking a point on the chart.\nIf an input.time() and input.price() function call in the script share a unique inline argument and have matching group arguments, those calls create a single interactive point marker on the chart. The user can move that marker to adjust the input time and price values simultaneously.",
+    "seeAlso": [
+      "input.bool",
+      "input.int",
+      "input.float",
+      "input.string",
+      "input.text_area",
+      "input.symbol",
+      "input.timeframe",
+      "input.session",
+      "input.source",
+      "input.color",
+      "input"
     ]
   },
   {
@@ -6683,6 +7583,21 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "input string",
     "examples": [
       "//@version=6\nindicator(\"input.timeframe\", overlay=true)\ni_res = input.timeframe('D', \"Resolution\", options=['D', 'W', 'M'])\ns = request.security(\"AAPL\", i_res, close)\nplot(s)"
+    ],
+    "returnsDescription": "Value of input variable.",
+    "remarks": "Result of input.timeframe() function always should be assigned to a variable, see examples above.",
+    "seeAlso": [
+      "input.bool",
+      "input.int",
+      "input.float",
+      "input.string",
+      "input.text_area",
+      "input.symbol",
+      "input.session",
+      "input.source",
+      "input.color",
+      "input.time",
+      "input"
     ]
   },
   {
@@ -6744,7 +7659,16 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series int"
       }
     ],
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The value of the argument after casting to int.",
+    "seeAlso": [
+      "float",
+      "bool",
+      "color",
+      "string",
+      "line",
+      "label"
+    ]
   },
   {
     "name": "label",
@@ -6759,7 +7683,16 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series label",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The value of the argument after casting to label.",
+    "seeAlso": [
+      "float",
+      "int",
+      "bool",
+      "color",
+      "string",
+      "line"
+    ]
   },
   {
     "name": "label.copy",
@@ -6777,6 +7710,11 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series label",
     "examples": [
       "//@version=6\nindicator('Last 100 bars highest/lowest', overlay = true)\nLOOKBACK = 100\nhighest = ta.highest(LOOKBACK)\nhighestBars = ta.highestbars(LOOKBACK)\nlowest = ta.lowest(LOOKBACK)\nlowestBars = ta.lowestbars(LOOKBACK)\nif barstate.islastconfirmedhistory\n    var labelHigh = label.new(bar_index + highestBars, highest, str.tostring(highest), color = color.green)\n    var labelLow = label.copy(labelHigh)\n    label.set_xy(labelLow, bar_index + lowestBars, lowest)\n    label.set_text(labelLow, str.tostring(lowest))\n    label.set_color(labelLow, color.red)\n    label.set_style(labelLow, label.style_label_up)"
+    ],
+    "returnsDescription": "New label ID object which may be passed to label.setXXX and label.getXXX functions.",
+    "seeAlso": [
+      "label.new",
+      "label.delete"
     ]
   },
   {
@@ -6793,7 +7731,10 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "label.new"
+    ]
   },
   {
     "name": "label.get_text",
@@ -6811,6 +7752,10 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series string",
     "examples": [
       "//@version=6\nindicator(\"label.get_text\")\nmy_label = label.new(time, open, text=\"Open bar text\", xloc=xloc.bar_time)\na = label.get_text(my_label)\nlabel.new(time, close, text = a + \" new\", xloc=xloc.bar_time)"
+    ],
+    "returnsDescription": "String object containing the text of this label.",
+    "seeAlso": [
+      "label.new"
     ]
   },
   {
@@ -6829,6 +7774,10 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series int",
     "examples": [
       "//@version=6\nindicator(\"label.get_x\")\nmy_label = label.new(time, open, text=\"Open bar text\", xloc=xloc.bar_time)\na = label.get_x(my_label)\nplot(time - label.get_x(my_label)) //draws zero plot"
+    ],
+    "returnsDescription": "UNIX timestamp (in milliseconds) or bar index.",
+    "seeAlso": [
+      "label.new"
     ]
   },
   {
@@ -6845,7 +7794,11 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "Floating point value representing price.",
+    "seeAlso": [
+      "label.new"
+    ]
   },
   {
     "name": "label.new",
@@ -7271,6 +8224,23 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"label.new\")\nvar label1 = label.new(bar_index, low, text=\"Hello, world!\", style=label.style_circle)\nlabel.set_x(label1, 0)\nlabel.set_xloc(label1, time, xloc.bar_time)\nlabel.set_color(label1, color.red)\nlabel.set_size(label1, size.large)"
+    ],
+    "returnsDescription": "Label ID object which may be passed to label.setXXX and label.getXXX functions.",
+    "seeAlso": [
+      "label.delete",
+      "label.set_x",
+      "label.set_y",
+      "label.set_xy",
+      "label.set_xloc",
+      "label.set_yloc",
+      "label.set_color",
+      "label.set_textcolor",
+      "label.set_style",
+      "label.set_size",
+      "label.set_textalign",
+      "label.set_tooltip",
+      "label.set_text",
+      "label.set_text_formatting"
     ]
   },
   {
@@ -7293,7 +8263,10 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "label.new"
+    ]
   },
   {
     "name": "label.set_point",
@@ -7338,7 +8311,16 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "size.auto",
+      "size.tiny",
+      "size.small",
+      "size.normal",
+      "size.large",
+      "size.huge",
+      "label.new"
+    ]
   },
   {
     "name": "label.set_style",
@@ -7383,7 +8365,10 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "label.new"
+    ]
   },
   {
     "name": "label.set_text",
@@ -7405,7 +8390,11 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "label.new",
+      "label.set_text_formatting"
+    ]
   },
   {
     "name": "label.set_text_font_family",
@@ -7433,6 +8422,11 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "void",
     "examples": [
       "//@version=6\nindicator(\"Example of setting the label font\")\nif barstate.islastconfirmedhistory\n    l = label.new(bar_index, 0, \"monospace\", yloc=yloc.abovebar)\n    label.set_text_font_family(l, font.family_monospace)"
+    ],
+    "seeAlso": [
+      "label.new",
+      "font.family_default",
+      "font.family_monospace"
     ]
   },
   {
@@ -7461,7 +8455,11 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "label.new",
+      "label.set_text"
+    ]
   },
   {
     "name": "label.set_textalign",
@@ -7488,7 +8486,13 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "text.align_left",
+      "text.align_center",
+      "text.align_right",
+      "label.new"
+    ]
   },
   {
     "name": "label.set_textcolor",
@@ -7510,7 +8514,10 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "label.new"
+    ]
   },
   {
     "name": "label.set_tooltip",
@@ -7532,7 +8539,10 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "label.new"
+    ]
   },
   {
     "name": "label.set_x",
@@ -7554,7 +8564,10 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "label.new"
+    ]
   },
   {
     "name": "label.set_xloc",
@@ -7582,7 +8595,12 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "xloc.bar_index",
+      "xloc.bar_time",
+      "label.new"
+    ]
   },
   {
     "name": "label.set_xy",
@@ -7610,7 +8628,10 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "label.new"
+    ]
   },
   {
     "name": "label.set_y",
@@ -7632,7 +8653,10 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "label.new"
+    ]
   },
   {
     "name": "label.set_yloc",
@@ -7654,7 +8678,13 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "yloc.price",
+      "yloc.abovebar",
+      "yloc.belowbar",
+      "label.new"
+    ]
   },
   {
     "name": "library",
@@ -7688,6 +8718,10 @@ export const FUNCTIONS: PineFunction[] = [
     },
     "examples": [
       "//@version=6\n// @description Math library\nlibrary(\"num_methods\", overlay = true)\n// Calculate \"sinh()\" from the float parameter `x`\nexport sinh(float x) =>\n    (math.exp(x) - math.exp(-x)) / 2.0\nplot(sinh(0))"
+    ],
+    "seeAlso": [
+      "indicator",
+      "strategy"
     ]
   },
   {
@@ -7703,7 +8737,16 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series line",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The value of the argument after casting to line.",
+    "seeAlso": [
+      "float",
+      "int",
+      "bool",
+      "color",
+      "string",
+      "label"
+    ]
   },
   {
     "name": "line.copy",
@@ -7721,6 +8764,11 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series line",
     "examples": [
       "//@version=6\nindicator('Last 100 bars price range', overlay = true)\nLOOKBACK = 100\nhighest = ta.highest(LOOKBACK)\nlowest = ta.lowest(LOOKBACK)\nif barstate.islastconfirmedhistory\n    var lineTop = line.new(bar_index[LOOKBACK], highest, bar_index, highest, color = color.green)\n    var lineBottom = line.copy(lineTop)\n    line.set_y1(lineBottom, lowest)\n    line.set_y2(lineBottom, lowest)\n    line.set_color(lineBottom, color.red)"
+    ],
+    "returnsDescription": "New line ID object which may be passed to line.setXXX and line.getXXX functions.",
+    "seeAlso": [
+      "line.new",
+      "line.delete"
     ]
   },
   {
@@ -7737,7 +8785,10 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "line.new"
+    ]
   },
   {
     "name": "line.get_price",
@@ -7761,6 +8812,11 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series float",
     "examples": [
       "//@version=6\nindicator(\"GetPrice\", overlay=true)\nvar line l = na\nif bar_index == 10\n    l := line.new(0, high[5], bar_index, high)\nplot(line.get_price(l, bar_index), color=color.green)"
+    ],
+    "returnsDescription": "Price value of line 'id' at bar index 'x'.",
+    "remarks": "The line is considered to have been created using 'extend=extend.both'.\nThis function can only be called for lines created using 'xloc.bar_index'. If you try to call it for a line created with 'xloc.bar_time', it will generate an error.",
+    "seeAlso": [
+      "line.new"
     ]
   },
   {
@@ -7779,6 +8835,10 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series int",
     "examples": [
       "//@version=6\nindicator(\"line.get_x1\")\nmy_line = line.new(time, open, time + 60 * 60 * 24, close, xloc=xloc.bar_time)\na = line.get_x1(my_line)\nplot(time - line.get_x1(my_line)) //draws zero plot"
+    ],
+    "returnsDescription": "UNIX timestamp (in milliseconds) or bar index.",
+    "seeAlso": [
+      "line.new"
     ]
   },
   {
@@ -7795,7 +8855,11 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series int",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "UNIX timestamp (in milliseconds) or bar index.",
+    "seeAlso": [
+      "line.new"
+    ]
   },
   {
     "name": "line.get_y1",
@@ -7811,7 +8875,11 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "Price value.",
+    "seeAlso": [
+      "line.new"
+    ]
   },
   {
     "name": "line.get_y2",
@@ -7827,7 +8895,11 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "Price value.",
+    "seeAlso": [
+      "line.new"
+    ]
   },
   {
     "name": "line.new",
@@ -8070,6 +9142,21 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"line.new\")\nvar line1 = line.new(0, low, bar_index, high, extend=extend.right)\nvar line2 = line.new(time, open, time + 60 * 60 * 24, close, xloc=xloc.bar_time, style=line.style_dashed)\nline.set_x2(line1, 0)\nline.set_xloc(line1, time, time + 60 * 60 * 24, xloc.bar_time)\nline.set_color(line2, color.green)\nline.set_width(line2, 5)"
+    ],
+    "returnsDescription": "Line ID object which may be passed to line.setXXX and line.getXXX functions.",
+    "seeAlso": [
+      "line.delete",
+      "line.set_x1",
+      "line.set_y1",
+      "line.set_xy1",
+      "line.set_x2",
+      "line.set_y2",
+      "line.set_xy2",
+      "line.set_xloc",
+      "line.set_color",
+      "line.set_extend",
+      "line.set_style",
+      "line.set_width"
     ]
   },
   {
@@ -8092,7 +9179,10 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "line.new"
+    ]
   },
   {
     "name": "line.set_extend",
@@ -8114,7 +9204,14 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "extend.none",
+      "extend.right",
+      "extend.left",
+      "extend.both",
+      "line.new"
+    ]
   },
   {
     "name": "line.set_first_point",
@@ -8180,7 +9277,16 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "line.style_solid",
+      "line.style_dotted",
+      "line.style_dashed",
+      "line.style_arrow_left",
+      "line.style_arrow_right",
+      "line.style_arrow_both",
+      "line.new"
+    ]
   },
   {
     "name": "line.set_width",
@@ -8202,7 +9308,10 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "line.new"
+    ]
   },
   {
     "name": "line.set_x1",
@@ -8224,7 +9333,10 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "line.new"
+    ]
   },
   {
     "name": "line.set_x2",
@@ -8246,7 +9358,10 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "line.new"
+    ]
   },
   {
     "name": "line.set_xloc",
@@ -8280,7 +9395,12 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "xloc.bar_index",
+      "xloc.bar_time",
+      "line.new"
+    ]
   },
   {
     "name": "line.set_xy1",
@@ -8308,7 +9428,10 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "line.new"
+    ]
   },
   {
     "name": "line.set_xy2",
@@ -8336,7 +9459,10 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "line.new"
+    ]
   },
   {
     "name": "line.set_y1",
@@ -8358,7 +9484,10 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "line.new"
+    ]
   },
   {
     "name": "line.set_y2",
@@ -8380,7 +9509,10 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "line.new"
+    ]
   },
   {
     "name": "linefill",
@@ -8395,7 +9527,17 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series linefill",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The value of the argument after casting to linefill.",
+    "seeAlso": [
+      "float",
+      "int",
+      "bool",
+      "color",
+      "string",
+      "line",
+      "label"
+    ]
   },
   {
     "name": "linefill.delete",
@@ -8471,7 +9613,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series linefill",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The ID of a linefill object that can be passed to other linefill.*() functions.",
+    "remarks": "If any line of the two is deleted, the linefill object is also deleted. If the lines are moved (e.g. via line.set_xy() functions), the linefill object is also moved.\nIf both lines are extended in the same direction relative to the lines themselves (e.g. both have extend.right as the value of their extend= parameter), the space between line extensions will also be filled."
   },
   {
     "name": "linefill.set_color",
@@ -8569,7 +9713,9 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nstrategy(\"My strategy\", overlay = true, process_orders_on_close = true)\nbracketTickSizeInput = input.int(1000, \"Stoploss/Take-Profit distance (in ticks)\")\n\nlongCondition = ta.crossover(ta.sma(close, 14), ta.sma(close, 28))\nif (longCondition)\n    limitLevel = close * 1.01\n    log.info(\"Long limit order has been placed at {0}\", limitLevel)\n    strategy.order(\"My Long Entry Id\", strategy.long, limit = limitLevel)\n\n    log.info(\"Exit orders have been placed: Take-profit at {0}, Stop-loss at {1}\", close, limitLevel)\n    strategy.exit(\"Exit\", \"My Long Entry Id\", profit = bracketTickSizeInput, loss = bracketTickSizeInput)\n\nif strategy.opentrades > 10\n    log.warning(\"{0} positions opened in the same direction in a row. Try adjusting `bracketTickSizeInput`\", strategy.opentrades)\n\nlast10Perc = strategy.initial_capital / 10 > strategy.equity\nif (last10Perc and not last10Perc[1])\n    log.error(\"The strategy has lost 90% of the initial capital!\")"
-    ]
+    ],
+    "returnsDescription": "The formatted string.",
+    "remarks": "Any curly braces within an unquoted pattern must be balanced. For example, \"ab {0} de\" and \"ab '}' de\" are valid patterns, but \"ab {0'}' de\", \"ab } de\" and \"''{''\" are not.\nThe function can apply additional formatting to some values inside of the {}. The list of additional formatting options can be found in the EXAMPLE section of the str.format() article.\nThe string used as the formatString argument can contain single quote characters ('). However, one must pair all single quotes in that string to avoid unexpected formatting results.\nThe \"Pine logs...\" button is accessible from the \"More\" dropdown in the Pine Editor and from the \"More\" dropdown in the status line of any script that uses log.*() functions."
   },
   {
     "name": "log.info",
@@ -8645,7 +9791,9 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nstrategy(\"My strategy\", overlay = true, process_orders_on_close = true)\nbracketTickSizeInput = input.int(1000, \"Stoploss/Take-Profit distance (in ticks)\")\n\nlongCondition = ta.crossover(ta.sma(close, 14), ta.sma(close, 28))\nif (longCondition)\n    limitLevel = close * 1.01\n    log.info(\"Long limit order has been placed at {0}\", limitLevel)\n    strategy.order(\"My Long Entry Id\", strategy.long, limit = limitLevel)\n\n    log.info(\"Exit orders have been placed: Take-profit at {0}, Stop-loss at {1}\", close, limitLevel)\n    strategy.exit(\"Exit\", \"My Long Entry Id\", profit = bracketTickSizeInput, loss = bracketTickSizeInput)\n\nif strategy.opentrades > 10\n    log.warning(\"{0} positions opened in the same direction in a row. Try adjusting `bracketTickSizeInput`\", strategy.opentrades)\n\nlast10Perc = strategy.initial_capital / 10 > strategy.equity\nif (last10Perc and not last10Perc[1])\n    log.error(\"The strategy has lost 90% of the initial capital!\")"
-    ]
+    ],
+    "returnsDescription": "The formatted string.",
+    "remarks": "Any curly braces within an unquoted pattern must be balanced. For example, \"ab {0} de\" and \"ab '}' de\" are valid patterns, but \"ab {0'}' de\", \"ab } de\" and \"''{''\" are not.\nThe function can apply additional formatting to some values inside of the {}. The list of additional formatting options can be found in the EXAMPLE section of the str.format() article.\nThe string used as the formatString argument can contain single quote characters ('). However, one must pair all single quotes in that string to avoid unexpected formatting results.\nThe \"Pine logs...\" button is accessible from the \"More\" dropdown in the Pine Editor and from the \"More\" dropdown in the status line of any script that uses log.*() functions."
   },
   {
     "name": "log.warning",
@@ -8721,7 +9869,9 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nstrategy(\"My strategy\", overlay = true, process_orders_on_close = true)\nbracketTickSizeInput = input.int(1000, \"Stoploss/Take-Profit distance (in ticks)\")\n\nlongCondition = ta.crossover(ta.sma(close, 14), ta.sma(close, 28))\nif (longCondition)\n    limitLevel = close * 1.01\n    log.info(\"Long limit order has been placed at {0}\", limitLevel)\n    strategy.order(\"My Long Entry Id\", strategy.long, limit = limitLevel)\n\n    log.info(\"Exit orders have been placed: Take-profit at {0}, Stop-loss at {1}\", close, limitLevel)\n    strategy.exit(\"Exit\", \"My Long Entry Id\", profit = bracketTickSizeInput, loss = bracketTickSizeInput)\n\nif strategy.opentrades > 10\n    log.warning(\"{0} positions opened in the same direction in a row. Try adjusting `bracketTickSizeInput`\", strategy.opentrades)\n\nlast10Perc = strategy.initial_capital / 10 > strategy.equity\nif (last10Perc and not last10Perc[1])\n    log.error(\"The strategy has lost 90% of the initial capital!\")"
-    ]
+    ],
+    "returnsDescription": "The formatted string.",
+    "remarks": "Any curly braces within an unquoted pattern must be balanced. For example, \"ab {0} de\" and \"ab '}' de\" are valid patterns, but \"ab {0'}' de\", \"ab } de\" and \"''{''\" are not.\nThe function can apply additional formatting to some values inside of the {}. The list of additional formatting options can be found in the EXAMPLE section of the str.format() article.\nThe string used as the formatString argument can contain single quote characters ('). However, one must pair all single quotes in that string to avoid unexpected formatting results.\nThe \"Pine logs...\" button is accessible from the \"More\" dropdown in the Pine Editor and from the \"More\" dropdown in the status line of any script that uses log.*() functions."
   },
   {
     "name": "map.clear",
@@ -8739,6 +9889,13 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "void",
     "examples": [
       "//@version=6\nindicator(\"map.clear example\")\noddMap = map.new<int, bool>()\noddMap.put(1, true)\noddMap.put(2, false)\noddMap.put(3, true)\nmap.clear(oddMap)\nplot(oddMap.size())"
+    ],
+    "seeAlso": [
+      "map.new<type,type>",
+      "map.put_all",
+      "map.keys",
+      "map.values",
+      "map.remove"
     ]
   },
   {
@@ -8763,6 +9920,13 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series bool",
     "examples": [
       "//@version=6\nindicator(\"map.includes example\")\na = map.new<string, float>()\na.put(\"open\", open)\np = close\nif map.contains(a, \"open\")\n    p := a.get(\"open\")\nplot(p)"
+    ],
+    "seeAlso": [
+      "map.new<type,type>",
+      "map.put",
+      "map.keys",
+      "map.values",
+      "map.size"
     ]
   },
   {
@@ -8781,6 +9945,15 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "map<keyType, valueType>",
     "examples": [
       "//@version=6\nindicator(\"map.copy example\")\na = map.new<string, int>()\na.put(\"example\", 1)\nb = map.copy(a)\na := map.new<string, int>()\na.put(\"example\", 2)\nplot(a.get(\"example\"))\nplot(b.get(\"example\"))"
+    ],
+    "returnsDescription": "A copy of the id map.",
+    "seeAlso": [
+      "map.new<type,type>",
+      "map.put",
+      "map.keys",
+      "map.values",
+      "map.get",
+      "map.size"
     ]
   },
   {
@@ -8805,6 +9978,13 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "<value_type>",
     "examples": [
       "//@version=6\nindicator(\"map.get example\")\na = map.new<int, int>()\nsize = 10\nfor i = 0 to size\n    a.put(i, size-i)\nplot(map.get(a, 1))"
+    ],
+    "seeAlso": [
+      "map.new<type,type>",
+      "map.put",
+      "map.keys",
+      "map.values",
+      "map.contains"
     ]
   },
   {
@@ -8823,6 +10003,14 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "array<type>",
     "examples": [
       "//@version=6\nindicator(\"map.keys example\")\na = map.new<string, float>()\na.put(\"open\", open)\na.put(\"high\", high)\na.put(\"low\", low)\na.put(\"close\", close)\nkeys = map.keys(a)\nohlc = 0.0\nfor key in keys\n    ohlc += a.get(key)\nplot(ohlc/4)"
+    ],
+    "remarks": "Maps maintain insertion order. The elements within the array returned by this function will also be in the insertion order.",
+    "seeAlso": [
+      "map.new<type,type>",
+      "map.put",
+      "map.get",
+      "map.values",
+      "map.size"
     ]
   },
   {
@@ -8834,6 +10022,15 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "map<keyType, valueType>",
     "examples": [
       "//@version=6\nindicator(\"map.new<string, int> example\")\na = map.new<string, int>()\na.put(\"example\", 1)\nlabel.new(bar_index, close, str.tostring(a.get(\"example\")))"
+    ],
+    "returnsDescription": "The ID of a map object which may be used in other map.*() functions.",
+    "remarks": "Each key is unique and can only appear once. When adding a new value with a key that the map already contains, that value replaces the old value associated with the key.\nMaps maintain insertion order. Note that the order does not change when inserting a pair with a key that's already in the map. The new pair replaces the existing pair with the key in such cases.",
+    "seeAlso": [
+      "map.put",
+      "map.keys",
+      "map.values",
+      "map.get",
+      "array.new<type>"
     ]
   },
   {
@@ -8864,6 +10061,15 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "<value_type>",
     "examples": [
       "//@version=6\nindicator(\"map.put example\")\na = map.new<string, float>()\nmap.put(a, \"first\", 10)\nmap.put(a, \"second\", 15)\nprevFirst = map.put(a, \"first\", 20)\ncurrFirst = a.get(\"first\")\nplot(prevFirst)\nplot(currFirst)"
+    ],
+    "returnsDescription": "The previous value associated with key if the key was already present in the map, or na if the key is new.",
+    "remarks": "Maps maintain insertion order. Note that the order does not change when inserting a pair with a key that's already in the map. The new pair replaces the existing pair with the key in such cases.",
+    "seeAlso": [
+      "map.new<type,type>",
+      "map.put_all",
+      "map.keys",
+      "map.values",
+      "map.remove"
     ]
   },
   {
@@ -8888,6 +10094,13 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "void",
     "examples": [
       "//@version=6\nindicator(\"map.put_all example\")\na = map.new<string, float>()\nb = map.new<string, float>()\na.put(\"first\", 10)\na.put(\"second\", 15)\nb.put(\"third\", 20)\nmap.put_all(a, b)\nplot(a.get(\"third\"))"
+    ],
+    "seeAlso": [
+      "map.new<type,type>",
+      "map.put",
+      "map.keys",
+      "map.values",
+      "map.remove"
     ]
   },
   {
@@ -8912,6 +10125,14 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "<value_type>",
     "examples": [
       "//@version=6\nindicator(\"map.remove example\")\na = map.new<string, color>()\na.put(\"firstColor\", color.green)\noldColorValue = map.remove(a, \"firstColor\")\nplot(close, color = oldColorValue)"
+    ],
+    "returnsDescription": "The previous value associated with key if the key was present in the map, or na if there was no such key.",
+    "seeAlso": [
+      "map.new<type,type>",
+      "map.put",
+      "map.keys",
+      "map.values",
+      "map.clear"
     ]
   },
   {
@@ -8930,6 +10151,13 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series int",
     "examples": [
       "//@version=6\nindicator(\"map.size example\")\na = map.new<int, int>()\nsize = 10\nfor i = 0 to size\n    a.put(i, size-i)\nplot(map.size(a))"
+    ],
+    "seeAlso": [
+      "map.new<type,type>",
+      "map.put",
+      "map.keys",
+      "map.values",
+      "map.get"
     ]
   },
   {
@@ -8948,6 +10176,14 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "array<type>",
     "examples": [
       "//@version=6\nindicator(\"map.values example\")\na = map.new<string, float>()\na.put(\"open\", open)\na.put(\"high\", high)\na.put(\"low\", low)\na.put(\"close\", close)\nvalues = map.values(a)\nohlc = 0.0\nfor value in values\n    ohlc += value\nplot(ohlc/4)"
+    ],
+    "remarks": "Maps maintain insertion order. The elements within the array returned by this function will also be in the insertion order.",
+    "seeAlso": [
+      "map.new<type,type>",
+      "map.put",
+      "map.get",
+      "map.keys",
+      "map.size"
     ]
   },
   {
@@ -9058,7 +10294,8 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series float"
       }
     ],
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The absolute value of number."
   },
   {
     "name": "math.acos",
@@ -9120,7 +10357,8 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series float"
       }
     ],
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The arc cosine of a value; the returned angle is in the range [0, Pi], or na if y is outside of range [-1, 1]."
   },
   {
     "name": "math.asin",
@@ -9182,7 +10420,8 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series float"
       }
     ],
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The arcsine of a value; the returned angle is in the range [-Pi/2, Pi/2], or na if y is outside of range [-1, 1]."
   },
   {
     "name": "math.atan",
@@ -9244,7 +10483,8 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series float"
       }
     ],
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The arc tangent of a value; the returned angle is in the range [-Pi/2, Pi/2]."
   },
   {
     "name": "math.avg",
@@ -9307,7 +10547,13 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series float"
       }
     ],
-    "examples": []
+    "examples": [],
+    "returnsDescription": "Average.",
+    "seeAlso": [
+      "math.sum",
+      "ta.cum",
+      "ta.sma"
+    ]
   },
   {
     "name": "math.ceil",
@@ -9372,7 +10618,12 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series int"
       }
     ],
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The smallest \"int\" value that is greater than or equal to the number.",
+    "seeAlso": [
+      "math.floor",
+      "math.round"
+    ]
   },
   {
     "name": "math.cos",
@@ -9434,7 +10685,8 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series float"
       }
     ],
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The trigonometric cosine of an angle."
   },
   {
     "name": "math.exp",
@@ -9496,7 +10748,11 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series float"
       }
     ],
-    "examples": []
+    "examples": [],
+    "returnsDescription": "A value representing e raised to the power of number.",
+    "seeAlso": [
+      "math.pow"
+    ]
   },
   {
     "name": "math.floor",
@@ -9561,7 +10817,12 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series int"
       }
     ],
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The largest \"int\" value that is less than or equal to the number.",
+    "seeAlso": [
+      "math.ceil",
+      "math.round"
+    ]
   },
   {
     "name": "math.log",
@@ -9623,7 +10884,11 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series float"
       }
     ],
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The natural logarithm of number.",
+    "seeAlso": [
+      "math.log10"
+    ]
   },
   {
     "name": "math.log10",
@@ -9685,7 +10950,11 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series float"
       }
     ],
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The base 10 logarithm of number.",
+    "seeAlso": [
+      "math.log"
+    ]
   },
   {
     "name": "math.max",
@@ -9852,6 +11121,10 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"math.max\", overlay=true)\nplot(math.max(close, open))\nplot(math.max(close, math.max(open, 42)))"
+    ],
+    "returnsDescription": "The greatest of multiple given values.",
+    "seeAlso": [
+      "math.min"
     ]
   },
   {
@@ -10019,6 +11292,10 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"math.min\", overlay=true)\nplot(math.min(close, open))\nplot(math.min(close, math.min(open, 42)))"
+    ],
+    "returnsDescription": "The smallest of multiple given values.",
+    "seeAlso": [
+      "math.max"
     ]
   },
   {
@@ -10113,6 +11390,11 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"math.pow\", overlay=true)\nplot(math.pow(close, 2))"
+    ],
+    "returnsDescription": "base raised to the power of exponent. If base is a series, it is calculated elementwise.",
+    "seeAlso": [
+      "math.sqrt",
+      "math.exp"
     ]
   },
   {
@@ -10143,7 +11425,8 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "A random value."
   },
   {
     "name": "math.round",
@@ -10283,7 +11566,13 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series float"
       }
     ],
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The value of number rounded to the nearest integer, or according to precision.",
+    "remarks": "Note that for 'na' values function returns 'na'.",
+    "seeAlso": [
+      "math.ceil",
+      "math.floor"
+    ]
   },
   {
     "name": "math.round_to_mintick",
@@ -10323,7 +11612,13 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series float"
       }
     ],
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The number rounded to tick precision.",
+    "remarks": "Note that for 'na' values function returns 'na'.",
+    "seeAlso": [
+      "math.ceil",
+      "math.floor"
+    ]
   },
   {
     "name": "math.sign",
@@ -10388,7 +11683,8 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series float"
       }
     ],
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The sign of the argument."
   },
   {
     "name": "math.sin",
@@ -10450,7 +11746,8 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series float"
       }
     ],
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The trigonometric sine of an angle."
   },
   {
     "name": "math.sqrt",
@@ -10512,7 +11809,11 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series float"
       }
     ],
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The square root of number.",
+    "seeAlso": [
+      "math.pow"
+    ]
   },
   {
     "name": "math.sum",
@@ -10539,7 +11840,13 @@ export const FUNCTIONS: PineFunction[] = [
       "minArgs": 1,
       "polymorphic": "numeric"
     },
-    "examples": []
+    "examples": [],
+    "returnsDescription": "Sum of source for length bars back.",
+    "remarks": "na values in the source series are ignored; the function calculates on the length quantity of non-na values.",
+    "seeAlso": [
+      "ta.cum",
+      "for"
+    ]
   },
   {
     "name": "math.tan",
@@ -10601,7 +11908,8 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series float"
       }
     ],
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The trigonometric tangent of an angle."
   },
   {
     "name": "math.todegrees",
@@ -10617,7 +11925,8 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The angle value in degrees."
   },
   {
     "name": "math.toradians",
@@ -10633,7 +11942,8 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The angle value in radians."
   },
   {
     "name": "matrix.add_col",
@@ -10665,6 +11975,15 @@ export const FUNCTIONS: PineFunction[] = [
     "examples": [
       "//@version=6\nindicator(\"`matrix.add_col()` Example 1\")\n\n// Create a 2x3 \"int\" matrix containing values `0`.\nm = matrix.new<int>(2, 3, 0)\n\n// Add a column with `na` values to the matrix.\nmatrix.add_col(m)\n\n// Display matrix elements.\nif barstate.islastconfirmedhistory\n    var t = table.new(position.top_right, 2, 2, color.green)\n    table.cell(t, 0, 0, \"Matrix elements:\")\n    table.cell(t, 0, 1, str.tostring(m))",
       "//@version=6\nindicator(\"`matrix.add_col()` Example 2\")\n\nif barstate.islastconfirmedhistory\n    // Create an empty matrix object.\n    var m = matrix.new<int>()\n\n    // Create an array with values `1` and `3`.\n    var a = array.from(1, 3)\n\n    // Add the `a` array as the first column of the empty matrix.\n    matrix.add_col(m, 0, a)\n\n    // Display matrix elements.\n    var t = table.new(position.top_right, 2, 2, color.green)\n    table.cell(t, 0, 0, \"Matrix elements:\")\n    table.cell(t, 0, 1, str.tostring(m))"
+    ],
+    "remarks": "Rather than add columns to an empty matrix, it is far more efficient to declare a matrix with explicit dimensions and fill it with values. Adding a column is also much slower than adding a row with the matrix.add_row() function.",
+    "seeAlso": [
+      "matrix.new<type>",
+      "matrix.get",
+      "matrix.set",
+      "matrix.columns",
+      "matrix.rows",
+      "matrix.add_row"
     ]
   },
   {
@@ -10697,6 +12016,15 @@ export const FUNCTIONS: PineFunction[] = [
     "examples": [
       "//@version=6\nindicator(\"`matrix.add_row()` Example 1\")\n\n// Create a 2x3 \"int\" matrix containing values `0`.\nm = matrix.new<int>(2, 3, 0)\n\n// Add a row with `na` values to the matrix.\nmatrix.add_row(m)\n\n// Display matrix elements.\nif barstate.islastconfirmedhistory\n    var t = table.new(position.top_right, 2, 2, color.green)\n    table.cell(t, 0, 0, \"Matrix elements:\")\n    table.cell(t, 0, 1, str.tostring(m))",
       "//@version=6\nindicator(\"`matrix.add_row()` Example 2\")\n\nif barstate.islastconfirmedhistory\n    // Create an empty matrix object.\n    var m = matrix.new<int>()\n\n    // Create an array with values `1` and `2`.\n    var a = array.from(1, 2)\n\n    // Add the `a` array as the first row of the empty matrix.\n    matrix.add_row(m, 0, a)\n\n    // Display matrix elements.\n    var t = table.new(position.top_right, 2, 2, color.green)\n    table.cell(t, 0, 0, \"Matrix elements:\")\n    table.cell(t, 0, 1, str.tostring(m))"
+    ],
+    "remarks": "Indexing of rows and columns starts at zero. Rather than add rows to an empty matrix, it is far more efficient to declare a matrix with explicit dimensions and fill it with values.",
+    "seeAlso": [
+      "matrix.new<type>",
+      "matrix.get",
+      "matrix.set",
+      "matrix.columns",
+      "matrix.rows",
+      "matrix.add_col"
     ]
   },
   {
@@ -10739,6 +12067,14 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"`matrix.avg()` Example\")\n\n// Create a 2x2 matrix.\nvar m = matrix.new<int>(2, 2, na)\n// Fill the matrix with values.\nmatrix.set(m, 0, 0, 1)\nmatrix.set(m, 0, 1, 2)\nmatrix.set(m, 1, 0, 3)\nmatrix.set(m, 1, 1, 4)\n\n// Get the average value of the matrix.\nvar x = matrix.avg(m)\n\nplot(x, 'Matrix average value')"
+    ],
+    "returnsDescription": "The average value from the id matrix.",
+    "seeAlso": [
+      "matrix.new<type>",
+      "matrix.get",
+      "matrix.set",
+      "matrix.columns",
+      "matrix.rows"
     ]
   },
   {
@@ -10763,6 +12099,15 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "array<type>",
     "examples": [
       "//@version=6\nindicator(\"`matrix.col()` Example\", \"\", true)\n\n// Create a 2x3 \"float\" matrix from `hlc3` values.\nm = matrix.new<float>(2, 3, hlc3)\n\n// Return an array with the values of the first column of matrix `m`.\na = matrix.col(m, 0)\n\n// Plot the first value from the array `a`.\nplot(array.get(a, 0))"
+    ],
+    "returnsDescription": "An array ID containing the column values of the id matrix.",
+    "remarks": "Indexing of rows starts at 0.",
+    "seeAlso": [
+      "matrix.new<type>",
+      "matrix.get",
+      "array.get",
+      "matrix.col",
+      "matrix.columns"
     ]
   },
   {
@@ -10781,6 +12126,15 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series int",
     "examples": [
       "//@version=6\nindicator(\"`matrix.columns()` Example\")\n\n// Create a 2x6 matrix with values `0`.\nvar m = matrix.new<int>(2, 6, 0)\n\n// Get the quantity of columns in matrix `m`.\nvar x = matrix.columns(m)\n\n// Display using a label.\nif barstate.islastconfirmedhistory\n    label.new(bar_index, high, \"Columns: \" + str.tostring(x) + \"\\n\" + str.tostring(m))"
+    ],
+    "returnsDescription": "The number of columns in the matrix id.",
+    "seeAlso": [
+      "matrix.new<type>",
+      "matrix.get",
+      "matrix.set",
+      "matrix.col",
+      "matrix.row",
+      "matrix.rows"
     ]
   },
   {
@@ -10805,6 +12159,15 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "matrix<type>",
     "examples": [
       "//@version=6\nindicator(\"`matrix.concat()` Example\")\n\n// Create a 2x4 \"int\" matrix containing values `0`.\nm1 = matrix.new<int>(2, 4, 0)\n// Create a 2x4 \"int\" matrix containing values `1`.\nm2 = matrix.new<int>(2, 4, 1)\n\n// Append matrix `m2` to `m1`.\nmatrix.concat(m1, m2)\n\n// Display matrix elements.\nif barstate.islastconfirmedhistory\n    var t = table.new(position.top_right, 2, 2, color.green)\n    table.cell(t, 0, 0, \"Matrix Elements:\")\n    table.cell(t, 0, 1, str.tostring(m1))"
+    ],
+    "returnsDescription": "Returns the id1 matrix concatenated with the id2 matrix.",
+    "remarks": "The number of columns in both matrices must be identical.",
+    "seeAlso": [
+      "matrix.new<type>",
+      "matrix.get",
+      "matrix.set",
+      "matrix.columns",
+      "matrix.rows"
     ]
   },
   {
@@ -10823,6 +12186,14 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "matrix<type>",
     "examples": [
       "//@version=6\nindicator(\"`matrix.copy()` Example\")\n\n// For efficiency, execute this code only once.\nif barstate.islastconfirmedhistory\n    // Create a 2x3 \"float\" matrix with `1` values.\n    var m1 = matrix.new<float>(2, 3, 1)\n\n    // Copy the matrix to a new one.\n    // Note that unlike what `matrix.copy()` does,\n    // the simple assignment operation `m2 = m1`\n    // would NOT create a new copy of the `m1` matrix.\n    // It would merely create a copy of its ID referencing the same matrix.\n    var m2 = matrix.copy(m1)\n\n    // Display using a table.\n    var t = table.new(position.top_right, 5, 2, color.green)\n    table.cell(t, 0, 0, \"Original Matrix:\")\n    table.cell(t, 0, 1, str.tostring(m1))\n    table.cell(t, 1, 0, \"Matrix Copy:\")\n    table.cell(t, 1, 1, str.tostring(m2))"
+    ],
+    "returnsDescription": "A new matrix object of the copied id matrix.",
+    "seeAlso": [
+      "matrix.new<type>",
+      "matrix.get",
+      "matrix.set",
+      "matrix.columns",
+      "matrix.rows"
     ]
   },
   {
@@ -10865,6 +12236,13 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"`matrix.det` Example\")\n\n// Create a 2x2 matrix.\nvar m = matrix.new<float>(2, 2, na)\n// Fill the matrix with values.\nmatrix.set(m, 0, 0,  3)\nmatrix.set(m, 0, 1,  7)\nmatrix.set(m, 1, 0,  1)\nmatrix.set(m, 1, 1, -4)\n\n// Get the determinant of the matrix.\nvar x = matrix.det(m)\n\nplot(x, 'Matrix determinant')"
+    ],
+    "returnsDescription": "The determinant value of the id matrix.",
+    "remarks": "Function calculation based on the LU decomposition algorithm.",
+    "seeAlso": [
+      "matrix.new<type>",
+      "matrix.set",
+      "matrix.is_square"
     ]
   },
   {
@@ -10926,6 +12304,14 @@ export const FUNCTIONS: PineFunction[] = [
     "examples": [
       "//@version=6\nindicator(\"`matrix.diff()` Example 1\")\n\n// For efficiency, execute this code only once.\nif barstate.islastconfirmedhistory\n    // Create a 2x3 matrix containing values `5`.\n    var m1 = matrix.new<float>(2, 3, 5)\n    // Create a 2x3 matrix containing values `4`.\n    var m2 = matrix.new<float>(2, 3, 4)\n    // Create a new matrix containing the difference between matrices `m1` and `m2`.\n    var m3 = matrix.diff(m1, m2)\n\n    // Display using a table.\n    var t = table.new(position.top_right, 1, 2, color.green)\n    table.cell(t, 0, 0, \"Difference between two matrices:\")\n    table.cell(t, 0, 1, str.tostring(m3))",
       "//@version=6\nindicator(\"`matrix.diff()` Example 2\")\n\n// For efficiency, execute this code only once.\nif barstate.islastconfirmedhistory\n    // Create a 2x3 matrix with values `4`.\n    var m1 = matrix.new<float>(2, 3, 4)\n\n    // Create a new matrix containing the difference between the `m1` matrix and the \"int\" value `1`.\n    var m2 = matrix.diff(m1, 1)\n\n    // Display using a table.\n    var t = table.new(position.top_right, 1, 2, color.green)\n    table.cell(t, 0, 0, \"Difference between a matrix and a scalar:\")\n    table.cell(t, 0, 1, str.tostring(m2))"
+    ],
+    "returnsDescription": "A new matrix object containing the difference between id2 and id1.",
+    "seeAlso": [
+      "matrix.new<type>",
+      "matrix.get",
+      "matrix.set",
+      "matrix.columns",
+      "matrix.rows"
     ]
   },
   {
@@ -10968,6 +12354,13 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"`matrix.eigenvalues()` Example\")\n\n// For efficiency, execute this code only once.\nif barstate.islastconfirmedhistory\n    // Create a 2x2 matrix.\n    var m1 = matrix.new<int>(2, 2, na)\n    // Fill the matrix with values.\n    matrix.set(m1, 0, 0, 2)\n    matrix.set(m1, 0, 1, 4)\n    matrix.set(m1, 1, 0, 6)\n    matrix.set(m1, 1, 1, 8)\n\n    // Get the eigenvalues of the matrix.\n    tr = matrix.eigenvalues(m1)\n\n    // Display matrix elements.\n    var t = table.new(position.top_right, 2, 2, color.green)\n    table.cell(t, 0, 0, \"Matrix elements:\")\n    table.cell(t, 0, 1, str.tostring(m1))\n    table.cell(t, 1, 0, \"Array of Eigenvalues:\")\n    table.cell(t, 1, 1, str.tostring(tr))"
+    ],
+    "returnsDescription": "An array containing the eigenvalues of the id matrix.",
+    "remarks": "The function is calculated using \"The Implicit QL Algorithm\".",
+    "seeAlso": [
+      "matrix.new<type>",
+      "matrix.set",
+      "matrix.eigenvectors"
     ]
   },
   {
@@ -11010,6 +12403,14 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"`matrix.eigenvectors()` Example\")\n\n// For efficiency, execute this code only once.\nif barstate.islastconfirmedhistory\n    // Create a 2x2 matrix\n    var m1 = matrix.new<int>(2, 2, 1)\n    // Fill the matrix with values.\n    matrix.set(m1, 0, 0, 2)\n    matrix.set(m1, 0, 1, 4)\n    matrix.set(m1, 1, 0, 6)\n    matrix.set(m1, 1, 1, 8)\n\n    // Get the eigenvectors of the matrix.\n    m2 = matrix.eigenvectors(m1)\n\n    // Display matrix elements.\n    var t = table.new(position.top_right, 2, 2, color.green)\n    table.cell(t, 0, 0, \"Matrix Elements:\")\n    table.cell(t, 0, 1, str.tostring(m1))\n    table.cell(t, 1, 0, \"Matrix Eigenvectors:\")\n    table.cell(t, 1, 1, str.tostring(m2))"
+    ],
+    "returnsDescription": "A new matrix containing the eigenvectors of the id matrix.",
+    "remarks": "The function is calculated using \"The Implicit QL Algorithm\".",
+    "seeAlso": [
+      "matrix.new<type>",
+      "matrix.get",
+      "matrix.set",
+      "matrix.eigenvalues"
     ]
   },
   {
@@ -11026,7 +12427,12 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series int",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "matrix.new<type>",
+      "matrix.columns",
+      "matrix.rows"
+    ]
   },
   {
     "name": "matrix.fill",
@@ -11078,6 +12484,13 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "void",
     "examples": [
       "//@version=6\nindicator(\"`matrix.fill()` Example\")\n\n// Create a 4x5 \"int\" matrix containing values `0`.\nm = matrix.new<float>(4, 5, 0)\n\n// Fill the intersection of rows 1 to 2 and columns 2 to 3 of the matrix with `hl2` values.\nmatrix.fill(m, hl2, 0, 2, 1, 3)\n\n// Display using a label.\nif barstate.islastconfirmedhistory\n    label.new(bar_index, high, str.tostring(m))"
+    ],
+    "seeAlso": [
+      "matrix.new<type>",
+      "matrix.get",
+      "matrix.set",
+      "matrix.columns",
+      "matrix.rows"
     ]
   },
   {
@@ -11108,6 +12521,14 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "<matrix_type>",
     "examples": [
       "//@version=6\nindicator(\"`matrix.get()` Example\", \"\", true)\n\n// Create a 2x3 \"float\" matrix from the `hl2` values.\nm = matrix.new<float>(2, 3, hl2)\n\n// Return the value of the element at index [0, 0] of matrix `m`.\nx = matrix.get(m, 0, 0)\n\nplot(x)"
+    ],
+    "returnsDescription": "The value of the element at the row and column index of the id matrix.",
+    "remarks": "Indexing of the rows and columns starts at zero.",
+    "seeAlso": [
+      "matrix.new<type>",
+      "matrix.set",
+      "matrix.columns",
+      "matrix.rows"
     ]
   },
   {
@@ -11150,6 +12571,15 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"`matrix.inv()` Example\")\n\n// For efficiency, execute this code only once.\nif barstate.islastconfirmedhistory\n    // Create a 2x2 matrix.\n    var m1 = matrix.new<int>(2, 2, na)\n    // Fill the matrix with values.\n    matrix.set(m1, 0, 0, 1)\n    matrix.set(m1, 0, 1, 2)\n    matrix.set(m1, 1, 0, 3)\n    matrix.set(m1, 1, 1, 4)\n\n    // Inverse of the matrix.\n    var m2 = matrix.inv(m1)\n\n    // Display matrix elements.\n    var t = table.new(position.top_right, 2, 2, color.green)\n    table.cell(t, 0, 0, \"Original Matrix:\")\n    table.cell(t, 0, 1, str.tostring(m1))\n    table.cell(t, 1, 0, \"Inverse matrix:\")\n    table.cell(t, 1, 1, str.tostring(m2))"
+    ],
+    "returnsDescription": "A new matrix, which is the inverse of the id matrix.",
+    "remarks": "The function is calculated using the LU decomposition algorithm.",
+    "seeAlso": [
+      "matrix.new<type>",
+      "matrix.set",
+      "matrix.pinv",
+      "matrix.copy",
+      "str.tostring"
     ]
   },
   {
@@ -11166,7 +12596,16 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series bool",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "Returns true if the id matrix is ​​anti-diagonal, false otherwise.",
+    "remarks": "Returns false with non-square matrices.",
+    "seeAlso": [
+      "matrix.new<type>",
+      "matrix.set",
+      "matrix.is_square",
+      "matrix.is_identity",
+      "matrix.is_diagonal"
+    ]
   },
   {
     "name": "matrix.is_antisymmetric",
@@ -11182,7 +12621,15 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series bool",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "Returns true, if the id matrix is antisymmetric, false otherwise.",
+    "remarks": "Returns false with non-square matrices.",
+    "seeAlso": [
+      "matrix.new<type>",
+      "matrix.get",
+      "matrix.set",
+      "matrix.is_square"
+    ]
   },
   {
     "name": "matrix.is_binary",
@@ -11198,7 +12645,13 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series bool",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "Returns true if the id matrix is binary, false otherwise.",
+    "seeAlso": [
+      "matrix.new<type>",
+      "matrix.get",
+      "matrix.set"
+    ]
   },
   {
     "name": "matrix.is_diagonal",
@@ -11214,7 +12667,16 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series bool",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "Returns true if the id matrix is diagonal, false otherwise.",
+    "remarks": "Returns false with non-square matrices.",
+    "seeAlso": [
+      "matrix.new<type>",
+      "matrix.set",
+      "matrix.is_square",
+      "matrix.is_identity",
+      "matrix.is_antidiagonal"
+    ]
   },
   {
     "name": "matrix.is_identity",
@@ -11230,7 +12692,14 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series bool",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "Returns true if id is an identity matrix, false otherwise.",
+    "remarks": "Returns false with non-square matrices.",
+    "seeAlso": [
+      "matrix.new<type>",
+      "matrix.is_square",
+      "matrix.is_diagonal"
+    ]
   },
   {
     "name": "matrix.is_square",
@@ -11246,7 +12715,15 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series bool",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "Returns true if the id matrix is square, false otherwise.",
+    "seeAlso": [
+      "matrix.new<type>",
+      "matrix.get",
+      "matrix.set",
+      "matrix.columns",
+      "matrix.rows"
+    ]
   },
   {
     "name": "matrix.is_stochastic",
@@ -11262,7 +12739,12 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series bool",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "Returns true if the id matrix is stochastic, false otherwise.",
+    "seeAlso": [
+      "matrix.new<type>",
+      "matrix.set"
+    ]
   },
   {
     "name": "matrix.is_symmetric",
@@ -11278,7 +12760,15 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series bool",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "Returns true if the id matrix is symmetric, false otherwise.",
+    "remarks": "Returns false with non-square matrices.",
+    "seeAlso": [
+      "matrix.new<type>",
+      "matrix.get",
+      "matrix.set",
+      "matrix.is_square"
+    ]
   },
   {
     "name": "matrix.is_triangular",
@@ -11294,7 +12784,14 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series bool",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "Returns true if the id matrix is triangular, false otherwise.",
+    "remarks": "Returns false with non-square matrices.",
+    "seeAlso": [
+      "matrix.new<type>",
+      "matrix.set",
+      "matrix.is_square"
+    ]
   },
   {
     "name": "matrix.is_zero",
@@ -11310,7 +12807,13 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series bool",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "Returns true if all elements of the id matrix are zero, false otherwise.",
+    "seeAlso": [
+      "matrix.new<type>",
+      "matrix.get",
+      "matrix.set"
+    ]
   },
   {
     "name": "matrix.kron",
@@ -11370,6 +12873,13 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"`matrix.kron()` Example\")\n\n// Display using a table.\nif barstate.islastconfirmedhistory\n    // Create two matrices with default values `1` and `2`.\n    var m1 = matrix.new<float>(2, 2, 1)\n    var m2 = matrix.new<float>(2, 2, 2)\n\n    // Calculate the Kronecker product of the matrices.\n    var m3 = matrix.kron(m1, m2)\n\n    // Display matrix elements.\n    var t = table.new(position.top_right, 5, 2, color.green)\n    table.cell(t, 0, 0, \"Matrix 1:\")\n    table.cell(t, 0, 1, str.tostring(m1))\n    table.cell(t, 1, 1, \"⊗\")\n    table.cell(t, 2, 0, \"Matrix 2:\")\n    table.cell(t, 2, 1, str.tostring(m2))\n    table.cell(t, 3, 1, \"=\")\n    table.cell(t, 4, 0, \"Kronecker product:\")\n    table.cell(t, 4, 1, str.tostring(m3))"
+    ],
+    "returnsDescription": "A new matrix containing the Kronecker product of id1 and id2.",
+    "seeAlso": [
+      "matrix.new<type>",
+      "matrix.mult",
+      "str.tostring",
+      "table.new"
     ]
   },
   {
@@ -11412,6 +12922,13 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"`matrix.max()` Example\")\n\n// Create a 2x2 matrix.\nvar m = matrix.new<int>(2, 2, na)\n// Fill the matrix with values.\nmatrix.set(m, 0, 0, 1)\nmatrix.set(m, 0, 1, 2)\nmatrix.set(m, 1, 0, 3)\nmatrix.set(m, 1, 1, 4)\n\n// Get the maximum value in the matrix.\nvar x = matrix.max(m)\n\nplot(x, 'Matrix maximum value')"
+    ],
+    "returnsDescription": "The maximum value from the id matrix.",
+    "seeAlso": [
+      "matrix.new<type>",
+      "matrix.min",
+      "matrix.avg",
+      "matrix.sort"
     ]
   },
   {
@@ -11454,6 +12971,13 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"`matrix.median()` Example\")\n\n// Create a 2x2 matrix.\nm = matrix.new<int>(2, 2, na)\n// Fill the matrix with values.\nmatrix.set(m, 0, 0, 1)\nmatrix.set(m, 0, 1, 2)\nmatrix.set(m, 1, 0, 3)\nmatrix.set(m, 1, 1, 4)\n\n// Get the median of the matrix.\nx = matrix.median(m)\n\nplot(x, 'Median of the matrix')"
+    ],
+    "remarks": "Note that na elements of the matrix are not considered when calculating the median.",
+    "seeAlso": [
+      "matrix.new<type>",
+      "matrix.mode",
+      "matrix.sort",
+      "matrix.avg"
     ]
   },
   {
@@ -11496,6 +13020,13 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"`matrix.min()` Example\")\n\n// Create a 2x2 matrix.\nvar m = matrix.new<int>(2, 2, na)\n// Fill the matrix with values.\nmatrix.set(m, 0, 0, 1)\nmatrix.set(m, 0, 1, 2)\nmatrix.set(m, 1, 0, 3)\nmatrix.set(m, 1, 1, 4)\n\n// Get the minimum value from the matrix.\nvar x = matrix.min(m)\n\nplot(x, 'Matrix minimum value')"
+    ],
+    "returnsDescription": "The smallest value from the id matrix.",
+    "seeAlso": [
+      "matrix.new<type>",
+      "matrix.max",
+      "matrix.avg",
+      "matrix.sort"
     ]
   },
   {
@@ -11538,6 +13069,15 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"`matrix.mode()` Example\")\n\n// Create a 2x2 matrix.\nvar m = matrix.new<int>(2, 2, na)\n// Fill the matrix with values.\nmatrix.set(m, 0, 0, 0)\nmatrix.set(m, 0, 1, 0)\nmatrix.set(m, 1, 0, 1)\nmatrix.set(m, 1, 1, 1)\n\n// Get the mode of the matrix.\nvar x = matrix.mode(m)\n\nplot(x, 'Mode of the matrix')"
+    ],
+    "returnsDescription": "The most frequently occurring value from the id matrix. If none exists, returns the smallest value instead.",
+    "remarks": "Note that na elements of the matrix are not considered when calculating the mode.",
+    "seeAlso": [
+      "matrix.new<type>",
+      "matrix.set",
+      "matrix.median",
+      "matrix.sort",
+      "matrix.avg"
     ]
   },
   {
@@ -11634,6 +13174,12 @@ export const FUNCTIONS: PineFunction[] = [
       "//@version=6\nindicator(\"`matrix.mult()` Example 1\")\n\n// For efficiency, execute this code only once.\nif barstate.islastconfirmedhistory\n    // Create a 6x2 matrix containing values `5`.\n    var m1 = matrix.new<float>(6, 2, 5)\n    // Create a 2x3 matrix containing values `4`.\n    // Note that it must have the same quantity of rows as there are columns in the first matrix.\n    var m2 = matrix.new<float>(2, 3, 4)\n    // Create a new matrix from the multiplication of the two matrices.\n    var m3 = matrix.mult(m1, m2)\n\n    // Display using a table.\n    var t = table.new(position.top_right, 1, 2, color.green)\n    table.cell(t, 0, 0, \"Product of two matrices:\")\n    table.cell(t, 0, 1, str.tostring(m3))",
       "//@version=6\nindicator(\"`matrix.mult()` Example 2\")\n\n// For efficiency, execute this code only once.\nif barstate.islastconfirmedhistory\n    // Create a 2x3 matrix containing values `4`.\n    var m1 = matrix.new<float>(2, 3, 4)\n\n    // Create a new matrix from the product of the two matrices.\n    scalar = 5\n    var m2 = matrix.mult(m1, scalar)\n\n    // Display using a table.\n    var t = table.new(position.top_right, 5, 2, color.green)\n    table.cell(t, 0, 0, \"Matrix 1:\")\n    table.cell(t, 0, 1, str.tostring(m1))\n    table.cell(t, 1, 1, \"x\")\n    table.cell(t, 2, 0, \"Scalar:\")\n    table.cell(t, 2, 1, str.tostring(scalar))\n    table.cell(t, 3, 1, \"=\")\n    table.cell(t, 4, 0, \"Matrix 2:\")\n    table.cell(t, 4, 1, str.tostring(m2))",
       "//@version=6\nindicator(\"`matrix.mult()` Example 3\")\n\n// For efficiency, execute this code only once.\nif barstate.islastconfirmedhistory\n    // Create a 2x3 matrix containing values `4`.\n    var m1 = matrix.new<int>(2, 3, 4)\n\n    // Create an array of three elements.\n    var array<int> a = array.from(1, 1, 1)\n\n    // Create a new matrix containing the product of the `m1` matrix and the `a` array.\n    var m3 = matrix.mult(m1, a)\n\n    // Display using a table.\n    var t = table.new(position.top_right, 5, 2, color.green)\n    table.cell(t, 0, 0, \"Matrix 1:\")\n    table.cell(t, 0, 1, str.tostring(m1))\n    table.cell(t, 1, 1, \"x\")\n    table.cell(t, 2, 0, \"Value:\")\n    table.cell(t, 2, 1, str.tostring(a, \" \"))\n    table.cell(t, 3, 1, \"=\")\n    table.cell(t, 4, 0, \"Matrix 3:\")\n    table.cell(t, 4, 1, str.tostring(m3))"
+    ],
+    "returnsDescription": "A new matrix object containing the product of id2 and id1.",
+    "seeAlso": [
+      "matrix.new<type>",
+      "matrix.sum",
+      "matrix.diff"
     ]
   },
   {
@@ -11670,6 +13216,14 @@ export const FUNCTIONS: PineFunction[] = [
       "//@version=6\nindicator(\"`matrix.new<type>()` Example 2\")\n\n// Function to create a matrix whose rows are filled with array values.\nmatrixFromArray(int rows, int columns, array<float> data) =>\n    m = matrix.new<float>(rows, columns)\n    for i = 0 to rows <= 0 ? na : rows - 1\n        for j = 0 to columns <= 0 ? na : columns - 1\n            matrix.set(m, i, j, array.get(data, i * columns + j))\n    m\n\n// Create a 3x3 matrix from an array of values.\nvar m1 = matrixFromArray(3, 3, array.from(1, 2, 3, 4, 5, 6, 7, 8, 9))\n// Display using a label.\nif barstate.islastconfirmedhistory\n    label.new(bar_index, high, str.tostring(m1))",
       "//@version=6\nindicator(\"`matrix.new<type>()` Example 3\")\n\n// Function to create a matrix from a text string.\n// Values in a row must be separated by a space. Each line is one row.\nmatrixFromInputArea(stringOfValues) =>\n    var rowsArray = str.split(stringOfValues, \"\\n\")\n    var rows = array.size(rowsArray)\n    var cols = array.size(str.split(array.get(rowsArray, 0), \" \"))\n    var matrix = matrix.new<float>(rows, cols, na)\n    row = 0\n    for rowString in rowsArray\n        col = 0\n        values = str.split(rowString, \" \")\n        for val in values\n            matrix.set(matrix, row, col, str.tonumber(val))\n            col += 1\n        row += 1\n    matrix\n\n\nstringInput = input.text_area(\"1 2 3\\n4 5 6\\n7 8 9\")\nvar m = matrixFromInputArea(stringInput)\n\n// Display using a label.\nif barstate.islastconfirmedhistory\n    label.new(bar_index, high, str.tostring(m))",
       "//@version=6\nindicator(\"`matrix.new<type>()` Example 4\")\n\n// Function to create a matrix with random values (0.0 to 1.0).\nmatrixRandom(int rows, int columns)=>\n    result = matrix.new<float>(rows, columns)\n    for i = 0 to rows - 1\n        for j = 0 to columns - 1\n            matrix.set(result, i, j, math.random())\n    result\n\n// Create a 2x3 matrix with random values.\nvar m = matrixRandom(2, 3)\n\n// Display using a label.\nif barstate.islastconfirmedhistory\n    label.new(bar_index, high, str.tostring(m))"
+    ],
+    "returnsDescription": "The ID of the new matrix object.",
+    "seeAlso": [
+      "matrix.set",
+      "matrix.fill",
+      "matrix.columns",
+      "matrix.rows",
+      "array.new<type>"
     ]
   },
   {
@@ -11712,6 +13266,13 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"`matrix.pinv()` Example\")\n\n// For efficiency, execute this code only once.\nif barstate.islastconfirmedhistory\n    // Create a 2x2 matrix.\n    var m1 = matrix.new<int>(2, 2, na)\n    // Fill the matrix with values.\n    matrix.set(m1, 0, 0, 1)\n    matrix.set(m1, 0, 1, 2)\n    matrix.set(m1, 1, 0, 3)\n    matrix.set(m1, 1, 1, 4)\n\n    // Pseudoinverse of the matrix.\n    var m2 = matrix.pinv(m1)\n\n    // Display matrix elements.\n    var t = table.new(position.top_right, 2, 2, color.green)\n    table.cell(t, 0, 0, \"Original Matrix:\")\n    table.cell(t, 0, 1, str.tostring(m1))\n    table.cell(t, 1, 0, \"Pseudoinverse matrix:\")\n    table.cell(t, 1, 1, str.tostring(m2))"
+    ],
+    "returnsDescription": "A new matrix containing the pseudoinverse of the id matrix.",
+    "remarks": "The function is calculated using a Moore–Penrose inverse formula based on singular-value decomposition of a matrix. For non-singular square matrices this function returns the result of matrix.inv().",
+    "seeAlso": [
+      "matrix.new<type>",
+      "matrix.set",
+      "matrix.inv"
     ]
   },
   {
@@ -11772,6 +13333,12 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"`matrix.pow()` Example\")\n\n// Display using a table.\nif barstate.islastconfirmedhistory\n    // Create a 2x2 matrix.\n    var m1 = matrix.new<int>(2, 2, 2)\n    // Calculate the power of three of the matrix.\n    var m2 = matrix.pow(m1, 3)\n\n    // Display matrix elements.\n    var t = table.new(position.top_right, 2, 2, color.green)\n    table.cell(t, 0, 0, \"Original Matrix:\")\n    table.cell(t, 0, 1, str.tostring(m1))\n    table.cell(t, 1, 0, \"Matrix³:\")\n    table.cell(t, 1, 1, str.tostring(m2))"
+    ],
+    "returnsDescription": "The product of the id matrix by itself power times.",
+    "seeAlso": [
+      "matrix.new<type>",
+      "matrix.set",
+      "matrix.mult"
     ]
   },
   {
@@ -11790,6 +13357,12 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series int",
     "examples": [
       "//@version=6\nindicator(\"`matrix.rank()` Example\")\n\n// For efficiency, execute this code only once.\nif barstate.islastconfirmedhistory\n    // Create a 2x2 matrix.\n    var m1 = matrix.new<int>(2, 2, na)\n    // Fill the matrix with values.\n    matrix.set(m1, 0, 0, 1)\n    matrix.set(m1, 0, 1, 2)\n    matrix.set(m1, 1, 0, 3)\n    matrix.set(m1, 1, 1, 4)\n\n    // Get the rank of the matrix.\n    r = matrix.rank(m1)\n\n    // Display matrix elements.\n    var t = table.new(position.top_right, 2, 2, color.green)\n    table.cell(t, 0, 0, \"Matrix elements:\")\n    table.cell(t, 0, 1, str.tostring(m1))\n    table.cell(t, 1, 0, \"Rank of the matrix:\")\n    table.cell(t, 1, 1, str.tostring(r))"
+    ],
+    "returnsDescription": "The rank of the id matrix.",
+    "seeAlso": [
+      "matrix.new<type>",
+      "matrix.set",
+      "str.tostring"
     ]
   },
   {
@@ -11815,6 +13388,14 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "array<type>",
     "examples": [
       "//@version=6\nindicator(\"matrix_remove_col\", overlay = true)\n\n// Create a 2x2 matrix with ones.\nvar matrixOrig = matrix.new<int>(2, 2, 1)\n\n// Set values to the 'matrixOrig' matrix.\nmatrix.set(matrixOrig, 0, 1, 2)\nmatrix.set(matrixOrig, 1, 0, 3)\nmatrix.set(matrixOrig, 1, 1, 4)\n\n\n// Create a copy of the 'matrixOrig' matrix.\nmatrixCopy = matrix.copy(matrixOrig)\n\n// Remove the first column from the `matrixCopy` matrix.\narr = matrix.remove_col(matrixCopy, 0)\n\n// Display matrix elements.\nif barstate.islastconfirmedhistory\n    var t = table.new(position.top_right, 3, 2, color.green)\n    table.cell(t, 0, 0, \"Original Matrix:\")\n    table.cell(t, 0, 1, str.tostring(matrixOrig))\n    table.cell(t, 1, 0, \"Removed Elements:\")\n    table.cell(t, 1, 1, str.tostring(arr))\n    table.cell(t, 2, 0, \"Result Matrix:\")\n    table.cell(t, 2, 1, str.tostring(matrixCopy))"
+    ],
+    "returnsDescription": "An array containing the elements of the column removed from the id matrix.",
+    "remarks": "Indexing of rows and columns starts at zero. It is far more efficient to declare matrices with explicit dimensions than to build them by adding or removing columns. Deleting a column is also much slower than deleting a row with the matrix.remove_row() function.",
+    "seeAlso": [
+      "matrix.new<type>",
+      "matrix.set",
+      "matrix.copy",
+      "matrix.remove_row"
     ]
   },
   {
@@ -11840,6 +13421,14 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "array<type>",
     "examples": [
       "//@version=6\nindicator(\"matrix_remove_row\", overlay = true)\n\n// Create a 2x2 \"int\" matrix containing values `1`.\nvar matrixOrig = matrix.new<int>(2, 2, 1)\n\n// Set values to the 'matrixOrig' matrix.\nmatrix.set(matrixOrig, 0, 1, 2)\nmatrix.set(matrixOrig, 1, 0, 3)\nmatrix.set(matrixOrig, 1, 1, 4)\n\n// Create a copy of the 'matrixOrig' matrix.\nmatrixCopy = matrix.copy(matrixOrig)\n\n// Remove the first row from the matrix `matrixCopy`.\narr = matrix.remove_row(matrixCopy, 0)\n\n// Display matrix elements.\nif barstate.islastconfirmedhistory\n    var t = table.new(position.top_right, 3, 2, color.green)\n    table.cell(t, 0, 0, \"Original Matrix:\")\n    table.cell(t, 0, 1, str.tostring(matrixOrig))\n    table.cell(t, 1, 0, \"Removed Elements:\")\n    table.cell(t, 1, 1, str.tostring(arr))\n    table.cell(t, 2, 0, \"Result Matrix:\")\n    table.cell(t, 2, 1, str.tostring(matrixCopy))"
+    ],
+    "returnsDescription": "An array containing the elements of the row removed from the id matrix.",
+    "remarks": "Indexing of rows and columns starts at zero. It is far more efficient to declare matrices with explicit dimensions than to build them by adding or removing rows.",
+    "seeAlso": [
+      "matrix.new<type>",
+      "matrix.set",
+      "matrix.copy",
+      "matrix.remove_col"
     ]
   },
   {
@@ -11870,6 +13459,13 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "void",
     "examples": [
       "//@version=6\nindicator(\"`matrix.reshape()` Example\")\n\n// For efficiency, execute this code only once.\nif barstate.islastconfirmedhistory\n    // Create a 2x3 matrix.\n    var m1 = matrix.new<float>(2, 3)\n    // Fill the matrix with values.\n    matrix.set(m1, 0, 0, 1)\n    matrix.set(m1, 0, 1, 2)\n    matrix.set(m1, 0, 2, 3)\n    matrix.set(m1, 1, 0, 4)\n    matrix.set(m1, 1, 1, 5)\n    matrix.set(m1, 1, 2, 6)\n\n    // Copy the matrix to a new one.\n    var m2 = matrix.copy(m1)\n\n    // Reshape the copy to a 3x2.\n    matrix.reshape(m2, 3, 2)\n\n    // Display using a table.\n    var t = table.new(position.top_right, 2, 2, color.green)\n    table.cell(t, 0, 0, \"Original matrix:\")\n    table.cell(t, 0, 1, str.tostring(m1))\n    table.cell(t, 1, 0, \"Reshaped matrix:\")\n    table.cell(t, 1, 1, str.tostring(m2))"
+    ],
+    "seeAlso": [
+      "matrix.new<type>",
+      "matrix.get",
+      "matrix.set",
+      "matrix.add_row",
+      "matrix.add_col"
     ]
   },
   {
@@ -11888,6 +13484,13 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "void",
     "examples": [
       "//@version=6\nindicator(\"`matrix.reverse()` Example\")\n\n// For efficiency, execute this code only once.\nif barstate.islastconfirmedhistory\n    // Copy the matrix to a new one.\n    var m1 = matrix.new<int>(2, 2, na)\n    // Fill the matrix with values.\n    matrix.set(m1, 0, 0, 1)\n    matrix.set(m1, 0, 1, 2)\n    matrix.set(m1, 1, 0, 3)\n    matrix.set(m1, 1, 1, 4)\n\n    // Copy matrix elements to a new matrix.\n    var m2 = matrix.copy(m1)\n\n    // Reverse the `m2` copy of the original matrix.\n    matrix.reverse(m2)\n\n    // Display using a table.\n    var t = table.new(position.top_right, 2, 2, color.green)\n    table.cell(t, 0, 0, \"Original matrix:\")\n    table.cell(t, 0, 1, str.tostring(m1))\n    table.cell(t, 1, 0, \"Reversed matrix:\")\n    table.cell(t, 1, 1, str.tostring(m2))"
+    ],
+    "seeAlso": [
+      "matrix.new<type>",
+      "matrix.set",
+      "matrix.columns",
+      "matrix.rows",
+      "matrix.reshape"
     ]
   },
   {
@@ -11912,6 +13515,15 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "array<type>",
     "examples": [
       "//@version=6\nindicator(\"`matrix.row()` Example\", \"\", true)\n\n// Create a 2x3 \"float\" matrix from `hlc3` values.\nm = matrix.new<float>(2, 3, hlc3)\n\n// Return an array with the values of the first row of the matrix.\na = matrix.row(m, 0)\n\n// Plot the first value from the array `a`.\nplot(array.get(a, 0))"
+    ],
+    "returnsDescription": "An array ID containing the row values of the id matrix.",
+    "remarks": "Indexing of rows starts at 0.",
+    "seeAlso": [
+      "matrix.new<type>",
+      "matrix.get",
+      "array.get",
+      "matrix.col",
+      "matrix.rows"
     ]
   },
   {
@@ -11930,6 +13542,14 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series int",
     "examples": [
       "//@version=6\nindicator(\"`matrix.rows()` Example\")\n\n// Create a 2x6 matrix with values `0`.\nvar m = matrix.new<int>(2, 6, 0)\n\n// Get the quantity of rows in the matrix.\nvar x = matrix.rows(m)\n\n// Display using a label.\nif barstate.islastconfirmedhistory\n    label.new(bar_index, high, \"Rows: \" + str.tostring(x) + \"\\n\" + str.tostring(m))"
+    ],
+    "returnsDescription": "The number of rows in the matrix id.",
+    "seeAlso": [
+      "matrix.new<type>",
+      "matrix.get",
+      "matrix.set",
+      "matrix.columns",
+      "matrix.row"
     ]
   },
   {
@@ -11966,6 +13586,12 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "void",
     "examples": [
       "//@version=6\nindicator(\"`matrix.set()` Example\")\n\n// Create a 2x3 \"int\" matrix containing values `4`.\nm = matrix.new<int>(2, 3, 4)\n\n// Replace the value of element at row 1 and column 2 with value `3`.\nmatrix.set(m, 0, 1, 3)\n\n// Display using a label.\nif barstate.islastconfirmedhistory\n    label.new(bar_index, high, str.tostring(m))"
+    ],
+    "seeAlso": [
+      "matrix.new<type>",
+      "matrix.get",
+      "matrix.columns",
+      "matrix.rows"
     ]
   },
   {
@@ -12073,6 +13699,12 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"`matrix.sort()` Example\")\n\n// For efficiency, execute this code only once.\nif barstate.islastconfirmedhistory\n    // Create a 2x2 matrix.\n    var m1 = matrix.new<float>(2, 2, na)\n    // Fill the matrix with values.\n    matrix.set(m1, 0, 0, 3)\n    matrix.set(m1, 0, 1, 4)\n    matrix.set(m1, 1, 0, 1)\n    matrix.set(m1, 1, 1, 2)\n\n    // Copy the matrix to a new one.\n    var m2 = matrix.copy(m1)\n    // Sort the rows of `m2` using the default arguments (first column and ascending order).\n    matrix.sort(m2)\n\n    // Display using a table.\n    if barstate.islastconfirmedhistory\n        var t = table.new(position.top_right, 2, 2, color.green)\n        table.cell(t, 0, 0, \"Original matrix:\")\n        table.cell(t, 0, 1, str.tostring(m1))\n        table.cell(t, 1, 0, \"Sorted matrix:\")\n        table.cell(t, 1, 1, str.tostring(m2))"
+    ],
+    "seeAlso": [
+      "matrix.new<type>",
+      "matrix.max",
+      "matrix.min",
+      "matrix.avg"
     ]
   },
   {
@@ -12119,6 +13751,15 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "matrix<type>",
     "examples": [
       "//@version=6\nindicator(\"`matrix.submatrix()` Example\")\n\n// For efficiency, execute this code only once.\nif barstate.islastconfirmedhistory\n    // Create a 2x3 matrix matrix with values `0`.\n    var m1 = matrix.new<int>(2, 3, 0)\n    // Fill the matrix with values.\n    matrix.set(m1, 0, 0, 1)\n    matrix.set(m1, 0, 1, 2)\n    matrix.set(m1, 0, 2, 3)\n    matrix.set(m1, 1, 0, 4)\n    matrix.set(m1, 1, 1, 5)\n    matrix.set(m1, 1, 2, 6)\n\n    // Create a 2x2 submatrix of the `m1` matrix.\n    var m2 = matrix.submatrix(m1, 0, 2, 1, 3)\n\n    // Display using a table.\n    var t = table.new(position.top_right, 2, 2, color.green)\n    table.cell(t, 0, 0, \"Original Matrix:\")\n    table.cell(t, 0, 1, str.tostring(m1))\n    table.cell(t, 1, 0, \"Submatrix:\")\n    table.cell(t, 1, 1, str.tostring(m2))"
+    ],
+    "returnsDescription": "A new matrix object containing the submatrix of the id matrix defined by the from_row, to_row, from_column and to_column indices.",
+    "remarks": "Indexing of the rows and columns starts at zero.",
+    "seeAlso": [
+      "matrix.new<type>",
+      "matrix.set",
+      "matrix.row",
+      "matrix.col",
+      "matrix.reshape"
     ]
   },
   {
@@ -12180,6 +13821,14 @@ export const FUNCTIONS: PineFunction[] = [
     "examples": [
       "//@version=6\nindicator(\"`matrix.sum()` Example 1\")\n\n// For efficiency, execute this code only once.\nif barstate.islastconfirmedhistory\n    // Create a 2x3 matrix containing values `5`.\n    var m1 = matrix.new<float>(2, 3, 5)\n    // Create a 2x3 matrix containing values `4`.\n    var m2 = matrix.new<float>(2, 3, 4)\n    // Create a new matrix that sums matrices `m1` and `m2`.\n    var m3 = matrix.sum(m1, m2)\n\n    // Display using a table.\n    var t = table.new(position.top_right, 1, 2, color.green)\n    table.cell(t, 0, 0, \"Sum of two matrices:\")\n    table.cell(t, 0, 1, str.tostring(m3))",
       "//@version=6\nindicator(\"`matrix.sum()` Example 2\")\n\n// For efficiency, execute this code only once.\nif barstate.islastconfirmedhistory\n    // Create a 2x3 matrix with values `4`.\n    var m1 = matrix.new<float>(2, 3, 4)\n\n    // Create a new matrix containing the sum of the `m1` matrix with the \"int\" value `1`.\n    var m2 = matrix.sum(m1, 1)\n\n    // Display using a table.\n    var t = table.new(position.top_right, 1, 2, color.green)\n    table.cell(t, 0, 0, \"Sum of a matrix and a scalar:\")\n    table.cell(t, 0, 1, str.tostring(m2))"
+    ],
+    "returnsDescription": "A new matrix object containing the sum of id2 and id1.",
+    "seeAlso": [
+      "matrix.new<type>",
+      "matrix.get",
+      "matrix.set",
+      "matrix.columns",
+      "matrix.rows"
     ]
   },
   {
@@ -12210,6 +13859,14 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "void",
     "examples": [
       "//@version=6\nindicator(\"`matrix.swap_columns()` Example\")\n\n// For efficiency, execute this code only once.\nif barstate.islastconfirmedhistory\n    // Create a 2x2 matrix with ‘na’ values.\n    var m1 = matrix.new<int>(2, 2, na)\n    // Fill the matrix with values.\n    matrix.set(m1, 0, 0, 1)\n    matrix.set(m1, 0, 1, 2)\n    matrix.set(m1, 1, 0, 3)\n    matrix.set(m1, 1, 1, 4)\n\n    // Copy the matrix to a new one.\n    var m2 = matrix.copy(m1)\n\n    // Swap the first and second columns of the matrix copy.\n    matrix.swap_columns(m2, 0, 1)\n\n    // Display using a table.\n    var t = table.new(position.top_right, 2, 2, color.green)\n    table.cell(t, 0, 0, \"Original matrix:\")\n    table.cell(t, 0, 1, str.tostring(m1))\n    table.cell(t, 1, 0, \"Swapped columns in copy:\")\n    table.cell(t, 1, 1, str.tostring(m2))"
+    ],
+    "remarks": "Indexing of the rows and columns starts at zero.",
+    "seeAlso": [
+      "matrix.new<type>",
+      "matrix.get",
+      "matrix.set",
+      "matrix.columns",
+      "matrix.rows"
     ]
   },
   {
@@ -12240,6 +13897,14 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "void",
     "examples": [
       "//@version=6\nindicator(\"`matrix.swap_rows()` Example\")\n\n// For efficiency, execute this code only once.\nif barstate.islastconfirmedhistory\n    // Create a 3x2 matrix with ‘na’ values.\n    var m1 = matrix.new<int>(3, 2, na)\n    // Fill the matrix with values.\n    matrix.set(m1, 0, 0, 1)\n    matrix.set(m1, 0, 1, 2)\n    matrix.set(m1, 1, 0, 3)\n    matrix.set(m1, 1, 1, 4)\n    matrix.set(m1, 2, 0, 5)\n    matrix.set(m1, 2, 1, 6)\n\n    // Copy the matrix to a new one.\n    var m2 = matrix.copy(m1)\n\n    // Swap the first and second rows of the matrix copy.\n    matrix.swap_rows(m2, 0, 1)\n\n    // Display using a table.\n    var t = table.new(position.top_right, 2, 2, color.green)\n    table.cell(t, 0, 0, \"Original matrix:\")\n    table.cell(t, 0, 1, str.tostring(m1))\n    table.cell(t, 1, 0, \"Swapped rows in copy:\")\n    table.cell(t, 1, 1, str.tostring(m2))"
+    ],
+    "remarks": "Indexing of the rows and columns starts at zero.",
+    "seeAlso": [
+      "matrix.new<type>",
+      "matrix.get",
+      "matrix.set",
+      "matrix.columns",
+      "matrix.swap_columns"
     ]
   },
   {
@@ -12282,6 +13947,14 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"`matrix.trace()` Example\")\n\n// For efficiency, execute this code only once.\nif barstate.islastconfirmedhistory\n    // Create a 2x2 matrix.\n    var m1 = matrix.new<int>(2, 2, na)\n    // Fill the matrix with values.\n    matrix.set(m1, 0, 0, 1)\n    matrix.set(m1, 0, 1, 2)\n    matrix.set(m1, 1, 0, 3)\n    matrix.set(m1, 1, 1, 4)\n\n    // Get the trace of the matrix.\n    tr = matrix.trace(m1)\n\n    // Display matrix elements.\n    var t = table.new(position.top_right, 2, 2, color.green)\n    table.cell(t, 0, 0, \"Matrix elements:\")\n    table.cell(t, 0, 1, str.tostring(m1))\n    table.cell(t, 1, 0, \"Trace of the matrix:\")\n    table.cell(t, 1, 1, str.tostring(tr))"
+    ],
+    "returnsDescription": "The trace of the id matrix.",
+    "seeAlso": [
+      "matrix.new<type>",
+      "matrix.get",
+      "matrix.set",
+      "matrix.columns",
+      "matrix.rows"
     ]
   },
   {
@@ -12300,6 +13973,15 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "matrix<type>",
     "examples": [
       "//@version=6\nindicator(\"`matrix.transpose()` Example\")\n\n// For efficiency, execute this code only once.\nif barstate.islastconfirmedhistory\n    // Create a 2x2 matrix.\n    var m1 = matrix.new<float>(2, 2, na)\n    // Fill the matrix with values.\n    matrix.set(m1, 0, 0, 1)\n    matrix.set(m1, 0, 1, 2)\n    matrix.set(m1, 1, 0, 3)\n    matrix.set(m1, 1, 1, 4)\n\n    // Create a transpose of the matrix.\n    var m2 = matrix.transpose(m1)\n\n    // Display using a table.\n    var t = table.new(position.top_right, 2, 2, color.green)\n    table.cell(t, 0, 0, \"Original matrix:\")\n    table.cell(t, 0, 1, str.tostring(m1))\n    table.cell(t, 1, 0, \"Transposed matrix:\")\n    table.cell(t, 1, 1, str.tostring(m2))"
+    ],
+    "returnsDescription": "A new matrix containing the transposed version of the id matrix.",
+    "seeAlso": [
+      "matrix.new<type>",
+      "matrix.set",
+      "matrix.columns",
+      "matrix.rows",
+      "matrix.reshape",
+      "matrix.reverse"
     ]
   },
   {
@@ -12331,6 +14013,11 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "void",
     "examples": [
       "//@version=6\nindicator(\"max_bars_back\")\nclose_() => close\ndepth() => 400\nd = depth()\nv = close_()\nmax_bars_back(v, 500)\nout = if bar_index > 0\n    v[d]\nelse\n    v\nplot(out)"
+    ],
+    "returnsDescription": "void",
+    "remarks": "At the moment 'max_bars_back' cannot be applied to built-ins like 'hl2', 'hlc3', 'ohlc4'. Please use multiple 'max_bars_back' calls as workaround here (e.g. instead of a single ‘max_bars_back(hl2, 100)’ call you should call the function twice: ‘max_bars_back(high, 100), max_bars_back(low, 100)’).\nIf the indicator() or strategy() 'max_bars_back' parameter is used, all variables in the indicator are affected. This may result in excessive memory usage and cause runtime problems. When possible (i.e. when the cause is a variable rather than a function), please use the max_bars_back() function instead.",
+    "seeAlso": [
+      "indicator"
     ]
   },
   {
@@ -12353,7 +14040,19 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series int",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "Minute (in exchange timezone) for provided UNIX time.",
+    "remarks": "UNIX time is the number of milliseconds that have elapsed since 00:00:00 UTC, 1 January 1970.",
+    "seeAlso": [
+      "minute",
+      "time",
+      "year",
+      "month",
+      "dayofmonth",
+      "dayofweek",
+      "hour",
+      "second"
+    ]
   },
   {
     "name": "month",
@@ -12375,7 +14074,19 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series int",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "Month (in exchange timezone) for provided UNIX time.",
+    "remarks": "UNIX time is the number of milliseconds that have elapsed since 00:00:00 UTC, 1 January 1970.\nNote that this function returns the month based on the time of the bar's open. For overnight sessions (e.g. EURUSD, where Monday session starts on Sunday, 17:00 UTC-4) this value can be lower by 1 than the month of the trading day.",
+    "seeAlso": [
+      "month",
+      "time",
+      "year",
+      "dayofmonth",
+      "dayofweek",
+      "hour",
+      "minute",
+      "second"
+    ]
   },
   {
     "name": "na",
@@ -12416,6 +14127,12 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"na\")\n// Use the `na()` function to test for `na`.\nplot(na(close[1]) ? close : close[1])\n// ALTERNATIVE\n// `nz()` also tests `close[1]` for `na`. It returns `close[1]` if it is not `na`, and `close` if it is.\nplot(nz(close[1], close))"
+    ],
+    "returnsDescription": "Returns true if x is na, false otherwise.",
+    "seeAlso": [
+      "na",
+      "fixnan",
+      "nz"
     ]
   },
   {
@@ -12546,6 +14263,12 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"nz\", overlay=true)\nplot(nz(ta.sma(close, 100)))"
+    ],
+    "returnsDescription": "The value of source if it is not na. If the value of source is na, returns zero, or the replacement argument when one is used.",
+    "seeAlso": [
+      "na",
+      "na",
+      "fixnan"
     ]
   },
   {
@@ -12687,6 +14410,15 @@ export const FUNCTIONS: PineFunction[] = [
     },
     "examples": [
       "//@version=6\nindicator(\"plot\")\nplot(high+low, title='Title', color=color.new(#00ffaa, 70), linewidth=2, style=plot.style_area, offset=15, trackprice=true)\n\n// You may fill the background between any two plots with a fill() function:\np1 = plot(open)\np2 = plot(close)\nfill(p1, p2, color=color.new(color.green, 90))"
+    ],
+    "returnsDescription": "A plot object, that can be used in fill()",
+    "seeAlso": [
+      "plotshape",
+      "plotchar",
+      "plotarrow",
+      "barcolor",
+      "bgcolor",
+      "fill"
     ]
   },
   {
@@ -12796,6 +14528,14 @@ export const FUNCTIONS: PineFunction[] = [
     },
     "examples": [
       "//@version=6\nindicator(\"plotarrow example\", overlay=true)\ncodiff = close - open\nplotarrow(codiff, colorup=color.new(color.teal,40), colordown=color.new(color.orange, 40))"
+    ],
+    "remarks": "Use plotarrow() function in conjunction with 'overlay=true' indicator() parameter!",
+    "seeAlso": [
+      "plot",
+      "plotshape",
+      "plotchar",
+      "barcolor",
+      "bgcolor"
     ]
   },
   {
@@ -12899,6 +14639,10 @@ export const FUNCTIONS: PineFunction[] = [
     },
     "examples": [
       "//@version=6\nindicator(\"plotbar example\", overlay=true)\nplotbar(open, high, low, close, title='Title', color = open < close ? color.green : color.red)"
+    ],
+    "remarks": "Even if one value of open, high, low or close equal NaN then bar no draw.\nThe maximal value of open, high, low or close will be set as 'high', and the minimal value will be set as 'low'.",
+    "seeAlso": [
+      "plotcandle"
     ]
   },
   {
@@ -13014,6 +14758,10 @@ export const FUNCTIONS: PineFunction[] = [
     },
     "examples": [
       "//@version=6\nindicator(\"plotcandle example\", overlay=true)\nplotcandle(open, high, low, close, title='Title', color = open < close ? color.green : color.red, wickcolor=color.black)"
+    ],
+    "remarks": "Even if one value of open, high, low or close equal NaN then bar no draw.\nThe maximal value of open, high, low or close will be set as 'high', and the minimal value will be set as 'low'.",
+    "seeAlso": [
+      "plotbar"
     ]
   },
   {
@@ -13150,6 +14898,14 @@ export const FUNCTIONS: PineFunction[] = [
     },
     "examples": [
       "//@version=6\nindicator(\"plotchar example\", overlay=true)\ndata = close >= open\nplotchar(data, char='❄')"
+    ],
+    "remarks": "Use plotchar() function in conjunction with 'overlay=true' indicator() parameter!",
+    "seeAlso": [
+      "plot",
+      "plotshape",
+      "plotarrow",
+      "barcolor",
+      "bgcolor"
     ]
   },
   {
@@ -13300,6 +15056,14 @@ export const FUNCTIONS: PineFunction[] = [
     },
     "examples": [
       "//@version=6\nindicator(\"plotshape example 1\", overlay=true)\ndata = close >= open\nplotshape(data, style=shape.xcross)"
+    ],
+    "remarks": "Use plotshape() function in conjunction with 'overlay=true' indicator() parameter!",
+    "seeAlso": [
+      "plot",
+      "plotchar",
+      "plotarrow",
+      "barcolor",
+      "bgcolor"
     ]
   },
   {
@@ -13398,6 +15162,10 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series polyline",
     "examples": [
       "//@version=6\nindicator(\"Polylines example\", overlay = true)\n\n//@variable If `true`, connects all points in the polyline with curved line segments.\nbool curvedInput = input.bool(false, \"Curve Polyline\")\n//@variable If `true`, connects the first point in the polyline to the last point.\nbool closedInput = input.bool(true, \"Close Polyline\")\n//@variable The color of the space filled by the polyline.\ncolor fillcolor = input.color(color.new(color.blue, 90), \"Fill Color\")\n\n// Time and price inputs for the polyline's points.\np1x = input.time(0,  \"p1\", confirm = true, inline = \"p1\")\np1y = input.price(0, \"  \", confirm = true, inline = \"p1\")\np2x = input.time(0,  \"p2\", confirm = true, inline = \"p2\")\np2y = input.price(0, \"  \", confirm = true, inline = \"p2\")\np3x = input.time(0,  \"p3\", confirm = true, inline = \"p3\")\np3y = input.price(0, \"  \", confirm = true, inline = \"p3\")\np4x = input.time(0,  \"p4\", confirm = true, inline = \"p4\")\np4y = input.price(0, \"  \", confirm = true, inline = \"p4\")\np5x = input.time(0,  \"p5\", confirm = true, inline = \"p5\")\np5y = input.price(0, \"  \", confirm = true, inline = \"p5\")\n\nif barstate.islastconfirmedhistory\n    //@variable An array of `chart.point` objects for the new polyline.\n    var points = array.new<chart.point>()\n    // Push new `chart.point` instances into the `points` array.\n    points.push(chart.point.from_time(p1x, p1y))\n    points.push(chart.point.from_time(p2x, p2y))\n    points.push(chart.point.from_time(p3x, p3y))\n    points.push(chart.point.from_time(p4x, p4y))\n    points.push(chart.point.from_time(p5x, p5y))\n    // Add labels for each `chart.point` in `points`.\n    l1p1 = label.new(points.get(0), text = \"p1\", xloc = xloc.bar_time, color = na)\n    l1p2 = label.new(points.get(1), text = \"p2\", xloc = xloc.bar_time, color = na)\n    l2p1 = label.new(points.get(2), text = \"p3\", xloc = xloc.bar_time, color = na)\n    l2p2 = label.new(points.get(3), text = \"p4\", xloc = xloc.bar_time, color = na)\n    // Create a new polyline that connects each `chart.point` in the `points` array, starting from the first.\n    polyline.new(points, curved = curvedInput, closed = closedInput, fill_color = fillcolor, xloc = xloc.bar_time)"
+    ],
+    "returnsDescription": "The ID of a new polyline object that a script can use in other polyline.*() functions.",
+    "seeAlso": [
+      "chart.point.new"
     ]
   },
   {
@@ -13429,7 +15197,8 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series float",
     "examples": [
       "//@version=6\nindicator(\"Close in British Pounds\")\nrate = request.currency_rate(syminfo.currency, \"GBP\")\nplot(close * rate)"
-    ]
+    ],
+    "remarks": "If from and to arguments are equal, function returns 1. Please note that using this variable/function can cause indicator repainting."
   },
   {
     "name": "request.dividends",
@@ -13491,6 +15260,13 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series float",
     "examples": [
       "//@version=6\nindicator(\"request.dividends\")\ns1 = request.dividends(\"NASDAQ:BELFA\")\nplot(s1)\ns2 = request.dividends(\"NASDAQ:BELFA\", dividends.net, gaps=barmerge.gaps_on, lookahead=barmerge.lookahead_on)\nplot(s2)"
+    ],
+    "returnsDescription": "Requested series, or n/a if there is no dividends data for the specified symbol.",
+    "seeAlso": [
+      "request.earnings",
+      "request.splits",
+      "request.security",
+      "syminfo.tickerid"
     ]
   },
   {
@@ -13554,6 +15330,13 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series float",
     "examples": [
       "//@version=6\nindicator(\"request.earnings\")\ns1 = request.earnings(\"NASDAQ:BELFA\")\nplot(s1)\ns2 = request.earnings(\"NASDAQ:BELFA\", earnings.actual, gaps=barmerge.gaps_on, lookahead=barmerge.lookahead_on)\nplot(s2)"
+    ],
+    "returnsDescription": "Requested series, or n/a if there is no earnings data for the specified symbol.",
+    "seeAlso": [
+      "request.dividends",
+      "request.splits",
+      "request.security",
+      "syminfo.tickerid"
     ]
   },
   {
@@ -13596,6 +15379,11 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series float",
     "examples": [
       "//@version=6\nindicator(\"US GDP\")\ne = request.economic(\"US\", \"GDP\")\nplot(e)"
+    ],
+    "returnsDescription": "Requested series.",
+    "remarks": "Economic data can also be accessed from charts, just like a regular symbol. Use \"ECONOMIC\" as the exchange name and {country_code}{field} as the ticker. The name of US GDP data is thus \"ECONOMIC:USGDP\".",
+    "seeAlso": [
+      "request.financial"
     ]
   },
   {
@@ -13657,6 +15445,11 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series float",
     "examples": [
       "//@version=6\nindicator(\"request.financial\")\nf = request.financial(\"NASDAQ:MSFT\", \"ACCOUNTS_PAYABLE\", \"FY\")\nplot(f)"
+    ],
+    "returnsDescription": "Requested series.",
+    "seeAlso": [
+      "request.security",
+      "syminfo.tickerid"
     ]
   },
   {
@@ -13687,7 +15480,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "footprint",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The ID of a footprint object containing volume footprint data for the current bar, or na if no data is available.",
+    "remarks": "Only accounts with Premium or Ultimate plans can use scripts that call this function.\nA single script cannot include more than one request.footprint() call."
   },
   {
     "name": "request.quandl",
@@ -13729,6 +15524,11 @@ export const FUNCTIONS: PineFunction[] = [
     "deprecated": "Note: This function has been deprecated due to the API change from NASDAQ Data Link.",
     "examples": [
       "//@version=6\nindicator(\"request.quandl\")\nf = request.quandl(\"CFTC/SB_FO_ALL\", barmerge.gaps_off, 0)\nplot(f)"
+    ],
+    "returnsDescription": "Requested series.",
+    "seeAlso": [
+      "request.security",
+      "syminfo.tickerid"
     ]
   },
   {
@@ -13803,6 +15603,20 @@ export const FUNCTIONS: PineFunction[] = [
     "examples": [
       "//@version=6\nindicator(\"Simple `request.security()` calls\")\n// Returns 1D close of the current symbol.\ndailyClose = request.security(syminfo.tickerid, \"1D\", close)\nplot(dailyClose)\n\n// Returns the close of \"AAPL\" from the same timeframe as currently open on the chart.\naaplClose = request.security(\"AAPL\", timeframe.period, close)\nplot(aaplClose)",
       "//@version=6\nindicator(\"Advanced `request.security()` calls\")\n// This calculates a 10-period moving average on the active chart.\nsma = ta.sma(close, 10)\n// This sends the `sma` calculation for execution in the context of the \"AAPL\" symbol at a \"240\" (4 hours) timeframe.\naaplSma = request.security(\"AAPL\", \"240\", sma)\nplot(aaplSma)\n\n// To avoid differences on historical and realtime bars, you can use this technique, which only returns a value from the higher timeframe on the bar after it completes:\nindexHighTF = barstate.isrealtime ? 1 : 0\nindexCurrTF = barstate.isrealtime ? 0 : 1\nnonRepaintingClose = request.security(syminfo.tickerid, \"1D\", close[indexHighTF])[indexCurrTF]\nplot(nonRepaintingClose, \"Non-repainting close\")\n\n// Returns the 1H close of \"AAPL\", extended session included. The value is dividend-adjusted.\nextendedTicker = ticker.modify(\"NASDAQ:AAPL\", session = session.extended, adjustment = adjustment.dividends)\naaplExtAdj = request.security(extendedTicker, \"60\", close)\nplot(aaplExtAdj)\n\n// Returns the result of a user-defined function.\n// The `max` variable is mutable, but we can pass it to `request.security()` because it is wrapped in a function.\nallTimeHigh(source) =>\n    var max = source\n    max := math.max(max, source)\nallTimeHigh1D = request.security(syminfo.tickerid, \"1D\", allTimeHigh(high))\n\n// By using a tuple `expression`, we obtain several values with only one `request.security()` call.\n[open1D, high1D, low1D, close1D, ema1D] = request.security(syminfo.tickerid, \"1D\", [open, high, low, close, ta.ema(close, 10)])\nplotcandle(open1D, high1D, low1D, close1D)\nplot(ema1D)\n\n// Returns an array containing the OHLC values of the chart's symbol from the 1D timeframe.\nohlcArray = request.security(syminfo.tickerid, \"1D\", array.from(open, high, low, close))\nplotcandle(array.get(ohlcArray, 0), array.get(ohlcArray, 1), array.get(ohlcArray, 2), array.get(ohlcArray, 3))"
+    ],
+    "returnsDescription": "A result determined by expression.",
+    "remarks": "Scripts using this function might calculate differently on historical and realtime bars, leading to repainting.\nA single script can contain no more than 40 unique request.*() function calls. A call is unique only if it does not call the same function with the same arguments.\nWhen using two calls to a request.*() function to evaluate the same expression from the same context with different calc_bars_count values, the second call requests the same number of historical bars as the first. For example, if a script calls request.security(\"AAPL\", \"\", close, calc_bars_count = 3) after it calls request.security(\"AAPL\", \"\", close, calc_bars_count = 5), the second call also uses five bars of historical data, not three.\nThe symbol of a request.() call can be inherited if it is not specified precisely, i.e., if the symbol argument is an empty string or syminfo.tickerid. Similarly, the timeframe of a request.() call can be inherited if the timeframe argument is an empty string or timeframe.period. These values are normally taken from the chart on which the script is running. However, if request.*() function A is called from within the expression of request.*() function B, then function A can inherit the values from function B. See here for more information.",
+    "seeAlso": [
+      "syminfo.ticker",
+      "syminfo.tickerid",
+      "timeframe.period",
+      "ticker.new",
+      "ticker.modify",
+      "request.security_lower_tf",
+      "request.dividends",
+      "request.earnings",
+      "request.splits",
+      "request.financial"
     ]
   },
   {
@@ -13861,6 +15675,19 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "array<type>",
     "examples": [
       "//@version=6\nindicator(\"`request.security_lower_tf()` Example\", overlay = true)\n\n// If the current chart timeframe is set to 120 minutes, then the `arrayClose` array will contain two 'close' values from the 60 minute timeframe for each bar.\narrClose = request.security_lower_tf(syminfo.tickerid, \"60\", close)\n\nif bar_index == last_bar_index - 1\n    label.new(bar_index, high, str.tostring(arrClose))"
+    ],
+    "returnsDescription": "An array of a type determined by expression, or a tuple of these.",
+    "remarks": "Scripts using this function might calculate differently on historical and realtime bars, leading to repainting.\nPlease note that spreads (e.g., \"AAPL+MSFT*TSLA\") do not always return reliable data with this function.\nA single script can contain no more than 40 unique request.*() function calls. A call is unique only if it does not call the same function with the same arguments.\nWhen using two calls to a request.*() function to evaluate the same expression from the same context with different calc_bars_count values, the second call requests the same number of historical bars as the first. For example, if a script calls request.security(\"AAPL\", \"\", close, calc_bars_count = 3) after it calls request.security(\"AAPL\", \"\", close, calc_bars_count = 5), the second call also uses five bars of historical data, not three.\nThe symbol of a request.() call can be inherited if it is not specified precisely, i.e., if the symbol argument is an empty string or syminfo.tickerid. Similarly, the timeframe of a request.() call can be inherited if the timeframe argument is an empty string or timeframe.period. These values are normally taken from the chart that the script is running on. However, if request.*() function A is called from within the expression of request.*() function B, then function A can inherit the values from function B. See here for more information.",
+    "seeAlso": [
+      "request.security",
+      "syminfo.ticker",
+      "syminfo.tickerid",
+      "timeframe.period",
+      "ticker.new",
+      "request.dividends",
+      "request.earnings",
+      "request.splits",
+      "request.financial"
     ]
   },
   {
@@ -13905,7 +15732,8 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series <type>",
     "examples": [
       "//@version=6\nindicator(\"BTC Development Activity\")\n\n[devAct, devActSMA] = request.seed(\"seed_crypto_santiment\", \"BTC_DEV_ACTIVITY\", [close, ta.sma(close, 10)])\n\nplot(devAct, \"BTC Development Activity\")\nplot(devActSMA, \"BTC Development Activity SMA10\", color = color.yellow)"
-    ]
+    ],
+    "returnsDescription": "Requested series or tuple of series, which may include array/matrix IDs."
   },
   {
     "name": "request.splits",
@@ -13960,6 +15788,13 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series float",
     "examples": [
       "//@version=6\nindicator(\"request.splits\")\ns1 = request.splits(\"NASDAQ:BELFA\", splits.denominator)\nplot(s1)\ns2 = request.splits(\"NASDAQ:BELFA\", splits.denominator, gaps=barmerge.gaps_on, lookahead=barmerge.lookahead_on)\nplot(s2)"
+    ],
+    "returnsDescription": "Requested series, or n/a if there is no splits data for the specified symbol.",
+    "seeAlso": [
+      "request.earnings",
+      "request.dividends",
+      "request.security",
+      "syminfo.tickerid"
     ]
   },
   {
@@ -13998,7 +15833,19 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series int",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "Second (in exchange timezone) for provided UNIX time.",
+    "remarks": "UNIX time is the number of milliseconds that have elapsed since 00:00:00 UTC, 1 January 1970.",
+    "seeAlso": [
+      "second",
+      "time",
+      "year",
+      "month",
+      "dayofmonth",
+      "dayofweek",
+      "hour",
+      "minute"
+    ]
   },
   {
     "name": "str.contains",
@@ -14075,6 +15922,11 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"str.contains\")\n// If the current chart is a continuous futures chart, e.g “BTC1!”, then the function will return true, false otherwise.\nvar isFutures = str.contains(syminfo.tickerid, \"!\")\nplot(isFutures ? 1 : 0)"
+    ],
+    "returnsDescription": "True if the str was found in the source string, false otherwise.",
+    "seeAlso": [
+      "str.pos",
+      "str.match"
     ]
   },
   {
@@ -14150,7 +16002,11 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series bool"
       }
     ],
-    "examples": []
+    "examples": [],
+    "returnsDescription": "True if the source string ends with the substring specified in str, false otherwise.",
+    "seeAlso": [
+      "str.startswith"
+    ]
   },
   {
     "name": "str.format",
@@ -14233,7 +16089,9 @@ export const FUNCTIONS: PineFunction[] = [
     "examples": [
       "//@version=6\nindicator(\"Simple `str.format()` demo\")\n\n//@variable A formatted string that includes representations of the current `bar_index` and `close` values.\n//          The placeholder `{0}` refers to the first argument after the formatting string (`bar_index`), and \n//          `{1}` refers to the second (`close`).\nstring labelText = str.format(\"Current bar index: {0}\\nCurrent bar close: {1}\", bar_index, close)\n\n// Draw a label to display the `labelText` string at the current bar's `high` price. \nlabel.new(bar_index, high, labelText)",
       "//@version=6\nindicator(\"Extensive `str.format()` demo\", overlay=true)\n// The format specifier inside the curly braces accepts certain modifiers:\n// - Specify the number of decimals to display:\ns1 = str.format(\"{0,number,#.#}\", 1.34) // returns: 1.3\nlabel.new(bar_index, close, text=s1)\n// - Round a float value to an integer:\ns2 = str.format(\"{0,number,integer}\", 1.34) // returns: 1\nlabel.new(bar_index - 1, close, text=s2)\n// - Display a number in currency:\ns3 = str.format(\"{0,number,currency}\", 1.34) // returns: $1.34\nlabel.new(bar_index - 2, close, text=s3)\n// - Display a number as a percentage:\ns4 = str.format(\"{0,number,percent}\", 0.5) // returns: 50%\nlabel.new(bar_index - 3, close, text=s4)\n// EXAMPLES WITH SEVERAL ARGUMENTS\n// returns: Number 1 is not equal to 4\ns5 = str.format(\"Number {0} is not {1} to {2}\", 1, \"equal\", 4)\nlabel.new(bar_index - 4, close, text=s5)\n// returns: 1.34 != 1.3\ns6 = str.format(\"{0} != {0, number, #.#}\", 1.34)\nlabel.new(bar_index - 5, close, text=s6)\n// returns: 1 is equal to 1, but 2 is equal to 2\ns7 = str.format(\"{0, number, integer} is equal to 1, but {1, number, integer} is equal to 2\", 1.34, 1.52)\nlabel.new(bar_index - 6, close, text=s7)\n// returns: The cash turnover amounted to $1,340,000.00\ns8 = str.format(\"The cash turnover amounted to {0, number, currency}\", 1340000)\nlabel.new(bar_index - 7, close, text=s8)\n// returns: Expected return is 10% - 20%\ns9 = str.format(\"Expected return is {0, number, percent} - {1, number, percent}\", 0.1, 0.2)\nlabel.new(bar_index - 8, close, text=s9)"
-    ]
+    ],
+    "returnsDescription": "The formatted string.",
+    "remarks": "The string used as the formatString argument can contain single quote characters ('). However, programmers must pair all single quotes in that string to avoid unexpected formatting results.\nAll non-quoted left curly brackets must have corresponding right curly brackets in the formatting string. If the string contains imbalanced left curly brackets, it causes a runtime error. For example, \"ab {0} de\" and \"ab }{0} de\" are valid formatting strings, but \"ab {0'}' de\", \"ab }{0}{ de\" and \"''{''{0}\" are not.\nThe placeholders for \"int\" or \"float\" values or arrays can include modifiers and formatting tokens to customize how the resulting string represents them.\nFor example, the placeholder {0,number,#.#) specifies that the result inserts characters representing the arg0 number rounded to one fractional digit.\nFor detailed information about placeholders and supported formats, refer to the Formatting strings section of our User Manual's Strings page.\nThe apostrophe (') acts as a quote character rather than a literal character inside formatting strings. If a formatting string has a sequence of characters between two apostrophes, the function's result includes those characters literally. For instance, the substring '{' adds a literal { character to the result instead of treating it as the start of a placeholder. Note that if a formatting string uses apostrophes instead of quotation marks for its enclosing characters, the string must escape any apostrophes within the character sequence using the backslash."
   },
   {
     "name": "str.format_time",
@@ -14265,7 +16123,9 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series string",
     "examples": [
       "//@version=6\nindicator(\"str.format_time\")\nif timeframe.change(\"1D\")\n    formattedTime = str.format_time(time, \"yyyy-MM-dd HH:mm\", syminfo.timezone)\n    label.new(bar_index, high, formattedTime)"
-    ]
+    ],
+    "returnsDescription": "The formatted string.",
+    "remarks": "The M, d, h, H, m and s tokens can all be doubled to generate leading zeros. For example, the month of January will display as 1 with M, or 01 with MM.\nThe most frequently used formatting tokens are:\ny - Year. Use yy to output the last two digits of the year or yyyy to output all four. Year 2000 will be 00 with yy or 2000 with yyyy.\nM - Month. Not to be confused with lowercase m, which stands for minute.\nd - Day of the month.\na - AM/PM postfix.\nh - Hour in the 12-hour format. The last hour of the day will be 11 in this format.\nH - Hour in the 24-hour format. The last hour of the day will be 23 in this format.\nm - Minute.\ns - Second.\nS - Fractions of a second.\nZ - Timezone, the HHmm offset from UTC, preceded by either + or -."
   },
   {
     "name": "str.length",
@@ -14316,7 +16176,8 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series int"
       }
     ],
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The number of chars in source string."
   },
   {
     "name": "str.lower",
@@ -14367,7 +16228,11 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series string"
       }
     ],
-    "examples": []
+    "examples": [],
+    "returnsDescription": "A new string with all letters converted to lowercase.",
+    "seeAlso": [
+      "str.upper"
+    ]
   },
   {
     "name": "str.match",
@@ -14427,6 +16292,12 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"str.match\")\n\ns = input.string(\"It's time to sell some NASDAQ:AAPL!\")\n\n// finding first substring that matches regular expression \"[\\w]+:[\\w]+\"\nvar string tickerid = str.match(s, \"[\\\\w]+:[\\\\w]+\")\n\nif barstate.islastconfirmedhistory\n    label.new(bar_index, high, text = tickerid) // \"NASDAQ:AAPL\""
+    ],
+    "returnsDescription": "The new substring of the source string if it matches a regex regular expression, an empty string otherwise.",
+    "remarks": "Function returns first occurrence of the regular expression in the source string.\nThe backslash \"\\\" symbol in theregex string needs to be escaped with additional backslash, e.g. \"\\\\d\" stands for regular expression \"\\d\".",
+    "seeAlso": [
+      "str.contains",
+      "str.substring"
     ]
   },
   {
@@ -14502,7 +16373,14 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series int"
       }
     ],
-    "examples": []
+    "examples": [],
+    "returnsDescription": "Position of the str string in the source string.",
+    "remarks": "Strings indexing starts at 0.",
+    "seeAlso": [
+      "str.contains",
+      "str.match",
+      "str.substring"
+    ]
   },
   {
     "name": "str.repeat",
@@ -14631,7 +16509,8 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"str.repeat\")\nrepeat = str.repeat(\"?\", 3, \",\") // Returns \"?,?,?\"\nlabel.new(bar_index,close,repeat)"
-    ]
+    ],
+    "remarks": "Returns na if the source is na."
   },
   {
     "name": "str.replace",
@@ -14756,6 +16635,11 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"str.replace\")\nvar source = \"FTX:BTCUSD / FTX:BTCEUR\"\n\n// Replace first occurrence of \"FTX\" with \"BINANCE\" replacement string\nvar newSource = str.replace(source, \"FTX\", \"BINANCE\", 0)\n\nif barstate.islastconfirmedhistory\n    // Display \"BINANCE:BTCUSD / FTX:BTCEUR\"\n    label.new(bar_index, high, text = newSource)"
+    ],
+    "returnsDescription": "Processed string.",
+    "seeAlso": [
+      "str.replace_all",
+      "str.match"
     ]
   },
   {
@@ -14832,7 +16716,8 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series string"
       }
     ],
-    "examples": []
+    "examples": [],
+    "returnsDescription": "Processed string."
   },
   {
     "name": "str.split",
@@ -14854,7 +16739,8 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "array<string>",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The id of an array of strings."
   },
   {
     "name": "str.startswith",
@@ -14929,7 +16815,11 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series bool"
       }
     ],
-    "examples": []
+    "examples": [],
+    "returnsDescription": "True if the source string starts with the substring specified in str, false otherwise.",
+    "seeAlso": [
+      "str.endswith"
+    ]
   },
   {
     "name": "str.substring",
@@ -15034,6 +16924,13 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"str.substring\", overlay = true)\nsym= input.symbol(\"NASDAQ:AAPL\")\npos = str.pos(sym, \":\") // Get position of \":\" character\ntkr= str.substring(sym, pos+1) // \"AAPL\"\nif barstate.islastconfirmedhistory\n    label.new(bar_index, high, text = tkr)"
+    ],
+    "returnsDescription": "The substring extracted from the source string.",
+    "remarks": "Strings indexing starts from 0. If begin_pos is equal to end_pos, the function returns an empty string.",
+    "seeAlso": [
+      "str.contains",
+      "str.pos",
+      "str.match"
     ]
   },
   {
@@ -15096,7 +16993,8 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series float"
       }
     ],
-    "examples": []
+    "examples": [],
+    "returnsDescription": "A \"float\" equivalent of the value in string. If the value is not a properly formed integer or floating point value, the function returns na."
   },
   {
     "name": "str.tostring",
@@ -15190,7 +17088,9 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series string"
       }
     ],
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The string representation of the value argument.\nIf the value argument is a string, it is returned as is.\nWhen the value is na, the function returns the string \"NaN\".",
+    "remarks": "The formatting of float values will also round those values when necessary, e.g. str.tostring(3.99, '#') will return \"4\".\nTo display trailing zeros, use '0' instead of '#'. For example, '#.000'.\nWhen using format.mintick, the value will be rounded to the nearest number that can be divided by syminfo.mintick without the remainder. The string is returned with trailing zeros.\nIf the x argument is a string, the same string value will be returned.\nBool type arguments return \"true\" or \"false\".\nWhen x is na, the function returns \"NaN\"."
   },
   {
     "name": "str.trim",
@@ -15254,7 +17154,8 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"str.trim\")\ntrim = str.trim(\"    abc    \") // Returns \"abc\"\nlabel.new(bar_index,close,trim)"
-    ]
+    ],
+    "remarks": "Returns an empty string (\"\") if the result is empty after the trim or if the source is na."
   },
   {
     "name": "str.upper",
@@ -15305,7 +17206,11 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series string"
       }
     ],
-    "examples": []
+    "examples": [],
+    "returnsDescription": "A new string with all letters converted to uppercase.",
+    "seeAlso": [
+      "str.lower"
+    ]
   },
   {
     "name": "strategy",
@@ -15575,6 +17480,11 @@ export const FUNCTIONS: PineFunction[] = [
     },
     "examples": [
       "//@version=6\nstrategy(\"My strategy\", overlay = true)\n\n// Enter long by market if current open is greater than previous high.\nif open > high[1]\n    strategy.entry(\"Long\", strategy.long, 1)\n// Generate a full exit bracket (profit 10 points, loss 5 points per contract) from the entry named \"Long\".\nstrategy.exit(\"Exit\", \"Long\", profit = 10, loss = 5)"
+    ],
+    "remarks": "You can learn more about strategies in our User Manual.\nEvery strategy script must have one strategy() call.\nStrategies using calc_on_every_tick = true parameter may calculate differently on historical and realtime bars, which causes repainting.\nStrategies always use the chart's prices to enter and exit positions. Using them on non-standard chart types (Heikin Ashi, Renko, etc.) will produce misleading results, as their prices are synthetic. Backtesting on non-standard charts is thus not recommended.\nThe maximum number of orders a strategy can open, unless it uses Deep Backtesting mode, is 9000. If the strategy exceeds this limit, it removes the oldest order's information when a new entry appears in the \"List of Trades\" tab. The strategy.closedtrades.*() functions return na for trades opened or closed by removed orders. To retrieve the index of the oldest available closed trade, use the strategy.closedtrades.first_index variable.",
+    "seeAlso": [
+      "indicator",
+      "library"
     ]
   },
   {
@@ -15664,7 +17574,8 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "void",
     "examples": [
       "//@version=6\nstrategy(\"Partial close strategy\")\n\n// Calculate a 14-bar and 28-bar moving average of `close` prices.\nfloat sma14 = ta.sma(close, 14)\nfloat sma28 = ta.sma(close, 28)\n\n// Place a market order to enter a long position when `sma14` crosses over `sma28`.\nif ta.crossover(sma14, sma28)\n    strategy.entry(\"My Long Entry ID\", strategy.long)\n\n// Place a market order to close the long trade when `sma14` crosses under `sma28`.\nif ta.crossunder(sma14, sma28)\n    strategy.close(\"My Long Entry ID\", \"50% market close\", qty_percent = 50)\n\n// Plot the position size.\nplot(strategy.position_size)"
-    ]
+    ],
+    "remarks": "When a position consists of several open trades and the close_entries_rule in the strategy() declaration statement is \"FIFO\" (default), a strategy.close() call exits from the position starting with the first open trade. This behavior applies even if the id value is the entry ID of different open trades. However, in that case, the maximum exit order size still depends on the trades opened by orders with the id identifier. For more information, see this section of our User Manual."
   },
   {
     "name": "strategy.close_all",
@@ -15722,6 +17633,10 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series float",
     "examples": [
       "//@version=6\nstrategy(\"`strategy.closedtrades.commission` Example\", commission_type = strategy.commission.percent, commission_value = 0.1)\n\n// Strategy calls to enter long trades every 15 bars and exit long trades every 20 bars.\nif bar_index % 15 == 0\n    strategy.entry(\"Long\", strategy.long)\nif bar_index % 20 == 0\n    strategy.close(\"Long\")\n\n// Plot total fees for the latest closed trade.\nplot(strategy.closedtrades.commission(strategy.closedtrades - 1))"
+    ],
+    "seeAlso": [
+      "strategy",
+      "strategy.opentrades.commission"
     ]
   },
   {
@@ -15740,6 +17655,10 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series int",
     "examples": [
       "//@version=6\nstrategy(\"strategy.closedtrades.entry_bar_index Example\")\n// Enter long trades on three rising bars; exit on two falling bars.\nif ta.rising(close, 3)\n    strategy.entry(\"Long\", strategy.long)\nif ta.falling(close, 2)\n    strategy.close(\"Long\")\n// Function that calculates the average amount of bars in a trade.\navgBarsPerTrade() =>\n    sumBarsPerTrade = 0\n    for tradeNo = 0 to strategy.closedtrades - 1\n        // Loop through all closed trades, starting with the oldest.\n        sumBarsPerTrade += strategy.closedtrades.exit_bar_index(tradeNo) - strategy.closedtrades.entry_bar_index(tradeNo) + 1\n    result = nz(sumBarsPerTrade / strategy.closedtrades)\nplot(avgBarsPerTrade())"
+    ],
+    "seeAlso": [
+      "strategy.closedtrades.exit_bar_index",
+      "strategy.opentrades.entry_bar_index"
     ]
   },
   {
@@ -15758,6 +17677,11 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series string",
     "examples": [
       "//@version=6\nstrategy(\"`strategy.closedtrades.entry_comment()` Example\", overlay = true)\n\nstopPrice = open * 1.01\n\nlongCondition = ta.crossover(ta.sma(close, 14), ta.sma(close, 28))\n\nif (longCondition)\n    strategy.entry(\"Long\", strategy.long, stop = stopPrice, comment = str.tostring(stopPrice, \"#.####\"))\n    strategy.exit(\"EXIT\", trail_points = 1000, trail_offset = 0)\n\nvar testTable = table.new(position.top_right, 1, 3, color.orange, border_width = 1)\n\nif barstate.islastconfirmedhistory or barstate.isrealtime\n    table.cell(testTable, 0, 0, 'Last closed trade:')\n    table.cell(testTable, 0, 1, \"Order stop price value: \" + strategy.closedtrades.entry_comment(strategy.closedtrades - 1))\n    table.cell(testTable, 0, 2, \"Actual Entry Price: \" + str.tostring(strategy.closedtrades.entry_price(strategy.closedtrades - 1)))"
+    ],
+    "seeAlso": [
+      "strategy",
+      "strategy.entry",
+      "strategy.closedtrades"
     ]
   },
   {
@@ -15776,6 +17700,13 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series string",
     "examples": [
       "//@version=6\nstrategy(\"strategy.closedtrades.entry_id Example\", overlay = true)\n\n// Enter a short position and close at the previous to last bar.\nif bar_index == 1\n    strategy.entry(\"Short at bar #\" + str.tostring(bar_index), strategy.short)\nif bar_index == last_bar_index - 2\n    strategy.close_all()\n\n// Display ID of the last entry position.\nif barstate.islastconfirmedhistory\n    label.new(last_bar_index, high, \"Last Entry ID is: \" + strategy.closedtrades.entry_id(strategy.closedtrades - 1))"
+    ],
+    "returnsDescription": "Returns the id of the closed trade's entry.",
+    "remarks": "The function returns na if trade_num is not in the range: 0 to strategy.closedtrades-1.",
+    "seeAlso": [
+      "strategy.closedtrades.entry_bar_index",
+      "strategy.closedtrades.entry_price",
+      "strategy.closedtrades.entry_time"
     ]
   },
   {
@@ -15795,6 +17726,12 @@ export const FUNCTIONS: PineFunction[] = [
     "examples": [
       "//@version=6\nstrategy(\"strategy.closedtrades.entry_price Example 1\")\n\n// Strategy calls to enter long trades every 15 bars and exit long trades every 20 bars.\nif bar_index % 15 == 0\n    strategy.entry(\"Long\", strategy.long)\nif bar_index % 20 == 0\n    strategy.close(\"Long\")\n\n// Return the entry price for the latest entry.\nentryPrice = strategy.closedtrades.entry_price(strategy.closedtrades - 1)\n\nplot(entryPrice, \"Long entry price\")",
       "// Calculates the average profit percentage for all closed trades.\n//@version=6\nstrategy(\"strategy.closedtrades.entry_price Example 2\")\n\n// Strategy calls to create single short and long trades\nif bar_index == last_bar_index - 15\n    strategy.entry(\"Long Entry\", strategy.long)\nelse if bar_index == last_bar_index - 10\n    strategy.close(\"Long Entry\")\n    strategy.entry(\"Short\", strategy.short)\nelse if bar_index == last_bar_index - 5\n    strategy.close(\"Short\")\n\n// Calculate profit for both closed trades.\nprofitPct = 0.0\nfor tradeNo = 0 to strategy.closedtrades - 1\n    entryP = strategy.closedtrades.entry_price(tradeNo)\n    exitP = strategy.closedtrades.exit_price(tradeNo)\n    profitPct += (exitP - entryP) / entryP * strategy.closedtrades.size(tradeNo) * 100\n\n// Calculate average profit percent for both closed trades.\navgProfitPct = nz(profitPct / strategy.closedtrades)\n\nplot(avgProfitPct)"
+    ],
+    "seeAlso": [
+      "strategy.closedtrades.entry_price",
+      "strategy.closedtrades.exit_price",
+      "strategy.closedtrades.size",
+      "strategy.closedtrades"
     ]
   },
   {
@@ -15813,6 +17750,11 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series int",
     "examples": [
       "//@version=6\nstrategy(\"strategy.closedtrades.entry_time Example\", overlay = true)\n\n// Enter long trades on three rising bars; exit on two falling bars.\nif ta.rising(close, 3)\n    strategy.entry(\"Long\", strategy.long)\nif ta.falling(close, 2)\n    strategy.close(\"Long\")\n\n// Calculate the average trade duration\navgTradeDuration() =>\n    sumTradeDuration = 0\n    for i = 0 to strategy.closedtrades - 1\n        sumTradeDuration += strategy.closedtrades.exit_time(i) - strategy.closedtrades.entry_time(i)\n    result = nz(sumTradeDuration / strategy.closedtrades)\n\n// Display average duration converted to seconds and formatted using 2 decimal points\nif barstate.islastconfirmedhistory\n    label.new(bar_index, high, str.tostring(avgTradeDuration() / 1000, \"#.##\") + \" seconds\")"
+    ],
+    "seeAlso": [
+      "strategy.opentrades.entry_time",
+      "strategy.closedtrades.exit_time",
+      "time"
     ]
   },
   {
@@ -15832,6 +17774,10 @@ export const FUNCTIONS: PineFunction[] = [
     "examples": [
       "//@version=6\nstrategy(\"strategy.closedtrades.exit_bar_index Example 1\")\n\n// Strategy calls to place a single short trade. We enter the trade at the first bar and exit the trade at 10 bars before the last chart bar.\nif bar_index == 0\n    strategy.entry(\"Short\", strategy.short)\nif bar_index == last_bar_index - 10\n    strategy.close(\"Short\")\n\n// Calculate the amount of bars since the last closed trade.\nbarsSinceClosed = strategy.closedtrades > 0 ? bar_index - strategy.closedtrades.exit_bar_index(strategy.closedtrades - 1) : na\n\nplot(barsSinceClosed, \"Bars since last closed trade\")",
       "// Calculates the average amount of bars per trade.\n//@version=6\nstrategy(\"strategy.closedtrades.exit_bar_index Example 2\")\n\n// Enter long trades on three rising bars; exit on two falling bars.\nif ta.rising(close, 3)\n    strategy.entry(\"Long\", strategy.long)\nif ta.falling(close, 2)\n    strategy.close(\"Long\")\n\n// Function that calculates the average amount of bars per trade.\navgBarsPerTrade() =>\n    sumBarsPerTrade = 0\n    for tradeNo = 0 to strategy.closedtrades - 1\n        // Loop through all closed trades, starting with the oldest.\n        sumBarsPerTrade += strategy.closedtrades.exit_bar_index(tradeNo) - strategy.closedtrades.entry_bar_index(tradeNo) + 1\n    result = nz(sumBarsPerTrade / strategy.closedtrades)\n\nplot(avgBarsPerTrade())"
+    ],
+    "seeAlso": [
+      "bar_index",
+      "last_bar_index"
     ]
   },
   {
@@ -15850,6 +17796,12 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series string",
     "examples": [
       "//@version=6\nstrategy(\"`strategy.closedtrades.exit_comment()` Example\", overlay = true)\n\nlongCondition = ta.crossover(ta.sma(close, 14), ta.sma(close, 28))\nif (longCondition)\n    strategy.entry(\"Long\", strategy.long)\n    strategy.exit(\"Exit\", stop = open * 0.95, limit = close * 1.05, trail_points = 100, trail_offset = 0, comment_profit = \"TP\", comment_loss = \"SL\", comment_trailing = \"TRAIL\")\n\nexitStats() =>\n    int slCount = 0\n    int tpCount = 0\n    int trailCount = 0\n\n    if strategy.closedtrades > 0\n        for i = 0 to strategy.closedtrades - 1\n            switch strategy.closedtrades.exit_comment(i)\n                \"TP\"    => tpCount    += 1\n                \"SL\"    => slCount    += 1\n                \"TRAIL\" => trailCount += 1\n    [slCount, tpCount, trailCount]\n\nvar testTable = table.new(position.top_right, 1, 4, color.orange, border_width = 1)\n\nif barstate.islastconfirmedhistory\n    [slCount, tpCount, trailCount] = exitStats()\n    table.cell(testTable, 0, 0, \"Closed trades (\" + str.tostring(strategy.closedtrades) +\") stats:\")\n    table.cell(testTable, 0, 1, \"Stop Loss: \" + str.tostring(slCount))\n    table.cell(testTable, 0, 2, \"Take Profit: \" + str.tostring(tpCount))\n    table.cell(testTable, 0, 3, \"Trailing Stop: \" + str.tostring(trailCount))"
+    ],
+    "seeAlso": [
+      "strategy",
+      "strategy.exit",
+      "strategy.close",
+      "strategy.closedtrades"
     ]
   },
   {
@@ -15868,6 +17820,13 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series string",
     "examples": [
       "//@version=6\nstrategy(\"strategy.closedtrades.exit_id Example\", overlay = true)\n\n// Strategy calls to create single short and long trades\nif bar_index == last_bar_index - 15\n    strategy.entry(\"Long Entry\", strategy.long)\nelse if bar_index == last_bar_index - 10\n    strategy.entry(\"Short Entry\", strategy.short)\n\n// When a new open trade is detected then we create the exit strategy corresponding with the matching entry id\n// We detect the correct entry id by determining if a position is long or short based on the position quantity\nif ta.change(strategy.opentrades) != 0\n    posSign = strategy.opentrades.size(strategy.opentrades - 1)\n    strategy.exit(posSign > 0 ? \"SL Long Exit\" : \"SL Short Exit\", strategy.opentrades.entry_id(strategy.opentrades - 1), stop = posSign > 0 ? high - ta.tr : low + ta.tr)\n\n// When a new closed trade is detected then we place a label above the bar with the exit info\nif ta.change(strategy.closedtrades) != 0\n    msg = \"Trade closed by: \" + strategy.closedtrades.exit_id(strategy.closedtrades - 1)\n    label.new(bar_index, high + (3 * ta.tr), msg)"
+    ],
+    "returnsDescription": "Returns the id of the closed trade's exit.",
+    "remarks": "The function returns na if trade_num is not in the range: 0 to strategy.closedtrades-1.",
+    "seeAlso": [
+      "strategy.closedtrades.exit_bar_index",
+      "strategy.closedtrades.exit_price",
+      "strategy.closedtrades.exit_time"
     ]
   },
   {
@@ -15887,6 +17846,9 @@ export const FUNCTIONS: PineFunction[] = [
     "examples": [
       "//@version=6\nstrategy(\"strategy.closedtrades.exit_price Example 1\")\n\n// We are creating a long trade every 5 bars\nif bar_index % 5 == 0\n    strategy.entry(\"Long\", strategy.long)\nstrategy.close(\"Long\")\n\n// Return the exit price from the latest closed trade.\nexitPrice = strategy.closedtrades.exit_price(strategy.closedtrades - 1)\n\nplot(exitPrice, \"Long exit price\")",
       "// Calculates the average profit percentage for all closed trades.\n//@version=6\nstrategy(\"strategy.closedtrades.exit_price Example 2\")\n\n// Strategy calls to create single short and long trades.\nif bar_index == last_bar_index - 15\n    strategy.entry(\"Long Entry\", strategy.long)\nelse if bar_index == last_bar_index - 10\n    strategy.close(\"Long Entry\")\n    strategy.entry(\"Short\", strategy.short)\nelse if bar_index == last_bar_index - 5\n    strategy.close(\"Short\")\n\n// Calculate profit for both closed trades.\nprofitPct = 0.0\nfor tradeNo = 0 to strategy.closedtrades - 1\n    entryP = strategy.closedtrades.entry_price(tradeNo)\n    exitP = strategy.closedtrades.exit_price(tradeNo)\n    profitPct += (exitP - entryP) / entryP * strategy.closedtrades.size(tradeNo) * 100\n\n// Calculate average profit percent for both closed trades.\navgProfitPct = nz(profitPct / strategy.closedtrades)\n\nplot(avgProfitPct)"
+    ],
+    "seeAlso": [
+      "strategy.closedtrades.entry_price"
     ]
   },
   {
@@ -15906,6 +17868,9 @@ export const FUNCTIONS: PineFunction[] = [
     "examples": [
       "//@version=6\nstrategy(\"strategy.closedtrades.exit_time Example 1\")\n\n// Enter long trades on three rising bars; exit on two falling bars.\nif ta.rising(close, 3)\n    strategy.entry(\"Long\", strategy.long)\nif ta.falling(close, 2)\n    strategy.close(\"Long\")\n\n// Calculate the average trade duration.\navgTradeDuration() =>\n    sumTradeDuration = 0\n    for i = 0 to strategy.closedtrades - 1\n        sumTradeDuration += strategy.closedtrades.exit_time(i) - strategy.closedtrades.entry_time(i)\n    result = nz(sumTradeDuration / strategy.closedtrades)\n\n// Display average duration converted to seconds and formatted using 2 decimal points.\nif barstate.islastconfirmedhistory\n    label.new(bar_index, high, str.tostring(avgTradeDuration() / 1000, \"#.##\") + \" seconds\")",
       "// Reopens a closed trade after X seconds.\n//@version=6\nstrategy(\"strategy.closedtrades.exit_time Example 2\")\n\n// Strategy calls to emulate a single long trade at the first bar.\nif bar_index == 0\n    strategy.entry(\"Long\", strategy.long)\n\nreopenPositionAfter(timeSec) =>\n    if strategy.closedtrades > 0\n        if time - strategy.closedtrades.exit_time(strategy.closedtrades - 1) >= timeSec * 1000\n            strategy.entry(\"Long\", strategy.long)\n\n// Reopen last closed position after 120 sec.\nreopenPositionAfter(120)\n\nif ta.change(strategy.opentrades) != 0\n    strategy.exit(\"Long\", stop = low * 0.9, profit = high * 2.5)"
+    ],
+    "seeAlso": [
+      "strategy.closedtrades.entry_time"
     ]
   },
   {
@@ -15924,6 +17889,11 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series float",
     "examples": [
       "//@version=6\nstrategy(\"`strategy.closedtrades.max_drawdown` Example\")\n\n// Strategy calls to enter long trades every 15 bars and exit long trades every 20 bars.\nif bar_index % 15 == 0\n    strategy.entry(\"Long\", strategy.long)\nif bar_index % 20 == 0\n    strategy.close(\"Long\")\n\n// Get the biggest max trade drawdown value from all of the closed trades.\nmaxTradeDrawDown() =>\n    maxDrawdown = 0.0\n    for tradeNo = 0 to strategy.closedtrades - 1\n        maxDrawdown := math.max(maxDrawdown, strategy.closedtrades.max_drawdown(tradeNo))\n    result = maxDrawdown\n\nplot(maxTradeDrawDown(), \"Biggest max drawdown\")"
+    ],
+    "remarks": "The function returns na if trade_num is not in the range: 0 to strategy.closedtrades - 1.",
+    "seeAlso": [
+      "strategy.opentrades.max_drawdown",
+      "strategy.max_drawdown"
     ]
   },
   {
@@ -15940,7 +17910,11 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "strategy.closedtrades.max_drawdown",
+      "strategy.max_drawdown"
+    ]
   },
   {
     "name": "strategy.closedtrades.max_runup",
@@ -15958,6 +17932,10 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series float",
     "examples": [
       "//@version=6\nstrategy(\"`strategy.closedtrades.max_runup` Example\")\n\n// Strategy calls to enter long trades every 15 bars and exit long trades every 20 bars.\nif bar_index % 15 == 0\n    strategy.entry(\"Long\", strategy.long)\nif bar_index % 20 == 0\n    strategy.close(\"Long\")\n\n// Get the biggest max trade runup value from all of the closed trades.\nmaxTradeRunUp() =>\n    maxRunup = 0.0\n    for tradeNo = 0 to strategy.closedtrades - 1\n        maxRunup := math.max(maxRunup, strategy.closedtrades.max_runup(tradeNo))\n    result = maxRunup\n\nplot(maxTradeRunUp(), \"Max trade runup\")"
+    ],
+    "seeAlso": [
+      "strategy.opentrades.max_runup",
+      "strategy.max_runup"
     ]
   },
   {
@@ -15974,7 +17952,11 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "strategy.closedtrades.max_runup",
+      "strategy.max_runup"
+    ]
   },
   {
     "name": "strategy.closedtrades.profit",
@@ -15992,6 +17974,11 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series float",
     "examples": [
       "//@version=6\nstrategy(\"`strategy.closedtrades.profit()` example\")\n\n// Enter a long trade every 15 bars, and close a long trade every 20 bars.\nif bar_index % 15 == 0\n    strategy.entry(\"Long\", strategy.long)\nif bar_index % 20 == 0\n    strategy.close(\"Long\")\n\n//@function Calculates the average gross profit from all available closed trades. \navgGrossProfit() =>\n    var float result = 0.0\n    if result == 0.0 or strategy.closedtrades > strategy.closedtrades[1]\n        float sumGrossProfit = 0.0\n        for tradeNo = 0 to strategy.closedtrades - 1\n            sumGrossProfit += strategy.closedtrades.profit(tradeNo)\n        result := nz(sumGrossProfit / strategy.closedtrades)\n    result\n\nplot(avgGrossProfit(), \"Average gross profit\")"
+    ],
+    "seeAlso": [
+      "strategy.account_currency",
+      "strategy.opentrades.profit",
+      "strategy.closedtrades.commission"
     ]
   },
   {
@@ -16008,7 +17995,10 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "strategy.closedtrades.profit"
+    ]
   },
   {
     "name": "strategy.closedtrades.size",
@@ -16027,6 +18017,12 @@ export const FUNCTIONS: PineFunction[] = [
     "examples": [
       "//@version=6\nstrategy(\"`strategy.closedtrades.size` Example 1\")\n\n// We calculate the max amt of shares we can buy.\namtShares = math.floor(strategy.equity / close)\n// Strategy calls to enter long trades every 15 bars and exit long trades every 20 bars\nif bar_index % 15 == 0\n    strategy.entry(\"Long\", strategy.long, qty = amtShares)\nif bar_index % 20 == 0\n    strategy.close(\"Long\")\n\n// Plot the number of contracts traded in the last closed trade.\nplot(strategy.closedtrades.size(strategy.closedtrades - 1), \"Number of contracts traded\")",
       "// Calculates the average profit percentage for all closed trades.\n//@version=6\nstrategy(\"`strategy.closedtrades.size` Example 2\")\n\n// Strategy calls to enter long trades every 15 bars and exit long trades every 20 bars.\nif bar_index % 15 == 0\n    strategy.entry(\"Long\", strategy.long)\nif bar_index % 20 == 0\n    strategy.close(\"Long\")\n\n\n// Calculate profit for both closed trades.\nprofitPct = 0.0\nfor tradeNo = 0 to strategy.closedtrades - 1\n    entryP = strategy.closedtrades.entry_price(tradeNo)\n    exitP = strategy.closedtrades.exit_price(tradeNo)\n    profitPct += (exitP - entryP) / entryP * strategy.closedtrades.size(tradeNo) * 100\n\n// Calculate average profit percent for both closed trades.\navgProfitPct = nz(profitPct / strategy.closedtrades)\n\nplot(avgProfitPct)"
+    ],
+    "seeAlso": [
+      "strategy.opentrades.size",
+      "strategy.position_size",
+      "strategy.closedtrades",
+      "strategy.opentrades"
     ]
   },
   {
@@ -16046,6 +18042,10 @@ export const FUNCTIONS: PineFunction[] = [
     "examples": [
       "//@version=6\nstrategy(\"`strategy.convert_to_account` Example 1\", currency = currency.EUR)\n\nplot(close, \"Close price using default currency\")\nplot(strategy.convert_to_account(close), \"Close price converted to strategy currency\")",
       "// Calculates the \"Buy and hold return\" using your account's currency.\n//@version=6\nstrategy(\"`strategy.convert_to_account` Example 2\", currency = currency.EUR)\n\ndateInput = input.time(timestamp(\"20 Jul 2021 00:00 +0300\"), \"From Date\", confirm = true)\n\nbuyAndHoldReturnPct(fromDate) =>\n    if time >= fromDate\n        money = close * syminfo.pointvalue\n        var initialBal = strategy.convert_to_account(money)\n        (strategy.convert_to_account(money) - initialBal) / initialBal * 100\n\nplot(buyAndHoldReturnPct(dateInput))"
+    ],
+    "seeAlso": [
+      "strategy",
+      "strategy.convert_to_symbol"
     ]
   },
   {
@@ -16064,6 +18064,10 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series float",
     "examples": [
       "//@version=6\nstrategy(\"`strategy.convert_to_symbol` Example\", currency = currency.EUR)\n\n// Calculate the max qty we can buy using current chart's currency.\ncalcContracts(accountMoney) =>\n    math.floor(strategy.convert_to_symbol(accountMoney) / syminfo.pointvalue / close)\n\n// Return max qty we can buy using 300 euros\nqt = calcContracts(300)\n\n// Strategy calls to enter long trades every 15 bars and exit long trades every 20 bars using our custom qty.\nif bar_index % 15 == 0\n    strategy.entry(\"Long\", strategy.long, qty = qt)\nif bar_index % 20 == 0\n    strategy.close(\"Long\")"
+    ],
+    "seeAlso": [
+      "strategy",
+      "strategy.convert_to_account"
     ]
   },
   {
@@ -16082,7 +18086,8 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series float",
     "examples": [
       "//@version=6\nstrategy(\"Supertrend Strategy\", overlay = true, default_qty_type = strategy.percent_of_equity, default_qty_value = 15)\n\n//@variable The length of the ATR calculation.\natrPeriod = input(10, \"ATR Length\")\n//@variable The ATR multiplier.\nfactor = input.float(3.0, \"Factor\", step = 0.01)\n//@variable The tick offset of the stop order.\nstopOffsetInput = input.int(100, \"Tick offset for entry stop\")\n\n// Get the direction of the SuperTrend.\n[_, direction] = ta.supertrend(factor, atrPeriod)\n\nif ta.change(direction) < 0\n    //@variable The stop price of the entry order.\n    stopPrice = close + syminfo.mintick * stopOffsetInput\n    //@variable The expected default fill quantity at the `stopPrice`. This value may not reflect actual qty of the filled order, because fill price may be different.\n    calculatedQty = strategy.default_entry_qty(stopPrice)\n    strategy.entry(\"My Long Entry Id\", strategy.long, stop = stopPrice)\n    label.new(bar_index, stopPrice, str.format(\"Stop set at {0}\\nExpected qty at {0}: {1}\", math.round_to_mintick(stopPrice), calculatedQty))\n\nif ta.change(direction) > 0\n    strategy.close_all()"
-    ]
+    ],
+    "remarks": "This function does not consider open positions simulated by a strategy. For example, if a strategy script has an open position from a long order with a qty of 10 units, using the strategy.entry() function to simulate a short order with a qty of 5 will prompt the script to sell 15 units to reverse the position. This function will still return 5 in such a case since it doesn't consider an open trade.\nThis value represents the default calculated quantity of an order.\nOrder placement commands can override the default value by explicitly passing a new qty value in the function call."
   },
   {
     "name": "strategy.entry",
@@ -16329,7 +18334,8 @@ export const FUNCTIONS: PineFunction[] = [
     "examples": [
       "//@version=6\nstrategy(\"Exit bracket strategy\", overlay = true)\n\n// Inputs that define the profit and loss amount of each trade as a tick distance from the entry price.\nint profitDistanceInput = input.int(100, \"Profit distance, in ticks\", 1)\nint lossDistanceInput   = input.int(100, \"Loss distance, in ticks\", 1)\n\n// Variables to track the take-profit and stop-loss price.\nvar float takeProfit = na\nvar float stopLoss   = na\n\n// Calculate a 14-bar and 28-bar moving average of `close` prices.\nfloat sma14 = ta.sma(close, 14)\nfloat sma28 = ta.sma(close, 28)\n\nif ta.crossover(sma14, sma28) and strategy.opentrades == 0\n    // Place a market order to enter a long position.\n    strategy.entry(\"My Long Entry ID\", strategy.long)\n    // Place a take-profit and stop-loss order when the entry order fills.\n    strategy.exit(\"My Long Exit ID\", \"My Long Entry ID\", profit = profitDistanceInput, loss = lossDistanceInput)\n\nif ta.change(strategy.opentrades) == 1\n    //@variable The long entry price.\n    float entryPrice = strategy.opentrades.entry_price(0)\n    // Update the `takeProfit` and `stopLoss` values.\n    takeProfit := entryPrice + profitDistanceInput * syminfo.mintick\n    stopLoss   := entryPrice - lossDistanceInput * syminfo.mintick\n\nif ta.change(strategy.closedtrades) == 1\n    // Reset the `takeProfit` and `stopLoss`.\n    takeProfit := na\n    stopLoss   := na\n\n// Plot the `takeProfit` and `stopLoss`.\nplot(takeProfit, \"Take-profit level\", color.green, 2, plot.style_linebr)\nplot(stopLoss, \"Stop-loss level\", color.red, 2, plot.style_linebr)",
       "//@version=6\nstrategy(\"Trailing stop strategy\", overlay = true)\n\n//@variable The distance required to activate the trailing stop.\nfloat activationDistanceInput = input.int(100, \"Trail activation distance, in ticks\") * syminfo.mintick\n//@variable The number of ticks the trailing stop follows behind the price as it reaches new peaks.\nint trailDistanceInput = input.int(100, \"Trail distance, in ticks\")\n\n//@function Draws a label and line at the specified `price` to visualize a trailing stop order's activation level.\ndrawActivation(float price) =>\n    label.new(\n         bar_index, price, \"Activation level\", style = label.style_label_right,\n         color = color.gray, textcolor = color.white\n     )\n    line.new(\n         bar_index, price, bar_index + 1, price, extend = extend.right, style = line.style_dashed, color = color.gray\n     )\n\n//@function Stops the `l` line from extending further.\nmethod stopExtend(line l) =>\n    l.set_x2(bar_index)\n    l.set_extend(extend.none)\n\n// The activation line, active trailing stop price, and active trailing stop flag.\nvar line activationLine     = na\nvar float trailingStopPrice = na\nvar bool isActive           = false\n\nif bar_index % 100 == 0 and strategy.opentrades == 0\n    trailingStopPrice := na\n    isActive          := false\n    // Place a market order to enter a long position.\n    strategy.entry(\"My Long Entry ID\", strategy.long)\n    //@variable The activation level's price.\n    float activationPrice = close + activationDistanceInput\n    // Create a trailing stop order that activates the defined number of ticks above the entry price.\n    strategy.exit(\n         \"My Long Exit ID\", \"My Long Entry ID\", trail_price = activationPrice, trail_offset = trailDistanceInput,\n         oca_name = \"Exit\"\n     )\n    // Create new drawings at the `activationPrice`.\n    activationLine := drawActivation(activationPrice)\n\n// Logic for trailing stop visualization.\nif strategy.opentrades == 1\n    // Stop extending the `activationLine` when the stop activates.\n    if not isActive and high > activationLine.get_price(bar_index)\n        isActive := true\n        activationLine.stopExtend()\n    // Update the `trailingStopPrice` while the trailing stop is active.\n    if isActive\n        float offsetPrice = high - trailDistanceInput * syminfo.mintick\n        trailingStopPrice := math.max(nz(trailingStopPrice, offsetPrice), offsetPrice)\n\n// Close the trade with a market order if the trailing stop does not activate before the next 300th bar.\nif not isActive and bar_index % 300 == 0\n    strategy.close_all(\"Market close\")\n\n// Reset the `trailingStopPrice` and `isActive` flags when the trade closes, and stop extending the `activationLine`.\nif ta.change(strategy.closedtrades) > 0\n    if not isActive\n        activationLine.stopExtend()\n    trailingStopPrice := na\n    isActive          := false\n\n// Plot the `trailingStopPrice`.\nplot(trailingStopPrice, \"Trailing stop\", color.red, 3, plot.style_linebr)"
-    ]
+    ],
+    "remarks": "A single call to the strategy.exit() command can generate exit orders for several entries in an open position, depending on the call's from_entry value. If the call does not include a from_entry argument, it creates exit orders for all open trades, even the ones opened after the call, until the position closes. See this section of our User Manual to learn more.\nWhen a position consists of several open trades, and the close_entries_rule in the strategy() declaration statement is \"FIFO\" (default), the orders from a strategy.exit() call exit from the position starting with the first open trade. This behavior applies even if the from_entry value is the entry ID of different open trades. However, in that case, the maximum size of the exit orders still depends on the trades opened by orders with the from_entry ID. For more information, see this section of our User Manual.\nIf a strategy.exit() call includes arguments for creating stop-loss and trailing stop orders, the command places only the order that is supposed to fill first, because both orders are of the \"stop\" type."
   },
   {
     "name": "strategy.opentrades.commission",
@@ -16347,6 +18353,10 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series float",
     "examples": [
       "// Calculates the gross profit or loss for the current open position.\n//@version=6\nstrategy(\"`strategy.opentrades.commission` Example\", commission_type = strategy.commission.percent, commission_value = 0.1)\n\n// Strategy calls to enter long trades every 15 bars and exit long trades every 20 bars.\nif bar_index % 15 == 0\n    strategy.entry(\"Long\", strategy.long)\nif bar_index % 20 == 0\n    strategy.close(\"Long\")\n\n// Calculate gross profit or loss for open positions only.\ntradeOpenGrossPL() =>\n    sumOpenGrossPL = 0.0\n    for tradeNo = 0 to strategy.opentrades - 1\n        sumOpenGrossPL += strategy.opentrades.profit(tradeNo) - strategy.opentrades.commission(tradeNo)\n    result = sumOpenGrossPL\n\nplot(tradeOpenGrossPL())"
+    ],
+    "seeAlso": [
+      "strategy",
+      "strategy.closedtrades.commission"
     ]
   },
   {
@@ -16365,6 +18375,10 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series int",
     "examples": [
       "// Wait 10 bars and then close the position.\n//@version=6\nstrategy(\"`strategy.opentrades.entry_bar_index` Example\")\n\nbarsSinceLastEntry() =>\n    strategy.opentrades > 0 ? bar_index - strategy.opentrades.entry_bar_index(strategy.opentrades - 1) : na\n\n// Enter a long position if there are no open positions.\nif strategy.opentrades == 0\n    strategy.entry(\"Long\", strategy.long)\n\n// Close the long position after 10 bars.\nif barsSinceLastEntry() >= 10\n    strategy.close(\"Long\")"
+    ],
+    "seeAlso": [
+      "strategy.closedtrades.entry_bar_index",
+      "strategy.closedtrades.exit_bar_index"
     ]
   },
   {
@@ -16383,6 +18397,11 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series string",
     "examples": [
       "//@version=6\nstrategy(\"`strategy.opentrades.entry_comment()` Example\", overlay = true)\n\nstopPrice = open * 1.01\n\nlongCondition = ta.crossover(ta.sma(close, 14), ta.sma(close, 28))\n\nif (longCondition)\n    strategy.entry(\"Long\", strategy.long, stop = stopPrice, comment = str.tostring(stopPrice, \"#.####\"))\n\nvar testTable = table.new(position.top_right, 1, 3, color.orange, border_width = 1)\n\nif barstate.islastconfirmedhistory or barstate.isrealtime\n    table.cell(testTable, 0, 0, 'Last entry stats')\n    table.cell(testTable, 0, 1, \"Order stop price value: \" + strategy.opentrades.entry_comment(strategy.opentrades - 1))\n    table.cell(testTable, 0, 2, \"Actual Entry Price: \" + str.tostring(strategy.opentrades.entry_price(strategy.opentrades - 1)))"
+    ],
+    "seeAlso": [
+      "strategy",
+      "strategy.entry",
+      "strategy.opentrades"
     ]
   },
   {
@@ -16401,6 +18420,13 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series string",
     "examples": [
       "//@version=6\nstrategy(\"`strategy.opentrades.entry_id` Example\", overlay = true)\n\n// We enter a long position when 14 period sma crosses over 28 period sma.\n// We enter a short position when 14 period sma crosses under 28 period sma.\nlongCondition = ta.crossover(ta.sma(close, 14), ta.sma(close, 28))\nshortCondition = ta.crossunder(ta.sma(close, 14), ta.sma(close, 28))\n\n// Strategy calls to enter a long or short position when the corresponding condition is met.\nif longCondition\n    strategy.entry(\"Long entry at bar #\" + str.tostring(bar_index), strategy.long)\nif shortCondition\n    strategy.entry(\"Short entry at bar #\" + str.tostring(bar_index), strategy.short)\n\n// Display ID of the latest open position.\nif barstate.islastconfirmedhistory\n    label.new(bar_index, high + (2 * ta.tr), \"Last opened position is \\n \" + strategy.opentrades.entry_id(strategy.opentrades - 1))"
+    ],
+    "returnsDescription": "Returns the id of the open trade's entry.",
+    "remarks": "The function returns na if trade_num is not in the range: 0 to strategy.opentrades-1.",
+    "seeAlso": [
+      "strategy.opentrades.entry_bar_index",
+      "strategy.opentrades.entry_price",
+      "strategy.opentrades.entry_time"
     ]
   },
   {
@@ -16420,6 +18446,9 @@ export const FUNCTIONS: PineFunction[] = [
     "examples": [
       "//@version=6\nstrategy(\"strategy.opentrades.entry_price Example 1\", overlay = true)\n\n// Strategy calls to enter long trades every 15 bars and exit long trades every 20 bars.\nif ta.crossover(close, ta.sma(close, 14))\n    strategy.entry(\"Long\", strategy.long)\n\n// Return the entry price for the latest closed trade.\ncurrEntryPrice = strategy.opentrades.entry_price(strategy.opentrades - 1)\ncurrExitPrice = currEntryPrice * 1.05\n\nif high >= currExitPrice\n    strategy.close(\"Long\")\n\nplot(currEntryPrice, \"Long entry price\", style = plot.style_linebr)\nplot(currExitPrice, \"Long exit price\", color.green, style = plot.style_linebr)",
       "// Calculates the average price for the open position.\n//@version=6\nstrategy(\"strategy.opentrades.entry_price Example 2\", pyramiding = 2)\n\n// Strategy calls to enter long trades every 15 bars and exit long trades every 20 bars.\nif bar_index % 15 == 0\n    strategy.entry(\"Long\", strategy.long)\nif bar_index % 20 == 0\n    strategy.close(\"Long\")\n\n// Calculates the average price for the open position.\navgOpenPositionPrice() =>\n    sumOpenPositionPrice = 0.0\n    for tradeNo = 0 to strategy.opentrades - 1\n        sumOpenPositionPrice += strategy.opentrades.entry_price(tradeNo) * strategy.opentrades.size(tradeNo) / strategy.position_size\n    result = nz(sumOpenPositionPrice / strategy.opentrades)\n\nplot(avgOpenPositionPrice())"
+    ],
+    "seeAlso": [
+      "strategy.closedtrades.exit_price"
     ]
   },
   {
@@ -16438,6 +18467,10 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series int",
     "examples": [
       "//@version=6\nstrategy(\"strategy.opentrades.entry_time Example\")\n\n// Strategy calls to enter long trades every 15 bars and exit long trades every 20 bars.\nif bar_index % 15 == 0\n    strategy.entry(\"Long\", strategy.long)\nif bar_index % 20 == 0\n    strategy.close(\"Long\")\n\n// Calculates duration in milliseconds since the last position was opened.\ntimeSinceLastEntry()=>\n    strategy.opentrades > 0 ? (time - strategy.opentrades.entry_time(strategy.opentrades - 1)) : na\n\nplot(timeSinceLastEntry() / 1000 * 60 * 60 * 24, \"Days since last entry\")"
+    ],
+    "seeAlso": [
+      "strategy.closedtrades.entry_time",
+      "strategy.closedtrades.exit_time"
     ]
   },
   {
@@ -16457,6 +18490,11 @@ export const FUNCTIONS: PineFunction[] = [
     "examples": [
       "//@version=6\nstrategy(\"strategy.opentrades.max_drawdown Example 1\")\n\n// Strategy calls to enter long trades every 15 bars and exit long trades every 20 bars.\nif bar_index % 15 == 0\n    strategy.entry(\"Long\", strategy.long)\nif bar_index % 20 == 0\n    strategy.close(\"Long\")\n\n// Plot the max drawdown of the latest open trade.\nplot(strategy.opentrades.max_drawdown(strategy.opentrades - 1), \"Max drawdown of the latest open trade\")",
       "// Calculates the max trade drawdown value for all open trades.\n//@version=6\nstrategy(\"`strategy.opentrades.max_drawdown` Example 2\", pyramiding = 100)\n\n// Strategy calls to enter long trades every 15 bars and exit long trades every 20 bars.\nif bar_index % 15 == 0\n    strategy.entry(\"Long\", strategy.long)\nif bar_index % 20 == 0\n    strategy.close(\"Long\")\n\n// Get the biggest max trade drawdown value from all of the open trades.\nmaxTradeDrawDown() =>\n    maxDrawdown = 0.0\n    for tradeNo = 0 to strategy.opentrades - 1\n        maxDrawdown := math.max(maxDrawdown, strategy.opentrades.max_drawdown(tradeNo))\n    result = maxDrawdown\n\nplot(maxTradeDrawDown(), \"Biggest max drawdown\")"
+    ],
+    "remarks": "The function returns na if trade_num is not in the range: 0 to strategy.closedtrades - 1.",
+    "seeAlso": [
+      "strategy.closedtrades.max_drawdown",
+      "strategy.max_drawdown"
     ]
   },
   {
@@ -16473,7 +18511,11 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "strategy.opentrades.max_drawdown",
+      "strategy.max_drawdown"
+    ]
   },
   {
     "name": "strategy.opentrades.max_runup",
@@ -16492,6 +18534,10 @@ export const FUNCTIONS: PineFunction[] = [
     "examples": [
       "//@version=6\nstrategy(\"strategy.opentrades.max_runup Example 1\")\n\n// Strategy calls to enter long trades every 15 bars and exit long trades every 20 bars.\nif bar_index % 15 == 0\n    strategy.entry(\"Long\", strategy.long)\nif bar_index % 20 == 0\n    strategy.close(\"Long\")\n\n// Plot the max runup of the latest open trade.\nplot(strategy.opentrades.max_runup(strategy.opentrades - 1), \"Max runup of the latest open trade\")",
       "// Calculates the max trade runup value for all open trades.\n//@version=6\nstrategy(\"strategy.opentrades.max_runup Example 2\", pyramiding = 100)\n\n// Enter a long position every 30 bars.\nif bar_index % 30 == 0\n    strategy.entry(\"Long\", strategy.long)\n\n// Calculate biggest max trade runup value from all of the open trades.\nmaxOpenTradeRunUp() =>\n    maxRunup = 0.0\n    for tradeNo = 0 to strategy.opentrades - 1\n        maxRunup := math.max(maxRunup, strategy.opentrades.max_runup(tradeNo))\n    result = maxRunup\n\nplot(maxOpenTradeRunUp(), \"Biggest max runup of all open trades\")"
+    ],
+    "seeAlso": [
+      "strategy.closedtrades.max_runup",
+      "strategy.max_drawdown"
     ]
   },
   {
@@ -16508,7 +18554,11 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "strategy.opentrades.max_runup",
+      "strategy.max_runup"
+    ]
   },
   {
     "name": "strategy.opentrades.profit",
@@ -16527,6 +18577,12 @@ export const FUNCTIONS: PineFunction[] = [
     "examples": [
       "// Returns the profit of the last open trade.\n//@version=6\nstrategy(\"`strategy.opentrades.profit` Example 1\", commission_type = strategy.commission.percent, commission_value = 0.1)\n\n// Strategy calls to enter long trades every 15 bars and exit long trades every 20 bars.\nif bar_index % 15 == 0\n    strategy.entry(\"Long\", strategy.long)\nif bar_index % 20 == 0\n    strategy.close(\"Long\")\n\nplot(strategy.opentrades.profit(strategy.opentrades - 1), \"Profit of the latest open trade\")",
       "// Calculates the profit for all open trades.\n//@version=6\nstrategy(\"`strategy.opentrades.profit` Example 2\", pyramiding = 5)\n\n// Strategy calls to enter 5 long positions every 2 bars.\nif bar_index % 2 == 0\n    strategy.entry(\"Long\", strategy.long, qty = 5)\n\n// Calculate open profit or loss for the open positions.\ntradeOpenPL() =>\n    sumProfit = 0.0\n    for tradeNo = 0 to strategy.opentrades - 1\n        sumProfit += strategy.opentrades.profit(tradeNo)\n    result = sumProfit\n\nplot(tradeOpenPL(), \"Profit of all open trades\")"
+    ],
+    "seeAlso": [
+      "strategy.closedtrades.profit",
+      "strategy.openprofit",
+      "strategy.netprofit",
+      "strategy.grossprofit"
     ]
   },
   {
@@ -16543,7 +18599,10 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "strategy.opentrades.profit"
+    ]
   },
   {
     "name": "strategy.opentrades.size",
@@ -16562,6 +18621,12 @@ export const FUNCTIONS: PineFunction[] = [
     "examples": [
       "//@version=6\nstrategy(\"`strategy.opentrades.size` Example 1\")\n\n// We calculate the max amt of shares we can buy.\namtShares = math.floor(strategy.equity / close)\n// Strategy calls to enter long trades every 15 bars and exit long trades every 20 bars\nif bar_index % 15 == 0\n    strategy.entry(\"Long\", strategy.long, qty = amtShares)\nif bar_index % 20 == 0\n    strategy.close(\"Long\")\n\n// Plot the number of contracts in the latest open trade.\nplot(strategy.opentrades.size(strategy.opentrades - 1), \"Amount of contracts in latest open trade\")",
       "// Calculates the average profit percentage for all open trades.\n//@version=6\nstrategy(\"`strategy.opentrades.size` Example 2\")\n\n// Strategy calls to enter long trades every 15 bars and exit long trades every 20 bars.\nif bar_index % 15 == 0\n    strategy.entry(\"Long\", strategy.long)\nif bar_index % 20 == 0\n    strategy.close(\"Long\")\n\n// Calculate profit for all open trades.\nprofitPct = 0.0\nfor tradeNo = 0 to strategy.opentrades - 1\n    entryP = strategy.opentrades.entry_price(tradeNo)\n    exitP = close\n    profitPct += (exitP - entryP) / entryP * strategy.opentrades.size(tradeNo) * 100\n\n// Calculate average profit percent for all open trades.\navgProfitPct = nz(profitPct / strategy.opentrades)\nplot(avgProfitPct)"
+    ],
+    "seeAlso": [
+      "strategy.closedtrades.size",
+      "strategy.position_size",
+      "strategy.opentrades",
+      "strategy.closedtrades"
     ]
   },
   {
@@ -16785,6 +18850,11 @@ export const FUNCTIONS: PineFunction[] = [
     "examples": [
       "// Sets the maximum intraday loss using the strategy's equity value.\n//@version=6\nstrategy(\"strategy.risk.max_intraday_loss Example 1\", overlay = false, default_qty_type = strategy.percent_of_equity, default_qty_value = 100)\n\n// Input for maximum intraday loss %.\nlossPct = input.float(10)\n\n// Set maximum intraday loss to our lossPct input\nstrategy.risk.max_intraday_loss(lossPct, strategy.percent_of_equity)\n\n// Enter Short at bar_index zero.\nif bar_index == 0\n    strategy.entry(\"Short\", strategy.short)\n\n// Store equity value from the beginning of the day\neqFromDayStart = ta.valuewhen(ta.change(dayofweek) > 0, strategy.equity, 0)\n\n// Calculate change of the current equity from the beginning of the current day.\neqChgPct = 100 * ((strategy.equity - eqFromDayStart) / strategy.equity)\n\n// Plot it\nplot(eqChgPct)\nhline(-lossPct)",
       "// Sets the maximum intraday loss using the strategy's cash value.\n//@version=6\nstrategy(\"strategy.risk.max_intraday_loss Example 2\", overlay = false)\n\n// Input for maximum intraday loss in absolute cash value of the symbol.\nabsCashLoss = input.float(5)\n\n// Set maximum intraday loss to `absCashLoss` in account currency.\nstrategy.risk.max_intraday_loss(absCashLoss, strategy.cash)\n\n// Enter Short at bar_index zero.\nif bar_index == 0\n    strategy.entry(\"Short\", strategy.short)\n\n// Store the open price value from the beginning of the day.\nbeginPrice = ta.valuewhen(ta.change(dayofweek) > 0, open, 0)\n\n// Calculate the absolute price change for the current period.\npriceChg = (close - beginPrice)\n\nhline(absCashLoss)\nplot(priceChg)"
+    ],
+    "seeAlso": [
+      "strategy",
+      "strategy.percent_of_equity",
+      "strategy.cash"
     ]
   },
   {
@@ -16864,7 +18934,16 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series string"
       }
     ],
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The value of the argument after casting to string.",
+    "seeAlso": [
+      "float",
+      "int",
+      "bool",
+      "color",
+      "line",
+      "label"
+    ]
   },
   {
     "name": "syminfo.prefix",
@@ -16906,6 +18985,15 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"syminfo.prefix fun\", overlay=true)\ni_sym = input.symbol(\"NASDAQ:AAPL\")\npref = syminfo.prefix(i_sym)\ntick = syminfo.ticker(i_sym)\nt = ticker.new(pref, tick, session.extended)\ns = request.security(t, \"1D\", close)\nplot(s)"
+    ],
+    "returnsDescription": "Returns exchange prefix of the symbol, e.g. \"NASDAQ\".",
+    "remarks": "The result of the function is used in the ticker.new()/ticker.modify() and request.security().",
+    "seeAlso": [
+      "syminfo.tickerid",
+      "syminfo.ticker",
+      "syminfo.prefix",
+      "syminfo.ticker",
+      "ticker.new"
     ]
   },
   {
@@ -16948,6 +19036,15 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"syminfo.ticker fun\", overlay=true)\ni_sym = input.symbol(\"NASDAQ:AAPL\")\npref = syminfo.prefix(i_sym)\ntick = syminfo.ticker(i_sym)\nt = ticker.new(pref, tick, session.extended)\ns = request.security(t, \"1D\", close)\nplot(s)"
+    ],
+    "returnsDescription": "Returns symbol name without exchange prefix, e.g. \"AAPL\".",
+    "remarks": "The result of the function is used in the ticker.new()/ticker.modify() and request.security().",
+    "seeAlso": [
+      "syminfo.tickerid",
+      "syminfo.ticker",
+      "syminfo.prefix",
+      "syminfo.prefix",
+      "ticker.new"
     ]
   },
   {
@@ -16990,6 +19087,16 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series float",
     "examples": [
       "//@version=6\nindicator(\"ta.alma\", overlay=true)\nplot(ta.alma(close, 9, 0.85, 6))\n\n// same on pine, but much less efficient\npine_alma(series, windowsize, offset, sigma) =>\n    m = offset * (windowsize - 1)\n    //m = math.floor(offset * (windowsize - 1)) // Used as m when math.floor=true\n    s = windowsize / sigma\n    norm = 0.0\n    sum = 0.0\n    for i = 0 to windowsize - 1\n        weight = math.exp(-1 * math.pow(i - m, 2) / (2 * math.pow(s, 2)))\n        norm := norm + weight\n        sum := sum + series[windowsize - i - 1] * weight\n    sum / norm\nplot(pine_alma(close, 9, 0.85, 6))"
+    ],
+    "returnsDescription": "Arnaud Legoux Moving Average.",
+    "remarks": "na values in the source series are included in calculations and will produce an na result.",
+    "seeAlso": [
+      "ta.sma",
+      "ta.ema",
+      "ta.rma",
+      "ta.wma",
+      "ta.vwma",
+      "ta.swma"
     ]
   },
   {
@@ -17008,6 +19115,12 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series float",
     "examples": [
       "//@version=6\nindicator(\"ta.atr\")\nplot(ta.atr(14))\n\n//the same on pine\npine_atr(length) =>\n    trueRange = na(high[1])? high-low : math.max(math.max(high - low, math.abs(high - close[1])), math.abs(low - close[1]))\n    //true range can be also calculated with ta.tr(true)\n    ta.rma(trueRange, length)\n\nplot(pine_atr(14))"
+    ],
+    "returnsDescription": "Average true range.",
+    "remarks": "na values in the source series are ignored; the function calculates on the length quantity of non-na values.",
+    "seeAlso": [
+      "ta.tr",
+      "ta.rma"
     ]
   },
   {
@@ -17026,6 +19139,15 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series int",
     "examples": [
       "//@version=6\nindicator(\"ta.barssince\")\n// get number of bars since last color.green bar\nplot(ta.barssince(close >= open))"
+    ],
+    "returnsDescription": "Number of bars since condition was true.",
+    "remarks": "If the condition has never been met prior to the current bar, the function returns na.\nPlease note that using this variable/function can cause indicator repainting.",
+    "seeAlso": [
+      "ta.lowestbars",
+      "ta.highestbars",
+      "ta.valuewhen",
+      "ta.highest",
+      "ta.lowest"
     ]
   },
   {
@@ -17056,6 +19178,13 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "[series float, series float, series float]",
     "examples": [
       "//@version=6\nindicator(\"ta.bb\")\n\n[middle, upper, lower] = ta.bb(close, 5, 4)\nplot(middle, color=color.yellow)\nplot(upper, color=color.yellow)\nplot(lower, color=color.yellow)\n\n// the same on pine\nf_bb(src, length, mult) =>\n    float basis = ta.sma(src, length)\n    float dev = mult * ta.stdev(src, length)\n    [basis, basis + dev, basis - dev]\n\n[pineMiddle, pineUpper, pineLower] = f_bb(close, 5, 4)\n\nplot(pineMiddle)\nplot(pineUpper)\nplot(pineLower)"
+    ],
+    "returnsDescription": "Bollinger Bands.",
+    "remarks": "na values in the source series are ignored; the function calculates on the length quantity of non-na values.",
+    "seeAlso": [
+      "ta.sma",
+      "ta.stdev",
+      "ta.kc"
     ]
   },
   {
@@ -17086,6 +19215,13 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series float",
     "examples": [
       "//@version=6\nindicator(\"ta.bbw\")\n\nplot(ta.bbw(close, 5, 4), color=color.yellow)\n\n// the same on pine\nf_bbw(src, length, mult) =>\n    float basis = ta.sma(src, length)\n    float dev = mult * ta.stdev(src, length)\n    (((basis + dev) - (basis - dev)) / basis) * 100\n\nplot(f_bbw(close, 5, 4))"
+    ],
+    "returnsDescription": "Bollinger Bands Width.",
+    "remarks": "na values in the source series are ignored; the function calculates on the length quantity of non-na values.",
+    "seeAlso": [
+      "ta.bb",
+      "ta.sma",
+      "ta.stdev"
     ]
   },
   {
@@ -17108,7 +19244,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "Commodity channel index of source for length bars back.",
+    "remarks": "na values in the source series are ignored."
   },
   {
     "name": "ta.change",
@@ -17192,6 +19330,12 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator('Day and Direction Change', overlay = true)\ndailyBarTime = time('1D')\nisNewDay = ta.change(dailyBarTime) != 0\nbgcolor(isNewDay ? color.new(color.green, 80) : na)\n\nisGreenBar = close >= open\ncolorChange = ta.change(isGreenBar)\nplotshape(colorChange, 'Direction Change')"
+    ],
+    "returnsDescription": "The difference between the values when they are numerical. When a 'bool' source is used, returns true when the current source is different from the previous source.",
+    "remarks": "na values in the source series are included in calculations and will produce an na result.",
+    "seeAlso": [
+      "ta.mom",
+      "ta.cross"
     ]
   },
   {
@@ -17216,6 +19360,13 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series float",
     "examples": [
       "//@version=6\nindicator(\"ta.cmo\")\nplot(ta.cmo(close, 5), color=color.yellow)\n\n// the same on pine\nf_cmo(src, length) =>\n    float mom = ta.change(src)\n    float sm1 = math.sum((mom >= 0) ? mom : 0.0, length)\n    float sm2 = math.sum((mom >= 0) ? 0.0 : -mom, length)\n    100 * (sm1 - sm2) / (sm1 + sm2)\n\nplot(f_cmo(close, 5))"
+    ],
+    "returnsDescription": "Chande Momentum Oscillator.",
+    "remarks": "na values in the source series are ignored.",
+    "seeAlso": [
+      "ta.rsi",
+      "ta.stoch",
+      "math.sum"
     ]
   },
   {
@@ -17240,6 +19391,11 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series float",
     "examples": [
       "//@version=6\nindicator(\"ta.cog\", overlay=true)\nplot(ta.cog(close, 10))\n\n// the same on pine\npine_cog(source, length) =>\n    sum = math.sum(source, length)\n    num = 0.0\n    for i = 0 to length - 1\n        price = source[i]\n        num := num + price * (i + 1)\n    -num / sum\n\nplot(pine_cog(close, 10))"
+    ],
+    "returnsDescription": "Center of Gravity.",
+    "remarks": "na values in the source series are ignored.",
+    "seeAlso": [
+      "ta.stoch"
     ]
   },
   {
@@ -17268,7 +19424,12 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "Correlation coefficient.",
+    "remarks": "na values in the source series are ignored; the function calculates on the length quantity of non-na values.",
+    "seeAlso": [
+      "request.security"
+    ]
   },
   {
     "name": "ta.cross",
@@ -17290,7 +19451,11 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series bool",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "true if two series have crossed each other, otherwise false.",
+    "seeAlso": [
+      "ta.change"
+    ]
   },
   {
     "name": "ta.crossover",
@@ -17312,7 +19477,8 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series bool",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "true if source1 crossed over source2 otherwise false."
   },
   {
     "name": "ta.crossunder",
@@ -17334,7 +19500,8 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series bool",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "true if source1 crossed under source2 otherwise false."
   },
   {
     "name": "ta.cum",
@@ -17350,7 +19517,11 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "Total sum series.",
+    "seeAlso": [
+      "math.sum"
+    ]
   },
   {
     "name": "ta.dev",
@@ -17374,6 +19545,12 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series float",
     "examples": [
       "//@version=6\nindicator(\"ta.dev\")\nplot(ta.dev(close, 10))\n\n// the same on pine\npine_dev(source, length) =>\n    mean = ta.sma(source, length)\n    sum = 0.0\n    for i = 0 to length - 1\n        val = source[i]\n        sum := sum + math.abs(val - mean)\n    dev = sum/length\nplot(pine_dev(close, 10))"
+    ],
+    "returnsDescription": "Deviation of source for length bars back.",
+    "remarks": "na values in the source series are ignored.",
+    "seeAlso": [
+      "ta.variance",
+      "ta.stdev"
     ]
   },
   {
@@ -17398,6 +19575,12 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "[series float, series float, series float]",
     "examples": [
       "//@version=6\nindicator(title=\"Directional Movement Index\", shorttitle=\"DMI\", format=format.price, precision=4)\nlen = input.int(17, minval=1, title=\"DI Length\")\nlensig = input.int(14, title=\"ADX Smoothing\", minval=1)\n[diplus, diminus, adx] = ta.dmi(len, lensig)\nplot(adx, color=color.red, title=\"ADX\")\nplot(diplus, color=color.blue, title=\"+DI\")\nplot(diminus, color=color.orange, title=\"-DI\")"
+    ],
+    "returnsDescription": "Tuple of three DMI series: Positive Directional Movement (+DI), Negative Directional Movement (-DI) and Average Directional Movement Index (ADX).",
+    "seeAlso": [
+      "ta.rsi",
+      "ta.tsi",
+      "ta.mfi"
     ]
   },
   {
@@ -17422,6 +19605,16 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series float",
     "examples": [
       "//@version=6\nindicator(\"ta.ema\")\nplot(ta.ema(close, 15))\n\n//the same on pine\npine_ema(src, length) =>\n    alpha = 2 / (length + 1)\n    sum = 0.0\n    sum := na(sum[1]) ? src : alpha * src + (1 - alpha) * nz(sum[1])\nplot(pine_ema(close,15))"
+    ],
+    "returnsDescription": "Exponential moving average of source with alpha = 2 / (length + 1).",
+    "remarks": "Please note that using this variable/function can cause indicator repainting.\nna values in the source series are ignored; the function calculates on the length quantity of non-na values.",
+    "seeAlso": [
+      "ta.sma",
+      "ta.rma",
+      "ta.wma",
+      "ta.vwma",
+      "ta.swma",
+      "ta.alma"
     ]
   },
   {
@@ -17444,7 +19637,12 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series bool",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "true if current source value is less than any previous source value for length bars back, false otherwise.",
+    "remarks": "na values in the source series are ignored; the function calculates on the length quantity of non-na values.",
+    "seeAlso": [
+      "ta.rising"
+    ]
   },
   {
     "name": "ta.highest",
@@ -17466,7 +19664,16 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "Highest value in the series.",
+    "remarks": "Two args version: source is a series and length is the number of bars back.\nOne arg version: length is the number of bars back. Algorithm uses high as a source series.\nna values in the source series are ignored.",
+    "seeAlso": [
+      "ta.lowest",
+      "ta.lowestbars",
+      "ta.highestbars",
+      "ta.valuewhen",
+      "ta.barssince"
+    ]
   },
   {
     "name": "ta.highestbars",
@@ -17488,7 +19695,16 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series int",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "Offset to the highest bar.",
+    "remarks": "Two args version: source is a series and length is the number of bars back.\nOne arg version: length is the number of bars back. Algorithm uses high as a source series.\nna values in the source series are ignored.",
+    "seeAlso": [
+      "ta.lowest",
+      "ta.highest",
+      "ta.lowestbars",
+      "ta.barssince",
+      "ta.valuewhen"
+    ]
   },
   {
     "name": "ta.hma",
@@ -17512,6 +19728,15 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series float",
     "examples": [
       "//@version=6\nindicator(\"Hull Moving Average\")\nsrc = input(defval=close, title=\"Source\")\nlength = input(defval=9, title=\"Length\")\nhmaBuildIn = ta.hma(src, length)\nplot(hmaBuildIn, title=\"Hull MA\", color=#674EA7)"
+    ],
+    "returnsDescription": "Hull moving average of 'source' for 'length' bars back.",
+    "remarks": "na values in the source series are ignored.",
+    "seeAlso": [
+      "ta.ema",
+      "ta.rma",
+      "ta.wma",
+      "ta.vwma",
+      "ta.sma"
     ]
   },
   {
@@ -17548,6 +19773,13 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "[series float, series float, series float]",
     "examples": [
       "//@version=6\nindicator(\"ta.kc\")\n\n[middle, upper, lower] = ta.kc(close, 5, 4)\nplot(middle, color=color.yellow)\nplot(upper, color=color.yellow)\nplot(lower, color=color.yellow)\n\n\n// the same on pine\nf_kc(src, length, mult, useTrueRange) =>\n    float basis = ta.ema(src, length)\n    float span = (useTrueRange) ? ta.tr : (high - low)\n    float rangeEma = ta.ema(span, length)\n    [basis, basis + rangeEma * mult, basis - rangeEma * mult]\n\n[pineMiddle, pineUpper, pineLower] = f_kc(close, 5, 4, true)\n\nplot(pineMiddle)\nplot(pineUpper)\nplot(pineLower)"
+    ],
+    "returnsDescription": "Keltner Channels.",
+    "remarks": "na values in the source series are ignored; the function calculates on the length quantity of non-na values.",
+    "seeAlso": [
+      "ta.ema",
+      "ta.atr",
+      "ta.bb"
     ]
   },
   {
@@ -17584,6 +19816,14 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series float",
     "examples": [
       "//@version=6\nindicator(\"ta.kcw\")\n\nplot(ta.kcw(close, 5, 4), color=color.yellow)\n\n// the same on pine\nf_kcw(src, length, mult, useTrueRange) =>\n    float basis = ta.ema(src, length)\n    float span = (useTrueRange) ? ta.tr : (high - low)\n    float rangeEma = ta.ema(span, length)\n\n    ((basis + rangeEma * mult) - (basis - rangeEma * mult)) / basis\n\nplot(f_kcw(close, 5, 4, true))"
+    ],
+    "returnsDescription": "Keltner Channels Width.",
+    "remarks": "na values in the source series are ignored; the function calculates on the length quantity of non-na values.",
+    "seeAlso": [
+      "ta.kc",
+      "ta.ema",
+      "ta.atr",
+      "ta.bb"
     ]
   },
   {
@@ -17612,7 +19852,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "Linear regression curve.",
+    "remarks": "na values in the source series are included in calculations and will produce an na result."
   },
   {
     "name": "ta.lowest",
@@ -17634,7 +19876,16 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "Lowest value in the series.",
+    "remarks": "Two args version: source is a series and length is the number of bars back.\nOne arg version: length is the number of bars back. Algorithm uses low as a source series.\nna values in the source series are ignored.",
+    "seeAlso": [
+      "ta.highest",
+      "ta.lowestbars",
+      "ta.highestbars",
+      "ta.valuewhen",
+      "ta.barssince"
+    ]
   },
   {
     "name": "ta.lowestbars",
@@ -17656,7 +19907,16 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series int",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "Offset to the lowest bar.",
+    "remarks": "Two args version: source is a series and length is the number of bars back.\nOne arg version: length is the number of bars back. Algorithm uses low as a source series.\nna values in the source series are ignored.",
+    "seeAlso": [
+      "ta.lowest",
+      "ta.highest",
+      "ta.highestbars",
+      "ta.barssince",
+      "ta.valuewhen"
+    ]
   },
   {
     "name": "ta.macd",
@@ -17693,6 +19953,12 @@ export const FUNCTIONS: PineFunction[] = [
     "examples": [
       "//@version=6\nindicator(\"MACD\")\n[macdLine, signalLine, histLine] = ta.macd(close, 12, 26, 9)\nplot(macdLine, color=color.blue)\nplot(signalLine, color=color.orange)\nplot(histLine, color=color.red, style=plot.style_histogram)",
       "//@version=6\nindicator(\"MACD\")\n[_, signalLine, _] = ta.macd(close, 12, 26, 9)\nplot(signalLine, color=color.orange)"
+    ],
+    "returnsDescription": "Tuple of three MACD series: MACD line, signal line and histogram line.",
+    "remarks": "na values in the source series are ignored; the function calculates on the length quantity of non-na values.",
+    "seeAlso": [
+      "ta.sma",
+      "ta.ema"
     ]
   },
   {
@@ -17709,7 +19975,8 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": []
+    "examples": [],
+    "remarks": "na"
   },
   {
     "name": "ta.median",
@@ -17770,7 +20037,9 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series float"
       }
     ],
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The median of the series.",
+    "remarks": "na values in the source series are ignored; the function calculates on the length quantity of non-na values."
   },
   {
     "name": "ta.mfi",
@@ -17794,6 +20063,12 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series float",
     "examples": [
       "//@version=6\nindicator(\"Money Flow Index\")\n\nplot(ta.mfi(hlc3, 14), color=color.yellow)\n\n// the same on pine\npine_mfi(src, length) =>\n    float upper = math.sum(volume * (ta.change(src) <= 0.0 ? 0.0 : src), length)\n    float lower = math.sum(volume * (ta.change(src) >= 0.0 ? 0.0 : src), length)\n    mfi = 100.0 - (100.0 / (1.0 + upper / lower))\n    mfi\n\nplot(pine_mfi(hlc3, 14))"
+    ],
+    "returnsDescription": "Money Flow Index.",
+    "remarks": "na values in the source series are ignored; the function calculates on the length quantity of non-na values.",
+    "seeAlso": [
+      "ta.rsi",
+      "math.sum"
     ]
   },
   {
@@ -17810,7 +20085,8 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": []
+    "examples": [],
+    "remarks": "na"
   },
   {
     "name": "ta.mode",
@@ -17871,7 +20147,9 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series float"
       }
     ],
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The most frequently occurring value from the source. If none exists, returns the smallest value instead.",
+    "remarks": "na values in the source series are ignored; the function calculates on the length quantity of non-na values."
   },
   {
     "name": "ta.mom",
@@ -17893,7 +20171,12 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "Momentum of source price and source price length bars ago.",
+    "remarks": "na values in the source series are included in calculations and will produce an na result.",
+    "seeAlso": [
+      "ta.change"
+    ]
   },
   {
     "name": "ta.percentile_linear_interpolation",
@@ -17921,7 +20204,12 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "P-th percentile of source series for length bars back.",
+    "remarks": "Note that a percentile calculated using this method will NOT always be a member of the input data set.\nna values in the source series are included in calculations and will produce an na result.",
+    "seeAlso": [
+      "ta.percentile_nearest_rank"
+    ]
   },
   {
     "name": "ta.percentile_nearest_rank",
@@ -17949,7 +20237,12 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "P-th percentile of source series for length bars back.",
+    "remarks": "Using the Nearest Rank method on lengths less than 100 bars back can result in the same number being used for more than one percentile.\nA percentile calculated using the Nearest Rank method will always be a member of the input data set.\nThe 100th percentile is defined to be the largest value in the input data set.\nna values in the source series are ignored.",
+    "seeAlso": [
+      "ta.percentile_linear_interpolation"
+    ]
   },
   {
     "name": "ta.percentrank",
@@ -17971,7 +20264,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "Percent rank of source for length bars back.",
+    "remarks": "na values in the source series are included in calculations and will produce an na result."
   },
   {
     "name": "ta.pivot_point_levels",
@@ -18010,7 +20305,9 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "array<float>",
     "examples": [
       "//@version=6\nindicator(\"Weekly Pivots\", max_lines_count=500, overlay=true)\ntimeframe = \"1W\"\ntypeInput = input.string(\"Traditional\", \"Type\", options=[\"Traditional\", \"Fibonacci\", \"Woodie\", \"Classic\", \"DM\", \"Camarilla\"])\nweekChange = timeframe.change(timeframe)\npivotPointsArray = ta.pivot_point_levels(typeInput, weekChange)\nif weekChange\n    for pivotLevel in pivotPointsArray\n        line.new(time, pivotLevel, time + timeframe.in_seconds(timeframe) * 1000, pivotLevel, xloc=xloc.bar_time)"
-    ]
+    ],
+    "returnsDescription": "An array<float> with numerical values representing 11 pivot point levels: [P, R1, S1, R2, S2, R3, S3, R4, S4, R5, S5]. Levels absent from the specified type return na values (e.g., \"DM\" only calculates P, R1, and S1).",
+    "remarks": "The developing parameter cannot be true when type is set to \"Woodie\", because the Woodie calculation for a period depends on that period's open, which means that the pivot value is either available or unavailable, but never developing. If used together, the indicator will return a runtime error."
   },
   {
     "name": "ta.pivothigh",
@@ -18082,7 +20379,9 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"PivotHigh\", overlay=true)\nleftBars = input(2)\nrightBars=input(2)\nph = ta.pivothigh(leftBars, rightBars)\nplot(ph, style=plot.style_cross, linewidth=3, color= color.red, offset=-rightBars)"
-    ]
+    ],
+    "returnsDescription": "Price of the point or 'NaN'.",
+    "remarks": "If parameters 'leftbars' or 'rightbars' are series you should use max_bars_back() function for the 'source' variable."
   },
   {
     "name": "ta.pivotlow",
@@ -18154,7 +20453,9 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"PivotLow\", overlay=true)\nleftBars = input(2)\nrightBars=input(2)\npl = ta.pivotlow(close, leftBars, rightBars)\nplot(pl, style=plot.style_cross, linewidth=3, color= color.blue, offset=-rightBars)"
-    ]
+    ],
+    "returnsDescription": "Price of the point or 'NaN'.",
+    "remarks": "If parameters 'leftbars' or 'rightbars' are series you should use max_bars_back() function for the 'source' variable."
   },
   {
     "name": "ta.range",
@@ -18215,7 +20516,9 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series float"
       }
     ],
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The difference between the min and max values in the series.",
+    "remarks": "na values in the source series are ignored; the function calculates on the length quantity of non-na values."
   },
   {
     "name": "ta.rci",
@@ -18237,7 +20540,8 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The Rank Correlation Index, a value between -100 to 100."
   },
   {
     "name": "ta.rising",
@@ -18259,7 +20563,12 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series bool",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "true if current source is greater than any previous source for length bars back, false otherwise.",
+    "remarks": "na values in the source series are ignored.",
+    "seeAlso": [
+      "ta.falling"
+    ]
   },
   {
     "name": "ta.rma",
@@ -18283,6 +20592,17 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series float",
     "examples": [
       "//@version=6\nindicator(\"ta.rma\")\nplot(ta.rma(close, 15))\n\n//the same on pine\npine_rma(src, length) =>\n    alpha = 1/length\n    sum = 0.0\n    sum := na(sum[1]) ? ta.sma(src, length) : alpha * src + (1 - alpha) * nz(sum[1])\nplot(pine_rma(close, 15))"
+    ],
+    "returnsDescription": "Exponential moving average of source with alpha = 1 / length.",
+    "remarks": "na values in the source series are ignored; the function calculates on the length quantity of non-na values.",
+    "seeAlso": [
+      "ta.sma",
+      "ta.ema",
+      "ta.wma",
+      "ta.vwma",
+      "ta.swma",
+      "ta.alma",
+      "ta.rsi"
     ]
   },
   {
@@ -18305,7 +20625,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The rate of change of source for length bars back.",
+    "remarks": "na values in the source series are included in calculations and will produce an na result."
   },
   {
     "name": "ta.rsi",
@@ -18329,6 +20651,11 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series float",
     "examples": [
       "//@version=6\nindicator(\"ta.rsi\")\nplot(ta.rsi(close, 7))\n\n// same on pine, but less efficient\npine_rsi(x, y) =>\n    u = math.max(x - x[1], 0) // upward ta.change\n    d = math.max(x[1] - x, 0) // downward ta.change\n    rs = ta.rma(u, y) / ta.rma(d, y)\n    res = 100 - 100 / (1 + rs)\n    res\n\nplot(pine_rsi(close, 7))"
+    ],
+    "returnsDescription": "Relative strength index.",
+    "remarks": "na values in the source series are ignored; the function calculates on the length quantity of non-na values.",
+    "seeAlso": [
+      "ta.rma"
     ]
   },
   {
@@ -18359,7 +20686,8 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series float",
     "examples": [
       "//@version=6\nindicator(\"ta.sar\")\nplot(ta.sar(0.02, 0.02, 0.2), style=plot.style_cross, linewidth=3)\n\n// The same on Pine Script®\npine_sar(start, inc, max) =>\n    var float result = na\n    var float maxMin = na\n    var float acceleration = na\n    var bool isBelow = false\n    bool isFirstTrendBar = false\n\n    if bar_index == 1\n        if close > close[1]\n            isBelow := true\n            maxMin := high\n            result := low[1]\n        else\n            isBelow := false\n            maxMin := low\n            result := high[1]\n        isFirstTrendBar := true\n        acceleration := start\n\n    result := result + acceleration * (maxMin - result)\n\n    if isBelow\n        if result > low\n            isFirstTrendBar := true\n            isBelow := false\n            result := math.max(high, maxMin)\n            maxMin := low\n            acceleration := start\n    else\n        if result < high\n            isFirstTrendBar := true\n            isBelow := true\n            result := math.min(low, maxMin)\n            maxMin := high\n            acceleration := start\n            \n    if not isFirstTrendBar\n        if isBelow\n            if high > maxMin\n                maxMin := high\n                acceleration := math.min(acceleration + inc, max)\n        else\n            if low < maxMin\n                maxMin := low\n                acceleration := math.min(acceleration + inc, max)\n\n    if isBelow\n        result := math.min(result, low[1])\n        if bar_index > 1\n            result := math.min(result, low[2])\n        \n    else\n        result := math.max(result, high[1])\n        if bar_index > 1\n            result := math.max(result, high[2])\n\n    result\n\nplot(pine_sar(0.02, 0.02, 0.2), style=plot.style_cross, linewidth=3)"
-    ]
+    ],
+    "returnsDescription": "Parabolic SAR."
   },
   {
     "name": "ta.sma",
@@ -18383,6 +20711,16 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series float",
     "examples": [
       "//@version=6\nindicator(\"ta.sma\")\nplot(ta.sma(close, 15))\n\n// same on pine, but much less efficient\npine_sma(x, y) =>\n    sum = 0.0\n    for i = 0 to y - 1\n        sum := sum + x[i] / y\n    sum\nplot(pine_sma(close, 15))"
+    ],
+    "returnsDescription": "Simple moving average of source for length bars back.",
+    "remarks": "na values in the source series are ignored.",
+    "seeAlso": [
+      "ta.ema",
+      "ta.rma",
+      "ta.wma",
+      "ta.vwma",
+      "ta.swma",
+      "ta.alma"
     ]
   },
   {
@@ -18414,6 +20752,12 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series float",
     "examples": [
       "//@version=6\nindicator(\"ta.stdev\")\nplot(ta.stdev(close, 5))\n\n//the same on pine\nisZero(val, eps) => math.abs(val) <= eps\n\nSUM(fst, snd) =>\n    EPS = 1e-10\n    res = fst + snd\n    if isZero(res, EPS)\n        res := 0\n    else\n        if not isZero(res, 1e-4)\n            res := res\n        else\n            15\n\npine_stdev(src, length) =>\n    avg = ta.sma(src, length)\n    sumOfSquareDeviations = 0.0\n    for i = 0 to length - 1\n        sum = SUM(src[i], -avg)\n        sumOfSquareDeviations := sumOfSquareDeviations + sum * sum\n\n    stdev = math.sqrt(sumOfSquareDeviations / length)\nplot(pine_stdev(close, 5))"
+    ],
+    "returnsDescription": "Standard deviation.",
+    "remarks": "If biased is true, function will calculate using a biased estimate of the entire population, if false - unbiased estimate of a sample.\nna values in the source series are ignored; the function calculates on the length quantity of non-na values.",
+    "seeAlso": [
+      "ta.dev",
+      "ta.variance"
     ]
   },
   {
@@ -18448,7 +20792,12 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "Stochastic.",
+    "remarks": "na values in the source series are ignored.",
+    "seeAlso": [
+      "ta.cog"
+    ]
   },
   {
     "name": "ta.supertrend",
@@ -18472,6 +20821,10 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "[series float, series float]",
     "examples": [
       "//@version=6\nindicator(\"Pine Script® Supertrend\")\n\n[supertrend, direction] = ta.supertrend(3, 10)\nplot(direction < 0 ? supertrend : na, \"Up direction\", color = color.green, style=plot.style_linebr)\nplot(direction > 0 ? supertrend : na, \"Down direction\", color = color.red, style=plot.style_linebr)\n\n// The same on Pine Script®\npine_supertrend(factor, atrPeriod) =>\n    src = hl2\n    atr = ta.atr(atrPeriod)\n    upperBand = src + factor * atr\n    lowerBand = src - factor * atr\n    prevLowerBand = nz(lowerBand[1])\n    prevUpperBand = nz(upperBand[1])\n\n    lowerBand := lowerBand > prevLowerBand or close[1] < prevLowerBand ? lowerBand : prevLowerBand\n    upperBand := upperBand < prevUpperBand or close[1] > prevUpperBand ? upperBand : prevUpperBand\n    int _direction = na\n    float superTrend = na\n    prevSuperTrend = superTrend[1]\n    if na(atr[1])\n        _direction := 1\n    else if prevSuperTrend == prevUpperBand\n        _direction := close > upperBand ? -1 : 1\n    else\n        _direction := close < lowerBand ? 1 : -1\n    superTrend := _direction == -1 ? lowerBand : upperBand\n    [superTrend, _direction]\n\n[Pine_Supertrend, pineDirection] = pine_supertrend(3, 10)\nplot(pineDirection < 0 ? Pine_Supertrend : na, \"Up direction\", color = color.green, style=plot.style_linebr)\nplot(pineDirection > 0 ? Pine_Supertrend : na, \"Down direction\", color = color.red, style=plot.style_linebr)"
+    ],
+    "returnsDescription": "Tuple of two supertrend series: supertrend line and direction of trend. Possible values are 1 (down direction) and -1 (up direction).",
+    "seeAlso": [
+      "ta.macd"
     ]
   },
   {
@@ -18490,6 +20843,16 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series float",
     "examples": [
       "//@version=6\nindicator(\"ta.swma\")\nplot(ta.swma(close))\n\n// same on pine, but less efficient\npine_swma(x) =>\n    x[3] * 1 / 6 + x[2] * 2 / 6 + x[1] * 2 / 6 + x[0] * 1 / 6\nplot(pine_swma(close))"
+    ],
+    "returnsDescription": "Symmetrically weighted moving average.",
+    "remarks": "na values in the source series are included in calculations and will produce an na result.",
+    "seeAlso": [
+      "ta.sma",
+      "ta.ema",
+      "ta.rma",
+      "ta.wma",
+      "ta.vwma",
+      "ta.alma"
     ]
   },
   {
@@ -18506,7 +20869,13 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "True range. It is math.max(high - low, math.abs(high - close[1]), math.abs(low - close[1])).",
+    "remarks": "ta.tr(false) is exactly the same as ta.tr.",
+    "seeAlso": [
+      "ta.tr",
+      "ta.atr"
+    ]
   },
   {
     "name": "ta.tsi",
@@ -18534,7 +20903,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "True strength index. A value in range [-1, 1].",
+    "remarks": "na values in the source series are ignored; the function calculates on the length quantity of non-na values."
   },
   {
     "name": "ta.valuewhen",
@@ -18661,6 +21032,14 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"ta.valuewhen\")\nslow = ta.sma(close, 7)\nfast = ta.sma(close, 14)\n// Get value of `close` on second most recent cross\nplot(ta.valuewhen(ta.cross(slow, fast), close, 1))"
+    ],
+    "remarks": "This function requires execution on every bar. It is not recommended to use it inside a for or while loop structure, where its behavior can be unexpected. Please note that using this function can cause indicator repainting.",
+    "seeAlso": [
+      "ta.lowestbars",
+      "ta.highestbars",
+      "ta.barssince",
+      "ta.highest",
+      "ta.lowest"
     ]
   },
   {
@@ -18690,7 +21069,13 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "Variance of source for length bars back.",
+    "remarks": "If biased is true, function will calculate using a biased estimate of the entire population, if false - unbiased estimate of a sample.\nna values in the source series are ignored; the function calculates on the length quantity of non-na values.",
+    "seeAlso": [
+      "ta.dev",
+      "ta.stdev"
+    ]
   },
   {
     "name": "ta.vwap",
@@ -18765,6 +21150,11 @@ export const FUNCTIONS: PineFunction[] = [
     "examples": [
       "//@version=6\nindicator(\"Simple VWAP\")\nvwap = ta.vwap(open)\nplot(vwap)",
       "//@version=6\nindicator(\"Advanced VWAP\")\nvwapAnchorInput = input.string(\"Daily\", \"Anchor\", options = [\"Daily\", \"Weekly\", \"Monthly\"])\nstdevMultiplierInput = input.float(1.0, \"Standard Deviation Multiplier\")\nanchorTimeframe = switch vwapAnchorInput\n    \"Daily\"   => \"1D\"\n    \"Weekly\"  => \"1W\"\n    \"Monthly\" => \"1M\"\nanchor = timeframe.change(anchorTimeframe)\n[vwap, upper, lower] = ta.vwap(open, anchor, stdevMultiplierInput)\nplot(vwap)\nplot(upper, color = color.green)\nplot(lower, color = color.green)"
+    ],
+    "returnsDescription": "A VWAP series, or a tuple [vwap, upper_band, lower_band] if stdev_mult is specified.",
+    "remarks": "Calculations only begin the first time the anchor condition becomes true. Until then, the function returns na.",
+    "seeAlso": [
+      "ta.vwap"
     ]
   },
   {
@@ -18789,6 +21179,16 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series float",
     "examples": [
       "//@version=6\nindicator(\"ta.vwma\")\nplot(ta.vwma(close, 15))\n\n// same on pine, but less efficient\npine_vwma(x, y) =>\n    ta.sma(x * volume, y) / ta.sma(volume, y)\nplot(pine_vwma(close, 15))"
+    ],
+    "returnsDescription": "Volume-weighted moving average of source for length bars back.",
+    "remarks": "na values in the source series are ignored.",
+    "seeAlso": [
+      "ta.sma",
+      "ta.ema",
+      "ta.rma",
+      "ta.wma",
+      "ta.swma",
+      "ta.alma"
     ]
   },
   {
@@ -18813,6 +21213,16 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series float",
     "examples": [
       "//@version=6\nindicator(\"ta.wma\")\nplot(ta.wma(close, 15))\n\n// same on pine, but much less efficient\npine_wma(x, y) =>\n    norm = 0.0\n    sum = 0.0\n    for i = 0 to y - 1\n        weight = (y - i) * y\n        norm := norm + weight\n        sum := sum + x[i] * weight\n    sum / norm\nplot(pine_wma(close, 15))"
+    ],
+    "returnsDescription": "Weighted moving average of source for length bars back.",
+    "remarks": "na values in the source series are ignored.",
+    "seeAlso": [
+      "ta.sma",
+      "ta.ema",
+      "ta.rma",
+      "ta.vwma",
+      "ta.swma",
+      "ta.alma"
     ]
   },
   {
@@ -18831,6 +21241,12 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series float",
     "examples": [
       "//@version=6\nindicator(\"Williams %R\", shorttitle=\"%R\", format=format.price, precision=2)\nplot(ta.wpr(14), title=\"%R\", color=color.new(#ff6d00, 0))"
+    ],
+    "returnsDescription": "Williams %R.",
+    "remarks": "na values in the source series are ignored.",
+    "seeAlso": [
+      "ta.mfi",
+      "ta.cmo"
     ]
   },
   {
@@ -18846,7 +21262,17 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series table",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The value of the argument after casting to table.",
+    "seeAlso": [
+      "float",
+      "int",
+      "bool",
+      "color",
+      "string",
+      "line",
+      "label"
+    ]
   },
   {
     "name": "table.cell",
@@ -18967,7 +21393,20 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "remarks": "This function does not create the table itself, but defines the table’s cells. To use it, you first need to create a table object with table.new().\nEach table.cell() call overwrites all previously defined properties of a cell. If you call table.cell() twice in a row, e.g., the first time with text='Test Text', and the second time with text_color=color.red but without a new text argument, the default value of the 'text' being an empty string, it will overwrite 'Test Text', and your cell will display an empty string. If you want, instead, to modify any of the cell's properties, use the table.cell_set_*() functions.\nA single script can only display one table in each of the possible locations. If table.cell() is used on several bars to change the same attribute of a cell (e.g. change the background color of the cell to red on the first bar, then to yellow on the second bar), only the last change will be reflected in the table, i.e., the cell’s background will be yellow. Avoid unnecessary setting of cell properties by enclosing function calls in an if barstate.islast block whenever possible, to restrict their execution to the last bar of the series.",
+    "seeAlso": [
+      "table.cell_set_bgcolor",
+      "table.cell_set_height",
+      "table.cell_set_text",
+      "table.cell_set_text_formatting",
+      "table.cell_set_text_color",
+      "table.cell_set_text_halign",
+      "table.cell_set_text_size",
+      "table.cell_set_text_valign",
+      "table.cell_set_width",
+      "table.cell_set_tooltip"
+    ]
   },
   {
     "name": "table.cell_set_bgcolor",
@@ -19001,7 +21440,17 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "table.cell_set_height",
+      "table.cell_set_text",
+      "table.cell_set_text_color",
+      "table.cell_set_text_halign",
+      "table.cell_set_text_size",
+      "table.cell_set_text_valign",
+      "table.cell_set_width",
+      "table.cell_set_tooltip"
+    ]
   },
   {
     "name": "table.cell_set_height",
@@ -19035,7 +21484,17 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "table.cell_set_bgcolor",
+      "table.cell_set_text",
+      "table.cell_set_text_color",
+      "table.cell_set_text_halign",
+      "table.cell_set_text_size",
+      "table.cell_set_text_valign",
+      "table.cell_set_width",
+      "table.cell_set_tooltip"
+    ]
   },
   {
     "name": "table.cell_set_text",
@@ -19071,6 +21530,17 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "void",
     "examples": [
       "//@version=6\nindicator(\"TABLE example\")\nvar tLog = table.new(position = position.top_left, rows = 1, columns = 2, bgcolor = color.yellow, border_width=1)\ntable.cell(tLog, row = 0, column = 0, text = \"sometext\", text_color = color.blue)\ntable.cell_set_text(tLog, row = 0, column = 0, text = \"sometext\")"
+    ],
+    "seeAlso": [
+      "table.cell_set_bgcolor",
+      "table.cell_set_height",
+      "table.cell_set_text_color",
+      "table.cell_set_text_halign",
+      "table.cell_set_text_size",
+      "table.cell_set_text_valign",
+      "table.cell_set_width",
+      "table.cell_set_tooltip",
+      "table.cell_set_text_formatting"
     ]
   },
   {
@@ -19105,7 +21575,17 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "table.cell_set_bgcolor",
+      "table.cell_set_height",
+      "table.cell_set_text",
+      "table.cell_set_text_halign",
+      "table.cell_set_text_size",
+      "table.cell_set_text_valign",
+      "table.cell_set_width",
+      "table.cell_set_tooltip"
+    ]
   },
   {
     "name": "table.cell_set_text_font_family",
@@ -19145,6 +21625,11 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "void",
     "examples": [
       "//@version=6\nindicator(\"Example of setting the table cell font\")\nvar t = table.new(position.top_left, rows = 1, columns = 1)\ntable.cell(t, 0, 0, \"monospace\", text_color = color.blue)\ntable.cell_set_text_font_family(t, 0, 0, font.family_monospace)"
+    ],
+    "seeAlso": [
+      "table.new",
+      "font.family_default",
+      "font.family_monospace"
     ]
   },
   {
@@ -19185,7 +21670,18 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "table.cell_set_bgcolor",
+      "table.cell_set_height",
+      "table.cell_set_text_color",
+      "table.cell_set_text_halign",
+      "table.cell_set_text_size",
+      "table.cell_set_text_valign",
+      "table.cell_set_width",
+      "table.cell_set_tooltip",
+      "table.cell_set_text"
+    ]
   },
   {
     "name": "table.cell_set_text_halign",
@@ -19224,7 +21720,17 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "table.cell_set_bgcolor",
+      "table.cell_set_height",
+      "table.cell_set_text",
+      "table.cell_set_text_color",
+      "table.cell_set_text_size",
+      "table.cell_set_text_valign",
+      "table.cell_set_width",
+      "table.cell_set_tooltip"
+    ]
   },
   {
     "name": "table.cell_set_text_size",
@@ -19259,7 +21765,17 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "table.cell_set_bgcolor",
+      "table.cell_set_height",
+      "table.cell_set_text",
+      "table.cell_set_text_color",
+      "table.cell_set_text_halign",
+      "table.cell_set_text_valign",
+      "table.cell_set_width",
+      "table.cell_set_tooltip"
+    ]
   },
   {
     "name": "table.cell_set_text_valign",
@@ -19298,7 +21814,17 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "table.cell_set_bgcolor",
+      "table.cell_set_height",
+      "table.cell_set_text",
+      "table.cell_set_text_color",
+      "table.cell_set_text_halign",
+      "table.cell_set_text_size",
+      "table.cell_set_width",
+      "table.cell_set_tooltip"
+    ]
   },
   {
     "name": "table.cell_set_tooltip",
@@ -19334,6 +21860,16 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "void",
     "examples": [
       "//@version=6\nindicator(\"TABLE example\")\nvar tLog = table.new(position = position.top_left, rows = 1, columns = 2, bgcolor = color.yellow, border_width=1)\ntable.cell(tLog, row = 0, column = 0, text = \"sometext\", text_color = color.blue)\ntable.cell_set_tooltip(tLog, row = 0, column = 0, tooltip = \"sometext\")"
+    ],
+    "seeAlso": [
+      "table.cell_set_bgcolor",
+      "table.cell_set_height",
+      "table.cell_set_text_color",
+      "table.cell_set_text_halign",
+      "table.cell_set_text_size",
+      "table.cell_set_text_valign",
+      "table.cell_set_width",
+      "table.cell_set_text"
     ]
   },
   {
@@ -19368,7 +21904,17 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "table.cell_set_bgcolor",
+      "table.cell_set_height",
+      "table.cell_set_text",
+      "table.cell_set_text_color",
+      "table.cell_set_text_halign",
+      "table.cell_set_text_size",
+      "table.cell_set_text_valign",
+      "table.cell_set_tooltip"
+    ]
   },
   {
     "name": "table.clear",
@@ -19412,6 +21958,10 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "void",
     "examples": [
       "//@version=6\nindicator(\"A donut\", overlay=true)\nif barstate.islast\n    colNum = 8, rowNum = 8\n    padding = \"◯\"\n    donutTable = table.new(position.middle_right, colNum, rowNum)\n    for c = 0 to colNum - 1\n        for r = 0 to rowNum - 1\n            table.cell(donutTable, c, r, text=padding, bgcolor=#face6e, text_color=color.new(color.black, 100))\n    table.clear(donutTable, 2, 2, 5, 5)"
+    ],
+    "seeAlso": [
+      "table.delete",
+      "table.new"
     ]
   },
   {
@@ -19430,6 +21980,10 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "void",
     "examples": [
       "//@version=6\nindicator(\"table.delete example\")\nvar testTable = table.new(position = position.top_right, columns = 2, rows = 1, bgcolor = color.yellow, border_width = 1)\nif barstate.islast\n    table.cell(table_id = testTable, column = 0, row = 0, text = \"Open is \" + str.tostring(open))\n    table.cell(table_id = testTable, column = 1, row = 0, text = \"Close is \" + str.tostring(close), bgcolor=color.teal)\nif barstate.isrealtime\n    table.delete(testTable)"
+    ],
+    "seeAlso": [
+      "table.new",
+      "table.clear"
     ]
   },
   {
@@ -19472,6 +22026,11 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "void",
     "examples": [
       "//@version=6\nindicator(\"table.merge_cells example\")\nSMA50  = ta.sma(close, 50)\nSMA100 = ta.sma(close, 100)\nSMA200 = ta.sma(close, 200)\nif barstate.islast\n    maTable = table.new(position.bottom_right, 3, 3, bgcolor = color.gray, border_width = 1, border_color = color.black)\n    // Header\n    table.cell(maTable, 0, 0, text = \"SMA Table\")\n    table.merge_cells(maTable, 0, 0, 2, 0)\n    // Cell Titles\n    table.cell(maTable, 0, 1, text = \"SMA 50\")\n    table.cell(maTable, 1, 1, text = \"SMA 100\")\n    table.cell(maTable, 2, 1, text = \"SMA 200\")\n    // Values\n    table.cell(maTable, 0, 2, bgcolor = color.white, text = str.tostring(SMA50))\n    table.cell(maTable, 1, 2, bgcolor = color.white, text = str.tostring(SMA100))\n    table.cell(maTable, 2, 2, bgcolor = color.white, text = str.tostring(SMA200))"
+    ],
+    "remarks": "This function will merge cells, even if their properties are not yet defined with table.cell().\nThe resulting merged cell inherits all of its values from the cell located at start_column:start_row, except width and height. The width and height of the resulting merged cell are based on the width/height of other cells in the neighboring columns/rows and cannot be set manually.\nTo modify the merged cell with any of the table.cell_set_* functions, target the cell at the start_column:start_row coordinates.\nAn attempt to merge a cell that has already been merged will result in an error.",
+    "seeAlso": [
+      "table.delete",
+      "table.new"
     ]
   },
   {
@@ -19555,6 +22114,19 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series table",
     "examples": [
       "//@version=6\nindicator(\"table.new example\")\nvar testTable = table.new(position = position.top_right, columns = 2, rows = 1, bgcolor = color.yellow, border_width = 1)\nif barstate.islast\n    table.cell(table_id = testTable, column = 0, row = 0, text = \"Open is \" + str.tostring(open))\n    table.cell(table_id = testTable, column = 1, row = 0, text = \"Close is \" + str.tostring(close), bgcolor=color.teal)"
+    ],
+    "returnsDescription": "The ID of a table object that can be passed to other table.*() functions.",
+    "remarks": "This function creates the table object itself, but the table will not be displayed until its cells are populated. To define a cell and change its contents or attributes, use table.cell() and other table.cell_*() functions.\nOne table.new() call can only display one table (the last one drawn), but the function itself will be recalculated on each bar it is used on. For performance reasons, it is wise to use table.new() in conjunction with either the var keyword (so the table object is only created on the first bar) or in an if barstate.islast block (so the table object is only created on the last bar).",
+    "seeAlso": [
+      "table.cell",
+      "table.clear",
+      "table.delete",
+      "table.set_bgcolor",
+      "table.set_border_color",
+      "table.set_border_width",
+      "table.set_frame_color",
+      "table.set_frame_width",
+      "table.set_position"
     ]
   },
   {
@@ -19578,7 +22150,17 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "table.clear",
+      "table.delete",
+      "table.new",
+      "table.set_border_color",
+      "table.set_border_width",
+      "table.set_frame_color",
+      "table.set_frame_width",
+      "table.set_position"
+    ]
   },
   {
     "name": "table.set_border_color",
@@ -19601,7 +22183,17 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "table.clear",
+      "table.delete",
+      "table.new",
+      "table.set_frame_color",
+      "table.set_border_width",
+      "table.set_bgcolor",
+      "table.set_frame_width",
+      "table.set_position"
+    ]
   },
   {
     "name": "table.set_border_width",
@@ -19624,7 +22216,17 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "table.clear",
+      "table.delete",
+      "table.new",
+      "table.set_frame_color",
+      "table.set_frame_width",
+      "table.set_bgcolor",
+      "table.set_border_color",
+      "table.set_position"
+    ]
   },
   {
     "name": "table.set_frame_color",
@@ -19647,7 +22249,17 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "table.clear",
+      "table.delete",
+      "table.new",
+      "table.set_border_color",
+      "table.set_border_width",
+      "table.set_bgcolor",
+      "table.set_frame_width",
+      "table.set_position"
+    ]
   },
   {
     "name": "table.set_frame_width",
@@ -19670,7 +22282,17 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "table.clear",
+      "table.delete",
+      "table.new",
+      "table.set_frame_color",
+      "table.set_border_width",
+      "table.set_bgcolor",
+      "table.set_border_color",
+      "table.set_position"
+    ]
   },
   {
     "name": "table.set_position",
@@ -19703,7 +22325,17 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": []
+    "examples": [],
+    "seeAlso": [
+      "table.clear",
+      "table.delete",
+      "table.new",
+      "table.set_bgcolor",
+      "table.set_border_color",
+      "table.set_border_width",
+      "table.set_frame_color",
+      "table.set_frame_width"
+    ]
   },
   {
     "name": "ticker.heikinashi",
@@ -19745,6 +22377,16 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"ticker.heikinashi\", overlay=true)\nheikinashi_close = request.security(ticker.heikinashi(syminfo.tickerid), timeframe.period, close)\n\nheikinashi_aapl_60_close = request.security(ticker.heikinashi(\"AAPL\"), \"60\", close)\nplot(heikinashi_close)\nplot(heikinashi_aapl_60_close)"
+    ],
+    "returnsDescription": "String value of ticker id, that can be supplied to request.security() function.",
+    "seeAlso": [
+      "syminfo.tickerid",
+      "syminfo.ticker",
+      "request.security",
+      "ticker.renko",
+      "ticker.linebreak",
+      "ticker.kagi",
+      "ticker.pointfigure"
     ]
   },
   {
@@ -19805,7 +22447,8 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"ticker.inherit\")\n\n//@variable A \"NASDAQ:AAPL\" ticker ID with Extender Hours enabled.\ntickerExtHours = ticker.new(\"NASDAQ\", \"AAPL\", session.extended)\n//@variable A Heikin Ashi ticker ID for \"NASDAQ:AAPL\" with Extended Hours enabled.\nHAtickerExtHours = ticker.heikinashi(tickerExtHours)\n//@variable The \"NASDAQ:MSFT\" symbol with no modifiers.\ntestSymbol = \"NASDAQ:MSFT\"\n//@variable A ticker ID for \"NASDAQ:MSFT\" with inherited Heikin Ashi and Extended Hours modifiers.\ntestSymbolHAtickerExtHours = ticker.inherit(HAtickerExtHours, testSymbol)\n\n//@variable The `close` price requested using \"NASDAQ:MSFT\" with inherited modifiers.\nsecData = request.security(testSymbolHAtickerExtHours, \"60\", close, ignore_invalid_symbol = true)\n//@variable The `close` price requested using \"NASDAQ:MSFT\" without modifiers.\ncompareData = request.security(testSymbol, \"60\", close, ignore_invalid_symbol = true)\n\nplot(secData, color = color.green)\nplot(compareData)"
-    ]
+    ],
+    "remarks": "If the constructed ticker ID inherits a modifier that doesn't apply to the symbol (e.g., if the from_tickerid has Extended Hours enabled, but no such option is available for the symbol), the script will ignore the modifier when requesting data using the ID."
   },
   {
     "name": "ticker.kagi",
@@ -19938,6 +22581,16 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"ticker.kagi\", overlay=true)\nkagi_tickerid = ticker.kagi(syminfo.tickerid, 3)\nkagi_close = request.security(kagi_tickerid, timeframe.period, close)\nplot(kagi_close)"
+    ],
+    "returnsDescription": "String value of ticker id, that can be supplied to request.security() function.",
+    "seeAlso": [
+      "syminfo.tickerid",
+      "syminfo.ticker",
+      "request.security",
+      "ticker.heikinashi",
+      "ticker.renko",
+      "ticker.linebreak",
+      "ticker.pointfigure"
     ]
   },
   {
@@ -19998,6 +22651,16 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"ticker.linebreak\", overlay=true)\nlinebreak_tickerid = ticker.linebreak(syminfo.tickerid, 3)\nlinebreak_close = request.security(linebreak_tickerid, timeframe.period, close)\nplot(linebreak_close)"
+    ],
+    "returnsDescription": "String value of ticker id, that can be supplied to request.security() function.",
+    "seeAlso": [
+      "syminfo.tickerid",
+      "syminfo.ticker",
+      "request.security",
+      "ticker.heikinashi",
+      "ticker.renko",
+      "ticker.kagi",
+      "ticker.pointfigure"
     ]
   },
   {
@@ -20178,6 +22841,24 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"ticker_modify\", overlay=true)\nt1 = ticker.new(syminfo.prefix, syminfo.ticker, session.regular, adjustment.splits)\nc1 = request.security(t1, \"D\", close)\nt2 = ticker.modify(t1, session.extended)\nc2 = request.security(t2, \"2D\", close)\nplot(c1)\nplot(c2)"
+    ],
+    "returnsDescription": "String value of ticker id, that can be supplied to request.security() function.",
+    "seeAlso": [
+      "syminfo.tickerid",
+      "syminfo.ticker",
+      "syminfo.session",
+      "session.extended",
+      "session.regular",
+      "ticker.heikinashi",
+      "adjustment.none",
+      "adjustment.splits",
+      "adjustment.dividends",
+      "backadjustment.inherit",
+      "backadjustment.on",
+      "backadjustment.off",
+      "settlement_as_close.inherit",
+      "settlement_as_close.on",
+      "settlement_as_close.off"
     ]
   },
   {
@@ -20376,6 +23057,25 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"ticker.new\", overlay=true)\nt = ticker.new(syminfo.prefix, syminfo.ticker, session.regular, adjustment.splits)\nt2 = ticker.heikinashi(t)\nc = request.security(t2, timeframe.period, low, barmerge.gaps_on)\nplot(c, style=plot.style_linebr)"
+    ],
+    "returnsDescription": "String value of ticker id, that can be supplied to request.security() function.",
+    "remarks": "You may use return value of ticker.new() function as input argument for ticker.heikinashi(), ticker.renko(), ticker.linebreak(), ticker.kagi(), ticker.pointfigure() functions.",
+    "seeAlso": [
+      "syminfo.tickerid",
+      "syminfo.ticker",
+      "syminfo.session",
+      "session.extended",
+      "session.regular",
+      "ticker.heikinashi",
+      "adjustment.none",
+      "adjustment.splits",
+      "adjustment.dividends",
+      "backadjustment.inherit",
+      "backadjustment.on",
+      "backadjustment.off",
+      "settlement_as_close.inherit",
+      "settlement_as_close.on",
+      "settlement_as_close.off"
     ]
   },
   {
@@ -20517,6 +23217,16 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"ticker.pointfigure\", overlay=true)\npnf_tickerid = ticker.pointfigure(syminfo.tickerid, \"hl\", \"Traditional\", 1, 3)\npnf_close = request.security(pnf_tickerid, timeframe.period, close)\nplot(pnf_close)"
+    ],
+    "returnsDescription": "String value of ticker id, that can be supplied to request.security() function.",
+    "seeAlso": [
+      "syminfo.tickerid",
+      "syminfo.ticker",
+      "request.security",
+      "ticker.heikinashi",
+      "ticker.renko",
+      "ticker.linebreak",
+      "ticker.kagi"
     ]
   },
   {
@@ -20665,6 +23375,16 @@ export const FUNCTIONS: PineFunction[] = [
     "examples": [
       "//@version=6\nindicator(\"ticker.renko\", overlay=true)\nrenko_tickerid = ticker.renko(syminfo.tickerid, \"ATR\", 10)\nrenko_close = request.security(renko_tickerid, timeframe.period, close)\nplot(renko_close)",
       "//@version=6\nindicator(\"Renko candles\", overlay=false)\nrenko_tickerid = ticker.renko(syminfo.tickerid, \"ATR\", 10)\n[renko_open, renko_high, renko_low, renko_close] = request.security(renko_tickerid, timeframe.period, [open, high, low, close])\nplotcandle(renko_open, renko_high, renko_low, renko_close, color = renko_close > renko_open ? color.green : color.red)"
+    ],
+    "returnsDescription": "String value of ticker id, that can be supplied to request.security() function.",
+    "seeAlso": [
+      "syminfo.tickerid",
+      "syminfo.ticker",
+      "request.security",
+      "ticker.heikinashi",
+      "ticker.linebreak",
+      "ticker.kagi",
+      "ticker.pointfigure"
     ]
   },
   {
@@ -20710,6 +23430,10 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"ticker.standard\", overlay = true)\n// This script should be run on a non-standard chart such as HA, Renko...\n\n// Requests data from the chart type the script is running on.\nchartTypeValue = request.security(syminfo.tickerid, \"1D\", close)\n\n// Request data from the standard chart type, regardless of the chart type the script is running on.\nstandardChartValue = request.security(ticker.standard(syminfo.tickerid), \"1D\", close)\n\n// This will not use a standard ticker ID because the `symbol` argument contains only the ticker — not the prefix (exchange).\nstandardChartValue2 = request.security(ticker.standard(syminfo.ticker), \"1D\", close)\n\nplot(chartTypeValue)\nplot(standardChartValue, color = color.green)"
+    ],
+    "returnsDescription": "A string representing the ticker of a standard chart in the \"prefix:ticker\" format. If the symbol argument does not contain the prefix and ticker information, the function returns the supplied argument as is.",
+    "seeAlso": [
+      "request.security"
     ]
   },
   {
@@ -20827,6 +23551,11 @@ export const FUNCTIONS: PineFunction[] = [
       "//@version=6\nindicator(\"Time\", overlay=true)\n// Try this on chart AAPL,1\ntimeinrange(res, sess) => not na(time(res, sess, \"America/New_York\")) ? 1 : 0\nplot(timeinrange(\"1\", \"1300-1400\"), color=color.red)\n\n// This plots 1.0 at every start of 10 minute bar on a 1 minute chart:\nnewbar(res) => ta.change(time(res)) == 0 ? 0 : 1\nplot(newbar(\"10\"))",
       "//@version=6\nindicator(\"Time\", overlay=true)\nt1 = time(timeframe.period, \"0000-0000:23456\")\nbgcolor(not na(t1) ? color.new(color.blue, 90) : na)",
       "//@version=6\nindicator(\"Time\", overlay=true)\nt1 = time(timeframe.period, \"1000-1100,1400-1500:23456\")\nbgcolor(not na(t1) ? color.new(color.blue, 90) : na)"
+    ],
+    "returnsDescription": "The opening UNIX timestamp.",
+    "remarks": "UNIX time is a standardized date and time representation that measures the number of non-leap seconds elapsed since January 1, 1970 at 00:00:00 UTC. Pine Script expresses UNIX time values in milliseconds. See the UNIX timestamps section of the User Manual's Time page to learn more.",
+    "seeAlso": [
+      "time"
     ]
   },
   {
@@ -20942,6 +23671,11 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"Time\", overlay=true)\nt1 = time_close(timeframe.period, \"1200-1300\", \"America/New_York\")\nbgcolor(not na(t1) ? color.new(color.blue, 90) : na)"
+    ],
+    "returnsDescription": "The closing UNIX timestamp.",
+    "remarks": "UNIX time is a standardized date and time representation that measures the number of non-leap seconds elapsed since January 1, 1970 at 00:00:00 UTC. Pine Script expresses UNIX time values in milliseconds. See the UNIX timestamps section of the User Manual's Time page to learn more.",
+    "seeAlso": [
+      "time_close"
     ]
   },
   {
@@ -20960,7 +23694,8 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series bool",
     "examples": [
       "//@version=6\n// Run this script on an intraday chart.\nindicator(\"New day started\", overlay = true)\n// Highlights the first bar of the new day.\nisNewDay = timeframe.change(\"1D\")\nbgcolor(isNewDay ? color.new(color.green, 80) : na)"
-    ]
+    ],
+    "returnsDescription": "Returns true on the first bar of a new timeframe, false otherwise."
   },
   {
     "name": "timeframe.from_seconds",
@@ -21002,6 +23737,13 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"HTF Close\", \"\", true)\nint chartTf = timeframe.in_seconds()\nstring tfTimes5 = timeframe.from_seconds(chartTf * 5)\nfloat htfClose = request.security(syminfo.tickerid, tfTimes5, close)\nplot(htfClose)"
+    ],
+    "returnsDescription": "A timeframe string compliant with timeframe string specifications.",
+    "remarks": "If no valid timeframe exists for the quantity of seconds supplied, the next higher valid timeframe will be returned. Accordingly, one second or less will return \"1S\", 2-5 seconds will return \"5S\", and 604,799 seconds (one second less than 7 days) will return \"7D\".\nIf the seconds exactly represent two or more valid timeframes, the one with the larger base unit will be used. Thus 604,800 seconds (7 days) returns \"1W\", not \"7D\".\nAll values above 31,622,400 (366 days) return \"12M\".",
+    "seeAlso": [
+      "timeframe.in_seconds",
+      "request.security",
+      "request.security_lower_tf"
     ]
   },
   {
@@ -21047,6 +23789,13 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"`timeframe_in_seconds()`\"),\n\n// Get a user-selected timeframe.\ntfInput = input.timeframe(\"1D\")\n\n// Convert it into an \"int\" number of seconds.\nsecondsInTf = timeframe.in_seconds(tfInput)\n\nplot(secondsInTf)"
+    ],
+    "returnsDescription": "The \"int\" representation of the number of seconds in the timeframe string.",
+    "remarks": "When the timeframe is \"1M\" or more, calculations use 2628003 as the number of seconds in one month, which represents 30.4167 (365/12) days.",
+    "seeAlso": [
+      "input.timeframe",
+      "timeframe.period",
+      "timeframe.from_seconds"
     ]
   },
   {
@@ -21309,6 +24058,14 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "examples": [
       "//@version=6\nindicator(\"timestamp\")\nplot(timestamp(2016, 01, 19, 09, 30), linewidth=3, color=color.green)\nplot(timestamp(syminfo.timezone, 2016, 01, 19, 09, 30), color=color.blue)\nplot(timestamp(2016, 01, 19, 09, 30), color=color.yellow)\nplot(timestamp(\"GMT+6\", 2016, 01, 19, 09, 30))\nplot(timestamp(2019, 06, 19, 09, 30, 15), color=color.lime)\nplot(timestamp(\"GMT+3\", 2019, 06, 19, 09, 30, 15), color=color.fuchsia)\nplot(timestamp(\"Feb 01 2020 22:10:05\"))\nplot(timestamp(\"2011-10-10T14:48:00\"))\nplot(timestamp(\"04 Dec 1995 00:12:00 GMT+5\"))"
+    ],
+    "returnsDescription": "UNIX time.",
+    "remarks": "UNIX time is the number of milliseconds that have elapsed since 00:00:00 UTC, 1 January 1970.",
+    "seeAlso": [
+      "time",
+      "time",
+      "timenow",
+      "syminfo.timezone"
     ]
   },
   {
@@ -21325,7 +24082,8 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The total \"buy\" volume for the footprint row."
   },
   {
     "name": "volume_row.delta",
@@ -21341,7 +24099,8 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The volume delta for the footprint row."
   },
   {
     "name": "volume_row.down_price",
@@ -21357,7 +24116,8 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The lower boundary of the footprint row's price range."
   },
   {
     "name": "volume_row.has_buy_imbalance",
@@ -21373,7 +24133,8 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series bool",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "A value of true if the footprint row has a detected buy imbalance, and false otherwise."
   },
   {
     "name": "volume_row.has_sell_imbalance",
@@ -21389,7 +24150,8 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series bool",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "A value of true if the footprint row has a detected sell imbalance, and false otherwise."
   },
   {
     "name": "volume_row.sell_volume",
@@ -21405,7 +24167,8 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The total \"sell\" volume for the footprint row."
   },
   {
     "name": "volume_row.total_volume",
@@ -21421,7 +24184,8 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The total volume for the footprint row."
   },
   {
     "name": "volume_row.up_price",
@@ -21437,7 +24201,8 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The upper boundary of the footprint row's price range."
   },
   {
     "name": "weekofyear",
@@ -21459,7 +24224,20 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series int",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "The calculated week number, expressed in the specified time zone.",
+    "remarks": "A UNIX timestamp represents the number of milliseconds elapsed since 00:00 UTC on 1970-01-01. The meaning of a UNIX timestamp does not change relative to any time zone.",
+    "seeAlso": [
+      "weekofyear",
+      "dayofmonth",
+      "dayofweek",
+      "time",
+      "year",
+      "month",
+      "hour",
+      "minute",
+      "second"
+    ]
   },
   {
     "name": "year",
@@ -21481,7 +24259,19 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series int",
-    "examples": []
+    "examples": [],
+    "returnsDescription": "Year (in exchange timezone) for provided UNIX time.",
+    "remarks": "UNIX time is the number of milliseconds that have elapsed since 00:00:00 UTC, 1 January 1970.\nNote that this function returns the year based on the time of the bar's open. For overnight sessions (e.g. EURUSD, where Monday session starts on Sunday, 17:00 UTC-4) this value can be lower by 1 than the year of the trading day.",
+    "seeAlso": [
+      "year",
+      "time",
+      "month",
+      "dayofmonth",
+      "dayofweek",
+      "hour",
+      "minute",
+      "second"
+    ]
   }
 ];
 

@@ -63,9 +63,34 @@ interface FunctionDetail {
 	overloadArgs?: Array<
 		Array<{ name: string; type: string; description?: string }>
 	>;
+	returnsDescription?: string;
+	remarks?: string;
+	seeAlso?: string[];
 }
 
-interface GeneratedFunction {
+// Prose sub-sections (Returns sentence, Remarks, See also) captured offline from
+// the DOM mirror by reextract-sections.ts. Carried verbatim into the generated
+// catalogs for downstream/external consumers of pine-data; our own checker does
+// not read them.
+interface ReferenceProse {
+	returnsDescription?: string;
+	remarks?: string;
+	seeAlso?: string[];
+}
+
+function pickProse(src: {
+	returnsDescription?: string;
+	remarks?: string;
+	seeAlso?: string[];
+}): ReferenceProse {
+	const out: ReferenceProse = {};
+	if (src.returnsDescription) out.returnsDescription = src.returnsDescription;
+	if (src.remarks) out.remarks = src.remarks;
+	if (src.seeAlso && src.seeAlso.length > 0) out.seeAlso = src.seeAlso;
+	return out;
+}
+
+interface GeneratedFunction extends ReferenceProse {
 	name: string;
 	namespace?: string;
 	syntax: string;
@@ -99,7 +124,7 @@ interface GeneratedFunction {
 	examples?: string[];
 }
 
-interface GeneratedVariable {
+interface GeneratedVariable extends ReferenceProse {
 	name: string;
 	namespace?: string;
 	type: string;
@@ -107,14 +132,14 @@ interface GeneratedVariable {
 	description: string;
 }
 
-interface GeneratedConstant {
+interface GeneratedConstant extends ReferenceProse {
 	name: string;
 	namespace: string;
 	shortName: string;
 	type: string;
 }
 
-interface GeneratedType {
+interface GeneratedType extends ReferenceProse {
 	name: string;
 	namespace?: string;
 	kind: "primitive" | "qualifier" | "container" | "object";
@@ -123,21 +148,21 @@ interface GeneratedType {
 	fields?: Array<{ name: string; type: string; description: string }>;
 }
 
-interface GeneratedAnnotation {
+interface GeneratedAnnotation extends ReferenceProse {
 	name: string;
 	description: string;
 	syntax?: string;
 	examples?: string[];
 }
 
-interface ScrapedMember {
+interface ScrapedMember extends ReferenceProse {
 	name: string;
 	type: string;
 	description: string;
 	namespace: string;
 }
 
-interface ScrapedType {
+interface ScrapedType extends ReferenceProse {
 	name: string;
 	description?: string;
 	examples?: string[];
@@ -145,10 +170,24 @@ interface ScrapedType {
 	namespace?: string;
 }
 
-interface ScrapedAnnotation {
+interface ScrapedAnnotation extends ReferenceProse {
 	name: string;
 	description?: string;
 	syntax?: string;
+	examples?: string[];
+}
+
+interface ScrapedOperator extends ReferenceProse {
+	name: string;
+	description?: string;
+	syntax?: string;
+	examples?: string[];
+}
+
+interface GeneratedOperator extends ReferenceProse {
+	name: string;
+	syntax?: string;
+	description: string;
 	examples?: string[];
 }
 
@@ -158,6 +197,7 @@ interface DetailsData {
 	constants?: Record<string, ScrapedMember>;
 	types?: Record<string, ScrapedType>;
 	annotations?: Record<string, ScrapedAnnotation>;
+	operators?: Record<string, ScrapedOperator>;
 }
 
 interface ConstructsData {
@@ -169,6 +209,7 @@ interface ConstructsData {
 	constants?: { byNamespace?: Record<string, string[]> };
 	types?: { items?: string[] };
 	annotations?: { items?: string[] };
+	operators?: { items?: string[] };
 }
 
 // =============================================================================
@@ -569,6 +610,7 @@ function generateFunctions(
 			overloads: buildOverloads(detail),
 			deprecated,
 			examples: detail.examples,
+			...pickProse(detail),
 		};
 
 		functions.push(func);
@@ -668,6 +710,7 @@ function generateVariables(
 			type: typeInfo.type,
 			qualifier: typeInfo.qualifier,
 			description: sv?.description || `Built-in variable: ${name}`,
+			...(sv ? pickProse(sv) : {}),
 		});
 	}
 
@@ -760,7 +803,13 @@ function generateConstants(
 				missingType.push(name);
 				type = "string";
 			}
-			constants.push({ name, namespace, shortName, type });
+			constants.push({
+				name,
+				namespace,
+				shortName,
+				type,
+				...(sc ? pickProse(sc) : {}),
+			});
 		}
 	}
 
@@ -854,6 +903,7 @@ function generateTypes(
 			description: sc?.description || undefined,
 			examples: sc?.examples && sc.examples.length > 0 ? sc.examples : undefined,
 			fields: sc?.fields && sc.fields.length > 0 ? sc.fields : undefined,
+			...(sc ? pickProse(sc) : {}),
 		};
 	});
 
@@ -905,6 +955,7 @@ function generateAnnotations(
 			description: sc?.description || "",
 			syntax: sc?.syntax || undefined,
 			examples: sc?.examples && sc.examples.length > 0 ? sc.examples : undefined,
+			...(sc ? pickProse(sc) : {}),
 		};
 	});
 
@@ -938,6 +989,62 @@ export const ANNOTATION_NAMES: Set<string> = new Set(ANNOTATIONS.map(a => a.name
 	fs.writeFileSync(path.join(OUTPUT_DIR, "annotations.ts"), content);
 	console.log(`   ${annotations.length} annotations`);
 	return annotations;
+}
+
+function generateOperators(
+	details: DetailsData,
+	constructs: ConstructsData,
+): GeneratedOperator[] {
+	console.log("Generating operators.ts...");
+
+	const scraped = details.operators || {};
+	const names = constructs.operators?.items || [];
+
+	const operators: GeneratedOperator[] = names.map((name) => {
+		const sc = scraped[name];
+		return {
+			name,
+			syntax: sc?.syntax || undefined,
+			description: sc?.description || "",
+			examples: sc?.examples && sc.examples.length > 0 ? sc.examples : undefined,
+			...(sc ? pickProse(sc) : {}),
+		};
+	});
+
+	const content = `/**
+ * Pine Script ${VERSION.toUpperCase()} Operators
+ * Auto-generated from TradingView documentation
+ * Generated: ${new Date().toISOString()}
+ * Total: ${operators.length} operators
+ *
+ * Reference data only: operators are grammar the parser hardcodes (see the
+ * Data-vs-Syntax split in CLAUDE.md), so the checker does not read this catalog.
+ * It exists for downstream/external consumers of pine-data.
+ */
+
+import type { PineOperator } from "../schema/types";
+
+/**
+ * All ${VERSION} operators
+ */
+export const OPERATORS: PineOperator[] = ${JSON.stringify(operators, null, 2)};
+
+/**
+ * Operators indexed by symbol for O(1) lookup
+ */
+export const OPERATORS_BY_NAME: Map<string, PineOperator> = new Map(
+	OPERATORS.map(o => [o.name, o])
+);
+
+/**
+ * All operator symbols as a Set for fast membership check
+ */
+export const OPERATOR_NAMES: Set<string> = new Set(OPERATORS.map(o => o.name));
+`;
+
+	fs.writeFileSync(path.join(OUTPUT_DIR, "operators.ts"), content);
+	console.log(`   ${operators.length} operators`);
+	return operators;
 }
 
 function generateKeywords(constructs: ConstructsData): string[] {
@@ -1055,6 +1162,7 @@ export * from "./variables";
 export * from "./constants";
 export * from "./types";
 export * from "./annotations";
+export * from "./operators";
 export * from "./keywords";
 
 // Re-export types
@@ -1172,6 +1280,7 @@ function main(): void {
 	const constants = generateConstants(details, constructs);
 	const types = generateTypes(details, constructs);
 	const annotations = generateAnnotations(details, constructs);
+	const operators = generateOperators(details, constructs);
 	const keywords = generateKeywords(constructs);
 	generateVersionIndex(functions, variables, constants, keywords);
 
@@ -1187,6 +1296,7 @@ function main(): void {
 	writeJson("constants", constants);
 	writeJson("types", types);
 	writeJson("annotations", annotations);
+	writeJson("operators", operators);
 	writeJson("keywords", keywords);
 
 	console.log(`\nPine Script ${VERSION} data generated successfully!`);
@@ -1195,6 +1305,7 @@ function main(): void {
 	console.log(`   ${constants.length} constants`);
 	console.log(`   ${types.length} types`);
 	console.log(`   ${annotations.length} annotations`);
+	console.log(`   ${operators.length} operators`);
 	console.log(`   ${keywords.length} keywords\n`);
 }
 

@@ -1,7 +1,7 @@
 /**
  * Pine Script V6 Annotations
  * Auto-generated from TradingView documentation
- * Generated: 2026-05-29T17:59:07.467Z
+ * Generated: 2026-05-30T21:51:35.372Z
  * Total: 10 annotations
  */
 
@@ -80,7 +80,8 @@ export const ANNOTATIONS: PineAnnotation[] = [
     "examples": [
       "//@version=6\nindicator(\"Pine v6 Indicator\")\nplot(close)",
       "//This indicator has no version annotation, so it will try to use v1.\n//Pine Script® v1 has no function named `indicator()`, so the script will not compile.\nindicator(\"Pine v1 Indicator\")\nplot(close)"
-    ]
+    ],
+    "remarks": "The version should always be specified. Otherwise, for compatibility reasons, the script will be compiled using Pine Script® v1, which lacks most of the newer features and is bound to confuse. This annotation can be anywhere within a script, but we recommend placing it at the top of the code for readability."
   }
 ];
 

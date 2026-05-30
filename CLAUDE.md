@@ -215,6 +215,7 @@ pnpm test                 # Run tests
 pnpm run crawl            # Crawl TradingView docs (TOC inventory)
 pnpm run scrape           # Scrape details + build .cache/dom mirror
 pnpm run reextract:dom    # Re-derive overloadArgs from the mirror (offline; run after scrape)
+pnpm run reextract:sections # Re-derive returnsDescription/remarks/seeAlso from the mirror (offline; run after scrape)
 pnpm run generate         # Generate pine-data/v6/*.{ts,json}
 pnpm run generate:syntax  # Generate syntaxes/pine.tmLanguage.json
 
@@ -283,28 +284,51 @@ All API data is scraped from TradingView docs and generated:
 | `crawl` | `pine-data/raw/v6/v6-language-constructs.json` (TOC inventory of every reference section) |
 | `scrape` | `pine-data/raw/v6/complete-v6-details.json` (+ DOM mirror under `.cache/dom/`) |
 | `reextract:dom` | re-derives `overloadArgs` from the mirror, **offline** — run after every `scrape` (see below) |
+| `reextract:sections` | re-derives `returnsDescription`/`remarks`/`seeAlso` from the mirror, **offline** — run after every `scrape` (see below) |
 | `generate` | `pine-data/v6/*.ts` + `*.json` (vendor-friendly snapshot for downstream Rust/non-node consumers) |
 | `generate:syntax` | `syntaxes/pine.tmLanguage.json` |
 
 `generate` emits one catalog per reference section: `functions`, `variables`,
-`constants`, `types`, `annotations`, `keywords` (`.ts` + `.json` each). The
-`functions` entries carry an `overloads[]` array (exact per-overload param
-types + returns) alongside the merged view, and params carry `default`
+`constants`, `types`, `annotations`, `operators`, `keywords` (`.ts` + `.json`
+each). The `functions` entries carry an `overloads[]` array (exact per-overload
+param types + returns) alongside the merged view, and params carry `default`
 (literal or a magic sentinel like `CHART_SYMBOL`/`ARG:<name>`), `allowedValues`,
 and `min`/`max`. `types` includes `chart.point`'s fields; the opaque ID types
-have none. **Operators are intentionally NOT emitted** — they're grammar the
-parser hardcodes (Data-vs-Syntax); the crawl still records the accurate set in
-the raw constructs (from `#op_` TOC links) but nothing generates them.
+have none.
+
+Every reference item also carries the prose sub-sections the structured fields
+otherwise drop, for downstream/external consumers: `returnsDescription` (the
+Returns *sentence*, distinct from the typed `returns`), `remarks` (free-text
+caveats — na-handling, every-bar-calling, side effects), and `seeAlso` (bare
+cross-ref symbol names). These are re-derived offline by `reextract:sections`
+from the `.cache/dom` mirror; **our own checker does not read them** — they are
+reference data only.
+
+**Operators are emitted as reference data** (`operators.{ts,json}` —
+description/syntax/examples + the prose sub-sections), for external consumers of
+pine-data. This does NOT change the Data-vs-Syntax split: operators are still
+grammar the parser hardcodes and the checker does not consume the catalog. The
+crawl records the symbol set from `#op_` TOC links; the operator detail pages
+are scraped via `op_<symbol>` anchors and mirrored under `op__<hex-slug>` (the
+slug avoids the `?:`/`+=`/`==` filename collisions a naive safe-name produces).
 
 **Regenerating is safe** - customizations are in the scripts, not output files.
 
-⚠️ **Always run `pnpm run reextract:dom` after any `scrape`.** A `scrape`
-rebuilds `complete-v6-details.json` from the per-function cache
-(`.cache/function-details/`), which holds the scrape's *own* extraction — NOT
-the offline re-derivation. Skipping reextract reverts the variadic
-`overloadArgs` (e.g. `math.max` → empty) and per-overload descriptions to the
-cache's pre-fix state. The standard refresh is: `crawl` → `scrape` →
-`reextract:dom` → `generate` → `install:cli` → `regression-check`.
+⚠️ **Always run `pnpm run reextract:dom` AND `pnpm run reextract:sections`
+after any `scrape`.** A `scrape` rebuilds `complete-v6-details.json` from the
+per-function cache (`.cache/function-details/`), which holds the scrape's *own*
+extraction — NOT the offline re-derivation. Skipping `reextract:dom` reverts the
+variadic `overloadArgs` (e.g. `math.max` → empty) and per-overload descriptions
+to the cache's pre-fix state; skipping `reextract:sections` drops every
+catalog's `returnsDescription`/`remarks`/`seeAlso`. The standard refresh is:
+`crawl` → `scrape` → `reextract:dom` → `reextract:sections` → `generate` →
+`install:cli` → `regression-check`.
+
+Note: `scrape` now also DOM-mirrors variables and constants (under
+`var__<name>`/`const__<name>`) and operators (`op__<hex-slug>`), not just
+functions/types/annotations — so `reextract:sections` can re-derive their prose
+offline. The first scrape after this change re-fetches the un-mirrored members
+(a valid details cache with a missing mirror triggers a re-scrape of that item).
 
 ### Re-running type logic WITHOUT scraping
 
@@ -333,9 +357,11 @@ HTML to this public repo). So a DOM-*extraction* change does **not** need a
 re-scrape either:
 
 ```bash
-# 1. edit packages/pipeline/src/arg-parse.ts (the shared arg-type parser)
-pnpm run reextract:dom     # re-derive overloadArgs from .cache/dom — NO network
-pnpm run generate          # recompute pine-data from the corrected dump
+# 1. edit packages/pipeline/src/arg-parse.ts (the shared arg-type parser) or
+#    packages/pipeline/src/section-parse.ts (the Returns/Remarks/See-also parser)
+pnpm run reextract:dom       # re-derive overloadArgs from .cache/dom — NO network
+pnpm run reextract:sections  # re-derive returnsDescription/remarks/seeAlso — NO network
+pnpm run generate            # recompute pine-data from the corrected dump
 pnpm run install:cli
 node scripts/regression-check.mjs
 ```

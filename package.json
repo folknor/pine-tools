@@ -144,6 +144,7 @@
     "scrape": "node --experimental-strip-types packages/pipeline/src/scrape.ts",
     "scrape:force": "node --experimental-strip-types packages/pipeline/src/scrape.ts --force",
     "reextract:dom": "node --experimental-strip-types packages/pipeline/src/reextract-overload-args.ts",
+    "reextract:sections": "node --experimental-strip-types packages/pipeline/src/reextract-sections.ts",
     "test": "pnpm run build:tsc && vitest run",
     "test:coverage": "vitest run --coverage",
     "test:snippet": "node dev-tools/test-snippet.js",
