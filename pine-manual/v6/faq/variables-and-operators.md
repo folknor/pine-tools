@@ -4,9 +4,9 @@ source: https://www.tradingview.com/pine-script-docs/faq/variables-and-operators
 section: faq
 ---
 
-# Variables and operators
+# Variables and operators {#variables-and-operators}
 
-## What is the variable name for the current price?
+## What is the variable name for the current price? {#what-is-the-variable-name-for-the-current-price}
 
 In Pine Script®, the [close](https://www.tradingview.com/pine-script-reference/v6/#var_close) variable represents the current price. It provides the _closing price_ of each historical bar, and, for indicator scripts, the _current price_ of the most recent realtime bar. The [close](https://www.tradingview.com/pine-script-reference/v6/#var_close) value of an open bar can change on each tick to reflect the latest price.
 
@@ -14,7 +14,7 @@ Strategy scripts usually execute only once on each historical _and_ realtime bar
 
 To reference the closing price of the previous bar, use `close[1]`. Learn more about using square brackets to reference previous values in the [history-referencing operator](https://www.tradingview.com/pine-script-docs/language/operators/#-history-referencing-operator) section.
 
-## Why declare variables with the ​`var`​ keyword?
+## Why declare variables with the `var` keyword? {#why-declare-variables-with-the-var-keyword}
 
 The [var](https://www.tradingview.com/pine-script-reference/v6/#kw_var) keyword is useful for storing data across multiple bars. By default, the value assigned to a variable is _reset_ and calculated again on each new bar. This process is called [rollback](https://www.tradingview.com/pine-script-docs/language/execution-model/#executions-on-realtime-bars).
 
@@ -45,7 +45,7 @@ plot(a, "a", close > open ? #089981 : #f23645, style = plot.style_columns)
 plot(b, "b", color.yellow)
 ```
 
-## What is ​`varip`​ used for?
+## What is `varip` used for? {#what-is-varip-used-for}
 
 The [varip](https://www.tradingview.com/pine-script-reference/v6/#kw_varip) keyword declares variables whose values persist _within the same realtime bar_. This contrasts with the typical mode of Pine’s [execution model](https://www.tradingview.com/pine-script-docs/language/execution-model/), where variables are reset to their last committed value with _each realtime script execution_, potentially many times in each bar.
 
@@ -81,7 +81,7 @@ Note that:
 
 -   Both plots in the above script are the _same_ for historical bars, because there are no intrabar updates on historical bars.
 
-## What’s the difference between ​`==`​, ​`=`​, and ​`:=`​?
+## What’s the difference between `==`, `=`, and `:=`? {#whats-the-difference-between---and-}
 
 The [\= operator](https://www.tradingview.com/pine-script-docs/language/operators/#-assignment-operator) declares and initializes variables, assigning a specific value to a named variable. For example, `a = 0` sets the variable `a` to hold the value 0.
 
@@ -119,7 +119,7 @@ plotchar(a == b, "a equals b", "✅", location.bottom)
 plotchar(a != b, "a does not equal b", "❌", location.bottom)
 ```
 
-## Can I use the ​`:=`​ operator to assign values to past values of a series?
+## Can I use the `:=` operator to assign values to past values of a series? {#can-i-use-the--operator-to-assign-values-to-past-values-of-a-series}
 
 Historical values are fixed and cannot be changed. Just as we can’t alter the past in real life, scripts are unable to modify historical values in a series, because they are read-only. For example, the following script generates an error:
 
@@ -145,7 +145,7 @@ a := high[1]
 plot(a, color = chart.fg_color, linewidth = 3)
 ```
 
-## Why do the OHLC built-ins sometimes return different values than the ones shown on the chart?
+## Why do the OHLC built-ins sometimes return different values than the ones shown on the chart? {#why-do-the-ohlc-built-ins-sometimes-return-different-values-than-the-ones-shown-on-the-chart}
 
 The OHLC (Open, High, Low, Close) values displayed on the chart and the values returned by the [built-in](https://www.tradingview.com/pine-script-docs/language/built-ins/#built-in-functions) OHLC variables [open](https://www.tradingview.com/pine-script-reference/v6/#var_open), [high](https://www.tradingview.com/pine-script-reference/v6/#var_high), [low](https://www.tradingview.com/pine-script-reference/v6/#var_low), [close](https://www.tradingview.com/pine-script-reference/v6/#var_close) can differ. This is because data feeds can contain price points that exceed a symbol’s defined _tick precision_. While visually, chart prices are always rounded to tick precision, the built-in variables maintain their original, unrounded values.
 
@@ -191,7 +191,7 @@ plot(close, "close", getTickColor(c, close), display = display.data_window)
 bgcolor(o != open or h != high or l != low or c != close ? color.new(color.red, 90) : na)
 ```
 
-## Why do some logical expressions not evaluate as expected when ​`na`​ values are involved?
+## Why do some logical expressions not evaluate as expected when `na` values are involved? {#why-do-some-logical-expressions-not-evaluate-as-expected-when-na-values-are-involved}
 
 In Pine Script, every type of variable can take an [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) value — _except_ Boolean variables, which can only be true or false. Here, [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) stands for “not available”, and signifies the absence of a value, similar to NULL in other programming languages.
 
@@ -226,4 +226,4 @@ if barstate.islastconfirmedhistory
       )
 ```
 
-To avoid unwanted false negatives, write code that checks for [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) values and, if necessary, replaces them. For a discussion of [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) values and how to manage them, see the [​na​ value](https://www.tradingview.com/pine-script-docs/language/type-system/#na-value) section of the User Manual.
+To avoid unwanted false negatives, write code that checks for [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) values and, if necessary, replaces them. For a discussion of [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) values and how to manage them, see the [na value](https://www.tradingview.com/pine-script-docs/language/type-system/#na-value) section of the User Manual.

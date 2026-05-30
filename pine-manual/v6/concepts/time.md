@@ -4,9 +4,9 @@ source: https://www.tradingview.com/pine-script-docs/concepts/time/
 section: concepts
 ---
 
-# Time
+# Time {#time}
 
-## Introduction
+## Introduction {#introduction}
 
 In Pine Script®, the following key aspects apply when working with date and time values:
 
@@ -15,7 +15,7 @@ In Pine Script®, the following key aspects apply when working with date and tim
 -   **Chart time zone**: The time zone the chart and [Pine Logs](https://www.tradingview.com/pine-script-docs/writing/debugging/#pine-logs) message prefixes use to express time values. Users can set the chart time zone using the “Timezone” input in the “Symbol” tab of the chart’s settings. This setting only changes the _display_ of dates and times on the chart and the times that prefix logged messages. It does **not** affect the behavior of Pine scripts because they cannot access a chart’s time zone information.
 -   **`timezone` parameter**: A “string” parameter of time-related functions that specifies the time zone used in their calculations. For [calendar-based functions](https://www.tradingview.com/pine-script-docs/concepts/time/#calendar-based-functions), such as [dayofweek()](https://www.tradingview.com/pine-script-reference/v6/#fun_dayofweek), the `timezone` parameter determines the time zone of the returned value. For functions that return UNIX timestamps, such as [time()](https://www.tradingview.com/pine-script-reference/v6/#fun_time), the specified `timezone` defines the time zone of other applicable parameters, e.g., `session`. See the [Time zone strings](https://www.tradingview.com/pine-script-docs/concepts/time/#time-zone-strings) section to learn more.
 
-## UNIX timestamps
+## UNIX timestamps {#unix-timestamps}
 
 [UNIX time](https://en.wikipedia.org/wiki/Unix_time) is a standardized date and time representation that measures the number of _non-leap seconds_ elapsed since January 1, 1970 at 00:00:00 [UTC](https://en.wikipedia.org/wiki/Coordinated_Universal_Time) (the _UNIX Epoch_), typically expressed in seconds or smaller time units. A UNIX time value in Pine Script is an “int” _timestamp_ representing the number of _milliseconds_ from the UNIX Epoch to a specific point in time.
 
@@ -59,7 +59,7 @@ Note that:
 
 See the [Formatting dates and times](https://www.tradingview.com/pine-script-docs/concepts/time/#formatting-dates-and-times) section to learn more about representing UNIX timestamps with formatted strings.
 
-## Time zones
+## Time zones {#time-zones}
 
 A [time zone](https://en.wikipedia.org/wiki/Time_zone) is a geographic region with an assigned _local time_. The specific time within a time zone is consistent throughout the region. Time zone boundaries typically relate to a location’s longitude. However, in practice, they tend to align with administrative boundaries rather than strictly following longitudinal lines.
 
@@ -126,7 +126,7 @@ Note that:
 -   The “Default” and “Exchange” rows in the table show identical results because [syminfo.timezone](https://www.tradingview.com/pine-script-reference/v6/#var_syminfo.timezone) is the [str.format\_time()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.format_time) function’s default `timezone` argument.
 -   The exchange time zone on our example chart appears as `"America/New_York"`, the [IANA identifier](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) for the NASDAQ exchange’s time zone. It represents UTC-4 _or_ UTC-5, depending on the time of year. See the [next section](https://www.tradingview.com/pine-script-docs/concepts/time/#time-zone-strings) to learn more about time zone strings.
 
-### Time zone strings
+### Time zone strings {#time-zone-strings}
 
 All built-in functions with a `timezone` parameter accept a “string” argument specifying the [time zone](https://www.tradingview.com/pine-script-docs/concepts/time/#time-zones) they use in their calculations. These functions can accept time zone strings in either of the following formats:
 
@@ -245,7 +245,7 @@ bgcolor(bgColor, title = "Unequal result highlight", force_overlay = true)
 
 The plots in the chart above diverge periodically because New York observes daylight saving time, meaning its UTC offset _changes_ at specific points in a year. During DST, New York’s local time follows UTC-4. Otherwise, it follows UTC-5. Because the script’s first [hour()](https://www.tradingview.com/pine-script-reference/v6/#fun_hour) call uses `"UTC-4"` as its `timezone` argument, it returns the correct hour in New York _only_ during DST. In contrast, the call that uses the `"America/New_York"` time zone string adjusts its UTC offset automatically to return the correct hour in New York at _any_ time of the year.
 
-## Time variables
+## Time variables {#time-variables}
 
 Pine Script has several built-in variables that provide scripts access to different forms of time information:
 
@@ -257,7 +257,7 @@ Pine Script has several built-in variables that provide scripts access to differ
 -   The [chart.left\_visible\_bar\_time](https://www.tradingview.com/pine-script-reference/v6/#var_chart.left_visible_bar_time) and [chart.right\_visible\_bar\_time](https://www.tradingview.com/pine-script-reference/v6/#var_chart.right_visible_bar_time) variables hold UNIX timestamps representing the opening times of the leftmost and rightmost visible chart bars.
 -   The [syminfo.timezone](https://www.tradingview.com/pine-script-reference/v6/#var_syminfo.timezone) variable holds a “string” value representing the [time zone](https://www.tradingview.com/pine-script-docs/concepts/time/#time-zones) of the current symbol’s exchange in [IANA database notation](https://www.tradingview.com/pine-script-docs/concepts/time/#time-zone-strings). All time-related function overloads with a `timezone` parameter use this variable as the default argument.
 
-### ​`time`​ and ​`time_close`​ variables
+### `time` and `time_close` variables {#time-and-time_close-variables}
 
 The [time](https://www.tradingview.com/pine-script-reference/v6/#var_time) variable holds the [UNIX timestamp](https://www.tradingview.com/pine-script-docs/concepts/time/#unix-timestamps) of the current bar’s _opening time_, and the [time\_close](https://www.tradingview.com/pine-script-reference/v6/#var_time_close) variable holds the UNIX timestamp of the bar’s _closing time_.
 
@@ -387,7 +387,7 @@ Note that:
 -   The [barstate.islast](https://www.tradingview.com/pine-script-reference/v6/#var_barstate.islast) value is `true` for all realtime bars in the dataset. Therefore, the elapsed realtime bar and the latest realtime bar both display a purple [label](https://www.tradingview.com/pine-script-docs/concepts/text-and-shapes/#labels) and highlighted [background](https://www.tradingview.com/pine-script-docs/concepts/backgrounds/). See the [Bar states](https://www.tradingview.com/pine-script-docs/concepts/bar-states/) page to learn more about the different `barstate.*` variables in Pine Script.
 -   The [time\_close()](https://www.tradingview.com/pine-script-reference/v6/#fun_time_close) function can similarly retrieve the previous bar’s closing time on price-based charts using a `bar_back = 1` argument.
 
-### ​`time_tradingday`​
+### `time_tradingday` {#time_tradingday}
 
 The [time\_tradingday](https://www.tradingview.com/pine-script-reference/v6/#var_time_tradingday) variable holds a [UNIX timestamp](https://www.tradingview.com/pine-script-docs/concepts/time/#unix-timestamps) representing the starting time (00:00 UTC) of the last trading day in the current bar’s final session. It is helpful primarily for date and time calculations on _time-based_ charts for symbols with overnight sessions that start and end on _different_ calendar days.
 
@@ -441,7 +441,7 @@ Note that:
 -   The formatted strings show `"GMT"` as the acronym of the time zone, which is equivalent to `"UTC+0"` in this context.
 -   The [time\_tradingday](https://www.tradingview.com/pine-script-reference/v6/#var_time_tradingday) value is the same for _all_ three-hour bars within each session, even for the initial bar that opens on the previous UTC calendar day. The assigned timestamp changes only when a new session starts.
 
-### ​`timenow`​
+### `timenow` {#timenow}
 
 The [timenow](https://www.tradingview.com/pine-script-reference/v6/#var_timenow) variable holds a [UNIX timestamp](https://www.tradingview.com/pine-script-docs/concepts/time/#unix-timestamps) representing the script’s _current time_. Unlike the values of other variables that hold UNIX timestamps, the values in the [timenow](https://www.tradingview.com/pine-script-reference/v6/#var_timenow) series correspond to times when the script _executes_, not the times of specific bars or trading days.
 
@@ -508,7 +508,7 @@ Note that:
 -   The [varip](https://www.tradingview.com/pine-script-reference/v6/#kw_varip) keyword specifies that a variable does not revert to the last committed value in its series when new updates occur. This behavior allows the script to use variables to track changes in [timenow](https://www.tradingview.com/pine-script-reference/v6/#var_timenow) on an open bar.
 -   Updates to [timenow](https://www.tradingview.com/pine-script-reference/v6/#var_timenow) on open realtime bars do not affect the recorded timestamps on confirmed bars as the script executes. However, the historical series changes (_repaints_) after reloading the chart because [timenow](https://www.tradingview.com/pine-script-reference/v6/#var_timenow) references the script’s _current time_, not the times of specific bars.
 
-### Calendar-based variables
+### Calendar-based variables {#calendar-based-variables}
 
 The [year](https://www.tradingview.com/pine-script-reference/v6/#var_year), [month](https://www.tradingview.com/pine-script-reference/v6/#var_month), [weekofyear](https://www.tradingview.com/pine-script-reference/v6/#var_weekofyear), [dayofmonth](https://www.tradingview.com/pine-script-reference/v6/#var_dayofmonth), [dayofweek](https://www.tradingview.com/pine-script-reference/v6/#var_dayofweek), [hour](https://www.tradingview.com/pine-script-reference/v6/#var_hour), [minute](https://www.tradingview.com/pine-script-reference/v6/#var_minute), and [second](https://www.tradingview.com/pine-script-reference/v6/#var_second) variables hold _calendar-based_ “int” values calculated from the current bar’s _opening time_, expressed in the [exchange time zone](https://www.tradingview.com/pine-script-docs/concepts/time/#time-zones). These variables reference the same values that [calendar-based functions](https://www.tradingview.com/pine-script-docs/concepts/time/#calendar-based-functions) return when they use the default `timezone` argument and [time](https://www.tradingview.com/pine-script-reference/v6/#var_time) as the `time` argument. For instance, the [year](https://www.tradingview.com/pine-script-reference/v6/#var_year) variable holds the same value that a `year(time)` call returns.
 
@@ -587,7 +587,7 @@ Note that:
 -   The `dayofweek.*` namespace contains variables that hold each possible [dayofweek](https://www.tradingview.com/pine-script-reference/v6/#var_dayofweek) value, e.g., [dayofweek.sunday](https://www.tradingview.com/pine-script-reference/v6/#const_dayofweek.sunday) has a constant value of 1 and [dayofweek.saturday](https://www.tradingview.com/pine-script-reference/v6/#const_dayofweek.saturday) has a constant value of 7. The script compares [dayofweek](https://www.tradingview.com/pine-script-reference/v6/#var_dayofweek) to these variables in a [switch](https://www.tradingview.com/pine-script-reference/v6/#kw_switch) structure to determine the weekday name shown inside each [label](https://www.tradingview.com/pine-script-reference/v6/#type_label).
 -   To detect the _first opening time_ in a monthly timeframe, not strictly the first day in a calendar month, use `ta.change(time("1M")) > 0` or `timeframe.change("1M")` instead of conditions based on these variables. See the [Testing for changes in higher timeframes](https://www.tradingview.com/pine-script-docs/concepts/time/#testing-for-changes-in-higher-timeframes) section to learn more.
 
-### ​`last_bar_time`​
+### `last_bar_time` {#last_bar_time}
 
 The [last\_bar\_time](https://www.tradingview.com/pine-script-reference/v6/#var_last_bar_time) variable holds a [UNIX timestamp](https://www.tradingview.com/pine-script-docs/concepts/time/#unix-timestamps) representing the _last_ available bar’s opening time. It is similar to [last\_bar\_index](https://www.tradingview.com/pine-script-reference/v6/#var_last_bar_index), which references the latest bar index. On historical bars, [last\_bar\_time](https://www.tradingview.com/pine-script-reference/v6/#var_last_bar_time) consistently references the [time](https://www.tradingview.com/pine-script-reference/v6/#var_time) value of the last bar available when the script first _loads_ on the chart. The only time the variable’s value updates across script executions is when a new realtime bar opens.
 
@@ -638,7 +638,7 @@ Note that:
 -   Updates to [last\_bar\_time](https://www.tradingview.com/pine-script-reference/v6/#var_last_bar_time) on realtime bars do not affect the values on historical bars as the script executes. However, the variable’s series _repaints_ when the script restarts because [last\_bar\_time](https://www.tradingview.com/pine-script-reference/v6/#var_last_bar_time) always references the latest available bar’s opening time.
 -   This script expresses dates using the `"dd/MM/yy"` format, meaning the two-digit day appears before the two-digit month, and the month appears before the two-digit representation of the year. See [this section](https://www.tradingview.com/pine-script-docs/concepts/time/#formatting-dates-and-times) below for more information.
 
-### Visible bar times
+### Visible bar times {#visible-bar-times}
 
 The [chart.left\_visible\_bar\_time](https://www.tradingview.com/pine-script-reference/v6/#var_chart.left_visible_bar_time) and [chart.right\_visible\_bar\_time](https://www.tradingview.com/pine-script-reference/v6/#var_chart.right_visible_bar_time) variables reference the opening [UNIX timestamps](https://www.tradingview.com/pine-script-docs/concepts/time/#unix-timestamps) of the chart’s leftmost (first) and rightmost (last) _visible bars_ on every script execution. When a script uses these variables, it responds dynamically to visible chart changes, such as users scrolling across bars or zooming in/out. Each time the visible window changes, the script _re-executes_ automatically to update the variables’ values on all available bars.
 
@@ -691,7 +691,7 @@ Note that:
 -   The [chart.left\_visible\_bar\_time](https://www.tradingview.com/pine-script-reference/v6/#var_chart.left_visible_bar_time) and [chart.right\_visible\_bar\_time](https://www.tradingview.com/pine-script-reference/v6/#var_chart.right_visible_bar_time) values are consistent across all executions, which allows the script to identify the visible bars’ timestamps on the _first_ bar and check when the [time](https://www.tradingview.com/pine-script-reference/v6/#var_time) value equals them. The script restarts on any chart window changes, updating the variables’ series to reference the new timestamps on every bar.
 -   The [str.format\_time()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.format_time) function uses ISO 8601 format by default when the call does not include a `format` argument because it is the _international standard_ for expressing dates and times. See the [Formatting dates and times](https://www.tradingview.com/pine-script-docs/concepts/time/#formatting-dates-and-times) section to learn more about time string formats.
 
-### ​`syminfo.timezone`​
+### `syminfo.timezone` {#syminfotimezone}
 
 The [syminfo.timezone](https://www.tradingview.com/pine-script-reference/v6/#var_syminfo.timezone) variable holds a [time zone string](https://www.tradingview.com/pine-script-docs/concepts/time/#time-zone-strings) representing the current symbol’s _exchange_ time zone. The “string” value expresses the time zone as an _IANA identifier_ (e.g., `"America/New_York"`). The overloads of [time functions](https://www.tradingview.com/pine-script-docs/concepts/time/#time-functions) that include a `timezone` parameter use [syminfo.timezone](https://www.tradingview.com/pine-script-reference/v6/#var_syminfo.timezone) as the default argument.
 
@@ -741,7 +741,7 @@ Note that:
 -   The default `symbolInput` value is `"NSE:BANKNIFTY"`. NSE is in the “Asia/Kolkata” [time zone](https://www.tradingview.com/pine-script-docs/concepts/time/#time-zones), which is 9.5 hours ahead of the main symbol’s exchange time zone (“America/New\_York”) at the time of the screenshot. Although the _local_ time representations differ, both refer to the same _absolute_ time that the [timenow](https://www.tradingview.com/pine-script-reference/v6/#var_timenow) timestamp represents.
 -   Pine v6 scripts use dynamic `request.*()` calls by default, which allows the script to call [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security) dynamically inside the [if](https://www.tradingview.com/pine-script-reference/v6/#kw_if) structure’s _local scope_. See the [Dynamic requests](https://www.tradingview.com/pine-script-docs/concepts/other-timeframes-and-data/#dynamic-requests) section of the [Other timeframes and data](https://www.tradingview.com/pine-script-docs/concepts/other-timeframes-and-data/) page to learn more.
 
-## Time functions
+## Time functions {#time-functions}
 
 Pine Script features several built-in functions that scripts can use to retrieve, calculate, and express time values:
 
@@ -751,7 +751,7 @@ Pine Script features several built-in functions that scripts can use to retrieve
 -   The [str.format\_time()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.format_time) function formats a UNIX timestamp into a human-readable date/time “string”, expressed in a specified time zone. The [Formatting dates and times](https://www.tradingview.com/pine-script-docs/concepts/time/#formatting-dates-and-times) section below provides detailed information about formatting timestamps with this function.
 -   The [input.time()](https://www.tradingview.com/pine-script-reference/v6/#fun_input.time) function returns a UNIX timestamp corresponding to the user-specified date and time, and the [input.session()](https://www.tradingview.com/pine-script-reference/v6/#fun_input.session) function returns a valid [time-based session string](https://www.tradingview.com/pine-script-docs/concepts/sessions/#time-based-sessions) corresponding to the user-specified start and end times. See the [Time input](https://www.tradingview.com/pine-script-docs/concepts/inputs/#time-input) and [Session input](https://www.tradingview.com/pine-script-docs/concepts/inputs/#session-input) sections of the [Inputs](https://www.tradingview.com/pine-script-docs/concepts/inputs/) page to learn more about these functions.
 
-### ​`time()`​ and ​`time_close()`​ functions
+### `time()` and `time_close()` functions {#time-and-time_close-functions}
 
 The [time()](https://www.tradingview.com/pine-script-reference/v6/#fun_time) and [time\_close()](https://www.tradingview.com/pine-script-reference/v6/#fun_time_close) functions return [UNIX timestamps](https://www.tradingview.com/pine-script-docs/concepts/time/#unix-timestamps) representing the opening and closing times of bars on a specified timeframe. Both functions can _filter_ their returned values based on a given [session](https://www.tradingview.com/pine-script-docs/concepts/sessions/) in a specific [time zone](https://www.tradingview.com/pine-script-docs/concepts/time/#time-zones). They each have the following signatures:
 
@@ -781,7 +781,7 @@ Typical use cases for the [time()](https://www.tradingview.com/pine-script-refer
 -   [Testing for changes](https://www.tradingview.com/pine-script-docs/concepts/time/#testing-for-changes-in-higher-timeframes) or measuring time differences on specified higher timeframes.
 -   [Calculating timestamps at bar offsets](https://www.tradingview.com/pine-script-docs/concepts/time/#calculating-timestamps-at-bar-offsets) on the script’s main timeframe, a specified timeframe, or both.
 
-#### Testing for sessions
+#### Testing for sessions {#testing-for-sessions}
 
 The [time()](https://www.tradingview.com/pine-script-reference/v6/#fun_time) and [time\_close()](https://www.tradingview.com/pine-script-reference/v6/#fun_time_close) functions’ `session` and `timezone` parameters define the [sessions](https://www.tradingview.com/pine-script-docs/concepts/sessions/) for which they can return _non-na_ values. If a call to either function references a bar that opens/closes within the defined session in a given [time zone](https://www.tradingview.com/pine-script-docs/concepts/time/#time-zones), it returns a [UNIX timestamp](https://www.tradingview.com/pine-script-docs/concepts/time/#unix-timestamps) for that bar. Otherwise, it returns [na](https://www.tradingview.com/pine-script-reference/v6/#var_na). Programmers can pass the returned values to the [na()](https://www.tradingview.com/pine-script-reference/v6/#fun_na) function to identify which bars open or close within specified intervals, which is helpful for session-based calculations and logic.
 
@@ -839,7 +839,7 @@ Note that:
 
 -   This script uses _IANA notation_ for all [time zone strings](https://www.tradingview.com/pine-script-docs/concepts/time/#time-zone-strings) because it is the recommended format. Using an IANA identifier allows the [time()](https://www.tradingview.com/pine-script-reference/v6/#fun_time) call to automatically adjust the session’s UTC offset based on a region’s local time policies, such as daylight saving time.
 
-#### Testing for changes in higher timeframes
+#### Testing for changes in higher timeframes {#testing-for-changes-in-higher-timeframes}
 
 The `timeframe` parameter of the [time()](https://www.tradingview.com/pine-script-reference/v6/#fun_time) and [time\_close()](https://www.tradingview.com/pine-script-reference/v6/#fun_time_close) functions specifies the timeframe of the bars in the calculation, allowing scripts to retrieve opening/closing [UNIX timestamps](https://www.tradingview.com/pine-script-docs/concepts/time/#unix-timestamps) from _higher timeframes_ than the current chart’s timeframe without requiring `request.*()` function calls.
 
@@ -892,7 +892,7 @@ Note that:
 -   The detected monthly opening times do not always correspond to the first calendar day of the month. Instead, they correspond to the first time assigned to a “1M” bar, which can be _after_ the first calendar day. For symbols with overnight sessions, such as “USDJPY” in our example chart, a “1M” bar can also open _before_ the first calendar day.
 -   Sometimes, the opening time assigned to an HTF bar might _not_ equal the opening time of any chart bar, which is why other conditions such as `time == time("1M")` cannot detect new monthly bars consistently. For example, on our “USDJPY” chart, the “1M” opening time `2023-12-31T17:00:00-0500` does not match an opening time on the “1D” timeframe. The first available “1D” bar after that point opened at `2024-01-01T17:00:00-0500`.
 
-#### Calculating timestamps at bar offsets
+#### Calculating timestamps at bar offsets {#calculating-timestamps-at-bar-offsets}
 
 The `bars_back` and `timeframe_bars_back` parameters of the [time()](https://www.tradingview.com/pine-script-reference/v6/#fun_time) and [time\_close()](https://www.tradingview.com/pine-script-reference/v6/#fun_time_close) functions control _bar offsets_ in the calculations, enabling the functions to compute the opening/closing [UNIX timestamps](https://www.tradingview.com/pine-script-docs/concepts/time/#unix-timestamps) for bars that are _before_ or _after_ the current bar, on a given timeframe, without requiring `request.*()` calls or history-referencing operations.
 
@@ -991,7 +991,7 @@ If we increase the HTF offset to 3, the distance from the purple box to the blue
 
 ![image](https://www.tradingview.com/pine-script-docs/_astro/Time-Time-functions-Time-and-time-close-functions-Calculating-timestamps-at-bar-offsets-3.CwaV-eSs_2hcMS4.webp)
 
-### Calendar-based functions
+### Calendar-based functions {#calendar-based-functions}
 
 The [year()](https://www.tradingview.com/pine-script-reference/v6/#fun_year), [month()](https://www.tradingview.com/pine-script-reference/v6/#fun_month), [weekofyear()](https://www.tradingview.com/pine-script-reference/v6/#fun_weekofyear), [dayofmonth()](https://www.tradingview.com/pine-script-reference/v6/#fun_dayofmonth), [dayofweek()](https://www.tradingview.com/pine-script-reference/v6/#fun_dayofweek), [hour()](https://www.tradingview.com/pine-script-reference/v6/#fun_hour), [minute()](https://www.tradingview.com/pine-script-reference/v6/#fun_minute), and [second()](https://www.tradingview.com/pine-script-reference/v6/#fun_second) functions calculate _calendar-based_ “int” values from a [UNIX timestamp](https://www.tradingview.com/pine-script-docs/concepts/time/#unix-timestamps). Unlike the [calendar-based variables](https://www.tradingview.com/pine-script-docs/concepts/time/#calendar-based-variables), which always hold exchange calendar values based on the current bar’s opening timestamp, these functions can return calendar values for any valid timestamp and express them in a chosen [time zone](https://www.tradingview.com/pine-script-docs/concepts/time/#time-zones).
 
@@ -1127,7 +1127,7 @@ Note that:
 -   This script’s conditions check for the first bar that closes after each calendar unit changes its value. The bar where each condition is `true` varies with the data available on the chart. For example, the `closeInNewMonth` condition can be `true` _after_ the first calendar day of the month if a chart bar did not close on that day.
 -   To detect when new bars start on a specific _timeframe_ rather than strictly calendar changes, check when the [ta.change()](https://www.tradingview.com/pine-script-reference/v6/#fun_ta.change) of a [time()](https://www.tradingview.com/pine-script-reference/v6/#fun_time) or [time\_close()](https://www.tradingview.com/pine-script-reference/v6/#fun_time_close) call’s returned value is nonzero, or use the [timeframe.change()](https://www.tradingview.com/pine-script-reference/v6/#fun_timeframe.change) function. See [this section](https://www.tradingview.com/pine-script-docs/concepts/time/#testing-for-changes-in-higher-timeframes) above for more information.
 
-### ​`timestamp()`​
+### `timestamp()` {#timestamp}
 
 The [timestamp()](https://www.tradingview.com/pine-script-reference/v6/#fun_timestamp) function calculates a [UNIX timestamp](https://www.tradingview.com/pine-script-docs/concepts/time/#unix-timestamps) from a specified calendar date and time. It has the following three signatures:
 
@@ -1215,7 +1215,7 @@ Note that:
 -   The formatted strings on the first and fourth rows show the date and time five hours _before_ January 1, 2021, because the [timestamp()](https://www.tradingview.com/pine-script-reference/v6/#fun_timestamp) calls evaluated the date in _UTC_ and the [str.format\_time()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.format_time) calls used a time zone five hours _behind_ UTC.
 -   On our chart, the second and third rows have matching timestamps because both corresponding [timestamp()](https://www.tradingview.com/pine-script-reference/v6/#fun_timestamp) calls evaluated the date in the “America/New\_York” time zone. The two rows would show different results if we applied the script to a symbol with a different exchange time zone.
 
-## Formatting dates and times
+## Formatting dates and times {#formatting-dates-and-times}
 
 Programmers can format [UNIX timestamps](https://www.tradingview.com/pine-script-docs/concepts/time/#unix-timestamps) into human-readable dates and times, expressed in specific [time zones](https://www.tradingview.com/pine-script-docs/concepts/time/#time-zones), using the [str.format\_time()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.format_time) function. The function has the following signature:
 
@@ -1336,7 +1336,7 @@ if barstate.islast
     displayText(12, "'Time zone change': MMM-d-y HH:mm:ss z", timenow, "Australia/Sydney")
 ```
 
-## Expressing time differences
+## Expressing time differences {#expressing-time-differences}
 
 Every [UNIX timestamp](https://www.tradingview.com/pine-script-docs/concepts/time/#unix-timestamps) represents a specific point in time as the absolute _time difference_ from a fixed historical point (epoch). The specific epoch all UNIX timestamps reference is _midnight UTC on January 1, 1970_. Programmers can [format](https://www.tradingview.com/pine-script-docs/concepts/time/#formatting-dates-and-times) UNIX timestamps into readable date-time strings with the [str.format\_time()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.format_time) function because it uses the time difference from the UNIX Epoch in its date and time calculations.
 
@@ -1396,7 +1396,7 @@ To express the difference between timestamps in other time units correctly, prog
 
 The calculations required to express time differences depend on the chosen time units. The sections below explain how to express millisecond differences in [weekly and smaller units](https://www.tradingview.com/pine-script-docs/concepts/time/#weekly-and-smaller-units), and [monthly and larger units](https://www.tradingview.com/pine-script-docs/concepts/time/#monthly-and-larger-units).
 
-### Weekly and smaller units
+### Weekly and smaller units {#weekly-and-smaller-units}
 
 Weeks and smaller time units (days, hours, minutes, seconds, and milliseconds) cover _consistent_ blocks of time. These units have the following relationship:
 
@@ -1502,13 +1502,13 @@ if barstate.islastconfirmedhistory
 
 Note that:
 
--   The [user-defined function](https://www.tradingview.com/pine-script-docs/language/user-defined-functions/) uses [math.floor()](https://www.tradingview.com/pine-script-reference/v6/#fun_math.floor) to round each divided result down to the nearest “int” value to get the number of _complete_ units in the interval. After division, it uses the modulo assignment operator ([%=](https://www.tradingview.com/pine-script-reference/v6/#op_%25=)) to get the _remainder_ and assign that value to the `timeDifference` variable. This process repeats for each selected unit.
+-   The [user-defined function](https://www.tradingview.com/pine-script-docs/language/user-defined-functions/) uses [math.floor()](https://www.tradingview.com/pine-script-reference/v6/#fun_math.floor) to round each divided result down to the nearest “int” value to get the number of _complete_ units in the interval. After division, it uses the modulo assignment operator ([%=](https://www.tradingview.com/pine-script-reference/v6/#op_%=)) to get the _remainder_ and assign that value to the `timeDifference` variable. This process repeats for each selected unit.
 
 The image above shows the calculated time difference in mixed time units. By toggling the “bool” inputs, users can also isolate specific units in the calculation. For example, this image shows the result after enabling only the “Milliseconds” input:
 
 ![image](https://www.tradingview.com/pine-script-docs/_astro/Time-Relative-time-differences-Weekly-and-smaller-units-2.CwvuIXRj_1hdHCe.webp)
 
-### Monthly and larger units
+### Monthly and larger units {#monthly-and-larger-units}
 
 Unlike weeks and smaller units, months and larger units _vary_ in length based on calendar rules. For example, a month can contain 28, 29, 30, or 31 days, and a year can contain 365 or 366 days.
 

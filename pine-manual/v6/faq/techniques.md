@@ -4,9 +4,9 @@ source: https://www.tradingview.com/pine-script-docs/faq/techniques/
 section: faq
 ---
 
-# Techniques
+# Techniques {#techniques}
 
-## How can I prevent the “Bar index value of the ​`x`​ argument is too far from the current bar index. Try using ​`time`​ instead” and “Objects positioned using xloc.bar\_index cannot be drawn further than X bars into the future” errors?
+## How can I prevent the “Bar index value of the `x` argument is too far from the current bar index. Try using `time` instead” and “Objects positioned using xloc.bar\_index cannot be drawn further than X bars into the future” errors? {#how-can-i-prevent-the-bar-index-value-of-the-x-argument-is-too-far-from-the-current-bar-index-try-using-time-instead-and-objects-positioned-using-xlocbar_index-cannot-be-drawn-further-than-x-bars-into-the-future-errors}
 
 Both these errors occur when creating objects too distant from the current bar. An x point on a [line](https://www.tradingview.com/pine-script-docs/visuals/lines-and-boxes/#lines), [label](https://www.tradingview.com/pine-script-docs/visuals/text-and-shapes/#labels), or [box](https://www.tradingview.com/pine-script-docs/visuals/lines-and-boxes/#boxes) can not be more than 9999 bars in the past or more than 500 bars in the future relative to the bar on which the script draws it.
 
@@ -14,7 +14,7 @@ Scripts _can_ draw objects beyond these limits, however, using [xloc.bar\_time](
 
 Note that, by default, all drawings use `xloc.bar_index`, which means that the values passed to their `x`\-coordinates are treated as if they are bar indices. If drawings use a `time`\-based value without specifying `xloc = xloc.bar_time`, the timestamp — which is usually an `int` value of trillions of milliseconds — is treated as an index of a bar in the future, and inevitably exceeds the 500 future bars limit. To use `time`\-based values for drawings, always specify `xloc.bar_time`.
 
-## How can I update the right side of all lines or boxes?
+## How can I update the right side of all lines or boxes? {#how-can-i-update-the-right-side-of-all-lines-or-boxes}
 
 Scripts can update the `x2` value of all lines or boxes by storing them in an array and using a [for…in](https://www.tradingview.com/pine-script-reference/v6/#op_for...in) loop to iterate over each object. Update the `x2` value using the [line.set\_x2()](https://www.tradingview.com/pine-script-reference/v6/#fun_line.set_x2) or [box.set\_right()](https://www.tradingview.com/pine-script-reference/v6/#fun_box.set_right) functions.
 
@@ -70,7 +70,7 @@ if barstate.islast
         eachLine.set_x2(bar_index)
 ```
 
-## How to avoid repainting when _not_ using the ​`request.security()`​ function?
+## How to avoid repainting when _not_ using the `request.security()` function? {#how-to-avoid-repainting-when-not-using-the-requestsecurity-function}
 
 Scripts can give deceptive output if they [repaint](https://www.tradingview.com/pine-script-docs/concepts/repainting/) by behaving differently on historical and elapsed realtime bars. This type of repainting is most commonly caused by requesting data from another context using the [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security) function.
 
@@ -84,7 +84,7 @@ To avoid this kind of repainting and ensure that outputs do not change during a 
 
 For further exploration of these methods, see the PineCoders publication [“How to avoid repainting when NOT using security()“](https://www.tradingview.com/script/s8kWs84i-How-to-avoid-repainting-when-NOT-using-security/).
 
-## How can I trigger a condition n bars after it last occurred?
+## How can I trigger a condition n bars after it last occurred? {#how-can-i-trigger-a-condition-n-bars-after-it-last-occurred}
 
 Using the [ta.barssince()](https://www.tradingview.com/pine-script-reference/v6/#fun_ta.barssince) function, scripts can implement a condition when a certain number of bars have elapsed since the last occurrence of that condition.
 
@@ -104,7 +104,7 @@ plotchar(cond)
 plotchar(trigger, "", "O", color = color.red)
 ```
 
-## How can my script identify what chart type is active?
+## How can my script identify what chart type is active? {#how-can-my-script-identify-what-chart-type-is-active}
 
 Various boolean [built-in](https://www.tradingview.com/pine-script-docs/language/built-ins/) variables within the `chart.*` namespace enable a script to detect the type of chart it is running on.
 
@@ -129,7 +129,7 @@ if barstate.islastconfirmedhistory
     table.cell(display, 0, 0, str.format("Chart type: {0}", chartTypeToString()), text_color = chart.bg_color)
 ```
 
-## How can I plot the highest and lowest visible candle values?
+## How can I plot the highest and lowest visible candle values? {#how-can-i-plot-the-highest-and-lowest-visible-candle-values}
 
 To plot the highest [high](https://www.tradingview.com/pine-script-reference/v6/#var_high) and lowest [low](https://www.tradingview.com/pine-script-reference/v6/#var_low) within the range of visible bars, a script can use the [chart.left\_visible\_bar\_time](https://www.tradingview.com/pine-script-reference/v6/#var_chart.left_visible_bar_time) and [chart.right\_visible\_bar\_time](https://www.tradingview.com/pine-script-reference/v6/#var_chart.right_visible_bar_time) built-ins. These variables allow the script to identify the times of the earliest and latest visible bars on the chart and calculate the maximum or minimum values within that range.
 
@@ -170,7 +170,7 @@ NoteScripts that use [chart.left\_visible\_bar\_time](https://www.tradingview.co
 
 For more information, refer to the [VisibleChart](https://www.tradingview.com/script/j7vCseM2-VisibleChart/) library’s documentation.
 
-## How to remember the last time a condition occurred?
+## How to remember the last time a condition occurred? {#how-to-remember-the-last-time-a-condition-occurred}
 
 Scripts can store the number of bars between the current bar and a bar on which a condition occurred in various ways:
 
@@ -178,7 +178,7 @@ Scripts can store the number of bars between the current bar and a bar on which 
 -   Manually replicating the functionality of [ta.barssince()](https://www.tradingview.com/pine-script-reference/v6/#fun_ta.barssince) by initializing the distance to zero when the condition occurs, then incrementing it by one on each bar, resetting it if the condition occurs again.
 -   Saving the [bar\_index](https://www.tradingview.com/pine-script-reference/v6/#var_bar_index) when the condition occurs, and calculating the difference from the current [bar\_index](https://www.tradingview.com/pine-script-reference/v6/#var_bar_index).
 
-Programmers can then use the number of bars with the [history-referencing operator \[\]](https://www.tradingview.com/pine-script-reference/v6/#op_%5B%5D) to retrieve the value of a variable, such as the [close](https://www.tradingview.com/pine-script-reference/v6/#var_close), on that bar.
+Programmers can then use the number of bars with the [history-referencing operator \[\]](https://www.tradingview.com/pine-script-reference/v6/#op_[]) to retrieve the value of a variable, such as the [close](https://www.tradingview.com/pine-script-reference/v6/#var_close), on that bar.
 
 Alternatively, if the script needs _only_ the value itself and not the number of bars, simply save the value each time the condition occurs. This method is more efficient because it avoids referencing the series multiple times throughout its history. This method also reduces the risk of runtime errors in scripts if the size of the historical reference is [too large](https://www.tradingview.com/pine-script-docs/error-messages/#the-requested-historical-offset-x-is-beyond-the-historical-buffers-limit-y).
 
@@ -236,11 +236,11 @@ plot(highWhenUp, color = color.new(color.white, 70), linewidth = 1)
 plot(lowWhenDn,  color = color.new(color.white, 70), linewidth = 1)
 ```
 
-## How can I plot the previous and current day’s open?
+## How can I plot the previous and current day’s open? {#how-can-i-plot-the-previous-and-current-days-open}
 
 There are several methods for plotting prices from a higher timeframe (we assume that these scripts are to be run on intraday timeframes).
 
-### Using ​`timeframe.change()`​
+### Using `timeframe.change()` {#using-timeframechange}
 
 The [timeframe.change()](https://www.tradingview.com/pine-script-reference/v6/#fun_timeframe.change) function identifies when a bar in a specified timeframe opens. When a new daily bar opens, the following example script first copies the existing daily opening value to the variable for the previous day, and then updates the opening price for the current day.
 
@@ -266,7 +266,7 @@ Note that:
 -   This method uses the chart’s timeframe transitions to establish open prices and does not make adjustments for session times.
 -   For some markets and instrument types, the intraday data and the daily data is expected to differ. For example, the US exchanges like NASDAQ and NYSE include more trades in daily bars than in intraday ones, which results in different OHLC values between intraday and daily data, and in daily volume being far greater than intraday one. As a result, the first [open](https://www.tradingview.com/pine-script-reference/v6/#var_open) of a trading session on an intraday chart can differ from the [open](https://www.tradingview.com/pine-script-reference/v6/#var_open) of its respective 1D candle.
 
-### Using ​`request.security()`​
+### Using `request.security()` {#using-requestsecurity}
 
 To match the values on the chart with the values on higher timeframe charts, it’s necessary to access the higher timeframe data feeds. Scripts can achieve this by using the [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security) function.
 
@@ -298,7 +298,7 @@ line.set_xy1(rtOpen,  rtStart, htfRtOpen),  line.set_xy2(rtOpen,  rtEnd, htfRtOp
 bgcolor(timeframe.change(periodInput) ? color.new(color.gray, 80) : na)
 ```
 
-### Using ​`timeframe`​
+### Using `timeframe` {#using-timeframe}
 
 Instead of writing custom logic to retrieve or calculate prices for a particular timeframe, programmers can run the entire script in that timeframe.
 
@@ -319,7 +319,7 @@ Note that:
 -   Only simple scripts that do not use drawings can use the `timeframe` parameter.
 -   Scripts that use the `timeframe` parameter can plot values quite differently depending on which settings are chosen. For an explanation, see [this Help Center article](https://www.tradingview.com/support/solutions/43000591555/).
 
-## How can I count the occurrences of a condition in the last x bars?
+## How can I count the occurrences of a condition in the last x bars? {#how-can-i-count-the-occurrences-of-a-condition-in-the-last-x-bars}
 
 One obvious method is to use a [for](https://www.tradingview.com/pine-script-reference/v6/#kw_for) loop to retrospectively review each of the last x bars and check for the condition. However, this method is inefficient, because it examines all bars in range _again_ on every bar, even though it already examined all but the last bar.
 
@@ -358,7 +358,7 @@ plot(v1, "Efficient count",       color.red,   4)
 plot(v2, "Inefficient count",     color.black, 1)
 ```
 
-## How can I implement an on/off switch?
+## How can I implement an on/off switch? {#how-can-i-implement-an-onoff-switch}
 
 An on/off switch is a persistent state that can be turned on once, and persists across bars until it is turned off. Scripts can use the [var](https://www.tradingview.com/pine-script-docs/language/variable-declarations/#var) keyword to initialize a variable only once, and maintain its most recent value across subsequent bars unless it is reassigned. Such persistent states can be boolean values, or integers, or any other type.
 
@@ -387,7 +387,7 @@ plotchar(triggerOn,  "triggerOn",  "▲", location.belowbar, color.lime, size = 
 plotchar(triggerOff, "triggerOff", "▼", location.abovebar, color.red,  size = size.tiny, text = "Off")
 ```
 
-## How can I alternate conditions?
+## How can I alternate conditions? {#how-can-i-alternate-conditions}
 
 Scripts can alternate from one state to another strictly, even when the triggers to change state do not occur in strict order. This can be useful to mark only the first trigger and not any subsequent triggers, or to prevent multiple alerts.
 
@@ -451,7 +451,7 @@ Note that:
 -   A pair of boolean variables can replicate this behavior, with careful handling. See the FAQ entry [“How can I accumulate a value for two exclusive states?”](https://www.tradingview.com/pine-script-docs/faq/techniques/#how-can-i-accumulate-a-value-for-two-exclusive-states) for an example of using two boolean values in this way.
 -   A string variable can also do the same thing. The advantage of an [enum](https://www.tradingview.com/pine-script-docs/language/enums/#enums) over a string is that all possible allowed values are known, thus avoiding the case where a condition tests for a value that is misspelled, outdated or otherwise not relevant. Such a test silently fails in every possible case, and the corresponding logic never runs. Such tests can therefore cause bugs that are difficult to find.
 
-## Can I merge two or more indicators into one?
+## Can I merge two or more indicators into one? {#can-i-merge-two-or-more-indicators-into-one}
 
 It is possible to combine indicators, paying attention to the following points:
 
@@ -462,7 +462,7 @@ It is possible to combine indicators, paying attention to the following points:
 
 NoticeIf the individual indicators are large or computationally complex, programmers might encounter issues with one or more of Pine’s [limitations](https://www.tradingview.com/pine-script-docs/writing/limitations/) when combining them into a single script.
 
-## How can I rescale an indicator from one scale to another?
+## How can I rescale an indicator from one scale to another? {#how-can-i-rescale-an-indicator-from-one-scale-to-another}
 
 Rescaling an indicator from one scale to another means trying to ensure that the values display within a similar range to other values, from the same indicator or from the chart.
 
@@ -532,11 +532,11 @@ plot(ta.rsi(close, 14), "Original RSI",        display = display.data_window)
 
 ![image](https://www.tradingview.com/pine-script-docs/_astro/Techniques-How-can-i-rescale-an-indicator-from-one-scale-to-another-1.C3veEcNW_Z56Pg1.webp)
 
-## How can I calculate my script’s run time?
+## How can I calculate my script’s run time? {#how-can-i-calculate-my-scripts-run-time}
 
 Programmers can measure the time that a script takes to run and see detailed information about which parts of the code take longest in the Pine Profiler. See the section of the User Manual on [Profiling and optimization](https://www.tradingview.com/pine-script-docs/writing/profiling-and-optimization/) for more information.
 
-## How can I save a value when an event occurs?
+## How can I save a value when an event occurs? {#how-can-i-save-a-value-when-an-event-occurs}
 
 To save a value when an event occurs, use a _persistent variable_. Scripts declare persistent variables by using the [var](https://www.tradingview.com/pine-script-docs/language/variable-declarations/#var) keyword. Such variables are initialized only once, at [bar\_index](https://www.tradingview.com/pine-script-reference/v6/#var_bar_index) zero, instead of on each bar, and maintain the same value after that unless changed.
 
@@ -553,7 +553,7 @@ plot(hiHi)
 plot(priceAtCross, "Price At Cross", color.orange, 3, plot.style_circles)
 ```
 
-## How can I count touches of a specific level?
+## How can I count touches of a specific level? {#how-can-i-count-touches-of-a-specific-level}
 
 The most efficient way to count touches of a specific level is by tracking the series on each bar. A robust approach requires maintaining separate tallies for up and down bar touches and taking into account any gaps across the level. Using loops instead would be inefficient and impractical in this case.
 
@@ -601,7 +601,7 @@ fill(basePlus,  hiPlus,  color.lime)
 fill(baseMinus, loMinus, color.red)
 ```
 
-## How can I know if something is happening for the first time since the beginning of the day?
+## How can I know if something is happening for the first time since the beginning of the day? {#how-can-i-know-if-something-is-happening-for-the-first-time-since-the-beginning-of-the-day}
 
 One way is to use the [ta.barssince()](https://www.tradingview.com/pine-script-reference/v6/#fun_ta.barssince) function to check if the number of bars since the last occurrence of a condition, plus one, is greater than the number of bars since the beginning of the new day.
 
@@ -637,7 +637,7 @@ if isUpCandle and not hadUpCandleToday  // If this is the first up candle today.
 plotchar(isFirstToday2, "isFirstToday2", "•", location.top, color = color.yellow, size = size.small)
 ```
 
-## How can I optimize Pine Script code?
+## How can I optimize Pine Script code? {#how-can-i-optimize-pine-script-code}
 
 Optimizing Pine Script code can make scripts run faster and use less memory. For large or complex scripts, optimization can avoid scripts reaching the [computational limits](https://www.tradingview.com/pine-script-docs/writing/limitations/).
 
@@ -649,13 +649,13 @@ The [Pine Profiler](https://www.tradingview.com/pine-script-docs/writing/profili
 -   Keep operations on strings to a necessary minimum, because they can be more resource-intensive than operations on other types.
 -   Using built-in functions is usually faster than writing custom functions that do the same thing. Sometimes, alternative logic can be more efficient than using standard functions. For example, use a persistent variable when an event occurs, to avoid using [ta.valuewhen()](https://www.tradingview.com/pine-script-reference/v6/#fun_ta.valuewhen), as described in the FAQ entry [How can I save a value when an event occurs?](https://www.tradingview.com/pine-script-docs/faq/techniques/#how-can-i-save-a-value-when-an-event-occurs). Or save the [bar\_index](https://www.tradingview.com/pine-script-reference/v6/#var_bar_index) when a condition occurs to avoid using [ta.barssince()](https://www.tradingview.com/pine-script-reference/v6/#fun_ta.barssince), as described in the FAQ entry [How to remember the last time a condition occurred?](https://www.tradingview.com/pine-script-docs/faq/techniques/#how-to-remember-the-last-time-a-condition-occurred).
 
-## How can I access a stock’s financial information?
+## How can I access a stock’s financial information? {#how-can-i-access-a-stocks-financial-information}
 
 In Pine, the [request.financial()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.financial) function can directly request financial data.
 
 On the chart, users can open financial indicators in the “Financials” section of the “Indicators, Metrics & Strategies” window.
 
-## How can I find the maximum value in a set of events?
+## How can I find the maximum value in a set of events? {#how-can-i-find-the-maximum-value-in-a-set-of-events}
 
 Finding the maximum value of a variable that has a meaningful value _on every bar_, such as the [high](https://www.tradingview.com/pine-script-reference/v6/#var_high) or [low](https://www.tradingview.com/pine-script-reference/v6/#var_low) in price, is simple, using the [ta.highest()](https://www.tradingview.com/pine-script-reference/v6/#fun_ta.highest) function.
 
@@ -684,13 +684,13 @@ plotchar(newPH, "newPH", "•", location.abovebar, offset = - pivotLengthInput)
 plotchar(newPH, "newPH", "▲", location.top)
 ```
 
-## How can I display plot values in the chart’s scale?
+## How can I display plot values in the chart’s scale? {#how-can-i-display-plot-values-in-the-charts-scale}
 
 To display the names and values of plots from an indicator in the chart’s scale, right-click on the chart to open the chart “Settings” menu. In the “Scales and lines” tab, select “Name” and “Value” from the “Indicators and financials” drop-down menu.
 
 ![image](https://www.tradingview.com/pine-script-docs/_astro/Techniques-How-can-i-display-plot-values-in-the-charts-scale-1.DoK1stsV_1hol50.webp)
 
-## How can I reset a sum on a condition?
+## How can I reset a sum on a condition? {#how-can-i-reset-a-sum-on-a-condition}
 
 To sum a series of values, initialize a persistent variable by using the [var](https://www.tradingview.com/pine-script-docs/language/variable-declarations/#var) keyword to the track the sum. Then use a logical test to reset the values when a condition occurs.
 
@@ -721,7 +721,7 @@ Note that:
 
 -   In the [ta.macd()](https://www.tradingview.com/pine-script-reference/v6/#fun_ta.macd) function call, we only require two of the three values returned in the [tuple](https://www.tradingview.com/pine-script-docs/language/type-system/#tuples). To avoid unnecessary variable declarations, we assign the third tuple value to an underscore. Here, [the underscore acts like a dummy variable](https://www.tradingview.com/pine-script-docs/language/variable-declarations/#using-an-underscore-_-as-an-identifier).
 
-## How can I accumulate a value for two exclusive states?
+## How can I accumulate a value for two exclusive states? {#how-can-i-accumulate-a-value-for-two-exclusive-states}
 
 Consider a simple indicator defined by two exclusive states: _buy_ and _sell_. The indicator cannot be in both _buy_ and _sell_ states simultaneously. In the _buy_ state, the script accumulates the [volume](https://www.tradingview.com/pine-script-reference/v6/#var_volume) of shares being traded. In the _sell_ state, the accumulation of volume begins again from zero.
 
@@ -770,7 +770,7 @@ Note that:
 -   When using states, it is important to make the conditions for resetting states explicit, to avoid unforeseen problems.
 -   Displaying all events and states during script development, either on the chart or in the Data Window, helps debugging.
 
-## How can I organize my script’s inputs in the Settings/Inputs tab?
+## How can I organize my script’s inputs in the Settings/Inputs tab? {#how-can-i-organize-my-scripts-inputs-in-the-settingsinputs-tab}
 
 A script’s plots and inputs constitute its user interface. The following example script uses the following techniques to organize inputs for greater clarity:
 
@@ -872,7 +872,7 @@ Tips:
 -   To ensure that separators align just slightly to the left of the furthest edge of dropdowns, begin with the longest input title, because it sets the width of the window.
 -   To avoid adjusting separators if the longest input title is shorter than initially anticipated, extend its length using Unicode white space. Refer to the code example for input `level4Input` for a demonstration.
 
-## Can I plot values from a local scope?
+## Can I plot values from a local scope? {#can-i-plot-values-from-a-local-scope}
 
 A script can use `plot*()` functions and other [plot visuals](https://www.tradingview.com/pine-script-docs/visuals/overview/#plot-visuals) only in the [global scope](https://www.tradingview.com/pine-script-docs/faq/programming/#what-does-scope-mean) — they cannot be included in the local scopes of [conditional structures](https://www.tradingview.com/pine-script-docs/language/conditional-structures/), [loops](https://www.tradingview.com/pine-script-docs/language/loops/), or [user-defined functions](https://www.tradingview.com/pine-script-docs/language/user-defined-functions/) and [methods](https://www.tradingview.com/pine-script-docs/language/methods/#user-defined-methods). Therefore, plots can only use variables and literals that are declared globally.
 

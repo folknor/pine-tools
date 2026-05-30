@@ -4,9 +4,9 @@ source: https://www.tradingview.com/pine-script-docs/concepts/alerts/
 section: concepts
 ---
 
-# Alerts
+# Alerts {#alerts}
 
-## Introduction
+## Introduction {#introduction}
 
 TradingView alerts run 24x7 on our servers and do not require users to be logged in to execute. Alerts are created from the charts user interface (_UI_). You will find all the information necessary to understand how alerts work and how to create them from the charts UI in the Help Center’s [About TradingView alerts](https://www.tradingview.com/support/solutions/43000520149) page.
 
@@ -26,13 +26,13 @@ Keep in mind that:
 -   Alerts only trigger in the realtime bar. The operational scope of Pine Script code dealing with any type of alert is therefore restricted to realtime bars only.
 -   When an alert is created in the charts UI, TradingView saves a mirror image of the script and its inputs, along with the chart’s main symbol and timeframe to run the alert on its servers. Subsequent changes to your script’s inputs or the chart will thus not affect running alerts previously created from them. If you want any changes to your context to be reflected in a running alert’s behavior, you will need to delete the alert and create a new one in the new context.
 
-### Background
+### Background {#background}
 
 The different methods Pine programmers can use today to create alert events in their script are the result of successive enhancements deployed throughout Pine Script’s evolution. The [alertcondition()](https://www.tradingview.com/pine-script-reference/v6/#fun_alertcondition) function, which works in indicators only, was the first feature allowing Pine Script programmers to create alert events. Then came order fill alerts for strategies, which trigger when the broker emulator creates _order fill events_. _Order fill events_ require no special code for script users to create alerts on them, but by way of the `alert_message` parameter for order-generating `strategy.*()` functions, programmers can customize the message of alerts triggering on _order fill events_ by defining a distinct alert message for any number of order fulfillment events.
 
 The [alert()](https://www.tradingview.com/pine-script-reference/v6/#fun_alert) function is the most recent addition to Pine Script. It more or less supersedes [alertcondition()](https://www.tradingview.com/pine-script-reference/v6/#fun_alertcondition), and when used in strategies, provides a useful complement to alerts on _order fill events_.
 
-### Which type of alert is best?
+### Which type of alert is best? {#which-type-of-alert-is-best}
 
 For Pine Script programmers, the [alert()](https://www.tradingview.com/pine-script-reference/v6/#fun_alert) function will generally be easier and more flexible to work with. Contrary to [alertcondition()](https://www.tradingview.com/pine-script-reference/v6/#fun_alertcondition), it allows for dynamic alert messages, works in both indicators and strategies and the programmer decides on the frequency of [alert()](https://www.tradingview.com/pine-script-reference/v6/#fun_alert) events.
 
@@ -42,7 +42,7 @@ When a script user wants to generate an alert on a strategy’s order fill event
 
 The [alertcondition()](https://www.tradingview.com/pine-script-reference/v6/#fun_alertcondition) function remains in Pine Script for backward compatibility, but it can also be used advantageously to generate distinct alerts available for selection as individual items in the “Create Alert” dialog box’s “Condition” field.
 
-## Script alerts
+## Script alerts {#script-alerts}
 
 When a script user creates a _script alert_ using the “Create Alert” dialog box, the events able to trigger the alert will vary depending on whether the alert is created from an indicator or a strategy.
 
@@ -54,7 +54,7 @@ A _script alert_ created from an **indicator** will trigger when:
 
 A _script alert_ created from a **strategy** can trigger on _alert() function calls_, on _order fill events_, or both. The script user creating an alert on a strategy decides which type of events he wishes to include in his _script alert_. While users can create a _script alert_ on _order fill events_ without the need for a strategy to include special code, it must contain [alert()](https://www.tradingview.com/pine-script-reference/v6/#fun_alert) calls for users to include _alert() function calls_ in their _script alert_.
 
-### ​`alert()`​ function events
+### `alert()` function events {#alert-function-events}
 
 The [alert()](https://www.tradingview.com/pine-script-reference/v6/#fun_alert) function has the following signature:
 
@@ -78,7 +78,7 @@ The [alert()](https://www.tradingview.com/pine-script-reference/v6/#fun_alert) f
 
 Note that by default, strategies are recalculated at the bar’s close, so if the [alert()](https://www.tradingview.com/pine-script-reference/v6/#fun_alert) function with the frequency `alert.freq_all` or `alert.freq_once_per_bar` is used in a strategy, then it will be called no more often than once at the bar’s close. In order to enable the [alert()](https://www.tradingview.com/pine-script-reference/v6/#fun_alert) function to be called during the bar construction process, you need to enable the `calc_on_every_tick` option.
 
-#### Using all ​`alert()`​ calls
+#### Using all `alert()` calls {#using-all-alert-calls}
 
 Let’s look at an example where we detect crosses of the RSI centerline:
 
@@ -106,13 +106,13 @@ If a _script alert_ is created from this script:
 
 -   When RSI crosses the centerline up, the _script alert_ will trigger with the “Go long…” message. When RSI crosses the centerline down, the _script alert_ will trigger with the “Go short…” message.
 -   Because no argument is specified for the `freq` parameter in the [alert()](https://www.tradingview.com/pine-script-reference/v6/#fun_alert) call, the default value of `alert.freq_once_per_bar` will be used, so the alert will only trigger the first time each of the [alert()](https://www.tradingview.com/pine-script-reference/v6/#fun_alert) calls is executed during the realtime bar.
--   The message sent with the alert is composed of two parts: a constant string and then the result of the [str.tostring()](https://www.tradingview.com/pine-script-reference/v6/#fun_str%7Bdot%7Dtostring) call which will include the value of RSI at the moment where the [alert()](https://www.tradingview.com/pine-script-reference/v6/#fun_alert) call is executed by the script. An alert message for a cross up would look like: “Go long (RSI is 53.41)“.
+-   The message sent with the alert is composed of two parts: a constant string and then the result of the [str.tostring()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.tostring) call which will include the value of RSI at the moment where the [alert()](https://www.tradingview.com/pine-script-reference/v6/#fun_alert) call is executed by the script. An alert message for a cross up would look like: “Go long (RSI is 53.41)“.
 -   Because a _script alert_ always triggers on any occurrence of a call to [alert()](https://www.tradingview.com/pine-script-reference/v6/#fun_alert), as long as the frequency used in the call allows for it, this particular script does not allow a script user to restrict his _script alert_ to longs only, for example.
 
 Note that:
 
 -   Contrary to an [alertcondition()](https://www.tradingview.com/pine-script-reference/v6/#fun_alertcondition) call which is always placed at column 0 (in the script’s global scope), the [alert()](https://www.tradingview.com/pine-script-reference/v6/#fun_alert) call is placed in the local scope of an [if](https://www.tradingview.com/pine-script-reference/v6/#kw_if) branch so it only executes when our triggering condition is met. If an [alert()](https://www.tradingview.com/pine-script-reference/v6/#fun_alert) call was placed in the script’s global scope at column 0, it would execute on all bars, which would likely not be the desired behavior.
--   An [alertcondition()](https://www.tradingview.com/pine-script-reference/v6/#fun_alertcondition) could not accept the same string we use for our alert’s message because of its use of the [str.tostring()](https://www.tradingview.com/pine-script-reference/v6/#fun_str%7Bdot%7Dtostring) call. [alertcondition()](https://www.tradingview.com/pine-script-reference/v6/#fun_alertcondition) messages must be constant strings.
+-   An [alertcondition()](https://www.tradingview.com/pine-script-reference/v6/#fun_alertcondition) could not accept the same string we use for our alert’s message because of its use of the [str.tostring()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.tostring) call. [alertcondition()](https://www.tradingview.com/pine-script-reference/v6/#fun_alertcondition) messages must be constant strings.
 
 Lastly, because [alert()](https://www.tradingview.com/pine-script-reference/v6/#fun_alert) messages can be constructed dynamically at runtime, we could have used the following code to generate our alert events:
 
@@ -123,7 +123,7 @@ if xUp or xDn
     alert(firstPart + str.tostring(r, "#.00)"))
 ```
 
-#### Using selective ​`alert()`​ calls
+#### Using selective `alert()` calls {#using-selective-alert-calls}
 
 When users create a _script alert_ on _alert() function calls_, the alert will trigger on any call the script makes to the [alert()](https://www.tradingview.com/pine-script-reference/v6/#fun_alert) function, provided its frequency constraints are met. If you want to allow your script’s users to select which [alert()](https://www.tradingview.com/pine-script-reference/v6/#fun_alert) function call in your script will trigger a _script alert_, you will need to provide them with the means to indicate their preference in your script’s inputs, and code the appropriate logic in your script. This way, script users will be able to create multiple _script alerts_ from a single script, each behaving differently as per the choices made in the script’s inputs prior to creating the alert in the charts UI.
 
@@ -163,7 +163,7 @@ Note how:
     -   Select only “Detect Longs” in the inputs and create a first _script alert_ on the script.
     -   Select only “Detect Shorts” in the Inputs and create another _script alert_ on the script.
 
-#### In strategies
+#### In strategies {#in-strategies}
 
 [alert()](https://www.tradingview.com/pine-script-reference/v6/#fun_alert) function calls can be used in strategies also, with the provision that strategies, by default, only execute on the [close](https://www.tradingview.com/pine-script-reference/v6/#var_close) of realtime bars. Unless `calc_on_every_tick = true` is used in the [strategy()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy) declaration statement, all [alert()](https://www.tradingview.com/pine-script-reference/v6/#fun_alert) calls will use the `alert.freq_once_per_bar_close` frequency, regardless of the argument used for `freq`.
 
@@ -201,17 +201,17 @@ hline(50)
 plot(r)
 ```
 
-If a user created a _script alert_ from this strategy and included both _order fill events_ and _alert() function calls_ in his alert, the alert would trigger whenever an order is executed, or when one of the [alert()](https://www.tradingview.com/pine-script-reference/v6/#fun_alert) calls was executed by the script on the realtime bar’s closing iteration, i.e., when [barstate.isrealtime](https://www.tradingview.com/pine-script-reference/v6/#var_barstate%7Bdot%7Disrealtime) and [barstate.isconfirmed](https://www.tradingview.com/pine-script-reference/v6/#var_barstate%7Bdot%7Disconfirmed) are both true. The _alert() function events_ in the script would only trigger the alert when the realtime bar closes because `alert.freq_once_per_bar_close` is the argument used for the `freq` parameter in the [alert()](https://www.tradingview.com/pine-script-reference/v6/#fun_alert) calls.
+If a user created a _script alert_ from this strategy and included both _order fill events_ and _alert() function calls_ in his alert, the alert would trigger whenever an order is executed, or when one of the [alert()](https://www.tradingview.com/pine-script-reference/v6/#fun_alert) calls was executed by the script on the realtime bar’s closing iteration, i.e., when [barstate.isrealtime](https://www.tradingview.com/pine-script-reference/v6/#var_barstate.isrealtime) and [barstate.isconfirmed](https://www.tradingview.com/pine-script-reference/v6/#var_barstate.isconfirmed) are both true. The _alert() function events_ in the script would only trigger the alert when the realtime bar closes because `alert.freq_once_per_bar_close` is the argument used for the `freq` parameter in the [alert()](https://www.tradingview.com/pine-script-reference/v6/#fun_alert) calls.
 
-### Order fill events
+### Order fill events {#order-fill-events}
 
-When a _script alert_ is created from an indicator, it can only trigger on _alert() function calls_. However, when a _script alert_ is created from a strategy, the user can specify that _order fill events_ also trigger the _script alert_. An _order fill event_ is any event generated by the broker emulator which causes a simulated order to be executed. It is the equivalent of a trade order being filled by a broker/exchange. Orders are not necessarily executed when they are placed. In a strategy, the execution of orders can only be detected indirectly and after the fact, by analyzing changes in built-in variables such as [strategy.opentrades](https://www.tradingview.com/pine-script-reference/v6/#var_strategy%7Bdot%7Dopentrades) or [strategy.position\_size](https://www.tradingview.com/pine-script-reference/v6/#var_strategy%7Bdot%7Dposition_size). _Script alerts_ configured on _order fill events_ are thus useful in that they allow the triggering of alerts at the precise moment of an order’s execution, before a script’s logic can detect it.
+When a _script alert_ is created from an indicator, it can only trigger on _alert() function calls_. However, when a _script alert_ is created from a strategy, the user can specify that _order fill events_ also trigger the _script alert_. An _order fill event_ is any event generated by the broker emulator which causes a simulated order to be executed. It is the equivalent of a trade order being filled by a broker/exchange. Orders are not necessarily executed when they are placed. In a strategy, the execution of orders can only be detected indirectly and after the fact, by analyzing changes in built-in variables such as [strategy.opentrades](https://www.tradingview.com/pine-script-reference/v6/#var_strategy.opentrades) or [strategy.position\_size](https://www.tradingview.com/pine-script-reference/v6/#var_strategy.position_size). _Script alerts_ configured on _order fill events_ are thus useful in that they allow the triggering of alerts at the precise moment of an order’s execution, before a script’s logic can detect it.
 
-Pine Script programmers can customize the alert message sent when specific orders are executed. While this is not a pre-requisite for _order fill events_ to trigger, custom alert messages can be useful because they allow custom syntax to be included with alerts in order to route actual orders to a third-party execution engine, for example. Specifying custom alert messages for specific _order fill events_ is done by means of the `alert_message` parameter in functions which can generate orders: [strategy.close()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy%7Bdot%7Dclose), [strategy.entry()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy%7Bdot%7Dentry), [strategy.exit()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy%7Bdot%7Dexit) and [strategy.order()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy%7Bdot%7Dorder).
+Pine Script programmers can customize the alert message sent when specific orders are executed. While this is not a pre-requisite for _order fill events_ to trigger, custom alert messages can be useful because they allow custom syntax to be included with alerts in order to route actual orders to a third-party execution engine, for example. Specifying custom alert messages for specific _order fill events_ is done by means of the `alert_message` parameter in functions which can generate orders: [strategy.close()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.close), [strategy.entry()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.entry), [strategy.exit()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.exit) and [strategy.order()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.order).
 
 The argument used for the `alert_message` parameter is a “series string”, so it can be constructed dynamically using any variable available to the script, as long as it is converted to string format.
 
-Let’s look at a strategy where we use the `alert_message` parameter in both our [strategy.entry()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy%7Bdot%7Dentry) calls:
+Let’s look at a strategy where we use the `alert_message` parameter in both our [strategy.entry()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.entry) calls:
 
 ```pine
 //@version=6
@@ -235,7 +235,7 @@ plot(r)
 
 Note that:
 
--   We use the `stop` parameter in our [strategy.entry()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy%7Bdot%7Dentry) calls, which creates stop-buy and stop-sell orders. This entails that buy orders will only execute once price is higher than the `high` on the bar where the order is placed, and sell orders will only execute once price is lower than the \[low\] on the bar where the order is placed.
+-   We use the `stop` parameter in our [strategy.entry()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.entry) calls, which creates stop-buy and stop-sell orders. This entails that buy orders will only execute once price is higher than the `high` on the bar where the order is placed, and sell orders will only execute once price is lower than the \[low\] on the bar where the order is placed.
 -   The up/down arrows which we plot with [plotchar()](https://www.tradingview.com/pine-script-reference/v6/#fun_plotchar) are plotted when orders are **placed**. Any number of bars may elapse before the order is actually executed, and in some cases the order will never be executed because price does not meet the required condition.
 -   Because we use the same `id` argument for all buy orders, any new buy order placed before a previous order’s condition is met will replace that order. The same applies to sell orders.
 -   Variables included in the `alert_message` argument are evaluated when the order is executed, so when the alert triggers.
@@ -244,7 +244,7 @@ When the `alert_message` parameter is used in a strategy’s order-generating `s
 
 While other placeholders can be used in the “Create Alert” dialog box’s “Message” field by users creating alerts on _order fill events_, they cannot be used in the argument of `alert_message`.
 
-## ​`alertcondition()`​ events
+## `alertcondition()` events {#alertcondition-events}
 
 The [alertcondition()](https://www.tradingview.com/pine-script-reference/v6/#fun_alertcondition) function allows programmers to create individual _alertcondition events_ in their indicators. One indicator may contain more than one [alertcondition()](https://www.tradingview.com/pine-script-reference/v6/#fun_alertcondition) call. Each call to [alertcondition()](https://www.tradingview.com/pine-script-reference/v6/#fun_alertcondition) in a script will create a corresponding alert selectable in the “Condition” dropdown menu of the “Create Alert” dialog box.
 
@@ -270,7 +270,7 @@ A “const string” optional argument that specifies the text message to displa
 
 The [alertcondition()](https://www.tradingview.com/pine-script-reference/v6/#fun_alertcondition) function does not include a `freq` parameter. The frequency of _alertcondition() alerts_ is determined by users in the “Create Alert” dialog box.
 
-### Using one condition
+### Using one condition {#using-one-condition}
 
 Here is an example of code creating _alertcondition() events_:
 
@@ -306,7 +306,7 @@ Note that:
 -   The second line uses the `{{plot("[plot_title]")}}` type of placeholder, which must include the `title` of the [plot()](https://www.tradingview.com/pine-script-reference/v6/#fun_plot) call used in our script to plot RSI. Double quotes are used to wrap the plot’s title inside the `{{plot("RSI")}}` placeholder. This requires that we use single quotes to wrap the `message` string.
 -   Using one of these methods, we can include any numeric value that is plotted by our indicator, but as strings cannot be plotted, no string variable can be used.
 
-### Using compound conditions
+### Using compound conditions {#using-compound-conditions}
 
 If we want to offer script users the possiblity of creating a single alert from an indicator using multiple [alertcondition()](https://www.tradingview.com/pine-script-reference/v6/#fun_alertcondition) calls, we will need to provide options in the script’s inputs through which users will indicate the conditions they want to trigger their alert before creating it.
 
@@ -336,7 +336,7 @@ alertcondition(enterLong or enterShort, "Compound alert", "Entry")
 
 Note how the [alertcondition()](https://www.tradingview.com/pine-script-reference/v6/#fun_alertcondition) call is allowed to trigger on one of two conditions. Each condition can only trigger the alert if the user enables it in the script’s inputs before creating the alert.
 
-### Placeholders
+### Placeholders {#placeholders}
 
 These placeholders can be used in the `message` argument of [alertcondition()](https://www.tradingview.com/pine-script-reference/v6/#fun_alertcondition) calls. They will be replaced with dynamic values when the alert triggers. They are the only way to include dynamic values (values that can vary bar to bar) in [alertcondition()](https://www.tradingview.com/pine-script-reference/v6/#fun_alertcondition) messages.
 
@@ -387,11 +387,11 @@ Returns the time at the beginning of the bar. Time is UTC, formatted as `yyyy-MM
 
 Current time when the alert triggers, formatted in the same way as `{{time}}`. The precision is to the nearest second, regardless of the chart’s timeframe.
 
-## Avoiding repainting with alerts
+## Avoiding repainting with alerts {#avoiding-repainting-with-alerts}
 
 The most common instances of repainting traders want to avoid with alerts are ones where they must prevent an alert from triggering at some point during the realtime bar when it would **not** have triggered at its close. This can happen when these conditions are met:
 
--   The calculations used in the condition triggering the alert can vary during the realtime bar. This will be the case with any calculation using `high`, `low` or `close`, for example, which includes almost all built-in indicators. It will also be the case with the result of any [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request%7Bdot%7Dsecurity) call using a higher timeframe than the chart’s, when the higher timeframe’s current bar has not closed yet.
+-   The calculations used in the condition triggering the alert can vary during the realtime bar. This will be the case with any calculation using `high`, `low` or `close`, for example, which includes almost all built-in indicators. It will also be the case with the result of any [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security) call using a higher timeframe than the chart’s, when the higher timeframe’s current bar has not closed yet.
 -   The alert can trigger before the close of the realtime bar, so with any frequency other than “Once Per Bar Close”.
 
 The simplest way to avoid this type of repainting is to configure the triggering frequency of alerts so they only trigger on the close of the realtime bar. There is no panacea; avoiding this type of repainting **always** entails waiting for confirmed information, which means the trader must sacrifice immediacy to achieve reliability.

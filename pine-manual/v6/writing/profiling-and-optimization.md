@@ -4,9 +4,9 @@ source: https://www.tradingview.com/pine-script-docs/writing/profiling-and-optim
 section: writing
 ---
 
-# Profiling and optimization
+# Profiling and optimization {#profiling-and-optimization}
 
-## Introduction
+## Introduction {#introduction}
 
 Pine Script® is a cloud-based compiled language geared toward efficient repeated script execution. When a user adds a Pine script to a chart, it executes _numerous_ times, once for each available bar or tick in the data feeds it accesses, as explained in this manual’s [Execution model](https://www.tradingview.com/pine-script-docs/language/execution-model/) page.
 
@@ -18,13 +18,13 @@ For a quick introduction, see the following video, where we profile an example s
 
 [Play](https://youtube.com/watch?v=dQ7sbzWL0Dk) 
 
-## Pine Profiler
+## Pine Profiler {#pine-profiler}
 
 Before diving into [optimization](https://www.tradingview.com/pine-script-docs/writing/profiling-and-optimization/#optimization), it’s prudent to evaluate a script’s runtime and pinpoint _bottlenecks_, i.e., areas in the code that substantially impact overall performance. With these insights, programmers can ensure they focus on optimizing where it truly matters instead of spending time and effort on low-impact code.
 
 Enter the _Pine Profiler_, a powerful utility that analyzes the executions of all significant code lines and blocks in a script and displays helpful performance information next to the lines inside the Pine Editor. By inspecting the Profiler’s results, programmers can gain a clearer perspective on a script’s overall runtime, the distribution of runtime across its significant code regions, and the critical portions that may need extra attention and optimization.
 
-### Profiling a script
+### Profiling a script {#profiling-a-script}
 
 The Pine Profiler can analyze the runtime performance of any _editable_ script coded in Pine Script v6. To profile a script, add it to the chart, open the source code in the Pine Editor, and turn on the “Profiler mode” switch in the dropdown accessible via the “More” option in the top-right corner:
 
@@ -97,9 +97,9 @@ Similar to profiling tools for other languages, the Pine Profiler _wraps_ a scri
 
 Furthermore, the Profiler cannot collect and display individual performance data for the _internal calculations_ that also affect runtime, including the calculations required to track performance, meaning the time values shown for all a script’s code regions **do not** add up to exactly 100% of its overall runtime.
 
-### Interpreting profiled results
+### Interpreting profiled results {#interpreting-profiled-results}
 
-#### Single-line results
+#### Single-line results {#single-line-results}
 
 For a code line containing single-line expressions, the Profiler bar and displayed percentage represent the relative portion of the script’s total runtime spent on that line. The corresponding tooltip displays three fields:
 
@@ -146,7 +146,7 @@ color oscColor = oscillator > 0 ?
      color.from_gradient(oscillator, -1.0, 0.0, color.red, color.gray)
 ```
 
-#### Code block results
+#### Code block results {#code-block-results}
 
 For a line at the start of a [loop](https://www.tradingview.com/pine-script-docs/language/loops/) or [conditional structure](https://www.tradingview.com/pine-script-docs/language/conditional-structures/), the Profiler bar and percentage represent the relative portion of the script’s runtime spent on the **entire code block**, not just the single line. The corresponding tooltip displays four fields:
 
@@ -285,7 +285,7 @@ Note that:
 
 -   This same process can also apply to [ternary operations](https://www.tradingview.com/pine-script-docs/language/operators/#-ternary-operator). When a complex ternary expression’s operands contain significant calculations, reorganizing the logic into a nested [if](https://www.tradingview.com/pine-script-reference/v6/#kw_if) structure allows more detailed Profiler results, making it easier to spot critical parts.
 
-#### User-defined function calls
+#### User-defined function calls {#user-defined-function-calls}
 
 [User-defined functions](https://www.tradingview.com/pine-script-docs/language/user-defined-functions/) and [methods](https://www.tradingview.com/pine-script-docs/language/methods/#user-defined-methods) are functions written by users. They encapsulate code sequences that a script may execute several times. Users often write functions and methods for improved code modularity, reusability, and maintainability.
 
@@ -352,7 +352,7 @@ In this case, the local code results no longer correspond to a _single_ evaluati
 
 NoteIf the local scopes of a script’s [user-defined functions](https://www.tradingview.com/pine-script-docs/language/user-defined-functions/) or [methods](https://www.tradingview.com/pine-script-docs/language/methods/#user-defined-methods) contain calls to `request.*()` functions, the _translated form_ of the script extracts such calls **outside** the functions’ scopes to evaluate them **separately**. Consequently, the Profiler’s results for lines with calls to those user-defined functions **do not** include the time spent on the `request.*()` calls. See the [section below](https://www.tradingview.com/pine-script-docs/writing/profiling-and-optimization/#when-requesting-other-contexts) to learn more.
 
-#### When requesting other contexts
+#### When requesting other contexts {#when-requesting-other-contexts}
 
 Pine scripts can request data from other _contexts_, i.e., different symbols, timeframes, or data modifications than what the chart’s data uses by calling the `request.*()` family of functions or specifying an alternate `timeframe` in the [indicator()](https://www.tradingview.com/pine-script-reference/v6/#fun_indicator) declaration statement.
 
@@ -487,7 +487,7 @@ Note that:
 -   The [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security) call takes place in the **outer scope**, outside the `getCompositeAvg()` function.
 -   The translation substantially reduced the local code of `getCompositeAvg()`. It now solely returns a value passed into it, as all the function’s required calculations take place **outside** its scope. Due to this reduction, the function call’s performance results **will not** reflect any of the time spent on the data request’s required calculations.
 
-#### Insignificant, unused, and redundant code
+#### Insignificant, unused, and redundant code {#insignificant-unused-and-redundant-code}
 
 When inspecting a profiled script’s results, it’s crucial to understand that _not all_ code in a script necessarily impacts runtime performance. Some code has no direct performance impact, such as a script’s declaration statement and [type](https://www.tradingview.com/pine-script-reference/v6/#kw_type) declarations. Other code regions with insignificant expressions, such as most `input.*()` calls, variable references, or [variable declarations](https://www.tradingview.com/pine-script-docs/language/variable-declarations/) without significant calculations, have little to _no effect_ on a script’s runtime. Therefore, the Profiler will **not** display performance results for these types of code.
 
@@ -624,7 +624,7 @@ As we see here, the Profiler shows performance information for the `calcMetallic
 
 ![image](https://www.tradingview.com/pine-script-docs/_astro/Profiling-and-optimization-Pine-profiler-Interpreting-profiled-results-Insignificant-unused-and-redundant-code-4.DrYo57fh_Z1bPueN.webp)
 
-### A look into the Profiler’s inner workings
+### A look into the Profiler’s inner workings {#a-look-into-the-profilers-inner-workings}
 
 The Pine Profiler wraps all necessary code regions with specialized _internal functions_ to track and collect required information across script executions. It then passes the information to additional calculations that organize and display the performance results inside the Pine Editor. This section gives users a peek into how the Profiler applies internal functions to wrap Pine code and collect performance data.
 
@@ -772,7 +772,7 @@ The _“Line time”_ calculation for [code blocks](https://www.tradingview.com/
 
 NoteThe Profiler **cannot** collect individual performance data for any required _internal_ calculations and display their results inside the Pine Editor. Consequently, the time values the Profiler displays for all code regions in a script **do not** add up to 100% of its total runtime.
 
-### Profiling across configurations
+### Profiling across configurations {#profiling-across-configurations}
 
 When a code’s [time complexity](https://en.wikipedia.org/wiki/Time_complexity) is not constant or its execution pattern varies with its inputs, function arguments, or available data, it’s often wise to profile the code across _different configurations_ and data feeds for a more well-rounded perspective on its general performance.
 
@@ -813,7 +813,7 @@ We can see from these observations that the script’s runtime appears to scale 
 
 TipProfiling each configuration _more than once_ helps reduce the impact of outliers while assessing how a script’s performance varies with its inputs or data. See the [Repetitive profiling](https://www.tradingview.com/pine-script-docs/writing/profiling-and-optimization/#repetitive-profiling) section below for more information.
 
-### Repetitive profiling
+### Repetitive profiling {#repetitive-profiling}
 
 The runtime resources available to a script _vary_ over time. Consequently, the time it takes to evaluate a code region, even one with constant [complexity](https://en.wikipedia.org/wiki/Time_complexity), _fluctuates_ across executions, and the cumulative performance results shown by the Profiler **will vary** with each independent script run.
 
@@ -859,7 +859,7 @@ After repeating this process several times and documenting the results from each
 
 NoticeWhether profiling a single script run or multiple, it’s crucial to understand that **results will vary**. Averaging results across several profiled script runs can help programmers derive more stable performance estimates. However, those estimates do not necessarily indicate how the script will perform in the future.
 
-## Optimization
+## Optimization {#optimization}
 
 _Code optimization_, not to be confused with indicator or strategy optimization, involves modifying a script’s source code for improved execution time, resource efficiency, and scalability. Programmers may use various approaches to optimize a script when they need enhanced runtime performance, depending on what a script’s calculations entail.
 
@@ -869,7 +869,7 @@ The following sections explain several straightforward concepts programmers can 
 
 TipBefore looking for ways to optimize a script, [profile it](https://www.tradingview.com/pine-script-docs/writing/profiling-and-optimization/#profiling-a-script) to gauge its performance and identify the **critical code regions** that can benefit the most from optimization.
 
-### Using built-ins
+### Using built-ins {#using-built-ins}
 
 Pine Script features a variety of _built-in_ functions and variables that help streamline script creation. Many of Pine’s built-ins feature internal optimizations to help maximize efficiency and minimize execution time. As such, one of the simplest ways to optimize Pine code is to utilize these efficient built-ins in a script’s calculations when possible.
 
@@ -959,7 +959,7 @@ Note that:
 -   In many scenarios, a script’s runtime can benefit from using built-ins where applicable. However, the relative performance edge achieved from using built-ins depends on a script’s _high-impact code_ and the specific built-ins used. In any case, one should always [profile their scripts](https://www.tradingview.com/pine-script-docs/writing/profiling-and-optimization/#profiling-a-script), preferably [several times](https://www.tradingview.com/pine-script-docs/writing/profiling-and-optimization/#repetitive-profiling), when exploring optimized solutions.
 -   The calculations performed by the functions in this example also depend on the sequence of the chart’s data. Therefore, programmers can gain further insight into their general performance by profiling the script across [different datasets](https://www.tradingview.com/pine-script-docs/writing/profiling-and-optimization/#profiling-across-configurations) as well.
 
-### Reducing repetition
+### Reducing repetition {#reducing-repetition}
 
 The Pine Script compiler can automatically simplify some types of [repetitive code](https://www.tradingview.com/pine-script-docs/writing/profiling-and-optimization/#insignificant-unused-and-redundant-code) without a programmer’s intervention. However, this automatic process has its limitations. If a script contains repetitive calculations that the compiler _cannot_ reduce, programmers can reduce the repetition _manually_ to improve their script’s performance.
 
@@ -1062,7 +1062,7 @@ Note that:
 
 -   Since this script only calls `valuesAbove()` once, the [method’s](https://www.tradingview.com/pine-script-docs/language/methods/#user-defined-methods) local code will now reflect the results from that specific call. See [this section](https://www.tradingview.com/pine-script-docs/writing/profiling-and-optimization/#user-defined-function-calls) to learn more about interpreting profiled function and method call results.
 
-### Minimizing ​`request.*()`​ calls
+### Minimizing `request.*()` calls {#minimizing-request-calls}
 
 The built-in functions in the `request.*()` namespace allow scripts to retrieve data from [other contexts](https://www.tradingview.com/pine-script-docs/concepts/other-timeframes-and-data/). While these functions provide utility in many applications, it’s important to consider that each call to these functions can have a significant impact on a script’s resource usage.
 
@@ -1147,7 +1147,7 @@ Note that:
 -   Another way to request multiple values from the same context with a single `request.*()` call is to pass an [object](https://www.tradingview.com/pine-script-docs/language/objects/) of a [user-defined type (UDT)](https://www.tradingview.com/pine-script-docs/language/type-system/#user-defined-types) as the `expression` argument. See [this section](https://www.tradingview.com/pine-script-docs/concepts/other-timeframes-and-data/#user-defined-types) of the [Other timeframes and data](https://www.tradingview.com/pine-script-docs/concepts/other-timeframes-and-data/) page to learn more about requesting [UDTs](https://www.tradingview.com/pine-script-docs/language/type-system/#user-defined-types).
 -   Programmers can also reduce the total runtime of a [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security), [request.security\_lower\_tf()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security_lower_tf), or [request.seed()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.seed) call by passing an argument to the function’s `calc_bars_count` parameter, which _restricts_ the number of _historical_ data points it can access from a context and execute required calculations on. In general, if calls to these `request.*()` functions retrieve _more_ historical data than what a script _needs_, limiting the requests with `calc_bars_count` can help improve the script’s performance.
 
-### Avoiding redrawing
+### Avoiding redrawing {#avoiding-redrawing}
 
 Pine Script’s [drawing types](https://www.tradingview.com/pine-script-docs/language/type-system/#drawing-types) allow scripts to draw custom visuals on a chart that one cannot achieve through other outputs such as [plots](https://www.tradingview.com/pine-script-docs/visuals/plots/). While these types provide greater visual flexibility, they also have a _higher_ runtime and memory cost, especially when a script unnecessarily _recreates_ drawings instead of directly updating their properties to change their appearance.
 
@@ -1197,7 +1197,7 @@ Note that:
 -   The number of executions shown for the loop’s _local code_ is 25 times the number shown for the code in the script’s _global scope_, as each execution of the loop statement triggers 25 executions of the local block.
 -   This script updates its drawings over _all bars_ in the chart’s history for **testing** purposes. However, it does **not** actually need to execute all these historical updates since users will only see the **final** result from the _last historical bar_ and the changes across _realtime bars_. See the [next section](https://www.tradingview.com/pine-script-docs/writing/profiling-and-optimization/#reducing-drawing-updates) to learn more.
 
-### Reducing drawing updates
+### Reducing drawing updates {#reducing-drawing-updates}
 
 When a script produces [drawing objects](https://www.tradingview.com/pine-script-docs/language/type-system/#drawing-types) that change across _historical bars_, users will only ever see their **final results** on those bars since the script completes its historical executions when it first loads on the chart. The only time one will see such drawings _evolve_ across executions is during _realtime bars_, as new data flows in.
 
@@ -1280,7 +1280,7 @@ Note that:
 
 -   The script will still update the cells when new **realtime** updates come in, as users can observe those changes on the chart, unlike the changes that the script used to execute across historical bars.
 
-### Storing calculated values
+### Storing calculated values {#storing-calculated-values}
 
 When a script performs a critical calculation that changes _infrequently_ throughout all executions, one can reduce its runtime by **saving the result** to a variable declared with the [var](https://www.tradingview.com/pine-script-reference/v6/#kw_var) or [varip](https://www.tradingview.com/pine-script-reference/v6/#kw_varip) keywords and **only** updating the value if the calculation changes. If the script calculates _multiple_ values excessively, one can store them within [collections](https://www.tradingview.com/pine-script-docs/language/type-system/#collections), [matrices](https://www.tradingview.com/pine-script-docs/language/matrices/), and [maps](https://www.tradingview.com/pine-script-docs/language/maps/) or [objects](https://www.tradingview.com/pine-script-docs/language/objects/) of [user-defined types](https://www.tradingview.com/pine-script-docs/language/type-system/#user-defined-types).
 
@@ -1371,7 +1371,7 @@ Note that:
 -   Although we’ve significantly improved this script’s performance by saving its _execution-invariant_ values to variables, it does still involve a higher computational cost with **large** `lengthInput` values due to the remaining loop calculations that execute on each bar.
 -   Another, more _advanced_ way one can further enhance this script’s performance is by storing the weights in a _single-row_ [matrix](https://www.tradingview.com/pine-script-reference/v6/#type_matrix) on the first bar, using an [array](https://www.tradingview.com/pine-script-reference/v6/#type_array) as a [queue](https://www.tradingview.com/pine-script-docs/language/arrays/#using-an-array-as-a-queue) to hold recent [close](https://www.tradingview.com/pine-script-reference/v6/#var_close) values, then replacing the [for…in](https://www.tradingview.com/pine-script-reference/v6/#kw_for...in) loop with a call to [matrix.mult()](https://www.tradingview.com/pine-script-reference/v6/#fun_matrix.mult). See the [Matrices](https://www.tradingview.com/pine-script-docs/language/matrices/) page to learn more about working with `matrix.*()` functions.
 
-### Eliminating loops
+### Eliminating loops {#eliminating-loops}
 
 [Loops](https://www.tradingview.com/pine-script-docs/language/loops/) allow Pine scripts to perform _iterative_ calculations on each execution. Each time a loop activates, its local code may execute _several times_, often leading to a _substantial increase_ in resource usage.
 
@@ -1478,7 +1478,7 @@ Now, let’s compare the performance with the _heavier_ `lengthInput` value of 2
 
 NoteNot all iterative calculations have loop-free alternatives. If the **only** way to achieve a calculation is through iteration, programmers can still aim to identify ways to optimize their loops for improved performance. See the [Optimizing loops](https://www.tradingview.com/pine-script-docs/writing/profiling-and-optimization/#optimizing-loops) section below for more information.
 
-### Optimizing loops
+### Optimizing loops {#optimizing-loops}
 
 Although Pine’s [execution model](https://www.tradingview.com/pine-script-docs/language/execution-model/) and the available built-ins often _eliminate_ the need for [loops](https://www.tradingview.com/pine-script-docs/language/loops/) in many cases, there are still instances where a script **will** require [loops](https://www.tradingview.com/pine-script-docs/language/loops/) for some types of tasks, including:
 
@@ -1490,7 +1490,7 @@ When a script uses [loops](https://www.tradingview.com/pine-script-docs/language
 
 TipBefore identifying ways to _optimize_ a loop, we recommend searching for ways to [eliminate](https://www.tradingview.com/pine-script-docs/writing/profiling-and-optimization/#eliminating-loops) it first. If **no solution** exists that makes the loop unnecessary, then proceed with attempting to reduce its overhead.
 
-#### Reducing loop calculations
+#### Reducing loop calculations {#reducing-loop-calculations}
 
 The code executed within a [loop’s](https://www.tradingview.com/pine-script-docs/language/loops/) local scope can have a **multiplicative** impact on its overall runtime, as each time a loop statement executes, it will typically trigger _several_ iterations of the local code. Therefore, programmers should strive to keep a loop’s calculations as simple as possible by eliminating unnecessary structures, function calls, and operations to minimize the performance impact, especially when the script must evaluate its loops _numerous times_ throughout all its executions.
 
@@ -1593,7 +1593,7 @@ With this simple change, our loop is much more efficient, as it no longer needs 
 
 ![image](https://www.tradingview.com/pine-script-docs/_astro/Profiling-and-optimization-Optimization-Optimizing-loops-Reducing-loop-calculations-2.ChKixPxa_1EmP5G.webp)
 
-#### Loop-invariant code motion
+#### Loop-invariant code motion {#loop-invariant-code-motion}
 
 _Loop-invariant code_ is any code region within a [loop’s](https://www.tradingview.com/pine-script-docs/language/loops/) scope that produces an **unchanging** result on each iteration. When a script’s [loops](https://www.tradingview.com/pine-script-docs/language/loops/) contain loop-invariant code, it can substantially impact performance in some cases due to excessive, **unnecessary** calculations.
 
@@ -1663,9 +1663,9 @@ As we see from the script’s [profiled results](https://www.tradingview.com/pin
 
 ![image](https://www.tradingview.com/pine-script-docs/_astro/Profiling-and-optimization-Optimization-Optimizing-loops-Loop-invariant-code-motion-2.9LhBcnjw_2wcLOq.webp)
 
-### Minimizing historical buffer calculations
+### Minimizing historical buffer calculations {#minimizing-historical-buffer-calculations}
 
-Pine scripts create _historical buffers_ for all variables and function calls their outputs depend on. Each buffer contains information about the range of historical values the script can access with the history-referencing operator [\[\]](https://www.tradingview.com/pine-script-reference/v6/#op_%5B%5D).
+Pine scripts create _historical buffers_ for all variables and function calls their outputs depend on. Each buffer contains information about the range of historical values the script can access with the history-referencing operator [\[\]](https://www.tradingview.com/pine-script-reference/v6/#op_[]).
 
 A script _automatically_ determines the required buffer size for all its variables and function calls by analyzing the historical references executed during the **first 244 bars** in a dataset. When a script only references the history of a calculated value _after_ those initial bars, it will **restart** its executions repetitively across previous bars with successively larger historical buffers until it either determines the appropriate size or raises a runtime error. Those repetitive executions can significantly increase a script’s runtime in some cases.
 
@@ -1789,9 +1789,9 @@ When using [max\_bars\_back()](https://www.tradingview.com/pine-script-reference
 
 Additionally, it’s crucial to understand that large buffers elevate a script’s _memory use_. Choosing buffer sizes that are larger than what a script needs is a suboptimal practice that yields no benefit. In some cases, excessively large buffers can cause a script to exceed its memory limits. Therefore, when defining a buffer’s size, choose the **smallest** possible size that accommodates the script’s historical references. For example, if a script requires only 500 past values from a series, set the buffer’s size to 500 bars. Setting the buffer to include 5000 bars in such a case causes the script to use significantly more memory than necessary.
 
-## Tips
+## Tips {#tips}
 
-### Working around Profiler overhead
+### Working around Profiler overhead {#working-around-profiler-overhead}
 
 Since the [Pine Profiler](https://www.tradingview.com/pine-script-docs/writing/profiling-and-optimization/#pine-profiler) must perform _extra calculations_ to collect performance data, as explained in [this section](https://www.tradingview.com/pine-script-docs/writing/profiling-and-optimization/#a-look-into-the-profilers-inner-workings), the time it takes to execute a script **increases** while profiling.
 

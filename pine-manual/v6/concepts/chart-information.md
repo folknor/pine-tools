@@ -4,9 +4,9 @@ source: https://www.tradingview.com/pine-script-docs/concepts/chart-information/
 section: concepts
 ---
 
-# Chart information
+# Chart information {#chart-information}
 
-## Introduction
+## Introduction {#introduction}
 
 The way scripts can obtain information about the chart and symbol they are currently running on is through a subset of Pine Script®‘s [built-in variables](https://www.tradingview.com/pine-script-docs/language/built-ins/#built-in-variables). The ones we cover here allow scripts to access information relating to:
 
@@ -15,7 +15,7 @@ The way scripts can obtain information about the chart and symbol they are curre
 -   The chart’s timeframe
 -   The session (or time period) the symbol trades on
 
-## Prices and volume
+## Prices and volume {#prices-and-volume}
 
 The built-in variables for OHLCV values are:
 
@@ -35,9 +35,9 @@ On historical bars, the values of the above variables do not vary during the bar
 
 Realtime bars are another story altogether. When indicators (or strategies using `calc_on_every_tick = true`) run in realtime, the values of the above variables (except [open](https://www.tradingview.com/pine-script-reference/v6/#var_open)) will vary between successive iterations of the script on the realtime bar, because they represent their **current** value at one point in time during the progress of the realtime bar. This may lead to one form of [repainting](https://www.tradingview.com/pine-script-docs/concepts/repainting/). See the page on Pine Script’s [execution model](https://www.tradingview.com/pine-script-docs/language/execution-model/) for more details.
 
-The [\[\]](https://www.tradingview.com/pine-script-reference/v6/#op_%5B%5D) [history-referencing operator](https://www.tradingview.com/pine-script-docs/language/operators/#-history-referencing-operator) can be used to refer to past values of the built-in variables, e.g., `close[1]` refers to the value of [close](https://www.tradingview.com/pine-script-reference/v6/#var_close) on the previous bar, relative to the particular bar the script is executing on.
+The [\[\]](https://www.tradingview.com/pine-script-reference/v6/#op_[]) [history-referencing operator](https://www.tradingview.com/pine-script-docs/language/operators/#-history-referencing-operator) can be used to refer to past values of the built-in variables, e.g., `close[1]` refers to the value of [close](https://www.tradingview.com/pine-script-reference/v6/#var_close) on the previous bar, relative to the particular bar the script is executing on.
 
-## Symbol information
+## Symbol information {#symbol-information}
 
 Built-in variables in the `syminfo` namespace provide scripts with information on the symbol of the chart the script is running on. This information changes every time a script user changes the chart’s symbol. The script then re-executes on all the chart’s bars using the new values of the built-in variables:
 
@@ -104,7 +104,7 @@ if barstate.islast
     table.cell(t, 1, 0, txtRight, bgcolor = color.yellow, text_halign = text.align_left)
 ```
 
-## Chart timeframe
+## Chart timeframe {#chart-timeframe}
 
 A script can obtain information on the type of timeframe used on the chart using these built-ins, which all return a “simple bool” result:
 
@@ -124,7 +124,7 @@ Additional built-ins return more specific timeframe information:
 
 See the page on [Timeframes](https://www.tradingview.com/pine-script-docs/concepts/timeframes/) for more information.
 
-## Session information
+## Session information {#session-information}
 
 Session information is available in different forms:
 

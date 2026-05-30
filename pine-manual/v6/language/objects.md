@@ -4,17 +4,17 @@ source: https://www.tradingview.com/pine-script-docs/language/objects/
 section: language
 ---
 
-# Objects
+# Objects {#objects}
 
 TipThis page contains _advanced_ material. If you’re new to Pine Script®, start by learning about core language components — such as the [type system](https://www.tradingview.com/pine-script-docs/language/type-system/) and [the basics](https://www.tradingview.com/pine-script-docs/language/execution-model/#the-basics) of the [execution model](https://www.tradingview.com/pine-script-docs/language/execution-model/) — and explore other, more accessible features before venturing further.
 
-## Introduction
+## Introduction {#introduction}
 
 Pine Script objects are instances of _user-defined types_ (UDTs). They are the equivalent of variables containing parts called _fields_, each able to hold independent values that can be of various types.
 
 Experienced programmers can think of UDTs as methodless classes. They allow users to create custom types that organize different values under one logical entity.
 
-## Creating objects
+## Creating objects {#creating-objects}
 
 Before an object can be created, its type must be defined. The [User-defined types](https://www.tradingview.com/pine-script-docs/language/type-system/#user-defined-types) section of the [Type system](https://www.tradingview.com/pine-script-docs/language/type-system/) page explains how to do so.
 
@@ -34,7 +34,7 @@ Note that:
 -   After the first line, we create a local block containing the type and name of each field.
 -   The `x` field will hold the x-coordinate of the pivot. It is declared as an “int” because it will hold either a timestamp or a bar index of “int” type.
 -   `y` is a “float” because it will hold the pivot’s price.
--   `xloc` is a field that will specify the units of `x`: [xloc.bar\_index](https://www.tradingview.com/pine-script-reference/v6/#const_xloc%7Bdot%7Dbar_index) or [xloc.bar\_time](https://www.tradingview.com/pine-script-reference/v6/#const_xloc%7Bdot%7Dbar_time). We set its default value to [xloc.bar\_time](https://www.tradingview.com/pine-script-reference/v6/#const_xloc%7Bdot%7Dbar_time) by using the `=` operator. When an object is created from that UDT, its `xloc` field will thus be set to that value.
+-   `xloc` is a field that will specify the units of `x`: [xloc.bar\_index](https://www.tradingview.com/pine-script-reference/v6/#const_xloc.bar_index) or [xloc.bar\_time](https://www.tradingview.com/pine-script-reference/v6/#const_xloc.bar_time). We set its default value to [xloc.bar\_time](https://www.tradingview.com/pine-script-reference/v6/#const_xloc.bar_time) by using the `=` operator. When an object is created from that UDT, its `xloc` field will thus be set to that value.
 
 Now that our `pivotPoint` UDT is defined, we can proceed to create objects from it. We create objects using the UDT’s `new()` built-in method. To create a new `foundPoint` object from our `pivotPoint` UDT, we use:
 
@@ -54,7 +54,7 @@ Or the equivalent:
 foundPoint = pivotPoint.new(x = time, y = high)
 ```
 
-At this point, the `foundPoint` object’s `x` field will contain the value of the [time](https://www.tradingview.com/pine-script-reference/v6/#var_time) built-in when it is created, `y` will contain the value of [high](https://www.tradingview.com/pine-script-reference/v6/#var_high) and the `xloc` field will contain its default value of [xloc.bar\_time](https://www.tradingview.com/pine-script-reference/v6/#const_xloc%7Bdot%7Dbar_time) because no value was defined for it when creating the object.
+At this point, the `foundPoint` object’s `x` field will contain the value of the [time](https://www.tradingview.com/pine-script-reference/v6/#var_time) built-in when it is created, `y` will contain the value of [high](https://www.tradingview.com/pine-script-reference/v6/#var_high) and the `xloc` field will contain its default value of [xloc.bar\_time](https://www.tradingview.com/pine-script-reference/v6/#const_xloc.bar_time) because no value was defined for it when creating the object.
 
 Object placeholders can also be created by declaring [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) object names using the following:
 
@@ -151,7 +151,7 @@ Note that:
 -   We used the [var](https://www.tradingview.com/pine-script-reference/v6/#kw_var) keyword to specify that the `Counter` object assigned to the `counter` variable persists throughout the script’s execution.
 -   The `bars` field rolls back on realtime bars, whereas the `ticks` field does not since we included [varip](https://www.tradingview.com/pine-script-reference/v6/#kw_varip) in its declaration.
 
-## Changing field values
+## Changing field values {#changing-field-values}
 
 The value of an object’s fields can be changed using the [:=](https://www.tradingview.com/pine-script-docs/language/operators/#-reassignment-operator) reassignment operator.
 
@@ -169,7 +169,7 @@ foundPoint.x := time[legsInput]
 foundPoint.y := pivotHighPrice
 ```
 
-## Collecting objects
+## Collecting objects {#collecting-objects}
 
 Pine Script _collections_ ([arrays](https://www.tradingview.com/pine-script-docs/language/arrays/), [matrices](https://www.tradingview.com/pine-script-docs/language/matrices/), and [maps](https://www.tradingview.com/pine-script-docs/language/maps/)) can contain references to UDT objects, enabling programmers to add virtual dimensions to their data structures. To create a collection of a user-defined type, call the collection type’s `*.new*()` function with the UDT name in the function’s _type template_.
 
@@ -230,7 +230,7 @@ if barstate.islastconfirmedhistory
         previousPoint := eachPivot
 ```
 
-## Copying objects
+## Copying objects {#copying-objects}
 
 In Pine, objects are assigned by reference. When an existing object is assigned to a new variable, both point to the same object.
 
@@ -329,7 +329,7 @@ parent.set(bar_index, 0, "Parent")
 deep.set(bar_index, 1, "Deep Copy")
 ```
 
-## Shadowing
+## Shadowing {#shadowing}
 
 To avoid potential conflicts in the eventuality where namespaces added to Pine Script in the future would collide with UDT names in existing scripts; as a rule, UDT names shadow the language’s namespaces. For example, a UDT can have the same name as some built-in types, such as [line](https://www.tradingview.com/pine-script-reference/v6/#type_line) or [table](https://www.tradingview.com/pine-script-reference/v6/#type_table).
 

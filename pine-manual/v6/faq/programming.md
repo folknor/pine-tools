@@ -4,9 +4,9 @@ source: https://www.tradingview.com/pine-script-docs/faq/programming/
 section: faq
 ---
 
-# Programming
+# Programming {#programming}
 
-## What does “scope” mean?
+## What does “scope” mean? {#what-does-scope-mean}
 
 The _scope_ of a variable is the part of a script that defines the variable and in which it can be referenced. There are two main types of scope: _global_ and _local_.
 
@@ -68,17 +68,17 @@ plot(isUpCandleWithLargerUpWick, "Global variable depending on two local variabl
 
 For more information about scopes, see the [Code](https://www.tradingview.com/pine-script-docs/language/script-structure/#code) section of the User Manual.
 
-## How can I convert a script to a newer version of Pine Script®?
+## How can I convert a script to a newer version of Pine Script®? {#how-can-i-convert-a-script-to-a-newer-version-of-pine-script}
 
 See the [Migration Guides](https://www.tradingview.com/pine-script-docs/migration-guides/overview/) section of the User Manual for instructions about upgrading the version of Pine that a script uses.
 
-## Can I access the source code of “invite-only” or “closed-source” scripts?
+## Can I access the source code of “invite-only” or “closed-source” scripts? {#can-i-access-the-source-code-of-invite-only-or-closed-source-scripts}
 
 No; only _open_ scripts have their source code visible. The source code of _protected_ and _invite-only_ scripts is hidden and can only be seen by the script author.
 
 Refer to the [Visibility types](https://www.tradingview.com/pine-script-docs/writing/publishing/#visibility-types) section of the [Publishing scripts](https://www.tradingview.com/pine-script-docs/writing/publishing/) page to learn more about the differences between open-source, protected, and invite-only scripts. To learn about the difference between _public_ and _private_ scripts, see the [Privacy types](https://www.tradingview.com/pine-script-docs/writing/publishing/#privacy-types) section on that page.
 
-## Is Pine Script an object-oriented language?
+## Is Pine Script an object-oriented language? {#is-pine-script-an-object-oriented-language}
 
 Although Pine Script is not strictly an object-oriented programming language, it incorporates some object-oriented features, notably [user-defined types](https://www.tradingview.com/pine-script-docs/language/type-system/#user-defined-types) (UDTs). Scripts can create [objects](https://www.tradingview.com/pine-script-docs/language/objects/) as instances of a UDT. These objects have one or more fields, which can store values of various data types.
 
@@ -103,7 +103,7 @@ plot(newPivot.y)
 
 In this example, we create an object `newPivot`, which is an instance of the user-defined type `pivot`. The script then plots the `y` field of `newPivot`.
 
-## How can I access the source code of built-in indicators?
+## How can I access the source code of built-in indicators? {#how-can-i-access-the-source-code-of-built-in-indicators}
 
 There are two ways to access the source code of built-in indicators that are written in Pine:
 
@@ -117,7 +117,7 @@ With the indicator displayed on the chart, click on the curly braces `{}` next t
 
 Some built-in indicators, such as the Volume Profile or chart pattern indicators, are not written in Pine and so the code for these indicators is not accessible. These indicators are not included in the “_Built-in script_” menu, and curly braces are not displayed next to their names on the chart.
 
-## How can I examine the value of a string in my script?
+## How can I examine the value of a string in my script? {#how-can-i-examine-the-value-of-a-string-in-my-script}
 
 Scripts can print [strings](https://www.tradingview.com/pine-script-docs/concepts/strings/) to Pine Logs on any or every bar, along with messages about the logic of the script at that point. See the [Pine Logs](https://www.tradingview.com/pine-script-docs/writing/debugging/#pine-logs) section of the User Manual for information about logging.
 
@@ -138,15 +138,15 @@ if barstate.islast
     print("Timeframe = " + timeframe.period)
 ```
 
-## How can I visualize my script’s conditions?
+## How can I visualize my script’s conditions? {#how-can-i-visualize-my-scripts-conditions}
 
 If a script contains complex logical conditions, it can be difficult to debug the output. Visualizing each condition separately can help to debug any problems. See the [Plotting and coloring conditions](https://www.tradingview.com/pine-script-docs/writing/debugging/#plotting-and-coloring-conditions) section of the User Manual for an example.
 
-## How can I make the console appear in the editor?
+## How can I make the console appear in the editor? {#how-can-i-make-the-console-appear-in-the-editor}
 
 To display the console in the editor, either press the keyboard shortcut Ctrl + \` (grave accent), or right-click within the editor and choose the “Toggle Console” option.
 
-## How can I plot numeric values so that they don’t affect the indicator’s scale?
+## How can I plot numeric values so that they don’t affect the indicator’s scale? {#how-can-i-plot-numeric-values-so-that-they-dont-affect-the-indicators-scale}
 
 Plotting numerical values on the main chart pane can distort the price scale if the values differ too much from the price.
 

@@ -4,15 +4,15 @@ source: https://www.tradingview.com/pine-script-docs/concepts/strategies/
 section: concepts
 ---
 
-# Strategies
+# Strategies {#strategies}
 
-## Introduction
+## Introduction {#introduction}
 
 Pine Script® Strategies are specialized scripts that simulate trades across historical and realtime bars, allowing users to backtest and forward test their trading systems. Strategy scripts have many of the same capabilities as [indicator](https://www.tradingview.com/pine-script-reference/v6/#fun_indicator) scripts, and they provide the ability to place, modify, and cancel hypothetical orders and analyze performance results.
 
 When a script uses the [strategy()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy) function as its declaration statement, it gains access to the `strategy.*` namespace, which features numerous functions and variables for simulating orders and retrieving essential strategy information. It also displays relevant information and simulated performance results in the dedicated [Strategy Tester](https://www.tradingview.com/pine-script-docs/concepts/strategies/#strategy-tester) tab.
 
-## A simple strategy example
+## A simple strategy example {#a-simple-strategy-example}
 
 The following script is a simple strategy that simulates entering a long or short position when two moving averages cross. When the `fastMA` crosses above the `slowMA`, it places a “buy” market order to enter a long position. When the `fastMA` crosses below the `slowMA`, it places a “sell” market order to enter a short position:
 
@@ -46,7 +46,7 @@ Note that:
 -   The `margin_long` and `margin_short` arguments in the [strategy()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy) call specify that the strategy must have 100% of a long or short trade’s amount available to allow the trade. See [this section](https://www.tradingview.com/pine-script-docs/concepts/strategies/#margin) for more information.
 -   The [strategy.entry()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.entry) function is the command that the script uses to create entry orders and reverse positions. The “buy” entry order closes any short position and opens a new long position. The “sell” entry order closes any long position and opens a new short position.
 
-## Applying a strategy to a chart
+## Applying a strategy to a chart {#applying-a-strategy-to-a-chart}
 
 To test a strategy, add it to the chart. Select a built-in or published strategy from the “Indicators, Metrics & Strategies” menu, or write a custom strategy in the Pine Editor and click the “Add to chart” option in the top-right corner:
 
@@ -64,7 +64,7 @@ The performance results from a strategy applied to _non-standard charts_ ([Heiki
 
 Therefore, we strongly recommend using **standard** chart types when testing strategies. Alternatively, on Heikin Ashi charts, users can simulate order fills using actual prices by enabling the _“Fill orders on standard OHLC”_ option in the strategy’s [properties](https://www.tradingview.com/support/solutions/43000628599) or including `fill_orders_on_standard_ohlc = true` in the [strategy()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy) declaration statement.
 
-## Strategy Tester
+## Strategy Tester {#strategy-tester}
 
 The _Strategy Tester_ visualizes the hypothetical performance of a strategy script and displays its properties. To use it, add a script declared with the [strategy()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy) function to the chart, then open the “Strategy Tester” tab. If two or more strategies are on the chart, specify which one to analyze by selecting its name in the top-left corner.
 
@@ -75,7 +75,7 @@ After the selected script executes across the chart’s data, the Strategy Teste
 -   [List of Trades](https://www.tradingview.com/pine-script-docs/concepts/strategies/#list-of-trades)
 -   [Properties](https://www.tradingview.com/pine-script-docs/concepts/strategies/#properties)
 
-### Overview
+### Overview {#overview}
 
 The [Overview](https://www.tradingview.com/support/solutions/43000681733) tab provides a quick look into a strategy’s performance over a sequence of simulated trades. This tab displays essential performance metrics and a chart with three helpful plots:
 
@@ -90,13 +90,13 @@ Note that:
 -   The chart has two separate vertical scales. The “Equity” and “Buy & hold equity” plots use the scale on the left, and the “Drawdown” plot uses the scale on the right. Users can toggle the plots and choose between absolute or percentage scales using the options at the bottom.
 -   When a user clicks on a point in this chart, the main chart scrolls to the corresponding bar where the trade closed and displays a tooltip containing the closing time.
 
-### Performance Summary
+### Performance Summary {#performance-summary}
 
 The [Performance Summary](https://www.tradingview.com/support/solutions/43000681683) tab presents an in-depth summary of a strategy’s key performance metrics, organized into separate columns. The “All” column shows performance information for all simulated trades, and the “Long” and “Short” columns show relevant metrics separately for long and short trades. This view provides more detailed insights into a strategy’s overall and directional trading performance:
 
 ![image](https://www.tradingview.com/pine-script-docs/_astro/Strategies-Strategy-tester-Performance-summary-1.BWnlmBT7_ZbAjVW.webp)
 
-### List of Trades
+### List of Trades {#list-of-trades}
 
 The [List of Trades](https://www.tradingview.com/support/solutions/43000681737) tab chronologically lists a strategy’s simulated trades. Each item in the list displays vital information about a trade, including the dates and times of entry and exit orders, the names of the orders, the order prices, and the number of contracts/shares/lots/units. In addition, each item shows the trade’s profit or loss and the strategy’s cumulative profit, run-up, and drawdown:
 
@@ -107,7 +107,7 @@ Note that:
 -   Hovering the mouse over a list item’s entry or exit information reveals a “Scroll to bar” button. Clicking that button navigates the main chart to the bar where the entry or exit occurred.
 -   The list shows each trade in _descending_ order by default, with the latest trade at the top. Users can reverse this order by clicking the “Trade #” button above the list.
 
-### Properties
+### Properties {#properties}
 
 The “Properties” tab provides detailed information about a strategy’s configuration and the dataset that it executes across, organized into four collapsible sections:
 
@@ -118,7 +118,7 @@ The “Properties” tab provides detailed information about a strategy’s conf
 
 ![image](https://www.tradingview.com/pine-script-docs/_astro/Strategies-Strategy-tester-Properties-1.DEisjv-X_ZkGUrR.webp)
 
-## Broker emulator
+## Broker emulator {#broker-emulator}
 
 TradingView uses a _broker emulator_ to simulate trades while running a strategy script. Unlike in real-world trading, the emulator fills a strategy’s orders exclusively using available _chart data_ by default. Consequently, it executes orders on historical bars _after a bar closes_. Similarly, the earliest point that it can fill orders on realtime bars is after a new price tick. For more information about this behavior, see the [Execution model](https://www.tradingview.com/pine-script-docs/language/execution-model/) page.
 
@@ -131,7 +131,7 @@ Because the broker emulator only uses price data from the chart by default, it m
 
 ![image](https://www.tradingview.com/pine-script-docs/_astro/Strategies-Broker-emulator-1.TOD5mNOt_Z1XAQS2.webp)
 
-### Bar magnifier
+### Bar magnifier {#bar-magnifier}
 
 Users with Premium and higher-tier [plans](https://www.tradingview.com/pricing/) can override the broker emulator’s default assumptions about intrabar prices by enabling the [Bar Magnifier](https://www.tradingview.com/support/solutions/43000669285) backtesting mode. In this mode, the emulator uses data from _lower timeframes_ to obtain more granular information about price action within bars, allowing more precise order fills in the strategy’s simulation.
 
@@ -188,7 +188,7 @@ If we enable the [Bar Magnifier](https://www.tradingview.com/support/solutions/4
 
 NoteScripts can request a maximum of 200,000 bars from a lower timeframe. Due to this limitation, some symbols with lengthier history might _not_ have intrabar coverage for their initial chart bars. Enabling the Bar Magnifier mode **does not** affect the trades on chart bars that do not have available intrabar data.
 
-## Orders and trades
+## Orders and trades {#orders-and-trades}
 
 Pine Script strategies use orders to make trades and manage positions, similar to real-world trading. In this context, an _order_ is an instruction that a strategy sends to the [broker emulator](https://www.tradingview.com/pine-script-docs/concepts/strategies/#broker-emulator) to perform a market action, and a _trade_ is the resulting transaction after the emulator fills an order.
 
@@ -227,11 +227,11 @@ The blue arrows on the above chart show where the strategy entered a long positi
 
 By default, the earliest point the [broker emulator](https://www.tradingview.com/pine-script-docs/concepts/strategies/#broker-emulator) fills an order is on the next available price tick, because creating and filling an order on the same tick is unrealistic. Since strategies recalculate after each bar closes by default, the next available tick where the emulator fills a generated order is at the _open_ of the _following bar_. For example, when the `longCondition` occurs on bar 20, the script places an entry order to fill on the next tick, which is at the open of bar 21. When the strategy recalculates its values after bar 21 closes, it places an order to close the current position on the next tick, which is at the open of bar 22.
 
-## Order types
+## Order types {#order-types}
 
 Pine Script strategies can simulate different order types to suit specific trading system needs. The main notable order types include [market](https://www.tradingview.com/pine-script-docs/concepts/strategies/#market-orders), [limit](https://www.tradingview.com/pine-script-docs/concepts/strategies/#limit-orders), [stop](https://www.tradingview.com/pine-script-docs/concepts/strategies/#stop-and-stop-limit-orders), and [stop-limit](https://www.tradingview.com/pine-script-docs/concepts/strategies/#stop-and-stop-limit-orders).
 
-### Market orders
+### Market orders {#market-orders}
 
 A _market order_ is the simplest type of order, which most [order placement commands](https://www.tradingview.com/pine-script-docs/concepts/strategies/#order-placement-and-cancellation) generate by default. A market order is an instruction to buy or sell a security as soon as possible, irrespective of the price. As such, the [broker emulator](https://www.tradingview.com/pine-script-docs/concepts/strategies/#broker-emulator) always executes a market order on the next available tick.
 
@@ -272,7 +272,7 @@ Note that:
 -   The [labels](https://www.tradingview.com/pine-script-docs/visuals/text-and-shapes/#labels) indicate the bars where the script generates the market orders. The broker emulator fills each order at the open of the following bar.
 -   The [strategy.entry()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.entry) command can automatically _reverse_ an open position in the opposite direction. See [this section](https://www.tradingview.com/pine-script-docs/concepts/strategies/#reversing-positions) below for more information.
 
-### Limit orders
+### Limit orders {#limit-orders}
 
 A _limit order_ is an instruction to buy or sell a security at a specific price or better (lower than specified for long orders, and higher than specified for short orders), irrespective of the time. To simulate a limit order in a strategy script, pass a _price_ value to the `limit` parameter of an applicable [order placement command](https://www.tradingview.com/pine-script-docs/concepts/strategies/#order-placement-and-cancellation).
 
@@ -332,7 +332,7 @@ if last_bar_index - bar_index == 100
     strategy.entry("Long", strategy.long, limit = limitPrice)
 ```
 
-### Stop and stop-limit orders
+### Stop and stop-limit orders {#stop-and-stop-limit-orders}
 
 A _stop order_ is an instruction to activate a new [market](https://www.tradingview.com/pine-script-docs/concepts/strategies/#market-orders) or [limit](https://www.tradingview.com/pine-script-docs/concepts/strategies/#limit-orders) order when the market price reaches a specific price or a worse value (higher than specified for long orders and lower than specified for short orders). To simulate a stop order, pass a price value to the `stop` parameter of an applicable [order placement command](https://www.tradingview.com/pine-script-docs/concepts/strategies/#order-placement-and-cancellation).
 
@@ -410,7 +410,7 @@ if high >= stopPrice
     stopPrice := na
 ```
 
-## Order placement and cancellation
+## Order placement and cancellation {#order-placement-and-cancellation}
 
 The `strategy.*` namespace features the following five functions that simulate the placement of orders, known as _order placement commands_: [strategy.entry()](https://www.tradingview.com/pine-script-docs/concepts/strategies/#strategyentry), [strategy.order()](https://www.tradingview.com/pine-script-docs/concepts/strategies/#strategyorder), [strategy.exit()](https://www.tradingview.com/pine-script-docs/concepts/strategies/#strategyexit), [strategy.close()](https://www.tradingview.com/pine-script-docs/concepts/strategies/#strategyclose-and-strategyclose_all), and [strategy.close\_all()](https://www.tradingview.com/pine-script-docs/concepts/strategies/#strategyclose-and-strategyclose_all).
 
@@ -418,11 +418,11 @@ Additionally, the namespace includes the following two functions that cancel pen
 
 The segments below explain these commands, their unique characteristics, and how to use them.
 
-### ​`strategy.entry()`​
+### `strategy.entry()` {#strategyentry}
 
 The [strategy.entry()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.entry) command generates _entry orders_. Its unique features help simplify opening and managing positions. This order placement command generates [market orders](https://www.tradingview.com/pine-script-docs/concepts/strategies/#market-orders) by default. It can also create [limit](https://www.tradingview.com/pine-script-docs/concepts/strategies/#limit-orders), [stop](https://www.tradingview.com/pine-script-docs/concepts/strategies/#stop-and-stop-limit-orders), and [stop-limit](https://www.tradingview.com/pine-script-docs/concepts/strategies/#stop-and-stop-limit-orders) orders with the `limit` and `stop` parameters, as explained in the [Order types](https://www.tradingview.com/pine-script-docs/concepts/strategies/#order-types) section above.
 
-#### Reversing positions
+#### Reversing positions {#reversing-positions}
 
 One of the [strategy.entry()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.entry) command’s unique features is its ability to _reverse_ an open position automatically. By default, when an order from [strategy.entry()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.entry) executes while there is an open position in the opposite direction, the command automatically _adds_ the position’s size to the new order’s size. The added quantity allows the order to close the current position and open a new position for the specified number of contracts/lots/shares/units in the new direction.
 
@@ -458,7 +458,7 @@ Note that:
 
 -   The [strategy.risk.allow\_entry\_in()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.risk.allow_entry_in) function _overrides_ the allowed direction for the [strategy.entry()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.entry) command. When a script specifies a trade direction with this [risk management](https://www.tradingview.com/pine-script-docs/concepts/strategies/#risk-management) command, orders from [strategy.entry()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.entry) in the opposite direction _close_ the open position without allowing a reversal.
 
-#### Pyramiding
+#### Pyramiding {#pyramiding}
 
 Another unique characteristic of the [strategy.entry()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.entry) command is its connection to a strategy’s _pyramiding_ property. Pyramiding specifies the maximum number of open trades, from the orders created by [strategy.entry()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.entry) calls, that a strategy allows for a single position. After this limit, the script does not execute new orders from subsequent calls to the command until at least one of the existing trades closes.
 
@@ -522,7 +522,7 @@ bgcolor(bgColor, title = "Background highlight")
 
 NoticeIn some cases, _price-based_ orders from the [strategy.entry()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.entry) command can cause a strategy’s entry count for a position to exceed the specified pyramiding limit. If multiple calls to this command generate [limit](https://www.tradingview.com/pine-script-docs/concepts/strategies/#limit-orders), [stop](https://www.tradingview.com/pine-script-docs/concepts/strategies/#stop-and-stop-limit-orders), or [stop-limit](https://www.tradingview.com/pine-script-docs/concepts/strategies/#stop-and-stop-limit-orders) orders on the _same tick_, the broker emulator fills each one that the price action triggers, regardless of the pyramiding setting.
 
-### ​`strategy.order()`​
+### `strategy.order()` {#strategyorder}
 
 The [strategy.order()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.order) command generates a _basic order_. Unlike other order placement commands, which can behave differently based on a strategy’s properties and open trades, this command _ignores_ most properties, such as [pyramiding](https://www.tradingview.com/pine-script-docs/concepts/strategies/#pyramiding), and simply creates orders with the specified parameters. This command generates [market orders](https://www.tradingview.com/pine-script-docs/concepts/strategies/#market-orders) by default. It can also create [limit](https://www.tradingview.com/pine-script-docs/concepts/strategies/#limit-orders), [stop](https://www.tradingview.com/pine-script-docs/concepts/strategies/#stop-and-stop-limit-orders), and [stop-limit](https://www.tradingview.com/pine-script-docs/concepts/strategies/#stop-and-stop-limit-orders) orders with the `limit` and `stop` parameters. Orders from [strategy.order()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.order) can open new positions and modify or close existing ones. When a strategy executes an order from this command, the resulting market position is the _net sum_ of the open position and the filled order quantity.
 
@@ -552,13 +552,13 @@ bgcolor(buyCondition ? color.new(color.blue, 90) : sellCondition ? color.new(col
 
 This particular strategy never simulates a _short position_. Unlike the [strategy.entry()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.entry) command, [strategy.order()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.order) _does not_ automatically [reverse](https://www.tradingview.com/pine-script-docs/concepts/strategies/#reversing-positions) open positions. After filling a “buy” order, the strategy has an open long position of 15 units. The three subsequent “sell” orders _reduce_ the position by five units each, and 15 - 5 \* 3 = 0. In other words, the strategy opens a long position on every 100th bar and gradually reduces the size to 0 using three successive short orders. If we used [strategy.entry()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.entry) instead of the [strategy.order()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.order) command in this example, the strategy would alternate between entering long and short positions of 15 and five units, respectively.
 
-### ​`strategy.exit()`​
+### `strategy.exit()` {#strategyexit}
 
 The [strategy.exit()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.exit) command generates _exit orders_. It features several unique behaviors that link to open trades, helping to simplify closing market positions and creating multi-level exits with _take-profit_, _stop-loss_, and _trailing stop_ orders.
 
 Unlike other order placement commands, which can generate a _single order_ per call, each call to [strategy.exit()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.exit) can produce _more than one_ type of exit order, depending on its arguments. Additionally, a single call to this command can generate exit orders for _multiple entries_, depending on the specified `from_entry` value and the strategy’s open trades.
 
-#### Take-profit and stop-loss
+#### Take-profit and stop-loss {#take-profit-and-stop-loss}
 
 The most basic use of the [strategy.exit()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.exit) command is the placement of [limit orders](https://www.tradingview.com/pine-script-docs/concepts/strategies/#limit-orders) to trigger exits after earning enough money (take-profit), [stop orders](https://www.tradingview.com/pine-script-docs/concepts/strategies/#stop-and-stop-limit-orders) to trigger exits after losing too much money (stop-loss), or both (bracket).
 
@@ -655,7 +655,7 @@ Note that:
 
 -   When a [strategy.exit()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.exit) call _does not_ include a `from_entry` argument, it creates exit orders for _all_ the position’s open trades, regardless of their entry IDs. See the [Exits for multiple entries](https://www.tradingview.com/pine-script-docs/concepts/strategies/#exits-for-multiple-entries) section below to learn more.
 
-#### Partial and multi-level exits
+#### Partial and multi-level exits {#partial-and-multi-level-exits}
 
 Strategies can use more than one call to [strategy.exit()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.exit) to create successive _partial_ exit orders for the same entry ID, helping to simplify the formation of multi-level exit strategies. To use multiple [strategy.exit()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.exit) calls to exit from an open trade, include a `qty` or `qty_percent` argument in each call to specify how much of the traded quantity to close. If the sum of the exit order sizes exceeds the open position, the strategy automatically _reduces_ their sizes to match the position.
 
@@ -760,7 +760,7 @@ Users unfamiliar with the [strategy.exit()](https://www.tradingview.com/pine-scr
 
 ![image](https://www.tradingview.com/pine-script-docs/_astro/Strategies-Orders-and-entries-Order-placement-commands-5a.CVJyBloz_1kIEfP.webp)
 
-#### Trailing stops
+#### Trailing stops {#trailing-stops}
 
 One of the [strategy.exit()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.exit) command’s key features is its ability to create _trailing stops_, i.e., stop-loss orders that trail behind the market price by a specified amount whenever it moves to a better value in the favorable direction (upward for long positions and downward for short positions).
 
@@ -842,7 +842,7 @@ if strategy.opentrades == 1
 plot(trailingStop, "Trailing Stop")
 ```
 
-#### Exits for multiple entries
+#### Exits for multiple entries {#exits-for-multiple-entries}
 
 A single call to the [strategy.exit()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.exit) command can generate exit orders for _more than one_ entry in an open position, depending on the call’s `from_entry` value.
 
@@ -1088,7 +1088,7 @@ bgcolor(callExit ? color.new(color.blue, 80) : na, title = "Exit call highlight"
 bgcolor(entriesEnd ? color.new(color.red, 80) : na, title = "Entries end highlight")
 ```
 
-### ​`strategy.close()`​ and ​`strategy.close_all()`​
+### `strategy.close()` and `strategy.close_all()` {#strategyclose-and-strategyclose_all}
 
 The [strategy.close()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.close) and [strategy.close\_all()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.close_all) commands generate orders to exit from an open position. Unlike [strategy.exit()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.exit), which creates _price-based_ exit orders (e.g., [stop-loss](https://www.tradingview.com/pine-script-docs/concepts/strategies/#take-profit-and-stop-loss)), these commands generate [market orders](https://www.tradingview.com/pine-script-docs/concepts/strategies/#market-orders) that the [broker emulator](https://www.tradingview.com/pine-script-docs/concepts/strategies/#broker-emulator) fills on the next available tick, irrespective of the price.
 
@@ -1159,7 +1159,7 @@ switch strategy.opentrades
     3 => strategy.close_all()
 ```
 
-### ​`strategy.cancel()`​ and ​`strategy.cancel_all()`​
+### `strategy.cancel()` and `strategy.cancel_all()` {#strategycancel-and-strategycancel_all}
 
 The [strategy.cancel()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.cancel) and [strategy.cancel\_all()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.cancel_all) commands allow strategies to cancel _unfilled_ orders before the [broker emulator](https://www.tradingview.com/pine-script-docs/concepts/strategies/#broker-emulator) processes them. These order cancellation commands are most helpful when working with _price-based orders_, including all orders from [strategy.exit()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.exit) calls and the orders from [strategy.entry()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.entry) and [strategy.order()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.order) calls that use `limit` or `stop` arguments.
 
@@ -1249,7 +1249,7 @@ if last_bar_index - bar_index == 99
 bgcolor(bgColor)
 ```
 
-## Position sizing
+## Position sizing {#position-sizing}
 
 Pine Script strategies feature two ways to control the sizes of the orders that open and manage positions:
 
@@ -1298,7 +1298,7 @@ switch
     high == highest => strategy.entry("Sell", strategy.short, shortAmount == 0.0 ? na : shortAmount)
 ```
 
-## Closing a market position
+## Closing a market position {#closing-a-market-position}
 
 By default, strategies close a market position using the _First In, First Out (FIFO)_ method, which means that any exit order closes or reduces the position starting with the _first_ open trade, even if the exit command specifies the entry ID of a _different_ open trade. To override this default behavior, include `close_entries_rule = "ANY"` in the [strategy()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy) declaration statement.
 
@@ -1355,13 +1355,13 @@ Note that:
 
 -   If we included `close_entries_rule = "ANY"` in the [strategy()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy) declaration statement, the market order from [strategy.close()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.close) would close the open trade with the “Buy2” entry ID _first_, and then the “bracket” orders from [strategy.exit()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.exit) would close the trade with the “Buy1” entry ID.
 
-## OCA groups
+## OCA groups {#oca-groups}
 
 _One-Cancels-All (OCA)_ groups allow a strategy to fully or partially _cancel_ specific orders when the [broker emulator](https://www.tradingview.com/pine-script-docs/concepts/strategies/#broker-emulator) executes another order from the same group. To assign an order to an OCA group, include an `oca_name` argument in the call to the [order placement command](https://www.tradingview.com/pine-script-docs/concepts/strategies/#order-placement-and-cancellation). The [strategy.entry()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.entry) and [strategy.order()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.order) commands also allow programmers to specify an _OCA type_, which defines whether a strategy [cancels](https://www.tradingview.com/pine-script-docs/concepts/strategies/#strategyocacancel), [reduces](https://www.tradingview.com/pine-script-docs/concepts/strategies/#strategyocareduce), or [does not modify](https://www.tradingview.com/pine-script-docs/concepts/strategies/#strategyocanone) the order after executing other orders.
 
 NoteAll order placement commands that issue orders for the same OCA group must specify the same group name **and** OCA type. If two commands have the same `oca_name` but _different_ `oca_type` values, the strategy considers them to be from **two distinct groups**. In other words, an OCA group **cannot** mix the [strategy.oca.cancel](https://www.tradingview.com/pine-script-reference/v6/#const_strategy.oca.cancel), [strategy.oca.reduce](https://www.tradingview.com/pine-script-reference/v6/#const_strategy.oca.reduce), and [strategy.oca.none](https://www.tradingview.com/pine-script-reference/v6/#const_strategy.oca.none) OCA types.
 
-### ​`strategy.oca.cancel`​
+### `strategy.oca.cancel` {#strategyocacancel}
 
 When an order placement command uses [strategy.oca.cancel](https://www.tradingview.com/pine-script-reference/v6/#const_strategy.oca.cancel) as its `oca_type` argument, the strategy completely _cancels_ the resulting order if another order from the same OCA group executes first.
 
@@ -1411,7 +1411,7 @@ plot(ma1, "Fast MA", color.aqua)
 plot(ma2, "Slow MA", color.orange)
 ```
 
-### ​`strategy.oca.reduce`​
+### `strategy.oca.reduce` {#strategyocareduce}
 
 When an order placement command uses [strategy.oca.reduce](https://www.tradingview.com/pine-script-reference/v6/#const_strategy.oca.reduce) as its OCA type, the strategy _does not_ cancel the resulting order entirely if another order with the same OCA name executes first. Instead, it _reduces_ the order’s size by the filled number of contracts/shares/lots/units, which is particularly useful for custom exit strategies.
 
@@ -1479,11 +1479,11 @@ Note that:
 
 -   We also changed the `qty` value of the “Limit 2” order to 6 instead of 3 because the strategy reduces its amount by three units when it executes the “Limit 1” order. Keeping the `qty` value of 3 would cause the second limit order’s size to drop to 0 after the strategy fills the first limit order, meaning it would never execute.
 
-### ​`strategy.oca.none`​
+### `strategy.oca.none` {#strategyocanone}
 
 When an order placement command uses [strategy.oca.none](https://www.tradingview.com/pine-script-reference/v6/#const_strategy.oca.none) as its `oca_type` value, all orders from that command execute _independently_ of any OCA group. This value is the default `oca_type` for the [strategy.order()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.order) and [strategy.entry()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.entry) commands.
 
-## Currency
+## Currency {#currency}
 
 Pine Script strategies can use different currencies in their calculations than the instruments they simulate trades on. Programmers can specify a strategy’s account currency by including a `currency.*` variable as the `currency` argument in the [strategy()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy) declaration statement. The default value is [currency.NONE](https://www.tradingview.com/pine-script-reference/v6/#const_currency.NONE), meaning the strategy uses the same currency as the current chart ([syminfo.currency](https://www.tradingview.com/pine-script-reference/v6/#var_syminfo.currency)). Script users can change the account currency using the “Base currency” input in the script’s “Settings/Properties” tab.
 
@@ -1525,13 +1525,13 @@ Note that:
 
 -   When a strategy executes on a chart with a timeframe higher than “1D”, it uses the data from _one day before_ each _historical_ bar’s closing time for its cross-rate calculations. For example, on a “1W” chart, the strategy bases its cross rate on the previous Thursday’s closing values. However, it still uses the latest confirmed daily rate on _realtime_ bars.
 
-## Altering calculation behavior
+## Altering calculation behavior {#altering-calculation-behavior}
 
 Strategy scripts execute across all available historical chart bars and continue to execute on realtime bars as new data comes in. However, by default, strategies only recalculate their values after a bar _closes_, even on realtime bars, and the earliest point that the [broker emulator](https://www.tradingview.com/pine-script-docs/concepts/strategies/#broker-emulator) fills the orders a strategy places on the close one bar is at the _open_ of the following bar.
 
 Users can change these behaviors with the `calc_on_every_tick`, `calc_on_order_fills`, and `process_orders_on_close` parameters of the [strategy()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy) declaration statement or the corresponding inputs in the “Recalculate” and “Fill orders” sections of the script’s “Settings/Properties” tab. The sections below explain how these settings affect a strategy’s calculations.
 
-### ​`calc_on_every_tick`​
+### `calc_on_every_tick` {#calc_on_every_tick}
 
 The `calc_on_every_tick` parameter of the [strategy()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy) function determines the frequency of a strategy’s calculations on _realtime bars_. When this parameter’s value is `true`, the script recalculates on each _new tick_ in the realtime data feed. Its default value is `false`, meaning the script only executes on a realtime bar after it closes. Users can also toggle this recalculation behavior with the “On every tick” input in the script’s “Settings/Properties” tab.
 
@@ -1575,7 +1575,7 @@ After we reload the chart, we see that the strategy _changed_ its behavior and _
 
 ![image](https://www.tradingview.com/pine-script-docs/_astro/Strategies-Altering-calculation-behavior-Calc-on-every-tick-2.CEEZdx06_14VHc5.webp)
 
-### ​`calc_on_order_fills`​
+### `calc_on_order_fills` {#calc_on_order_fills}
 
 The `calc_on_order_fills` parameter of the [strategy()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy) function enables a strategy to recalculate immediately after an _order fills_, allowing it to use more granular information and place additional orders without waiting for a bar to close. Its default value is `false`, meaning the strategy does not allow recalculation immediately after every order fill. Users can also toggle this behavior with the “After order is filled” input in the script’s “Settings/Properties” tab.
 
@@ -1621,7 +1621,7 @@ if last_bar_index - bar_index <= 25
     strategy.entry("Buy", strategy.long)
 ```
 
-### ​`process_orders_on_close`​
+### `process_orders_on_close` {#process_orders_on_close}
 
 By default, strategies simulate orders at the close of each bar, meaning that the earliest opportunity to fill the orders and execute strategy calculations and alerts is on the opening of the following bar. Programmers can change this behavior to process orders on the _closing tick_ of each bar by setting `process_orders_on_close` to `true` in the [strategy()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy) declaration statement. Users can set this behavior by changing the “Fill Orders/On Bar Close” setting in the “Settings/Properties” tab.
 
@@ -1632,11 +1632,11 @@ Note that:
 -   Using strategies with `process_orders_on_close` enabled to send alerts to a third-party service might cause unintended results. Alerts on the close of a bar still occur after the market closes, and real-world orders based on such alerts might not fill until after the market opens again.
 -   The [strategy.close()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.close) and [strategy.close\_all()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.close_all) commands feature an `immediately` parameter that, if `true`, allows the resulting market order to fill on the same tick where the strategy created it. This parameter provides an alternative way for programmers to selectively apply `process_orders_on_close` behavior to closing market orders without affecting the behavior of other order placement commands.
 
-## Simulating trading costs
+## Simulating trading costs {#simulating-trading-costs}
 
 Strategy performance reports are more relevant and meaningful when they include potential real-world trading costs. Without modeling the potential costs associated with their trades, traders may overestimate a strategy’s historical profitability, potentially leading to suboptimal decisions in live trading. Pine Script strategies include inputs and parameters for simulating trading costs in performance results.
 
-### Commission
+### Commission {#commission}
 
 Commission is the fee a broker/exchange charges when executing trades. Commission can be a flat fee per trade or contract/share/lot/unit, or a percentage of the total transaction value. Users can set the commission properties of their strategies by including `commission_type` and `commission_value` arguments in the [strategy()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy) function, or by setting the “Commission” inputs in the “Properties” tab of the strategy settings.
 
@@ -1687,7 +1687,7 @@ plot(lowest, color = color.new(color.red, 50))
 
 As we can see in the example above, after applying a 1% commission to the backtest, the strategy simulated a significantly reduced net profit of only 1.42% and a more volatile equity curve with an elevated max drawdown. These results highlight the impact that commission can have on a strategy’s hypothetical performance.
 
-### Slippage and unfilled limits
+### Slippage and unfilled limits {#slippage-and-unfilled-limits}
 
 In real-life trading, a broker/exchange may fill orders at slightly different prices than a trader intended, due to volatility, liquidity, order size, and other market factors, which can profoundly impact a strategy’s performance. The disparity between expected prices and the actual prices at which the broker/exchange executes trades is what we refer to as _slippage_. Slippage is dynamic and unpredictable, making it impossible to simulate precisely. However, factoring in a small amount of slippage on each trade during a backtest or forward test might help the results better align with reality. Users can model slippage in their strategy results, sized as a fixed number of _ticks_, by including a `slippage` argument in the [strategy()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy) declaration statement or by setting the “Slippage” input in the “Settings/Properties” tab.
 
@@ -1801,7 +1801,7 @@ By default, the script assumes that all limit orders are guaranteed to fill when
 
 NoticeLimit verification can change the _times_ of some order fills. However, strategies still execute verified limit orders at the same _prices_. This “time-warping” effect is a compromise that preserves the prices of limit orders, but it can cause a strategy to fill the orders at times that wouldn’t necessarily be possible in the real world. Therefore, users should exercise caution with this setting and understand its limitations when analyzing strategy results.
 
-## Risk management
+## Risk management {#risk-management}
 
 Designing a strategy that performs well, especially in a broad class of markets, is a challenging task. Most strategies are designed for specific market patterns/conditions and can produce uncontrolled losses when applied to other data. Therefore, a strategy’s risk management behavior can be critical to its performance. Programmers can set risk management criteria in their strategy scripts using the `strategy.risk.*()` commands.
 
@@ -1831,7 +1831,7 @@ This command controls the maximum loss the strategy tolerates per trading day (o
 
 This command specifies the maximum possible position size when using [strategy.entry()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.entry) commands. If the quantity of an entry command results in a market position that exceeds this threshold, the strategy reduces the order quantity so that the resulting position does not exceed the limit.
 
-## Margin
+## Margin {#margin}
 
 _Margin_ is the minimum percentage of a market position that a trader must hold in their account as collateral to receive and sustain a loan from their broker to achieve their desired _leverage_. The `margin_long` and `margin_short` parameters of the [strategy()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy) declaration statement and the “Margin for long/short positions” inputs in the “Properties” tab of the script settings specify margin percentages for long and short positions. For example, if a trader sets the margin for long positions to 25%, they must have enough funds to cover 25% of an open long position. This margin percentage also means the trader can potentially spend up to 400% of their equity on their trades.
 
@@ -1871,7 +1871,7 @@ Note that:
 
 -   The [strategy.margin\_liquidation\_price](https://www.tradingview.com/pine-script-reference/v6/#var_strategy.margin_liquidation_price) variable’s value represents the price level that will cause a margin call if the market price reaches it. For more information about how margin works and the formula for calculating a position’s margin call price, see [this page](https://www.tradingview.com/support/solutions/43000717375-how-do-i-simulate-trading-with-leverage/) in our Help Center.
 
-## Using strategy information in scripts
+## Using strategy information in scripts {#using-strategy-information-in-scripts}
 
 Numerous built-ins within the `strategy.*` namespace and its _sub-namespaces_ provide convenient solutions for programmers to use a strategy’s trade and performance information, including data shown in the [Strategy Tester](https://www.tradingview.com/pine-script-docs/concepts/strategies/#strategy-tester), directly within their code’s logic and calculations.
 
@@ -1983,7 +1983,7 @@ Note that:
 -   The script draws the [table](https://www.tradingview.com/pine-script-reference/v6/#type_table) only on the last historical bar and all realtime bars because the historical states of [tables](https://www.tradingview.com/pine-script-docs/visuals/tables/) are **never visible**. See the [Reducing drawing updates](https://www.tradingview.com/pine-script-docs/writing/profiling-and-optimization/#reducing-drawing-updates) section of the [Profiling and optimization](https://www.tradingview.com/pine-script-docs/writing/profiling-and-optimization/) page for more information.
 -   The [table.new()](https://www.tradingview.com/pine-script-reference/v6/#fun_table.new) call includes `force_overlay = true` to display the table on the main chart pane.
 
-### Individual trade information
+### Individual trade information {#individual-trade-information}
 
 The `strategy.*` namespace features two sub-namespaces that provide access to _individual trade_ information: `strategy.opentrades.*` and `strategy.closedtrades.*`. The `strategy.opentrades.*` built-ins return data for _incomplete_ (open) trades, and the `strategy.closedtrades.*` built-ins return data for _completed_ (closed) trades. With these built-ins, programmers can use granular trade data in their scripts, allowing for more detailed strategy analysis and advanced calculations.
 
@@ -2090,7 +2090,7 @@ Note that:
 -   This strategy can open up to five long trades per position because we included `pyramiding = 5` in the [strategy()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy) declaration statement. See the [pyramiding](https://www.tradingview.com/pine-script-docs/concepts/strategies/#pyramiding) section for more information.
 -   The [strategy.exit()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.exit) instance in this script persists and generates exit orders for every entry in the open position because we did not specify a `from_entry` ID. See the [Exits for multiple entries](https://www.tradingview.com/pine-script-docs/concepts/strategies/#exits-for-multiple-entries) section to learn more about this behavior.
 
-## Strategy alerts
+## Strategy alerts {#strategy-alerts}
 
 Pine Script indicators (not strategies) have two different mechanisms to set up custom alert conditions: the [alertcondition()](https://www.tradingview.com/pine-script-reference/v6/#fun_alertcondition) function, which tracks one specific condition per function call, and the [alert()](https://www.tradingview.com/pine-script-reference/v6/#fun_alert) function, which tracks all its calls simultaneously, but provides greater flexibility in the number of calls, alert messages, etc.
 
@@ -2129,19 +2129,19 @@ When the alert fires, the strategy populates the placeholders in the alert messa
 
 ![image](https://www.tradingview.com/pine-script-docs/_astro/Strategies-Strategy-alerts-2.RsPPvOvM_knILa.webp)
 
-## Notes on testing strategies
+## Notes on testing strategies {#notes-on-testing-strategies}
 
 Testing and tuning strategies in historical and live market conditions can provide insight into a strategy’s characteristics, potential weaknesses, and _possibly_ its future potential. However, traders should always be aware of the biases and limitations of simulated strategy results, especially when using the results to support live trading decisions. This section outlines some caveats associated with strategy validation and tuning and possible solutions to mitigate their effects.
 
 NoticeAlthough testing strategies on existing data might give traders helpful information about a strategy’s qualities, it’s important to note that neither the past nor the present guarantees the future. Financial markets can change rapidly and unpredictably, which can cause a strategy to sustain uncontrollable losses. Additionally, simulated results may not fully account for other real-world factors that can impact trading performance. Therefore, we recommend that traders thoroughly understand the limitations and risks of backtests and forward tests and consider them “parts of the whole” in their validation processes rather than basing decisions solely on the results.
 
-### Backtesting and forward testing
+### Backtesting and forward testing {#backtesting-and-forward-testing}
 
 _Backtesting_ is a technique to evaluate the historical performance of a trading strategy or model by simulating and analyzing its past results on historical market data. This technique assumes that a strategy’s results on past data can provide insight into its strengths and weaknesses. When backtesting, many traders adjust the parameters of a strategy in an attempt to optimize its results. Analysis and optimization of historical results can help traders to gain a deeper understanding of a strategy. However, traders should always understand the risks and limitations when basing their decisions on optimized backtest results.
 
 It is prudent to also use realtime analysis as a tool for evaluating a trading system on a forward-looking basis. _Forward testing_ aims to gauge the performance of a strategy in live market conditions, where factors such as trading costs, slippage, and liquidity can meaningfully affect its performance. While forward testing has the distinct advantage of not being affected by certain types of biases (e.g., lookahead bias or “future data leakage”), it does carry the disadvantage of being limited in the quantity of data to test. Therefore, although it can provide helpful insights into a strategy’s performance in current market conditions, forward testing is not typically used on its own.
 
-### Lookahead bias
+### Lookahead bias {#lookahead-bias}
 
 One typical issue in backtesting strategies that request alternate timeframe data, use repainting variables such as [timenow](https://www.tradingview.com/pine-script-reference/v6/#var_timenow), or alter calculation behavior for intrabar order fills, is the leakage of future data into the past during evaluation, which is known as _lookahead bias_. Not only is this bias a common cause of unrealistic strategy results, since the future is never actually knowable beforehand, but it is also one of the typical causes of strategy repainting.
 
@@ -2153,17 +2153,17 @@ To eliminate lookahead bias in a strategy:
 -   Do not include [barmerge.lookahead\_on](https://www.tradingview.com/pine-script-reference/v6/#const_barmerge.lookahead_on) in `request.*()` calls without offsetting the data series, as described in [this](https://www.tradingview.com/pine-script-docs/concepts/repainting/#future-leak-with-requestsecurity) section of the [Repainting](https://www.tradingview.com/pine-script-docs/concepts/repainting/) page.
 -   Use realistic strategy calculation behavior.
 
-### Selection bias
+### Selection bias {#selection-bias}
 
 Selection bias occurs when a trader analyzes only results on specific instruments or timeframes while ignoring others. This bias can distort the perspective of the strategy’s robustness, which can impact trading decisions and performance optimizations. Traders can reduce the effects of selection bias by evaluating their strategies on multiple, ideally diverse, symbols and timeframes, and ensuring not to ignore poor performance results or “cherry-pick” testing ranges.
 
-### Overfitting
+### Overfitting {#overfitting}
 
 A common problem when optimizing a strategy based on backtest results is overfitting (“curve fitting”), which means tailoring the strategy for specific data. An overfitted strategy often fails to generalize well on new, unseen data. One widely-used approach to help reduce the potential for overfitting and promote better generalization is to split an instrument’s data into two or more parts to test the strategy outside the sample used for optimization, otherwise known as “in-sample” (IS) and “out-of-sample” (OOS) backtesting.
 
 In this approach, traders optimize strategy parameters on the IS data, and they test the optimized configuration on the OOS data without additional fine-tuning. Although this and other, more robust approaches might provide a glimpse into how a strategy might fare after optimization, traders should still exercise caution. No trading strategy can guarantee future performance, regardless of the data used for optimization and testing, because the future is inherently unknowable.
 
-### Order limit
+### Order limit {#order-limit}
 
 Outside of Deep Backtesting, a strategy can keep track of up to 9000 orders. If a strategy creates more than 9000 orders, the earliest orders are _trimmed_ so that the strategy stores the information for only the most recent orders.
 

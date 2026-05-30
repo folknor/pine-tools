@@ -4,9 +4,9 @@ source: https://www.tradingview.com/pine-script-docs/language/loops/
 section: language
 ---
 
-# Loops
+# Loops {#loops}
 
-## Introduction
+## Introduction {#introduction}
 
 Loops are structures that repeatedly execute a block of statements based on specified criteria. They allow scripts to perform repetitive tasks without requiring duplicated lines of code. Pine Script® features three distinct loop types: [for](https://www.tradingview.com/pine-script-docs/language/loops/#for-loops), [while](https://www.tradingview.com/pine-script-docs/language/loops/#while-loops), and [for…in](https://www.tradingview.com/pine-script-docs/language/loops/#forin-loops).
 
@@ -14,7 +14,7 @@ Every loop structure in Pine Script consists of two main parts: a _loop header_ 
 
 Understanding when and how to use loops is essential for making the most of the power of Pine Script. Inefficient or [unnecessary](https://www.tradingview.com/pine-script-docs/language/loops/#when-loops-are-unnecessary) usage of loops can lead to suboptimal runtime performance. However, effectively using loops [when necessary](https://www.tradingview.com/pine-script-docs/language/loops/#when-loops-are-necessary) enables scripts to perform a wide range of calculations that would otherwise be impractical or impossible without them.
 
-### When loops are unnecessary
+### When loops are unnecessary {#when-loops-are-unnecessary}
 
 Pine’s [execution model](https://www.tradingview.com/pine-script-docs/language/execution-model/) and [time series](https://www.tradingview.com/pine-script-docs/language/execution-model/#time-series) structure make loops _unnecessary_ in many situations.
 
@@ -69,7 +69,7 @@ Note that:
 
 -   Users can see the substantial difference in efficiency between these two example scripts by analyzing their performance with the [Pine Profiler](https://www.tradingview.com/pine-script-docs/writing/profiling-and-optimization/#pine-profiler).
 
-### When loops are necessary
+### When loops are necessary {#when-loops-are-necessary}
 
 Although Pine’s [execution model](https://www.tradingview.com/pine-script-docs/language/execution-model/), [time series](https://www.tradingview.com/pine-script-docs/language/execution-model/#time-series), and available [built-ins](https://www.tradingview.com/pine-script-docs/language/built-ins/) often eliminate the need for loops in many cases, not all iterative tasks have loop-free alternatives. Loops _are necessary_ for several types of tasks, including:
 
@@ -108,15 +108,15 @@ barcolor(barstate.islastconfirmedhistory ? color.orange : na, title = "Last hist
 
 Note that:
 
--   Each _iteration_ of the [for](https://www.tradingview.com/pine-script-reference/v6/#kw_for) loop retrieves a previous bar’s [high](https://www.tradingview.com/pine-script-reference/v6/#var_high) with the history-referencing operator [\[\]](https://www.tradingview.com/pine-script-reference/v6/#op_%5B%5D), using the loop’s _counter_ (`i`) as the historical offset. The [label.new()](https://www.tradingview.com/pine-script-reference/v6/#fun_label.new) call also uses the counter to determine each label’s x-coordinate.
+-   Each _iteration_ of the [for](https://www.tradingview.com/pine-script-reference/v6/#kw_for) loop retrieves a previous bar’s [high](https://www.tradingview.com/pine-script-reference/v6/#var_high) with the history-referencing operator [\[\]](https://www.tradingview.com/pine-script-reference/v6/#op_[]), using the loop’s _counter_ (`i`) as the historical offset. The [label.new()](https://www.tradingview.com/pine-script-reference/v6/#fun_label.new) call also uses the counter to determine each label’s x-coordinate.
 -   The [indicator](https://www.tradingview.com/pine-script-reference/v6/#fun_indicator) declaration statement includes `max_labels_count = 500`, meaning the script can show up to 500 [labels](https://www.tradingview.com/pine-script-docs/visuals/text-and-shapes/#labels) on the chart.
 -   The script calls [barcolor()](https://www.tradingview.com/pine-script-reference/v6/#fun_barcolor) to highlight the last historical chart bar, and it draws a horizontal [line](https://www.tradingview.com/pine-script-reference/v6/#type_line) at that bar’s [high](https://www.tradingview.com/pine-script-reference/v6/#var_high) for visual reference.
 
-## Common characteristics
+## Common characteristics {#common-characteristics}
 
 The [for](https://www.tradingview.com/pine-script-docs/language/loops/#for-loops), [while](https://www.tradingview.com/pine-script-docs/language/loops/#while-loops), and [for…in](https://www.tradingview.com/pine-script-docs/language/loops/#forin-loops) loop statements all have similarities in their structure, syntax, and general behavior. Before we explore each specific loop type, let’s familiarize ourselves with these characteristics.
 
-### Structure and syntax
+### Structure and syntax {#structure-and-syntax}
 
 In any loop statement, programmers define the criteria under which a script remains in a loop and performs _iterations_, where an iteration refers to _one execution_ of the code within the loop’s [local block](https://www.tradingview.com/pine-script-docs/language/loops/#scope) (_body_). These criteria are part of the _loop header_. A script evaluates the header’s criteria _before_ each iteration, only allowing new iterations to occur while they remain valid. When the header’s criteria are no longer valid, the script _exits_ the loop and skips over its body.
 
@@ -149,7 +149,7 @@ To assign a loop’s result to a [var](https://www.tradingview.com/pine-script-r
 -   Declare the variable before the loop, then use the [reassignment operator](https://www.tradingview.com/pine-script-docs/language/operators/#-reassignment-operator) (`:=`) in the above syntax to _update_ the variable.
 -   Move the loop into a [user-defined function](https://www.tradingview.com/pine-script-docs/language/user-defined-functions/), then initialize the variable with the result of a call to that function.
 
-### Scope
+### Scope {#scope}
 
 All code lines that a script executes within a loop must have an indentation of _four spaces_ or a _tab_ relative to the loop’s header. The indented lines following the header define the loop’s _body_. This code represents a _local block_, meaning that all the definitions within the body are accessible only during the loop’s execution. In other words, the code within the loop’s body is part of its _local scope_.
 
@@ -205,7 +205,7 @@ if barstate.islastconfirmedhistory
      )
 ```
 
-### Keywords and return expressions
+### Keywords and return expressions {#keywords-and-return-expressions}
 
 Every loop in Pine Script implicitly _returns_ values, references, or [void](https://www.tradingview.com/pine-script-docs/language/type-system/#void). A loop’s returned results come from the _latest_ execution of the _last_ expression or nested structure within its body as of the final iteration. The results are usable only if they are not of the [void](https://www.tradingview.com/pine-script-docs/language/type-system/#void) type. Loops return [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) results for values or references when no iterations occur. Scripts can add a variable or tuple assignment to a loop statement to hold the returned results for use in additional calculations outside the loop’s [local scope](https://www.tradingview.com/pine-script-docs/language/loops/#scope).
 
@@ -255,7 +255,7 @@ Note that:
 -   The [label](https://www.tradingview.com/pine-script-reference/v6/#type_label) displays only _odd_ numbers from the [array](https://www.tradingview.com/pine-script-reference/v6/#type_array) because the script does not reassign the `tempString` when the loop iteration’s `number` is even. However, it does not include the _last_ odd number from the array (15) because the loop stops when `number == 8`, preventing iteration over the remaining `randomArray` elements.
 -   When the script exits the loop due to the `break` keyword, the loop’s return value becomes the last evaluated result from the `tempString` reassignment expression. In this case, the last time that code executes is on the iteration where `number == 9`.
 
-## ​`for`​ loops
+## `for` loops {#for-loops}
 
 The [for](https://www.tradingview.com/pine-script-reference/v6/#kw_for) loop statement creates a _count-controlled_ loop, which uses a _counter_ variable to manage the iterative executions of its local code block. The counter starts at a predefined initial value, and the loop increments or decrements the counter by a fixed amount after each iteration. The loop stops its iterations after the counter reaches a specified final value.
 
@@ -451,7 +451,7 @@ Note that:
 -   Changing the `to_num` value on an iteration does not affect the established _direction_ in which the loop adjusts its counter variable. For instance, if the loop in this example changed `barOffset` to -1 on any iteration, it would stop immediately after that iteration ends without reducing the `i` value.
 -   The script uses `force_overlay = true` in the second [plot()](https://www.tradingview.com/pine-script-reference/v6/#fun_plot) call to display the historical closing price on the main chart pane.
 
-## ​`while`​ loops
+## `while` loops {#while-loops}
 
 The [while](https://www.tradingview.com/pine-script-reference/v6/#kw_while) loop statement creates a _condition-controlled_ loop, which uses a _conditional expression_ to control the executions of its local block. The loop continues its iterations as long as the specified condition remains `true`.
 
@@ -556,7 +556,7 @@ Note that:
 -   The left and right edges of [boxes](https://www.tradingview.com/pine-script-docs/visuals/lines-and-boxes/#boxes) sit within the horizontal _center_ of their respective bars, meaning that each drawing spans from the middle of the first consecutive bar to the middle of the last bar within each window.
 -   This script uses the `i` variable as a [history-referencing](https://www.tradingview.com/pine-script-docs/language/operators/#-history-referencing-operator) index within the _conditional expression_ the [while](https://www.tradingview.com/pine-script-reference/v6/#kw_while) loop checks on each iteration. The variable **does not** behave as a loop counter, as the iteration boundaries are **unknown**. The loop executes its local block repeatedly until the condition becomes `false`.
 
-## ​`for...in`​ loops
+## `for...in` loops {#forin-loops}
 
 The [for…in](https://www.tradingview.com/pine-script-reference/v6/#kw_for...in) loop statement creates a _collection-controlled_ loop, which uses the _contents_ of a [collection](https://www.tradingview.com/pine-script-docs/language/type-system/#collections) to control its iterations. This loop structure is often the preferred approach for looping through [arrays](https://www.tradingview.com/pine-script-docs/language/arrays/), [matrices](https://www.tradingview.com/pine-script-docs/language/matrices/), and [maps](https://www.tradingview.com/pine-script-docs/language/maps/).
 
@@ -592,7 +592,7 @@ The iterative behavior of a [for…in](https://www.tradingview.com/pine-script-r
 
 NoteScripts can modify the sizes of arrays and matrices directly within a [for…in](https://www.tradingview.com/pine-script-reference/v6/#kw_for...in) loop’s local scope. When a [for…in](https://www.tradingview.com/pine-script-reference/v6/#kw_for...in) loop changes the size of a collection during an iteration, the loop’s header uses the _updated size_ to control subsequent iterations, just like an equivalent [for](https://www.tradingview.com/pine-script-docs/language/loops/#for-loops) loop that uses `array.size(id) - 1` or `matrix.rows(id) - 1` as the `to_num` argument.
 
-### Looping through arrays
+### Looping through arrays {#looping-through-arrays}
 
 Pine scripts can iterate over the elements of [arrays](https://www.tradingview.com/pine-script-docs/language/arrays/) using any loop structure. However, the [for…in](https://www.tradingview.com/pine-script-reference/v6/#kw_for...in) loop is typically the most convenient because it automatically verifies the size of an [array](https://www.tradingview.com/pine-script-reference/v6/#type_array) when controlling iterations. With other loop structures, programmers must carefully set the header’s boundaries or conditions to _prevent_ the loop from attempting to access an element at a _nonexistent_ index.
 
@@ -754,7 +754,7 @@ Note that:
 -   Pine Script features several ways to calculate averages, many of which _do not_ require a loop. However, a loop is [necessary](https://www.tradingview.com/pine-script-docs/language/loops/#when-loops-are-necessary) in this example because the script uses information only available on the **current bar** to determine which prices contribute toward the average.
 -   The _first_ form of the [for…in](https://www.tradingview.com/pine-script-reference/v6/#kw_for...in) loop is the most convenient option in this example because we need direct access to the [lines](https://www.tradingview.com/pine-script-docs/visuals/lines-and-boxes/#lines) referenced within the `pivotLines` array, but we do not need the corresponding _index_ values.
 
-### Looping through matrices
+### Looping through matrices {#looping-through-matrices}
 
 Pine scripts can iterate over the contents of a [matrix](https://www.tradingview.com/pine-script-reference/v6/#type_matrix) in several different ways. Unlike [arrays](https://www.tradingview.com/pine-script-docs/language/arrays), [matrices](https://www.tradingview.com/pine-script-docs/language/matrices/) use _two_ indices to reference their elements because they store data in a _rectangular_ format. The first index refers to _rows_, and the second refers to _columns_. If a programmer opts to use [for](https://www.tradingview.com/pine-script-reference/v6/#kw_for) or [while](https://www.tradingview.com/pine-script-reference/v6/#kw_while) loops to iterate through [matrices](https://www.tradingview.com/pine-script-docs/language/matrices/) instead of using [for…in](https://www.tradingview.com/pine-script-reference/v6/#kw_for...in), they must carefully define the loop boundaries or conditions to avoid [out-of-bounds](https://www.tradingview.com/pine-script-docs/language/matrices/#the-rowcolumn-index-xx-is-out-of-bounds-rowcolumn-size-is-yy) errors.
 
@@ -881,7 +881,7 @@ if barstate.islastconfirmedhistory
      )
 ```
 
-### Looping through maps
+### Looping through maps {#looping-through-maps}
 
 The [for…in](https://www.tradingview.com/pine-script-reference/v6/#kw_for...in) loop statement is the primary, most convenient approach for iterating over the data within Pine Script [maps](https://www.tradingview.com/pine-script-docs/language/maps/).
 

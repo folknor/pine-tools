@@ -4,9 +4,9 @@ source: https://www.tradingview.com/pine-script-docs/language/conditional-struct
 section: language
 ---
 
-# Conditional structures
+# Conditional structures {#conditional-structures}
 
-## Introduction
+## Introduction {#introduction}
 
 The conditional structures in Pine Script® are [if](https://www.tradingview.com/pine-script-reference/v6/#kw_if) and [switch](https://www.tradingview.com/pine-script-reference/v6/#kw_switch). They can be used:
 
@@ -21,9 +21,9 @@ This restriction does not entail their functionality cannot be controlled by con
 
 The local blocks in conditional structures must be indented by four spaces or a tab.
 
-## ​`if`​ structure
+## `if` structure {#if-structure}
 
-### ​`if`​ used for its side effects
+### `if` used for its side effects {#if-used-for-its-side-effects}
 
 An [if](https://www.tradingview.com/pine-script-reference/v6/#kw_if) structure used for its side effects has the following syntax:
 
@@ -76,13 +76,13 @@ if barstate.islast
 
 Note that:
 
--   We initialize the `ourLabel` variable on the script’s first bar only, as we use the [var](https://www.tradingview.com/pine-script-reference/v6/#kw_var) declaration mode. The value used to initialize the variable is provided by the [label.new()](https://www.tradingview.com/pine-script-reference/v6/#fun_label%7Bdot%7Dnew) function call, which returns a label ID pointing to the label it creates. We use that call to set the label’s properties because once set, they will persist until we change them.
--   What happens next is that on each successive bar the Pine Script runtime will skip the initialization of `ourLabel`, and the [if](https://www.tradingview.com/pine-script-reference/v6/#kw_if) structure’s condition ([barstate.islast](https://www.tradingview.com/pine-script-reference/v6/#var_barstate%7Bdot%7Dislast)) is evaluated. It returns `false` on all bars until the last one, so the script does nothing on most historical bars after bar zero.
--   On the last bar, [barstate.islast](https://www.tradingview.com/pine-script-reference/v6/#var_barstate%7Bdot%7Dislast) becomes true and the structure’s local block executes, modifying on each chart update the properties of our label, which displays the number of bars in the dataset.
--   We want to display the label’s text without a background, so we make the label’s background [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) in the [label.new()](https://www.tradingview.com/pine-script-reference/v6/#fun_label%7Bdot%7Dnew) function call, and we use `hl2[1]` for the label’s _y_ position because we don’t want it to move all the time. By using the average of the **previous** bar’s [high](https://www.tradingview.com/pine-script-reference/v6/#var_high) and [low](https://www.tradingview.com/pine-script-reference/v6/#var_low) values, the label doesn’t move until the moment when the next realtime bar opens.
--   We use `bar_index + 2` in our [label.set\_xy()](https://www.tradingview.com/pine-script-reference/v6/#fun_label%7Bdot%7Dset_xy) call to offset the label to the right by two bars.
+-   We initialize the `ourLabel` variable on the script’s first bar only, as we use the [var](https://www.tradingview.com/pine-script-reference/v6/#kw_var) declaration mode. The value used to initialize the variable is provided by the [label.new()](https://www.tradingview.com/pine-script-reference/v6/#fun_label.new) function call, which returns a label ID pointing to the label it creates. We use that call to set the label’s properties because once set, they will persist until we change them.
+-   What happens next is that on each successive bar the Pine Script runtime will skip the initialization of `ourLabel`, and the [if](https://www.tradingview.com/pine-script-reference/v6/#kw_if) structure’s condition ([barstate.islast](https://www.tradingview.com/pine-script-reference/v6/#var_barstate.islast)) is evaluated. It returns `false` on all bars until the last one, so the script does nothing on most historical bars after bar zero.
+-   On the last bar, [barstate.islast](https://www.tradingview.com/pine-script-reference/v6/#var_barstate.islast) becomes true and the structure’s local block executes, modifying on each chart update the properties of our label, which displays the number of bars in the dataset.
+-   We want to display the label’s text without a background, so we make the label’s background [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) in the [label.new()](https://www.tradingview.com/pine-script-reference/v6/#fun_label.new) function call, and we use `hl2[1]` for the label’s _y_ position because we don’t want it to move all the time. By using the average of the **previous** bar’s [high](https://www.tradingview.com/pine-script-reference/v6/#var_high) and [low](https://www.tradingview.com/pine-script-reference/v6/#var_low) values, the label doesn’t move until the moment when the next realtime bar opens.
+-   We use `bar_index + 2` in our [label.set\_xy()](https://www.tradingview.com/pine-script-reference/v6/#fun_label.set_xy) call to offset the label to the right by two bars.
 
-### ​`if`​ used to return a value
+### `if` used to return a value {#if-used-to-return-a-value}
 
 An [if](https://www.tradingview.com/pine-script-reference/v6/#kw_if) structure used to return one or more values has the following syntax:
 
@@ -150,7 +150,7 @@ if condition1 and condition2 and condition3
     expression
 ```
 
-## ​`switch`​ structure
+## `switch` structure {#switch-structure}
 
 The [switch](https://www.tradingview.com/pine-script-reference/v6/#kw_switch) structure exists in two forms. One switches on the different values of a key expression:
 
@@ -185,7 +185,7 @@ Both forms are allowed as the value used to initialize a variable.
 
 As with the [if](https://www.tradingview.com/pine-script-reference/v6/#kw_if) structure, if no local block is exectuted, the expression returns either [false](https://www.tradingview.com/pine-script-reference/v6/#const_false) (when other local blocks return a “bool” value) or [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) (in all other cases).
 
-### ​`switch`​ with an expression
+### `switch` with an expression {#switch-with-an-expression}
 
 Let’s look at an example of a [switch](https://www.tradingview.com/pine-script-reference/v6/#kw_switch) using an expression:
 
@@ -210,10 +210,10 @@ plot(ma)
 
 Note that:
 
--   The expression we are switching on is the variable `maType`, which is of “input int” type (see here for an explanation of what the “[input](https://www.tradingview.com/pine-script-docs/language/type-system/#input)” qualifier is). Since it cannot change during the execution of the script, this guarantees that whichever MA type the user selects will be executing on each bar, which is a requirement for functions like [ta.ema()](https://www.tradingview.com/pine-script-reference/v6/#fun_ta%7Bdot%7Dema) which require a “simple int” argument for their `length` parameter.
+-   The expression we are switching on is the variable `maType`, which is of “input int” type (see here for an explanation of what the “[input](https://www.tradingview.com/pine-script-docs/language/type-system/#input)” qualifier is). Since it cannot change during the execution of the script, this guarantees that whichever MA type the user selects will be executing on each bar, which is a requirement for functions like [ta.ema()](https://www.tradingview.com/pine-script-reference/v6/#fun_ta.ema) which require a “simple int” argument for their `length` parameter.
 -   If no matching value is found for `maType`, the [switch](https://www.tradingview.com/pine-script-reference/v6/#kw_switch) executes the last local block introduced by `=>`, which acts as a catch-all. We generate a runtime error in that block. We also end it with `float(na)` so the local block returns a value whose type is compatible with that of the other local blocks in the structure, to avoid a compilation error.
 
-### ​`switch`​ without an expression
+### `switch` without an expression {#switch-without-an-expression}
 
 This is an example of a [switch](https://www.tradingview.com/pine-script-reference/v6/#kw_switch) structure which does not use an expression:
 
@@ -233,7 +233,7 @@ Note that:
 
 -   We are using the [switch](https://www.tradingview.com/pine-script-reference/v6/#kw_switch) to select the appropriate strategy order to emit, depending on whether the `longCondition` or `shortCondition` “bool” variables are `true`.
 -   The building conditions of `longCondition` and `shortCondition` are exclusive. While they can both be `false` simultaneously, they cannot be `true` at the same time. The fact that only **one** local block of the [switch](https://www.tradingview.com/pine-script-reference/v6/#kw_switch) structure is ever executed is thus not an issue for us.
--   We evaluate the calls to [ta.crossover()](https://www.tradingview.com/pine-script-reference/v6/#fun_ta%7Bdot%7Dcrossover) and [ta.crossunder()](https://www.tradingview.com/pine-script-reference/v6/#fun_ta%7Bdot%7Dcrossunder) **prior** to entry in the [switch](https://www.tradingview.com/pine-script-reference/v6/#kw_switch) structure. Not doing so, as in the following example, would prevent the functions to be executed on each bar, which would result in a compiler warning and erratic behavior:
+-   We evaluate the calls to [ta.crossover()](https://www.tradingview.com/pine-script-reference/v6/#fun_ta.crossover) and [ta.crossunder()](https://www.tradingview.com/pine-script-reference/v6/#fun_ta.crossunder) **prior** to entry in the [switch](https://www.tradingview.com/pine-script-reference/v6/#kw_switch) structure. Not doing so, as in the following example, would prevent the functions to be executed on each bar, which would result in a compiler warning and erratic behavior:
 
 ```pine
 //@version=6
@@ -245,7 +245,7 @@ switch
     ta.crossunder(ta.sma(close, 14), ta.sma(close, 28)) => strategy.entry("Short ID", strategy.short)
 ```
 
-## Matching local block type requirement
+## Matching local block type requirement {#matching-local-block-type-requirement}
 
 When multiple local blocks are used in structures, the type of the return value of all its local blocks must match. This applies only if the structure is used to assign a value to a variable in a declaration, because a variable can only have one type, and if the statement returns two incompatible types in its branches, the variable type cannot be properly determined. If the structure is not assigned anywhere, its branches can return different values.
 

@@ -4,9 +4,9 @@ source: https://www.tradingview.com/pine-script-docs/faq/general/
 section: faq
 ---
 
-# FAQ
+# FAQ {#faq}
 
-## Get real OHLC price on a Heikin Ashi chart
+## Get real OHLC price on a Heikin Ashi chart {#get-real-ohlc-price-on-a-heikin-ashi-chart}
 
 Suppose, we have a Heikin Ashi chart (or Renko, Kagi, PriceBreak etc) and we’ve added a Pine script on it:
 
@@ -31,7 +31,7 @@ plot(realC)
 
 In a similar way we may get other OHLC prices: _open_, _high_ and _low_.
 
-## Get non-standard OHLC values on a standard chart
+## Get non-standard OHLC values on a standard chart {#get-non-standard-ohlc-values-on-a-standard-chart}
 
 Backtesting on non-standard chart types (e.g. Heikin Ashi or Renko) is not recommended because the bars on these kinds of charts do not represent real price movement that you would encounter while trading. If you want your strategy to enter and exit on real prices but still use Heikin Ashi-based signals, you can use the same method to get Heikin Ashi values on a regular candlestick chart:
 
@@ -48,7 +48,7 @@ if trade == -1
     strategy.entry("BarDn", strategy.short)
 ```
 
-## Plot arrows on the chart
+## Plot arrows on the chart {#plot-arrows-on-the-chart}
 
 You may use plotshape with style `shape.arrowup` and `shape.arrowdown`:
 
@@ -74,7 +74,7 @@ plotchar(condition, char='↑', location = location.belowbar, color = color.red,
 
 ![image](https://www.tradingview.com/pine-script-docs/_astro/Buy_sell_chart2.bwHf9rIu_Z2nlGwx.webp)
 
-## Plot a dynamic horizontal line
+## Plot a dynamic horizontal line {#plot-a-dynamic-horizontal-line}
 
 There is the function `hline` in Pine Script, but it is limited to only plot a constant value. Here is a simple script with a workaround to plot a changing hline:
 
@@ -87,7 +87,7 @@ plot(close[10], trackprice = true, offset = -9999)
 plot(close, color = #FFFFFFFF)  // forces display
 ```
 
-## Plot a vertical line on condition
+## Plot a vertical line on condition {#plot-a-vertical-line-on-condition}
 
 ```pine
 //@version=6
@@ -102,7 +102,7 @@ cond = barstate.islast
 plot(cond ? 10e20 : na, style = plot.style_histogram)
 ```
 
-## Access the previous value
+## Access the previous value {#access-the-previous-value}
 
 ```pine
 //@version=6
@@ -113,7 +113,7 @@ if (condition)
     s := s + 1
 ```
 
-## Get a 5-days high
+## Get a 5-days high {#get-a-5-days-high}
 
 Lookback 5 days from the current bar, find the highest bar, plot a star character at that price level above the current bar
 
@@ -149,7 +149,7 @@ plotchar(rightBorder ? maxHi : na, "Level", "—", location.absolute, size = siz
 bgcolor(leftBorder and not rightBorder ? color.new(color.aqua, 70) : na)
 ```
 
-## Count bars in a dataset
+## Count bars in a dataset {#count-bars-in-a-dataset}
 
 Get a count of all the bars in the loaded dataset. Might be useful for calculating flexible lookback periods based on number of bars.
 
@@ -159,7 +159,7 @@ indicator("Bar Count", overlay = true, scale = scale.none)
 plot(bar_index + 1, style = plot.style_histogram)
 ```
 
-## Enumerate bars in a day
+## Enumerate bars in a day {#enumerate-bars-in-a-day}
 
 ```pine
 //@version=6
@@ -172,7 +172,7 @@ isNewDay() =>
 plot(ta.barssince(isNewDay()), style = plot.style_cross)
 ```
 
-## Find the highest and lowest values for the entire dataset
+## Find the highest and lowest values for the entire dataset {#find-the-highest-and-lowest-values-for-the-entire-dataset}
 
 ```pine
 //@version=6
@@ -190,7 +190,7 @@ plot(allTimetHi(close), "ATH", color.green)
 plot(allTimetLo(close), "ATL", color.red)
 ```
 
-## Query the last non-na value
+## Query the last non-na value {#query-the-last-non-na-value}
 
 You can use the script below to avoid gaps in a series:
 

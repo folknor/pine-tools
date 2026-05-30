@@ -4,9 +4,9 @@ source: https://www.tradingview.com/pine-script-docs/visuals/lines-and-boxes/
 section: visuals
 ---
 
-# Lines and boxes
+# Lines and boxes {#lines-and-boxes}
 
-## Introduction
+## Introduction {#introduction}
 
 Pine Script® facilitates drawing lines, boxes, and other geometric formations from code using the [line](https://www.tradingview.com/pine-script-reference/v6/#type_line), [box](https://www.tradingview.com/pine-script-reference/v6/#type_box), and [polyline](https://www.tradingview.com/pine-script-reference/v6/#type_polyline) types. These types provide utility for programmatically drawing support and resistance levels, trend lines, price ranges, and other custom formations on a chart.
 
@@ -27,7 +27,7 @@ Lines drawn by a script may be vertical, horizontal, or angled. Boxes are always
 
 NoteThe Supercharts interface features a set of _drawing tools_ that enable users to draw on the chart using mouse actions. Although some of those drawings might resemble the outputs of a script’s drawing objects, it’s crucial to understand that they are **unrelated** entities. Scripts cannot interact with the chart’s drawing tools. Additionally, mouse actions do not directly affect a script’s drawing objects.
 
-## Lines
+## Lines {#lines}
 
 The built-ins in the `line.*` namespace control the creation and management of [line](https://www.tradingview.com/pine-script-reference/v6/#type_line) objects:
 
@@ -40,7 +40,7 @@ The built-ins in the `line.*` namespace control the creation and management of [
 
 Scripts can call `line.set_*()`, `line.get_*()`, [line.copy()](https://www.tradingview.com/pine-script-reference/v6/#fun_line.copy), and [line.delete()](https://www.tradingview.com/pine-script-reference/v6/#fun_line.delete) built-ins as functions or [methods](https://www.tradingview.com/pine-script-docs/language/methods/).
 
-### Creating lines
+### Creating lines {#creating-lines}
 
 The [line.new()](https://www.tradingview.com/pine-script-reference/v6/#fun_line.new) function creates a new [line](https://www.tradingview.com/pine-script-reference/v6/#type_line) instance to display on the chart. It has the following signatures:
 
@@ -155,7 +155,7 @@ Note that:
 -   We’ve included `max_lines_count = 500` in the [indicator()](https://www.tradingview.com/pine-script-reference/v6/#fun_indicator) function call, meaning the script preserves up to 500 lines on the chart.
 -   Each [line.new()](https://www.tradingview.com/pine-script-reference/v6/#fun_line.new) call _copies_ the information from the [chart.point](https://www.tradingview.com/pine-script-reference/v6/#type_chart.point) referenced by the `firstPoint` and `secondPoint` variables. As such, the script can change the `price` field of the `secondPoint` on each loop iteration without affecting the y-coordinates in other lines.
 
-### Modifying lines
+### Modifying lines {#modifying-lines}
 
 The `line.*` namespace contains multiple _setter_ functions that modify the properties of [line](https://www.tradingview.com/pine-script-reference/v6/#type_line) instances:
 
@@ -229,7 +229,7 @@ Note that:
 
 -   Each line drawing in this example uses the [line.style\_arrow\_right](https://www.tradingview.com/pine-script-reference/v6/#var_line.style_arrow_right) style. See the [Line styles](https://www.tradingview.com/pine-script-docs/visuals/lines-and-boxes/#line-styles) section below for an overview of all available style settings.
 
-### Line styles
+### Line styles {#line-styles}
 
 Users can control the style of their scripts’ line drawings by passing one of the following variables as the `style` argument in their [line.new()](https://www.tradingview.com/pine-script-reference/v6/#fun_line.new) or [line.set\_style()](https://www.tradingview.com/pine-script-reference/v6/#fun_line.set_style) function calls:
 
@@ -246,7 +246,7 @@ Note that:
 
 -   _Polylines_ can also use any of these variables as their `line_style` value. See the [Creating polylines](https://www.tradingview.com/pine-script-docs/visuals/lines-and-boxes/#creating-polylines) section of this page.
 
-### Reading line values
+### Reading line values {#reading-line-values}
 
 The `line.*` namespace includes _getter_ functions, which allow a script to retrieve values from a [line](https://www.tradingview.com/pine-script-reference/v6/#type_line) object for further use:
 
@@ -301,7 +301,7 @@ Note that:
 -   The [line.get\_price()](https://www.tradingview.com/pine-script-reference/v6/#fun_line.get_price) function call treats the `directionLine` as though it extends infinitely, regardless of its `extend` property.
 -   The script only displays approximately the last 50 lines on the chart, but the [plot](https://www.tradingview.com/pine-script-reference/v6/#fun_plot) of extrapolated values spans throughout the chart’s history.
 
-### Cloning lines
+### Cloning lines {#cloning-lines}
 
 Scripts can clone a line `id` and all its properties with the [line.copy()](https://www.tradingview.com/pine-script-reference/v6/#fun_line.copy) function. Any changes to the copied line instance do not affect the original.
 
@@ -342,7 +342,7 @@ Note that:
 
 -   The `index` field of the `secondPoint` is `length` bars beyond the current [bar\_index](https://www.tradingview.com/pine-script-reference/v6/#var_bar_index). Since the maximum x-coordinate allowed with [xloc.bar\_index](https://www.tradingview.com/pine-script-reference/v6/#var_xloc.bar_index) is `bar_index + 500`, we’ve set the `maxval` of the `length` input to 500.
 
-### Deleting lines
+### Deleting lines {#deleting-lines}
 
 To delete a line drawn by a script, use the [line.delete()](https://www.tradingview.com/pine-script-reference/v6/#fun_line.delete) function. This function removes the line instance from the script and its drawing on the chart.
 
@@ -398,7 +398,7 @@ Note that:
 -   We declared a `MAX_LINES_COUNT` variable with the “const int” _qualified type_, which the script uses as the `max_lines_count` in the [indicator()](https://www.tradingview.com/pine-script-reference/v6/#fun_indicator) function and the `maxval` of the [input.int()](https://www.tradingview.com/pine-script-reference/v6/#fun_input.int) assigned to the `numberOfLines` variable.
 -   This example uses the second overload of the [line.new()](https://www.tradingview.com/pine-script-reference/v6/#fun_line.new) function, which specifies `x1`, `y1`, `x2`, and `y2` coordinates independently.
 
-### Filling the space between lines
+### Filling the space between lines {#filling-the-space-between-lines}
 
 Scripts can _fill_ the space between two [line](https://www.tradingview.com/pine-script-reference/v6/#type_line) drawings by creating a [linefill](https://www.tradingview.com/pine-script-reference/v6/#type_linefill) object that references them with the [linefill.new()](https://www.tradingview.com/pine-script-reference/v6/#fun_linefill.new) function. Linefills automatically determine their fill boundaries using the properties from the `line1` and `line2` IDs that they reference.
 
@@ -446,7 +446,7 @@ lowerLine.set_xy2(basisLine.get_x2(), basisLine.get_y2() - stDev)
 
 To learn more about the [linefill](https://www.tradingview.com/pine-script-reference/v6/#type_linefill) type, see [this](https://www.tradingview.com/pine-script-docs/visuals/fills/#line-fills) section of the [Fills](https://www.tradingview.com/pine-script-docs/visuals/fills/) page.
 
-## Boxes
+## Boxes {#boxes}
 
 The built-ins in the `box.*` namespace create and manage [box](https://www.tradingview.com/pine-script-reference/v6/#type_box) objects:
 
@@ -459,7 +459,7 @@ The built-ins in the `box.*` namespace create and manage [box](https://www.tradi
 
 As with [lines](https://www.tradingview.com/pine-script-docs/visuals/lines-and-boxes/#lines), users can call `box.set_*()`, `box.get_*()`, [box.copy()](https://www.tradingview.com/pine-script-reference/v6/#fun_box.copy), and [box.delete()](https://www.tradingview.com/pine-script-reference/v6/#fun_box.delete) built-ins as functions or [methods](https://www.tradingview.com/pine-script-docs/language/methods/).
 
-### Creating boxes
+### Creating boxes {#creating-boxes}
 
 The [box.new()](https://www.tradingview.com/pine-script-reference/v6/#fun_box.new) function creates a new [box](https://www.tradingview.com/pine-script-reference/v6/#type_box) object to display on the chart. It has the following signatures:
 
@@ -569,7 +569,7 @@ Note that:
 -   Similar to [lines](https://www.tradingview.com/pine-script-docs/visuals/lines-and-boxes/#lines), if the `topLeft` and `bottomRight` contained identical coordinates, the box wouldn’t display on the chart since there would be no space between them to draw. However, its ID would still exist.
 -   This script only displays approximately the last 50 boxes on the chart, as we have not specified a `max_boxes_count` in the [indicator()](https://www.tradingview.com/pine-script-reference/v6/#fun_indicator) function call.
 
-### Modifying boxes
+### Modifying boxes {#modifying-boxes}
 
 Multiple _setter_ functions exist in the `box.*` namespace, allowing scripts to modify the properties of [box](https://www.tradingview.com/pine-script-reference/v6/#type_box) objects:
 
@@ -660,7 +660,7 @@ Note that:
 -   The [indicator()](https://www.tradingview.com/pine-script-reference/v6/#fun_indicator) function call contains `max_boxes_count = 100`, meaning the script will preserve the last 100 boxes on the chart.
 -   We utilized _both overloads_ of [box.new()](https://www.tradingview.com/pine-script-reference/v6/#fun_box.new) in this example. On the first bar of the `timeframe`, the script calls the first overload for the `upBox` when the bar is rising, and it calls that overload for the `downBox` when the bar is falling. It uses the second overload to assign a new box with [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) values to the other box variable on that bar.
 
-### Box styles
+### Box styles {#box-styles}
 
 Users can include one of the following `line.style_*` variables in their [box.new()](https://www.tradingview.com/pine-script-reference/v6/#fun_box.new) or [box.set\_border\_style()](https://www.tradingview.com/pine-script-reference/v6/#fun_box.set_border_style) function calls to set the border styles of boxes drawn by their scripts:
 
@@ -672,7 +672,7 @@ Users can include one of the following `line.style_*` variables in their [box.ne
 | `line.style_dotted` | ![box\_style\_dotted](https://www.tradingview.com/pine-script-docs/_astro/box.style_dotted.DQk4-fDM_ZyphS6.webp) |
 | `line.style_dashed` | ![box\_style\_dashed](https://www.tradingview.com/pine-script-docs/_astro/box.style_dashed.BezJLOhC_24XtQ4.webp) |
 
-### Reading box values
+### Reading box values {#reading-box-values}
 
 The `box.*` namespace features _getter_ functions that allow scripts to retrieve coordinate values from a box instance:
 
@@ -742,7 +742,7 @@ Note that:
 -   On each new period, the script uses randomized [color.rgb()](https://www.tradingview.com/pine-script-reference/v6/#fun_color.rgb) values for the `border_color` and `bgcolor` of the boxes.
 -   Each [box.new()](https://www.tradingview.com/pine-script-reference/v6/#fun_box.new) call copies the coordinates from the [chart.point](https://www.tradingview.com/pine-script-reference/v6/#type_chart.point) objects assigned to the `topLeft` and `bottomRight` variables, which is why the script can modify their `price` fields on each loop iteration without affecting the other boxes.
 
-### Cloning boxes
+### Cloning boxes {#cloning-boxes}
 
 To clone a specific box `id`, use [box.copy()](https://www.tradingview.com/pine-script-reference/v6/#fun_box.copy). This function copies the box and its properties. Any changes to the copied box do not affect the original.
 
@@ -783,7 +783,7 @@ else
     box.set_bgcolor(copiedBox, na)
 ```
 
-### Deleting boxes
+### Deleting boxes {#deleting-boxes}
 
 To delete boxes drawn by a script, use [box.delete()](https://www.tradingview.com/pine-script-reference/v6/#fun_box.delete). As with `*.delete()` functions in other drawing namespaces, this function is handy for conditionally removing boxes or maintaining a specific number of boxes on the chart.
 
@@ -840,7 +840,7 @@ Note that:
 -   This script uses the second overload of the [box.new()](https://www.tradingview.com/pine-script-reference/v6/#fun_box.new) function, which specifies the box’s `left`, `top`, `right`, and `bottom` coordinates separately.
 -   We’ve included [format.volume](https://www.tradingview.com/pine-script-reference/v6/#var_format.volume) as the `format` argument in the [indicator()](https://www.tradingview.com/pine-script-reference/v6/#fun_indicator) call, which tells the script that the y-axis of the chart pane represents _volume_ values. Each box also displays its `top` coordinate as volume-formatted text.
 
-## Polylines
+## Polylines {#polylines}
 
 Pine Script polylines are **advanced** drawings that sequentially connect the coordinates from an [array](https://www.tradingview.com/pine-script-reference/v6/#type_array) of [chart.point](https://www.tradingview.com/pine-script-reference/v6/#type_chart.point) instances using straight or _curved_ line segments.
 
@@ -854,7 +854,7 @@ The `polyline.*` namespace features the following built-ins for creating and man
 
 Unlike [lines](https://www.tradingview.com/pine-script-docs/visuals/lines-and-boxes/#lines) or [boxes](https://www.tradingview.com/pine-script-docs/visuals/lines-and-boxes/#boxes), polylines do not have functions for modification or reading their properties. To redraw a polyline on the chart, one can _delete_ the existing instance and _create_ a new polyline with the desired changes.
 
-### Creating polylines
+### Creating polylines {#creating-polylines}
 
 The [polyline.new()](https://www.tradingview.com/pine-script-reference/v6/#fun_polyline.new) function creates a new [polyline](https://www.tradingview.com/pine-script-reference/v6/#type_polyline) instance to display on the chart. It has the following signature:
 
@@ -942,7 +942,7 @@ Note that:
 -   This script uses only _one_ polyline to connect each [chart point](https://www.tradingview.com/pine-script-docs/language/type-system/#chart-points) from the [array](https://www.tradingview.com/pine-script-reference/v6/#type_array) with straight line segments, and this drawing spans throughout the available chart data, starting from the first bar.
 -   While one can achieve a similar effect using [lines](https://www.tradingview.com/pine-script-docs/visuals/lines-and-boxes/#lines), doing so would require a new [line](https://www.tradingview.com/pine-script-reference/v6/#type_line) instance on each occurrence of the `newPoint` condition, and such a drawing would be limited to a maximum of 500 line segments. This single unclosed polyline drawing, on the other hand, can contain up to 9,999 line segments.
 
-#### Curved drawings
+#### Curved drawings {#curved-drawings}
 
 Polylines can draw _curves_ that are otherwise impossible to produce with [lines](https://www.tradingview.com/pine-script-docs/visuals/lines-and-boxes/#lines) or [boxes](https://www.tradingview.com/pine-script-docs/visuals/lines-and-boxes/#boxes). When enabling the `curved` parameter of the [polyline.new()](https://www.tradingview.com/pine-script-reference/v6/#fun_polyline.new) function, the resulting polyline interpolates _nonlinear_ values between the coordinates from each [chart.point](https://www.tradingview.com/pine-script-reference/v6/#type_chart.point) in its [array](https://www.tradingview.com/pine-script-reference/v6/#type_array) of `points` to generate a curvy effect.
 
@@ -1027,7 +1027,7 @@ if barstate.islastconfirmedhistory
 bgcolor(newPoint ? color.new(color.gray, 70) : na, title = "New point highlight")
 ```
 
-#### Closed shapes
+#### Closed shapes {#closed-shapes}
 
 Since a single polyline can contain numerous straight or curved line segments, and the `closed` parameter allows the drawing to connect the coordinates from the first and last [chart.point](https://www.tradingview.com/pine-script-reference/v6/#type_chart.point) in its [array](https://www.tradingview.com/pine-script-reference/v6/#type_array) of `points`, programmers can use polylines to draw many different types of closed polygonal shapes.
 
@@ -1092,7 +1092,7 @@ Note that:
 -   The resulting polygons have a maximum width of twice the horizontal semi-axis (`2 * xScale`), rounded to the nearest integer. The `newPolygon` condition uses this value to prevent the polygon drawings from overlapping.
 -   The script rounds the `xValue` calculation to the nearest integer because the `index` field of a [chart.point](https://www.tradingview.com/pine-script-reference/v6/#type_chart.point) only accepts an [int](https://www.tradingview.com/pine-script-reference/v6/#type_int) value, as the x-axis of the chart does not include fractional bar indices.
 
-### Deleting polylines
+### Deleting polylines {#deleting-polylines}
 
 To delete a specific polyline, use [polyline.delete()](https://www.tradingview.com/pine-script-reference/v6/#fun_polyline.delete). This function removes the [polyline](https://www.tradingview.com/pine-script-reference/v6/#type_polyline) object from the script and its drawing on the chart.
 
@@ -1175,7 +1175,7 @@ Note that:
 -   Despite the smooth appearance of the drawings, each polyline’s `points` array only contains _four_ [chart.point](https://www.tradingview.com/pine-script-reference/v6/#type_chart.point) objects per spiral rotation. Since the [polyline.new()](https://www.tradingview.com/pine-script-reference/v6/#fun_polyline.new) call includes `curved = true`, each polyline uses _smooth curves_ to connect their `points`, producing a visual approximation of the spiral’s actual curvature.
 -   The width of each spiral is approximately `4 * math.pi * rotations * xScale`, rounded to the nearest integer. We use this value in the `newSpiral` condition to space each drawing and prevent overlaps.
 
-### Redrawing polylines
+### Redrawing polylines {#redrawing-polylines}
 
 It may be desirable in some cases to change a polyline drawing throughout a script’s execution. While the `polyline.*` namespace does not contain built-in setter functions, we can _redraw_ polylines referenced by variables or [collections](https://www.tradingview.com/pine-script-docs/language/type-system/#collections) by _deleting_ the existing polylines and assigning _new instances_ with the desired changes.
 
@@ -1236,7 +1236,7 @@ currentDrawing := polyline.new(
  )
 ```
 
-## Realtime behavior
+## Realtime behavior {#realtime-behavior}
 
 [Lines](https://www.tradingview.com/pine-script-docs/visuals/lines-and-boxes/#lines), [boxes](https://www.tradingview.com/pine-script-docs/visuals/lines-and-boxes/#boxes), and [polylines](https://www.tradingview.com/pine-script-docs/visuals/lines-and-boxes/#polylines) are subject to both _commit_ and _rollback_ actions, which affect the behavior of a script when it executes on a realtime bar. See the page on Pine Script’s [Execution model](https://www.tradingview.com/pine-script-docs/language/execution-model/).
 
@@ -1256,9 +1256,9 @@ line.new(bar_index, hl2, bar_index + 1, hl2, color = lineColor, width = 4)
 
 The [line.new()](https://www.tradingview.com/pine-script-reference/v6/#fun_line.new) call in this example creates a new [line](https://www.tradingview.com/pine-script-reference/v6/#type_line) ID on each iteration when values change on the unconfirmed bar. The script automatically deletes the objects created on each change in that bar because of the _rollback_ before each iteration. It only _commits_ the last line created before the bar closes, and that [line](https://www.tradingview.com/pine-script-reference/v6/#type_line) instance is the one that persists on the confirmed bar.
 
-## Limitations
+## Limitations {#limitations}
 
-### Total number of objects
+### Total number of objects {#total-number-of-objects}
 
 [Lines](https://www.tradingview.com/pine-script-docs/visuals/lines-and-boxes/#lines), [boxes](https://www.tradingview.com/pine-script-docs/visuals/lines-and-boxes/#boxes), and [polylines](https://www.tradingview.com/pine-script-docs/visuals/lines-and-boxes/#polylines) consume server resources, which is why there are limits on the total number of drawings per script. When a script creates more drawing objects than the allowed limit, the Pine Script runtime automatically deletes the oldest ones in a process referred to as _garbage collection_.
 
@@ -1291,17 +1291,17 @@ Note that:
 
 -   We’ve used TradingView’s “Measure” drawing tool to measure the number of bars covered by the script’s drawing objects.
 
-### Past and future references with ​`xloc.bar_index`​
+### Past and future references with `xloc.bar_index` {#past-and-future-references-with-xlocbar_index}
 
 Objects positioned using [xloc.bar\_index](https://www.tradingview.com/pine-script-reference/v6/#var_xloc.bar_index) can contain x-coordinates no further than 500 bars into the future or 10,000 bars into the past.
 
-### Other contexts
+### Other contexts {#other-contexts}
 
 Scripts cannot use [lines](https://www.tradingview.com/pine-script-docs/visuals/lines-and-boxes/#lines), [boxes](https://www.tradingview.com/pine-script-docs/visuals/lines-and-boxes/#boxes), or [polylines](https://www.tradingview.com/pine-script-docs/visuals/lines-and-boxes/#polylines) in `request.*()` functions. Instances of these types can use the values from `request.*()` calls, but scripts can only create and draw them in the chart’s context.
 
 This limitation is also why drawing objects will not work when using the `timeframe` parameter in the [indicator()](https://www.tradingview.com/pine-script-reference/v6/#fun_indicator) declaration statement.
 
-### Historical buffer and ​`max_bars_back`​
+### Historical buffer and `max_bars_back` {#historical-buffer-and-max_bars_back}
 
 Using [barstate.isrealtime](https://www.tradingview.com/pine-script-reference/v6/#var_barstate.isrealtime) in combination with drawings may sometimes produce unexpected results. For example, the intention of this script is to ignore all historical bars and draw horizontal lines spanning 300 bars back on _realtime_ bars:
 

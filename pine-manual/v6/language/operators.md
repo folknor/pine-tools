@@ -4,24 +4,24 @@ source: https://www.tradingview.com/pine-script-docs/language/operators/
 section: language
 ---
 
-# Operators
+# Operators {#operators}
 
-## Introduction
+## Introduction {#introduction}
 
 Some operators are used to build _expressions_ returning a result:
 
 -   Arithmetic operators
 -   Comparison operators
 -   Logical operators
--   The [?:](https://www.tradingview.com/pine-script-reference/v6/#op_%7Bquestion%7D%7Bcolon%7D) ternary operator
--   The [\[\]](https://www.tradingview.com/pine-script-reference/v6/#op_%5B%5D) history-referencing operator
+-   The [?:](https://www.tradingview.com/pine-script-reference/v6/#op_?:) ternary operator
+-   The [\[\]](https://www.tradingview.com/pine-script-reference/v6/#op_[]) history-referencing operator
 
 Other operators are used to assign values to variables:
 
 -   `=` is used to assign a value to a variable, **but only when you declare the variable** (the first time you use it)
 -   `:=` is used to assign a value to a **previously declared variable**. The following operators can also be used in such a way: `+=`, `-=`, `*=`, `/=`, `%=`
 
-As is explained in the [Type system](https://www.tradingview.com/pine-script-docs/language/type-system/) page, _qualifiers_ and _types_ play a critical role in determining the type of results that expressions yield. This, in turn, has an impact on how and with what functions you will be allowed to use those results. Expressions always return a value with the strongest qualifier used in the expression, e.g., if you multiply an “input int” with a “series int”, the expression will produce a “series int” result, which you will not be able to use as the argument to `length` in [ta.ema()](https://www.tradingview.com/pine-script-reference/v6/#fun_ta%7Bdot%7Dema).
+As is explained in the [Type system](https://www.tradingview.com/pine-script-docs/language/type-system/) page, _qualifiers_ and _types_ play a critical role in determining the type of results that expressions yield. This, in turn, has an impact on how and with what functions you will be allowed to use those results. Expressions always return a value with the strongest qualifier used in the expression, e.g., if you multiply an “input int” with a “series int”, the expression will produce a “series int” result, which you will not be able to use as the argument to `length` in [ta.ema()](https://www.tradingview.com/pine-script-reference/v6/#fun_ta.ema).
 
 This script will produce a compilation error:
 
@@ -35,14 +35,14 @@ ma = ta.ema(close, adjustedLength)  // Compilation error!
 plot(ma)
 ```
 
-The compiler will complain: _Cannot call ‘ta.ema’ with argument ‘length’=‘adjustedLength’. An argument of ‘series int’ type was used but a ‘simple int’ is expected;_. This is happening because `lenInput` is an “input int” but `factor` is a “series int” (it can only be determined by looking at the value of [year](https://www.tradingview.com/pine-script-reference/v6/#var_year) on each bar). The `adjustedLength` variable is thus assigned a “series int” value. Our problem is that the Reference Manual entry for [ta.ema()](https://www.tradingview.com/pine-script-reference/v6/#fun_ta%7Bdot%7Dema) tells us that its `length` parameter requires a “simple” value, which is a weaker qualifier than “series”, so a “series int” value is not allowed.
+The compiler will complain: _Cannot call ‘ta.ema’ with argument ‘length’=‘adjustedLength’. An argument of ‘series int’ type was used but a ‘simple int’ is expected;_. This is happening because `lenInput` is an “input int” but `factor` is a “series int” (it can only be determined by looking at the value of [year](https://www.tradingview.com/pine-script-reference/v6/#var_year) on each bar). The `adjustedLength` variable is thus assigned a “series int” value. Our problem is that the Reference Manual entry for [ta.ema()](https://www.tradingview.com/pine-script-reference/v6/#fun_ta.ema) tells us that its `length` parameter requires a “simple” value, which is a weaker qualifier than “series”, so a “series int” value is not allowed.
 
 The solution to our conundrum requires:
 
--   Using another moving average function that supports a “series int” length, such as [ta.sma()](https://www.tradingview.com/pine-script-reference/v6/#fun_ta%7Bdot%7Dsma), or
+-   Using another moving average function that supports a “series int” length, such as [ta.sma()](https://www.tradingview.com/pine-script-reference/v6/#fun_ta.sma), or
 -   Not using a calculation producing a “series int” value for our length.
 
-## Arithmetic operators
+## Arithmetic operators {#arithmetic-operators}
 
 There are five arithmetic operators in Pine Script®:
 
@@ -72,7 +72,7 @@ modulo(series int a, series int b) =>
 plot(modulo(-1, 100))
 ```
 
-## Comparison operators
+## Comparison operators {#comparison-operators}
 
 There are six comparison operators in Pine Script:
 
@@ -95,7 +95,7 @@ Examples:
 close >= open  // Depends on values of `close` and `open`
 ```
 
-## Logical operators
+## Logical operators {#logical-operators}
 
 There are three logical operators in Pine Script:
 
@@ -125,9 +125,9 @@ The operator `not` is unary. When applied to a `true`, operand the result will b
 | false | true | true |
 | false | false | false |
 
-## ​`?:`​ ternary operator
+## `?:` ternary operator {#-ternary-operator}
 
-The [?:](https://www.tradingview.com/pine-script-reference/v6/#op_%7Bquestion%7D%7Bcolon%7D) ternary operator is used to create expressions of the form:
+The [?:](https://www.tradingview.com/pine-script-reference/v6/#op_?:) ternary operator is used to create expressions of the form:
 
 ```pine
 condition ? valueWhenConditionIsTrue : valueWhenConditionIsFalse
@@ -143,17 +143,17 @@ timeframe.isintraday ? color.red : timeframe.isdaily ? color.green : timeframe.i
 
 The example is calculated from left to right:
 
--   If [timeframe.isintraday](https://www.tradingview.com/pine-script-reference/v6/#var_timeframe%7Bdot%7Disintraday) is `true`, then `color.red` is returned. If it is `false`, then [timeframe.isdaily](https://www.tradingview.com/pine-script-reference/v6/#var_timeframe%7Bdot%7Disdaily) is evaluated.
--   If [timeframe.isdaily](https://www.tradingview.com/pine-script-reference/v6/#var_timeframe%7Bdot%7Disdaily) is `true`, then `color.green` is returned. If it is `false`, then [timeframe.ismonthly](https://www.tradingview.com/pine-script-reference/v6/#var_timeframe%7Bdot%7Dismonthly) is evaluated.
--   If [timeframe.ismonthly](https://www.tradingview.com/pine-script-reference/v6/#var_timeframe%7Bdot%7Dismonthly) is `true`, then `color.blue` is returned, otherwise [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) is returned.
+-   If [timeframe.isintraday](https://www.tradingview.com/pine-script-reference/v6/#var_timeframe.isintraday) is `true`, then `color.red` is returned. If it is `false`, then [timeframe.isdaily](https://www.tradingview.com/pine-script-reference/v6/#var_timeframe.isdaily) is evaluated.
+-   If [timeframe.isdaily](https://www.tradingview.com/pine-script-reference/v6/#var_timeframe.isdaily) is `true`, then `color.green` is returned. If it is `false`, then [timeframe.ismonthly](https://www.tradingview.com/pine-script-reference/v6/#var_timeframe.ismonthly) is evaluated.
+-   If [timeframe.ismonthly](https://www.tradingview.com/pine-script-reference/v6/#var_timeframe.ismonthly) is `true`, then `color.blue` is returned, otherwise [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) is returned.
 
 Note that, in contrast to [conditional structures](https://www.tradingview.com/pine-script-docs/language/conditional-structures), the ternary operator does _not_ create [local scopes](https://www.tradingview.com/pine-script-docs/faq/programming/#what-does-scope-mean).
 
-## ​`[]`​ history-referencing operator
+## `[]` history-referencing operator {#-history-referencing-operator}
 
-It is possible to refer to past values of [time series](https://www.tradingview.com/pine-script-docs/language/execution-model/#time-series) using the [\[\]](https://www.tradingview.com/pine-script-reference/v6/#op_%5B%5D) history-referencing operator. Past values are values a variable had on bars preceding the bar where the script is currently executing — the _current bar_. See the [Execution model](https://www.tradingview.com/pine-script-docs/language/execution-model/) page for more information about the way scripts are executed on bars.
+It is possible to refer to past values of [time series](https://www.tradingview.com/pine-script-docs/language/execution-model/#time-series) using the [\[\]](https://www.tradingview.com/pine-script-reference/v6/#op_[]) history-referencing operator. Past values are values a variable had on bars preceding the bar where the script is currently executing — the _current bar_. See the [Execution model](https://www.tradingview.com/pine-script-docs/language/execution-model/) page for more information about the way scripts are executed on bars.
 
-The [\[\]](https://www.tradingview.com/pine-script-reference/v6/#op_%5B%5D) operator is used after a variable, expression or function call. The value used inside the square brackets of the operator is the offset in the past we want to refer to. To refer to the value of the [volume](https://www.tradingview.com/pine-script-reference/v6/#var_volume) built-in variable two bars away from the current bar, one would use `volume[2]`.
+The [\[\]](https://www.tradingview.com/pine-script-reference/v6/#op_[]) operator is used after a variable, expression or function call. The value used inside the square brackets of the operator is the offset in the past we want to refer to. To refer to the value of the [volume](https://www.tradingview.com/pine-script-reference/v6/#var_volume) built-in variable two bars away from the current bar, one would use `volume[2]`.
 
 Because series grow dynamically, as the script calculates on successive bars, a constant historical offset refers to different bars. Let’s see how the value returned by the same offset is dynamic, and why series are very different from arrays. In Pine Script, the [close](https://www.tradingview.com/pine-script-reference/v6/#var_close) variable, or `close[0]` which is equivalent, holds the value of the current bar’s “close”. If your code is now executing on the **third** bar of the _dataset_ (the set of all bars on your chart), `close` will contain the price at the close of that bar, `close[1]` will contain the price at the close of the preceding bar (the dataset’s second bar), and `close[2]`, the first bar. `close[3]` will return [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) because no bar exists in that position, and thus its value is _not available_.
 
@@ -167,7 +167,7 @@ Pine Script has a variable that contains the number of the bar the script is exe
 
 There is another important consideration to keep in mind when using the `[]` operator in Pine Script. We have seen cases when a history reference may return the [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) value. [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) represents a value which is not a number and using it in any expression will produce a result that is also [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) (similar to [NaN](https://en.wikipedia.org/wiki/NaN)). Such cases often happen during the script’s calculations in the early bars of the dataset, but can also occur in later bars under certain conditions. If your code does not explicitly handle these special cases using the [na()](https://www.tradingview.com/pine-script-reference/v6/#fun_na) and [nz()](https://www.tradingview.com/pine-script-reference/v6/#fun_nz) functions, [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) values can introduce invalid results in your script’s calculations that can affect calculations all the way to the realtime bar.
 
-These are all valid uses of the [\[\]](https://www.tradingview.com/pine-script-reference/v6/#op_%5B%5D) operator:
+These are all valid uses of the [\[\]](https://www.tradingview.com/pine-script-reference/v6/#op_[]) operator:
 
 ```pine
 high[10]
@@ -176,13 +176,13 @@ ta.highest(high, 10)[20]
 close > nz(close[1], open)
 ```
 
-Note that the [\[\]](https://www.tradingview.com/pine-script-reference/v6/#op_%5B%5D) operator can only be used once on the same value. This is not allowed:
+Note that the [\[\]](https://www.tradingview.com/pine-script-reference/v6/#op_[]) operator can only be used once on the same value. This is not allowed:
 
 ```pine
 close[1][2] // Error: incorrect use of [] operator
 ```
 
-## Operator precedence
+## Operator precedence {#operator-precedence}
 
 The order of calculations is determined by the operators’ precedence. Operators with greater precedence are calculated first. Below is a list of operators sorted by decreasing precedence:
 
@@ -202,7 +202,7 @@ If in one expression there are several operators with the same precedence, then 
 
 If the expression must be calculated in a different order than precedence would dictate, then parts of the expression can be grouped together with parentheses.
 
-## ​`=`​ assignment operator
+## `=` assignment operator {#-assignment-operator}
 
 The `=` operator assigns an initial value or reference to a declared variable. It means _this is a new variable, and it starts with this value_.
 
@@ -218,7 +218,7 @@ plotColor = color.green
 
 See the [Variable declarations](https://www.tradingview.com/pine-script-docs/language/variable-declarations/) page for more information on how to declare variables.
 
-## ​`:=`​ reassignment operator
+## `:=` reassignment operator {#-reassignment-operator}
 
 The `:=` is used to _reassign_ a value to an existing variable. It says _use this variable that was declared earlier in my script, and give it a new value_.
 
@@ -237,7 +237,7 @@ plot(pHi)
 Note that:
 
 -   We declare `pHi` with this code: `var float pHi = na`. The [var](https://www.tradingview.com/pine-script-reference/v6/#kw_var) keyword tells Pine Script that we only want that variable initialized with [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) on the dataset’s first bar. The `float` keyword tells the compiler we are declaring a variable of type “float”. This is necessary because, contrary to most cases, the compiler cannot automatically determine the type of the value on the right side of the `=` sign.
--   While the variable declaration will only be executed on the first bar because it uses [var](https://www.tradingview.com/pine-script-reference/v6/#kw_var), the `pHi := nz(ta.pivothigh(5, 5), pHi)` line will be executed on all the chart’s bars. On each bar, it evaluates if the [ta.pivothigh()](https://www.tradingview.com/pine-script-reference/v6/#fun_ta%7Bdot%7Dpivothigh) call returns [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) because that is what the function does when it hasn’t found a new pivot. The [nz()](https://www.tradingview.com/pine-script-reference/v6/#fun_nz) function is the one doing the “checking for [na](https://www.tradingview.com/pine-script-reference/v6/#var_na)” part. When its first argument (`ta.pivothigh(5, 5)`) is [na](https://www.tradingview.com/pine-script-reference/v6/#var_na), it returns the second argument (`pHi`) instead of the first. When [ta.pivothigh()](https://www.tradingview.com/pine-script-reference/v6/#fun_ta%7Bdot%7Dpivothigh) returns the price point of a newly found pivot, that value is assigned to `pHi`. When it returns [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) because no new pivot was found, we assign the previous value of `pHi` to itself, in effect preserving its previous value.
+-   While the variable declaration will only be executed on the first bar because it uses [var](https://www.tradingview.com/pine-script-reference/v6/#kw_var), the `pHi := nz(ta.pivothigh(5, 5), pHi)` line will be executed on all the chart’s bars. On each bar, it evaluates if the [ta.pivothigh()](https://www.tradingview.com/pine-script-reference/v6/#fun_ta.pivothigh) call returns [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) because that is what the function does when it hasn’t found a new pivot. The [nz()](https://www.tradingview.com/pine-script-reference/v6/#fun_nz) function is the one doing the “checking for [na](https://www.tradingview.com/pine-script-reference/v6/#var_na)” part. When its first argument (`ta.pivothigh(5, 5)`) is [na](https://www.tradingview.com/pine-script-reference/v6/#var_na), it returns the second argument (`pHi`) instead of the first. When [ta.pivothigh()](https://www.tradingview.com/pine-script-reference/v6/#fun_ta.pivothigh) returns the price point of a newly found pivot, that value is assigned to `pHi`. When it returns [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) because no new pivot was found, we assign the previous value of `pHi` to itself, in effect preserving its previous value.
 
 The output of our script looks like this:
 
@@ -250,7 +250,7 @@ Note that:
 
 See the [Variable reassignment](https://www.tradingview.com/pine-script-docs/language/variable-declarations/#variable-reassignment) section for more information on how to reassign values to variables.
 
-## Compound assignment operators
+## Compound assignment operators {#compound-assignment-operators}
 
 A _compound assignment operator_ combines an [arithmetic operator](https://www.tradingview.com/pine-script-docs/language/operators/#arithmetic-operators) with the [reassignment operator](https://www.tradingview.com/pine-script-docs/language/operators/#-reassignment-operator). It provides a shorthand way to perform an arithmetic calculation on a variable and then assign the result back to that same variable.
 

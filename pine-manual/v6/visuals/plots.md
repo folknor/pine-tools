@@ -4,9 +4,9 @@ source: https://www.tradingview.com/pine-script-docs/visuals/plots/
 section: visuals
 ---
 
-# Plots
+# Plots {#plots}
 
-## Introduction
+## Introduction {#introduction}
 
 The [plot()](https://www.tradingview.com/pine-script-reference/v6/#fun_plot) function is the most frequently used function used to display information calculated using Pine scripts. It is versatile and can plot different styles of lines, histograms, areas, columns (like volume columns), fills, circles or crosses.
 
@@ -82,7 +82,7 @@ A [plot()](https://www.tradingview.com/pine-script-reference/v6/#fun_plot) call 
 
 If the [plot()](https://www.tradingview.com/pine-script-reference/v6/#fun_plot) call includes `force_overlay = true`, the result always displays on the main chart pane, even if the script is running in a separate pane. Otherwise, the script displays the plot in the same pane in which it runs. By contrast, scripts can only [color bars](https://www.tradingview.com/pine-script-docs/visuals/bar-coloring/) in the main chart pane, regardless of where they run.
 
-## ​`plot()`​ parameters
+## `plot()` parameters {#plot-parameters}
 
 The [plot()](https://www.tradingview.com/pine-script-reference/v6/#fun_plot) function has the following signature:
 
@@ -191,11 +191,11 @@ Controls the style of plotted lines, using one of the following arguments: [plot
 
 This parameter only modifies lines, so the `style` parameter must use one of the following arguments: [plot.style\_line](https://www.tradingview.com/pine-script-reference/v6/#const_plot.style_line) (the default), [plot.style\_linebr](https://www.tradingview.com/pine-script-reference/v6/#const_plot.style_linebr), [plot.style\_stepline](https://www.tradingview.com/pine-script-reference/v6/#const_plot.style_stepline), [plot.style\_stepline\_diamond](https://www.tradingview.com/pine-script-reference/v6/#const_plot.style_stepline_diamond), or [plot.style\_area](https://www.tradingview.com/pine-script-reference/v6/#const_plot.style_area) for it to take effect.
 
-## Plotting conditionally
+## Plotting conditionally {#plotting-conditionally}
 
 Scripts cannot call the [plot()](https://www.tradingview.com/pine-script-reference/v6/#fun_plot) function from conditional structures such as [if](https://www.tradingview.com/pine-script-reference/v6/#kw_if) blocks, but can control plots by varying their plotted values or their color. When no plot is required, you can either plot [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) values, or plot values using [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) color or any color with 100 transparency (which also makes it invisible).
 
-### Value control
+### Value control {#value-control}
 
 One way to control the display of plots is to plot [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) values when no plot is needed. Sometimes, values returned by functions such as [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security) will return [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) values, when `gaps = barmerge.gaps_on` is used, for example. In both these cases it is sometimes useful to plot discontinuous lines. This script shows a few ways to do it:
 
@@ -230,7 +230,7 @@ startInput = input.time(timestamp("2021-01-01"))
 plot(time > startInput ? close : na)
 ```
 
-### Color control
+### Color control {#color-control}
 
 The [Conditional coloring](https://www.tradingview.com/pine-script-docs/visuals/colors/#conditional-coloring) section of the [Colors](https://www.tradingview.com/pine-script-docs/visuals/colors/) page discusses color control for plots. We’ll look here at a few examples.
 
@@ -298,7 +298,7 @@ Note that:
 -   The last plot is plotting a continuous value, but it is setting the plot’s color to [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) when the pivot’s value changes, so the plot isn’t visible then. Because of this, a visible plot will only appear on the bar following the one where we plotted using [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) color.
 -   The blue dot indicates when a new high pivot is detected and no plot is drawn between the preceding bar and that one. Note how the pivot on the bar indicated by the arrow has just been detected in the realtime bar, three bars later, and how no plot is drawn. The plot will only appear on the next bar, making the plot visible **four bars** after the actual pivot.
 
-## Levels
+## Levels {#levels}
 
 The [hline()](https://www.tradingview.com/pine-script-reference/v6/#fun_hline) function plots horizontal lines at fixed levels (see the page on [Levels](https://www.tradingview.com/pine-script-docs/visuals/levels/)). The [hline()](https://www.tradingview.com/pine-script-reference/v6/#fun_hline) function is useful because it has some unique line styles that are not available with [plot()](https://www.tradingview.com/pine-script-reference/v6/#fun_plot), and is often more performant than similar [plot()](https://www.tradingview.com/pine-script-reference/v6/#fun_plot) lines. However, it also has some limitations, namely that it does not accept “series color” arguments, and that its `price` parameter requires an “input int/float” type, so it cannot vary during the script’s execution. In cases where scripts need to use dynamically calculated prices or colors, the [plot()](https://www.tradingview.com/pine-script-reference/v6/#fun_plot) function can create similar horizontal levels.
 
@@ -326,7 +326,7 @@ Note that:
 -   The 200 levels are plotted using `trackprice = true` to plot a distinct pattern of small squares that extends the full width of the script’s visual space. The `show_last = 1` in there displays only the last plotted value, which would appear as a one-bar straight line if the next trick wasn’t also used: the `offset = -99999` pushes that one-bar segment far away in the past so that it is never visible.
 -   The 300 levels are plotted using a continuous line, but a lighter transparency is used to make them less prominent.
 
-## Offsets
+## Offsets {#offsets}
 
 The `offset` parameter specifies the number of bars into the past or future that a script plots a given series. By default, a plot’s offset is zero, so each plot point aligns with its bar. Negative offsets display plots on bars _before_ the current bar, while positive offsets display them on future bars.
 
@@ -345,7 +345,7 @@ Note that:
 
 -   The argument for the `offset` parameter cannot be of type “series”; it must be a “simple” value, which does _not_ change during script execution.
 
-## Plot count limit
+## Plot count limit {#plot-count-limit}
 
 Each script is limited to a maximum plot count of 64. All `plot*()` calls and [alertcondition()](https://www.tradingview.com/pine-script-reference/v6/#fun_alertcondition) calls count towards the plot count of a script. Depending on the complexity of the plot and its arguments, certain calls count as _more than one_ plot in the total plot count.
 
@@ -366,7 +366,7 @@ plot(close, color = color.new(color.silver, close > open ? 40 : 0)) //🠆 "seri
 
 See the [Plot limits](https://www.tradingview.com/pine-script-docs/writing/limitations/#plot-limits) section of the [Limitations](https://www.tradingview.com/pine-script-docs/writing/limitations/) page for more information.
 
-## Scale
+## Scale {#scale}
 
 Not all values can be plotted everywhere. Your script’s visual space is always bound by upper and lower limits that are dynamically adjusted with the values plotted. An [RSI](https://www.tradingview.com/support/solutions/43000502338) indicator will plot values between 0 and 100, which is why it is usually displayed in a distinct _pane_ — or area — above or below the chart. If RSI values were plotted as an overlay on the chart, the effect would be to distort the symbol’s normal price scale, unless it just hapenned to be close to RSI’s 0 to 100 range. This shows an RSI signal line and a centerline at the 50 level, with the script running in a separate pane:
 
@@ -397,7 +397,7 @@ This is what happens:
 
 The chart is on the BTCUSD symbol, whose [close](https://www.tradingview.com/pine-script-reference/v6/#var_close) prices are around 40000 during this period. Plotting values in the 40000 range makes our RSI plots in the 0 to 100 range indiscernible. The same distorted plots would occur if we placed the [RSI](https://www.tradingview.com/support/solutions/43000502338) indicator on the chart as an overlay.
 
-### Merging two indicators
+### Merging two indicators {#merging-two-indicators}
 
 If you are planning to merge two signals in one script, first consider the scale of each. It is impossible, for example, to correctly plot an [RSI](https://www.tradingview.com/support/solutions/43000502338) and a [MACD](https://www.tradingview.com/support/solutions/43000502344) in the same script’s visual space because RSI has a fixed range (0 to 100) while MACD doesn’t, as it plots moving averages calculated on price.
 

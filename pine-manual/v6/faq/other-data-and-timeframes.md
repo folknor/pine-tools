@@ -4,9 +4,9 @@ source: https://www.tradingview.com/pine-script-docs/faq/other-data-and-timefram
 section: faq
 ---
 
-# Other data and timeframes
+# Other data and timeframes {#other-data-and-timeframes}
 
-## What kinds of data can I get from a higher timeframe?
+## What kinds of data can I get from a higher timeframe? {#what-kinds-of-data-can-i-get-from-a-higher-timeframe}
 
 Generally speaking, the [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security) function can get the same kinds of data from another timeframe that is available on the chart timeframe. Scripts can retrieve built-in variables like [open](https://www.tradingview.com/pine-script-reference/v6/#var_open), [high](https://www.tradingview.com/pine-script-reference/v6/#var_high), [low](https://www.tradingview.com/pine-script-reference/v6/#var_low), [close](https://www.tradingview.com/pine-script-reference/v6/#var_close), [volume](https://www.tradingview.com/pine-script-reference/v6/#var_volume), and [bar\_index](https://www.tradingview.com/pine-script-reference/v6/#var_bar_index).
 
@@ -21,7 +21,7 @@ plot(higherTfAtr)
 
 NoticeWhile the above script executes on realtime bars, its requested data includes _unconfirmed_ values from developing daily bars. Only the _confirmed_ values for the closed bars and the latest value for the open bar remain available after the script reloads. To learn how to request _non-repainting_ values from another context, see the [Avoiding repainting](https://www.tradingview.com/pine-script-docs/concepts/other-timeframes-and-data/#avoiding-repainting) section of the [Other timeframes and data](https://www.tradingview.com/pine-script-docs/concepts/other-timeframes-and-data/) page.
 
-## Which ​`request.*()`​ function should I use for lower timeframes?
+## Which `request.*()` function should I use for lower timeframes? {#which-request-function-should-i-use-for-lower-timeframes}
 
 The [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security) function is intended for accessing data at timeframes that are equal to or higher than the chart’s current timeframe. It is _possible_ to retrieve lower-timeframe (LTF) data using this function. However, the function returns the value from only _one_ LTF bar within the chart’s current bar (the last bar, by default).
 
@@ -60,13 +60,13 @@ NoteAlthough this approach is simpler to implement than the previous, it is also
 
 See the sections in the User Manual page “Other timeframes and Data” about [`request.security_lower_tf()`](https://www.tradingview.com/pine-script-docs/concepts/other-timeframes-and-data/#lower-timeframes) and using [`request.security()` on lower timeframes](https://www.tradingview.com/pine-script-docs/concepts/other-timeframes-and-data/#requestsecurity_lower_tf) to learn more about the differences between running these functions on a lower timeframe.
 
-## How to avoid repainting when using the ​`request.security()`​ function?
+## How to avoid repainting when using the `request.security()` function? {#how-to-avoid-repainting-when-using-the-requestsecurity-function}
 
 [Repainting](https://www.tradingview.com/pine-script-docs/concepts/repainting/) can be a problem when retrieving data from higher or lower timeframes using [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security).
 
 Retrieving data from a different symbol on the chart’s timeframe does not risk repainting. Requesting data from the chart’s own symbol and timeframe does not result in repainting either, but it is usually unnecessary to use [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security) rather than simply referencing the chart’s own values (except when modifying the chart’s ticker using `ticker.*()` functions). When using the chart’s timeframe, there is no need to offset the data, change the default `lookahead` value, or use [barmerge.lookahead\_on](https://www.tradingview.com/pine-script-reference/v6/#const_barmerge.lookahead_on) in order to avoid repainting.
 
-### Higher timeframes
+### Higher timeframes {#higher-timeframes}
 
 Values from a _higher timeframe_ (HTF) often repaint because a [historical bar](https://www.tradingview.com/pine-script-docs/language/execution-model/#executions-on-historical-bars) on the chart might include data from a [realtime bar](https://www.tradingview.com/pine-script-docs/language/execution-model/#executions-on-realtime-bars) on the HTF. Realtime values can change throughout the bar; for example, the [close](https://www.tradingview.com/pine-script-reference/v6/#var_close) price reflects the _latest_ price update in a realtime bar. When the HTF bar closes and its values become fixed, the relevant historical chart bars _change_ to adjust to the fixed HTF values. This behavior is described in the [Historical and realtime behavior](https://www.tradingview.com/pine-script-docs/concepts/other-timeframes-and-data/#historical-and-realtime-behavior) section of the User Manual. Users expect historical bars not to change, which is one reason why repainting is such a concern.
 
@@ -87,7 +87,7 @@ if timeframe.in_seconds() >= timeframe.in_seconds("1D")
 
 See the [Avoiding repainting](https://www.tradingview.com/pine-script-docs/concepts/other-timeframes-and-data/#avoiding-repainting) section of the User Manual for more information.
 
-### Lower timeframes
+### Lower timeframes {#lower-timeframes}
 
 Although the [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security) function is intended to operate on timeframes greater than or equal to the chart timeframe, it _can_ request data from a [lower timeframe](https://www.tradingview.com/pine-script-docs/concepts/other-timeframes-and-data/#lower-timeframes) (LTF), with limitations. When accessing data from a LTF, the function evaluates the given expression in the LTF context and returns the result from a _single_ LTF bar per chart bar. The specific LTF bar returned depends on the [lookahead](https://www.tradingview.com/pine-script-docs/concepts/other-timeframes-and-data/#lookahead) parameter:
 
@@ -96,7 +96,7 @@ Although the [request.security()](https://www.tradingview.com/pine-script-refere
 
 In most cases, using the [request.security\_lower\_tf()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security_lower_tf) function is more suitable for lower timeframes, as it returns an [array](https://www.tradingview.com/pine-script-docs/language/arrays/) containing data from _all_ available intrabars within a chart bar. See the section on [`request.security_lower_tf()`](https://www.tradingview.com/pine-script-docs/concepts/other-timeframes-and-data/#requestsecurity_lower_tf) to learn more.
 
-## How can I convert the chart’s timeframe into a numeric format?
+## How can I convert the chart’s timeframe into a numeric format? {#how-can-i-convert-the-charts-timeframe-into-a-numeric-format}
 
 The [timeframe.in\_seconds()](https://www.tradingview.com/pine-script-reference/v6/#fun_timeframe.in_seconds) function converts a timeframe specified in [timeframe.period](https://www.tradingview.com/pine-script-reference/v6/#var_timeframe.period) format into an equivalent number of seconds. Having the timeframe in a numeric format means that scripts can calculate the number of time units within a specific timeframe, or perform operations that adjust the timeframe used in HTF calls in relation to the chart’s timeframe, as described in [this FAQ entry](https://www.tradingview.com/pine-script-docs/faq/other-data-and-timeframes/#how-do-i-define-a-higher-timeframe-that-is-a-multiple-of-the-chart-timeframe).
 
@@ -125,7 +125,7 @@ if barstate.islastconfirmedhistory
     table.cell(displayTable, 1, 4, str.tostring(tfInDays), text_color = chart.fg_color)
 ```
 
-## How can I convert a timeframe in “float” minutes into a string usable with ​`request.security()`​?
+## How can I convert a timeframe in “float” minutes into a string usable with `request.security()`? {#how-can-i-convert-a-timeframe-in-float-minutes-into-a-string-usable-with-requestsecurity}
 
 The built-in function [timeframe.from\_seconds()](https://www.tradingview.com/pine-script-reference/v6/#fun_timeframe.from_seconds) function converts a number of seconds into a timeframe string that is compatible with [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security).
 
@@ -147,7 +147,7 @@ if barstate.islastconfirmedhistory
     table.cell(displayTable, 0, 0, str.format("Target TF (string): {0}", targetTfString), text_color = chart.fg_color)
 ```
 
-## How do I define a higher timeframe that is a multiple of the chart timeframe?
+## How do I define a higher timeframe that is a multiple of the chart timeframe? {#how-do-i-define-a-higher-timeframe-that-is-a-multiple-of-the-chart-timeframe}
 
 This example script uses the [timeframe.in\_seconds()](https://www.tradingview.com/pine-script-reference/v6/#fun_timeframe.in_seconds) and [timeframe.from\_seconds()](https://www.tradingview.com/pine-script-reference/v6/#fun_timeframe.from_seconds) functions to calculate a higher timeframe that is a fixed multiple of the chart’s current timeframe. Using the input for the multiplier, the user can define the ratio between the chart’s timeframe and the higher timeframe. The script then calculates the [Relative Strength Index](https://www.tradingview.com/support/solutions/43000502338-relative-strength-index-rsi/) (RSI) for both the chart’s timeframe and the higher timeframe, plotting both in a separate pane for comparison. We display the calculated higher timeframe string in a [table](https://www.tradingview.com/pine-script-docs/visuals/tables/) on the main chart pane by using `force_overlay`:
 
@@ -173,7 +173,7 @@ if barstate.islastconfirmedhistory
     table.cell(displayTable, 0, 0, str.format("Target TF (string): {0}", targetTfString), text_color = chart.fg_color)
 ```
 
-## How can I plot a moving average only when the chart’s timeframe is 1D or higher?
+## How can I plot a moving average only when the chart’s timeframe is 1D or higher? {#how-can-i-plot-a-moving-average-only-when-the-charts-timeframe-is-1d-or-higher}
 
 To plot a moving average on a chart only if it has a timeframe of daily (“1D”) or higher, scripts can use the [timeframe.in\_seconds()](https://www.tradingview.com/pine-script-reference/v6/#fun_timeframe.in_seconds) function to convert the chart’s current timeframe into seconds. Since a day consists of 86400 seconds, any timeframe equal to or exceeding this value corresponds to a daily or longer duration.
 
@@ -187,7 +187,7 @@ float ma = ta.sma(close, 200)
 plot(tfIsDailyOrGreater ? ma : na, "MA", color.aqua)
 ```
 
-## What happens if I plot a moving average from the 1H timeframe on a different timeframe?
+## What happens if I plot a moving average from the 1H timeframe on a different timeframe? {#what-happens-if-i-plot-a-moving-average-from-the-1h-timeframe-on-a-different-timeframe}
 
 The [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security) function can access data from a different _context_, such as a different symbol or timeframe. There are different considerations when accessing data from a timeframe _higher_ or _lower_ than the chart timeframe.
 
@@ -246,7 +246,7 @@ if barstate.islastconfirmedhistory and tfIsLess
     table.cell(displayTable, 0, 0, "Requested TF is lower than chart's TF\nNo MA displayed", text_color = color.red)
 ```
 
-## Why do intraday price and volume values differ from values retrieved with ​`request.security()`​ at daily timeframes and higher?
+## Why do intraday price and volume values differ from values retrieved with `request.security()` at daily timeframes and higher? {#why-do-intraday-price-and-volume-values-differ-from-values-retrieved-with-requestsecurity-at-daily-timeframes-and-higher}
 
 Intraday [open](https://www.tradingview.com/pine-script-reference/v6/#var_open), [high](https://www.tradingview.com/pine-script-reference/v6/#var_high), [low](https://www.tradingview.com/pine-script-reference/v6/#var_low), [close](https://www.tradingview.com/pine-script-reference/v6/#var_close), and [volume](https://www.tradingview.com/pine-script-reference/v6/#var_volume) (OHLCV) values can be different from those from [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security) at daily timeframes and higher for a number of reasons, including the following:
 

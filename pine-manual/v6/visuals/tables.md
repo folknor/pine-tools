@@ -4,20 +4,20 @@ source: https://www.tradingview.com/pine-script-docs/visuals/tables/
 section: visuals
 ---
 
-# Tables
+# Tables {#tables}
 
-## Introduction
+## Introduction {#introduction}
 
 Tables are objects that can be used to position information in specific and fixed locations in a script’s visual space. Contrary to all other plots or objects drawn in Pine Script®, tables are not anchored to specific bars; they _float_ in a script’s space, whether in overlay or pane mode, in studies or strategies, independently of the chart bars being viewed or the zoom factor used.
 
 Tables contain cells arranged in columns and rows, much like a spreadsheet. They are created and populated in two distincts steps:
 
-1.  A table’s structure and key attributes are defined using [table.new()](https://www.tradingview.com/pine-script-reference/v6/#fun_table%7Bdot%7Dnew), which returns a table ID that acts like a pointer to the table, just like label, line, or array IDs do. The [table.new()](https://www.tradingview.com/pine-script-reference/v6/#fun_table%7Bdot%7Dnew) call will create the table object but does not display it.
-2.  Once created, and for it to display, the table must be populated using one [table.cell()](https://www.tradingview.com/pine-script-reference/v6/#fun_table%7Bdot%7Dcell) call for each cell. Table cells can contain text, or not. This second step is when the width and height of cells are defined.
+1.  A table’s structure and key attributes are defined using [table.new()](https://www.tradingview.com/pine-script-reference/v6/#fun_table.new), which returns a table ID that acts like a pointer to the table, just like label, line, or array IDs do. The [table.new()](https://www.tradingview.com/pine-script-reference/v6/#fun_table.new) call will create the table object but does not display it.
+2.  Once created, and for it to display, the table must be populated using one [table.cell()](https://www.tradingview.com/pine-script-reference/v6/#fun_table.cell) call for each cell. Table cells can contain text, or not. This second step is when the width and height of cells are defined.
 
 Most attributes of a previously created table can be changed using `table.set_*()` setter functions. Attributes of previously populated cells can be modified using `table.cell_set_*()` functions.
 
-A table is positioned in an indicator’s space by anchoring it to one of nine references: the four corners or midpoints, including the center. Tables are positioned by expanding the table from its anchor, so a table anchored to the [position.middle\_right](https://www.tradingview.com/pine-script-reference/v6/#const_position%7Bdot%7Dmiddle_right) reference will be drawn by expanding up, down and left from that anchor.
+A table is positioned in an indicator’s space by anchoring it to one of nine references: the four corners or midpoints, including the center. Tables are positioned by expanding the table from its anchor, so a table anchored to the [position.middle\_right](https://www.tradingview.com/pine-script-reference/v6/#const_position.middle_right) reference will be drawn by expanding up, down and left from that anchor.
 
 Two modes are available to determine the width/height of table cells:
 
@@ -27,21 +27,21 @@ Two modes are available to determine the width/height of table cells:
 Displayed table contents always represent the last state of the table, as it was drawn on the script’s last execution, on the dataset’s last bar. Contrary to values displayed in the Data Window or in indicator values, variable contents displayed in tables will thus not change as a script user moves his cursor over specific chart bars. For this reason, it is strongly recommended to always restrict execution of all `table.*()` calls to either the first or last bars of the dataset. Accordingly:
 
 -   Use the [var](https://www.tradingview.com/pine-script-reference/v6/#kw_var) keyword to declare tables.
--   Enclose all other calls inside an [if](https://www.tradingview.com/pine-script-reference/v6/#kw_if) [barstate.islast](https://www.tradingview.com/pine-script-reference/v6/#var_barstate%7Bdot%7Dislast) block.
+-   Enclose all other calls inside an [if](https://www.tradingview.com/pine-script-reference/v6/#kw_if) [barstate.islast](https://www.tradingview.com/pine-script-reference/v6/#var_barstate.islast) block.
 
 **Multiple tables can be used in one script, as long as they are each anchored to a different position. Each table object is identified by its own ID. Limits on the quantity of cells in all tables are determined by the total number of cells used in one script.**
 
-## Creating tables
+## Creating tables {#creating-tables}
 
-When creating a table using [table.new()](https://www.tradingview.com/pine-script-reference/v6/#fun_table%7Bdot%7Dnew), three parameters are mandatory: the table’s position and its number of columns and rows. Five other parameters are optional: the table’s background color, the color and width of the table’s outer frame, and the color and width of the borders around all cells, excluding the outer frame. All table attributes except its number of columns and rows can be modified using setter functions: [table.set\_position()](https://www.tradingview.com/pine-script-reference/v6/#fun_table%7Bdot%7Dset_position), [table.set\_bgcolor()](https://www.tradingview.com/pine-script-reference/v6/#fun_table%7Bdot%7Dset_bgcolor), [table.set\_frame\_color()](https://www.tradingview.com/pine-script-reference/v6/#fun_table%7Bdot%7Dset_frame_color), [table.set\_frame\_width()](https://www.tradingview.com/pine-script-reference/v6/#fun_table%7Bdot%7Dset_frame_width), [table.set\_border\_color()](https://www.tradingview.com/pine-script-reference/v6/#fun_table%7Bdot%7Dset_border_color) and [table.set\_border\_width()](https://www.tradingview.com/pine-script-reference/v6/#fun_table%7Bdot%7Dset_border_width).
+When creating a table using [table.new()](https://www.tradingview.com/pine-script-reference/v6/#fun_table.new), three parameters are mandatory: the table’s position and its number of columns and rows. Five other parameters are optional: the table’s background color, the color and width of the table’s outer frame, and the color and width of the borders around all cells, excluding the outer frame. All table attributes except its number of columns and rows can be modified using setter functions: [table.set\_position()](https://www.tradingview.com/pine-script-reference/v6/#fun_table.set_position), [table.set\_bgcolor()](https://www.tradingview.com/pine-script-reference/v6/#fun_table.set_bgcolor), [table.set\_frame\_color()](https://www.tradingview.com/pine-script-reference/v6/#fun_table.set_frame_color), [table.set\_frame\_width()](https://www.tradingview.com/pine-script-reference/v6/#fun_table.set_frame_width), [table.set\_border\_color()](https://www.tradingview.com/pine-script-reference/v6/#fun_table.set_border_color) and [table.set\_border\_width()](https://www.tradingview.com/pine-script-reference/v6/#fun_table.set_border_width).
 
-Tables can be deleted using [table.delete()](https://www.tradingview.com/pine-script-reference/v6/#fun_table%7Bdot%7Ddelete), and their content can be selectively removed using [table.clear()](https://www.tradingview.com/pine-script-reference/v6/#fun_table%7Bdot%7Dclear).
+Tables can be deleted using [table.delete()](https://www.tradingview.com/pine-script-reference/v6/#fun_table.delete), and their content can be selectively removed using [table.clear()](https://www.tradingview.com/pine-script-reference/v6/#fun_table.clear).
 
-When populating cells using [table.cell()](https://www.tradingview.com/pine-script-reference/v6/#fun_table%7Bdot%7Dcell), you must supply an argument for four mandatory parameters: the table id the cell belongs to, its column and row index using indices that start at zero, and the text string the cell contains, which can be null. Other parameters are optional: the width and height of the cell, the text’s attributes (color, horizontal and vertical alignment, size, formatting), and the cell’s background color. All cell attributes can be modified using setter functions: [table.cell\_set\_text()](https://www.tradingview.com/pine-script-reference/v6/#fun_table%7Bdot%7Dcell_set_text), [table.cell\_set\_width()](https://www.tradingview.com/pine-script-reference/v6/#fun_table%7Bdot%7Dcell_set_width), [table.cell\_set\_height()](https://www.tradingview.com/pine-script-reference/v6/#fun_table%7Bdot%7Dcell_set_height), [table.cell\_set\_text\_color()](https://www.tradingview.com/pine-script-reference/v6/#fun_table%7Bdot%7Dcell_set_text_color), [table.cell\_set\_text\_halign()](https://www.tradingview.com/pine-script-reference/v6/#fun_table%7Bdot%7Dcell_set_text_halign), [table.cell\_set\_text\_valign()](https://www.tradingview.com/pine-script-reference/v6/#fun_table%7Bdot%7Dcell_set_text_valign), [table.cell\_set\_text\_size()](https://www.tradingview.com/pine-script-reference/v6/#fun_table%7Bdot%7Dcell_set_text_size), [table.cell\_set\_text\_formatting()](https://www.tradingview.com/pine-script-reference/v6/#fun_table.cell_set_text_formatting), and [table.cell\_set\_bgcolor()](https://www.tradingview.com/pine-script-reference/v6/#fun_table%7Bdot%7Dcell_set_bgcolor).
+When populating cells using [table.cell()](https://www.tradingview.com/pine-script-reference/v6/#fun_table.cell), you must supply an argument for four mandatory parameters: the table id the cell belongs to, its column and row index using indices that start at zero, and the text string the cell contains, which can be null. Other parameters are optional: the width and height of the cell, the text’s attributes (color, horizontal and vertical alignment, size, formatting), and the cell’s background color. All cell attributes can be modified using setter functions: [table.cell\_set\_text()](https://www.tradingview.com/pine-script-reference/v6/#fun_table.cell_set_text), [table.cell\_set\_width()](https://www.tradingview.com/pine-script-reference/v6/#fun_table.cell_set_width), [table.cell\_set\_height()](https://www.tradingview.com/pine-script-reference/v6/#fun_table.cell_set_height), [table.cell\_set\_text\_color()](https://www.tradingview.com/pine-script-reference/v6/#fun_table.cell_set_text_color), [table.cell\_set\_text\_halign()](https://www.tradingview.com/pine-script-reference/v6/#fun_table.cell_set_text_halign), [table.cell\_set\_text\_valign()](https://www.tradingview.com/pine-script-reference/v6/#fun_table.cell_set_text_valign), [table.cell\_set\_text\_size()](https://www.tradingview.com/pine-script-reference/v6/#fun_table.cell_set_text_size), [table.cell\_set\_text\_formatting()](https://www.tradingview.com/pine-script-reference/v6/#fun_table.cell_set_text_formatting), and [table.cell\_set\_bgcolor()](https://www.tradingview.com/pine-script-reference/v6/#fun_table.cell_set_bgcolor).
 
-Keep in mind that each successive call to [table.cell()](https://www.tradingview.com/pine-script-reference/v6/#fun_table%7Bdot%7Dcell) redefines **all** the cell’s properties, deleting any properties set by previous [table.cell()](https://www.tradingview.com/pine-script-reference/v6/#fun_table%7Bdot%7Dcell) calls on the same cell.
+Keep in mind that each successive call to [table.cell()](https://www.tradingview.com/pine-script-reference/v6/#fun_table.cell) redefines **all** the cell’s properties, deleting any properties set by previous [table.cell()](https://www.tradingview.com/pine-script-reference/v6/#fun_table.cell) calls on the same cell.
 
-### Placing a single value in a fixed position
+### Placing a single value in a fixed position {#placing-a-single-value-in-a-fixed-position}
 
 Let’s create our first table, which will place the value of ATR in the upper-right corner of the chart. We first create a one-cell table, then populate that cell:
 
@@ -61,8 +61,8 @@ if barstate.islast
 
 Note that:
 
--   We use the [var](https://www.tradingview.com/pine-script-reference/v6/#kw_var) keyword when creating the table with [table.new()](https://www.tradingview.com/pine-script-reference/v6/#fun_table%7Bdot%7Dnew).
--   We populate the cell inside an [if](https://www.tradingview.com/pine-script-reference/v6/#kw_if) [barstate.islast](https://www.tradingview.com/pine-script-reference/v6/#var_barstate%7Bdot%7Dislast) block using [table.cell()](https://www.tradingview.com/pine-script-reference/v6/#fun_table%7Bdot%7Dcell).
+-   We use the [var](https://www.tradingview.com/pine-script-reference/v6/#kw_var) keyword when creating the table with [table.new()](https://www.tradingview.com/pine-script-reference/v6/#fun_table.new).
+-   We populate the cell inside an [if](https://www.tradingview.com/pine-script-reference/v6/#kw_if) [barstate.islast](https://www.tradingview.com/pine-script-reference/v6/#var_barstate.islast) block using [table.cell()](https://www.tradingview.com/pine-script-reference/v6/#fun_table.cell).
 -   When populating the cell, we do not specify the `width` or `height`. The width and height of our cell will thus adjust automatically to the text it contains.
 -   We call `ta.atr(14)` prior to entry in our [if](https://www.tradingview.com/pine-script-reference/v6/#kw_if) block so that it evaluates on each bar. Had we used `str.tostring(ta.atr(14))` inside the [if](https://www.tradingview.com/pine-script-reference/v6/#kw_if) block, the function would not have evaluated correctly because it would be called on the dataset’s last bar without having calculated the necessary values from the previous bars.
 
@@ -83,12 +83,12 @@ if barstate.islast
 
 Note that:
 
--   We used [table.new()](https://www.tradingview.com/pine-script-reference/v6/#fun_table%7Bdot%7Dnew) to define a background color, a frame color and its width.
--   When populating the cell with [table.cell()](https://www.tradingview.com/pine-script-reference/v6/#fun_table%7Bdot%7Dcell), we set the text to display in white.
--   We pass [format.mintick](https://www.tradingview.com/pine-script-reference/v6/#const_format%7Bdot%7Dmintick) as a second argument to the [str.tostring()](https://www.tradingview.com/pine-script-reference/v6/#fun_str%7Bdot%7Dtostring) function to restrict the precision of ATR to the chart’s tick precision.
+-   We used [table.new()](https://www.tradingview.com/pine-script-reference/v6/#fun_table.new) to define a background color, a frame color and its width.
+-   When populating the cell with [table.cell()](https://www.tradingview.com/pine-script-reference/v6/#fun_table.cell), we set the text to display in white.
+-   We pass [format.mintick](https://www.tradingview.com/pine-script-reference/v6/#const_format.mintick) as a second argument to the [str.tostring()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.tostring) function to restrict the precision of ATR to the chart’s tick precision.
 -   We now use an input to allow the script user to specify the period of ATR. The input also includes a tooltip, which the user can see when he hovers over the “i” icon in the script’s “Settings/Inputs” tab.
 
-### Coloring the chart’s background
+### Coloring the chart’s background {#coloring-the-charts-background}
 
 This example uses a one-cell table to color the chart’s background on the bull/bear state of RSI:
 
@@ -112,9 +112,9 @@ Note that:
 
 -   We provide users with inputs allowing them to specify the bull/bear colors to use for the background, and send those input colors as arguments to our `colorChartBg()` function.
 -   We create a new table only once, using the [var](https://www.tradingview.com/pine-script-reference/v6/#kw_var) keyword to declare the table.
--   We use [table.cell()](https://www.tradingview.com/pine-script-reference/v6/#fun_table%7Bdot%7Dcell) on the last bar only, to specify the cell’s properties. We make the cell the width and height of the indicator’s space, so it covers the whole chart.
+-   We use [table.cell()](https://www.tradingview.com/pine-script-reference/v6/#fun_table.cell) on the last bar only, to specify the cell’s properties. We make the cell the width and height of the indicator’s space, so it covers the whole chart.
 
-### Creating a display panel
+### Creating a display panel {#creating-a-display-panel}
 
 Tables are ideal to create sophisticated display panels. Not only do they make it possible for display panels to always be visible in a constant position, they provide more flexible formatting because each cell’s properties are controlled separately: background, text color, size and alignment, etc.
 
@@ -175,10 +175,10 @@ Note that:
 
 -   Users can select the table’s position from the inputs, as well as the bull/bear/neutral colors to be used for the background of the right column’s cells.
 -   The table’s quantity of rows is determined using the number of MAs the user chooses to display. We add one row for the column headers.
--   Even though we populate the table cells on the last bar only, we need to execute the calls to [ta.sma()](https://www.tradingview.com/pine-script-reference/v6/#fun_ta%7Bdot%7Dsma) on every bar so they produce the correct results. The compiler warning that appears when you compile the code can be safely ignored.
+-   Even though we populate the table cells on the last bar only, we need to execute the calls to [ta.sma()](https://www.tradingview.com/pine-script-reference/v6/#fun_ta.sma) on every bar so they produce the correct results. The compiler warning that appears when you compile the code can be safely ignored.
 -   We separate our inputs in two sections using `group`, and join the relevant ones on the same line using `inline`. We supply tooltips to document the limits of certain fields using `tooltip`.
 
-### Displaying a heatmap
+### Displaying a heatmap {#displaying-a-heatmap}
 
 Our next project is a heatmap, which will indicate the bull/bear relationship of the current price relative to its past values. To do so, we will use a table positioned at the bottom of the chart. We will display colors only, so our table will contain no text; we will simply color the background of its cells to produce our heatmap. The heatmap uses a user-selectable lookback period. It loops across that period to determine if price is above/below each bar in that past, and displays a progressively lighter intensity of the bull/bear color as we go further in the past:
 
@@ -219,16 +219,16 @@ Note that:
 
 -   We define a maximum lookback period as a `MAX_LOOKBACK` constant. This is an important value and we use it for two purposes: to specify the number of columns we will create in our one-row table, and to specify the lookback period required for the `_src` argument in our function, so that we force Pine Script to create a historical buffer size that will allow us to refer to the required quantity of past values of `_src` in our [for](https://www.tradingview.com/pine-script-reference/v6/#kw_for) loop.
 -   We offer users the possibility of configuring the bull/bear colors in the inputs and we use `inline` to place the color selections on the same line.
--   Inside our function, we enclose our table-creation code in an [if](https://www.tradingview.com/pine-script-reference/v6/#kw_if) [barstate.islast](https://www.tradingview.com/pine-script-reference/v6/#var_barstate%7Bdot%7Dislast) construct so that it only runs on the last bar of the chart.
+-   Inside our function, we enclose our table-creation code in an [if](https://www.tradingview.com/pine-script-reference/v6/#kw_if) [barstate.islast](https://www.tradingview.com/pine-script-reference/v6/#var_barstate.islast) construct so that it only runs on the last bar of the chart.
 -   The initialization of the table is done inside the [if](https://www.tradingview.com/pine-script-reference/v6/#kw_if) statement. Because of that, and the fact that it uses the [var](https://www.tradingview.com/pine-script-reference/v6/#kw_var) keyword, initialization only occurs the first time the script executes on a last bar. Note that this behavior is different from the usual [var](https://www.tradingview.com/pine-script-reference/v6/#kw_var) declarations in the script’s global scope, where initialization occurs on the first bar of the dataset, at [bar\_index](https://www.tradingview.com/pine-script-reference/v6/#var_bar_index) zero.
--   We do not specify an argument to the `text` parameter in our [table.cell()](https://www.tradingview.com/pine-script-reference/v6/#fun_table%7Bdot%7Dcell) calls, so an empty string is used.
+-   We do not specify an argument to the `text` parameter in our [table.cell()](https://www.tradingview.com/pine-script-reference/v6/#fun_table.cell) calls, so an empty string is used.
 -   We calculate our transparency in such a way that the intensity of the colors decreases as we go further in history.
 -   We use dynamic color generation to create different transparencies of our base colors as needed.
 -   Contrary to other objects displayed in Pine scripts, this heatmap’s cells are not linked to chart bars. The configured lookback period determines how many table cells the heatmap contains, and the heatmap will not change as the chart is panned horizontally, or scaled.
 -   The maximum number of cells that can be displayed in the script’s visual space will depend on your viewing device’s resolution and the portion of the display used by your chart. Higher resolution screens and wider windows will allow more table cells to be displayed.
 
-## Tips
+## Tips {#tips}
 
--   When creating tables in strategy scripts, keep in mind that unless the strategy uses `calc_on_every_tick = true`, table code enclosed in [if](https://www.tradingview.com/pine-script-reference/v6/#kw_if) [barstate.islast](https://www.tradingview.com/pine-script-reference/v6/#var_barstate%7Bdot%7Dislast) blocks will not execute on each realtime update, so the table will not display as you expect.
--   Keep in mind that successive calls to [table.cell()](https://www.tradingview.com/pine-script-reference/v6/#fun_table%7Bdot%7Dcell) overwrite the cell’s properties specified by previous [table.cell()](https://www.tradingview.com/pine-script-reference/v6/#fun_table%7Bdot%7Dcell) calls. Use the setter functions to modify a cell’s properties.
+-   When creating tables in strategy scripts, keep in mind that unless the strategy uses `calc_on_every_tick = true`, table code enclosed in [if](https://www.tradingview.com/pine-script-reference/v6/#kw_if) [barstate.islast](https://www.tradingview.com/pine-script-reference/v6/#var_barstate.islast) blocks will not execute on each realtime update, so the table will not display as you expect.
+-   Keep in mind that successive calls to [table.cell()](https://www.tradingview.com/pine-script-reference/v6/#fun_table.cell) overwrite the cell’s properties specified by previous [table.cell()](https://www.tradingview.com/pine-script-reference/v6/#fun_table.cell) calls. Use the setter functions to modify a cell’s properties.
 -   Remember to control the execution of your table code wisely by restricting it to the necessary bars only. This saves server resources and your charts will display faster, so everybody wins.

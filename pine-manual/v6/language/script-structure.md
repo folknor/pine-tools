@@ -4,7 +4,7 @@ source: https://www.tradingview.com/pine-script-docs/language/script-structure/
 section: language
 ---
 
-# Script structure
+# Script structure {#script-structure}
 
 A Pine script follows this general structure:
 
@@ -14,7 +14,7 @@ A Pine script follows this general structure:
 <code>
 ```
 
-## Version
+## Version {#version}
 
 A [compiler annotation](https://www.tradingview.com/pine-script-docs/language/script-structure/#compiler-annotations) in the following form tells the compiler which of the versions of Pine Script® the script is written in:
 
@@ -28,7 +28,7 @@ A [compiler annotation](https://www.tradingview.com/pine-script-docs/language/sc
 
 Notable changes to the current version of Pine Script are documented in the [Release notes](https://www.tradingview.com/pine-script-docs/release-notes/).
 
-## Declaration statement
+## Declaration statement {#declaration-statement}
 
 All Pine scripts must contain one declaration statement, which is a call to one of these functions:
 
@@ -47,7 +47,7 @@ Each script type has distinct basic requirements. Scripts that do not meet these
 -   [Strategies](https://www.tradingview.com/pine-script-docs/concepts/strategies/) must call at least one [order placement command](https://www.tradingview.com/pine-script-docs/concepts/strategies/#order-placement-and-cancellation) or other output function.
 -   [Libraries](https://www.tradingview.com/pine-script-docs/concepts/libraries/) must [export](https://www.tradingview.com/pine-script-reference/v6/#kw_export) at least one user-defined [function](https://www.tradingview.com/pine-script-docs/language/user-defined-functions/), [method](https://www.tradingview.com/pine-script-docs/language/methods/#user-defined-methods), [type](https://www.tradingview.com/pine-script-docs/language/type-system/#user-defined-types), or [enum](https://www.tradingview.com/pine-script-docs/language/enums/).
 
-## Code
+## Code {#code}
 
 Lines in a script that are not [comments](https://www.tradingview.com/pine-script-docs/language/script-structure/#comments) or [compiler annotations](https://www.tradingview.com/pine-script-docs/language/script-structure/#compiler-annotations) are _statements_, which implement the script’s algorithm. A statement can be one of these:
 
@@ -104,7 +104,7 @@ if (shortCondition)
     strategy.entry("My Short Entry Id", strategy.short)
 ```
 
-## Comments
+## Comments {#comments}
 
 Double slashes (`//`) define comments in Pine Script. Comments can begin anywhere on the line. They can also follow Pine Script code on the same line:
 
@@ -118,7 +118,7 @@ plot(a)
 
 The Pine Editor has a keyboard shortcut to comment/uncomment lines: `ctrl` + `/`. You can use it on multiple lines by highlighting them first.
 
-## Line wrapping
+## Line wrapping {#line-wrapping}
 
 Scripts can use _line wrapping_ to define a long _single line_ of code across _multiple_ lines. Generally, each wrapped line after the first can use any indentation length _except_ multiples of four, because Pine uses four-space or tab indentations to define [local code blocks](https://www.tradingview.com/pine-script-docs/faq/programming/#what-does-scope-mean).
 
@@ -211,7 +211,7 @@ Note that:
 
 -   A multiline string treats _all_ characters between the `"""` or `'''` delimiters as literal text, including the _leading spaces_ on each visible code line. If a line in a multiline string definition is indented by any number of spaces, relative to _column 0_ in the Pine Editor, the line in the resulting string also includes that indentation.
 
-## Compiler annotations
+## Compiler annotations {#compiler-annotations}
 
 Compiler annotations are [comments](https://www.tradingview.com/pine-script-docs/language/script-structure/#comments) that issue special instructions for a script:
 

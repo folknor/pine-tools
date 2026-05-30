@@ -4,15 +4,15 @@ source: https://www.tradingview.com/pine-script-docs/language/enums/
 section: language
 ---
 
-# Enums
+# Enums {#enums}
 
 TipThis page contains _advanced_ material. If you’re new to Pine Script®, start by learning about core language components — such as the [type system](https://www.tradingview.com/pine-script-docs/language/type-system/) and [the basics](https://www.tradingview.com/pine-script-docs/language/execution-model/#the-basics) of the [execution model](https://www.tradingview.com/pine-script-docs/language/execution-model/) — and explore other, more accessible features before venturing further.
 
-## Introduction
+## Introduction {#introduction}
 
 Pine Script Enums, otherwise known as _enumerations_, _enumerated types_, or [enum types](https://www.tradingview.com/pine-script-docs/language/type-system/#enum-types), are unique data types with all possible values (_members_) explicitly defined by the programmer in advance. They provide a human-readable, expressive way to declare distinct sets of _predefined values_ that variables, conditional expressions, and [collections](https://www.tradingview.com/pine-script-docs/language/type-system/#collections) can accept, allowing more strict control over the values used in a script’s logic.
 
-## Declaring an enum
+## Declaring an enum {#declaring-an-enum}
 
 To declare an enum, use the [enum](https://www.tradingview.com/pine-script-reference/v6/#kw_enum) keyword with the following syntax:
 
@@ -67,7 +67,7 @@ Note that the above line does not require specifying the variable’s _type_ as 
 Signal mySignal = na
 ```
 
-## Using enums
+## Using enums {#using-enums}
 
 Scripts can compare enum members with the [\==](https://www.tradingview.com/pine-script-reference/v6/#op_==) and [!=](https://www.tradingview.com/pine-script-reference/v6/#op_!=) operators and use the results of those comparisons in [conditional structures](https://www.tradingview.com/pine-script-docs/language/conditional-structures/), allowing the convenient creation of logical patterns with a reduced risk of unintended values or operations.
 
@@ -147,7 +147,7 @@ calcOscillator(float source, simple int length, OscType selection) =>
 plot(calcOscillator(close, 20, selection = oscInput))
 ```
 
-### Utilizing field titles
+### Utilizing field titles {#utilizing-field-titles}
 
 The “string” titles of an enum’s fields allow programmers to add extra information to each member. These field titles appear within a dropdown input in the script’s “Settings/Inputs” tab when the script uses the [input.enum()](https://www.tradingview.com/pine-script-reference/v6/#fun_input.enum) function.
 
@@ -193,9 +193,9 @@ Note that:
 -   None of the members of the `Exchange` or `Pair` enums have specified titles. Therefore, each field’s title is the “string” representation of its name, as shown by the script’s [enum inputs](https://www.tradingview.com/pine-script-docs/concepts/inputs/#enum-input).
 -   Calling the [str.tostring()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.tostring) function on an enum field is the **only** way to retrieve its title for additional calculations. The [str.format()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.format) and `log.*()` functions _cannot_ accept enum members. To use a field’s title in a string formatting function, call [str.tostring()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.tostring) on the field first, then pass the resulting “string” to the function.
 
-## Collecting enum members
+## Collecting enum members {#collecting-enum-members}
 
-Pine Script [collections](https://www.tradingview.com/pine-script-docs/language/type-system/#collections) ([arrays](https://www.tradingview.com/pine-script-docs/language/arrays/), [matrices](https://www.tradingview.com/pine-script-docs/language/matrices/), and [maps](https://www.tradingview.com/pine-script-docs/language/maps/)) can store enum members, allowing strict control over the values they can contain. To create a collection of enum members, include the enum’s _name_ in the _type template_ of the `*.new*()` function from the collection’s namespace (e.g., [array.new<type>()](https://www.tradingview.com/pine-script-reference/v6/#fun_array.new%3Ctype%3E)).
+Pine Script [collections](https://www.tradingview.com/pine-script-docs/language/type-system/#collections) ([arrays](https://www.tradingview.com/pine-script-docs/language/arrays/), [matrices](https://www.tradingview.com/pine-script-docs/language/matrices/), and [maps](https://www.tradingview.com/pine-script-docs/language/maps/)) can store enum members, allowing strict control over the values they can contain. To create a collection of enum members, include the enum’s _name_ in the _type template_ of the `*.new*()` function from the collection’s namespace (e.g., [array.new<type>()](https://www.tradingview.com/pine-script-reference/v6/#fun_array.new<type>)).
 
 For example, the following code block creates an empty [array](https://www.tradingview.com/pine-script-reference/v6/#type_array) object to store members of a `FooBar` enum. The only values that the array can contain are `FooBar.foo`, `FooBar.bar`, `FooBar.baz`, and [na](https://www.tradingview.com/pine-script-reference/v6/#var_na):
 
@@ -278,7 +278,7 @@ Note that:
 -   On the first chart bar, the script uses five [map.put()](https://www.tradingview.com/pine-script-reference/v6/#fun_map.put) calls to establish the _insertion order_ of keys in the `signalCounters` map. See [this section](https://www.tradingview.com/pine-script-docs/language/maps/#mapkeys-and-mapvalues) of the [Maps](https://www.tradingview.com/pine-script-docs/language/maps/) page for more information.
 -   To minimize _resource usage_, the script declares the `infoTable` variable and initializes the referenced table’s cell only on the _first bar_, and then updates the cell’s text on the _latest bar_. See the [Reducing drawing updates](https://www.tradingview.com/pine-script-docs/writing/profiling-and-optimization/#reducing-drawing-updates) section of the [Profiling and optimization](https://www.tradingview.com/pine-script-docs/writing/profiling-and-optimization/) page to learn more.
 
-## Shadowing
+## Shadowing {#shadowing}
 
 In contrast to [user-defined types (UDTs)](https://www.tradingview.com/pine-script-docs/language/type-system/#user-defined-types), which can have names that _shadow_ some built-in types or namespaces, enum types require _unique_ names that do **not** match any built-in types or namespaces.
 

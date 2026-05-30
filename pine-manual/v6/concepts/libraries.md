@@ -4,9 +4,9 @@ source: https://www.tradingview.com/pine-script-docs/concepts/libraries/
 section: concepts
 ---
 
-# Libraries
+# Libraries {#libraries}
 
-## Introduction
+## Introduction {#introduction}
 
 Pine Script® libraries are publications containing functions that can be reused in indicators, strategies, or in other libraries. They are useful to define frequently-used functions so their source code does not have to be included in every script where they are needed.
 
@@ -16,7 +16,7 @@ Library programmers should be familiar with Pine’s typing nomenclature, scopes
 
 You can browse public library scripts in the [Community Scripts](https://www.tradingview.com/scripts/?script_type=libraries) feed.
 
-## Creating a library
+## Creating a library {#creating-a-library}
 
 A library is a special kind of script that begins with the [library()](https://www.tradingview.com/pine-script-reference/v6/#fun_library) declaration statement, rather than [indicator()](https://www.tradingview.com/pine-script-reference/v6/#fun_indicator) or [strategy()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy). A library contains exportable [function](https://www.tradingview.com/pine-script-docs/language/user-defined-functions/), [method](https://www.tradingview.com/pine-script-docs/language/methods/#user-defined-methods), [UDT](https://www.tradingview.com/pine-script-docs/language/type-system/#user-defined-types), and [enum](https://www.tradingview.com/pine-script-docs/language/type-system/#enum-types) definitions, which constitute the only visible part of the library when imported by another script. Like other script types, libraries can also include Pine Script code in their global scopes. Programmers typically use a library’s global code to demonstrate how other scripts can use its exported structures.
 
@@ -86,7 +86,7 @@ plot(hi())
 plot(lo())
 ```
 
-### Library functions
+### Library functions {#library-functions}
 
 Exported functions and methods have slightly different requirements and constraints compared to non-exported functions.
 
@@ -105,7 +105,7 @@ Exported library functions have the following constraints:
 
 Library functions always return “simple” or “series” results. They do not return values with _weaker_ [qualifiers](https://www.tradingview.com/pine-script-docs/language/type-system/#qualifiers). Consequently, scripts cannot use their returned values in locations requiring “const” or “input” values. For example, a library function cannot calculate an argument for the `show_last` parameter in a [plot()](https://www.tradingview.com/pine-script-reference/v6/#fun_plot) call because the parameter requires an “input int” or “const int” value.
 
-### Qualified type control
+### Qualified type control {#qualified-type-control}
 
 Pine Script automatically determines the [qualified types](https://www.tradingview.com/pine-script-docs/language/type-system/) of the arguments in calls to library functions based on how the functions use those arguments. If a parameter is compatible with the “series” [type qualifier](https://www.tradingview.com/pine-script-docs/language/type-system/#qualifiers), its arguments automatically inherit that qualifier by default. Otherwise, Pine attempts to evaluate the argument with the “simple” qualifier. For example, consider the following exported function:
 
@@ -136,7 +136,7 @@ One can also use the [series](https://www.tradingview.com/pine-script-reference/
 
 NoteInstances of [reference types](https://www.tradingview.com/pine-script-docs/language/type-system/#reference-types) automatically inherit the “series” qualifier, regardless of how a script uses them. Therefore, libraries **cannot** create exported functions that rely on reference types and return “simple” values, because all calculations involving “series” data always produce “series” results. See the [Type system](https://www.tradingview.com/pine-script-docs/language/type-system/) page to learn more.
 
-### User-defined types and objects
+### User-defined types and objects {#user-defined-types-and-objects}
 
 Libraries can export [user-defined types (UDTs)](https://www.tradingview.com/pine-script-docs/language/type-system/#user-defined-types), and library functions can return the _references (IDs)_ to [objects](https://www.tradingview.com/pine-script-docs/language/objects/) of these types.
 
@@ -261,7 +261,7 @@ import TradingView/PivotLabels/1 as dpl
 dpl.drawPivots(20, 10, 10)
 ```
 
-### Enum types
+### Enum types {#enum-types}
 
 Libraries can also export [enum types](https://www.tradingview.com/pine-script-docs/language/type-system/#enum-types), allowing other scripts to import sets of predefined, named constants that help control the values accepted by variables, conditional expressions, and [collections](https://www.tradingview.com/pine-script-docs/language/type-system/#collections).
 
@@ -307,7 +307,7 @@ plot(close, color = mySignal == Signal.State.long ? color.green : mySignal == Si
 
 Similar to exporting [UDTs](https://www.tradingview.com/pine-script-docs/concepts/libraries/#user-defined-types-and-objects), a library **must** export an enum when its exported functions or methods accept or return the [enum’s](https://www.tradingview.com/pine-script-docs/language/enums/) members, or when the fields of an exported [UDT](https://www.tradingview.com/pine-script-docs/language/type-system/#user-defined-types) accept values of that [enum type](https://www.tradingview.com/pine-script-docs/language/type-system/#enum-types).
 
-## Publishing a library
+## Publishing a library {#publishing-a-library}
 
 Before you or other Pine Script programmers can reuse any library, it must be published. If you want to share your library with all TradingViewers, publish it publicly. To use it privately, use a private publication. As with indicators or strategies, the active chart when you publish a library will appear in both its widget (the small placeholder denoting libraries in the TradingView scripts stream) and script page (the page users see when they click on the widget).
 
@@ -328,13 +328,13 @@ Note that:
 
 The intended users of public libraries being other Pine programmers; the better you explain and document your library’s functions, the more chances others will use them. Providing examples demonstrating how to use your library’s functions in your publication’s code will also help.
 
-### House Rules
+### House Rules {#house-rules}
 
 Pine libraries are considered “public domain” code in our [House Rules on Script Publishing](https://www.tradingview.com/support/solutions/43000590599), which entails that permission is not required from their author if you call their functions or reuse their code in your open-source scripts. However, if you intend to reuse code from a Pine Script library’s functions in a public protected or invite-only publication, explicit permission for reuse in that form is required from its author.
 
 Whether using a library’s functions or reusing its code, you must credit the author in your publication’s description. It is also good form to credit in open-source comments.
 
-## Using a library
+## Using a library {#using-a-library}
 
 Using a library from another script (which can be an indicator, a strategy or another library), is done through the [import](https://www.tradingview.com/pine-script-reference/v6/#kw_import) statement:
 

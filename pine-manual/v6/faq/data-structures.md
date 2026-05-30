@@ -4,9 +4,9 @@ source: https://www.tradingview.com/pine-script-docs/faq/data-structures/
 section: faq
 ---
 
-# Data structures
+# Data structures {#data-structures}
 
-## What data structures can I use in Pine Script®?
+## What data structures can I use in Pine Script®? {#what-data-structures-can-i-use-in-pine-script}
 
 Pine data structures resemble those in other programming languages, with some important differences:
 
@@ -23,7 +23,7 @@ Pine data structures resemble those in other programming languages, with some im
 
 The following sections describe each data structure in more detail.
 
-### Tuples
+### Tuples {#tuples}
 
 A [tuple](https://www.tradingview.com/pine-script-docs/language/type-system/#tuples) in Pine Script is a list of values that is returned by a [function](https://www.tradingview.com/pine-script-docs/language/user-defined-functions/), [method](https://www.tradingview.com/pine-script-docs/language/methods/), or local block. Unlike in other languages, tuples in Pine serve no other function. Tuples do not have names and cannot be assigned to variables. Apart from the fact that the values are requested and returned together, the values have no relation to each other, in contrast to the other data structures described here.
 
@@ -46,13 +46,13 @@ Using a tuple can consolidate these calls into a single [request.security()](htt
 
 See the [Tuples](https://www.tradingview.com/pine-script-docs/language/type-system/#tuples) section in the User Manual for more information.
 
-### Arrays
+### Arrays {#arrays}
 
 [Arrays](https://www.tradingview.com/pine-script-docs/language/arrays/) store multiple values of the same [type](https://www.tradingview.com/pine-script-docs/language/type-system/) in a single variable. Each _element_ in an array can be efficiently accessed by its _index_—an integer corresponding to its position within the array.
 
 Arrays can contain an arbitrary number of elements. Scripts can loop through arrays, testing each element in turn for certain logical conditions. There are also many built-in functions to perform different operations on arrays. This flexibility makes arrays very versatile data structures.
 
-Arrays can be created with either the [array.new<type>()](https://www.tradingview.com/pine-script-reference/v6/#fun_array.new%3Ctype%3E) or [array.from()](https://www.tradingview.com/pine-script-reference/v6/#fun_array.from) function. In this simple example, we store the last five closing prices in an array and display it in a table:
+Arrays can be created with either the [array.new<type>()](https://www.tradingview.com/pine-script-reference/v6/#fun_array.new<type>) or [array.from()](https://www.tradingview.com/pine-script-reference/v6/#fun_array.from) function. In this simple example, we store the last five closing prices in an array and display it in a table:
 
 ```pine
 //@version=6
@@ -70,7 +70,7 @@ if barstate.islast
 
 See the [Arrays](https://www.tradingview.com/pine-script-docs/language/arrays/) section in the User Manual for more information.
 
-### Matrices
+### Matrices {#matrices}
 
 A [matrix](https://www.tradingview.com/pine-script-docs/language/matrices/) is a two-dimensional array, made of rows and columns, like a spreadsheet. Matrices, like arrays, store values of the same built-in or user-defined [type](https://www.tradingview.com/pine-script-docs/language/type-system/#types).
 
@@ -107,7 +107,7 @@ if barstate.islast
 
 See the [Matrices](https://www.tradingview.com/pine-script-docs/language/matrices/) section in the User Manual for more information.
 
-### Objects
+### Objects {#objects}
 
 Pine Script [objects](https://www.tradingview.com/pine-script-docs/language/objects/) are containers that group together multiple fields into one logical unit.
 
@@ -136,7 +136,7 @@ if not na(pivFound)
 
 See the User Manual page on [Objects](https://www.tradingview.com/pine-script-docs/language/objects/) to learn more about working with UDTs.
 
-### Maps
+### Maps {#maps}
 
 [Maps](https://www.tradingview.com/pine-script-docs/language/maps/#maps) in Pine Script are similar to _dictionaries_ in other programming languages, such as dictionaries in Python, objects in JavaScript, or HashMaps in Java. Maps store elements as key-value pairs, where each key is unique. Scripts can access a particular value by looking up its associated key.
 
@@ -168,7 +168,7 @@ Here, we use [request.earnings()](https://www.tradingview.com/pine-script-refere
 
 To learn more about working with maps, refer to the [Maps](https://www.tradingview.com/pine-script-docs/language/maps/) section in the User Manual.
 
-## What’s the difference between a series and an array?
+## What’s the difference between a series and an array? {#whats-the-difference-between-a-series-and-an-array}
 
 In Pine Script, [“series”](https://www.tradingview.com/pine-script-docs/language/type-system/#series) variables are calculated on each bar. Historical values cannot change. Series values can change during the open realtime bar, but when the bar closes, the value for that bar becomes fixed and immutable. These fixed values are automatically indexed for each bar. Scripts can access values from previous bars by using the [\[\] history-referencing operator](https://www.tradingview.com/pine-script-docs/language/operators/#-history-referencing-operator) to go back one or more bars.
 
@@ -182,13 +182,13 @@ Arrays, of course, can do many things that series variables cannot. Scripts can 
 
 NoteAn array itself is part of a series. Scripts can reference the previous committed states of any array by using the history-referencing operator. See the [History referencing](https://www.tradingview.com/pine-script-docs/language/arrays/#history-referencing) section of the [Arrays](https://www.tradingview.com/pine-script-docs/language/arrays/) page for more information.
 
-## How do I create and use arrays in Pine Script?
+## How do I create and use arrays in Pine Script? {#how-do-i-create-and-use-arrays-in-pine-script}
 
 Pine Script [arrays](https://www.tradingview.com/pine-script-docs/language/arrays/) are one-dimensional collections that can hold multiple values of a single type.
 
 **Declaring arrays**
 
-Declare an array by using one of the following functions: [array.new<type>()](https://www.tradingview.com/pine-script-reference/v6/#fun_array.new%3Ctype%3E), [array.from()](https://www.tradingview.com/pine-script-reference/v6/#fun_array.from), or [array.copy()](https://www.tradingview.com/pine-script-reference/v6/#fun_array.copy). Arrays can be declared with the [var](https://www.tradingview.com/pine-script-docs/language/variable-declarations/#var) keyword to have their values persist from bar to bar, or without it, so that the values initialize again on each bar. For more on the differences between declaring arrays with or without [var](https://www.tradingview.com/pine-script-docs/language/variable-declarations/#var), see [this section](https://www.tradingview.com/pine-script-docs/faq/data-structures/#whats-the-difference-between-an-array-declared-with-or-without-var) of this FAQ.
+Declare an array by using one of the following functions: [array.new<type>()](https://www.tradingview.com/pine-script-reference/v6/#fun_array.new<type>), [array.from()](https://www.tradingview.com/pine-script-reference/v6/#fun_array.from), or [array.copy()](https://www.tradingview.com/pine-script-reference/v6/#fun_array.copy). Arrays can be declared with the [var](https://www.tradingview.com/pine-script-docs/language/variable-declarations/#var) keyword to have their values persist from bar to bar, or without it, so that the values initialize again on each bar. For more on the differences between declaring arrays with or without [var](https://www.tradingview.com/pine-script-docs/language/variable-declarations/#var), see [this section](https://www.tradingview.com/pine-script-docs/faq/data-structures/#whats-the-difference-between-an-array-declared-with-or-without-var) of this FAQ.
 
 **Adding and removing elements**
 
@@ -243,7 +243,7 @@ bgcolor(session.isfirstbar_regular ? color.new(color.gray, 80) : na)
 
 For more information about arrays, see the [Arrays](https://www.tradingview.com/pine-script-docs/language/arrays/#arrays) page in the User Manual.
 
-## What’s the difference between an array declared with or without ​`var`​?
+## What’s the difference between an array declared with or without `var`? {#whats-the-difference-between-an-array-declared-with-or-without-var}
 
 Using the [var](https://www.tradingview.com/pine-script-reference/v6/#op_var) keyword, a script can declare an [array](https://www.tradingview.com/pine-script-docs/language/arrays/) variable in a script that is initialized only once, during the first iteration on the first chart bar.
 
@@ -286,7 +286,7 @@ if barstate.islast
 
 For further details, consult the sections concerning variable [declaration modes](https://www.tradingview.com/pine-script-docs/language/variable-declarations/#declaration-modes) and their use in [array declarations](https://www.tradingview.com/pine-script-docs/language/arrays/#using-var-and-varip-keywords) in the User Manual.
 
-## What are queues and stacks?
+## What are queues and stacks? {#what-are-queues-and-stacks}
 
 Scripts can use [arrays](https://www.tradingview.com/pine-script-docs/language/arrays/) to create [queues](https://www.tradingview.com/pine-script-docs/language/arrays/#using-an-array-as-a-queue) and [stacks](https://www.tradingview.com/pine-script-docs/language/arrays/#using-an-array-as-a-stack).
 
@@ -419,7 +419,7 @@ extendLines(pivotLoArray)
 
 For more information on manipulating arrays, see the [Arrays](https://www.tradingview.com/pine-script-docs/language/arrays/) section in the User Manual.
 
-## How can I perform operations on all elements in an array?
+## How can I perform operations on all elements in an array? {#how-can-i-perform-operations-on-all-elements-in-an-array}
 
 In Pine Script, there are no built-in functions to apply operations across the entire array at once. Instead, scripts need to iterate through the array, performing the operation on each element one at a time.
 
@@ -527,11 +527,11 @@ if barstate.islastconfirmedhistory
     label.new(bar_index +1, high, str.tostring(valuesArray) + "\n" + str.tostring(isPos), style = label.style_label_left, textcolor = chart.fg_color)
 ```
 
-## What’s the most efficient way to search an array?
+## What’s the most efficient way to search an array? {#whats-the-most-efficient-way-to-search-an-array}
 
 The obvious way to search for an element in an array is to use a [loop](https://www.tradingview.com/pine-script-docs/language/loops/) to check each element in turn. However, there are more efficient ways to search, which can be useful in different situations. Some of the following functions return only the index of a value. Programmers can then use [array.get()](https://www.tradingview.com/pine-script-reference/v6/#fun_array.get) if the script needs the actual value.
 
-### Checking if a value is present in an array
+### Checking if a value is present in an array {#checking-if-a-value-is-present-in-an-array}
 
 If all the script needs to do is to check whether a certain value is present in an array or not, use the [array.includes()](https://www.tradingview.com/pine-script-reference/v6/#fun_array.includes) function. If the element is found, the function returns [true](https://www.tradingview.com/pine-script-reference/v6/#const_true); otherwise, it returns [false](https://www.tradingview.com/pine-script-reference/v6/#const_false). This method does not return the index of the element.
 
@@ -547,7 +547,7 @@ if barstate.islast
     label.new(bar_index, low, valuePresent ? "Search value found" : "Search value not found", textcolor = color.white)
 ```
 
-### Finding the position of an element
+### Finding the position of an element {#finding-the-position-of-an-element}
 
 If the script requires the _position_ of an element, programmers can use the [array.indexof()](https://www.tradingview.com/pine-script-reference/v6/#fun_array.indexof) function. This function returns the index of the _first_ occurrence of a value within an array. If the value is not found, the function returns `-1`. This method does not show whether there are multiple occurrences of the search value in the array. Depending on the script logic, this method might not be suitable if the array contains values that are not unique.
 
@@ -570,7 +570,7 @@ if barstate.islast
      )
 ```
 
-### Binary search
+### Binary search {#binary-search}
 
 If the script requires the position of the element in a sorted array, the function [array.binary\_search()](https://www.tradingview.com/pine-script-reference/v6/#fun_array.binary_search) returns the index of a value more efficiently than [array.indexof()](https://www.tradingview.com/pine-script-reference/v6/#fun_array.indexof). The performance improvement is significant for large arrays. If the value is not found, the function returns `-1`.
 
@@ -607,13 +607,13 @@ if barstate.islast
 
 If a script does not need the exact value, the functions [array.binary\_search\_leftmost()](https://www.tradingview.com/pine-script-reference/v6/#fun_array.binary_search_leftmost) and [array.binary\_search\_rightmost()](https://www.tradingview.com/pine-script-reference/v6/#fun_array.binary_search_rightmost) provide an effective way to locate the nearest index to a given value in sorted arrays. These functions return the index of the value, if it is present. If the value is not present, they return the index of the element that is closest to the search value on the left (smaller) or right (larger) side.
 
-## How can I debug arrays?
+## How can I debug arrays? {#how-can-i-debug-arrays}
 
 To debug arrays, scripts need to display the contents of the array at certain points in the script. Techniques that can display the contents of arrays include using plots, labels, tables, and Pine Logs.
 
 For information about commonly encountered array-related errors, refer to the array [Error Handling](https://www.tradingview.com/pine-script-docs/language/arrays/#error-handling) section in the User Manual.
 
-### Plotting
+### Plotting {#plotting}
 
 Using the [plot()](https://www.tradingview.com/pine-script-reference/v6/#fun_plot) function to inspect the contents of an array can be helpful because this function can show numerical values on the script’s status line, the price scale, and the Data Window. It is also easy to review historical values.
 
@@ -635,7 +635,7 @@ plot(ohlc.get(2), "Low",   color.blue)
 plot(ohlc.get(3), "Close", color.green)
 ```
 
-### Using labels
+### Using labels {#using-labels}
 
 Using [labels](https://www.tradingview.com/pine-script-docs/visuals/text-and-shapes/#labels) to display array values on certain bars is particularly useful for non-continuous data points or to view all elements of an array simultaneously. Scripts can create labels within any local scope, including [functions](https://www.tradingview.com/pine-script-docs/language/user-defined-functions/) and [methods](https://www.tradingview.com/pine-script-docs/language/methods/#user-defined-methods). Scripts can also position drawings at any available chart location, irrespective of the current [bar\_index](https://www.tradingview.com/pine-script-reference/v6/#var_bar_index). Unlike plots, labels can display the contents of a variety of array types, including boolean and string arrays.
 
@@ -666,7 +666,7 @@ plot(slowMa, "Slow MA", color.orange)
 
 For more information, see the [Labels](https://www.tradingview.com/pine-script-docs/writing/debugging/#labels) section of the [Debugging](https://www.tradingview.com/pine-script-docs/writing/debugging/) page in the User Manual.
 
-### Using label tooltips
+### Using label tooltips {#using-label-tooltips}
 
 If programmers want to be able to inspect the values in an array on every bar, displaying the contents of the array in a label is not convenient, because the labels overlap and become difficult to read. In this case, displaying the array contents in a label tooltip can be visually clearer. This method has the same advantages and limitations as [using labels](https://www.tradingview.com/pine-script-docs/faq/data-structures/#using-labels) in the section above.
 
@@ -700,7 +700,7 @@ plot(fastMa, "Fast MA", color.aqua)
 plot(slowMa, "Slow MA", color.orange)
 ```
 
-### Using tables
+### Using tables {#using-tables}
 
 Using [tables](https://www.tradingview.com/pine-script-docs/visuals/tables/) for debugging offers a more organized and scalable alternative to labels. Tables can display multiple [“series”](https://www.tradingview.com/pine-script-docs/language/type-system/#series) strings in a clear format that remains unaffected by the chart’s scale or the index of the bars.
 
@@ -750,7 +750,7 @@ if barstate.islast
     table.cell(rsiTable, 0, 0, "Bar indices of RSI ATHs\n" + str.tostring(barIndicesOfHiRSIs), text_color = chart.fg_color)
 ```
 
-### Using Pine Logs
+### Using Pine Logs {#using-pine-logs}
 
 [Pine Logs](https://www.tradingview.com/pine-script-docs/writing/debugging/#pine-logs) are messages that display in the Pine Logs pane, along with a timestamp when the logging function was called. Scripts can create log messages at specific points during the execution of a script. Programmers can use the `log.*()` functions to create Pine Logs from almost anywhere in a script — including inside the _local scopes_ of [user-defined functions](https://www.tradingview.com/pine-script-docs/language/user-defined-functions/), [conditional structures](https://www.tradingview.com/pine-script-docs/language/conditional-structures/), and [loops](https://www.tradingview.com/pine-script-docs/language/loops/).
 
@@ -817,7 +817,7 @@ extendLines(pivotHiArray), extendLines(pivotLoArray)
 removeLines(pivotHiArray, true), removeLines(pivotLoArray, false)
 ```
 
-## Can I use matrices or multidimensional arrays in Pine Script?
+## Can I use matrices or multidimensional arrays in Pine Script? {#can-i-use-matrices-or-multidimensional-arrays-in-pine-script}
 
 Pine Script does not directly support multidimensional arrays; however, it provides [matrices](https://www.tradingview.com/pine-script-docs/language/matrices/) and [user-defined types](https://www.tradingview.com/pine-script-docs/language/type-system/#user-defined-types) (UDTs). Programmers can use these data structures to create and manipulate complex datasets.
 
@@ -831,7 +831,7 @@ Programmers can achieve similar functionality to multidimensional arrays through
 
 For more information, see the sections on [Matrices](https://www.tradingview.com/pine-script-docs/language/matrices/), [Maps](https://www.tradingview.com/pine-script-docs/language/maps/), and [Objects](https://www.tradingview.com/pine-script-docs/language/objects/) in the User Manual.
 
-## How can I debug objects?
+## How can I debug objects? {#how-can-i-debug-objects}
 
 To debug [objects](https://www.tradingview.com/pine-script-docs/language/objects/), create custom functions that break down an object into its constituent fields and convert these fields into strings. See the [Debugging](https://www.tradingview.com/pine-script-docs/writing/debugging/) section of the User Manual for information about methods to display debug information. In particular, [Pine Logs](https://www.tradingview.com/pine-script-docs/writing/debugging/#pine-logs) can display extensive and detailed debug information. See the FAQ section about debugging arrays [using Pine Logs](https://www.tradingview.com/pine-script-docs/faq/data-structures/#using-pine-logs) for an explanation of using logs for debugging.
 

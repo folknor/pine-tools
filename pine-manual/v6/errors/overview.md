@@ -4,9 +4,9 @@ source: https://www.tradingview.com/pine-script-docs/errors/overview/
 section: errors
 ---
 
-# Overview
+# Overview {#overview}
 
-## Introduction
+## Introduction {#introduction}
 
 Pine Script® uses _runtime errors_, _compilation errors_, and _compiler warnings_ to help prevent unintended or erroneous script behaviors:
 
@@ -21,7 +21,7 @@ This page provides an overview of the common runtime errors, compilation errors,
 
 TipYou can also find information about other errors and warnings for specific features on the pages that describe those features in the User Manual. For example, the sections in the [Type system](https://www.tradingview.com/pine-script-docs/language/type-system/) page include details about common type-related errors.
 
-## Error reference table
+## Error reference table {#error-reference-table}
 
 The reference table below lists the current errors and warnings documented in this section of the User Manual. The codes in the “Error/warning code” column link to the pages that contain detailed information about the issues and possible solutions.
 

@@ -4,7 +4,7 @@ source: https://www.tradingview.com/pine-script-docs/migration-guides/to-pine-ve
 section: migration-guides
 ---
 
-# To Pine Script® version 2
+# To Pine Script® version 2 {#to-pine-script-version-2}
 
 Pine Script version 2 is fully backwards compatible with version 1. As a result, all v1 scripts can be converted to v2 by adding the `//@version=2` annotation to them.
 

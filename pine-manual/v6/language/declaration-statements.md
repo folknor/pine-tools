@@ -4,9 +4,9 @@ source: https://www.tradingview.com/pine-script-docs/language/declaration-statem
 section: language
 ---
 
-# Declaration statements
+# Declaration statements {#declaration-statements}
 
-## Introduction
+## Introduction {#introduction}
 
 In Pine Script®, a _declaration statement_ is a mandatory function call that declares the script’s _type_ and its _properties_ at _compile time_. The available declaration functions are [indicator()](https://www.tradingview.com/pine-script-reference/v6/#fun_indicator), [strategy()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy), and [library()](https://www.tradingview.com/pine-script-reference/v6/#fun_library). Each type of script has different capabilities and behaviors, the compiler uses different rules to compile them, and Pine’s runtime system also [executes](https://www.tradingview.com/pine-script-docs/language/execution-model/) them differently.
 
@@ -26,7 +26,7 @@ The [`indicator()`](https://www.tradingview.com/pine-script-docs/language/declar
 
 TipThe Pine Editor displays the [Reference Manual](https://www.tradingview.com/pine-script-reference/v6/) documentation for a declaration function and its parameters in a pop-up window as the user types the statement. To view the complete Reference Manual entry from inside the editor, press the CTRL or CMD key and click the [indicator()](https://www.tradingview.com/pine-script-reference/v6/#fun_indicator), [strategy()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy), or [library()](https://www.tradingview.com/pine-script-reference/v6/#fun_library) identifier.
 
-## ​`indicator()`​
+## `indicator()` {#indicator}
 
 The [indicator()](https://www.tradingview.com/pine-script-reference/v6/#fun_indicator) function declares that the script is an _indicator_. Indicators perform calculations across a dataset to generate [visuals](https://www.tradingview.com/pine-script-docs/visuals/overview/), [alerts](https://www.tradingview.com/pine-script-docs/concepts/alerts/), or [Pine Logs](https://www.tradingview.com/pine-script-docs/writing/debugging/#pine-logs). They are the most common type of scripts in Pine.
 
@@ -51,7 +51,7 @@ The following sections explain the parameters of the [indicator()](https://www.t
 
 NoteAll the parameters described below, excluding [`timeframe` and `timeframe_gaps`](https://www.tradingview.com/pine-script-docs/language/declaration-statements/#timeframe-and-timeframe_gaps), also apply to the [strategy()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy) function.
 
-### ​`title`​ and ​`shorttitle`​
+### `title` and `shorttitle` {#title-and-shorttitle}
 
 The required `title` parameter defines the script’s _main title_. The script displays the specified “string” title in all possible chart locations by default. Additionally, the “Publish script” window automatically suggests using that title for a [script publication](https://www.tradingview.com/pine-script-docs/writing/publishing/).
 
@@ -88,7 +88,7 @@ plot(ema, "EMA", ema > ema[1] ? color.green : color.red, 3)
 
 TipThe `shorttitle` parameter is intended for creating an _abbreviated_ display title for a script. As such, the compiler raises a warning if the specified string contains more characters than the recommended limit. If you encounter the warning, we recommend reducing the string’s length. If you want the script to display a longer title, specify that title in the `title` argument and _remove_ the `shorttitle` argument.
 
-### ​`overlay`​, ​`scale`​, and ​`behind_chart`​
+### `overlay`, `scale`, and `behind_chart` {#overlay-scale-and-behind_chart}
 
 The `overlay`, `scale`, and `behind_chart` parameters of the declaration statement configure where the script displays its chart outputs. They control the _global default_ display location and scaling behavior of the script’s [visuals](https://www.tradingview.com/pine-script-docs/visuals/overview/), separate to the individual properties of [plot visuals](https://www.tradingview.com/pine-script-docs/visuals/overview/#plot-visuals) or [drawing visuals](https://www.tradingview.com/pine-script-docs/visuals/overview/#drawing-visuals).
 
@@ -127,7 +127,7 @@ The `behind_chart` parameter determines the _visual order_ of the script’s plo
 
 NoteThe functions that create plots, background colors, and drawings include a `force_overlay` parameter. If a call to these functions specifies `true` as the `force_overlay` argument, its resulting visuals always appear over the _main_ chart pane and use that pane’s scale, regardless of the `overlay`, `behind_chart`, and `scale` arguments in the script’s declaration statement. See the [`overlay`](https://www.tradingview.com/pine-script-docs/visuals/overview/#overlay) section of the [Visuals overview](https://www.tradingview.com/pine-script-docs/visuals/overview/) page to learn more about this feature.
 
-### ​`format`​ and ​`precision`​
+### `format` and `precision` {#format-and-precision}
 
 The `format` and `precision` parameters of the declaration statement control the default appearance of _plotted numbers_ in the script’s status line, the price scales, and the data window.
 
@@ -202,7 +202,7 @@ plot(volume, "Volume", volColor, style = plot.style_columns)
 plot(ta.sma(volume, lengthInput), "Avg volume", color.blue, linewidth = 2, format = format.price)
 ```
 
-### ​`max_bars_back`​
+### `max_bars_back` {#max_bars_back}
 
 The `max_bars_back` parameter of the declaration statement, if it has a specified argument, sets the initial maximum _history-referencing length_ for each series in a script. It accepts an “int” value from 0 to 5000, representing the number of past data points maintained in memory for _all_ variables and expressions.
 
@@ -219,7 +219,7 @@ Before using this parameter, ensure that _all_ or _most_ of the series in the sc
 
 See the [historical buffer limit](https://www.tradingview.com/pine-script-docs/errors/RE10143/#the-requested-historical-offset-x-is-beyond-the-historical-buffers-limit-y) error page to learn more. For _advanced_ details about the workings of historical buffers, refer to the [Historical buffers](https://www.tradingview.com/pine-script-docs/language/execution-model/#historical-buffers) section of the [Execution model](https://www.tradingview.com/pine-script-docs/language/execution-model/) page.
 
-### ​`timeframe`​ and ​`timeframe_gaps`​
+### `timeframe` and `timeframe_gaps` {#timeframe-and-timeframe_gaps}
 
 The `timeframe` parameter of the [indicator()](https://www.tradingview.com/pine-script-reference/v6/#fun_indicator) declaration statement sets the script’s _main timeframe_. It enables the script to perform calculations on the data for a different timeframe than that of the chart without requiring `request.*()` function calls. The parameter accepts a valid [timeframe string](https://www.tradingview.com/pine-script-docs/concepts/timeframes/#timeframe-string-specifications), such as `"1D"` for the daily timeframe or `"30"` for the 30-minute timeframe. If an argument is not specified, or if the value is an empty string (`""`), the script executes on the data for the current chart’s timeframe.
 
@@ -256,7 +256,7 @@ Note that:
 -   If the specified timeframe is _lower_ than or _equal_ to the chart’s timeframe, the script plots an “x-cross” shape on _every_ chart bar.
 -   An alternative way to achieve this script’s default result without using these parameters is to plot the value returned by the call `request.security(syminfo.tickerid, "1D", ta.sma(close, 14), gaps = barmerge.gaps_on)`. Refer to the [Other timeframes and data](https://www.tradingview.com/pine-script-docs/concepts/other-timeframes-and-data/) page to learn more about `request.*()` functions.
 
-### ​`explicit_plot_zorder`​
+### `explicit_plot_zorder` {#explicit_plot_zorder}
 
 The `explicit_plot_zorder` parameter of the declaration statement determines the _visual order_ in which the script’s [plots](https://www.tradingview.com/pine-script-docs/visuals/plots/), [horizontal levels](https://www.tradingview.com/pine-script-docs/visuals/levels/), and [fills](https://www.tradingview.com/pine-script-docs/visuals/fills/) _stack_ on the chart.
 
@@ -266,7 +266,7 @@ If the value is `false` (default), the script visually stacks its plots, levels,
 
 NoteThis parameter **does not** affect visuals created by the [bgcolor()](https://www.tradingview.com/pine-script-reference/v6/#fun_bgcolor) function or [drawing objects](https://www.tradingview.com/pine-script-docs/language/type-system/#drawing-types). Background colors and drawings _always_ stack on the chart in the order of the _z-index_, regardless of the `explicit_plot_zorder` argument in the script’s declaration statement.
 
-### ​`max_lines_count`​, ​`max_labels_count`​, ​`max_boxes_count`​, and ​`max_polylines_count`​
+### `max_lines_count`, `max_labels_count`, `max_boxes_count`, and `max_polylines_count` {#max_lines_count-max_labels_count-max_boxes_count-and-max_polylines_count}
 
 The `max_lines_count`, `max_labels_count`, `max_boxes_count`, and `max_polylines_count` parameters of the declaration statement limit the number of [line](https://www.tradingview.com/pine-script-reference/v6/#type_line), [label](https://www.tradingview.com/pine-script-reference/v6/#type_label), [box](https://www.tradingview.com/pine-script-reference/v6/#type_box), and [polyline](https://www.tradingview.com/pine-script-reference/v6/#type_polyline) drawing objects that the script can maintain in memory. As the script creates new objects of a given [drawing type](https://www.tradingview.com/pine-script-docs/language/type-system/#drawing-types), the runtime system _deletes_ the _oldest_ drawings of that type as necessary if the number of active objects exceeds the script’s limit.
 
@@ -276,7 +276,7 @@ NoteThe limits defined by these parameters are approximate. The maximum number o
 
 See the [Line, box, polyline, and label limits](https://www.tradingview.com/pine-script-docs/writing/limitations/#line-box-polyline-and-label-limits) section of the [Limitations](https://www.tradingview.com/pine-script-docs/writing/limitations/) page and the [Total number of objects](https://www.tradingview.com/pine-script-docs/visuals/lines-and-boxes/#total-number-of-objects) section of the [Lines and boxes](https://www.tradingview.com/pine-script-docs/visuals/lines-and-boxes/) page to learn more about drawing limits.
 
-### ​`calc_bars_count`​
+### `calc_bars_count` {#calc_bars_count}
 
 The `calc_bars_count` parameter of the declaration statement sets the default _maximum_ number of most recent _historical bars_ that the script can access for its calculations. It accepts an “int” value that is greater than or equal to 0.
 
@@ -298,9 +298,9 @@ indicator("`calc_bars_count` demo", calc_bars_count = 40)
 plot(close, "Close", linewidth = 2)
 ```
 
-NoteLimiting the bars on which a script can execute with the `calc_bars_count` parameter also limits the data points available for [history-referencing](https://www.tradingview.com/pine-script-docs/language/operators/#-history-referencing-operator) operations and bar indexing. A script treats the first bar on which it _executes_ as the _earliest_ bar in the dataset, with a [bar\_index](https://www.tradingview.com/pine-script-reference/v6/#var_bar_index) value of 0, even if earlier bars are otherwise available from the data feed. Therefore, [\[\]](https://www.tradingview.com/pine-script-reference/v6/#op_%5B%5D) operations _cannot_ retrieve data from bars before the first bar determined by the `calc_bars_count` argument.
+NoteLimiting the bars on which a script can execute with the `calc_bars_count` parameter also limits the data points available for [history-referencing](https://www.tradingview.com/pine-script-docs/language/operators/#-history-referencing-operator) operations and bar indexing. A script treats the first bar on which it _executes_ as the _earliest_ bar in the dataset, with a [bar\_index](https://www.tradingview.com/pine-script-reference/v6/#var_bar_index) value of 0, even if earlier bars are otherwise available from the data feed. Therefore, [\[\]](https://www.tradingview.com/pine-script-reference/v6/#op_[]) operations _cannot_ retrieve data from bars before the first bar determined by the `calc_bars_count` argument.
 
-### ​`dynamic_requests`​
+### `dynamic_requests` {#dynamic_requests}
 
 The `dynamic_requests` parameter of the declaration statement specifies whether the script can use `request.*()` function calls to execute [dynamic requests](https://www.tradingview.com/pine-script-docs/concepts/other-timeframes-and-data/#dynamic-requests). If the value is `true` (default), the script can:
 
@@ -360,7 +360,7 @@ Note that:
 
 To learn more about the `request.*()` functions and the differences between dynamic and non-dynamic requests, refer to the [Other timeframes and data](https://www.tradingview.com/pine-script-docs/concepts/other-timeframes-and-data/) page.
 
-## ​`strategy()`​
+## `strategy()` {#strategy}
 
 The [strategy()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy) function declares that the script is a _strategy_. [Strategies](https://www.tradingview.com/pine-script-docs/concepts/strategies/) can simulate orders and trades across a dataset, enabling users to backtest and forward test their trading systems. They have many similar capabilities to indicators, while also providing the ability to analyze hypothetical trading performance in a dedicated tab.
 
@@ -390,7 +390,7 @@ The unique parameters in the [strategy()](https://www.tradingview.com/pine-scrip
 
 For detailed information about how to use the unique [strategy()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy) function parameters and the built-ins in the `strategy` namespace, refer to the [Strategies](https://www.tradingview.com/pine-script-docs/concepts/strategies/) page.
 
-### ​`pyramiding`​
+### `pyramiding` {#pyramiding}
 
 The `pyramiding` parameter of the [strategy()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy) declaration statement accepts an “int” value specifying the default maximum number of _open trades_, from the orders created by [strategy.entry()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.entry) calls, that a strategy allows for a single position. The default argument is 1, meaning that the strategy can open only _one_ long or short trade at a time using orders from [strategy.entry()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.entry) calls and _cannot_ execute another entry order in the _same direction_ until after the existing trade closes. Users can adjust the script’s pyramiding limit without editing the code by using the “Pyramiding” input in the script’s “Settings/Properties” tab.
 
@@ -434,7 +434,7 @@ Note that:
 -   The `default_qty_value` argument in the declaration statement specifies the initial default size of the strategy’s orders. See the [`default_qty_type` and `default_qty_value`](https://www.tradingview.com/pine-script-docs/language/declaration-statements/#default_qty_type-and-default_qty_value) section to learn more.
 -   The strategy enters a new trade after every occurrence of the long condition only if the `pyramiding` value is at least 5.
 
-### ​`calc_on_every_tick`​, ​`calc_on_order_fills`​, and ​`process_orders_on_close`​
+### `calc_on_every_tick`, `calc_on_order_fills`, and `process_orders_on_close` {#calc_on_every_tick-calc_on_order_fills-and-process_orders_on_close}
 
 The `calc_on_every_tick`, `calc_on_order_fills`, and `process_orders_on_close` parameters of the [strategy()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy) declaration statement specify the strategy’s default [calculation behaviors](https://www.tradingview.com/pine-script-docs/concepts/strategies/#altering-calculation-behavior). If the argument for each of these parameters is `false` (default), the strategy executes strictly _once per bar_, on each bar’s _closing tick_, and the [broker emulator](https://www.tradingview.com/pine-script-docs/concepts/strategies/#broker-emulator) fills each order from the strategy on the _open_ of the next available bar. Specifying a value of `true` for any of these parameters changes the strategy’s default execution and order-fill behaviors. Users can also change these behaviors via the “On every tick”, “After order is filled”, and “On bar close” checkboxes in the script’s “Settings/Properties” tab.
 
@@ -508,7 +508,7 @@ NoticeForcing orders to fill on a bar’s close can be helpful in some scenarios
 
 See the [Altering calculation behavior](https://www.tradingview.com/pine-script-docs/concepts/strategies/#altering-calculation-behavior) section of the [Strategies](https://www.tradingview.com/pine-script-docs/concepts/strategies/) page to learn more about the `calc_on_every_tick`, `calc_on_order_fills`, and `process_orders_on_close` parameters. For detailed information about how scripts execute on historical and realtime bars, and how these parameters affect executions, refer to the [Execution model](https://www.tradingview.com/pine-script-docs/language/execution-model/) page.
 
-### ​`slippage`​ and ​`backtest_fill_limits_assumption`​
+### `slippage` and `backtest_fill_limits_assumption` {#slippage-and-backtest_fill_limits_assumption}
 
 The `slippage` parameter of the `strategy()` declaration statement specifies the default fixed number of ticks that the strategy applies to the fill prices of _all_ [market orders](https://www.tradingview.com/pine-script-docs/concepts/strategies/#market-orders) and [stop orders](https://www.tradingview.com/pine-script-docs/concepts/strategies/#stop-and-stop-limit-orders) to simulate [slippage](https://www.tradingview.com/pine-script-docs/concepts/strategies/#slippage-and-unfilled-limits). If the argument is a positive “int” value, the strategy adds the specified number of ticks to the fill prices of long orders and subtracts it from the fill prices of short orders. This behavior helps simulate the disparity between expected and actual fill prices that might occur in real-world trading. If the `slippage` argument is 0 (default), the strategy fills orders at their expected prices without simulating any slippage. Users can change the specified slippage amount via the “Slippage” input in the strategy’s “Settings/Properties” tab.
 
@@ -516,7 +516,7 @@ The `backtest_fill_limits_assumption` parameter specifies the default number of 
 
 NoticeLimit verification can cause order fills to occur at _different times_, depending on how long it takes for the market price to exceed limit levels by the specified amount. This tradeoff is necessary to enable filling limit orders at their verified prices without introducing lookahead bias in the simulation. However, in some cases, it can also cause some limit orders to fill at times that are not possible in the real world. We therefore recommend users understand this price-time tradeoff and analyze their strategies carefully when adding verification to limit orders.
 
-### ​`default_qty_type`​ and ​`default_qty_value`​
+### `default_qty_type` and `default_qty_value` {#default_qty_type-and-default_qty_value}
 
 The `default_qty_type` and `default_qty_value` parameters of the [strategy()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy) declaration statement specify the initial _default order size_ for the [strategy.entry()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.entry) and [strategy.order()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.order) commands. If a call to either command does not specify an order size, the resulting order uses the default order size defined by these parameters. Users can adjust these properties via the “Default order size” inputs in the script’s “Settings/Properties” tab.
 
@@ -600,7 +600,7 @@ if risingVolume
 plot(strategy.position_size, "Position size", style = plot.style_area)
 ```
 
-### ​`initial_capital`​ and ​`currency`​
+### `initial_capital` and `currency` {#initial_capital-and-currency}
 
 The `initial_capital` parameter of the `strategy()` declaration statement specifies the default _initial account balance_ for the strategy’s simulation, as a quantity of the account currency. It accepts a positive “int” or “float” argument. The default is 1000000. Users can change the strategy’s initial account balance by adjusting the “Initial capital” input in the script’s “Settings/Properties” tab.
 
@@ -608,7 +608,7 @@ The `currency` parameter specifies the strategy’s default _account currency_. 
 
 If the specified account currency differs from the chart’s currency, the strategy _converts_ monetary values in its calculations to express them in the account currency. However, the prices of the strategy’s orders remain expressed in the chart’s currency. To convert necessary monetary values to the account currency, the strategy typically uses the previous _daily_ value of a corresponding _currency pair_ as the conversion rate, or the value from a [spread](https://www.tradingview.com/support/solutions/43000502298-spread-charts-explained/) if no direct currency pair is available. See the [Currency](https://www.tradingview.com/pine-script-docs/concepts/strategies/#currency) section of the [Strategies](https://www.tradingview.com/pine-script-docs/concepts/strategies/) page for more information.
 
-### ​`commission_type`​ and ​`commission_value`​
+### `commission_type` and `commission_value` {#commission_type-and-commission_value}
 
 The `commission_type` and `commission_value` parameters of the `strategy()` declaration statement specify the default commission fees that the broker emulator applies to the strategy’s simulated transactions. Users can customize the strategy’s commission settings via the “Commission” inputs in the “Settings/Properties” tab.
 
@@ -622,7 +622,7 @@ The default argument is [strategy.commission.percent](https://www.tradingview.co
 
 The `commission_value` parameter accepts a positive “int” or “float” value specifying the default fee amount for the commission type. For example, if the value is 1, the strategy simulates a fee of one unit of the account currency per transaction, one unit of the account currency per contract/share/lot/unit, or one percent of each transaction’s size by default, depending on the `commission_type` value. The default argument is 0, meaning that the strategy does not simulate commission unless the user specifies a nonzero value for the first “Commission” input in the “Properties” tab.
 
-### ​`close_entries_rule`​
+### `close_entries_rule` {#close_entries_rule}
 
 The `close_entries_rule` parameter of the [strategy()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy) declaration statement determines the order in which the strategy simulation closes the trades in an open market position. It accepts one of two “string” arguments: `"FIFO"` or `"ANY"`. If the value is `"FIFO"`, the [broker emulator](https://www.tradingview.com/pine-script-docs/concepts/strategies/#broker-emulator) follows _First In, First Out (FIFO)_ rules when closing market positions. Under these rules, the _earliest_ open trade is always the _first_ to close, regardless of the entry IDs specified by the script’s [strategy.exit()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.exit) or [strategy.close()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.close) calls. If the value is `"ANY"`, the broker emulator _ignores_ FIFO rules and closes the trades specified by the exit commands, even if an earlier trade with a different entry ID is open. The default is `"FIFO"`.
 
@@ -630,7 +630,7 @@ NoteUsers cannot customize a strategy’s exit order rules from the script’s �
 
 Refer to the [Closing a market position](https://www.tradingview.com/pine-script-docs/concepts/strategies/#closing-a-market-position) section of the [Strategies](https://www.tradingview.com/pine-script-docs/concepts/strategies/) page for an example of how changing the `close_entries_rule` argument can affect a strategy’s exit behavior.
 
-### ​`margin_long`​ and ​`margin_short`​
+### `margin_long` and `margin_short` {#margin_long-and-margin_short}
 
 The `margin_long` and `margin_short` parameters of the [strategy()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy) declaration statement specify the default [margin](https://www.tradingview.com/pine-script-docs/concepts/strategies/#margin) requirements for the strategy’s long and short positions, respectively. Users can adjust the strategy’s long and short margin requirements via the “Margin for long positions” and “Margin for short positions” inputs in the “Settings/Properties” tab.
 
@@ -642,25 +642,25 @@ If a strategy’s available funds drop below the required margin percentage, the
 
 NoticeIf a strategy’s long or short margin percentage is _zero_, it effectively has _infinite_ leverage. It can open and maintain positions of _any size_, regardless of its simulated account balance. This behavior can cause **misleading** results, because real-world brokers require traders to fund at least part of their positions. Therefore, we do not recommend using a value of 0 as the `margin_long` or `margin_short` argument.
 
-### ​`risk_free_rate`​
+### `risk_free_rate` {#risk_free_rate}
 
 The `risk_free_rate` parameter of the [strategy()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy) declaration statement specifies the annual percentage return of a hypothetical _risk-free_ investment. The strategy uses the specified risk-free rate to calculate the [Sharpe ratio](https://www.tradingview.com/support/solutions/43000681694-risk-performance-ratios-sharpe-ratio/) and [Sortino ratio](https://www.tradingview.com/support/solutions/43000681697-risk-performance-ratios-sortino-ratio/) metrics displayed in the “Strategy report” panel. The default value is 2, meaning that these metrics assess the strategy’s _risk-adjusted returns_ relative to a hypothetical 2% risk-free rate.
 
 NoteUsers cannot adjust the risk-free rate from the “Settings/Properties” tab. The only way to change the value is by specifying a `risk_free_rate` argument in the [strategy()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy) statement.
 
-### ​`use_bar_magnifier`​
+### `use_bar_magnifier` {#use_bar_magnifier}
 
 The `use_bar_magnifier` parameter of the [strategy()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy) declaration statement specifies whether the strategy enables the [Bar Magnifier](https://www.tradingview.com/pine-script-docs/concepts/strategies/#bar-magnifier) backtesting mode by default. Users can activate or deactivate the Bar Magnifier mode by selecting the “Using bar magnifier” checkbox in the strategy’s “Settings/Properties” tab. If the value is `true`, the broker emulator retrieves available prices from a _lower timeframe_ on historical bars by default for more precise intrabar order fills. If the argument is `false` (default), the broker emulator relies on default _assumptions_ about intrabar price movement instead of using prices from a lower timeframe. See the [Broker emulator](https://www.tradingview.com/pine-script-docs/concepts/strategies/#broker-emulator) section of the [Strategies](https://www.tradingview.com/pine-script-docs/concepts/strategies/) page to learn more.
 
 NoteThe Bar Magnifier feature is available only to accounts with Premium and Ultimate plans.
 
-### ​`fill_orders_on_standard_ohlc`​
+### `fill_orders_on_standard_ohlc` {#fill_orders_on_standard_ohlc}
 
 The `fill_orders_on_standard_ohlc` parameter of the [strategy()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy) declaration statement specifies whether the broker emulator fills the strategy’s orders using actual prices by default when the strategy executes on a [Heikin Ashi chart](https://www.tradingview.com/support/solutions/43000619436-understanding-heikin-ashi-charts/). Users can activate or deactivate the feature via the “Using standard OHLC” input in the strategy’s “Settings/Properties” tab. If the value is `false`, the emulator fills the strategy’s orders using the chart’s _synthetic prices_ by default. If `true`, it fills the orders using the _actual_ open, high, low, and close prices from a _standard chart_ dataset for more realistic results. The default argument is `false`.
 
 NoticeThis feature **does not** affect backtests on other non-standard charts, such as [Renko](https://www.tradingview.com/support/solutions/43000502284-understanding-renko-charts/) or [Kagi](https://www.tradingview.com/support/solutions/43000502272-learn-to-use-kagi-charts/). A strategy always uses the chart’s synthetic prices when executing on those chart types, and therefore produces _unreliable_ results, regardless of the specified `fill_orders_on_standard_ohlc` argument. See the [Strategy produces unrealistic results on non-standard chart types](https://www.tradingview.com/support/solutions/43000481029-strategy-produces-unrealistic-results-on-non-standard-chart-types-heikin-ashi-renko-etc/) article in our Help Center to learn more.
 
-## ​`library()`​
+## `library()` {#library}
 
 The [library()](https://www.tradingview.com/pine-script-reference/v6/#fun_library) function declares that the script is a library. [Libraries](https://www.tradingview.com/pine-script-docs/concepts/libraries/) _export_ reusable [functions](https://www.tradingview.com/pine-script-docs/language/user-defined-functions/), [methods](https://www.tradingview.com/pine-script-docs/language/methods/#user-defined-methods), [user-defined types (UDTs)](https://www.tradingview.com/pine-script-docs/language/type-system/#user-defined-types), [enum types](https://www.tradingview.com/pine-script-docs/language/type-system/#enum-types), or [constant variables](https://www.tradingview.com/pine-script-docs/language/type-system/#const). Libraries can also include _non-exported_ code to demonstrate how they work and how to use them. Indicators, strategies, and other libraries can use the [import](https://www.tradingview.com/pine-script-reference/v6/#kw_import) keyword to import a [published](https://www.tradingview.com/pine-script-docs/writing/publishing/) library’s exported code components. Importing components from libraries often helps programmers streamline script creation and simplify source code.
 
@@ -687,7 +687,7 @@ The `overlay` parameter behaves the same as that of the [indicator()](https://ww
 
 The `title` and `dynamic_requests` parameters are also common to the [indicator()](https://www.tradingview.com/pine-script-reference/v6/#fun_indicator) and [strategy()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy) functions. However, they have some _unique_ characteristics in libraries, as explained in the sections below.
 
-### ​`title`​
+### `title` {#title}
 
 The `title` parameter of the [library()](https://www.tradingview.com/pine-script-reference/v6/#fun_library) declaration statement specifies the library’s unique name, which other scripts _reference_ to import and use the library’s code. For example, if a `userName` user [publishes](https://www.tradingview.com/pine-script-docs/writing/publishing/) a library that uses `"foo"` as the `title` argument, another script imports version 1 of the library using the following [import](https://www.tradingview.com/pine-script-reference/v6/#kw_import) statement:
 
@@ -717,7 +717,7 @@ NoteWhen [preparing a publication](https://www.tradingview.com/pine-script-docs/
 
 If a user applies the library directly to their chart, the `title` argument’s text appears as the display name in all relevant chart locations, including the script’s status line, the data window, and the [Pine Logs](https://www.tradingview.com/pine-script-docs/writing/debugging/#pine-logs) pane.
 
-### ​`dynamic_requests`​
+### `dynamic_requests` {#dynamic_requests-1}
 
 The `dynamic_requests` parameter of the [library()](https://www.tradingview.com/pine-script-reference/v6/#fun_library) declaration statement specifies whether the library can use [dynamic requests](https://www.tradingview.com/pine-script-docs/concepts/other-timeframes-and-data/#dynamic-requests). If the argument is `true` (default), the library can use `request.*()` function calls with [“series” arguments](https://www.tradingview.com/pine-script-docs/concepts/other-timeframes-and-data/#nested-requests) to define the requested ticker ID and timeframe, include `request.*()` calls [in the local scopes](https://www.tradingview.com/pine-script-docs/concepts/other-timeframes-and-data/#in-local-scopes) of [conditional structures](https://www.tradingview.com/pine-script-docs/language/conditional-structures/) or [loops](https://www.tradingview.com/pine-script-docs/language/loops/), and execute [nested requests](https://www.tradingview.com/pine-script-docs/concepts/other-timeframes-and-data/#nested-requests). Additionally, the library can _export_ [user-defined functions](https://www.tradingview.com/pine-script-docs/language/user-defined-functions/) and [methods](https://www.tradingview.com/pine-script-docs/language/methods/#user-defined-methods) that use `request.*()` calls within their [function scopes](https://www.tradingview.com/pine-script-docs/language/user-defined-functions/#function-scopes).
 

@@ -4,19 +4,19 @@ source: https://www.tradingview.com/pine-script-docs/concepts/sessions/
 section: concepts
 ---
 
-# Sessions
+# Sessions {#sessions}
 
-## Introduction
+## Introduction {#introduction}
 
 Exchanges define a _session_ for every symbol, which represents the times of day and days of the week in which the symbol can be traded. Exchanges might also define sessions other than the default one, which are called _subsessions_. Subsessions can be shorter or longer than the default session. If different sessions are available for a symbol, users can switch between them either from the “Sessions” controls in the bottom-right corner of the chart or from the chart’s “Settings/Symbol/Session” menu.
 
 Programmers can use built-in functions and variables to define custom sessions, determine whether bars belong to specific sessions, retrieve data from named subsessions, and access session-related market states.
 
-## Time-based sessions
+## Time-based sessions {#time-based-sessions}
 
 A script can define a custom session by encoding the start time, end time, and, optionally, days of the week of the session into a _session string_. Scripts often [use time-based session strings](https://www.tradingview.com/pine-script-docs/concepts/sessions/#using-time-based-sessions) to check whether a bar belongs to certain time period.
 
-### Creating time-based sessions
+### Creating time-based sessions {#creating-time-based-sessions}
 
 Time-based session strings have the following syntax:
 
@@ -46,7 +46,7 @@ The following table shows some examples of session strings:
 
 Note that a special format exists to represent a 7-day, 24-hour session beginning at midnight: `"24x7"` — this session string is equivalent to the first two examples in the table above.
 
-### Using time-based sessions
+### Using time-based sessions {#using-time-based-sessions}
 
 The [`time()` and `time_close()` functions](https://www.tradingview.com/pine-script-docs/concepts/time/#time-and-time_close-functions) can accept time-based session strings as their `session` parameter arguments:
 
@@ -173,7 +173,7 @@ Note that:
 -   The `sessionInput` end time must be within the trading period of the symbol on the chart in order for the script to display the label.
 -   For an extended example of using this technique to visually identify sessions, see the [How can I make an entire custom session visible?](https://www.tradingview.com/pine-script-docs/faq/times-dates-and-sessions/#how-can-i-make-an-entire-custom-session-visible) entry in the [Times, dates, and sessions FAQ](https://www.tradingview.com/pine-script-docs/faq/times-dates-and-sessions/).
 
-## Named sessions
+## Named sessions {#named-sessions}
 
 Exchanges often define _named subsessions_. These sessions can differ from the default session in one or more ways:
 
@@ -185,7 +185,7 @@ Traders can use named sessions to focus on trading periods with greater volume, 
 
 To use data from a named session, first identify the exact name of the session, then [create a modified ticker](https://www.tradingview.com/pine-script-docs/concepts/sessions/#creating-a-session-specific-ticker) that uses that session, and finally [request data](https://www.tradingview.com/pine-script-docs/concepts/sessions/#requesting-data-from-session-specific-tickers) from that ticker. The sections below discuss these steps in more detail.
 
-### Retrieving named sessions
+### Retrieving named sessions {#retrieving-named-sessions}
 
 Unlike custom [time-based session](https://www.tradingview.com/pine-script-docs/concepts/sessions/#time-based-sessions) strings, which are user-defined, session names are _fixed_. Scripts can retrieve the active session’s name automatically. Programmers can also supply predefined session names in the code.
 
@@ -220,7 +220,7 @@ Now let’s look at some non-standard named sessions. Applying our previous exam
 
 ![image](https://www.tradingview.com/pine-script-docs/_astro/Sessions-Named-sessions-Retrieving-named-sessions-3.CkU2q5IS_ZM5L9G.webp)
 
-### Creating a session-specific ticker
+### Creating a session-specific ticker {#creating-a-session-specific-ticker}
 
 A script can create a ticker that uses a specific session by using [ticker.new()](https://www.tradingview.com/pine-script-reference/v6/#fun_ticker.new) or [ticker.modify()](https://www.tradingview.com/pine-script-reference/v6/#fun_ticker.modify). Both functions create a new ticker identifier, which can specify additional session and pricing modifiers for the requested context. The only practical difference between the two functions is that [ticker.new()](https://www.tradingview.com/pine-script-reference/v6/#fun_ticker.new) creates a ticker from an exchange `prefix` and `ticker` name (two separate “string” arguments), whereas [ticker.modify()](https://www.tradingview.com/pine-script-reference/v6/#fun_ticker.modify) modifies a full ticker ID (`"prefix:ticker"` as one “string” argument, or a `tickerid` string with additional modifiers returned from `ticker.*()`).
 
@@ -271,7 +271,7 @@ Note that:
 
 The previous example demonstrates that the two ticker creation functions are largely equivalent. For consistency, we use [ticker.new()](https://www.tradingview.com/pine-script-reference/v6/#fun_ticker.new) in our examples below.
 
-### Requesting data from session-specific tickers
+### Requesting data from session-specific tickers {#requesting-data-from-session-specific-tickers}
 
 Scripts use session-specific tickers in [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security) calls to retrieve data from that particular session.
 
@@ -367,11 +367,11 @@ Note that:
 
 NoteIf a script attempts to retrieve data using a named session that does not exist for that symbol, the default session is used instead.
 
-## Session variables reference
+## Session variables reference {#session-variables-reference}
 
 Programmers can use several built-in variables for session-related data.
 
-### Market states
+### Market states {#market-states}
 
 The following Boolean variables track whether the current bar belongs to the pre-market or post-market session:
 
@@ -385,7 +385,7 @@ For tickers without pre-market and post-market sessions, such as “BTCUSD”, [
 
 For many futures symbols, Electronic trading hours (ETH) are considered the default session and use the named session `"regular"`, so during those hours [session.ismarket](https://www.tradingview.com/pine-script-reference/v6/#var_session.ismarket) is `true` and [session.ispremarket](https://www.tradingview.com/pine-script-reference/v6/#var_session.ispremarket) and [session.ispostmarket](https://www.tradingview.com/pine-script-reference/v6/#var_session.ispostmarket) are both `false`.
 
-### First and last bars
+### First and last bars {#first-and-last-bars}
 
 The following Boolean variables track whether the current bar is the first or last in different sessions:
 
@@ -398,7 +398,7 @@ The following Boolean variables track whether the current bar is the first or la
 
 The [session.islastbar](https://www.tradingview.com/pine-script-reference/v6/#var_session.islastbar) and [session.islastbar\_regular](https://www.tradingview.com/pine-script-reference/v6/#var_session.islastbar_regular) variables might not be `true` for any bar in a session if no price or volume updates occur during the time period of the last bar. This is more likely at lower timeframes for thinly traded symbols. In contrast, [session.isfirstbar](https://www.tradingview.com/pine-script-reference/v6/#var_session.isfirstbar) and [session.isfirstbar\_regular](https://www.tradingview.com/pine-script-reference/v6/#var_session.isfirstbar_regular) are always `true` once for any session.
 
-### Named session variables
+### Named session variables {#named-session-variables}
 
 Scripts can use the following “string” variables to work with named sessions. The [Retrieving named sessions](https://www.tradingview.com/pine-script-docs/concepts/sessions/#retrieving-named-sessions) section of this page discusses the use of these variables.
 

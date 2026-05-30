@@ -4,11 +4,11 @@ source: https://www.tradingview.com/pine-script-docs/language/maps/
 section: language
 ---
 
-# Maps
+# Maps {#maps}
 
 TipThis page contains _advanced_ material. If you’re new to Pine Script®, start by learning about core language components — such as the [type system](https://www.tradingview.com/pine-script-docs/language/type-system/) and [the basics](https://www.tradingview.com/pine-script-docs/language/execution-model/#the-basics) of the [execution model](https://www.tradingview.com/pine-script-docs/language/execution-model/) — and explore other, more accessible features before venturing further.
 
-## Introduction
+## Introduction {#introduction}
 
 Pine Script _maps_ are [collections](https://www.tradingview.com/pine-script-docs/language/type-system/#collections) that store data in _key-value pairs_. They enable scripts to collect multiple values or references in a single location and associate those elements with specific _unique values (keys)_.
 
@@ -18,7 +18,7 @@ A map’s key elements must be of a [value type](https://www.tradingview.com/pin
 
 Similar to arrays and matrices, maps can contain up to 100,000 elements in total. However, because each key-value pair in a map consists of _two_ elements (a _unique key_ and associated _value_), the maximum number of key-value pairs that a map can contain is 50,000.
 
-## Declaring a map
+## Declaring a map {#declaring-a-map}
 
 Pine Script uses the following syntax for map declarations:
 
@@ -44,7 +44,7 @@ For example, the following line calls `map.new<string, float>()` to create an em
 myMap = map.new<string, float>()
 ```
 
-### Using ​`var`​ and ​`varip`​ keywords
+### Using `var` and `varip` keywords {#using-var-and-varip-keywords}
 
 Users can include the [var](https://www.tradingview.com/pine-script-reference/v6/#kw_var) or [varip](https://www.tradingview.com/pine-script-reference/v6/#kw_varip) keywords to instruct their scripts to declare a map variable on only one bar instead of on every execution of the variable’s scope. Variables that use these keywords point to the same map instances on each script execution until explicitly reassigned.
 
@@ -87,9 +87,9 @@ Map variables declared using [varip](https://www.tradingview.com/pine-script-ref
 -   IDs of the [chart.point](https://www.tradingview.com/pine-script-reference/v6/#type_chart.point), [footprint](https://www.tradingview.com/pine-script-reference/v6/#type_footprint), or [volume\_row](https://www.tradingview.com/pine-script-reference/v6/#type_volume_row) type.
 -   References to objects of a [user-defined type](https://www.tradingview.com/pine-script-docs/language/type-system/#user-defined-types) that have fields for storing only data of either of the above types or the IDs of other [collections](https://www.tradingview.com/pine-script-docs/language/type-system/#collections) containing only these types.
 
-## Reading and writing
+## Reading and writing {#reading-and-writing}
 
-### Putting and getting key-value pairs
+### Putting and getting key-value pairs {#putting-and-getting-key-value-pairs}
 
 The [map.put()](https://www.tradingview.com/pine-script-reference/v6/#fun_map.put) function is one that map users will utilize quite often, as it’s the primary method to put a new key-value pair into a map. It associates the `key` argument with the `value` argument in the call and adds the pair to the `id` map.
 
@@ -189,9 +189,9 @@ Note that:
 
 -   This script would behave differently if it passed a copy of `myData` into each [map.put()](https://www.tradingview.com/pine-script-reference/v6/#fun_map.put) call. For more information, see the [Copying objects](https://www.tradingview.com/pine-script-docs/language/objects/#copying-objects) section of the [Objects](https://www.tradingview.com/pine-script-docs/language/objects/) page.
 
-### Inspecting keys and values
+### Inspecting keys and values {#inspecting-keys-and-values}
 
-#### ​`map.keys()`​ and ​`map.values()`​
+#### `map.keys()` and `map.values()` {#mapkeys-and-mapvalues}
 
 To retrieve all keys and values put into a map, use [map.keys()](https://www.tradingview.com/pine-script-reference/v6/#fun_map.keys) and [map.values()](https://www.tradingview.com/pine-script-reference/v6/#fun_map.values). These functions copy all keys/values within an `id` map to a new [array](https://www.tradingview.com/pine-script-reference/v6/#type_array) object. Modifying the array returned from either of these functions does not affect the `id` map.
 
@@ -271,7 +271,7 @@ if bar_index % 50 == 0
 
 NoticeThe elements in a [map.values()](https://www.tradingview.com/pine-script-reference/v6/#fun_map.values) array store the same values or references as the `id` map. If a map’s value elements are of any reference type, including [line](https://www.tradingview.com/pine-script-reference/v6/#type_line), [linefill](https://www.tradingview.com/pine-script-reference/v6/#type_linefill), [box](https://www.tradingview.com/pine-script-reference/v6/#type_box), [polyline](https://www.tradingview.com/pine-script-reference/v6/#type_polyline), [label](https://www.tradingview.com/pine-script-reference/v6/#type_label), [table](https://www.tradingview.com/pine-script-reference/v6/#type_table), [chart.point](https://www.tradingview.com/pine-script-reference/v6/#type_chart.point), or a [UDT](https://www.tradingview.com/pine-script-docs/language/type-system/#user-defined-types), modifying the instances referenced by the [map.values()](https://www.tradingview.com/pine-script-reference/v6/#fun_map.values) array also affects those referenced by the original `id` map, because the contents of both collections point to identical objects.
 
-#### ​`map.contains()`​
+#### `map.contains()` {#mapcontains}
 
 To check if a specific `key` exists within an `id` map, use [map.contains()](https://www.tradingview.com/pine-script-reference/v6/#fun_map.contains). This function is a convenient alternative to calling [array.includes()](https://www.tradingview.com/pine-script-reference/v6/#fun_array.includes) on the [array](https://www.tradingview.com/pine-script-reference/v6/#type_array) returned from [map.keys()](https://www.tradingview.com/pine-script-reference/v6/#fun_map.keys).
 
@@ -313,7 +313,7 @@ if bar_index == last_bar_index - 1
      )
 ```
 
-### Removing key-value pairs
+### Removing key-value pairs {#removing-key-value-pairs}
 
 To remove a specific key-value pair from an `id` map, use [map.remove()](https://www.tradingview.com/pine-script-reference/v6/#fun_map.remove). This function removes the `key` and its associated value from the map while preserving the insertion order of other key-value pairs. It returns the removed value if the map [contained](https://www.tradingview.com/pine-script-docs/language/maps/#mapcontains) the specified `key`. Otherwise, it returns [na](https://www.tradingview.com/pine-script-reference/v6/#var_na).
 
@@ -368,7 +368,7 @@ Note that:
 
 -   Not all strings in the `removeKeys` array are present in the keys of the map. Attempting to remove non-existent keys (“F”, “a”, and the second “B” in this example) has no effect on a map’s contents.
 
-### Combining maps
+### Combining maps {#combining-maps}
 
 Scripts can combine two maps via [map.put\_all()](https://www.tradingview.com/pine-script-reference/v6/#fun_map.put_all). This function puts _all_ key-value pairs from the `id2` map, in their insertion order, into the `id1` map. As with [map.put()](https://www.tradingview.com/pine-script-reference/v6/#fun_map.put), if any keys in `id2` are also present in `id1`, this function **replaces** the key-value pairs that contain those keys without affecting their initial insertion order.
 
@@ -437,7 +437,7 @@ if bar_index == last_bar_index - 1
     debugLabel(mapA, bar_index + 10, color.purple, note = "Merge B into A")
 ```
 
-## Looping through a map
+## Looping through a map {#looping-through-a-map}
 
 There are several ways scripts can iteratively access the keys and values in a map. For example, one could loop through the [map.keys()](https://www.tradingview.com/pine-script-reference/v6/#fun_map.keys) array and use [map.get()](https://www.tradingview.com/pine-script-reference/v6/#fun_map.get) the value for each key, like so:
 
@@ -531,9 +531,9 @@ string headerText = str.format("{0} {1}-bar averages", "'" + syminfo.tickerid + 
 averages.toTable(header = headerText, textSize = txtSize)
 ```
 
-## Copying a map
+## Copying a map {#copying-a-map}
 
-### Shallow copies
+### Shallow copies {#shallow-copies}
 
 Scripts can make a _shallow copy_ of an `id` map by using the [map.copy()](https://www.tradingview.com/pine-script-reference/v6/#fun_map.copy) function. Modifications to a shallow copy do not affect the original `id` map or its internal insertion order.
 
@@ -582,7 +582,7 @@ if bar_index == last_bar_index - 1
     mCopy.debugLabel(bar_index + 10, color.purple, note = "Copied and changed")
 ```
 
-### Deep copies
+### Deep copies {#deep-copies}
 
 While a [shallow copy](https://www.tradingview.com/pine-script-docs/language/maps/#shallow-copies) will suffice when copying maps that have values of a [fundamental type](https://www.tradingview.com/pine-script-docs/language/type-system/#types) or [enum type](https://www.tradingview.com/pine-script-docs/language/type-system/#enum-types), it’s crucial to understand that shallow copies of a map with elements of a _reference type_ ([line](https://www.tradingview.com/pine-script-reference/v6/#type_line), [linefill](https://www.tradingview.com/pine-script-reference/v6/#type_linefill), [box](https://www.tradingview.com/pine-script-reference/v6/#type_box), [polyline](https://www.tradingview.com/pine-script-reference/v6/#type_polyline), [label](https://www.tradingview.com/pine-script-reference/v6/#type_label), [table](https://www.tradingview.com/pine-script-reference/v6/#type_table), [chart.point](https://www.tradingview.com/pine-script-reference/v6/#type_chart.point) or a [UDT](https://www.tradingview.com/pine-script-docs/language/type-system/#user-defined-types)) point to the same objects as the original. Modifying the objects referenced by a shallow copy’s elements affect the objects referenced by the original map and vice versa.
 
@@ -647,9 +647,9 @@ Note that:
 
 -   The `deepCopy()` method loops through the `original` map, copying each `value` and [putting](https://www.tradingview.com/pine-script-docs/language/maps/#putting-and-getting-key-value-pairs) key-value pairs containing the copies into a new map instance.
 
-## Scope and history
+## Scope and history {#scope-and-history}
 
-As with other collections in Pine, map variables leave historical trails on each bar, allowing a script to access past map instances assigned to a variable using the history-referencing operator [\[\]](https://www.tradingview.com/pine-script-reference/v6/#op_%5B%5D). Scripts can also assign maps to global variables and interact with them from the scopes of [user-defined functions](https://www.tradingview.com/pine-script-docs/language/user-defined-functions/), [methods](https://www.tradingview.com/pine-script-docs/language/methods/#user-defined-methods), and [conditional structures](https://www.tradingview.com/pine-script-docs/language/conditional-structures/).
+As with other collections in Pine, map variables leave historical trails on each bar, allowing a script to access past map instances assigned to a variable using the history-referencing operator [\[\]](https://www.tradingview.com/pine-script-reference/v6/#op_[]). Scripts can also assign maps to global variables and interact with them from the scopes of [user-defined functions](https://www.tradingview.com/pine-script-docs/language/user-defined-functions/), [methods](https://www.tradingview.com/pine-script-docs/language/methods/#user-defined-methods), and [conditional structures](https://www.tradingview.com/pine-script-docs/language/conditional-structures/).
 
 As an example, this script uses a global map and its history to calculate an aggregate set of [EMAs](https://www.tradingview.com/support/solutions/43000592270/). It declares a `globalData` map of [int](https://www.tradingview.com/pine-script-reference/v6/#type_int) keys and [float](https://www.tradingview.com/pine-script-reference/v6/#type_float) values, where each key in the map corresponds to the length of each EMA calculation. The user-defined `update()` function calculates each `key`\-length EMA by mixing the values from the `previous` map assigned to `globalData` with the current `source` value.
 
@@ -698,7 +698,7 @@ plot(values.min(), "Min EMA", color.red, 2)
 plot(globalData.get(50), "50-bar EMA", color.orange, 3)
 ```
 
-## Maps of other collections
+## Maps of other collections {#maps-of-other-collections}
 
 Maps cannot directly store references to other maps, [arrays](https://www.tradingview.com/pine-script-docs/language/arrays/), or [matrices](https://www.tradingview.com/pine-script-docs/language/matrices/) as value elements, but they can hold references to objects of a [user-defined type](https://www.tradingview.com/pine-script-docs/language/type-system/#user-defined-types) whose fields can reference other collections.
 

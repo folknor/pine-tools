@@ -4,9 +4,9 @@ source: https://www.tradingview.com/pine-script-docs/visuals/text-and-shapes/
 section: visuals
 ---
 
-# Text and shapes
+# Text and shapes {#text-and-shapes}
 
-## Introduction
+## Introduction {#introduction}
 
 Pine Script® features five different ways to display text or shapes on the chart:
 
@@ -63,7 +63,7 @@ Note that:
 -   Some text strings contain the 🠇 Unicode arrow (U+1F807).
 -   Some text strings contain the `\n` sequence that represents a new line.
 
-## ​`plotchar()`​
+## `plotchar()` {#plotchar}
 
 This function is useful to display a single character on bars. It has the following syntax:
 
@@ -120,7 +120,7 @@ This method has the inconvenience that, since there is no relative positioning m
 
 ![image](https://www.tradingview.com/pine-script-docs/_astro/TextAndShapes-Plotchar-03.lnUtjJIt_Z10hG01.webp)
 
-## ​`plotshape()`​
+## `plotshape()` {#plotshape}
 
 This function is useful to display pre-defined shapes and/or text on bars. It has the following syntax:
 
@@ -151,7 +151,7 @@ indicator("Lift text", "", true)
 plotshape(true, "", shape.arrowup,   location.abovebar, color.green,  text = "A")
 plotshape(true, "", shape.arrowup,   location.abovebar, color.lime,   text = "B\n")
 plotshape(true, "", shape.arrowdown, location.belowbar, color.red,    text = "C")
-plotshape(true, "", shape.arrowdown, location.belowbar, color.maroon, text = "​\nD")
+plotshape(true, "", shape.arrowdown, location.belowbar, color.maroon, text = "\nD")
 ```
 
 ![image](https://www.tradingview.com/pine-script-docs/_astro/TextAndShapes-Plotshape-02.CuvXGcSI_Z1xQ7NX.webp)
@@ -167,7 +167,7 @@ The available shapes you can use with the `style` parameter are:
 | `shape.triangledown` | ![Plotshape\_triangledown](https://www.tradingview.com/pine-script-docs/_astro/Plotshape_triangledown.D3CZ8Iw5_1OnjGi.webp) | ![Triangledown\_with\_text](https://www.tradingview.com/pine-script-docs/_astro/Triangledown_with_text.BNalFnw6_1iS4Ch.webp) | `shape.labelup` | ![Plotshape\_labelup](https://www.tradingview.com/pine-script-docs/_astro/Plotshape_labelup.BEl-5lc0_1OezMJ.webp) | ![Labelup\_with\_text](https://www.tradingview.com/pine-script-docs/_astro/Labelup_with_text.BZCbEuFR_1zNAil.webp) |
 | `shape.flag` | ![Plotshape\_flag](https://www.tradingview.com/pine-script-docs/_astro/Plotshape_flag.Cj1OxWfL_1Mk7T3.webp) | ![Flag\_with\_text](https://www.tradingview.com/pine-script-docs/_astro/Flag_with_text.PGNhrE2y_Z1blD4n.webp) | `shape.labeldown` | ![Plotshape\_labeldown](https://www.tradingview.com/pine-script-docs/_astro/Plotshape_labeldown.CoBObOmO_1CPFqL.webp) | ![Labeldown\_with\_text](https://www.tradingview.com/pine-script-docs/_astro/Labeldown_with_text.lJXVqT03_1fjvoS.webp) |
 
-## ​`plotarrow()`​
+## `plotarrow()` {#plotarrow}
 
 The [plotarrow()](https://www.tradingview.com/pine-script-reference/v6/#fun_plotarrow) function displays up or down arrows of variable length, based on the relative value of the series used in the function’s first argument. It has the following syntax:
 
@@ -213,7 +213,7 @@ plotarrow(osc)
 
 Note that we display the actual “Chaikin Oscillator” in a pane below the chart, so you can see what values are used to determine the position and size of the arrows.
 
-## Labels
+## Labels {#labels}
 
 Labels are only available in v4 and higher versions of Pine Script. They work very differently than [plotchar()](https://www.tradingview.com/pine-script-reference/v6/#fun_plotchar) and [plotshape()](https://www.tradingview.com/pine-script-reference/v6/#fun_plotshape).
 
@@ -239,7 +239,7 @@ Your toolbox of built-ins to manage labels are all in the `label` namespace. The
 -   [label.delete()](https://www.tradingview.com/pine-script-reference/v6/#fun_label.delete) to delete labels
 -   The [label.all](https://www.tradingview.com/pine-script-reference/v6/#var_label.all) array which always contains the IDs of all the visible labels on the chart. The array’s size will depend on the maximum label count for your script and how many of those you have drawn. `aray.size(label.all)` will return the array’s size.
 
-### Creating and modifying labels
+### Creating and modifying labels {#creating-and-modifying-labels}
 
 The [label.new()](https://www.tradingview.com/pine-script-reference/v6/#fun_label.new) function creates a new label object on the chart. It has the following signatures:
 
@@ -350,7 +350,7 @@ else
 
 ![image](https://www.tradingview.com/pine-script-docs/_astro/TextAndShapes-CreatingLabels-03.ClglPmUL_9zu2U.webp)
 
-### Positioning labels
+### Positioning labels {#positioning-labels}
 
 Labels are positioned on the chart according to _x_ (bars) and _y_ (price) coordinates. Five parameters affect this behavior: `x`, `y`, `xloc`, `yloc` and `style`:
 
@@ -413,7 +413,7 @@ label.new(bar_index - 10, high[10])
 label.new(bar_index[10], high[10])
 ```
 
-### Reading label properties
+### Reading label properties {#reading-label-properties}
 
 The following _getter_ functions are available for labels:
 
@@ -429,7 +429,7 @@ label.get_text(id) → series string
 
 where `id` is the label whose text is to be retrieved.
 
-### Cloning labels
+### Cloning labels {#cloning-labels}
 
 The [label.copy()](https://www.tradingview.com/pine-script-reference/v6/#fun_label.copy) function is used to clone labels. Its syntax is:
 
@@ -437,7 +437,7 @@ The [label.copy()](https://www.tradingview.com/pine-script-reference/v6/#fun_lab
 label.copy(id) → void
 ```
 
-### Deleting labels
+### Deleting labels {#deleting-labels}
 
 The [label.delete()](https://www.tradingview.com/pine-script-reference/v6/#fun_label.delete) function is used to delete labels. Its syntax is:
 
@@ -491,7 +491,7 @@ if barstate.islast
     label.set_text(lbl, str.tostring(high, format.mintick))
 ```
 
-### Realtime behavior
+### Realtime behavior {#realtime-behavior}
 
 Labels are subject to both _commit_ and _rollback_ actions, which affect the behavior of a script when it executes on the realtime bar. See the [Execution model](https://www.tradingview.com/pine-script-docs/language/execution-model/) page to learn more.
 
@@ -505,7 +505,7 @@ label.new(bar_index, high)
 
 On realtime bars, [label.new()](https://www.tradingview.com/pine-script-reference/v6/#fun_label.new) creates a new label on every script update, but because of the rollback process, the label created on the previous update on the same bar is deleted. Only the last label created before the realtime bar’s close will be committed, and thus persist.
 
-## Text formatting
+## Text formatting {#text-formatting}
 
 Drawing objects like [labels](https://www.tradingview.com/pine-script-docs/visuals/text-and-shapes/#labels), [tables](https://www.tradingview.com/pine-script-docs/visuals/tables/), and [boxes](https://www.tradingview.com/pine-script-docs/visuals/lines-and-boxes/#boxes) have text-related properties that allow users to customize how an object’s text appears on the chart. Some common properties include the text color, size, font family, and typographic emphasis.
 

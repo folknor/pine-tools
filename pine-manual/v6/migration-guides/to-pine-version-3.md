@@ -4,11 +4,11 @@ source: https://www.tradingview.com/pine-script-docs/migration-guides/to-pine-ve
 section: migration-guides
 ---
 
-# To Pine Script® version 3
+# To Pine Script® version 3 {#to-pine-script-version-3}
 
 This document helps to migrate Pine Script code from `@version=2` to `@version=3`.
 
-## Default behaviour of security function has changed
+## Default behaviour of security function has changed {#default-behaviour-of-security-function-has-changed}
 
 Let’s look at the simple `security` function use case. Add this indicator on an intraday chart:
 
@@ -28,7 +28,7 @@ The old behaviour is still available though. We added a parameter to the `securi
 
 It can take on the form of two different values: `barmerge.lookahead_off` (and this is the default for Pine Script version 3) or `barmerge.lookahead_on` (which is the default for Pine Script version 2).
 
-## Self-referenced variables are removed
+## Self-referenced variables are removed {#self-referenced-variables-are-removed}
 
 Pine Script version 2 pieces of code, containing a self-referencing variable:
 
@@ -51,7 +51,7 @@ s := nz(s[1]) + close
 
 In some cases you may initialize that mutable variable (like `s`) with a `na` value. But in complex cases that won’t work.
 
-## Forward-referenced variables are removed
+## Forward-referenced variables are removed {#forward-referenced-variables-are-removed}
 
 ```pine
 //@version=2
@@ -72,7 +72,7 @@ e = d + 1
 f := e + close
 ```
 
-## Resolving a problem with a mutable variable in a security expression
+## Resolving a problem with a mutable variable in a security expression {#resolving-a-problem-with-a-mutable-variable-in-a-security-expression}
 
 When you migrate script to version 3 it’s possible that after removing self-referencing and forward-referencing variables the Pine Script compiler will give you an error:
 
@@ -97,7 +97,7 @@ calcS() =>
 t = security(tickerid, period, calcS())
 ```
 
-## Math operations with booleans are forbidden
+## Math operations with booleans are forbidden {#math-operations-with-booleans-are-forbidden}
 
 In Pine Script v2 there were rules of implicit conversion of booleans into numeric types. In v3 this is forbidden. There is a conversion of numeric types into booleans instead (0 and `na` values are `false`, all the other numbers are `true`). Example (In v2 this code compiles fine):
 

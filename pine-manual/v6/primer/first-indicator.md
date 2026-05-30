@@ -4,9 +4,9 @@ source: https://www.tradingview.com/pine-script-docs/primer/first-indicator/
 section: primer
 ---
 
-# First indicator
+# First indicator {#first-indicator}
 
-## The Pine Editor
+## The Pine Editor {#the-pine-editor}
 
 The Pine Editor is where you will be working on your scripts. While you can use any text editor you want to write your Pine scripts, using the Pine Editor has many advantages:
 
@@ -18,7 +18,7 @@ The Pine Editor is where you will be working on your scripts. While you can use 
 
 To open the Pine Editor, select the “Pine Editor” tab at the bottom of the TradingView chart.
 
-## First version
+## First version {#first-version}
 
 Let’s create our first working Pine script, an implementation of the [MACD](https://www.tradingview.com/support/solutions/43000502344-macd-moving-average-convergence-divergence/) indicator:
 
@@ -87,9 +87,9 @@ Line 10: `plot(signal, color = color.orange)`
 
 Calls the [plot()](https://www.tradingview.com/pine-script-reference/v6/#fun_plot) function to output the variable `signal` using an orange line.
 
-## Second version
+## Second version {#second-version}
 
-The first version of our script calculated the MACD using multiple steps, but because Pine Script is specially designed to write indicators and strategies, [built-in functions](https://www.tradingview.com/pine-script-docs/language/built-ins/) exist for many common indicators, including one for MACD: [ta.macd()](https://www.tradingview.com/pine-script-reference/v6/#fun_ta%7Bdot%7Dmacd).
+The first version of our script calculated the MACD using multiple steps, but because Pine Script is specially designed to write indicators and strategies, [built-in functions](https://www.tradingview.com/pine-script-docs/language/built-ins/) exist for many common indicators, including one for MACD: [ta.macd()](https://www.tradingview.com/pine-script-reference/v6/#fun_ta.macd).
 
 Therefore, we can write a second version of our script that takes advantage of Pine’s available built-in functions:
 
@@ -106,7 +106,7 @@ plot(signalLine, color = color.orange)
 Note that:
 
 -   We add [inputs](https://www.tradingview.com/pine-script-docs/concepts/inputs/) so we can change the lengths of the moving averages from the script’s settings.
--   We now use the [ta.macd()](https://www.tradingview.com/pine-script-reference/v6/#fun_ta%7Bdot%7Dmacd) built-in function to calculate our MACD directly, which replaces three lines of calculations and makes our code easier to read.
+-   We now use the [ta.macd()](https://www.tradingview.com/pine-script-reference/v6/#fun_ta.macd) built-in function to calculate our MACD directly, which replaces three lines of calculations and makes our code easier to read.
 
 Let’s repeat the same process as before to create our new indicator:
 
@@ -136,7 +136,7 @@ As with `fastInput` in the previous line, we do the same for the slow length, ta
 
 Line 5: `[macdLine, signalLine, histLine] = ta.macd(close, fastInput, slowInput, 9)`
 
-This is where we call the [ta.macd()](https://www.tradingview.com/pine-script-reference/v6/#fun_ta%7Bdot%7Dmacd) built-in function to perform all the first version’s calculations in only one line. The function requires four _parameters_ (the values enclosed in parentheses after the function name). It returns _three_ values, unlike the other functions we’ve used so far that only returned one. For this reason, we need to enclose the list of three variables receiving the function’s result in square brackets (to form a [tuple](https://www.tradingview.com/pine-script-docs/language/type-system/#tuples)) to the left of the `=` sign. Note that two of the values we pass to the function are the “input” variables containing the fast and slow lengths (`fastInput` and `slowInput`).
+This is where we call the [ta.macd()](https://www.tradingview.com/pine-script-reference/v6/#fun_ta.macd) built-in function to perform all the first version’s calculations in only one line. The function requires four _parameters_ (the values enclosed in parentheses after the function name). It returns _three_ values, unlike the other functions we’ve used so far that only returned one. For this reason, we need to enclose the list of three variables receiving the function’s result in square brackets (to form a [tuple](https://www.tradingview.com/pine-script-docs/language/type-system/#tuples)) to the left of the `=` sign. Note that two of the values we pass to the function are the “input” variables containing the fast and slow lengths (`fastInput` and `slowInput`).
 
 Lines 6 and 7: `plot(macdLine, color = color.blue)` and `plot(signalLine, color = color.orange)`
 
@@ -144,6 +144,6 @@ The variable names we are plotting here have changed, but the lines still behave
 
 Our second version of the script performs the same calculations as our first, but we’ve made the indicator more efficient as it now leverages Pine’s built-in capabilities and easily supports variable lengths for the MACD calculation. Therefore, we have successfully improved our Pine script.
 
-## Next
+## Next {#next}
 
 We now recommend you go to the [Next Steps](https://www.tradingview.com/pine-script-docs/primer/next-steps/) page.

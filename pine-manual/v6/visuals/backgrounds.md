@@ -4,7 +4,7 @@ source: https://www.tradingview.com/pine-script-docs/visuals/backgrounds/
 section: visuals
 ---
 
-# Backgrounds
+# Backgrounds {#backgrounds}
 
 The [bgcolor()](https://www.tradingview.com/pine-script-reference/v6/#fun_bgcolor) function changes the color of the script’s background. If the script is running in `overlay = true` mode, then it will color the chart’s background.
 
@@ -16,7 +16,7 @@ bgcolor(color, offset, editable, show_last, title, force_overlay) → void
 
 Its `color` parameter allows a “series color” to be used for its argument, so it can be dynamically calculated in an expression.
 
-If the correct transparency is not part of the color to be used, it can be be generated using the [color.new()](https://www.tradingview.com/pine-script-reference/v6/#fun_color%7Bdot%7Dnew) function.
+If the correct transparency is not part of the color to be used, it can be be generated using the [color.new()](https://www.tradingview.com/pine-script-reference/v6/#fun_color.new) function.
 
 Here is a script that colors the background of trading sessions (try it on 30min EURUSD, for example):
 
@@ -100,10 +100,10 @@ bgcolor(backgroundColor)
 
 Note that:
 
--   We use the [ta.cci()](https://www.tradingview.com/pine-script-reference/v6/#fun_ta%7Bdot%7Dcci) built-in function to calculate the indicator value.
+-   We use the [ta.cci()](https://www.tradingview.com/pine-script-reference/v6/#fun_ta.cci) built-in function to calculate the indicator value.
 -   We use the [ta.percentrank()](https://www.tradingview.com/pine-script-reference/v6/#ta.percentrank) built-in function to calculate `myCCIPosition`, i.e., the percentage of past `myCCI` values in the last 100 bars that are below the current value of `myCCI`.
--   To calculate the gradient, we use two different calls of the [color.from\_gradient()](https://www.tradingview.com/pine-script-reference/v6/#fun_color%7Bdot%7Dfrom_gradient) built-in: one for the bull gradient when `myCCIPosition` is in the 50-100% range, which means that more past values are below its current value, and another for the bear gradient when `myCCIPosition` is in the 0-49.99% range, which means that more past values are above it.
--   We provide inputs so the user can change the bull/bear colors, and we place both color input widgets on the same line using `inline = "1"` in both [input.color()](https://www.tradingview.com/pine-script-reference/v6/#fun_input%7Bdot%7Dcolor) calls.
+-   To calculate the gradient, we use two different calls of the [color.from\_gradient()](https://www.tradingview.com/pine-script-reference/v6/#fun_color.from_gradient) built-in: one for the bull gradient when `myCCIPosition` is in the 50-100% range, which means that more past values are below its current value, and another for the bear gradient when `myCCIPosition` is in the 0-49.99% range, which means that more past values are above it.
+-   We provide inputs so the user can change the bull/bear colors, and we place both color input widgets on the same line using `inline = "1"` in both [input.color()](https://www.tradingview.com/pine-script-reference/v6/#fun_input.color) calls.
 -   We plot the CCI signal using two [plot()](https://www.tradingview.com/pine-script-reference/v6/#fun_plot) calls to achieve the best contrast over the busy background: the first plot is a 3-pixel wide white background, the second [plot()](https://www.tradingview.com/pine-script-reference/v6/#fun_plot) call plots the thin, 1-pixel wide black line.
 
 See the [Colors](https://www.tradingview.com/pine-script-docs/visuals/colors/) page for more examples of backgrounds.

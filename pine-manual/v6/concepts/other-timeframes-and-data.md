@@ -4,9 +4,9 @@ source: https://www.tradingview.com/pine-script-docs/concepts/other-timeframes-a
 section: concepts
 ---
 
-# Other timeframes and data
+# Other timeframes and data {#other-timeframes-and-data}
 
-## Introduction
+## Introduction {#introduction}
 
 Pine Script® allows users to request data from sources and contexts other than those their charts use. The functions we present on this page can fetch data from a variety of alternative sources:
 
@@ -49,11 +49,11 @@ The `request.*()` family of functions has numerous potential applications. Throu
 
 TipProgrammers can also enable compatible scripts to perform calculations on data from another timeframe, without requiring `request.*()` calls, by supplying an argument to the `timeframe` parameter of the [indicator()](https://www.tradingview.com/pine-script-reference/v6/#fun_indicator) declaration statement.
 
-## Common characteristics
+## Common characteristics {#common-characteristics}
 
 Many functions in the `request.*()` namespace share some common properties and parameters. Before we explore each function in depth, let’s familiarize ourselves with these characteristics.
 
-### Behavior
+### Behavior {#behavior}
 
 All `request.*()` functions have similar internal behavior, even though they do not all share the same required parameters. Every unique `request.*()` call in a script requests a dataset from a defined _context_ (i.e., ticker ID and timeframe) and evaluates an _expression_ across the retrieved data.
 
@@ -96,7 +96,7 @@ plot(costOfGoods, "Cost of goods", color.purple, 3, plot.style_stepline_diamond)
 
 Scripts can perform up to 40 unique requests using any combination of `request.*()` function calls, or up to 64 if the user has the [Ultimate plan](https://www.tradingview.com/pricing/). Unique `request.*()` calls count toward this limit because they are the only calls that fetch _new data_. By contrast, redundant calls to the same `request.*()` function with identical arguments _do not_ typically perform new requests. Instead, they _reuse_ the data from the first executed call. See the [`request.*()` calls](https://www.tradingview.com/pine-script-docs/writing/limitations/#request-calls) section of the [Limitations](https://www.tradingview.com/pine-script-docs/writing/limitations/) page for more information.
 
-### ​`gaps`​
+### `gaps` {#gaps}
 
 When using a `request.*()` function to retrieve data from another context, the data might not come in on each new bar as it would with the current chart. The `gaps` parameter of a `request.*()` function controls how the function responds to nonexistent values in the requested series.
 
@@ -133,7 +133,7 @@ Note that:
 -   The script plots the requested series as lines with breaks ([plot.style\_linebr](https://www.tradingview.com/pine-script-reference/v6/#var_plot.style_linebr)), which do not bridge over [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) values as the default style ([plot.style\_line](https://www.tradingview.com/pine-script-reference/v6/#var_plot.style_line)) does.
 -   When using [barmerge.gaps\_off](https://www.tradingview.com/pine-script-reference/v6/#var_barmerge.gaps_off), the [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security) function returns the last confirmed [close](https://www.tradingview.com/pine-script-reference/v6/#var_close) from the hourly timeframe on all historical bars. When running on _realtime bars_ (the bars with the [color.aqua](https://www.tradingview.com/pine-script-reference/v6/#var_color.aqua) background in this example), it returns the symbol’s current [close](https://www.tradingview.com/pine-script-reference/v6/#var_close) value, regardless of confirmation. For more information, see the [Historical and realtime behavior](https://www.tradingview.com/pine-script-docs/concepts/other-timeframes-and-data/#historical-and-realtime-behavior) section of this page.
 
-### ​`ignore_invalid_symbol`​
+### `ignore_invalid_symbol` {#ignore_invalid_symbol}
 
 The `ignore_invalid_symbol` parameter of `request.*()` functions determines how a function handles invalid data requests, e.g.:
 
@@ -193,7 +193,7 @@ Note that:
 -   We included [format.volume](https://www.tradingview.com/pine-script-reference/v6/#var_format.volume) in the [indicator()](https://www.tradingview.com/pine-script-reference/v6/#fun_indicator) and [str.tostring()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.tostring) calls to specify that the y-axis of the chart pane represents volume-formatted values and the “string” representation of the `marketCap` value shows as volume-formatted text.
 -   For efficiency, this script creates a [table](https://www.tradingview.com/pine-script-reference/v6/#type_table) and initializes its cell on the _first_ chart bar, then updates the cell’s text on the _last_ bar. To learn more about working with tables, see the [Tables](https://www.tradingview.com/pine-script-docs/visuals/tables/) page.
 
-### ​`currency`​
+### `currency` {#currency}
 
 The `currency` parameter of a `request.*()` function enables programmers to specify the currency of the requested data. If this parameter’s value differs from the symbol’s [syminfo.currency](https://www.tradingview.com/pine-script-reference/v6/#var_syminfo.currency) value, the function converts the requested values to express them in the specified currency. The `currency` parameter accepts a built-in constant from the `currency.*` namespace, such as [currency.JPY](https://www.tradingview.com/pine-script-reference/v6/#var_currency.JPY), or a string representing a valid currency code (e.g., “JPY”). By default, this parameter accepts a “series” argument that can change across executions. However, if [dynamic requests](https://www.tradingview.com/pine-script-docs/concepts/other-timeframes-and-data/#dynamic-requests) are not enabled, it accepts only a value with the “simple” [qualifier](https://www.tradingview.com/pine-script-docs/language/type-system/#qualifiers) or a weaker one.
 
@@ -201,7 +201,7 @@ The conversion rate between the [syminfo.currency](https://www.tradingview.com/p
 
 NoteNot all `request.*()` function calls return values expressed as a currency amount. Therefore, currency conversion is _not_ always necessary. For example, some of the series that the [request.financial()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.financial) function can retrieve — such as the “PIOTROSKI\_F\_SCORE” and “NUMBER\_OF\_EMPLOYEES” metrics — use units other than currency. It is up to programmers to determine when currency conversion is appropriate for their data requests.
 
-### ​`lookahead`​
+### `lookahead` {#lookahead}
 
 The `lookahead` parameter in [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security), [request.dividends()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.dividends), [request.splits()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.splits), and [request.earnings()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.earnings) specifies the lookahead behavior of the function call. Its default value is [barmerge.lookahead\_off](https://www.tradingview.com/pine-script-reference/v6/#var_barmerge.lookahead_off).
 
@@ -221,7 +221,7 @@ NoticeScripts that use [request.security()](https://www.tradingview.com/pine-scr
 
 This example demonstrates how the `lookahead` parameter affects the behavior of higher-timeframe data requests and why enabling lookahead in [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security) without offsetting the `expression` is misleading. The script calls [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security) to get the HTF [high](https://www.tradingview.com/pine-script-reference/v6/#var_high) price for the current chart’s symbol in three different ways and [plots](https://www.tradingview.com/pine-script-docs/visuals/plots/) the resulting series on the chart for comparison.
 
-The first call uses [barmerge.lookahead\_off](https://www.tradingview.com/pine-script-reference/v6/#var_barmerge.lookahead_off) (default), and the others use [barmerge.lookahead\_on](https://www.tradingview.com/pine-script-reference/v6/#var_barmerge.lookahead_on). However, the third [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security) call also _offsets_ its `expression` using the history-referencing operator [\[\]](https://www.tradingview.com/pine-script-reference/v6/#op_%5B%5D) to avoid leaking future data into the past.
+The first call uses [barmerge.lookahead\_off](https://www.tradingview.com/pine-script-reference/v6/#var_barmerge.lookahead_off) (default), and the others use [barmerge.lookahead\_on](https://www.tradingview.com/pine-script-reference/v6/#var_barmerge.lookahead_on). However, the third [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security) call also _offsets_ its `expression` using the history-referencing operator [\[\]](https://www.tradingview.com/pine-script-reference/v6/#op_[]) to avoid leaking future data into the past.
 
 As we see on the chart, the [plot](https://www.tradingview.com/pine-script-reference/v6/#fun_plot) of the series requested using [barmerge.lookahead\_on](https://www.tradingview.com/pine-script-reference/v6/#var_barmerge.lookahead_on) without an offset ([fuchsia](https://www.tradingview.com/pine-script-reference/v6/#var_color.fuchsia) line) shows final HTF [high](https://www.tradingview.com/pine-script-reference/v6/#var_high) prices _before_ they are actually available on historical bars, whereas the other two calls do not:
 
@@ -260,9 +260,9 @@ Note that:
 -   On realtime bars, the plot of the series without lookahead ([blue](https://www.tradingview.com/pine-script-reference/v6/#var_color.blue)) and the series with lookahead and no historical offset ([fuchsia](https://www.tradingview.com/pine-script-reference/v6/#var_color.fuchsia)) show the _same value_ (i.e., the HTF period’s unconfirmed [high](https://www.tradingview.com/pine-script-reference/v6/#var_high) price), as no data exists beyond those points to leak into the past. Both of these plots _repaint_ their results after the user reloads the script, because the _elapsed_ realtime bars from the previous run become _historical_ bars in the new run.
 -   The series that uses lookahead and a historical offset ([aqua](https://www.tradingview.com/pine-script-reference/v6/#var_color.aqua)) _does not_ repaint its results, because it always uses the last _confirmed_ value from the higher timeframe. See the [Avoiding repainting](https://www.tradingview.com/pine-script-docs/concepts/other-timeframes-and-data/#avoiding-repainting) section of this page for more information.
 
-NoticeIn Pine Script versions 1 and 2, the `security()` function did not include a `lookahead` parameter. However, the request behaved the same as those with `lookahead = barmerge.lookahead_on` in later versions of Pine, meaning that it systematically accessed future data from a higher timeframe on historical bars. Therefore, _exercise caution_ with Pine v1 or v2 scripts that use HTF `security()` calls, unless those calls offset the requested series with the [\[\]](https://www.tradingview.com/pine-script-reference/v6/#op_%5B%5D) operator.
+NoticeIn Pine Script versions 1 and 2, the `security()` function did not include a `lookahead` parameter. However, the request behaved the same as those with `lookahead = barmerge.lookahead_on` in later versions of Pine, meaning that it systematically accessed future data from a higher timeframe on historical bars. Therefore, _exercise caution_ with Pine v1 or v2 scripts that use HTF `security()` calls, unless those calls offset the requested series with the [\[\]](https://www.tradingview.com/pine-script-reference/v6/#op_[]) operator.
 
-### Dynamic requests
+### Dynamic requests {#dynamic-requests}
 
 By default, unlike all previous Pine Script versions, `request.*()` function calls in Pine Script v6 are _dynamic_.
 
@@ -282,7 +282,7 @@ In Pine Script v5, it is possible for scripts to call [user-defined functions](h
 
 In Pine Script v6, scripts **cannot** use wrapped `request.*()` calls within the local blocks of these structures without enabling dynamic requests.
 
-#### ”series” arguments
+#### ”series” arguments {#series-arguments}
 
 Scripts without dynamic requests enabled cannot use “series” arguments for most `request.*()` function parameters, which means the argument values _cannot change_. The only exception is the `expression` parameter in [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security), [request.security\_lower\_tf()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security_lower_tf), and [request.seed()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.seed), which _always_ allows “series” values.
 
@@ -349,7 +349,7 @@ if symbolSeries != symbolSeries[1]
     label.new(bar_index, requestedClose, symbolSeries, textcolor = color.white)
 ```
 
-#### In local scopes
+#### In local scopes {#in-local-scopes}
 
 When scripts do not allow dynamic requests, all `request.*()` calls execute once on _every_ bar or realtime tick, which prevents their use within most local scopes. The only exception is for `request.*()` calls in the scopes of _non-exported_ [functions](https://www.tradingview.com/pine-script-docs/language/user-defined-functions/) and [methods](https://www.tradingview.com/pine-script-docs/language/methods/#user-defined-methods), because the Pine Script compiler extracts such calls into the _global scope_ during translation.
 
@@ -421,7 +421,7 @@ plot(maxVolume, "Highest volume", color.teal,   3)
 plot(minVolume, "Lowest volume",  color.maroon, 3)
 ```
 
-#### In libraries
+#### In libraries {#in-libraries}
 
 [Libraries](https://www.tradingview.com/pine-script-docs/concepts/libraries/) with dynamic requests enabled can _export_ [functions](https://www.tradingview.com/pine-script-docs/language/user-defined-functions/) and [methods](https://www.tradingview.com/pine-script-docs/language/methods/#user-defined-methods) that utilize `request.*()` calls within their local scopes, provided that the evaluated expressions **do not** depend on any exported function parameters.
 
@@ -447,7 +447,7 @@ Note that:
 -   The `htfPrices()` function includes a [runtime.error()](https://www.tradingview.com/pine-script-reference/v6/#fun_runtime.error) call that raises a custom runtime error when the `timeframe` argument does not represent a higher timeframe than the chart’s timeframe. See the [higher timeframes](https://www.tradingview.com/pine-script-docs/concepts/other-timeframes-and-data/#higher-timeframes) section for more information.
 -   The [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security) call uses [barmerge.lookahead\_on](https://www.tradingview.com/pine-script-reference/v6/#const_barmerge.lookahead_on) and offsets each item in the tuple by one bar. This is the only recommended method to [avoid repainting](https://www.tradingview.com/pine-script-docs/concepts/other-timeframes-and-data/#avoiding-repainting).
 
-#### Nested requests
+#### Nested requests {#nested-requests}
 
 Scripts can use dynamic requests to execute _nested requests_, i.e., `request.*()` calls that dynamically evaluate other `request.*()` calls that their `expression` arguments depend on.
 
@@ -496,7 +496,7 @@ if barstate.islastconfirmedhistory
     log.info("Second request: {0}", info2)
 ```
 
-## Data feeds
+## Data feeds {#data-feeds}
 
 TradingView’s data providers supply different data feeds that scripts can access to retrieve information about an instrument, including:
 
@@ -523,7 +523,7 @@ NoteAs a rule, TradingView _does not_ generate data; it relies on its data provi
 
 When using data feeds requested from other contexts, it’s also crucial to consider the _time axis_ differences between the chart the script executes on and the requested feeds since `request.*()` functions adapt the returned series to the chart’s time axis. For example, requesting “BTCUSD” data on the “SPY” chart with [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security) will only show new values when the “SPY” chart has new data as well. Since “SPY” is not a 24-hour symbol, the “BTCUSD” data returned will contain gaps that are otherwise not present when viewing its chart directly.
 
-## ​`request.security()`​
+## `request.security()` {#requestsecurity}
 
 The [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security) function allows scripts to request data from other contexts than the chart the script executes on, such as:
 
@@ -550,13 +550,13 @@ The `expression` parameter of the [request.security()](https://www.tradingview.c
 
 NoticeIf a `request.*()` call uses the value from a [source input](https://www.tradingview.com/pine-script-docs/concepts/inputs/#source-input) in its `expression` argument, and that input accesses a plotted series from another indicator, the request evaluates that series using the data for the **chart’s symbol**, and **not** the data for the specified symbol. This behavior occurs because `request.*()` functions cannot evaluate the scopes required by an external series. Therefore, some `request.*()` calls that use a `symbol` argument and request the value of a source input can return unintended results.
 
-### Timeframes
+### Timeframes {#timeframes}
 
 The [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security) function can request data from any available timeframe, regardless of the chart the script executes on. The timeframe of the data retrieved depends on the `timeframe` argument in the function call, which may represent a higher timeframe (e.g., using “1D” as the `timeframe` value while running the script on an intraday chart) or the chart’s timeframe (i.e., using [timeframe.period](https://www.tradingview.com/pine-script-reference/v6/#var_timeframe.period) or an empty string as the `timeframe` argument).
 
 Scripts can also request _limited_ data from lower timeframes with [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security) (e.g., using “1” as the `timeframe` argument while running the script on a 60-minute chart). However, we don’t typically recommend using this function for LTF data requests. The [request.security\_lower\_tf()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security_lower_tf) function is more optimal for such cases.
 
-#### Higher timeframes
+#### Higher timeframes {#higher-timeframes}
 
 Most use cases of [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security) involve requesting data from a timeframe higher than or the same as the chart timeframe. For example, this script retrieves the [hl2](https://www.tradingview.com/pine-script-reference/v6/#var_hl2) price from a requested `higherTimeframe`. It [plots](https://www.tradingview.com/pine-script-docs/visuals/plots/) the resulting series on the chart alongside the current chart’s [hl2](https://www.tradingview.com/pine-script-reference/v6/#var_hl2) for comparison:
 
@@ -606,7 +606,7 @@ plot(hl2, "Current timeframe HL2", color.teal, 2)
 plot(htfPrice, "Higher timeframe HL2", color.purple, 3)
 ```
 
-#### Lower timeframes
+#### Lower timeframes {#lower-timeframes}
 
 Although the [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security) function is intended to operate on timeframes greater than or equal to the chart timeframe, it _can_ request data from lower timeframes as well, with limitations. When calling this function to access a lower timeframe, it will evaluate the `expression` from the LTF context. However, it returns the results from only a _single_ intrabar (LTF bar) on each chart bar.
 
@@ -642,9 +642,9 @@ Note that:
 -   Both [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security) calls return the _same_ value (the current [close](https://www.tradingview.com/pine-script-reference/v6/#var_close)) on each _realtime_ bar, as shown on the bars with the [orange](https://www.tradingview.com/pine-script-reference/v6/#var_color.orange) background.
 -   Scripts can retrieve up to 200,000 intrabars from a lower-timeframe context. The number of chart bars with available intrabar data varies with the requested lower timeframe, the `calc_bars_count` value, and the user’s plan. For more information, see [this](https://www.tradingview.com/pine-script-docs/writing/limitations/#intrabars) section of the [Limitations](https://www.tradingview.com/pine-script-docs/writing/limitations/) page.
 
-TipWhile scripts can use [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security) to retrieve limited intrabar data, we recommend using [request.security\_lower\_tf()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security_lower_tf) function for such requests in most cases. Instead of retrieving data for only a single LTF bar on each chart bar, it returns an [array](https://www.tradingview.com/pine-script-reference/v6/#type_array) containing the data for _all_ available LTF bars in the chart bar. See the [`​request.security_lower_tf()` section](https://www.tradingview.com/pine-script-docs/concepts/other-timeframes-and-data/#requestsecurity_lower_tf) below to learn more.
+TipWhile scripts can use [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security) to retrieve limited intrabar data, we recommend using [request.security\_lower\_tf()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security_lower_tf) function for such requests in most cases. Instead of retrieving data for only a single LTF bar on each chart bar, it returns an [array](https://www.tradingview.com/pine-script-reference/v6/#type_array) containing the data for _all_ available LTF bars in the chart bar. See the [`request.security_lower_tf()` section](https://www.tradingview.com/pine-script-docs/concepts/other-timeframes-and-data/#requestsecurity_lower_tf) below to learn more.
 
-### Requestable data
+### Requestable data {#requestable-data}
 
 The [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security) function is quite versatile, as it can retrieve values of any fundamental type ([int](https://www.tradingview.com/pine-script-docs/language/type-system/#int), [float](https://www.tradingview.com/pine-script-docs/language/type-system/#float), [bool](https://www.tradingview.com/pine-script-docs/language/type-system/#bool), [color](https://www.tradingview.com/pine-script-docs/language/type-system/#color), or [string](https://www.tradingview.com/pine-script-docs/language/type-system/#string)). It can also request the IDs of data structures and built-in or [user-defined types](https://www.tradingview.com/pine-script-docs/language/type-system/#user-defined-types) that reference fundamental types. The data this function requests depends on its `expression` parameter, which accepts any of the following arguments:
 
@@ -656,7 +656,7 @@ The [request.security()](https://www.tradingview.com/pine-script-reference/v6/#f
 -   [Collections](https://www.tradingview.com/pine-script-docs/concepts/other-timeframes-and-data/#collections)
 -   [User-defined types](https://www.tradingview.com/pine-script-docs/concepts/other-timeframes-and-data/#user-defined-types)
 
-#### Built-in variables and functions
+#### Built-in variables and functions {#built-in-variables-and-functions}
 
 A frequent use case of [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security) is requesting the output of a built-in variable or function/[method](https://www.tradingview.com/pine-script-docs/language/methods/) call from another symbol or timeframe.
 
@@ -719,7 +719,7 @@ Note that:
 -   Instead of calling [ta.sma()](https://www.tradingview.com/pine-script-reference/v6/#fun_ta.sma) within each [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security) call, one could use the `chartAvg` variable as the `expression` in each call to achieve the same result. See the [next section](https://www.tradingview.com/pine-script-docs/concepts/other-timeframes-and-data/#declared-variables) for more information.
 -   On realtime bars, this script also tracks _unconfirmed_ SMA values from each higher timeframe. See the [Historical and realtime behavior](https://www.tradingview.com/pine-script-docs/concepts/other-timeframes-and-data/#historical-and-realtime-behavior) section to learn more.
 
-#### Declared variables
+#### Declared variables {#declared-variables}
 
 The [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security) function’s `expression` parameter can accept declared variables that are accessible to the scope from which the function call executes. When using a declared variable as the `expression` argument, the function call _duplicates_ all _preceding code_ that determines the assigned value or reference. This duplication allows the function to evaluate necessary calculations and logic in the requested context without affecting the original variable.
 
@@ -799,7 +799,7 @@ if barstate.isconfirmed
     log.info("counter: {0}, requestedCounter: {1}", counter, requestedCounter)
 ```
 
-#### Tuples
+#### Tuples {#tuples}
 
 [Tuples](https://www.tradingview.com/pine-script-docs/language/type-system/#tuples) in Pine Script are comma-separated lists of expressions enclosed in square brackets. Programmers often use tuples when creating [functions](https://www.tradingview.com/pine-script-docs/language/user-defined-functions/), [conditional structures](https://www.tradingview.com/pine-script-docs/language/conditional-structures/), or [loops](https://www.tradingview.com/pine-script-docs/language/loops/) that return multiple values or references from their local scopes.
 
@@ -841,10 +841,10 @@ bgcolor(crossOver ? color.new(color.green, 50) : crossUnder ? color.new(color.re
 
 Note that:
 
--   We’ve offset the `rank` variable’s expression by one bar using the history-referencing operator [\[\]](https://www.tradingview.com/pine-script-reference/v6/#op_%5B%5D) and included [barmerge.lookahead\_on](https://www.tradingview.com/pine-script-reference/v6/#var_barmerge.lookahead_on) in the [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security) call to ensure the values on realtime bars do not repaint after becoming historical bars. See the [Avoiding repainting](https://www.tradingview.com/pine-script-docs/concepts/other-timeframes-and-data/#avoiding-repainting) section for more information.
+-   We’ve offset the `rank` variable’s expression by one bar using the history-referencing operator [\[\]](https://www.tradingview.com/pine-script-reference/v6/#op_[]) and included [barmerge.lookahead\_on](https://www.tradingview.com/pine-script-reference/v6/#var_barmerge.lookahead_on) in the [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security) call to ensure the values on realtime bars do not repaint after becoming historical bars. See the [Avoiding repainting](https://www.tradingview.com/pine-script-docs/concepts/other-timeframes-and-data/#avoiding-repainting) section for more information.
 -   The [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security) call returns a tuple, so we use a _tuple declaration_ to declare the `requestedRank`, `crossOver`, and `crossUnder` variables. To learn more about using tuples, see [this section](https://www.tradingview.com/pine-script-docs/language/type-system/#tuples) of our User Manual’s [Type system](https://www.tradingview.com/pine-script-docs/language/type-system/) page.
 
-#### User-defined functions
+#### User-defined functions {#user-defined-functions}
 
 [User-defined functions](https://www.tradingview.com/pine-script-docs/language/user-defined-functions/) and [methods](https://www.tradingview.com/pine-script-docs/language/methods/#user-defined-methods) are custom functions written by users. They allow users to define sequences of operations associated with an identifier that scripts can conveniently call throughout their executions (e.g., `myUDF()`).
 
@@ -898,7 +898,7 @@ Note that:
 
 -   We offset the `source` and `weight` arguments in the `weightedBB()` call used as the `expression` in [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security) and used [barmerge.lookahead\_on](https://www.tradingview.com/pine-script-reference/v6/#var_barmerge.lookahead_on) to ensure the requested results reflect the last confirmed values from the `timeframe` on realtime bars. See [this section](https://www.tradingview.com/pine-script-docs/concepts/other-timeframes-and-data/#avoiding-repainting) to learn more.
 
-#### Chart points
+#### Chart points {#chart-points}
 
 [Chart points](https://www.tradingview.com/pine-script-docs/language/type-system/#chart-points) are objects that represent coordinates on the chart. [Lines](https://www.tradingview.com/pine-script-docs/visuals/lines-and-boxes/#lines), [boxes](https://www.tradingview.com/pine-script-docs/visuals/lines-and-boxes/#boxes), [polylines](https://www.tradingview.com/pine-script-docs/visuals/lines-and-boxes/#polylines), and [labels](https://www.tradingview.com/pine-script-docs/visuals/text-and-shapes/#labels) use these objects to set their display locations.
 
@@ -944,7 +944,7 @@ Note that:
 
 -   Because we designed this example to request data from [higher timeframes](https://www.tradingview.com/pine-script-docs/concepts/other-timeframes-and-data/#higher-timeframes), we’ve included a [runtime.error()](https://www.tradingview.com/pine-script-reference/v6/#fun_runtime.error) call that the script executes if the `higherTimeframe` value represents a lower timeframe than [timeframe.period](https://www.tradingview.com/pine-script-reference/v6/#var_timeframe.period).
 
-#### Collections
+#### Collections {#collections}
 
 Pine Script _collections_ ([arrays](https://www.tradingview.com/pine-script-docs/language/arrays/), [matrices](https://www.tradingview.com/pine-script-docs/language/matrices/), and [maps](https://www.tradingview.com/pine-script-docs/language/maps/)) are data structures that contain an arbitrary number of elements with specified types. The [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security) function can retrieve the IDs of [collections](https://www.tradingview.com/pine-script-docs/language/type-system/#collections) whose elements consist of:
 
@@ -995,7 +995,7 @@ Note that:
 
 -   The [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security) call in this script can return [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) if no data is available from the specified context. Since one cannot call [methods](https://www.tradingview.com/pine-script-docs/language/methods/) on a [map](https://www.tradingview.com/pine-script-reference/v6/#type_map) variable when its value is [na](https://www.tradingview.com/pine-script-reference/v6/#var_na), we’ve added an [if](https://www.tradingview.com/pine-script-reference/v6/#kw_if) structure to only calculate a new `ratio` value when `otherData` references a valid [map](https://www.tradingview.com/pine-script-reference/v6/#type_map) instance.
 
-#### User-defined types
+#### User-defined types {#user-defined-types}
 
 [User-defined types (UDTs)](https://www.tradingview.com/pine-script-docs/language/type-system/#user-defined-types) are _composite types_ containing an arbitrary number of _fields_, which can be of any available type, including other [user-defined types](https://www.tradingview.com/pine-script-docs/language/type-system/#user-defined-types).
 
@@ -1069,7 +1069,7 @@ Note that:
 -   The `syminfo.*` variables used in this script all return “simple string” qualified types. However, [objects](https://www.tradingview.com/pine-script-docs/language/objects/) in Pine are _always_ qualified as “series”. Consequently, all values assigned to the `info` object’s fields automatically adopt the “series” [qualifier](https://www.tradingview.com/pine-script-docs/language/type-system/#qualifiers).
 -   It is possible for the [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security) call to return [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) due to differences between the data requested from the `symbol` and the main chart. This script assigns a new `TickerInfo` object to the `requestedInfo` in that case to prevent runtime errors.
 
-## ​`request.security_lower_tf()`​
+## `request.security_lower_tf()` {#requestsecurity_lower_tf}
 
 The [request.security\_lower\_tf()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security_lower_tf) function is an alternative to [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security) designed for reliably requesting information from lower-timeframe (LTF) contexts.
 
@@ -1085,13 +1085,13 @@ request.security_lower_tf(symbol, timeframe, expression, ignore_invalid_symbol, 
 
 This function requests data only from timeframes that are _lower than_ or _equal to_ the chart’s timeframe ([timeframe.period](https://www.tradingview.com/pine-script-reference/v6/#var_timeframe.period)). If the `timeframe` argument of the [request.security\_lower\_tf()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security_lower_tf) call represents a higher timeframe, the function raises a runtime error or returns [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) results, depending on the `ignore_invalid_timeframe` parameter. The parameter’s default value is `false`, meaning the function raises an error and halts the script’s executions if the `timeframe` argument is invalid.
 
-### Requesting intrabar data
+### Requesting intrabar data {#requesting-intrabar-data}
 
 Intrabar data can provide a script with additional information that may not be obvious or accessible from solely analyzing data sampled on the chart’s timerframe. The [request.security\_lower\_tf()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security_lower_tf) function can retrieve many data types from an intrabar context.
 
 Before you venture further in this section, we recommend exploring the [Requestable data](https://www.tradingview.com/pine-script-docs/concepts/other-timeframes-and-data/#requestable-data) portion of the [request.security()](https://www.tradingview.com/pine-script-docs/concepts/other-timeframes-and-data/#requestsecurity) section above, which provides foundational information about the types of data one can request. The `expression` parameter in [request.security\_lower\_tf()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security_lower_tf) accepts most of the same arguments discussed in that section, excluding direct references to [collections](https://www.tradingview.com/pine-script-docs/language/type-system/#collections) and mutable variables. Although it accepts many of the same types of arguments, this function returns [array](https://www.tradingview.com/pine-script-reference/v6/#type_array) results, which comes with some differences in interpretation and handling, as explained below.
 
-### Intrabar data arrays
+### Intrabar data arrays {#intrabar-data-arrays}
 
 Lower timeframes contain more data points than higher timeframes, as new values come in at a _higher frequency_. For example, when comparing a 1-minute chart to an hourly chart, the 1-minute chart will have up to 60 times the number of bars per hour, depending on the available data.
 
@@ -1145,7 +1145,7 @@ Note that:
 -   The number of intrabars per chart bar may vary depending on the data available from the context and the chart the script executes on. For example, a provider’s 1-minute data feed may not include data for every minute within the 60-minute timeframe due to a lack of trading activity over some 1-minute intervals. To check the number of intrabars retrieved for a chart bar, one can use [array.size()](https://www.tradingview.com/pine-script-reference/v6/#fun_array.size) on the resulting [array](https://www.tradingview.com/pine-script-reference/v6/#type_array).
 -   If the `lowerTimeframe` value is greater than the chart’s timeframe, the script will raise a _runtime error_, as we have not supplied an `ignore_invalid_timeframe` argument in the [request.security\_lower\_tf()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security_lower_tf) call.
 
-### Tuples of intrabar data
+### Tuples of intrabar data {#tuples-of-intrabar-data}
 
 When passing a tuple or a function call that returns a tuple as the `expression` argument in [request.security\_lower\_tf()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security_lower_tf), the result is a tuple of [arrays](https://www.tradingview.com/pine-script-docs/language/arrays/) with [type templates](https://www.tradingview.com/pine-script-docs/language/type-system/#collections) corresponding to the types within the argument. For example, using a `[float, string, color]` tuple as the `expression` will result in `[array<float>, array<string>, array<color>]` data returned by the function. Using a tuple `expression` allows a script to fetch the IDs of several [arrays](https://www.tradingview.com/pine-script-docs/language/arrays/) containing intrabar data with a single [request.security\_lower\_tf()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security_lower_tf) function call.
 
@@ -1219,7 +1219,7 @@ Note that:
 -   The `lowerTimeframe` value is the result of calculating the [math.ceil()](https://www.tradingview.com/pine-script-reference/v6/#fun_math.ceil) of the [timeframe.in\_seconds()](https://www.tradingview.com/pine-script-reference/v6/#fun_timeframe.in_seconds) divided by the `maxIntrabars` and converting to a [valid timeframe string](https://www.tradingview.com/pine-script-docs/concepts/timeframes/#timeframe-string-specifications) with [timeframe.from\_seconds()](https://www.tradingview.com/pine-script-reference/v6/#fun_timeframe.from_seconds).
 -   The script sets the top of the box drawing using the [array.max()](https://www.tradingview.com/pine-script-reference/v6/#fun_array.max) of the requested `hData` array, and it sets the box’s bottom using the [array.min()](https://www.tradingview.com/pine-script-reference/v6/#fun_array.min) of the requested `lData` array. As we see on the chart, these values correspond to the [high](https://www.tradingview.com/pine-script-reference/v6/#var_high) and [low](https://www.tradingview.com/pine-script-reference/v6/#var_low) of the chart bar.
 
-### Requesting collections
+### Requesting collections {#requesting-collections}
 
 In some cases, a script might need to request [collections](https://www.tradingview.com/pine-script-docs/language/type-system/#collections) from an intrabar context. However, in contrast to [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security), scripts cannot use collection references or calls to functions that return them as the `expression` argument in a [request.security\_lower\_tf()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security_lower_tf) call, because [arrays](https://www.tradingview.com/pine-script-docs/language/arrays/) cannot directly store references to other [collections](https://www.tradingview.com/pine-script-docs/language/type-system/#collections).
 
@@ -1298,7 +1298,7 @@ Note that:
 -   The `intrabarData` variable references an array from the `intrabarPrices.data` field only if the `intrabarPrices` variable references a `Prices` object. If `intrabarPrices` holds [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) because intrabar data is not available for a bar, the `intrabarData` variable references an array of [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) values.
 -   The process used in this example is _not_ necessary to achieve the intended result. Instead of using [UDTs](https://www.tradingview.com/pine-script-docs/language/type-system/#user-defined-types), we can use the tuple `[open, high, low, close]` as the `expression` argument in the request to retrieve a tuple of [arrays](https://www.tradingview.com/pine-script-docs/language/arrays/) for further operations. See the [Tuples of intrabar data](https://www.tradingview.com/pine-script-docs/concepts/other-timeframes-and-data/#tuples-of-intrabar-data) section above for more information.
 
-## Custom contexts
+## Custom contexts {#custom-contexts}
 
 Pine Script includes multiple `ticker.*()` functions that allow scripts to construct _custom_ ticker IDs that specify additional settings for data requests when used as a `symbol` argument in [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security) and [request.security\_lower\_tf()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security_lower_tf):
 
@@ -1437,7 +1437,7 @@ plot(renkoOpen)
 plot(renkoClose)
 ```
 
-## Historical and realtime behavior
+## Historical and realtime behavior {#historical-and-realtime-behavior}
 
 Functions in the `request.*()` namespace can behave differently on historical and realtime bars. This behavior is closely related to Pine’s [Execution model](https://www.tradingview.com/pine-script-docs/language/execution-model/).
 
@@ -1451,9 +1451,9 @@ TipIt is often helpful to distinguish historical bars from realtime bars when wo
 
 In most circumstances where a script requests data from a broader context, one will typically require confirmed, stable values that _do not_ fluctuate on realtime bars. The [section below](https://www.tradingview.com/pine-script-docs/concepts/other-timeframes-and-data/#avoiding-repainting) explains how to achieve such a result and avoid repainting data requests.
 
-### Avoiding repainting
+### Avoiding repainting {#avoiding-repainting}
 
-#### Higher-timeframe data
+#### Higher-timeframe data {#higher-timeframe-data}
 
 When requesting values from a higher timeframe, they are subject to repainting since realtime bars can contain _unconfirmed_ information from developing HTF bars, and the script may adjust the times that new values come in on historical bars. To avoid repainting HTF data, one must ensure that the function only returns confirmed values with consistent timing on all bars, regardless of bar state.
 
@@ -1490,7 +1490,7 @@ plot(requestedWMA, "HTF WMA", color.purple, 3)
 bgcolor(barstate.isrealtime ? color.new(color.orange, 70) : na, title = "Realtime bar highlight")
 ```
 
-To avoid repainting in this script, we can add `lookahead = barmerge.lookahead_on` to the [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security) call and offset the call history of [ta.wma()](https://www.tradingview.com/pine-script-reference/v6/#fun_ta.wma) by one bar with the history-referencing operator [\[\]](https://www.tradingview.com/pine-script-reference/v6/#op_%5B%5D), ensuring the request always retrieves the last confirmed HTF bar’s WMA at the start of each new `timeframe`. Unlike the previous script, this version has consistent behavior on historical and realtime bar states, as we see below:
+To avoid repainting in this script, we can add `lookahead = barmerge.lookahead_on` to the [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security) call and offset the call history of [ta.wma()](https://www.tradingview.com/pine-script-reference/v6/#fun_ta.wma) by one bar with the history-referencing operator [\[\]](https://www.tradingview.com/pine-script-reference/v6/#op_[]), ensuring the request always retrieves the last confirmed HTF bar’s WMA at the start of each new `timeframe`. Unlike the previous script, this version has consistent behavior on historical and realtime bar states, as we see below:
 
 ![image](https://www.tradingview.com/pine-script-docs/_astro/Other-timeframes-and-data-Historical-and-realtime-behavior-Avoiding-repainting-Higher-timeframe-data-2.DgoLhl8Y_Z2j8Wvs.webp)
 
@@ -1518,7 +1518,7 @@ plot(requestedWMA, "HTF WMA", color.purple, 3)
 bgcolor(barstate.isrealtime ? color.new(color.orange, 70) : na, title = "Realtime bar highlight")
 ```
 
-#### Lower-timeframe data
+#### Lower-timeframe data {#lower-timeframe-data}
 
 The [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security) and [request.security\_lower\_tf()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security_lower_tf) functions can retrieve data from lower-timeframe contexts. The [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security) function can only retrieve data from a _single_ intrabar in each chart bar, and [request.security\_lower\_tf()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security_lower_tf) retrieves data from _all_ available intrabars.
 
@@ -1573,7 +1573,7 @@ Note that:
 -   While [request.security\_lower\_tf()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security_lower_tf) is more optimized for handling historical and realtime intrabars, it’s still possible in some cases for minor repainting to occur due to data differences from the provider, as outlined above.
 -   This code may not show intrabar data on all available chart bars, depending on how many intrabars each chart bar contains, as `request.*()` functions can retrieve up to 200,000 intrabars from an LTF context. The maximum number of requestable intrabars depends on the user’s [plan](https://www.tradingview.com/pricing/). See [this](https://www.tradingview.com/pine-script-docs/writing/limitations/#request-calls) section of the [Limitations](https://www.tradingview.com/pine-script-docs/writing/limitations/) page for more information.
 
-## ​`request.currency_rate()`​
+## `request.currency_rate()` {#requestcurrency_rate}
 
 When a script needs to convert values expressed in one currency to another, one can use [request.currency\_rate()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.currency_rate). This function requests a _daily rate_ for currency conversion calculations based on currency pair or [spread](https://www.tradingview.com/support/solutions/43000502298/) data from the most popular exchanges, providing a simpler alternative to fetching specific pairs or [spreads](https://www.tradingview.com/support/solutions/43000502298/) with [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security).
 
@@ -1623,7 +1623,7 @@ plot(securityRequestedRate, "`request.security()` value", color.purple, 5)
 plot(nonSecurityRequestedRate, "`request.currency_rate()` value", color.yellow, 2)
 ```
 
-## ​`request.dividends()`​, ​`request.splits()`​, and ​`request.earnings()`​
+## `request.dividends()`, `request.splits()`, and `request.earnings()` {#requestdividends-requestsplits-and-requestearnings}
 
 Analyzing a stock’s earnings data and corporate actions provides helpful insights into its underlying financial strength. Pine Script provides the ability to retrieve essential information about applicable stocks via [request.dividends()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.dividends), [request.splits()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.splits), and [request.earnings()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.earnings).
 
@@ -1712,7 +1712,7 @@ Note that:
 -   The script assigns a [table](https://www.tradingview.com/pine-script-reference/v6/#type_table) ID to the `infoTable` variable on the first chart bar. On subsequent bars, it updates necessary cells with new information whenever data is available.
 -   If no information is available from any of the `request.*()` calls throughout the chart’s history (e.g., if the `ticker` has no dividend information), the script does not initialize the corresponding cells since it’s unnecessary.
 
-## ​`request.financial()`​
+## `request.financial()` {#requestfinancial}
 
 Financial metrics provide investors with insights about a company’s economic and financial health that are not tangible from solely analyzing its stock prices. TradingView offers a wide variety of financial metrics from [FactSet](https://www.factset.com/) that traders can access via the “Financials” tab in the “Indicators” menu of the chart. Scripts can access available metrics for an instrument directly via the [request.financial()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.financial) function.
 
@@ -1763,7 +1763,7 @@ Note that:
 
 -   Not all `fiscalPeriod` options are available for every ticker ID. For example, companies in the US typically publish _quarterly_ reports, whereas many European companies publish _semiannual_ reports. See [this page](https://www.tradingview.com/support/solutions/43000540147) in our Help Center for more information.
 
-### Calculating financial metrics
+### Calculating financial metrics {#calculating-financial-metrics}
 
 The [request.financial()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.financial) function can provide scripts with numerous useful financial metrics that don’t require additional calculations. However, some commonly used financial estimates require combining an instrument’s current market price with requested financial data. Such is the case for:
 
@@ -1833,7 +1833,7 @@ Note that:
 
 -   Since not all companies publish quarterly financial reports, one may need to change the “FQ” in these functions to match the minimum reporting period for a specific company, as the [request.financial()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.financial) calls will return [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) when “FQ” data isn’t available.
 
-### Financial IDs
+### Financial IDs {#financial-ids}
 
 Below is an overview of all financial metrics one can request via [request.financial()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.financial), along with the periods in which reports may be available. We’ve divided this information into four tables corresponding to the categories displayed in the “Financials” section of the “Indicators” menu:
 
@@ -1850,7 +1850,7 @@ Each table has the following three columns:
 
 TipThe tables in these sections are quite lengthy, because there are many `financial_id` arguments available. Use the **“Click to show/hide”** option above each table to toggle its visibility.
 
-#### Income statements
+#### Income statements {#income-statements}
 
 This table lists the available metrics that provide information about a company’s income, costs, profits and losses.
 
@@ -1897,7 +1897,7 @@ Click to show/hide
 | [Total revenue](https://www.tradingview.com/support/solutions/43000553619) | FQ, FH, FY, TTM | TOTAL\_REVENUE |
 | [Unusual income/expense](https://www.tradingview.com/support/solutions/43000563476) | FQ, FH, FY, TTM | UNUSUAL\_EXPENSE\_INC |
 
-#### Balance sheet
+#### Balance sheet {#balance-sheet}
 
 This table lists the metrics that provide information about a company’s capital structure.
 
@@ -1973,7 +1973,7 @@ Click to show/hide
 | [Total receivables, net](https://www.tradingview.com/support/solutions/43000563738) | FQ, FH, FY | TOTAL\_RECEIVABLES\_NET |
 | [Treasury stock - common](https://www.tradingview.com/support/solutions/43000563875) | FQ, FH, FY | TREASURY\_STOCK\_COMMON |
 
-#### Cash flow
+#### Cash flow {#cash-flow}
 
 This table lists the available metrics that provide information about how cash flows through a company.
 
@@ -2027,7 +2027,7 @@ Click to show/hide
 | [Sale/maturity of investments](https://www.tradingview.com/support/solutions/43000564161) | FQ, FH, FY | SALES\_OF\_INVESTMENTS |
 | [Total cash dividends paid](https://www.tradingview.com/support/solutions/43000564183) | FQ, FH, FY, TTM | TOTAL\_CASH\_DIVIDENDS\_PAID |
 
-#### Statistics
+#### Statistics {#statistics}
 
 This table contains a variety of statistical metrics, including commonly used financial ratios.
 
@@ -2108,7 +2108,7 @@ Click to show/hide
 | [Total common shares outstanding](https://www.tradingview.com/support/solutions/43000670331) | FQ, FH, FY | TOTAL\_SHARES\_OUTSTANDING |
 | [Zmijewski score](https://www.tradingview.com/support/solutions/43000597850) | FQ, FY | ZMIJEWSKI\_SCORE |
 
-## ​`request.economic()`​
+## `request.economic()` {#requesteconomic}
 
 The [request.economic()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.economic) function provides scripts with the ability to retrieve economic data for a specified country or region, including information about the state of the economy (GDP, inflation rate, etc.) or of a particular industry (steel production, ICU beds, etc.).
 
@@ -2155,7 +2155,7 @@ Note that:
 
 TipThe tables in the sections below are rather large, because there are numerous `country_code` and `field` arguments available. Use the **“Click to show/hide”** option above each table to toggle its visibility.
 
-### Country/region codes
+### Country/region codes {#countryregion-codes}
 
 The table in this section lists all country/region codes available for use with [request.economic()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.economic). The first column of the table contains the “string” values that represent the country or region code, and the second column contains the corresponding country/region names.
 
@@ -2367,7 +2367,7 @@ Click to show/hide
 | ZM | Zambia |
 | ZW | Zimbabwe |
 
-### Field codes
+### Field codes {#field-codes}
 
 The table in this section lists the field codes available for use with [request.economic()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.economic). The first column contains the “string” values used as the `field` argument, and the second column contains names of each metric and links to our Help Center with additional information, including the countries/regions they’re available for.
 
@@ -2694,7 +2694,7 @@ Click to show/hide
 | YUR | [Youth Unemployment Rate](https://www.tradingview.com/support/solutions/43000651211) |
 | ZCC | [ZEW Current Conditions](https://www.tradingview.com/support/solutions/43000651212) |
 
-## ​`request.footprint()`​
+## `request.footprint()` {#requestfootprint}
 
 The [request.footprint()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.footprint) function enables scripts to retrieve [volume footprint](https://www.tradingview.com/support/solutions/43000726164-volume-footprint-charts-a-complete-guide/) data for the bars in the datasets on which they run. For a given bar, a volume footprint categorizes volume values from lower timeframes as “buy” (upward) or “sell” (downward) based on intrabar price action, then collects the categorized volume data into equally sized rows that cover the bar’s price range. Programmers can use retrieved footprint data to inspect the distribution of “buy”, “sell”, and total volume across the rows for a bar’s range, identify a bar’s Point of Control (POC) and other significant price levels, calculate volume delta information, detect volume imbalances, and more.
 
@@ -2859,7 +2859,7 @@ To learn more about the [footprint](https://www.tradingview.com/pine-script-refe
 
 For more information about volume footprints and how they work, refer to the [Volume footprint charts](https://www.tradingview.com/support/solutions/43000726164-volume-footprint-charts-a-complete-guide/) article in our Help Center.
 
-### Requesting footprints on other datasets
+### Requesting footprints on other datasets {#requesting-footprints-on-other-datasets}
 
 Scripts can request volume footprint data, or the results of calculations that use footprint data, from _other datasets_ by passing an expression that returns or uses IDs of the [footprint](https://www.tradingview.com/pine-script-reference/v6/#type_footprint) or [volume\_row](https://www.tradingview.com/pine-script-reference/v6/#type_volume_row) type as the `expression` argument in a [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security) or [request.security\_lower\_tf()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security_lower_tf) function call. If a call to either of these functions requests the result of an expression that relies on volume footprint data, it calculates footprints on the specified dataset rather than the script’s main dataset.
 
@@ -2993,7 +2993,7 @@ Note that:
 
 -   Although the `pocMA` variable declaration and its dependencies no longer execute directly, the [Pine Profiler](https://www.tradingview.com/pine-script-docs/writing/profiling-and-optimization/#pine-profiler) displays performance details next to that code in the Pine Editor. Those details represent the performance of the _copied_ calculations that execute within the [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security) call’s context in this case, as the profiler cannot display that information elsewhere. See the [When requesting other contexts](https://www.tradingview.com/pine-script-docs/writing/profiling-and-optimization/#when-requesting-other-contexts) section of the [Profiling and optimization](https://www.tradingview.com/pine-script-docs/writing/profiling-and-optimization/) page to learn more about this behavior.
 
-## ​`request.seed()`​
+## `request.seed()` {#requestseed}
 
 TradingView aggregates a vast amount of data from its many providers, including price and volume information on tradable instruments, financials, economic data, and more, which users can retrieve in Pine Script using the functions discussed in the sections above, as well as multiple built-in variables.
 

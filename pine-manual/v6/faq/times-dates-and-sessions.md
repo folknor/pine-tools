@@ -4,9 +4,9 @@ source: https://www.tradingview.com/pine-script-docs/faq/times-dates-and-session
 section: faq
 ---
 
-# Times, dates, and sessions
+# Times, dates, and sessions {#times-dates-and-sessions}
 
-## How can I get the time of the first bar in the dataset?
+## How can I get the time of the first bar in the dataset? {#how-can-i-get-the-time-of-the-first-bar-in-the-dataset}
 
 The following example script initializes a variable using the [var](https://www.tradingview.com/pine-script-docs/language/variable-declarations/#var) keyword on the first bar and then never updates it again. The variable stores the value of the [time](https://www.tradingview.com/pine-script-reference/v6/#fun_time) built-in, which represents the time of the bar open in UNIX format (milliseconds since 00:00:00 UTC on 1 January 1970).
 
@@ -18,7 +18,7 @@ var int t = time
 plot(t)
 ```
 
-## How can I convert a time to a date-time string?
+## How can I convert a time to a date-time string? {#how-can-i-convert-a-time-to-a-date-time-string}
 
 The built-in function [str.format\_time()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.format_time) translates a UNIX timestamp into a string representation of date and time. In the following example script, we provide four distinct methods to obtain the date-time string, two of which offset the date and time into the future. To improve readability, we use a custom function, `timeToString()`, which calls [str.format\_time()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.format_time) and applies a consistent format, instead of specifying the format for every function call.
 
@@ -69,7 +69,7 @@ else if barstate.islast
     table.cell_set_text(tbl, 0, 0, txt)
 ```
 
-## How can I find out how many days are in the current month?
+## How can I find out how many days are in the current month? {#how-can-i-find-out-how-many-days-are-in-the-current-month}
 
 The following example script calculates the number of days in the current month, including adjustments for leap years. By default, the `daysPerMonth()` function uses the current year and month, but any year or month number can be passed as arguments:
 
@@ -92,11 +92,11 @@ daysPerMonth(int yearNumber = year, int monthNumber = month) =>
 plot(daysPerMonth())
 ```
 
-## How can I detect the chart’s last day?
+## How can I detect the chart’s last day? {#how-can-i-detect-the-charts-last-day}
 
 Scripts can detect the last day on a chart in different ways. However, because the [last\_bar\_time](https://www.tradingview.com/pine-script-reference/v6/#var_last_bar_time) and [timenow](https://www.tradingview.com/pine-script-reference/v6/#var_timenow) variables constantly update to mirror the time of the newest bar, each subsequent realtime bar is _also_ interpreted as if it is the chart’s last day.
 
-### Using ​`timeframe.change`​
+### Using `timeframe.change` {#using-timeframechange}
 
 This example script checks for all of these conditions:
 
@@ -114,7 +114,7 @@ if timeframe.change("1D") and last_bar_time - time < timeframe.in_seconds("1D") 
 bgcolor(isLastDay ? color.new(color.red, 90) : na)
 ```
 
-### Using ​`timenow`​
+### Using `timenow` {#using-timenow}
 
 This script uses the [timenow](https://www.tradingview.com/pine-script-reference/v6/#var_timenow) variable to retrieve the current time — not the time of the bar on which the script is executing, but the time of the latest chart update. We pass this time as input to the built-in functions [year()](https://www.tradingview.com/pine-script-reference/v6/#fun_year), [month()](https://www.tradingview.com/pine-script-reference/v6/#fun_month), and [dayofmonth()](https://www.tradingview.com/pine-script-reference/v6/#fun_dayofmonth) to calculate the year, month, and day of the month for that time. We compare these calculated values with the built-in variables [year](https://www.tradingview.com/pine-script-reference/v6/#var_year), [month](https://www.tradingview.com/pine-script-reference/v6/#var_month), and [dayofmonth](https://www.tradingview.com/pine-script-reference/v6/#var_dayofmonth), which store the year, month, and day of the month of the current chart bar. When the year, day and month of the latest chart update match the values of the current bar, then the script is executing on bars from the most recent day.
 
@@ -129,7 +129,7 @@ isToday() =>
 bgcolor(isToday() ? color.new(color.red, 90) : na)
 ```
 
-## How can I get bar’s trading date on symbols with an overnight session?
+## How can I get bar’s trading date on symbols with an overnight session? {#how-can-i-get-bars-trading-date-on-symbols-with-an-overnight-session}
 
 Some symbols trade overnight, which means that today’s trading day actually started yesterday, or even several days ago. Many futures and Forex pairs trade overnight. Trading hours are defined by the exchange. On timeframes of one day and above, the chart visually adjusts the dates of these bars to ensure the date corresponds to the bar’s trading day; on intraday timeframes the date and time are shown as they are.
 
@@ -171,7 +171,7 @@ Note that:
 
 -   Here, we add `"UTC"` as the time zone for the [dayofmonth()](https://www.tradingview.com/pine-script-reference/v6/#fun_dayofmonth) calculation, because [time\_tradingday](https://www.tradingview.com/pine-script-reference/v6/#var_time_tradingday) always returns the trading day as 00:00 in the UTC time zone. The variable returns 00:00 because its only purpose is to specify a year, month, and day, and its hour and minute components carry no specific meaning.
 
-## How can I plot a value starting n months or years back?
+## How can I plot a value starting n months or years back? {#how-can-i-plot-a-value-starting-n-months-or-years-back}
 
 The [timestamp()](https://www.tradingview.com/pine-script-reference/v6/#fun_timestamp) function can accept negative argument values and convert them to accurate dates. For instance, a negative month value deducts the corresponding number of months from the outcome.
 
@@ -201,7 +201,7 @@ plot(valueToPlot)
 bgcolor(isBeginMonth ? color.new(color.red, 80) : na)
 ```
 
-## How can I track highs and lows for a specific timeframe?
+## How can I track highs and lows for a specific timeframe? {#how-can-i-track-highs-and-lows-for-a-specific-timeframe}
 
 The following example script tracks the high and low values of a timeframe that the user selects. Our script avoids using [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security) calls, which are resource-intensive.
 
@@ -243,7 +243,7 @@ bgcolor(isNewPeriod ? color.new(color.gray, 90) : na)  // Highlight the backgrou
 -   The script resets the `hi` and `lo` variables at the beginning of a new timeframe and then trails `hi` up and `lo` down.
 -   We change the color of plots to [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) every time a new timeframe begins, to visually distinguish between periods.
 
-## How can I track the highs and lows within a specific session or time of day?
+## How can I track the highs and lows within a specific session or time of day? {#how-can-i-track-the-highs-and-lows-within-a-specific-session-or-time-of-day}
 
 To find if a time is within a specific session, pass a [time-based session string](https://www.tradingview.com/pine-script-docs/concepts/sessions/#time-based-sessions) to the [time()](https://www.tradingview.com/pine-script-reference/v6/#fun_time) function, which retrieves the UNIX time of the current bar based on a given timeframe and session. If the time point falls outside the session, the function returns [na](https://www.tradingview.com/pine-script-reference/v6/#var_na).
 
@@ -295,7 +295,7 @@ bgcolor(not timeIsAllowed ? color.new(color.red, 90) : na)
 -   We use the 3-parameter version of the [time()](https://www.tradingview.com/pine-script-reference/v6/#fun_time) function to ascertain whether we are within user-specified hours and time zone for tracking highs and lows.
 -   We pass a session input and an optional time zone to the [time()](https://www.tradingview.com/pine-script-reference/v6/#fun_time) function.
 
-## How can I make an entire custom session visible?
+## How can I make an entire custom session visible? {#how-can-i-make-an-entire-custom-session-visible}
 
 Scripts can use custom time-based sessions by defining a session string, as explained in the [Time-based sessions](https://www.tradingview.com/pine-script-docs/concepts/sessions/#time-based-sessions) section of the [Sessions](https://www.tradingview.com/pine-script-docs/concepts/sessions) page.
 
@@ -360,7 +360,7 @@ Note that:
 -   The lowest timeframe to use, assuming that the session allows 24-hour trading 7 days a week, to search forward one whole day, is 5 minutes. Therefore, if the chart timeframe is lower than “5m”, the script throws a runtime error.
 -   The script uses [time()](https://www.tradingview.com/pine-script-reference/v6/#fun_time-1) and [time\_close()](https://www.tradingview.com/pine-script-reference/v6/#fun_time_close) functions in loops, with positive and negative values for the `bars_back` parameter to search forwards and backwards in time.
 
-## How can I track highs and lows for periods within a bar?
+## How can I track highs and lows for periods within a bar? {#how-can-i-track-highs-and-lows-for-periods-within-a-bar}
 
 Historical bars contain one set of OHLC data for each bar. To identify values and times that start or end _within_ a chart bar, intrabar inspection is necessary, using data from lower timeframes.
 
@@ -417,7 +417,7 @@ if timeframe.in_seconds() <= timeframe.in_seconds(lowerTfInput)
 
 -   The script raises an error using [runtime.error()](https://www.tradingview.com/pine-script-reference/v6/#fun_runtime.error) if the chosen lower timeframe for intrabar inspection is not shorter than the main chart’s timeframe. Including error-checking such as this when working with timeframes makes the script more robust.
 
-## How can I detect a specific date and time?
+## How can I detect a specific date and time? {#how-can-i-detect-a-specific-date-and-time}
 
 The simplest way to detect a specific date and time is to check the [time](https://www.tradingview.com/pine-script-reference/v6/#var_time) variable, which returns the timestamp of the current bar’s open. If this matches a certain timestamp, then the script has detected that specific date and time.
 
@@ -484,7 +484,7 @@ bgcolor(isTargetTime ? color.new(color.green, 70) : na)
 -   We use the built-in variables [year](https://www.tradingview.com/pine-script-reference/v6/#var_year), [month](https://www.tradingview.com/pine-script-reference/v6/#var_month), [dayofmonth](https://www.tradingview.com/pine-script-reference/v6/#var_dayofmonth), [hour](https://www.tradingview.com/pine-script-reference/v6/#var_hour), and [minute](https://www.tradingview.com/pine-script-reference/v6/#var_minute), which store the time of the current bar’s open.
 -   We use the built-in functions [year()](https://www.tradingview.com/pine-script-reference/v6/#fun_year), [month()](https://www.tradingview.com/pine-script-reference/v6/#fun_month), [dayofmonth()](https://www.tradingview.com/pine-script-reference/v6/#fun_dayofmonth), [hour()](https://www.tradingview.com/pine-script-reference/v6/#fun_hour), and [minute()](https://www.tradingview.com/pine-script-reference/v6/#fun_minute) to retrieve the time of the current bar’s close, and to evaluate the time that is input by the user.
 
-## How can I know the date when the highest value was found?
+## How can I know the date when the highest value was found? {#how-can-i-know-the-date-when-the-highest-value-was-found}
 
 To determine the date on which the highest value occurred, the following example script uses the [ta.highest()](https://www.tradingview.com/pine-script-reference/v6/#fun_ta.highest) function to find the highest value within a certain lookback period, and the [ta.highestbars()](https://www.tradingview.com/pine-script-reference/v6/#fun_ta.highestbars) function to find how many bars back this value occurred. If the highest point occurs on the current bar, the number of bars back, or _offset_, is zero. In our example script, when this condition is met, we update labels showing the time at the respective highest or lowest price.
 
@@ -522,7 +522,7 @@ plot(loValue,            "Low",               color.fuchsia)
 -   When the bar offset functions return zero, we modify the respective label to display the bar time.
 -   The script plots the highest and lowest level for visual reference.
 
-## How can I detect bars opening at a specific hour?
+## How can I detect bars opening at a specific hour? {#how-can-i-detect-bars-opening-at-a-specific-hour}
 
 The following example script demonstrates three methods for detecting bars that open at 18:00 hours:
 
@@ -555,7 +555,7 @@ plotchar(method3 ? 3 : na, "method3", "", location.abovebar, color.yellow, text=
 
 -   To ensure that the numbers do not plot on top of one another, we use the technique described in the FAQ entry [How can I stack plotshape text?](https://www.tradingview.com/pine-script-docs/faq/strings-and-formatting/#how-can-i-stack-plotshape-text)
 
-## Can I time the duration of a condition?
+## Can I time the duration of a condition? {#can-i-time-the-duration-of-a-condition}
 
 Normally, variables reset every time the script performs a new iteration. This process is called _rollback_ and is described in the [Execution model](https://www.tradingview.com/pine-script-docs/language/execution-model/#executions-on-realtime-bars) page of the User Manual.
 
@@ -620,7 +620,7 @@ if timeAlert  // Fire alert if timer is triggered.
 
 For more information on the `secondsSince()` function and the use of [varip](https://www.tradingview.com/pine-script-reference/v6/#kw_varip) variables, consult the PineCoders’ [Using `varip` variables](https://www.tradingview.com/script/ppQxBISk-Using-varip-variables-PineCoders/) publication.
 
-## How can I identify the nth occurrence of a weekday in the month?
+## How can I identify the nth occurrence of a weekday in the month? {#how-can-i-identify-the-nth-occurrence-of-a-weekday-in-the-month}
 
 The following example script colors the background of the nth occurence of a user-configurable weekday. This identification can be useful for scheduled events that occur on specific weekdays, such as certain options expiry days.
 
@@ -689,7 +689,7 @@ bgcolor(isAtOccurrence ? color.purple : na, title = "Time condition highlight")
 -   The `weekdayOfMonth()` function determines the timestamp for the nth occurrence of a selected weekday within a specific month. This function first calculates the start time of the month and assesses the total number of days it contains. The function accounts for the unique characteristic of futures symbols, which begin trading on Sunday night, potentially causing a one-day discrepancy in the calculation.
 -   We plot the time of the bar close and of the occurence to the Data Window.
 
-## How can I count down the remaining time in a bar?
+## How can I count down the remaining time in a bar? {#how-can-i-count-down-the-remaining-time-in-a-bar}
 
 Users can display a countdown on the price scale of the chart that shows the time remaining in each bar, by enabling the “Countdown to bar close” option in the “Scales and lines” section of the chart “Settings” menu. Our example script below displays a similar countdown timer. This script functions on intraday and “1D” timeframes only. For timeframes longer than “1D”, more complex logic is necessary. The script throws a runtime error if the chart timefrmae is greater than one day.
 
@@ -740,7 +740,7 @@ else if barstate.islast
 -   The built-in bar countdown uses a background the same color as the current candle. Pine scripts do not have access to the chart candle color settings, but if the user sets the correct colors in the script settings, our countdown displays in the same way.
 -   We use a custom function to analyze the luminance of the background colors and decide whether black or white text has the better contrast.
 
-## How can I get the week of the month?
+## How can I get the week of the month? {#how-can-i-get-the-week-of-the-month}
 
 Counting the week of the month in which the current bar occurs is not always straightforward. Some symbols trade overnight, so the time of the bar open is technically the previous day to the bar close, and sometimes the previous week. Because [weekofyear](https://www.tradingview.com/pine-script-reference/v6/#var_weekofyear), [month](https://www.tradingview.com/pine-script-reference/v6/#var_month), and similar variables use [time](https://www.tradingview.com/pine-script-reference/v6/#var_time) (the time of the bar open) in their calculations, they can give unexpected results. The following example script, which uses these variables, gives unexpected results on some symbols such as US futures charts. For example, it increments the number of weeks on a Tuesday if the first trading day of the month is a Monday.
 

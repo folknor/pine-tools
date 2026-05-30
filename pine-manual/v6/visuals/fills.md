@@ -4,9 +4,9 @@ source: https://www.tradingview.com/pine-script-docs/visuals/fills/
 section: visuals
 ---
 
-# Fills
+# Fills {#fills}
 
-## Introduction
+## Introduction {#introduction}
 
 Some of Pine Script’s visual outputs, including [plots](https://www.tradingview.com/pine-script-docs/language/type-system/#plot-and-hline), [hlines](https://www.tradingview.com/pine-script-docs/language/type-system/#plot-and-hline), [lines](https://www.tradingview.com/pine-script-docs/visuals/lines-and-boxes/#lines), [boxes](https://www.tradingview.com/pine-script-docs/visuals/lines-and-boxes/#boxes), and [polylines](https://www.tradingview.com/pine-script-docs/visuals/lines-and-boxes/#polylines), allow one to fill the chart space they occupy with colors. Three different mechanisms facilitate filling the space between such outputs:
 
@@ -14,7 +14,7 @@ Some of Pine Script’s visual outputs, including [plots](https://www.tradingvie
 -   Objects of the [linefill](https://www.tradingview.com/pine-script-reference/v6/#type_linefill) type fill the space between [line](https://www.tradingview.com/pine-script-reference/v6/#type_line) instances created with [line.new()](https://www.tradingview.com/pine-script-reference/v6/#fun_line.new).
 -   Other drawing types, namely [boxes](https://www.tradingview.com/pine-script-docs/visuals/lines-and-boxes/#boxes) and [polylines](https://www.tradingview.com/pine-script-docs/visuals/lines-and-boxes/#polylines), have built-in properties that allow the drawings to fill the visual spaces they occupy.
 
-## ​`plot()`​ and ​`hline()`​ fills
+## `plot()` and `hline()` fills {#plot-and-hline-fills}
 
 The [fill()](https://www.tradingview.com/pine-script-reference/v6/#fun_fill) function fills the space between two plots or horizontal lines. It has the following two signatures:
 
@@ -103,7 +103,7 @@ ma2PlotID = plot(ma2, "20-bar SMA")
 fill(ma1PlotID, ma2PlotID, fillColor, "SMA plot fill")
 ```
 
-## Line fills
+## Line fills {#line-fills}
 
 While the [fill()](https://www.tradingview.com/pine-script-reference/v6/#fun_fill) function allows a script to fill the space between two [plots or hlines](https://www.tradingview.com/pine-script-docs/language/type-system/#plot-and-hline), it does not work with [line](https://www.tradingview.com/pine-script-reference/v6/#type_line) objects. When a script needs to fill the space between [lines](https://www.tradingview.com/pine-script-docs/visuals/lines-and-boxes/#lines), it requires a [linefill](https://www.tradingview.com/pine-script-reference/v6/#type_linefill) object created by the [linefill.new()](https://www.tradingview.com/pine-script-reference/v6/#fun_linefill.new) function. The function has the following signature:
 
@@ -166,7 +166,7 @@ if barstate.islastconfirmedhistory
     linefill channelFill = linefill.new(pivotHighLine, pivotLowLine, color.new(fillColor, 90))
 ```
 
-## Box and polyline fills
+## Box and polyline fills {#box-and-polyline-fills}
 
 The [box](https://www.tradingview.com/pine-script-reference/v6/#type_box) and [polyline](https://www.tradingview.com/pine-script-reference/v6/#type_polyline) types allow scripts to draw geometric shapes and other formations on the chart. Scripts create [boxes](https://www.tradingview.com/pine-script-docs/visuals/lines-and-boxes/#boxes) and [polylines](https://www.tradingview.com/pine-script-docs/visuals/lines-and-boxes/#polylines) with the [box.new()](https://www.tradingview.com/pine-script-reference/v6/#fun_box.new) and [polyline.new()](https://www.tradingview.com/pine-script-reference/v6/#fun_polyline.new) functions, which include parameters that allow the drawings to fill their visual spaces.
 

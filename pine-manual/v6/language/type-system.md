@@ -4,9 +4,9 @@ source: https://www.tradingview.com/pine-script-docs/language/type-system/
 section: language
 ---
 
-# Type system
+# Type system {#type-system}
 
-## Introduction
+## Introduction {#introduction}
 
 Pine Script® uses a system of _types_ and _type qualifiers_ to categorize the data in a script and indicate where and how the script can use it. This system applies to all values and references in a script, and to the variables, function parameters, and fields that store them.
 
@@ -18,7 +18,7 @@ NoteFor the sake of brevity, we often use the term “type” when referring to 
 
 The type system closely connects to the [execution model](https://www.tradingview.com/pine-script-docs/language/execution-model/) and its [time series](https://www.tradingview.com/pine-script-docs/language/execution-model/#time-series) structure — together, they determine how a script behaves as it runs on a dataset. Although it’s possible to write simple scripts without understanding these foundational topics, learning about them and their nuances is key to mastering Pine Script.
 
-## Qualifiers
+## Qualifiers {#qualifiers}
 
 Pine’s type qualifiers ([const](https://www.tradingview.com/pine-script-docs/language/type-system/#const), [input](https://www.tradingview.com/pine-script-docs/language/type-system/#input), [simple](https://www.tradingview.com/pine-script-docs/language/type-system/#simple), and [series](https://www.tradingview.com/pine-script-docs/language/type-system/#series)) indicate _when_ values in a script are accessible — either at compile time, input time, or runtime — and whether those values can change across script executions:
 
@@ -56,7 +56,7 @@ Note that a script **cannot** change the qualifier of a returned value to one th
 
 The following sections explain the behavior of each type qualifier, as well as the built-in keywords that programmers can use to specify qualifiers in their code.
 
-### const
+### const {#const}
 
 Values qualified as “const” are available at _compile time_, before the script starts its first execution. Compilation occurs when the user saves the script in the Pine Editor, and immediately before a script starts to run on the chart or in another location. Values with the “const” qualifier remain constant after compilation; they do not change during any script execution. All _literal values_ and the results of expressions that use only values qualified as “const” automatically inherit the “const” qualifier.
 
@@ -164,7 +164,7 @@ Note that:
 
 NoteScripts can also use the [const](https://www.tradingview.com/pine-script-reference/v6/#type_const) keyword when declaring variables of most [special types](https://www.tradingview.com/pine-script-docs/language/type-system/#types), such as [line](https://www.tradingview.com/pine-script-reference/v6/#type_line), [label](https://www.tradingview.com/pine-script-reference/v6/#type_label), and [array](https://www.tradingview.com/pine-script-reference/v6/#type_array) types. However, this keyword **does not** set the _qualifier_ of these variables; it only prevents the script from changing the variable’s assigned _reference (ID)_ during each execution. Special types and other reference types _always_ inherit the “series” qualifier. See the [Value vs. reference types](https://www.tradingview.com/pine-script-docs/language/type-system/#value-vs-reference-types) section for advanced details.
 
-### input
+### input {#input}
 
 Values qualified as “input” are established at _input time_. They are similar to “const” values, because they are available before the first script execution and never change during runtime. However, unlike “const” values, “input” values depend on user input.
 
@@ -223,7 +223,7 @@ gradientColor = color.from_gradient(gradientValue, 0, 1, chart.bg_color, chart.f
 bgcolor(gradientColor)
 ```
 
-### simple
+### simple {#simple}
 
 Values qualified as “simple” are established at runtime, while the script executes on the _first_ available bar. Similar to values qualified as “input” or “const”, “simple” values _do not change_ across bars.
 
@@ -265,7 +265,7 @@ plot(rand)
 
 NoteUsing the [simple](https://www.tradingview.com/pine-script-reference/v6/#type_simple) keyword is optional in most cases. However, the keyword is required to define exported _library functions_ that accept only arguments with “simple” or weaker qualifiers and return “simple” results. See the [Libraries](https://www.tradingview.com/pine-script-docs/concepts/libraries/) page to learn more.
 
-### series
+### series {#series}
 
 Values qualified as “series” provide the most flexibility in a script’s calculations. These values are available at runtime, and they are the **only** values that can _change_ from bar to bar.
 
@@ -320,7 +320,7 @@ ema = ta.ema(close, length = lengthInput)
 plot(ema)
 ```
 
-## Types
+## Types {#types}
 
 Types define the _categories_ of values in a script and determine the kinds of functions and operations with which those values are compatible. Each type represents a different kind of data. The primary types available in Pine Script consist of the following:
 
@@ -377,11 +377,11 @@ TipTo confirm a variable’s type, hover over its identifier in the Pine Editor.
 
 The sections below explain the different types available in Pine Script and how they work.
 
-### Value types
+### Value types {#value-types}
 
 The types covered in the following sections are _value types_. These types directly represent values, such as numbers, logical conditions, colors, or text sequences. Value types are compatible with any [type qualifier](https://www.tradingview.com/pine-script-docs/language/type-system/#qualifiers), depending on their use in the code. Additionally, value types, unlike reference types, are compatible with arithmetic and logical [operators](https://www.tradingview.com/pine-script-docs/language/operators/).
 
-#### int
+#### int {#int}
 
 Values of the “int” type represent _integers_: whole numbers _without_ fractional parts.
 
@@ -397,7 +397,7 @@ Below are a few examples of literal integers:
 
 Many built-in variables hold “int” values, including [bar\_index](https://www.tradingview.com/pine-script-reference/v6/#var_bar_index), [time](https://www.tradingview.com/pine-script-reference/v6/#var_time), [timenow](https://www.tradingview.com/pine-script-reference/v6/#var_timenow), [dayofmonth](https://www.tradingview.com/pine-script-reference/v6/#var_dayofmonth), and [strategy.wintrades](https://www.tradingview.com/pine-script-reference/v6/#var_strategy.wintrades).
 
-#### float
+#### float {#float}
 
 Values of the “float” type represent _floating-point_ numbers. In contrast to “int” values, “float” values represent the whole _and_ fractional parts of a number.
 
@@ -421,7 +421,7 @@ Many built-in variables store “float” values, including [close](https://www.
 
 NotePine Script automatically converts “int” values to the “float” type if a script passes those values to variables or function parameters that require “float” values. Likewise, Pine converts “int” values to “float” in arithmetic or comparison [operations](https://www.tradingview.com/pine-script-docs/language/operators/) that include a “float” operand. See the [Type casting](https://www.tradingview.com/pine-script-docs/language/type-system/#type-casting) section to learn more.
 
-#### bool
+#### bool {#bool}
 
 Values of the “bool” type represent the [Boolean](https://en.wikipedia.org/wiki/Boolean_data_type) truth values of conditions (_true_ or _false_). Scripts use these values in [conditional structures](https://www.tradingview.com/pine-script-docs/language/conditional-structures/) and expressions to trigger specific calculations in the code. All _comparison_ and _logical_ [operators](https://www.tradingview.com/pine-script-docs/language/operators/) return “bool” values.
 
@@ -440,7 +440,7 @@ All built-in variables that represent conditions store “bool” values, includ
 
 NoteIn contrast to some other languages, Pine Script does _not_ automatically convert other types to the “bool” type in logical expressions. Scripts can explicitly convert “int” or “float” values to the “bool” type by using the [bool()](https://www.tradingview.com/pine-script-reference/v6/#fun_bool) function. See the [Type casting](https://www.tradingview.com/pine-script-docs/language/type-system/#type-casting) section to learn more about type conversions.
 
-#### color
+#### color {#color}
 
 Values of the “color” type represent _RGB colors_, which scripts use to define the colors of chart [visuals](https://www.tradingview.com/pine-script-docs/visuals/overview/). Color literals in Pine have the format `#RRGGBB` or `#RRGGBBAA`, where:
 
@@ -495,7 +495,7 @@ Note that:
 
 To learn more about working with colors in Pine, see the [Colors](https://www.tradingview.com/pine-script-docs/visuals/colors/) page.
 
-#### string
+#### string {#string}
 
 Values of the “string” type contain sequences of encoded characters representing text, including letters, digits, symbols, spaces, or other Unicode characters. Scripts use strings in many ways, such as to define titles, express symbols and timeframes, create alerts and debug messages, and display text on the chart.
 
@@ -552,7 +552,7 @@ Several built-in variables that contain symbol and timeframe information store �
 
 For detailed information about Pine strings and the built-in `str.*()` functions, refer to the [Strings](https://www.tradingview.com/pine-script-docs/concepts/strings/) page. To learn more about displaying text from strings, see the [Text and shapes](https://www.tradingview.com/pine-script-docs/visuals/text-and-shapes/) and [Debugging](https://www.tradingview.com/pine-script-docs/writing/debugging/) pages.
 
-#### Enum types
+#### Enum types {#enum-types}
 
 The [enum](https://www.tradingview.com/pine-script-reference/v6/#kw_enum) keyword enables the creation of an _enum_, otherwise known as an _enumeration_, _enumerated type_, or _enum type_. An enum is a unique type that contains distinct _named fields_. These fields represent the _members_ (i.e., possible values) of the enum type. Programmers can use enums to maintain strict control over the values accepted by variables, parameters, conditional expressions, [collections](https://www.tradingview.com/pine-script-docs/language/type-system/#collections), and the fields of [UDT](https://www.tradingview.com/pine-script-docs/language/type-system/#user-defined-types) objects. Additionally, scripts can use the [input.enum()](https://www.tradingview.com/pine-script-reference/v6/#fun_input.enum) function to create enum-based dropdown [inputs](https://www.tradingview.com/pine-script-docs/concepts/inputs/) in the “Settings/Inputs” tab.
 
@@ -624,7 +624,7 @@ plot(selectedMA, "Selected moving average", color.teal, 3)
 
 See the [Enums](https://www.tradingview.com/pine-script-docs/language/enums/) page and the [Enum input](https://www.tradingview.com/pine-script-docs/concepts/inputs/#enum-input) section of the [Inputs](https://www.tradingview.com/pine-script-docs/concepts/inputs/) page to learn more about using enums and enum inputs.
 
-### Reference types
+### Reference types {#reference-types}
 
 All the types covered in the following sections are _reference types_. These types _do not_ directly represent values. Instead, scripts use them to create _objects_: logical entities that store data in a distinct location. Variables of reference types hold _references_, also known as _IDs_, that identify objects in memory and enable access to their data.
 
@@ -632,7 +632,7 @@ In contrast to [value types](https://www.tradingview.com/pine-script-docs/langua
 
 For advanced information about how these types differ from value types, see the [Value vs. reference types](https://www.tradingview.com/pine-script-docs/language/type-system/#value-vs-reference-types) section at the bottom of the page.
 
-#### plot and hline
+#### plot and hline {#plot-and-hline}
 
 Pine Script uses the “plot” and “hline” types to display [plots](https://www.tradingview.com/pine-script-docs/visuals/plots/) and horizontal [levels](https://www.tradingview.com/pine-script-docs/visuals/levels/) on the chart. The [plot()](https://www.tradingview.com/pine-script-reference/v6/#fun_plot) and [hline()](https://www.tradingview.com/pine-script-reference/v6/#fun_hline) functions create instances of these types. Each call to these functions returns a _reference (ID)_ to a specific “plot” or “hline” instance. Scripts can assign the references returned by these functions to variables for use with the [fill()](https://www.tradingview.com/pine-script-reference/v6/#fun_fill) function, which colors the space between two displayed plots or levels.
 
@@ -667,7 +667,7 @@ In addition to displaying the complete history of “series” values on the cha
 
 NoteIn contrast to variables of all other reference types, variables of the “plot” or “hline” type cannot refer to different plots or levels across bars. All variables of these types must consistently hold the references returned by the _same_ [plot()](https://www.tradingview.com/pine-script-reference/v6/#fun_plot) or [hline()](https://www.tradingview.com/pine-script-reference/v6/#fun_hline) calls on _every execution_. Additionally, the functions that create “plot” and “hline” objects work only in the _global scope_; scripts cannot use them in the _local scopes_ of [user-defined functions](https://www.tradingview.com/pine-script-docs/language/user-defined-functions/), [conditional structures](https://www.tradingview.com/pine-script-docs/language/conditional-structures/), or [loops](https://www.tradingview.com/pine-script-docs/language/loops/).
 
-#### Drawing types
+#### Drawing types {#drawing-types}
 
 Pine’s drawing types serve as structures for creating _drawing objects_, which scripts use to display custom chart [visuals](https://www.tradingview.com/pine-script-docs/visuals/overview/). The available drawing types are [line](https://www.tradingview.com/pine-script-reference/v6/#type_line), [linefill](https://www.tradingview.com/pine-script-reference/v6/#type_linefill), [box](https://www.tradingview.com/pine-script-reference/v6/#type_box), [polyline](https://www.tradingview.com/pine-script-reference/v6/#type_polyline), [label](https://www.tradingview.com/pine-script-reference/v6/#type_label), and [table](https://www.tradingview.com/pine-script-reference/v6/#type_table).
 
@@ -677,7 +677,7 @@ Each of these `*.new()` functions creates a new drawing object on every call, an
 
 For detailed information about lines, boxes, and polylines, see the [Lines and boxes](https://www.tradingview.com/pine-script-docs/visuals/lines-and-boxes/) page. To learn more about tables and labels, see the [Tables](https://www.tradingview.com/pine-script-docs/visuals/tables/) page and the [Labels](https://www.tradingview.com/pine-script-docs/visuals/text-and-shapes/#labels) section of the [Text and shapes](https://www.tradingview.com/pine-script-docs/visuals/text-and-shapes/) page.
 
-#### Chart points
+#### Chart points {#chart-points}
 
 The [chart.point](https://www.tradingview.com/pine-script-reference/v6/#type_chart.point) type is a special type that scripts use to generate _chart points_. Chart points are objects that contain _chart coordinates_. Scripts use information from these objects to position [lines](https://www.tradingview.com/pine-script-docs/visuals/lines-and-boxes/#lines), [boxes](https://www.tradingview.com/pine-script-docs/visuals/lines-and-boxes/#boxes), [polylines](https://www.tradingview.com/pine-script-docs/visuals/lines-and-boxes/#polylines), and [labels](https://www.tradingview.com/pine-script-docs/visuals/text-and-shapes/#labels) on the chart.
 
@@ -722,7 +722,7 @@ label.new(
 
 Refer to the [Lines and boxes](https://www.tradingview.com/pine-script-docs/visuals/lines-and-boxes/) page for additional examples of using chart points.
 
-#### footprint and volume\_row
+#### footprint and volume\_row {#footprint-and-volume_row}
 
 The [footprint](https://www.tradingview.com/pine-script-reference/v6/#type_footprint) and [volume\_row](https://www.tradingview.com/pine-script-reference/v6/#type_volume_row) types are special data types that scripts use when requesting [volume footprint](https://www.tradingview.com/support/solutions/43000726164-volume-footprint-charts-a-complete-guide/) information with the [request.footprint()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.footprint) function. An object of the [footprint](https://www.tradingview.com/pine-script-reference/v6/#type_footprint) type stores the available volume footprint data for a specific bar. A [volume\_row](https://www.tradingview.com/pine-script-reference/v6/#type_volume_row) object stores the data for an _individual row_ within a bar’s volume footprint.
 
@@ -764,7 +764,7 @@ See the [`request.footprint()`](https://www.tradingview.com/pine-script-docs/con
 
 To learn more about volume footprints and how they work, refer to the [Volume footprint charts](https://www.tradingview.com/support/solutions/43000726164-volume-footprint-charts-a-complete-guide/) article in our Help Center.
 
-#### Collections
+#### Collections {#collections}
 
 Pine Script _collections_ ([arrays](https://www.tradingview.com/pine-script-docs/language/arrays/), [matrices](https://www.tradingview.com/pine-script-docs/language/matrices/), and [maps](https://www.tradingview.com/pine-script-docs/language/maps/)) are objects that store values or the _IDs (references)_ of other objects as _elements_. Collection types enable scripts to group multiple values or IDs in a single location and perform advanced calculations. Arrays and matrices contain elements of _one_ specific type. Maps can contain data of _two_ types: one type for the _keys_, and another for the corresponding _value elements_. The `array`, `matrix`, and `map` _namespaces_ include all the built-in functions for creating and managing collections.
 
@@ -797,7 +797,7 @@ matrix<float> myFloatMatrix = matrix.new<float>(2, 3, 0.0)
 
 Notice
 
-The `array` namespace also includes _legacy functions_ for creating arrays of specific built-in types. For example, [array.new\_float()](https://www.tradingview.com/pine-script-reference/v6/#fun_array.new_float) creates a “float” array, just like `array.new<float>()`. However, we recommend using the general-purpose [array.new<type>()](https://www.tradingview.com/pine-script-reference/v6/#fun_array.new%3Ctype%3E) function, because it can create arrays of _any_ supported type.
+The `array` namespace also includes _legacy functions_ for creating arrays of specific built-in types. For example, [array.new\_float()](https://www.tradingview.com/pine-script-reference/v6/#fun_array.new_float) creates a “float” array, just like `array.new<float>()`. However, we recommend using the general-purpose [array.new<type>()](https://www.tradingview.com/pine-script-reference/v6/#fun_array.new<type>) function, because it can create arrays of _any_ supported type.
 
   
 
@@ -823,7 +823,7 @@ Collections _cannot_ store elements of any of the following types:
 
 TipAlthough collections cannot directly store the IDs of other collections, they _can_ store references to _user-defined type_ instances that contain collection IDs in their fields. See the next section to learn more about UDTs.
 
-#### User-defined types
+#### User-defined types {#user-defined-types}
 
 The [type](https://www.tradingview.com/pine-script-reference/v6/#kw_type) keyword enables the creation of _user-defined types (UDTs)_. UDTs are composite types; they can contain an arbitrary number of _fields_ that can be of _any_ supported type, including [collection types](https://www.tradingview.com/pine-script-docs/language/type-system/#collections) and other user-defined types. Scripts use UDTs to create [custom objects](https://www.tradingview.com/pine-script-docs/language/objects/) that can store multiple types of data in a single location.
 
@@ -872,7 +872,7 @@ Every user-defined type includes built-in `*.new()` and `*.copy()` functions for
 
 To learn more about objects of UDTs and how to use them, see the [Objects](https://www.tradingview.com/pine-script-docs/language/objects/) page.
 
-### void
+### void {#void}
 
 Pine Script includes some [built-in functions](https://www.tradingview.com/pine-script-docs/language/built-ins/#built-in-functions) that produce _side effects_ — such as creating triggers for [alerts](https://www.tradingview.com/pine-script-docs/concepts/alerts/), generating chart [visuals](https://www.tradingview.com/pine-script-docs/visuals/overview/), or modifying [collections](https://www.tradingview.com/pine-script-docs/language/type-system/#collections) — _without_ returning any value or reference. The return type of these functions is **“void”**, which represents the _absence_ of usable data. The “void” type applies to every function that performs actions without returning anything that the script can use elsewhere in the code.
 
@@ -880,7 +880,7 @@ For example, [plotshape()](https://www.tradingview.com/pine-script-reference/v6/
 
 Because “void” represents the absence of usable data, scripts _cannot_ call functions that return “void” in other calculations or assign their results to variables. Additionally, there is no available keyword to specify that an expression returns the “void” type.
 
-## ​`na`​ value
+## `na` value {#na-value}
 
 Pine Script includes a special value called [na](https://www.tradingview.com/pine-script-reference/v6/#var_na), which is an abbreviation for _“not available”_. Scripts use [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) to represent an _undefined_ value or reference. It is similar to `null` in Java or `NONE` in Python.
 
@@ -927,7 +927,7 @@ Best practices often involve _replacing_ occurrences of undefined values in the 
 -   Alternatively, scripts can use the [fixnan()](https://www.tradingview.com/pine-script-reference/v6/#fun_fixnan) function to replace [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) values of the above types in a series with the latest non-na value from that series’ history.
 -   For other types such as “string”, scripts can test for an undefined value using the [na()](https://www.tradingview.com/pine-script-reference/v6/#fun_na) function and replace it if the function returns `true`.
 
-The following line of code uses the [nz()](https://www.tradingview.com/pine-script-reference/v6/#fun_nz) function to replace the value of `close[1]` with the current bar’s [open](https://www.tradingview.com/pine-script-reference/v6/#var_open) value if the expression’s result is [na](https://www.tradingview.com/pine-script-reference/v6/#var_na). This logic prevents the code from returning [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) on the first bar, where there is _no_ previous [close](https://www.tradingview.com/pine-script-reference/v6/#var_close) value for the [\[\]](https://www.tradingview.com/pine-script-reference/v6/#op_%5B%5D) operator to access:
+The following line of code uses the [nz()](https://www.tradingview.com/pine-script-reference/v6/#fun_nz) function to replace the value of `close[1]` with the current bar’s [open](https://www.tradingview.com/pine-script-reference/v6/#var_open) value if the expression’s result is [na](https://www.tradingview.com/pine-script-reference/v6/#var_na). This logic prevents the code from returning [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) on the first bar, where there is _no_ previous [close](https://www.tradingview.com/pine-script-reference/v6/#var_close) value for the [\[\]](https://www.tradingview.com/pine-script-reference/v6/#op_[]) operator to access:
 
 ```pine
 //@variable Holds `true` if the current `close` value is above the previous `close` (or the current `open` if the previous `close` is `na`).
@@ -977,7 +977,7 @@ Note that:
 
 NoteSome built-in functions automatically _ignore_ [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) values in their calculations, preventing them from continuously returning [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) results in most cases. For example, [ta.max()](https://www.tradingview.com/pine-script-reference/v6/#fun_ta.max) calculates the all-time high of a series _without_ considering [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) values. Check the “Remarks” section of a function’s entry in the [Reference Manual](https://www.tradingview.com/pine-script-reference/v6/) to confirm whether it ignores [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) in its calculations.
 
-## Type casting
+## Type casting {#type-casting}
 
 Pine Script can convert (cast) values of one type to another type either by using specific functions, or automatically.
 
@@ -1045,7 +1045,7 @@ label myLabel = na
 myLabel = label(na)
 ```
 
-## Tuples
+## Tuples {#tuples}
 
 A _tuple_ is a _comma-separated list_ of expressions or identifiers enclosed in square brackets (e.g., `[expr1, expr2, expr3]`). If a structure that creates a local scope, such as a function, [method](https://www.tradingview.com/pine-script-docs/language/methods/), [conditional structure](https://www.tradingview.com/pine-script-docs/language/conditional-structures/), or [loop](https://www.tradingview.com/pine-script-docs/language/loops/), returns more than one result, the code lists the expressions for all the results in the form of a tuple at the end of the structure’s local block.
 
@@ -1175,7 +1175,7 @@ getParameters(float source, simple int length) =>
 plot(ta.ema(source = src, length = len))
 ```
 
-## Value vs. reference types
+## Value vs. reference types {#value-vs-reference-types}
 
 TipThis section contains advanced details about the differences between value and reference types. To make the most of this information, we recommend that newcomers to Pine Script start by reading about the available [types](https://www.tradingview.com/pine-script-docs/language/type-system/#types), and then come back to this section to learn more about their differences.
 
@@ -1206,7 +1206,7 @@ Note that:
 
 -   The script creates a label only on the first bar because the variable that stores its reference is declared in the _global scope_ using the [var](https://www.tradingview.com/pine-script-reference/v6/#kw_var) keyword. See the [Declaration modes](https://www.tradingview.com/pine-script-docs/language/variable-declarations/#declaration-modes) section of the [Variable declarations](https://www.tradingview.com/pine-script-docs/language/variable-declarations/) page to learn more.
 
-### Modifying variables vs. objects
+### Modifying variables vs. objects {#modifying-variables-vs-objects}
 
 Each variable of a [value type](https://www.tradingview.com/pine-script-docs/language/type-system/#value-types) holds an independent value, and the only way to modify that variable’s data is by using the reassignment or compound assignment [operators](https://www.tradingview.com/pine-script-docs/language/operators/). Each use of these operators directly overwrites the stored value, thus removing it from the current execution.
 
@@ -1268,7 +1268,7 @@ Note that:
 
 -   The [label.set\_point()](https://www.tradingview.com/pine-script-reference/v6/#fun_label.set_point) call in this example uses the `index` field of the chart point to set the label’s `x` value, and it uses the `price` field to set the `y` value. It does not use the `time` field from the chart point for the `x` value, because the default `xloc` property for labels is [xloc.bar\_index](https://www.tradingview.com/pine-script-reference/v6/#const_xloc.bar_index).
 
-#### Modifying global data in local scopes
+#### Modifying global data in local scopes {#modifying-global-data-in-local-scopes}
 
 Every script has one _global_ [scope](https://www.tradingview.com/pine-script-docs/faq/programming/#what-does-scope-mean), and it includes zero or more _local_ scopes from any [conditional structures](https://www.tradingview.com/pine-script-docs/language/conditional-structures/), [loops](https://www.tradingview.com/pine-script-docs/language/loops/), [user-defined functions](https://www.tradingview.com/pine-script-docs/language/user-defined-functions/) or [methods](https://www.tradingview.com/pine-script-docs/language/methods/#user-defined-methods), or other structures. Most structures that create local scopes can access and use any global variables declared above them in the source code, because a script’s local scopes _embed_ into the global scope.
 
@@ -1367,7 +1367,7 @@ updateCounter()
 plot(myCounter.value, "Counter value")
 ```
 
-### Copies vs. shared references
+### Copies vs. shared references {#copies-vs-shared-references}
 
 Variables of value types hold values that act as _independent copies_, because the only way to modify their data is through reassignment. If a script directly assigns one variable’s value to another variable, it can change either variable’s data later without affecting the other variable’s data in any way.
 
@@ -1442,7 +1442,7 @@ if barstate.islastconfirmedhistory
 
 NoteThe `*.copy()` function creates a _shallow copy_ of an object, not a _deep copy_. If a script uses this function to copy a [collection](https://www.tradingview.com/pine-script-docs/language/type-system/#collections) or [UDT](https://www.tradingview.com/pine-script-docs/language/type-system/#user-defined-types) instance that stores _other object references_, the contents of the copied instance refer to the **same objects** as the original instance. See the [Copying objects](https://www.tradingview.com/pine-script-docs/language/objects/#copying-objects) section of the [Objects](language/objects/) page for more information.
 
-### Using ​`const`​ with reference types
+### Using `const` with reference types {#using-const-with-reference-types}
 
 Scripts can use the [const](https://www.tradingview.com/pine-script-reference/v6/#type_const) keyword when declaring variables of most [reference types](https://www.tradingview.com/pine-script-docs/language/type-system/#reference-types), except for [plot](https://www.tradingview.com/pine-script-docs/language/type-system/#plot-and-hline), [hline](https://www.tradingview.com/pine-script-docs/language/type-system/#plot-and-hline), and [user-defined types](https://www.tradingview.com/pine-script-docs/language/type-system/#user-defined-types). However, with reference types, the keyword behaves _differently_ than it does with [value types](https://www.tradingview.com/pine-script-docs/language/type-system/#value-types).
 

@@ -4,15 +4,15 @@ source: https://www.tradingview.com/pine-script-docs/language/methods/
 section: language
 ---
 
-# Methods
+# Methods {#methods}
 
 TipThis page contains _advanced_ material. If you’re new to Pine Script®, start by learning about core language components — such as the [type system](https://www.tradingview.com/pine-script-docs/language/type-system/) and [the basics](https://www.tradingview.com/pine-script-docs/language/execution-model/#the-basics) of the [execution model](https://www.tradingview.com/pine-script-docs/language/execution-model/) — and explore other, more accessible features before venturing further.
 
-## Introduction
+## Introduction {#introduction}
 
 Pine Script methods are specialized functions associated with values of specific [built-in types](https://www.tradingview.com/pine-script-docs/language/type-system/#types), [user-defined types](https://www.tradingview.com/pine-script-docs/language/type-system/#user-defined-types), or [enum types](https://www.tradingview.com/pine-script-docs/language/type-system/#enum-types). They behave the same as regular functions in most regards while offering a shorter, more convenient syntax. Users can access methods using _dot notation_ syntax on variables of the associated type, similar to accessing the fields of a Pine Script [object](https://www.tradingview.com/pine-script-docs/language/objects/).
 
-## Built-in methods
+## Built-in methods {#built-in-methods}
 
 Pine Script features built-in methods for most [special types](https://www.tradingview.com/pine-script-docs/language/type-system/#types), including [array](https://www.tradingview.com/pine-script-reference/v6/#type_array), [matrix](https://www.tradingview.com/pine-script-reference/v6/#type_matrix), [map](https://www.tradingview.com/pine-script-reference/v6/#type_map), [line](https://www.tradingview.com/pine-script-reference/v6/#type_line), [linefill](https://www.tradingview.com/pine-script-reference/v6/#type_linefill), [box](https://www.tradingview.com/pine-script-reference/v6/#type_box), [polyline](https://www.tradingview.com/pine-script-reference/v6/#type_polyline), [label](https://www.tradingview.com/pine-script-reference/v6/#type_label), [table](https://www.tradingview.com/pine-script-reference/v6/#type_table), [chart.point](https://www.tradingview.com/pine-script-reference/v6/#type_chart.point), [footprint](https://www.tradingview.com/pine-script-reference/v6/#type_footprint), and [volume\_row](https://www.tradingview.com/pine-script-reference/v6/#type_volume_row). These methods provide users with a more concise way to call specialized routines for these types within their scripts.
 
@@ -117,7 +117,7 @@ Note that:
 -   We call the array methods using `sourceArray.*` rather than referencing the [array](https://www.tradingview.com/pine-script-reference/v6/#type_array) namespace.
 -   We do not include `sourceArray` as a parameter when we call the methods since they already reference the object.
 
-## User-defined methods
+## User-defined methods {#user-defined-methods}
 
 Pine Script allows users to define custom methods for use with objects of any built-in or user-defined type. Defining a method is essentially the same as defining a function, but with two key differences:
 
@@ -271,7 +271,7 @@ plot(highBand, "Upper", color.lime)
 plot(lowBand, "Lower", color.red)
 ```
 
-## Method overloading
+## Method overloading {#method-overloading}
 
 User-defined methods can override and overload existing built-in and user-defined methods with the same identifier. This capability allows users to define multiple routines associated with different parameter signatures under the same method name.
 
@@ -348,7 +348,7 @@ Note that:
 -   The underlying type of each variable determines which overload of `getType()` the compiler will use.
 -   The method will append “(na)” to the output string when a variable is `na` to demarcate that it is empty.
 
-## Advanced example
+## Advanced example {#advanced-example}
 
 Let’s apply what we’ve learned to construct a script that estimates the cumulative distribution of elements in an array, meaning the fraction of elements in the array that are less than or equal to any given value.
 

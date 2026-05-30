@@ -4,9 +4,9 @@ source: https://www.tradingview.com/pine-script-docs/visuals/levels/
 section: visuals
 ---
 
-# Levels
+# Levels {#levels}
 
-## ​`hline()`​ levels
+## `hline()` levels {#hline-levels}
 
 Levels are lines plotted using the [hline()](https://www.tradingview.com/pine-script-reference/v6/#fun_hline) function. It is designed to plot **horizontal** levels using a **single color**, i.e., it does not change on different bars. See the [Levels](https://www.tradingview.com/pine-script-docs/visuals/plots/#levels) section of the page on [plot()](https://www.tradingview.com/pine-script-reference/v6/#plot) for alternative ways to plot levels when [hline()](https://www.tradingview.com/pine-script-reference/v6/#fun_hline) won’t do what you need.
 
@@ -47,9 +47,9 @@ Note that:
 -   We display 5 levels, each of a different color.
 -   We use a different line style for the zero centerline.
 -   We choose colors that will work well on both light and dark themes.
--   The usual range for the indicator’s values is +100 to -100. Since the [ta.tsi()](https://www.tradingview.com/pine-script-reference/v6/#fun_ta%7Bdot%7Dtsi) built-in returns values in the +1 to -1 range, we make the adjustment in our code.
+-   The usual range for the indicator’s values is +100 to -100. Since the [ta.tsi()](https://www.tradingview.com/pine-script-reference/v6/#fun_ta.tsi) built-in returns values in the +1 to -1 range, we make the adjustment in our code.
 
-## Fills between levels
+## Fills between levels {#fills-between-levels}
 
 The space between two levels plotted with [hline()](https://www.tradingview.com/pine-script-reference/v6/#fun_hline) can be colored using [fill()](https://www.tradingview.com/pine-script-reference/v6/#fun_fill). Keep in mind that **both** plots must have been plotted with [hline()](https://www.tradingview.com/pine-script-reference/v6/#fun_hline).
 

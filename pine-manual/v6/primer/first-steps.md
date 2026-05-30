@@ -4,9 +4,9 @@ source: https://www.tradingview.com/pine-script-docs/primer/first-steps/
 section: primer
 ---
 
-# First steps
+# First steps {#first-steps}
 
-## Introduction
+## Introduction {#introduction}
 
 Welcome to the Pine Script® [v6 User Manual](https://www.tradingview.com/pine-script-docs/welcome/), which will accompany you in your journey to learn to program your own trading tools in Pine Script. Welcome also to the very active community of Pine Script programmers on TradingView.
 
@@ -20,7 +20,7 @@ If you are already familiar with the use of Pine scripts on TradingView and are 
 
 If you are new to our platform, then please read on!
 
-## Using scripts
+## Using scripts {#using-scripts}
 
 If you are interested in using technical indicators or strategies on TradingView, you can first start exploring the thousands of indicators already available on our platform. You can access existing indicators on the platform in two different ways:
 
@@ -29,7 +29,7 @@ If you are interested in using technical indicators or strategies on TradingView
 
 If you can find the tools you need already written for you, it can be a good way to get started and gradually become proficient as a script user, until you are ready to start your programming journey in Pine Script.
 
-### Loading scripts from the chart
+### Loading scripts from the chart {#loading-scripts-from-the-chart}
 
 To explore and load scripts from your chart, click the “Indicators, metrics, and strategies” button, or use the forward slash `/` keyboard shortcut:
 
@@ -50,7 +50,7 @@ Here, we selected the “Technicals” tab to see the TradingView built-in indic
 
 Clicking on one of the listed indicators or strategies loads the script on your chart. Strategy scripts are distinguished from indicators by a special symbol that appears to the right of the script name.
 
-### Browsing community scripts
+### Browsing community scripts {#browsing-community-scripts}
 
 To access the [Community scripts](https://www.tradingview.com/scripts/) feed from [TradingView’s homepage](https://www.tradingview.com/), select “Indicators and strategies” from the “Community” menu:
 
@@ -64,7 +64,7 @@ The scripts feed generates _script widgets_, which show the title and author of 
 
 When you find an interesting script in the Community scripts, follow the instructions in the Help Center to [load it on your chart](https://www.tradingview.com/support/solutions/43000555216).
 
-### Changing script settings
+### Changing script settings {#changing-script-settings}
 
 Once a script is loaded on the chart, you can double-click on its name or hover over the name and press the “Settings” button to bring up its “Settings/Inputs” tab:
 
@@ -76,7 +76,7 @@ Other settings are available to all scripts from the buttons that appear to the 
 
 ![image](https://www.tradingview.com/pine-script-docs/_astro/FirstSteps-ChangingScriptSettings-02.CJECCf_u_27i2gM.webp)
 
-## Reading scripts
+## Reading scripts {#reading-scripts}
 
 Reading code written by **good** programmers is the best way to develop your understanding of the language. This is as true for Pine Script as it is for all other programming languages. Finding good open-source Pine Script code is relatively easy. These are reliable sources of code written by good programmers on TradingView:
 
@@ -97,7 +97,7 @@ You can also open editable versions of the TradingView built-in scripts from the
 
 ![image](https://www.tradingview.com/pine-script-docs/_astro/First-steps-Reading-scripts-2.CB2-tfKz_19N9ip.webp)
 
-## Writing scripts
+## Writing scripts {#writing-scripts}
 
 We have built Pine Script to empower both new and experienced traders to create their own trading tools. Although learning a first programming language, like trading, is rarely **very** easy for anyone, we have designed Pine Script so it is relatively easy to learn for first-time programmers, yet powerful enough for knowledgeable programmers to build tools of moderate complexity.
 

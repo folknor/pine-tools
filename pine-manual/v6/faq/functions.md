@@ -4,9 +4,9 @@ source: https://www.tradingview.com/pine-script-docs/faq/functions/
 section: faq
 ---
 
-# Functions
+# Functions {#functions}
 
-## Can I use a variable length in functions?
+## Can I use a variable length in functions? {#can-i-use-a-variable-length-in-functions}
 
 Many [built-in](https://www.tradingview.com/pine-script-docs/language/built-ins/#built-in-functions) technical analysis (TA) functions have a `length` parameter, such as `ta.sma(source, length)`. A majority of these functions can process “[series](https://www.tradingview.com/pine-script-docs/language/type-system/#series)” lengths, i.e., lengths that can change from bar to bar. Some functions, however, only accept “[simple](https://www.tradingview.com/pine-script-docs/language/type-system/#simple)” integer lengths, which must be known on bar zero and not change during the execution of the script.
 
@@ -20,7 +20,7 @@ For more advanced versions of functions that support “series” lengths, or fo
 
 For built-in functions that do not accept “series” lengths and for which the functionality is not available in the [ta library](https://www.tradingview.com/script/BICzyhq0-ta/), consider creating a [user-defined function](https://www.tradingview.com/pine-script-docs/language/user-defined-functions/).
 
-## How can I calculate values depending on variable lengths that reset on a condition?
+## How can I calculate values depending on variable lengths that reset on a condition? {#how-can-i-calculate-values-depending-on-variable-lengths-that-reset-on-a-condition}
 
 To calculate certain values that are dependent on varying lengths, which also reset under specific conditions, the [ta.barssince()](https://www.tradingview.com/pine-script-reference/v6/#fun_ta.barssince) function can be useful. This function counts the number of bars since the last occurrence of a specified condition, automatically resetting the count each time this condition is met. There are, however, some considerations to take into account when using this function for this purpose.
 
@@ -57,7 +57,7 @@ plot(lookback, "Lookback", display = display.data_window)
 
 NoticeIf a script uses a dynamic value as the argument for a built-in function parameter that defines a lookback length, such as the `length` parameter of [ta.sma()](https://www.tradingview.com/pine-script-reference/v6/#fun_ta.sma), an error can occur if the value increases unpredictably. This behavior is most common on realtime bars, but it can also happen on historical bars in some cases. Refer to the section [The requested historical offset (X) is beyond the historical buffer’s limit (Y)](https://www.tradingview.com/pine-script-docs/error-messages/#the-requested-historical-offset-x-is-beyond-the-historical-buffers-limit-y) in the [Error messages](https://www.tradingview.com/pine-script-docs/error-messages/) page for more information about the error and its causes.
 
-## How can I round a number to x increments?
+## How can I round a number to x increments? {#how-can-i-round-a-number-to-x-increments}
 
 Rounding numbers to specific increments is useful for tasks like calculating levels for grid trading, dealing with fractional shares, or aligning trading parameters to specific pip values.
 
@@ -79,21 +79,21 @@ roundToIncrement(value, increment) =>
 plot(series = roundToIncrement(close, incrementInput), color = chart.fg_color)
 ```
 
-## How can I control the precision of values my script displays?
+## How can I control the precision of values my script displays? {#how-can-i-control-the-precision-of-values-my-script-displays}
 
 The `precision` and `format` arguments in the [indicator()](https://www.tradingview.com/pine-script-reference/v6/#fun_indicator) or [strategy()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy) declaration statement control the number of decimals in the values that a script displays.
 
 By default, scripts use the precision of the price scale. To display more decimal places, specify a `precision` argument that exceeds the value of the current price scale.
 
-## How can I control the precision of values used in my calculations?
+## How can I control the precision of values used in my calculations? {#how-can-i-control-the-precision-of-values-used-in-my-calculations}
 
 The `math.round(number, precision)` variation of the [math.round()](https://www.tradingview.com/pine-script-reference/v6/#fun_math.round) function rounds values according to a specified precision. Alternatively, the [math.round\_to\_mintick()](https://www.tradingview.com/pine-script-reference/v6/#fun_math.round_to_mintick) function rounds values to the nearest tick precision of the chart’s symbol.
 
-## How can I round to ticks?
+## How can I round to ticks? {#how-can-i-round-to-ticks}
 
 To round values to the tick precision of a chart’s symbol, use the function [math.round\_to\_mintick()](https://www.tradingview.com/pine-script-reference/v6/#fun_math.round_to_mintick). To convert the resulting number to a string, use `str.tostring(myValue, format.mintick)` to first round the number to tick precision and then return its string representation, where `myValue` is the number to convert into a rounded string.
 
-## How can I abbreviate large values?
+## How can I abbreviate large values? {#how-can-i-abbreviate-large-values}
 
 There are different ways to abbreviate large numerical values, such as volume. For instance, the number 1,222,333.0 can be simplified to 1.222M. Here are some methods to accomplish this:
 
@@ -135,7 +135,7 @@ print(formattedString) =>
 print(abbreviateValue(volume, ".00"))
 ```
 
-## How can I calculate using pips?
+## How can I calculate using pips? {#how-can-i-calculate-using-pips}
 
 You can use the custom function `calcBaseUnit()` in the following example script to retrieve the expected pip value for Forex symbols, or the minimum tick size for other symbols:
 
@@ -161,7 +161,7 @@ if barstate.islast
 
 NoteThis function might not address all potential scenarios. Therefore, we recommend confirming this function’s results with the pip values shown by your broker.
 
-## How do I calculate averages?
+## How do I calculate averages? {#how-do-i-calculate-averages}
 
 The method of calculating averages depends on the type of values to average.
 
@@ -181,7 +181,7 @@ To compute the average of the last _n_ values in a series, use the function [ta.
 
 To average a custom set of values, organize them into an [array](https://www.tradingview.com/pine-script-docs/language/arrays/) and use [array.avg()](https://www.tradingview.com/pine-script-reference/v6/#fun_array.avg). For complex datasets, programmers can use the [matrix.avg()](https://www.tradingview.com/pine-script-reference/v6/#fun_matrix.avg) function to average the contents of a matrix. For a deeper understanding of averaging custom datasets, refer to this [conditional averages](https://www.tradingview.com/script/9l0ZpuQU-ConditionalAverages/) publication.
 
-## How can I calculate an average only when a certain condition is true?
+## How can I calculate an average only when a certain condition is true? {#how-can-i-calculate-an-average-only-when-a-certain-condition-is-true}
 
 The usual methods of calculating averages, which were discussed in the [calculating averages section](https://www.tradingview.com/pine-script-docs/faq/functions/#how-do-i-calculate-averages) above, apply across _all_ data points in a range. To calculate averages of only those values that occur under specific conditions, calculate _conditional averages_ using custom functions.
 
@@ -216,7 +216,7 @@ plot(PCca.avgWhenLast(source = volume, condition = session.isfirstbar_regular, c
 
 TipSome built-in functions, such as [ta.sma()](https://www.tradingview.com/pine-script-reference/v6/#fun_ta.sma) _ignore_ the bars with [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) values in their calculations. Therefore, it is possible to perform some condition-based calculations using these functions. For example, the call `ta.sma(session.isfirstbar_regular ? volume : na, 5)` returns the same result as the `PCca.avgWhenLast()` call in the example above, because its calculation includes only the [volume](https://www.tradingview.com/pine-script-reference/v6/#var_volume) values from the latest five bars where the value of [session.isfirstbar\_regular](https://www.tradingview.com/pine-script-reference/v6/#var_session.isfirstbar_regular) is `true`.
 
-## How can I generate a random number?
+## How can I generate a random number? {#how-can-i-generate-a-random-number}
 
 Use the [math.random()](https://www.tradingview.com/pine-script-reference/v6/#fun_math.random) function to generate pseudorandom numbers. This example script creates a circle plot with random RGB color values and a random y value between 0 and 1:
 
@@ -231,13 +231,13 @@ color plotColor = color.rgb(math.random(0, 255), math.random(0, 255), math.rando
 plot(series = y, title = "Random number", color = plotColor, linewidth = 2, style = plot.style_circles)
 ```
 
-## How can I evaluate a filter I am planning to use?
+## How can I evaluate a filter I am planning to use? {#how-can-i-evaluate-a-filter-i-am-planning-to-use}
 
 To evaluate a filter, insert your filter code into the [Filter Information Box - PineCoders FAQ](https://www.tradingview.com/script/oTEP9DJF-Filter-Information-Box-PineCoders-FAQ/) script. This script conducts an impulse response analysis and shows the filter’s characteristics in a label on the chart.
 
 For further details and a guide on integrating your filter into the code, refer to the publication’s description.
 
-## What does nz() do?
+## What does nz() do? {#what-does-nz-do}
 
 The [nz()](https://www.tradingview.com/pine-script-reference/v6/#fun_nz) function replaces any [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) values with zero, or with a user-defined value if the `replacement` argument is specified. This function helps to prevent [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) values from interfering with calculations.
 

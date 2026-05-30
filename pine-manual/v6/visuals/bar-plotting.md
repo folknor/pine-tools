@@ -4,15 +4,15 @@ source: https://www.tradingview.com/pine-script-docs/visuals/bar-plotting/
 section: visuals
 ---
 
-# Bar plotting
+# Bar plotting {#bar-plotting}
 
-## Introduction
+## Introduction {#introduction}
 
 The [plotcandle()](https://www.tradingview.com/pine-script-reference/v6/#fun_plotcandle) built-in function is used to plot candles. [plotbar()](https://www.tradingview.com/pine-script-reference/v6/#fun_plotbar) is used to plot conventional bars.
 
 Both functions require four arguments that will be used for the OHLC prices ([open](https://www.tradingview.com/pine-script-reference/v6/#var_open), [high](https://www.tradingview.com/pine-script-reference/v6/#var_high), [low](https://www.tradingview.com/pine-script-reference/v6/#var_low), [close](https://www.tradingview.com/pine-script-reference/v6/#var_close)) of the bars they will be plotting. If one of those is [na](https://www.tradingview.com/pine-script-reference/v6/#var_na), no bar is plotted.
 
-## Plotting candles with ​`plotcandle()`​
+## Plotting candles with `plotcandle()` {#plotting-candles-with-plotcandle}
 
 The signature of [plotcandle()](https://www.tradingview.com/pine-script-reference/v6/#fun_plotcandle) is:
 
@@ -87,11 +87,11 @@ Note that:
 -   We set the `behind_chart` parameter of the [indicator()](https://www.tradingview.com/pine-script-reference/v6/#fun_indicator) declaration to `false`. This causes our script’s candles to appear on top of the chart’s candles. Selecting “Visual Order/Bring to Front” from the script’s “More” menu achieves the same result.
 -   The script displays candles only when two conditions are met:
     -   The chart is using an intraday timeframe (see the check on `timeframe.isintraday` in the [plotcandle()](https://www.tradingview.com/pine-script-reference/v6/#fun_plotcandle) call). We do this because it’s not useful to show a daily value on timeframes higher or equal to 1D.
-    -   The [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request%7Bdot%7Dsecurity) function returns non [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) values (see `gaps = barmerge.gaps_on` in the function call).
--   We use a tuple (`[open, high, low, close]`) with [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request%7Bdot%7Dsecurity) to fetch four values in one call.
+    -   The [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security) function returns non [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) values (see `gaps = barmerge.gaps_on` in the function call).
+-   We use a tuple (`[open, high, low, close]`) with [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security) to fetch four values in one call.
 -   We create a lighter transparency for the body of our candles in the `bodyColor` variable initialization, so they don’t obstruct the chart’s candles.
 
-## Plotting bars with ​`plotbar()`​
+## Plotting bars with `plotbar()` {#plotting-bars-with-plotbar}
 
 The signature of [plotbar()](https://www.tradingview.com/pine-script-reference/v6/#fun_plotbar) is:
 

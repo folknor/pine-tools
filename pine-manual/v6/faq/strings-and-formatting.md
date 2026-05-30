@@ -4,9 +4,9 @@ source: https://www.tradingview.com/pine-script-docs/faq/strings-and-formatting/
 section: faq
 ---
 
-# Strings and formatting
+# Strings and formatting {#strings-and-formatting}
 
-## How can I place text on the chart?
+## How can I place text on the chart? {#how-can-i-place-text-on-the-chart}
 
 Scripts can display text using the following methods:
 
@@ -14,7 +14,7 @@ Scripts can display text using the following methods:
 -   [Labels](https://www.tradingview.com/pine-script-docs/visuals/text-and-shapes/#labels) and [boxes](https://www.tradingview.com/pine-script-docs/visuals/lines-and-boxes/#boxes) for dynamic text, which can vary bar to bar.
 -   [Tables](https://www.tradingview.com/pine-script-docs/visuals/tables) for more complex text (static or dynamic) that stays in the same region of the chart.
 
-### Plotting text
+### Plotting text {#plotting-text}
 
 The [plotchar()](https://www.tradingview.com/pine-script-reference/v6/#fun_plotchar) and [plotshape()](https://www.tradingview.com/pine-script-reference/v6/#fun_plotshape) functions can display fixed text on bars:
 
@@ -53,7 +53,7 @@ plotshape(series = rsiDn, title = "Down", style = shape.triangledown, location =
   color = color.fuchsia, text = "RSI\nDown", size = size.tiny, textcolor = color.fuchsia)
 ```
 
-### Labels
+### Labels {#labels}
 
 [Labels](https://www.tradingview.com/pine-script-docs/visuals/text-and-shapes/#labels) are particularly useful for displaying text that can change from one bar to another. The `text` parameter of the [label.new()](https://www.tradingview.com/pine-script-reference/v6/#fun_label.new) function takes a “series string”, so it can change whenever necessary.
 
@@ -102,7 +102,7 @@ Note that:
 -   We do nothing with the label for all historical bars.
 -   We update the changing properties of the label such as text and position on the most recent bar and on every realtime bar. This method is more performant than updating the label on all bars or creating and deleting it each bar.
 
-### Boxes
+### Boxes {#boxes}
 
 [Boxes](https://www.tradingview.com/pine-script-docs/visuals/lines-and-boxes/#boxes) can also display text on the chart, by providing the text to the `text` parameter of the [box.new()](https://www.tradingview.com/pine-script-reference/v6/#fun_box.new) function. Boxes work with text in a similar way to labels, but with some additional features.
 
@@ -127,7 +127,7 @@ if barstate.islastconfirmedhistory
     label.new(bar_index[25], close * 1.1, lt, size = 36)
 ```
 
-### Tables
+### Tables {#tables}
 
 [Tables](https://www.tradingview.com/pine-script-docs/visuals/tables/) are useful to display information in a fixed position on the chart. Whereas plots and labels can easily show historical information because they are, or can be, linked to specific bars, table contents do not change as users move the cursor over past chart bars. This makes tables best suited for showing _current_ information.
 
@@ -158,7 +158,7 @@ Note that:
 -   This script displays the same information as the preceding example did using a label.
 -   Although this is a simple example, for more complex information, tables are easier to organise and read than labels.
 
-## How can I position text on either side of a single bar?
+## How can I position text on either side of a single bar? {#how-can-i-position-text-on-either-side-of-a-single-bar}
 
 Scripts can position a label to the _right_ of a bar by using `style = label.style_label_left`. This style _points_ the label to the **right** and _places_ it to the **left**. Likewise, a label with `style = label.style_label_right` displays to the right of the bar, pointing left.
 
@@ -193,7 +193,7 @@ if input.bool(false, "Show Center Label")
     print("label_center\nalign_center",  label.style_label_center, text.align_center)
 ```
 
-## How can I stack plotshape() text?
+## How can I stack plotshape() text? {#how-can-i-stack-plotshape-text}
 
 To make multiple text plots visible on the same bar, the text on one plot must be raised or lowered so that it does not overlap with another plot.
 
@@ -213,11 +213,11 @@ plotshape(true, "", shape.arrowdown, location.belowbar, color.maroon, textcolor 
 
 ![image](https://www.tradingview.com/pine-script-docs/_astro/Strings-and-formatting-How-can-i-lift-plotshape-text-up-1.BRcQQ6eU_Z2vQ3Az.webp)
 
-## How can I print a value at the top right of the chart?
+## How can I print a value at the top right of the chart? {#how-can-i-print-a-value-at-the-top-right-of-the-chart}
 
 Refer to the [Placing a single value in a fixed position](https://www.tradingview.com/pine-script-docs/visuals/tables/#placing-a-single-value-in-a-fixed-position) section of the [Tables](https://www.tradingview.com/pine-script-docs/visuals/tables/) page. The example in that section uses a single-cell table to display a string representation of a value in the top-right corner of the chart.
 
-## How can I split a string into characters?
+## How can I split a string into characters? {#how-can-i-split-a-string-into-characters}
 
 The [str.split()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.split) function splits a string into parts and stores the parts in an array. To split a string into individual characters, use an empty string `""` as the `separator` argument. Here is a code example:
 

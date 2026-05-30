@@ -4,9 +4,9 @@ source: https://www.tradingview.com/pine-script-docs/language/built-ins/
 section: language
 ---
 
-# Built-ins
+# Built-ins {#built-ins}
 
-## Introduction
+## Introduction {#introduction}
 
 Pine Script® has hundreds of _built-in_ variables and functions. They provide your scripts with valuable information and make calculations for you, dispensing you from coding them. The better you know the built-ins, the more you will be able to do with your Pine scripts.
 
@@ -21,7 +21,7 @@ Some variables have function versions as well, e.g.:
 -   The [ta.tr](https://www.tradingview.com/pine-script-reference/v6/#fun_ta.tr) variable returns the “True Range” of the current bar. The [ta.tr(true)](https://www.tradingview.com/pine-script-reference/v6/#fun_ta.tr) function call also returns the “True Range”, but when the previous [close](https://www.tradingview.com/pine-script-reference/v6/#var_close) value which is normally needed to calculate it is [na](https://www.tradingview.com/pine-script-reference/v6/#var_na), it calculates using `high - low` instead.
 -   The [time](https://www.tradingview.com/pine-script-reference/v6/#var_time) variable gives the time at the [open](https://www.tradingview.com/pine-script-reference/v6/#var_open) of the current bar. The [time(timeframe)](https://www.tradingview.com/pine-script-reference/v6/#fun_time) function returns the time of the bar’s [open](https://www.tradingview.com/pine-script-reference/v6/#var_open) from the `timeframe` specified, even if the chart’s timeframe is different. The [time(timeframe, session)](https://www.tradingview.com/pine-script-reference/v6/#fun_time) function returns the time of the bar’s [open](https://www.tradingview.com/pine-script-reference/v6/#var_open) from the `timeframe` specified, but only if it is within the `session` time. The [time(timeframe, session, timezone)](https://www.tradingview.com/pine-script-reference/v6/#fun_time) function returns the time of the bar’s [open](https://www.tradingview.com/pine-script-reference/v6/#var_open) from the `timeframe` specified, but only if it is within the `session` time in the specified `timezone`.
 
-## Built-in variables
+## Built-in variables {#built-in-variables}
 
 Built-in variables exist for different purposes. These are a few examples:
 
@@ -31,7 +31,7 @@ Built-in variables exist for different purposes. These are a few examples:
 -   Bar states in the `barstate` namespace (see the [Bar states](https://www.tradingview.com/pine-script-docs/concepts/bar-states/) page): [barstate.isconfirmed](https://www.tradingview.com/pine-script-reference/v6/#var_barstate.isconfirmed), [barstate.isfirst](https://www.tradingview.com/pine-script-reference/v6/#var_barstate.isfirst), [barstate.ishistory](https://www.tradingview.com/pine-script-reference/v6/#var_barstate.ishistory), [barstate.islast](https://www.tradingview.com/pine-script-reference/v6/#var_barstate.islast), [barstate.islastconfirmedhistory](https://www.tradingview.com/pine-script-reference/v6/#var_barstate.islastconfirmedhistory), [barstate.isnew](https://www.tradingview.com/pine-script-reference/v6/#var_barstate.isnew), and [barstate.isrealtime](https://www.tradingview.com/pine-script-reference/v6/#var_barstate.isrealtime).
 -   Strategy-related information in the `strategy` namespace: [strategy.equity](https://www.tradingview.com/pine-script-reference/v6/#var_strategy.equity), [strategy.initial\_capital](https://www.tradingview.com/pine-script-reference/v6/#var_strategy.initial_capital), [strategy.grossloss](https://www.tradingview.com/pine-script-reference/v6/#var_strategy.grossloss), [strategy.grossprofit](https://www.tradingview.com/pine-script-reference/v6/#var_strategy.grossprofit), [strategy.wintrades](https://www.tradingview.com/pine-script-reference/v6/#var_strategy.wintrades), [strategy.losstrades](https://www.tradingview.com/pine-script-reference/v6/#var_strategy.losstrades), [strategy.position\_size](https://www.tradingview.com/pine-script-reference/v6/#var_strategy.position_size), [strategy.position\_avg\_price](https://www.tradingview.com/pine-script-reference/v6/#var_strategy.position_avg_price), [strategy.wintrades](https://www.tradingview.com/pine-script-reference/v6/#var_strategy.wintrades), etc.
 
-## Built-in functions
+## Built-in functions {#built-in-functions}
 
 Many functions are used for the result(s) they return. These are a few examples:
 

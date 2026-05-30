@@ -122,6 +122,20 @@ function buildTurndown(): TurndownService {
 		replacement: (content) => content,
 	});
 
+	// Preserve TradingView's real heading anchor as a `{#id}` attribute. The id
+	// is the index key and the page's actual URL fragment (e.g.
+	// language/operators#the-ternary-operator), and TV's anchors don't always
+	// match a naive slug - so we keep the authoritative one, never re-slugify.
+	td.addRule("manualHeading", {
+		filter: ["h1", "h2", "h3", "h4", "h5", "h6"],
+		replacement: (content, node) => {
+			const level = Number(node.nodeName.charAt(1));
+			const id = (node as unknown as Element).getAttribute("id");
+			const anchor = id ? ` {#${id}}` : "";
+			return `\n\n${"#".repeat(level)} ${content.trim()}${anchor}\n\n`;
+		},
+	});
+
 	return td;
 }
 
@@ -145,6 +159,23 @@ export function convertManualPage(
 	// /pine-script-reference/...) to absolute URLs so they resolve standalone.
 	markdown = markdown.replace(/\]\(\/(?!\/)/g, `](${SITE_ORIGIN}/`);
 
+	// De-gunk Reference Manual anchors: TV's href template percent-encodes the
+	// `{dot}`/`{colon}`/`{question}` placeholder tokens, but the page's real
+	// element id uses literal punctuation (`#fun_ta.ema`, `#op_?:`, `#op_[]`).
+	// Decoding both makes the link resolve AND exposes the bare symbol that
+	// pine-data / `po lookup` already knows (strip the `fun_`/`var_`/`const_`/
+	// `type_`/`op_`/`an_` kind prefix to get the lookup key).
+	// Migration guides link to older-version reference manuals too (v3-v6).
+	markdown = markdown.replace(
+		/(\(https:\/\/www\.tradingview\.com\/pine-script-reference\/v\d+\/#)([^)\s]*)\)/g,
+		(_m, base, fragment) => `${base}${decodeReferenceAnchor(fragment)})`,
+	);
+
+	// TV injects zero-width spaces as line-break hints inside code-bearing
+	// headings/prose; they're invisible cruft in Markdown and can break
+	// heading-text matching downstream.
+	markdown = markdown.replace(/\u200b/g, "");
+
 	// Collapse runs of 3+ blank lines the custom code rules can introduce.
 	markdown = markdown.replace(/\n{3,}/g, "\n\n").trim();
 
@@ -157,6 +188,18 @@ export function convertManualPage(
 	].join("\n");
 
 	return `${frontmatter}\n\n${markdown}\n`;
+}
+
+/**
+ * Decode a Reference Manual URL fragment (e.g. `fun_ta%7Bdot%7Dema`,
+ * `op_%5B%5D`) into TradingView's literal anchor id (`fun_ta.ema`, `op_[]`) -
+ * which is also a clean, parseable symbol once the kind prefix is stripped.
+ */
+function decodeReferenceAnchor(fragment: string): string {
+	return decodeURIComponent(fragment)
+		.replace(/\{dot\}/g, ".")
+		.replace(/\{colon\}/g, ":")
+		.replace(/\{question\}/g, "?");
 }
 
 function yamlString(value: string): string {

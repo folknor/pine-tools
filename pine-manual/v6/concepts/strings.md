@@ -4,9 +4,9 @@ source: https://www.tradingview.com/pine-script-docs/concepts/strings/
 section: concepts
 ---
 
-# Strings
+# Strings {#strings}
 
-## Introduction
+## Introduction {#introduction}
 
 Pine Script® strings are immutable values containing sequences of up to 40,960 encoded characters, such as letters, digits, symbols, spaces, control characters, or other Unicode characters and code points. Strings allow scripts to represent a wide range of data as character patterns and human-readable text.
 
@@ -16,11 +16,11 @@ This page explains how Pine strings work, and how to construct, inspect, and mod
 
 NoteWe use the format _“U+XXXX”_ throughout our documentation when referring to characters and code points in the [Unicode Standard](https://en.wikipedia.org/wiki/Unicode).
 
-## Literal strings
+## Literal strings {#literal-strings}
 
 Literal strings are constant “string” values whose character sequences are defined literally in the source code. In Pine Script, programmers can define literal strings using [single-line](https://www.tradingview.com/pine-script-docs/concepts/strings/#single-line-strings) or [multiline](https://www.tradingview.com/pine-script-docs/concepts/strings/#multiline-strings) syntax.
 
-### Single-line strings
+### Single-line strings {#single-line-strings}
 
 A single-line string is a literal character sequence enclosed by a single pair of ASCII quotation marks (`"`) or apostrophes (`'`). All parts of the string’s definition, including the enclosing characters, occupy a _single_ line of code.
 
@@ -83,7 +83,7 @@ This line-wrapping behavior is _deprecated_; future versions of Pine Script will
 -   Splitting the string into smaller strings, then [concatenating](https://www.tradingview.com/pine-script-docs/concepts/strings/#concatenation) those strings using line-wrapped [+](https://www.tradingview.com/pine-script-reference/v6/#op_+) operations. See the [Line wrapping](https://www.tradingview.com/pine-script-docs/writing/style-guide/#line-wrapping) section of our [Style guide](https://www.tradingview.com/pine-script-docs/writing/style-guide/) for an example.
 -   Defining a [multiline string](https://www.tradingview.com/pine-script-docs/concepts/strings/#multiline-string) instead. See the next section to learn more.
 
-### Multiline strings
+### Multiline strings {#multiline-strings}
 
 A multiline string is a literal character sequence enclosed by _three_ pairs of ASCII quotation marks (e.g. `"""..."""`) or apostrophes (e.g., `'''...'''`). This syntax offers convenience for defining literal strings that represent _multiline text_. All parts of a multiline string definition between the enclosing `"""` or `'''` delimiters can occupy _separate_ code lines and use _any_ amount of indentation. The definition automatically adds the _newline_ control character (U+000A) before each new line to insert a line terminator into the resulting string’s sequence.
 
@@ -192,7 +192,7 @@ string quoted1 = " \"Some quoted text\" "
 string quoted2 = """ "Some quoted text" """
 ```
 
-## Escape sequences
+## Escape sequences {#escape-sequences}
 
 The backslash character (`\`), also known as the Reverse Solidus in Unicode (U+005C), is an _escape character_ in Pine strings. This character forms an _escape sequence_ when it precedes another character, signaling that the following character has a potentially _different_ meaning than usual.
 
@@ -238,7 +238,7 @@ Note that:
 
 -   The “string” value also includes `\` before the `T` character. However, that character still appears _literally_ in the displayed text. If a backslash applied to a character does not form a supported escape sequence, the character’s meaning _does not change_.
 
-## Concatenation
+## Concatenation {#concatenation}
 
 The [+](https://www.tradingview.com/pine-script-reference/v6/#op_+) and [+=](https://www.tradingview.com/pine-script-reference/v6/#op_+=) operators signify _concatenation_ when the operands are strings. A concatenation operation appends the second operand’s character sequence to the first operand’s sequence to form a new, _combined_ “string” value.
 
@@ -272,7 +272,7 @@ Note that:
 -   Another, more advanced way to combine strings is to collect them inside an [array](https://www.tradingview.com/pine-script-reference/v6/#type_array) and use the [array.join()](https://www.tradingview.com/pine-script-reference/v6/#fun_array.join) function. For more information, see the [Joining](https://www.tradingview.com/pine-script-docs/language/arrays/#joining) section of the [Arrays](https://www.tradingview.com/pine-script-docs/language/arrays/) page.
 -   In many cases, programmers can efficiently create _formatted strings_ with [str.format()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.format) instead of combining individual strings with concatenation or joining. See the [Formatting strings](https://www.tradingview.com/pine-script-docs/concepts/strings/#formatting-strings) section to learn more.
 
-## String conversion and formatting
+## String conversion and formatting {#string-conversion-and-formatting}
 
 Programmers can use strings to represent data of virtually any type as human-readable character sequences. Converting data to strings allows scripts to perform many helpful tasks, including:
 
@@ -281,7 +281,7 @@ Programmers can use strings to represent data of virtually any type as human-rea
 -   Logging [debug](https://www.tradingview.com/pine-script-docs/writing/debugging/) messages containing calculated script information in the [Pine Logs](https://www.tradingview.com/pine-script-docs/writing/debugging/#pine-logs) pane.
 -   Performing custom calculations and logic, such as constructing symbol or timeframe strings for [data requests](https://www.tradingview.com/pine-script-docs/concepts/other-timeframes-and-data/).
 
-### Converting values to strings
+### Converting values to strings {#converting-values-to-strings}
 
 The simplest way to convert data to strings is to call the [str.tostring()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.tostring) function. The function can represent values of several types as strings, based on predefined or custom formats. It has the following two signatures:
 
@@ -390,7 +390,7 @@ Note that:
 
 TipScripts can convert a numeric “string” value back to a “float” value with [str.tonumber()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.tonumber). When converting strings to numbers with this function, the value’s character sequence can include only ASCII digits, a sign symbol at the beginning (`+` or `-`), and a single period for the decimal point (`.`). If the specified “string” value does not represent a number with this format, the function returns [na](https://www.tradingview.com/pine-script-reference/v6/#var_na). For example, the function can convert `"1234.50"` to a “float” value, but it cannot convert strings such as `"$1,234.50"`.
 
-### Formatting strings
+### Formatting strings {#formatting-strings}
 
 The [str.format()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.format) function can combine multiple “int”, “float”, “bool”, “string”, or array arguments into one output string in a specified format. Using this function is a simpler alternative to creating multiple separate strings and combining them with repeated [concatenation](https://www.tradingview.com/pine-script-docs/concepts/strings/#concatenation) operations. Below is the function’s signature:
 
@@ -536,7 +536,7 @@ string formattedTime = str.format("{0,date,yyyy-MM-dd}T{0,time,HH:mm:ssZ}", time
 
 However, [str.format()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.format) **cannot** express dates and times in other time zones. It uses _UTC+0_ exclusively. The specialized [str.format\_time()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.format_time) function is more optimal for constructing date-time strings, because it can express dates and times in _any time zone_. See the [Formatting dates and times](https://www.tradingview.com/pine-script-docs/concepts/time/#formatting-dates-and-times) section of the [Time](https://www.tradingview.com/pine-script-docs/concepts/time/) page to learn more about this function and the available formatting tokens.
 
-### Custom representations
+### Custom representations {#custom-representations}
 
 All built-in functions that create “string” values to represent data support a limited subset of built-in types. They _do not_ support “color” values or objects of most _reference types_ (e.g., [labels](https://www.tradingview.com/pine-script-docs/visuals/text-and-shapes/#labels)). Programmers can, however, use custom logic and formatting to create “string” representations of data that the [str.tostring()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.tostring) or [str.format()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.format) functions cannot express as strings directly.
 
@@ -595,13 +595,13 @@ Note that:
 -   Not all special types have retrievable properties. For instance, scripts cannot retrieve information from [polylines](https://www.tradingview.com/pine-script-docs/visuals/lines-and-boxes/#polylines) or [tables](https://www.tradingview.com/pine-script-docs/visuals/tables/). To create strings for these types, track the data used in their creation with separate variables, then format the values of those variables into strings.
 -   For an example of creating strings from the field values of user-defined types, see the [Debugging objects of UDTs](https://www.tradingview.com/pine-script-docs/writing/debugging/#debugging-objects-of-udts) section of the [Debugging](https://www.tradingview.com/pine-script-docs/writing/debugging) page.
 
-## Modifying strings
+## Modifying strings {#modifying-strings}
 
 Several `str.*()` functions provide simplified ways to modify the character sequence from a “string” value, including [str.replace()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.replace), [str.replace\_all()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.replace_all), [str.upper()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.upper), [str.lower()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.lower), [str.trim()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.trim), and [str.repeat()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.repeat).
 
 Programmers can use these functions to create copies of strings with replaced character sequences, modified letter cases, trimmed whitespaces, or repeated character patterns.
 
-### Replacing substrings
+### Replacing substrings {#replacing-substrings}
 
 The [str.replace()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.replace) function searches a specified `source` string for the nth _non-overlapping_ occurrence of a given substring, then returns a copy of the original string containing a specified replacement at that substring’s position.
 
@@ -672,7 +672,7 @@ Note that:
 
 TipWhen using [str.replace()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.replace), knowing the precise number of substrings within the `source` value helps ensure correct results. A simple way to count substrings is to remove them with [str.replace\_all()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.replace_all), then measure the difference in length relative to the length of the removed substring. See the [Counting characters and substrings](https://www.tradingview.com/pine-script-docs/concepts/strings/#counting-characters-and-substrings) section to learn more.
 
-### Changing case
+### Changing case {#changing-case}
 
 The [str.upper()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.upper) and [str.lower()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.lower) functions create a copy of a `source` string with all ASCII letter characters converted to _uppercase_ or _lowercase_ variants, providing a convenient alternative to replacing specific characters with several `str.replace*()` calls. The [str.upper()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.upper) function replaces all lowercase characters with uppercase characters, and [str.lower()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.lower) does the opposite. These are the functions’ signatures:
 
@@ -723,7 +723,7 @@ if barstate.isfirst
     log.info("\n\nOriginal: {0}\nUppercase: {1}\nLowercase: {2}", originalString, uppercaseString, lowercaseString)
 ```
 
-### Trimming whitespaces
+### Trimming whitespaces {#trimming-whitespaces}
 
 The [str.trim()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.trim) function copies a `source` string and removes leading and trailing whitespace characters, including the standard space ( ), newline (`\n`), and tab space (`\t`). Below is the function’s signature:
 
@@ -797,7 +797,7 @@ for timeframe in timeframes
 label.new(bar_index, high, style = label.style_label_down, tooltip = displayText)
 ```
 
-### Repeating sequences
+### Repeating sequences {#repeating-sequences}
 
 The [str.repeat()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.repeat) function creates a “string” value that _repeats_ a `source` string’s character sequence a specified number of times, providing a convenient way to construct strings with repetitive character patterns. Below is the function’s signature:
 
@@ -905,13 +905,13 @@ Note that:
 -   The [table.cell()](https://www.tradingview.com/pine-script-reference/v6/#fun_table.cell) call uses [text.align\_left](https://www.tradingview.com/pine-script-reference/v6/#const_text.align_left) as the `text_halign` argument and [font.family\_monospace](https://www.tradingview.com/pine-script-reference/v6/#const_font.family_monospace) as the `text_font_family` argument to align the text lines to the _left_ with relatively uniform character width.
 -   The formatted string from each `makeLine()` call uses the `\n` [escape sequence](https://www.tradingview.com/pine-script-docs/concepts/strings/#escape-sequences) at the end to add a line terminator.
 
-## String inspection and extraction
+## String inspection and extraction {#string-inspection-and-extraction}
 
 Several built-in `str.*()` functions allow scripts to measure a “string” value, check for substrings and retrieve their positions, split a string into several substrings, and extract substrings based on positions or match patterns. These functions include [str.length()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.length), [str.contains()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.contains), [str.startswith()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.startswith), [str.endswith()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.endswith), [str.split()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.split), [str.pos()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.pos), [str.substring()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.substring), and [str.match()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.match).
 
 The sections below explain these functions and some helpful techniques to use them effectively.
 
-### Counting characters and substrings
+### Counting characters and substrings {#counting-characters-and-substrings}
 
 The [str.length()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.length) function measures the length of a specified “string” value, returning an “int” value representing the number of characters in the argument’s character sequence. It has the following signature:
 
@@ -997,7 +997,7 @@ Note that:
 
 -   This script uses the _second overload_ of [log.info()](https://www.tradingview.com/pine-script-reference/v6/#fun_log.info), which shares the same signature as [str.format()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.format) but logs a formatted message instead of returning a value. See the [Pine Logs](https://www.tradingview.com/pine-script-docs/writing/debugging/#pine-logs) section of the [Debugging](https://www.tradingview.com/pine-script-docs/writing/debugging/) page to learn more about the `log*()` functions.
 
-### Checking for substrings
+### Checking for substrings {#checking-for-substrings}
 
 The [str.contains()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.contains) function searches a `source` string for a specified substring, returning a “bool” value representing whether it found the substring. Two similar functions, [str.startswith()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.startswith) and [str.endswith()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.endswith), check whether the `source` _starts_ and _ends_ with a specified substring.
 
@@ -1056,7 +1056,7 @@ Note that:
 
 -   We used `" /"` as the substring value in the [str.startswith()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.startswith) call because an empty string does _not_ detect the empty input value. When the substring specified in a [str.contains()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.contains), [str.startswith()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.startswith), or [str.endswith()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.endswith) call is empty, the function always returns `true` because the argument can match _any position_ in a string’s sequence.
 
-### Splitting strings
+### Splitting strings {#splitting-strings}
 
 The [str.split()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.split) function splits a single “string” value into one or more substrings based on a `separator` substring in the value’s character sequence, then collects the results in an [array](https://www.tradingview.com/pine-script-reference/v6/#type_array). Below is the function’s signature:
 
@@ -1111,7 +1111,7 @@ Note that:
 -   The script uses [str.tostring()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.tostring) and [concatenation](https://www.tradingview.com/pine-script-docs/concepts/strings/#concatenation) to create the strings used for the table’s text.
 -   This script can fetch data from other contexts within a loop using “series string” `symbol` values because scripts allow dynamic requests by default. See the [Dynamic requests](https://www.tradingview.com/pine-script-docs/concepts/other-timeframes-and-data/#dynamic-requests) section of the [Other timeframes and data](https://www.tradingview.com/pine-script-docs/concepts/other-timeframes-and-data/) page for more information.
 
-### Locating and retrieving substrings
+### Locating and retrieving substrings {#locating-and-retrieving-substrings}
 
 The [str.pos()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.pos) function searches a `source` string for the _first_ occurrence of a specified substring and returns an “int” value representing the _position_ of its initial character boundary. The function’s signature is as follows:
 
@@ -1248,7 +1248,7 @@ Note that:
 -   Although the `positions` array starts with _one_ element, the [for…in](https://www.tradingview.com/pine-script-reference/v6/#kw_for...in) loop performs _more than one_ iteration because Pine loops can have dynamic boundaries. After each execution of the [array.push()](https://www.tradingview.com/pine-script-reference/v6/#fun_array.push) call, the `positions` array’s size increases, allowing a _new iteration_. Refer to the [Loops](https://www.tradingview.com/pine-script-docs/language/loops/) page for more information.
 -   Each reduced version of the string starts at the position _after_ the last character of the detected substring. The script identifies the end position by adding the substring’s [str.length()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.length) value to its starting position.
 
-### Matching patterns
+### Matching patterns {#matching-patterns}
 
 Pine scripts can dynamically match and retrieve substrings using the [str.match()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.match) function. In contrast to the other `str.*()` functions, which only match sequences of literal characters, the [str.match()](https://www.tradingview.com/pine-script-reference/v6/#fun_str.match) function uses [regular expressions (regex)](https://en.wikipedia.org/wiki/Regular_expression) to match variable _character patterns_. The function’s signature is as follows:
 
@@ -1446,7 +1446,7 @@ Note that:
 -   The `$` (dollar sign) character in this regular expression matches the _end_ of the input, excluding any final line terminators (`\n`).
 -   Because the `.` (period) character has a special meaning in regex strings, we must prefix it with two backslashes (`\\`) in the string to match a literal period.
 
-#### Regex syntax reference
+#### Regex syntax reference {#regex-syntax-reference}
 
 Every programming language’s regex engine has unique characteristics and syntax. Some regex syntax is universal across engines, while other patterns and modifiers are engine-specific.
 

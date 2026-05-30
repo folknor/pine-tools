@@ -4,9 +4,9 @@ source: https://www.tradingview.com/pine-script-docs/language/variable-declarati
 section: language
 ---
 
-# Variable declarations
+# Variable declarations {#variable-declarations}
 
-## Introduction
+## Introduction {#introduction}
 
 Variables are _named containers_ that store calculated values or other data for a script to access and use within a given scope. Variables in Pine Script® can hold data of any available [type](https://www.tradingview.com/pine-script-docs/language/type-system/#types) that is not [void](https://www.tradingview.com/pine-script-docs/language/type-system/#void), including the direct values of [value types](https://www.tradingview.com/pine-script-docs/language/type-system/#value-types), and the _IDs_ (references) of [drawings](https://www.tradingview.com/pine-script-docs/language/type-system/#drawing-types), [collections](https://www.tradingview.com/pine-script-docs/language/type-system/#collections), [plots](https://www.tradingview.com/pine-script-docs/language/type-system/#plot-and-hline) or other instances of [reference types](https://www.tradingview.com/pine-script-docs/language/type-system/#reference-types).
 
@@ -76,7 +76,7 @@ Regardless of format, several key characteristics and limitations apply to user-
 -   If a variable in a nested scope has the same name as one in an outer scope, that variable [shadows](https://www.tradingview.com/pine-script-docs/language/variable-declarations/#shadowing) the outer scope’s variable. In other words, the script _cannot access_ the outer scope’s variable in any part of the nested scope following the inner variable’s declaration.
 -   By default, a script declares and initializes a variable anew during _each execution_ of its scope. However, a single-variable declaration can include the [var](https://www.tradingview.com/pine-script-reference/v6/#kw_var) or [varip](https://www.tradingview.com/pine-script-reference/v6/#kw_varip) keyword to set an alternative [declaration mode](https://www.tradingview.com/pine-script-docs/language/variable-declarations/#declaration-modes), causing the variable and its data to _persist_ across bars or ticks.
 
-## Single-variable declarations
+## Single-variable declarations {#single-variable-declarations}
 
 A single-variable declaration is a statement that creates one new variable, names it, and assigns it an initial value or reference. The statement can include _keywords_ to specify the variable’s qualified type and declaration mode, or to export the variable. The syntax is as follows:
 
@@ -172,7 +172,7 @@ float median = ta.median(hl2, length = lengthInput)
 
 NoteThe [for](https://www.tradingview.com/pine-script-reference/v6/#kw_for) loop structure uses a single-variable declaration in its header to declare a local counter variable. Likewise, the [for…in](https://www.tradingview.com/pine-script-reference/v6/#kw_for...in) structure can declare a single local variable in its header to store items from a [collection](https://www.tradingview.com/pine-script-docs/language/type-system/#collections). These types of declarations use a different syntax than that of the declarations described above. See the [Loops](https://www.tradingview.com/pine-script-docs/language/loops/) page to learn more.
 
-## Tuple declarations
+## Tuple declarations {#tuple-declarations}
 
 Some [conditional structures](https://www.tradingview.com/pine-script-docs/language/conditional-structures/), [loops](https://www.tradingview.com/pine-script-docs/language/loops/), and function or [method](https://www.tradingview.com/pine-script-docs/language/methods/#methods) calls return [tuples](https://www.tradingview.com/pine-script-docs/language/type-system/#tuples) containing _multiple_ values or references. To use the data returned from such expressions and structures, programmers must write _tuple declarations_, which are single statements that declare multiple variables using a tuple format.
 
@@ -283,7 +283,7 @@ plot(bandWidth, "Band width", widthColor, style = plot.style_area)
 
 NoteThe [for…in](https://www.tradingview.com/pine-script-reference/v6/#kw_for...in) loop structure can also use a tuple declaration in its header to declare two local variables for tracking items from a [collection](https://www.tradingview.com/pine-script-docs/language/type-system/#collections) and their indices. However, the syntax differs from other tuple declarations described above. See the [`for...in` loops](https://www.tradingview.com/pine-script-docs/language/loops/#forin-loops) section of the [Loops](https://www.tradingview.com/pine-script-docs/language/loops/) page to learn more.
 
-## Using an underscore as an identifier
+## Using an underscore as an identifier {#using-an-underscore-as-an-identifier}
 
 Scripts can declare variables using a _single underscore_ (`_`) as the identifier to mark those variables as _unused_. A script _cannot_ access data from any variables named `_` or use those variables in other expressions or statements after their declaration. Programmers can write any number of `_` variable declarations anywhere in a script, including multiple times in the same [scope](https://www.tradingview.com/pine-script-docs/language/variable-declarations/#scopes).
 
@@ -333,7 +333,7 @@ Note that:
 
 -   The [+=](https://www.tradingview.com/pine-script-reference/v6/#op_+=) and [/=](https://www.tradingview.com/pine-script-reference/v6/#op_/=) operators in this script _reassign_ the value of the `sample` variable after initialization. See the [Variable reassignment](https://www.tradingview.com/pine-script-docs/language/variable-declarations/#variable-reassignment) section to learn more.
 
-## Declaring qualified types
+## Declaring qualified types {#declaring-qualified-types}
 
 Every variable has an assigned [type](https://www.tradingview.com/pine-script-docs/language/type-system/#types) and a [type qualifier](https://www.tradingview.com/pine-script-docs/language/type-system/#qualifiers), which together define the variable’s _qualified type_. A variable’s type determines _what kind_ of data the variable represents in the script’s calculations, as well as the types of data that the script can pass to the variable. A variable’s qualifier indicates _when_ the assigned data is available and whether it can _change_ across executions.
 
@@ -345,7 +345,7 @@ The following sections explain how these keywords affect declared variables. For
 
 Note[Tuple declarations](https://www.tradingview.com/pine-script-docs/language/variable-declarations/#tuple-declarations) do not support extra keywords for specifying qualified types. As such, each variable from a tuple declaration automatically inherits the same type as its assigned value or reference, and all the variables inherit the _strongest_ type qualifier used by the function call or structure. See the [Tuples](https://www.tradingview.com/pine-script-docs/language/type-system/#tuples) section of the [Type system](https://www.tradingview.com/pine-script-docs/language/type-system/) page to learn more.
 
-### Type keywords
+### Type keywords {#type-keywords}
 
 A variable declaration that prefixes the variable’s identifier with a _type keyword_ specifies the [type](https://www.tradingview.com/pine-script-docs/language/type-system/#types) of data that the variable represents in the script’s calculations.
 
@@ -431,7 +431,7 @@ myVar := nz(math.log(myVar))
 plot(myVar, "Log of bars remaining", color.purple, 3)
 ```
 
-### Qualifier keywords
+### Qualifier keywords {#qualifier-keywords}
 
 A [single-variable declaration](https://www.tradingview.com/pine-script-docs/language/variable-declarations/#single-variable-declarations) that includes a _qualifier keyword_ ([const](https://www.tradingview.com/pine-script-reference/v6/#type_const), [simple](https://www.tradingview.com/pine-script-reference/v6/#type_simple), or [series](https://www.tradingview.com/pine-script-reference/v6/#type_series)) before the [type keyword](https://www.tradingview.com/pine-script-docs/language/variable-declarations/#type-keywords) specifies the variable’s [type qualifier](https://www.tradingview.com/pine-script-docs/language/type-system/#qualifiers). A variable’s type qualifier indicates _when_ the assigned value must be accessible, and whether the value can _change_ during or across script executions. Qualifier keywords are almost always _optional_. The only exception is for a [library’s](https://www.tradingview.com/pine-script-docs/concepts/libraries/) exported variables, which require the [const](https://www.tradingview.com/pine-script-reference/v6/#type_const) keyword in their declarations.
 
@@ -569,7 +569,7 @@ else
 plot(rma, "RMA", plotColor, 3)
 ```
 
-## Variable reassignment
+## Variable reassignment {#variable-reassignment}
 
 In Pine Script, most variables declared by a script are _mutable_, meaning that the script can _change (reassign)_ their assigned values or references (IDs) after their declarations. The only exception is for variables that a script declares using the [const](https://www.tradingview.com/pine-script-reference/v6/#type_const) keyword, because that keyword explicitly _prevents_ the script from reassigning those variables.
 
@@ -617,7 +617,7 @@ Scripts can also reassign variables of specific [value types](https://www.tradin
 -   Subtraction assignment ([\-=](https://www.tradingview.com/pine-script-reference/v6/#op_-=))
 -   Multiplication assignment ([\*=](https://www.tradingview.com/pine-script-reference/v6/#op_*=))
 -   Division assignment ([/=](https://www.tradingview.com/pine-script-reference/v6/#op_/=))
--   Modulo (remainder) assignment ([%=](https://www.tradingview.com/pine-script-reference/v6/#op_%25=))
+-   Modulo (remainder) assignment ([%=](https://www.tradingview.com/pine-script-reference/v6/#op_%=))
 
 NoteMost compound assignment operators are compatible with variables or fields of only the “int” and “float” types. However, the [+=](https://www.tradingview.com/pine-script-reference/v6/#op_+=) operator is also compatible with variables of the “string” type. Additionally, scripts can use the [+=](https://www.tradingview.com/pine-script-reference/v6/#op_+=) and [\-=](https://www.tradingview.com/pine-script-reference/v6/#op_-=) operators to modify variables that store “plot\_display” values from expressions that use the built-in `display.*` constants.
 
@@ -688,7 +688,7 @@ Note that:
 
 -   A reassignment or compound assignment operation does not apply to a variable in any code before that operation in the script. The two [plot()](https://www.tradingview.com/pine-script-reference/v6/#fun_plot) calls demonstrate this behavior. Although both calls use the `macd` variable, they show different results because the first call uses the variable’s _initial_ value, and the second uses the variable’s value _after_ executing the [:=](https://www.tradingview.com/pine-script-reference/v6/#op_:=) operation.
 
-## Scopes
+## Scopes {#scopes}
 
 The _scope_ of a variable refers to the region of a script in which the script can use the declared [identifier](https://www.tradingview.com/pine-script-docs/language/identifiers/) to access that variable and its data. Every script has one _global_ scope and zero or more _local_ scopes.
 
@@ -787,7 +787,7 @@ Note that:
 -   The script declares the global `risingCount` and `fallingCount` variables to store the values returned by the [if](https://www.tradingview.com/pine-script-reference/v6/#kw_if) structures, because the local `counter` variables are not accessible to the expressions outside their local scopes. When either structure executes its scope, it returns the result of its `counter += 1` statement. Otherwise, it returns [na](https://www.tradingview.com/pine-script-reference/v6/#var_na).
 -   If we move the variable declaration on line 20 in this script _above_ the two [if](https://www.tradingview.com/pine-script-reference/v6/#kw_if) statements, a _compiler warning_ occurs because the local variables named `counter` _shadow_ the global variable. See the [Shadowing](https://www.tradingview.com/pine-script-docs/language/variable-declarations/#shadowing) section below to learn more.
 
-### Shadowing
+### Shadowing {#shadowing}
 
 _Variable shadowing_ refers to the behavior in which a variable in a specific scope _prevents access_ to a variable with the _same name_ in an outer scope. If a script declares a variable within an inner scope and assigns it the same identifier as a variable declared before it in an outer scope, the script **cannot** use the identifier to access the outer variable while executing the rest of the inner scope. In other words, the inner variable _shadows_ the outer variable.
 
@@ -938,7 +938,7 @@ log.info(str.tostring(syminfo.tickerid))
 
 TipRegardless of errors or warnings, we recommend declaring variables with names that do not conflict with identifiers for built-ins of any kind or custom variables from outer scopes. In addition to preventing shadowing and obscuring, using unique identifiers often helps promote readability and makes code simpler to maintain.
 
-## Declaration modes
+## Declaration modes {#declaration-modes}
 
 A variable’s _declaration mode_ defines whether and how the variable and its data _persist_ across script executions. By default, declared variables _do not_ persist beyond a single execution; the script declares and initializes them anew during _every_ execution of their [scopes](https://www.tradingview.com/pine-script-docs/language/variable-declarations/#scopes).
 
@@ -951,7 +951,7 @@ Programmers can override this behavior and specify an alternative mode in a [sin
 
 TipThe sections below provide detailed explanations of the [default](https://www.tradingview.com/pine-script-docs/language/variable-declarations/#default), [`var`](https://www.tradingview.com/pine-script-docs/language/variable-declarations/#var), and [`varip`](https://www.tradingview.com/pine-script-docs/language/variable-declarations/#varip) declaration modes. Understanding this information requires some prior knowledge of Pine’s [Execution model](https://www.tradingview.com/pine-script-docs/language/execution-model/) and [Type system](https://www.tradingview.com/pine-script-docs/language/type-system/). Therefore, we recommend reviewing [the basics](https://www.tradingview.com/pine-script-docs/language/execution-model/#the-basics) of the execution model, reading about the available [types](https://www.tradingview.com/pine-script-docs/language/type-system/#types), and then coming back to this part to learn more about each declaration mode.
 
-### Default
+### Default {#default}
 
 If a script declares a variable without using the [var](https://www.tradingview.com/pine-script-reference/v6/#kw_var) or [varip](https://www.tradingview.com/pine-script-reference/v6/#kw_varip) keyword, it declares and initializes that variable anew during _every_ execution of the variable’s [scope](https://www.tradingview.com/pine-script-docs/language/variable-declarations/#scopes). In other words, the variable _resets_ and holds a new value or reference on each new execution, without preserving the data stored during the scope executions on previous bars or ticks.
 
@@ -1006,9 +1006,9 @@ Note that:
 -   The expression `count[1]` returns [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) on the _first_ bar of the dataset, because there is no previous bar for the script to access at that point. Therefore, we use the [nz()](https://www.tradingview.com/pine-script-reference/v6/#fun_nz) function to replace [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) with 0 in the calculation. See the [`na` value](https://www.tradingview.com/pine-script-docs/language/type-system/#na-value) section of the [Type system](https://www.tradingview.com/pine-script-docs/language/type-system/) page to learn more.
 -   A simpler way to achieve the same plotted result is to add [var](https://www.tradingview.com/pine-script-reference/v6/#kw_var) to the `counter` variable declaration in the previous example script. See the [`var`](https://www.tradingview.com/pine-script-docs/language/variable-declarations/#var) section to learn more.
 
-NoteAlthough the [\[\]](https://www.tradingview.com/pine-script-reference/v6/#op_%5B%5D) operator can retrieve [reference-type](https://www.tradingview.com/pine-script-docs/language/type-system/#reference-types) IDs for previous bars, scripts cannot _modify_ all types of historical objects. For example, a script cannot modify a [collection](https://www.tradingview.com/pine-script-docs/language/type-system/#collections) that it accesses using an ID retrieved for a previous bar. To maintain and update collections across bars, the simplest approach is to declare _persistent_ variables to store their IDs. The [`var`](https://www.tradingview.com/pine-script-docs/language/variable-declarations/#var) section below includes a basic example.
+NoteAlthough the [\[\]](https://www.tradingview.com/pine-script-reference/v6/#op_[]) operator can retrieve [reference-type](https://www.tradingview.com/pine-script-docs/language/type-system/#reference-types) IDs for previous bars, scripts cannot _modify_ all types of historical objects. For example, a script cannot modify a [collection](https://www.tradingview.com/pine-script-docs/language/type-system/#collections) that it accesses using an ID retrieved for a previous bar. To maintain and update collections across bars, the simplest approach is to declare _persistent_ variables to store their IDs. The [`var`](https://www.tradingview.com/pine-script-docs/language/variable-declarations/#var) section below includes a basic example.
 
-### ​`var`​
+### `var` {#var}
 
 A variable declaration that includes the [var](https://www.tradingview.com/pine-script-reference/v6/#kw_var) keyword creates a variable that persists _across bars_. The variable _remains initialized_ after the _first_ execution of its [scope](https://www.tradingview.com/pine-script-docs/language/variable-declarations/#scopes) on a bar’s _closing tick_. From that bar onward, the variable automatically preserves its assigned value or reference until the script explicitly [reassigns](https://www.tradingview.com/pine-script-docs/language/variable-declarations/#variable-reassignment) it.
 
@@ -1203,7 +1203,7 @@ Note that:
 
 -   As demonstrated by the previous example, even local variables declared with [var](https://www.tradingview.com/pine-script-reference/v6/#kw_var) persist across bars. Therefore, if we remove the [if](https://www.tradingview.com/pine-script-reference/v6/#kw_if) statement that reassigns 0 to the `local2` variable, that variable’s value consistently increases by five on each bar.
 
-### ​`varip`​
+### `varip` {#varip}
 
 A variable declaration that includes the [varip](https://www.tradingview.com/pine-script-reference/v6/#kw_varip) keyword creates a variable that persists across _every tick_. The variable becomes permanently initialized after the _first_ execution of its [scope](https://www.tradingview.com/pine-script-docs/language/variable-declarations/#scopes), even if that execution occurs _before_ a bar’s closing tick. From that point onward, all changes to the variable’s data persist, even those that occur during script executions on an _open_ bar. The “ip” in the keyword stands for _“intrabar persist”_, as the value or reference stored by the variable persists across every update within each bar until the script explicitly [reassigns](https://www.tradingview.com/pine-script-docs/language/variable-declarations/#variable-reassignment) the variable.
 

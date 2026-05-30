@@ -4,9 +4,9 @@ source: https://www.tradingview.com/pine-script-docs/language/user-defined-funct
 section: language
 ---
 
-# User-defined functions
+# User-defined functions {#user-defined-functions}
 
-## Introduction
+## Introduction {#introduction}
 
 _User-defined functions_ are functions written by programmers, as opposed to the [built-in functions](https://www.tradingview.com/pine-script-docs/language/built-ins/#built-in-functions) provided by Pine Script®. They help to encapsulate custom calculations that scripts perform conditionally or repeatedly, or to isolate logic in a single location for modularity and readability. Programmers often write functions to extend the capabilities of their scripts when no existing built-ins fit their needs.
 
@@ -36,7 +36,7 @@ Regardless of format, location, or use, several common characteristics and [limi
 -   Each call returns the result of evaluating the _final_ statement or separate expression defined in the function’s body, and that result inherits the _strongest_ [type qualifier](https://www.tradingview.com/pine-script-docs/language/type-system/#qualifiers) used in the call’s calculations. As with parameter types, the call’s returned types must be consistent across executions.
 -   Each written call to the function establishes a _new scope_ from the function’s definition. The parameters, variables, and expressions created in that scope are _unique_ and have an _independent_ history; other calls to the function do not directly affect them.
 
-## Structure and syntax
+## Structure and syntax {#structure-and-syntax}
 
 A function definition can occupy a single line of code or multiple lines, depending on the expressions and statements that the function requires. The single-line and multiline formats are similar, with the key difference being the placement of the function’s _body_.
 
@@ -83,7 +83,7 @@ Note that:
 
 The following two sections explain the body structure of single-line and multiline functions.
 
-### Single-line functions
+### Single-line functions {#single-line-functions}
 
 A single-line function’s body begins and ends on the _same_ line of code as the header. This format is convenient for defining compact functions that execute only simple statements and do not use [conditional structures](https://www.tradingview.com/pine-script-docs/language/conditional-structures/) or [loops](https://www.tradingview.com/pine-script-docs/language/loops/). The syntax to define a single-line function is as follows:
 
@@ -155,7 +155,7 @@ Note that:
 
 TipAlthough it is possible to write single-line functions containing multiple statements, as shown above, using the [multiline](https://www.tradingview.com/pine-script-docs/language/user-defined-functions/#multiline-functions) format is often preferred for readability. Programmers can list the statements on separate lines and add comments for each one.
 
-### Multiline functions
+### Multiline functions {#multiline-functions}
 
 A multiline function defines its body using a _block_ of code following the header line. The general syntax is as follows:
 
@@ -239,7 +239,7 @@ Note that:
 -   The `smoothMedian()` call in this example does not supply an argument to the `avgType` parameter. Specifying an argument is _optional_, because the parameter declaration includes a _default argument_ (`"ema"`).
 -   We included empty lines between each section for readability. The lines that follow an empty line are considered part of the function as long as they are indented correctly.
 
-## Functions that return multiple results
+## Functions that return multiple results {#functions-that-return-multiple-results}
 
 Sometimes, a function must perform multiple calculations and return separate results for each one. Programmers can write functions that return _multiple_ values or references by using a [tuple](https://www.tradingview.com/pine-script-docs/language/type-system/#tuples) as the _final statement_ in the function’s body. A tuple is a comma-separated list of expressions enclosed in square brackets (`[]`). Every call to a function with a tuple at the end of its body returns the result of evaluating each listed expression in order.
 
@@ -300,13 +300,13 @@ plot(diff, "Difference", color.maroon, 3)
 
 NoteThe items in a function’s returned tuple can have _different_ [types](https://www.tradingview.com/pine-script-docs/language/type-system/#types). However, functions _cannot_ return multiple results with different [type qualifiers](https://www.tradingview.com/pine-script-docs/language/type-system/#qualifiers). Therefore, _all_ items in a returned tuple automatically inherit the _same qualifier_. If the tuple does not rely on a “series” value, all the items in the tuple typically inherit the _“simple”_ qualifier. Otherwise, all items inherit the _“series”_ qualifier. See the [Tuples](https://www.tradingview.com/pine-script-docs/language/type-system/#tuples) section of the [Type system](https://www.tradingview.com/pine-script-docs/language/type-system/) page for an example.
 
-## Declaring parameter types
+## Declaring parameter types {#declaring-parameter-types}
 
 User-defined function definitions can prefix each parameter declaration with type and qualifier _keywords_, enabling strict control over the qualified types that a script can pass to the parameter in any function call. If a declaration does not include these keywords, the compiler automatically determines the parameter’s qualified type based on its arguments and the function’s structure.
 
 The sections below explain how type and qualifier keywords affect the behavior of function parameters. For detailed information about Pine’s types and qualifiers, refer to the [Type system](https://www.tradingview.com/pine-script-docs/language/type-system/) page.
 
-### Type keywords
+### Type keywords {#type-keywords}
 
 Parameter declarations prefixed by _type keywords_ — such as [int](https://www.tradingview.com/pine-script-reference/v6/#fun_int), [float](https://www.tradingview.com/pine-script-reference/v6/#type_float), [string](https://www.tradingview.com/pine-script-reference/v6/#type_string), or [label](https://www.tradingview.com/pine-script-reference/v6/#type_label) — declare the [types](https://www.tradingview.com/pine-script-docs/language/type-system/#types) of data that the parameters represent in any function call. If a parameter declaration includes a type keyword, it accepts only arguments of that type, or arguments that Pine can automatically [cast](https://www.tradingview.com/pine-script-docs/language/type-system/#type-casting) to that type.
 
@@ -372,7 +372,7 @@ In most cases, type keywords are _optional_ in parameter declarations. However, 
 
 TipEven when not required, we recommend declaring parameter types where possible. Type keywords help promote readability, and they enable the Pine Editor to provide relevant code suggestions. Additionally, parameters with declared types help prevent _unintended_ arguments in function calls.
 
-### Qualifier keywords
+### Qualifier keywords {#qualifier-keywords}
 
 A _qualifier keyword_ ([const](https://www.tradingview.com/pine-script-reference/v6/#type_const), [simple](https://www.tradingview.com/pine-script-reference/v6/#type_simple), or [series](https://www.tradingview.com/pine-script-reference/v6/#type_series)) preceding a [type keyword](https://www.tradingview.com/pine-script-docs/language/user-defined-functions/#type-keywords) in a parameter declaration specifies the parameter’s [type qualifier](https://www.tradingview.com/pine-script-docs/language/type-system/#qualifiers). The keyword also indicates when the _argument_ for the parameter must be accessible, and whether that argument can _change_ across bars:
 
@@ -551,7 +551,7 @@ plot(avg1, "Consistent EMA", color.blue, 4)
 plot(avg2, "Inconsistent EMA/SMA", color.purple, 3)
 ```
 
-## Documenting functions
+## Documenting functions {#documenting-functions}
 
 Pine Script features [annotations](https://www.tradingview.com/pine-script-docs/language/script-structure/#compiler-annotations) that programmers can use to document a function, its parameters, and its result directly in the source code. Annotations are _comments_ that issue special _instructions_ to the compiler or the Pine Editor. The editor can display the formatted text from function annotations in a pop-up window as users work with the function in their code. Additionally, the “Publish script” window uses the text from function annotations to generate default descriptions for [libraries](https://www.tradingview.com/pine-script-docs/concepts/libraries/).
 
@@ -695,7 +695,7 @@ f() => int(na)
 
 NoteThe annotation syntax in the above example affects only the appearance of text displayed by the Pine Editor’s autosuggest feature; it **does not** affect text formatting in _script publications_. See the [Title and description](https://www.tradingview.com/pine-script-docs/writing/publishing/#title-and-description) section of the [Publishing scripts](https://www.tradingview.com/pine-script-docs/writing/publishing/) page to learn the formatting syntax for publication descriptions.
 
-## Function scopes
+## Function scopes {#function-scopes}
 
 All variables, expressions, and statements have a designated [scope](https://www.tradingview.com/pine-script-docs/faq/programming/#what-does-scope-mean), which refers to the part of the script where they are defined and accessible. Every script has one _global_ scope and zero or more _local_ scopes.
 
@@ -785,7 +785,7 @@ plot(increment())
 
 TipIt is possible to modify the data accessed by a global variable from inside a function’s scope if that variable is of a [reference type](https://www.tradingview.com/pine-script-docs/language/type-system/#reference-types), such as a [collection type](https://www.tradingview.com/pine-script-docs/language/type-system/#collections) or [user-defined type](https://www.tradingview.com/pine-script-docs/language/type-system/#user-defined-types). Instead of reassigning the variable, the script can use _setter functions_ or _field reassignments_, depending on the type, to modify the _object_ that the variable _refers_ to. For examples of this advanced technique, see the [Extracting data from local scopes](https://www.tradingview.com/pine-script-docs/writing/debugging/#extracting-data-from-local-scopes) section of the [Debugging](https://www.tradingview.com/pine-script-docs/writing/debugging/) page and the scope-related sections of the [Arrays](https://www.tradingview.com/pine-script-docs/language/arrays/), [Matrices](https://www.tradingview.com/pine-script-docs/language/matrices/), and [Maps](https://www.tradingview.com/pine-script-docs/language/maps/) pages.
 
-### Scope of a function call
+### Scope of a function call {#scope-of-a-function-call}
 
 A function’s definition acts as a _template_ for each function call. Every call _written_ in the source code establishes a _separate_ local scope using that definition. The parameters, variables, and expressions created for each function call are _unique_ to that call, and they leave _independent_ historical trails in the script’s [time series](https://www.tradingview.com/pine-script-docs/language/execution-model/#time-series). Because each written call has a separate scope, with an independent history, no two calls to the same function directly affect each other.
 
@@ -862,7 +862,7 @@ Note that:
 
 -   Both `accumulate()` calls return the _same_ result if we remove [var](https://www.tradingview.com/pine-script-reference/v6/#kw_var) from the `total` variable declaration. Without the keyword, each call’s version of the `total` variable no longer _persists_. Instead, every evaluation of the call _re-declares_ the variable and initializes it to 0 before adding the value of the `source` argument.
 
-## Function overloading
+## Function overloading {#function-overloading}
 
 Function _overloads_ are _unique versions_ of a function that share the same name but differ in their required [parameter types](https://www.tradingview.com/pine-script-docs/language/user-defined-functions/#declaring-parameter-types). Overloading enables function calls using the same identifier to perform _different tasks_ based on their specified arguments. Programmers often write overloads to group similar calculations for specific types under a single function name, offering a convenient alternative to defining several related functions with unique names.
 
@@ -1054,11 +1054,11 @@ Note that:
 
 -   If we change the fourth overload to use a `negate()` call with _two_ “float” arguments, a compilation error occurs because the overload calls _itself_ in that case. Even if Pine allowed recursive functions, using such an overload would cause an error because it creates the equivalent of an _infinite loop_, where a single call activates a second call, the second call activates a third one, and so on.
 
-## Limitations
+## Limitations {#limitations}
 
 This section explains several key limitations common to all user-defined functions. These same limitations also apply to [user-defined methods](https://www.tradingview.com/pine-script-docs/language/methods/#user-defined-methods).
 
-### No global-only built-in function calls
+### No global-only built-in function calls {#no-global-only-built-in-function-calls}
 
 The body of a user-defined function can contain calls to most other functions or [methods](https://www.tradingview.com/pine-script-docs/language/methods/), or previously defined [overloads](https://www.tradingview.com/pine-script-docs/language/user-defined-functions/#function-overloading) with the same function name. However, a function _cannot_ use calls to the following _built-in_ functions inside its scope:
 
@@ -1067,15 +1067,15 @@ The body of a user-defined function can contain calls to most other functions or
 
 Global variables can be assigned values returned by functions in order to be used in calls to the above functions. However, the calls to these functions are allowed only in the script’s [global scope](https://www.tradingview.com/pine-script-docs/faq/programming/#what-does-scope-mean), outside the operands of [ternary operations](https://www.tradingview.com/pine-script-docs/language/operators/#-ternary-operator) or other conditional expressions.
 
-### Consistent types for each call
+### Consistent types for each call {#consistent-types-for-each-call}
 
 Each written call to a user-defined function must have _consistent_ parameter types and return types during each evaluation of that call. The call _cannot_ accept varying argument types throughout the script’s runtime, nor can it change its return type. Similar limitations also apply to other structures and expressions, including [loops](https://www.tradingview.com/pine-script-docs/language/loops/), [conditional structures](https://www.tradingview.com/pine-script-docs/language/conditional-structures/), and ternary operations.
 
-### Cannot modify global variables or parameters
+### Cannot modify global variables or parameters {#cannot-modify-global-variables-or-parameters}
 
 The body of a user-defined function cannot use the _reassignment_ or _compound assignment_ [operators](https://www.tradingview.com/pine-script-docs/language/operators/) to modify variables declared in the _global scope_. Likewise, it cannot use these operators to reassign function _parameters_. The value or reference assigned to a global variable or the parameter of a function call _cannot change_ while the script evaluates the call. See the [Function scopes](https://www.tradingview.com/pine-script-docs/language/user-defined-functions/#function-scopes) section for an example.
 
-### No nested definitions
+### No nested definitions {#no-nested-definitions}
 
 The body of a user-defined function _cannot_ contain the definition of another user-defined function. Likewise, [loops](https://www.tradingview.com/pine-script-docs/language/loops/) and [conditional structures](https://www.tradingview.com/pine-script-docs/language/conditional-structures/) cannot include function definitions in their local blocks. Function and [method](https://www.tradingview.com/pine-script-docs/language/methods/#user-defined-methods) definitions are allowed only in the script’s _global scope_.
 
@@ -1108,7 +1108,7 @@ f(x, y) =>
 plot(f(open, close))
 ```
 
-### No recursive functions
+### No recursive functions {#no-recursive-functions}
 
 In contrast to functions in some programming languages, user-defined functions in Pine Script _cannot_ contain calls to _themselves_ within their bodies. Instead of using recursive function structures, programmers can replace those structures with equivalent [loop](https://www.tradingview.com/pine-script-docs/language/loops/) calculations.
 

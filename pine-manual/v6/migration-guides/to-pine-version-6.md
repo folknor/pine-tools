@@ -4,9 +4,9 @@ source: https://www.tradingview.com/pine-script-docs/migration-guides/to-pine-ve
 section: migration-guides
 ---
 
-# To Pine Script® version 6
+# To Pine Script® version 6 {#to-pine-script-version-6}
 
-## Introduction
+## Introduction {#introduction}
 
 Pine Script v6 introduces a number of changes and new features. See the [Release Notes](https://www.tradingview.com/pine-script-docs/release-notes/) for a list of all new features.
 
@@ -25,7 +25,7 @@ Here are the changes that affect v5 scripts:
 -   The default long and short margin percentage for strategies is now 100.
 -   Strategies now trim the oldest orders in their results instead of raising an error when they exceed the 9000 trade limit.
 -   The [strategy.exit()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.exit) command no longer ignores relative parameters defining take-profit and stop-loss prices or trailing stop activation levels when the call also includes arguments for the related absolute parameters.
--   The history-referencing operator [\[\]](https://www.tradingview.com/pine-script-reference/v6/#op_%5B%5D) can no longer reference the history of literal values or fields of user-defined types directly.
+-   The history-referencing operator [\[\]](https://www.tradingview.com/pine-script-reference/v6/#op_[]) can no longer reference the history of literal values or fields of user-defined types directly.
 -   Function calls can no longer include more than one argument for the same parameter.
 -   The `offset` parameter of [plot()](https://www.tradingview.com/pine-script-reference/v6/#fun_plot) and other functions no longer accepts “series” values.
 -   [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) values are no longer allowed in place of built-in constants of unique types.
@@ -36,7 +36,7 @@ Here are the changes that affect v5 scripts:
 -   Some default colors and color constants have updated values.
 -   The [for](https://www.tradingview.com/pine-script-reference/v6/#kw_for) loop statement now evaluates its end boundary dynamically before every iteration.
 
-## Converting v5 to v6 using the Pine Editor
+## Converting v5 to v6 using the Pine Editor {#converting-v5-to-v6-using-the-pine-editor}
 
 The Pine Editor can automatically convert a v5 script to v6. The Pine Editor highlights the `//@version=5` [annotation](https://www.tradingview.com/pine-script-docs/language/script-structure/#compiler-annotations) of a v5 script in yellow.
 
@@ -46,7 +46,7 @@ To convert the script, click the editor’s “Manage script” dropdown menu an
 
 A script can be converted only if its v5 code compiles successfully. In rare cases, converting the script automatically can result in a v6 script with compilation errors. In that case, the errors are highlighted in the Editor, and you need to resolve them by using the information in the following sections.
 
-## Dynamic requests
+## Dynamic requests {#dynamic-requests}
 
 In Pine v6, scripts can call all `request.*()` functions _dynamically by default_, allowing any single `request.*()` call instance in the code to request data from different datasets and work within local scopes.
 
@@ -107,11 +107,11 @@ In Pine v6, calling a `request.*()` function from the scope of a loop or conditi
 
 **Fix:** If a v5 script specifies `dynamic_requests` is `false` in its declaration statement and uses functions containing `request.*()` calls inside local blocks, remove the explicit `dynamic_requests` argument when converting the script to v6. The converted script will use [dynamic requests](https://www.tradingview.com/pine-script-docs/concepts/other-timeframes-and-data/#dynamic-requests) automatically, allowing the functions containing `request.*()` calls to work correctly inside local scopes.
 
-## Types
+## Types {#types}
 
 The following changes have been made to how Pine handles types.
 
-### Explicit “bool” casting
+### Explicit “bool” casting {#explicit-bool-casting}
 
 In Pine v6, “int” and “float” values are no longer implicitly cast to “bool”.
 
@@ -133,7 +133,7 @@ In v6, scripts must _explicitly_ cast a numeric value to “bool” to use it wh
 color expr = bool(bar_index) ? color.green : color.red
 ```
 
-### Boolean values cannot be ​`na`​
+### Boolean values cannot be `na` {#boolean-values-cannot-be-na}
 
 In v6, “bool” values can no longer be `na`. Consequently, the [na()](https://www.tradingview.com/pine-script-reference/v6/#fun_na), [nz()](https://www.tradingview.com/pine-script-reference/v6/#fun_nz), and [fixnan()](https://www.tradingview.com/pine-script-reference/v6/#fun_fixnan) functions no longer accept “bool” types.
 
@@ -271,7 +271,7 @@ if barstate.islastconfirmedhistory
          + "\n State: " + directionString)
 ```
 
-### Unique parameters cannot be ​`na`​
+### Unique parameters cannot be `na` {#unique-parameters-cannot-be-na}
 
 Some Pine Script function parameters expect values of _unique_ types. For example, the `style` parameter of the [plot()](https://www.tradingview.com/pine-script-reference/v6/#fun_plot) function expects a value of the “input plot\_style” qualified type, which must be one of the constants in the `plot.style_*` group.
 
@@ -346,11 +346,11 @@ else    //`else` block must be included in v6. Sets "line" style if `inputHundre
 plot(100, "100-line", color.orange, 4, style = hundredLineStyle)
 ```
 
-## Constants
+## Constants {#constants}
 
 The following changes have been made to how Pine handles constant values.
 
-### Fractional division of constants
+### Fractional division of constants {#fractional-division-of-constants}
 
 Dividing two integer “const” values can return a fractional value.
 
@@ -383,7 +383,7 @@ In v6, dividing two “int” values that are not evenly divisible _always_ resu
 
 **Fix:** If you need an “int” division result _without_ a fractional value, wrap the division with the [int()](https://www.tradingview.com/pine-script-reference/v6/#fun_int) function to cast the _result_ to “int”, which discards the fractional remainder. Alternatively, use [math.round()](https://www.tradingview.com/pine-script-reference/v6/#fun_math.round), [math.floor()](https://www.tradingview.com/pine-script-reference/v6/#fun_math.floor), or [math.ceil()](https://www.tradingview.com/pine-script-reference/v6/#fun_math.ceil) to _round_ the division result in a specific direction.
 
-### Mutable variables are always “series”
+### Mutable variables are always “series” {#mutable-variables-are-always-series}
 
 In Pine v5, some mutable variables are qualified as “series” values but are _erroneously_ qualified as “const”. This behavior is incorrect and allows a programmer to pass them where “series” variables are usually not accepted.
 
@@ -416,7 +416,7 @@ var seriesLen = 1
 plot(ta.ema(close, seriesLen))
 ```
 
-### Color changes
+### Color changes {#color-changes}
 
 The color values behind some of the `color.*` constants have changed in Pine v6 to better reflect the TradingView palette:
 
@@ -445,9 +445,9 @@ if barstate.islastconfirmedhistory
     label.new(bar_index + 2, 0, "Default text color")
 ```
 
-## Strategies
+## Strategies {#strategies}
 
-### Removal of ​`when`​ parameter
+### Removal of `when` parameter {#removal-of-when-parameter}
 
 The `when` parameter for order creation functions was deprecated in v5 and is removed in v6. An order is created only if the `when` condition is `true`, which is its default value. This parameter affects the following functions: [strategy.entry()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.entry), [strategy.order()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.order), [strategy.exit()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.exit), [strategy.close()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.close), [strategy.close\_all()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.close_all), [strategy.cancel()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.cancel), and [strategy.cancel\_all()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.cancel_all).
 
@@ -479,7 +479,7 @@ if shortCondition
     strategy.entry("My Short Entry Id", strategy.short)
 ```
 
-### Default margin percentage
+### Default margin percentage {#default-margin-percentage}
 
 The default margin percentage for strategies is now 100.
 
@@ -512,7 +512,7 @@ However, if we adjust this script to `//@version=6` on the same chart, we see th
 
 **Fix:** To replicate the previous v5 behavior, set the [strategy()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy) function’s `margin_short` and `margin_long` arguments to 0.
 
-### Excess orders are trimmed
+### Excess orders are trimmed {#excess-orders-are-trimmed}
 
 Strategy orders above the 9000 limit are trimmed (removed) in v6.
 
@@ -576,7 +576,7 @@ if barstate.islastconfirmedhistory
         t.cell(0, 2, trimmedTradePrice, text_size = size.large, bgcolor = #dd51c665)
 ```
 
-### ​`strategy.exit()`​ evaluates parameter pairs
+### `strategy.exit()` evaluates parameter pairs {#strategyexit-evaluates-parameter-pairs}
 
 The [strategy.exit()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.exit) function has three sets of _relative_ and _absolute_ parameters that define price levels for exit order calculations. The relative parameters `profit`, `loss`, and `trail_points` specify the [take-profit](https://www.tradingview.com/pine-script-docs/concepts/strategies/#take-profit-and-stop-loss) and [stop-loss](https://www.tradingview.com/pine-script-docs/concepts/strategies/#take-profit-and-stop-loss) levels and [trailing stop](https://www.tradingview.com/pine-script-docs/concepts/strategies/#trailing-stops) activation level as _tick distances_ from the entry price. In contrast, the absolute parameters `limit`, `stop`, and `trail_price` specify the exit and trail activation _prices_ directly.
 
@@ -616,11 +616,11 @@ if bar_index % 28 == 0
     strategy.exit("Exit", "Buy", profit = 0, limit = close + 2.0 * atr, loss = 0, stop = close - 2.0 * atr)
 ```
 
-## History-referencing operator
+## History-referencing operator {#history-referencing-operator}
 
 Pine v6 contains several changes to referencing the history of values.
 
-### No history for literal values
+### No history for literal values {#no-history-for-literal-values}
 
 The history-referencing operator `[]` can no longer be used with literal values or built-in constants.
 
@@ -665,7 +665,7 @@ if barstate.islastconfirmedhistory
     // Label output shows "string literal, more text" in v6, since `labelText` is defined without history-referencing anymore.
 ```
 
-### History of UDT fields
+### History of UDT fields {#history-of-udt-fields}
 
 The history-referencing operator `[]` can no longer be used directly on fields of user-defined types.
 
@@ -776,7 +776,7 @@ if barstate.islast
     t.cell(0, 0, txt, text_size = size.large)
 ```
 
-## Timeframes must include a multiplier
+## Timeframes must include a multiplier {#timeframes-must-include-a-multiplier}
 
 The [timeframe.period](https://www.tradingview.com/pine-script-reference/v6/#var_timeframe.period) variable holds a “string” that represents the chart’s timeframe, typically consisting of a _quantity_ (multiplier) and _unit_.
 
@@ -821,7 +821,7 @@ if barstate.islastconfirmedhistory
 
 **Fix:** In general, ensure that all timeframe strings include a multiplier. In this example, change the timeframe comparison “string” (`timeframe.period == "D"`) to ensure the “string” literal includes a multiplier (`timeframe.period == "1D"`).
 
-## Lazy evaluation of conditions
+## Lazy evaluation of conditions {#lazy-evaluation-of-conditions}
 
 The `and` and `or` conditions are now evaluated _lazily_ rather than _strictly_.
 
@@ -877,7 +877,7 @@ if myArray.size() != 0
         label.new(bar_index, high, "Test")
 ```
 
-## Cannot repeat parameters
+## Cannot repeat parameters {#cannot-repeat-parameters}
 
 In v5, you can specify the same parameter in a function more than once. However, doing so raises a _compiler warning_, and only the _first_ value will be used.
 
@@ -895,7 +895,7 @@ In v6, you can specify a parameter only _once_, and doing otherwise will result 
 plot(close, "Close", color = color.blue, linewidth = 2)
 ```
 
-## No series ​`offset`​ values
+## No series `offset` values {#no-series-offset-values}
 
 The `offset` parameter can no longer accept “series” values
 
@@ -921,7 +921,7 @@ Remember that the Pine Script [qualifiers](https://www.tradingview.com/pine-scri
 
 **Fix**: Change any “series” values passed to `offset` to “simple” values.
 
-## Minimum ​`linewidth`​ is 1
+## Minimum `linewidth` is 1 {#minimum-linewidth-is-1}
 
 In v5, the `linewidth` parameter of the [plot()](https://www.tradingview.com/pine-script-reference/v6/#fun_plot) and [hline()](https://www.tradingview.com/pine-script-reference/v6/#fun_hline) functions can accept a value smaller than 1, although the width on the chart will still appear as 1 for these drawings:
 
@@ -961,7 +961,7 @@ plot(close + 10, "LW 5",   linewidth = 5)
 hline(240, "hline", color.maroon, linewidth = 3)
 ```
 
-## Negative indices in arrays
+## Negative indices in arrays {#negative-indices-in-arrays}
 
 Some array functions now accept negative indices.
 
@@ -998,7 +998,7 @@ array<int> countingArray = array.from(1, 2, 3, 4, 5)
 countingArray.remove(-6)
 ```
 
-## The ​`transp`​ parameter is removed
+## The `transp` parameter is removed {#the-transp-parameter-is-removed}
 
 In Pine v4 and earlier, [plot()](https://www.tradingview.com/pine-script-reference/v6/#fun_plot) and similar functions had a `transp` parameter that specified the transparency of the resulting plot.
 
@@ -1034,7 +1034,7 @@ If you need to preserve the color inputs in the “Settings/Style” menu, you m
 
 You can learn more about why this happens and how to avoid it [here](https://www.tradingview.com/pine-script-docs/visuals/colors/#maintaining-automatic-color-selectors).
 
-## Dynamic ​`for`​ loop boundaries
+## Dynamic `for` loop boundaries {#dynamic-for-loop-boundaries}
 
 A [for](https://www.tradingview.com/pine-script-docs/language/loops/#for-loops) loop is a _count-controlled_ loop that executes successive iterations of its local block based on a counter variable. The counter starts with an _initial value_ (`from_num`) and increases or decreases by a fixed amount after every iteration until it reaches the specified _final value_ (`to_num`).
 

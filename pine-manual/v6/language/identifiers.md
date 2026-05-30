@@ -4,7 +4,7 @@ source: https://www.tradingview.com/pine-script-docs/language/identifiers/
 section: language
 ---
 
-# Identifiers
+# Identifiers {#identifiers}
 
 Identifiers are names used for user-defined variables and functions:
 

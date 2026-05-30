@@ -4,11 +4,11 @@ source: https://www.tradingview.com/pine-script-docs/migration-guides/overview/
 section: migration-guides
 ---
 
-# Overview
+# Overview {#overview}
 
 The migration guides catalogue all changes introduced between Pine Script® versions and explain how to rewrite code to convert the indicator successfully. Each guide details sequential changes; for example, the [To Pine Script version 6](https://www.tradingview.com/pine-script-docs/migration-guides/to-pine-version-6/) page assumes that the script is already written in Pine v5.
 
-## Pine converter
+## Pine converter {#pine-converter}
 
 Scripts written in every Pine Script version starting from v3 can be converted to the next version automatically using the converter available in the “Manage Scripts” menu:
 

@@ -4,15 +4,15 @@ source: https://www.tradingview.com/pine-script-docs/writing/style-guide/
 section: writing
 ---
 
-# Style guide
+# Style guide {#style-guide}
 
-## Introduction
+## Introduction {#introduction}
 
 This style guide provides recommendations on how to name variables and organize your Pine scripts in a standard way that works well. Scripts that follow our best practices will be easier to read, understand and maintain.
 
 You can see scripts using these guidelines published from the [TradingView](https://www.tradingview.com/u/TradingView/#published-scripts) and [PineCoders](https://www.tradingview.com/u/PineCoders/#published-scripts) accounts on the platform.
 
-## Naming Conventions
+## Naming Conventions {#naming-conventions}
 
 We recommend the use of:
 
@@ -20,7 +20,7 @@ We recommend the use of:
 -   All caps `SNAKE_CASE` for constants: `BULL_COLOR`, `BEAR_COLOR`, `MAX_LOOKBACK`.
 -   The use of qualifying suffixes when it provides valuable clues about the type or provenance of a variable: `maShowInput`, `bearColor`, `bearColorInput`, `volumesArray`, `maPlotID`, `resultsTable`, `levelsColorArray`.
 
-## Script organization
+## Script organization {#script-organization}
 
 The Pine Script® compiler is quite forgiving of the positioning of specific statements or the version [compiler annotation](https://www.tradingview.com/pine-script-docs/language/script-structure/#compiler-annotations) in the script. While other arrangements are syntactically correct, this is how we recommend organizing scripts:
 
@@ -38,7 +38,7 @@ The Pine Script® compiler is quite forgiving of the positioning of specific sta
 <alerts>
 ```
 
-### <license>
+### <license> {#license}
 
 If you publish your open-source scripts publicly on TradingView (scripts can also be published privately), your open-source code is by default protected by the Mozilla license. You may choose any other license you prefer.
 
@@ -51,7 +51,7 @@ The standard license comments appearing at the beginning of scripts are:
 // © username
 ```
 
-### <version>
+### <version> {#version}
 
 This is the [compiler annotation](https://www.tradingview.com/pine-script-docs/language/script-structure/#compiler-annotations) defining the version of Pine Script the script will use. If none is present, v1 is used. For v6, use:
 
@@ -59,15 +59,15 @@ This is the [compiler annotation](https://www.tradingview.com/pine-script-docs/l
 //@version=6
 ```
 
-### <declaration\_statement>
+### <declaration\_statement> {#declaration_statement}
 
 This is the mandatory declaration statement which defines the type of your script. It must be a call to either [indicator()](https://www.tradingview.com/pine-script-reference/v6/#fun_indicator), [strategy()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy), or [library()](https://www.tradingview.com/pine-script-reference/v6/#fun_library).
 
-### <import\_statements>
+### <import\_statements> {#import_statements}
 
 If your script uses one or more Pine Script [libraries](https://www.tradingview.com/pine-script-docs/concepts/libraries/), your [import](https://www.tradingview.com/pine-script-reference/v6/#kw_import) statements belong here.
 
-### <constant\_declarations>
+### <constant\_declarations> {#constant_declarations}
 
 Scripts can declare variables qualified as “const”, i.e., ones referencing a constant value.
 
@@ -125,7 +125,7 @@ Note that:
 -   Literals used in more than one place in a script should always be declared as a constant. Using the constant rather than the literal makes it more readable if it is given a meaningful name, and the practice makes code easier to maintain. Even though the quantity of milliseconds in a day is unlikely to change in the future, `MS_IN_DAY` is more meaningful than `1000 * 60 * 60 * 24`.
 -   Constants only used in the local block of a function or [if](https://www.tradingview.com/pine-script-reference/v6/#kw_if), [while](https://www.tradingview.com/pine-script-reference/v6/#kw_while), etc., statement for example, can be declared in that local block.
 
-### <inputs>
+### <inputs> {#inputs}
 
 It is **much** easier to read scripts when all their inputs are in the same code section. Placing that section at the beginning of the script also reflects how they are processed at runtime, i.e., before the rest of the script is executed.
 
@@ -141,7 +141,7 @@ int     fixedPeriodInput        = input.int(20,             "  Fixed period:
 string  ltfModeInput            = input.string(LTF3,        "Intrabar precision",               inline = "03", options = [LTF1, LTF2, LTF3, LTF4])
 ```
 
-### <function\_declarations>
+### <function\_declarations> {#function_declarations}
 
 All user-defined functions must be defined in the script’s global scope; nested function definitions are not allowed in Pine Script.
 
@@ -175,23 +175,23 @@ if ta.rising(close, 3)
     label.new(bar_index, na, yloc = yloc.abovebar, style = label.style_arrowup, size = getSize(sizeInput))
 ```
 
-### <calculations>
+### <calculations> {#calculations}
 
 This is where the script’s core calculations and logic should be placed. Code can be easier to read when variable declarations are placed near the code segment using the variables. Some programmers prefer to place all their non-constant variable declarations at the beginning of this section, which is not always possible for all variables, as some may require some calculations to have been executed before their declaration.
 
-### <strategy\_calls>
+### <strategy\_calls> {#strategy_calls}
 
 Strategies are easier to read when strategy calls are grouped in the same section of the script.
 
-### <visuals>
+### <visuals> {#visuals}
 
 This section should ideally include all the statements producing the script’s visuals, whether they be plots, drawings, background colors, candle-plotting, etc. See the Pine Script user manual’s section on [Z-index](https://www.tradingview.com/pine-script-docs/visuals/overview/#z-index) for more information on how the relative depth of visuals is determined.
 
-### <alerts>
+### <alerts> {#alerts}
 
 Alert code will usually require the script’s calculations to have executed before it, so it makes sense to put it at the end of the script.
 
-## Spacing
+## Spacing {#spacing}
 
 A space should be used on both sides of all operators, except unary operators (`-1`). A space is also recommended after all commas and when using named function arguments, as in `plot(series = close)`:
 
@@ -205,7 +205,7 @@ int index = bar_index % 2 == 0 ? 1 : 2
 plot(close, color = color.red)
 ```
 
-## Line wrapping
+## Line wrapping {#line-wrapping}
 
 [Line wrapping](https://www.tradingview.com/pine-script-docs/language/script-structure/#line-wrapping) can make long lines of code easier to read by defining a _single line_ of code across _multiple_ lines in the script. Generally, scripts can wrap lines using any indentation length that is _not_ a multiple of four, because the four-space or tab indentation defines [local blocks](https://www.tradingview.com/pine-script-docs/faq/programming/#what-does-scope-mean) in Pine.
 
@@ -314,7 +314,7 @@ if barstate.islastconfirmedhistory
     label.new(bar_index, 0, multiStrArray.join(), style = label.style_label_up, textalign = text.align_left)
 ```
 
-## Vertical alignment
+## Vertical alignment {#vertical-alignment}
 
 Vertical alignment using tabs or spaces can be useful in code sections containing many similar lines such as constant declarations or inputs. They can make mass edits much easier using the Pine Editor’s multi-cursor feature (`ctrl` + `alt` + `🠅`):
 
@@ -327,6 +327,6 @@ color COLOR_CORAL = #FF8080ff
 color COLOR_GOLD  = #CCCC00ff
 ```
 
-## Explicit typing
+## Explicit typing {#explicit-typing}
 
 Including the type of variables when declaring them is not required. However, it helps make scripts easier to read, navigate, and understand. It can help clarify the expected types at each point in a script’s execution and distinguish a variable’s declaration (using `=`) from its reassignments (using `:=`). Using explicit typing can also make scripts easier to [debug](https://www.tradingview.com/pine-script-docs/writing/debugging/).

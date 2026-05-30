@@ -4,17 +4,17 @@ source: https://www.tradingview.com/pine-script-docs/migration-guides/to-pine-ve
 section: migration-guides
 ---
 
-# To Pine Script® version 4
+# To Pine Script® version 4 {#to-pine-script-version-4}
 
 This is a guide to converting Pine Script code from `@version=3` to `@version=4`.
 
-## Converter
+## Converter {#converter}
 
 The Pine Editor can automatically convert v3 indicators and strategies to v4. The Pine converter is described in the [Overview](https://www.tradingview.com/pine-script-docs/migration-guides/overview/#pine-converter) page.
 
 Not all scripts can be automatically converted from v3 to v4. If you want to convert the script manually or if your indicator returns a compilation error after conversion, consult the guide below for more information.
 
-## Renaming of built-in constants, variables, and functions
+## Renaming of built-in constants, variables, and functions {#renaming-of-built-in-constants-variables-and-functions}
 
 In Pine Script v4 the following built-in constants, variables, and functions were renamed:
 
@@ -31,7 +31,7 @@ In Pine Script v4 the following built-in constants, variables, and functions wer
 
 The reason behind renaming all of the above was to structure the standard language tools and make working with code easier. New names are grouped according to assignments under common prefixes. For example, you will see a list with all available color constants if you type ‘color’ in the editor and press Ctrl + Space.
 
-## Explicit variable type declaration
+## Explicit variable type declaration {#explicit-variable-type-declaration}
 
 In Pine Script v4 it’s no longer possible to create variables with an unknown data type at the time of their declaration. This was done to avoid a number of issues that arise when the variable type changes after its initialization with the na value. From now on, you need to explicitly specify their type using keywords or type functions (for example, `float`) when declaring variables with the na value:
 

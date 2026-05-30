@@ -4,9 +4,9 @@ source: https://www.tradingview.com/pine-script-docs/concepts/timeframes/
 section: concepts
 ---
 
-# Timeframes
+# Timeframes {#timeframes}
 
-## Introduction
+## Introduction {#introduction}
 
 The _timeframe_ of a chart is sometimes also referred to as its _interval_ or _resolution_. It is the unit of time represented by one bar on the chart. All standard chart types use a timeframe: “Bars”, “Candles”, “Hollow Candles”, “Line”, “Area” and “Baseline”. One non-standard chart type also uses timeframes: “Heikin Ashi”.
 
@@ -20,7 +20,7 @@ Programmers interested in accessing data from multiple timeframes will need to b
 -   The [indicator()](https://www.tradingview.com/pine-script-reference/v6/#fun_indicator) declaration statement has an optional `timeframe` parameter that can be used to provide multi-timeframe capabilities to simple scripts without using [request.security()](https://www.tradingview.com/pine-script-reference/v6/#fun_request.security).
 -   Many built-in variables provide information on the timeframe used by the chart the script is running on. See the [Chart timeframe](https://www.tradingview.com/pine-script-docs/concepts/chart-information/#chart-timeframe) section for more information on them, including [timeframe.period](https://www.tradingview.com/pine-script-reference/v6/#var_timeframe.period) which returns a string in Pine Script’s timeframe specification format.
 
-## Timeframe string specifications
+## Timeframe string specifications {#timeframe-string-specifications}
 
 Timeframe strings follow these rules:
 
@@ -41,7 +41,7 @@ Timeframe strings follow these rules:
     -   For weeks, 1 to 52.
     -   For months, 1 to 12.
 
-## Comparing timeframes
+## Comparing timeframes {#comparing-timeframes}
 
 It can be useful to compare different timeframe strings to determine, for example, if the timeframe used on the chart is lower than the higher timeframes used in the script.
 

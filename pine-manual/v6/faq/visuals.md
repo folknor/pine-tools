@@ -4,9 +4,9 @@ source: https://www.tradingview.com/pine-script-docs/faq/visuals/
 section: faq
 ---
 
-# Visuals
+# Visuals {#visuals}
 
-## Why can’t I use a plot in an ​`if`​ or ​`for`​ statement?
+## Why can’t I use a plot in an `if` or `for` statement? {#why-cant-i-use-a-plot-in-an-if-or-for-statement}
 
 In Pine Script®, scripts cannot place [plot()](https://www.tradingview.com/pine-script-reference/v6/#fun_plot) calls directly within [if](https://www.tradingview.com/pine-script-reference/v6/#kw_if) or [for](https://www.tradingview.com/pine-script-reference/v6/#kw_for) statements — or in any other [local scopes](https://www.tradingview.com/pine-script-docs/faq/programming/#what-does-scope-mean). The compiler needs to know about all plots during script compilation.
 
@@ -49,11 +49,11 @@ Note that:
 -   The moving averages are each plotted twice. The plots that display in the Data Window must be assigned to variables so that the [fill()](https://www.tradingview.com/pine-script-reference/v6/#fun_fill) function call can reference them. The [fill()](https://www.tradingview.com/pine-script-reference/v6/#fun_fill) function cannot use the later plots, which display on the chart, because they have [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) values when the fill color is not [na](https://www.tradingview.com/pine-script-reference/v6/#var_na).
 -   We use `plot.style_linebr` as the argument for the `style` parameter of the [plot()](https://www.tradingview.com/pine-script-reference/v6/#fun_plot) function so that the plot does not span bars with an [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) plot value.
 
-## Can I plot diagonals between two points on the chart?
+## Can I plot diagonals between two points on the chart? {#can-i-plot-diagonals-between-two-points-on-the-chart}
 
 Scripts can plot diagonal lines between two points on a chart by using plots or line objects.
 
-### Using plots
+### Using plots {#using-plots}
 
 The [plot()](https://www.tradingview.com/pine-script-reference/v6/#fun_plot) function connects consecutive data points with straight lines.
 
@@ -89,7 +89,7 @@ Note that:
 
 -   The [ta.pivotlow()](https://www.tradingview.com/pine-script-reference/v6/#fun_ta.pivotlow) and [ta.pivothigh()](https://www.tradingview.com/pine-script-reference/v6/#fun_ta.pivothigh) functions confirm pivot highs and lows only after a specified number of bars, so the script must offset the plotted lines by the same number of bars. Plot offsets cannot change during script execution.
 
-### Using lines
+### Using lines {#using-lines}
 
 [Line objects](https://www.tradingview.com/pine-script-docs/concepts/lines-and-boxes/#lines) provide more flexibility than plots. The [plot()](https://www.tradingview.com/pine-script-reference/v6/#fun_plot) function can plot a line, symbol, or area only at the bar on which the script is executing (or at a _fixed_ offset from it). In contrast, line objects can be created on _any_ bar. Similarly, whereas plots are fixed once the bar closes, line properties can be updated at any time.
 
@@ -174,7 +174,7 @@ Note that:
 -   We use an [enum](https://www.tradingview.com/pine-script-docs/language/enums/#enums) to store the state of the pivot confirmation process. This, together with a set of explicit rules for changing the state, forms a simple [state machine](https://en.wikipedia.org/wiki/Finite-state_machine). Such constructs can be easier to debug than maintaining and resetting multiple persistent global variables that depend on each other.
 -   Scripts can create only a certain number of lines. The limit is set by the `max_lines_count` parameter of the [indicator()](https://www.tradingview.com/pine-script-reference/v6/#fun_indicator) or [strategy()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy) declaration. The default is 50, and the maximum is 500 per script.
 
-## How can I plot a line with gaps?
+## How can I plot a line with gaps? {#how-can-i-plot-a-line-with-gaps}
 
 Scripts can plot lines with gaps on specific bars by setting the argument of _either_ the `series` parameter or `color` parameter of the [plot()](https://www.tradingview.com/pine-script-reference/v6/#fun_plot) function to [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) for some bars.
 
@@ -210,7 +210,7 @@ Note that:
 
 -   The style for the plot with [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) `series` values must be `plot.style_linebr` in order to show gaps. The default value of `plot.style_line` fills in the gaps.
 
-## How do I plot a line using start/stop criteria?
+## How do I plot a line using start/stop criteria? {#how-do-i-plot-a-line-using-startstop-criteria}
 
 To plot a line based on start and stop criteria, consider the following structured approach:
 
@@ -262,13 +262,13 @@ Note that:
 
 -   The order in which scripts turn conditions on and off is important when dealing with persistent states, both in terms of the order in the script and within ternary conditions.
 
-## How can I plot a support or trend line?
+## How can I plot a support or trend line? {#how-can-i-plot-a-support-or-trend-line}
 
 _Support_ is a horizontal zone on a chart where analysts consider that a declining price is likely to turn upwards. Conversely, _resistance_ is a horizontal area from which a rising price is likely to turn downwards. Trend lines are usually diagonal lines that function as support or resistance.
 
 Different analysts — and different Pine scripts — understand and implement support, resistance, and trend lines differently. In the sections below, we provide some simple examples.
 
-### Plotting support and resistance
+### Plotting support and resistance {#plotting-support-and-resistance}
 
 The following example script tracks levels of support and resistance until price action breaks them. The script uses the `ta.pivot*()` built-in functions to detect pivot highs and lows, then draws horizontal lines from these points. This script visualizes lows as support (green lines) and highs as resistance (red lines) for simplicity. If the [close](https://www.tradingview.com/pine-script-reference/v6/#var_close) of a bar crosses a line, the script stops extending that line:
 
@@ -331,7 +331,7 @@ Note that:
 -   When price crosses a line, it becomes inactive. The script no longer updates inactive lines and does not extend them to the right.
 -   We store lines in one of two arrays, and remove lines from their array if they become inactive. Removing an object from an array does _not_ delete the object.
 
-### Plotting trend lines
+### Plotting trend lines {#plotting-trend-lines}
 
 The following example script uses the `ta.pivot*()` built-in functions to detect pivot highs and lows, and then draws lines that connect the two most recent pivots of the same type. The lines extend indefinitely to the right. If the script draws a new line that causes the total number of lines to exceed a specified maximum number, it deletes the oldest line:
 
@@ -390,7 +390,7 @@ Note that:
 -   For simplicity, we do not deactivate lines when price crosses them. For an example of how to do this, see the example script from the previous section, [Plotting support and resistance](https://www.tradingview.com/pine-script-docs/faq/visuals/#plotting-support-and-resistance).
 -   We store the lines in arrays, which makes it easier to manage them. In this script, unlike in the example script in the previous section, we delete the line object at the same time as we remove it from the array.
 
-## How can I use colors in my indicator plots?
+## How can I use colors in my indicator plots? {#how-can-i-use-colors-in-my-indicator-plots}
 
 The strategic use of color in indicator plots helps comprehension, pattern and trend recognition, and differentiation of categories or values. For example, different hues can represent different data thresholds, and gradients can indicate increases or decreases in values. When a script transforms numbers into colors in an intelligent way, it enhances the user’s ability to spot anomalies, trends, and significant data points. Here are some Pine features that script authors can use to work with colors:
 
@@ -412,7 +412,7 @@ Scripts can assign different colors to variables based on logical conditions. Pr
 
 **Gradient transitions**
 
-The [color.from\_gradient()](https://www.tradingview.com/pine-script-reference/v6/#fun_color%7Bdot%7Dfrom_gradient) function creates color gradients that can highlight shifts in data values while ensuring a smooth transition between colors. For detailed guidance and innovative examples on implementing gradients, consult the [Color Gradient Framework](https://www.tradingview.com/script/hqH4YIFa-Color-Gradient-Framework-PineCoders/) by PineCoders.
+The [color.from\_gradient()](https://www.tradingview.com/pine-script-reference/v6/#fun_color.from_gradient) function creates color gradients that can highlight shifts in data values while ensuring a smooth transition between colors. For detailed guidance and innovative examples on implementing gradients, consult the [Color Gradient Framework](https://www.tradingview.com/script/hqH4YIFa-Color-Gradient-Framework-PineCoders/) by PineCoders.
 
 **Fills**
 
@@ -497,7 +497,7 @@ Note that:
 -   The script uses the [plotcandle()](https://www.tradingview.com/pine-script-reference/v6/#fun_plotcandle) function to create bordered column bars painted in bullish or bearish hues based on the trend’s direction, serving as a visually distinct histogram that depicts the distance between the TSI and signal line.
 -   We use a four-color fill between the TSI and signal line to clarify trend direction and changes in trend. For instance, an upward trend with a declining TSI features a distinct color from the general rising trend hue.
 
-## How do I make my indicator plot in the main chart pane?
+## How do I make my indicator plot in the main chart pane? {#how-do-i-make-my-indicator-plot-in-the-main-chart-pane}
 
 By default, new scripts display in a separate pane. To make a script display in the main chart pane instead, use `overlay = true` in the [strategy()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy) or [indicator()](https://www.tradingview.com/pine-script-reference/v6/#fun_indicator) declaration statement:
 
@@ -509,7 +509,7 @@ The default value of the `overlay` parameter is `false`. If a programmer changes
 
 Note that users of an indicator can move scripts from a separate pane to the chart pane and vice-versa using the “Move to” option from the “More” script menu, regardless of the value of the `overlay` parameter.
 
-## How can I plot vertical lines on a chart?
+## How can I plot vertical lines on a chart? {#how-can-i-plot-vertical-lines-on-a-chart}
 
 Scripts can plot vertical lines in three main ways:
 
@@ -517,7 +517,7 @@ Scripts can plot vertical lines in three main ways:
 -   Plotting histograms
 -   Coloring the background
 
-### By drawing lines
+### By drawing lines {#by-drawing-lines}
 
 Advatages of drawing vertical lines include that lines can be drawn on past or future bars. Each script can draw up to a maximum of 500 lines. If a script draws a line that has both its x coordinates at the same bar, different y coordinates, and extends in both directions, the line is vertical. The following example script draws vertical lines every 10 bars:
 
@@ -529,7 +529,7 @@ if bar_index % 10 == 0
     line.new(bar_index, open, bar_index, open + atr, extend = extend.both, color = color.silver)
 ```
 
-### By plotting histograms
+### By plotting histograms {#by-plotting-histograms}
 
 Histogram plots that join a very large number and a very low number appear as vertical lines. Advantages of using histogram plots include that there is no limit on the number of lines. With this method, unlike using line drawings, the user must right-click the price scale and select “Scale price chart only” to avoid distorting the chart vertically. Scripts can plot histograms, like all types of plot, only on the bar where the script is executing or at a _fixed_ offset.
 
@@ -541,7 +541,7 @@ indicator("Histogram demo", overlay = true)
 plot(bar_index % 10 == 0 ? 10e20 : na, "vLine", color.silver, 1, plot.style_histogram, histbase = -10e20)
 ```
 
-### By coloring the background
+### By coloring the background {#by-coloring-the-background}
 
 Coloring the background for a single bar displays as a vertical line. Advantages of this method include simplicity, no limit on the number of lines, and no need to adjust the price scale. Disadvantages include no control of the width of the line — it is always exactly one bar wide, and the width scales with the number of bars that display on the chart. Scripts can change background color only on the bar on which the script is currently executing; offsetting the change is not possible.
 
@@ -551,7 +551,7 @@ indicator("Background color demo", overlay = true)
 bgcolor(bar_index % 10 == 0 ? chart.fg_color : na)
 ```
 
-## How can I toggle hline() levels on and off?
+## How can I toggle hline() levels on and off? {#how-can-i-toggle-hline-levels-on-and-off}
 
 Scripts can toggle the display of horizontal levels plotted using [hline()](https://www.tradingview.com/pine-script-reference/v6/#fun_hline) in several ways. Conditionally setting the argument of the `price` or `color` parameter to [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) shows or hides the level in a similar way that setting the `series` or `color` to [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) does for plotted lines, as described in the entry [How do I plot a line using start/stop criteria?](https://www.tradingview.com/pine-script-docs/faq/visuals/#how-do-i-plot-a-line-using-startstop-criteria) above.
 
@@ -575,11 +575,11 @@ bool showHlineInput3 = input.bool(true, "Show line 3")
 h3 = hline(price = 30, color = chart.fg_color, display = showHlineInput3 ? display.all : display.none)
 ```
 
-## How can I draw lines or labels into the future?
+## How can I draw lines or labels into the future? {#how-can-i-draw-lines-or-labels-into-the-future}
 
 Individual _plotted_ lines and shapes cannot be drawn into the future — only the entire series can be offset. By contrast, scripts can extend any _drawn_ lines or boxes, or position drawn labels, at an arbitrary distance beyond the last data point. There are two ways to achieve this: using [bar\_index](https://www.tradingview.com/pine-script-reference/v6/#var_bar_index) and using [xloc.bar\_time](https://www.tradingview.com/pine-script-reference/v6/#var_xloc.bar_time).
 
-### Using bar\_index
+### Using bar\_index {#using-bar_index}
 
 The [bar\_index](https://www.tradingview.com/pine-script-reference/v6/#var_bar_index) built-in variable represents the sequential number of the current bar, starting from zero for the first bar in the chart history and incrementing by 1 for each subsequent bar. Drawing objects with their `xloc` parameter set to [xloc.bar\_index](https://www.tradingview.com/pine-script-reference/v6/#var_xloc.bar_index) can use a `bar_index` as their x coordinates. If the `xloc` parameter is not specified, it defaults to [xloc.bar\_index](https://www.tradingview.com/pine-script-reference/v6/#var_xloc.bar_index).
 
@@ -631,7 +631,7 @@ Note that:
 -   We update the properties of the drawings each time we get a pivot. In this section, we call the setting functions for the lines and labels in the normal way.
 -   On the last bar of the dataset, we adjust the `x2` point of both lines and the `x` point of the labels to extend into the future by the user-defined offset amount. In this section, for demonstration purposes, we call the same setting functions as [methods](https://www.tradingview.com/pine-script-docs/language/methods/#methods) by using dot notation syntax.
 
-### Using time
+### Using time {#using-time}
 
 Drawing objects can also be positioned based on UNIX time values, by using [xloc.bar\_time](https://www.tradingview.com/pine-script-reference/v6/#var_xloc.bar_time) for an object’s `xloc` parameter. The time values can be timestamps, or a bar’s open time, or any other calculated time.
 
@@ -644,7 +644,7 @@ There are some challenges to this method, however:
 
 For help in displaying objects a specific number of time units into the future, refer to the [Time Offset Calculation Framework](https://www.tradingview.com/script/5mZ7hV66-Time-Offset-Calculation-Framework-PineCoders-FAQ/) by Pinecoders.
 
-## How can I keep only the last _n_ number of drawings?
+## How can I keep only the last _n_ number of drawings? {#how-can-i-keep-only-the-last-n-number-of-drawings}
 
 The two most robust and scalable ways to keep only the last _n_ number of drawing objects are:
 
@@ -653,7 +653,7 @@ The two most robust and scalable ways to keep only the last _n_ number of drawin
 
 NoteThe arguments of `max_labels_count` and the other `max_*_count` parameters in the [indicator()](https://www.tradingview.com/pine-script-reference/v6/#fun_indicator) and [strategy()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy) declaration statements represent _approximate_ values. To maintain a _precise_ number of active drawings, use one of the two methods explained below.
 
-### Using a ​`*.all`​ array
+### Using a `*.all` array {#using-a-all-array}
 
 The quickest and easiest method to limit the number of drawings displayed is to use the built-in `*.all` array for the drawing type. These arrays automatically contain all drawings of that type that currently display on the chart.
 
@@ -677,7 +677,7 @@ Note that:
 -   Only built-in drawing types have `*.all` arrays available, so if a script uses [objects of user-defined types](https://www.tradingview.com/pine-script-docs/language/objects/) as containers for several drawings, using an array as a queue instead is the only option.
 -   When the script deletes a label, the label is _also_ automatically removed from the [label.all](https://www.tradingview.com/pine-script-reference/v6/#var_label.all) array. By contrast, if a script adds drawings to an array manually, it must both remove the object from the array _and_ delete it. In this case, [array.shift()](https://www.tradingview.com/pine-script-reference/v6/#fun_array.shift) is usually the best choice, because it removes the first value from an array and returns it for further manipulation.
 
-### Using an array as a queue
+### Using an array as a queue {#using-an-array-as-a-queue}
 
 A more flexible method to keep only the last _n_ number of drawings is to [use an array as a queue](https://www.tradingview.com/pine-script-docs/language/arrays/#using-an-array-as-a-queue). Each time the script adds a new element to the array, it removes the oldest element. This is possible because each element in an array has a unique _index_, and array indexes _always_ begin at zero. If we remove element `0` from an array with several elements, the element that was at index `1` is now at index `0`, the element at index `2` moves down to index `1`, and so on.
 
@@ -711,11 +711,11 @@ if linesArray.size() > drawingQtyInput
     line.delete(linesArray.shift())
 ```
 
-## Is it possible to draw geometric shapes?
+## Is it possible to draw geometric shapes? {#is-it-possible-to-draw-geometric-shapes}
 
 Geometric shapes can illustrate patterns, mark zones of interest, or create other visual aids for technical analysis. Scripts can use two main methods for drawing shapes: [polylines](https://www.tradingview.com/pine-script-docs/concepts/lines-and-boxes/#polylines) and [lines](https://www.tradingview.com/pine-script-docs/concepts/lines-and-boxes/#lines).
 
-### Drawing with polylines
+### Drawing with polylines {#drawing-with-polylines}
 
 Polylines offer an efficient method for constructing complex shapes on a chart. To draw a shape with polylines, follow these steps:
 
@@ -775,7 +775,7 @@ Note that:
 
 -   The five sets of time and price inputs are _paired_ to form interactive points because they share matching `inline` arguments.
 
-### Drawing with lines
+### Drawing with lines {#drawing-with-lines}
 
 Lines are simpler than polylines. A [line](https://www.tradingview.com/pine-script-docs/concepts/lines-and-boxes/#lines) in Pine Script is straight connection between two points. Here’s how to use lines for drawing shapes:
 
@@ -840,7 +840,7 @@ if barstate.isfirst
     drawTriangle(x1BInput, y1BInput, x2BInput, y2BInput, x3BInput, y3BInput, color.fuchsia, "B")
 ```
 
-## How can I color the chart’s background on a condition detected on the last bar?
+## How can I color the chart’s background on a condition detected on the last bar? {#how-can-i-color-the-charts-background-on-a-condition-detected-on-the-last-bar}
 
 The usual way to color the chart background is by calling the [bgcolor()](https://www.tradingview.com/pine-script-reference/v6/#fun_bgcolor) function, which colors the chart background _for the bar on which it is called_. The background for a particular bar cannot be changed on later bars, and bars cannot be colored retroactively, using this method.
 

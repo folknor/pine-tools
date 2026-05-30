@@ -4,7 +4,7 @@ source: https://www.tradingview.com/pine-script-docs/faq/strategies/
 section: faq
 ---
 
-# Strategies
+# Strategies {#strategies}
 
 Using Pine Script® strategy scripts, users can test _simulated_ trades on historical and realtime data, to backtest and forward test trading systems. Strategies are similar to indicators, but with added capabilities such as placing, modifying, and canceling simulated orders and analyzing their results. Scripts that use the [strategy()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy) function as their [declaration statement](https://www.tradingview.com/pine-script-docs/language/script-structure/#declaration-statement) gain access to the `strategy.*` namespace, which contains functions and variables for simulating orders and retrieving strategy information.
 
@@ -14,9 +14,9 @@ Strategies support [various types of orders](https://www.tradingview.com/pine-sc
 
 For a thorough exploration of strategy features, capabilities, and usage, refer to the [Strategies](https://www.tradingview.com/pine-script-docs/concepts/strategies/) section in the User Manual.
 
-## Strategy basics
+## Strategy basics {#strategy-basics}
 
-### How can I turn my indicator into a strategy?
+### How can I turn my indicator into a strategy? {#how-can-i-turn-my-indicator-into-a-strategy}
 
 To convert an indicator to a strategy, begin by replacing the [indicator()](https://www.tradingview.com/pine-script-reference/v6/#fun_indicator) declaration with the [strategy()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy) declaration. This designates the script as a strategy.
 
@@ -58,7 +58,7 @@ if ta.crossunder(rsi,  50)
     strategy.entry("Short", strategy.short, comment = "Short")
 ```
 
-### How do I set a basic stop-loss order?
+### How do I set a basic stop-loss order? {#how-do-i-set-a-basic-stop-loss-order}
 
 Stop losses are a risk management method that traders use to limit potential losses. The [strategy.exit()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.exit) function sets an order to exit a trade once it hits a specified price, thus preventing the loss from exceeding a predetermined amount.
 
@@ -122,7 +122,7 @@ Note that:
 
 For more information, see the entry in the User Manual on [strategy.exit()](https://www.tradingview.com/pine-script-docs/concepts/strategies/#strategyexit).
 
-### How do I set an advanced stop-loss order?
+### How do I set an advanced stop-loss order? {#how-do-i-set-an-advanced-stop-loss-order}
 
 Scripts can use different types of exits that are more advanced than simply closing the position at a predetermined level.
 
@@ -146,7 +146,7 @@ Adjusting a stop loss to the breakeven point once a specific condition is met ca
 
 Modify the position size relative to the stop loss to maintain a constant risk percentage of total equity. For more insights, see the FAQ on [position sizing](https://www.tradingview.com/pine-script-docs/faq/strategies/#how-can-i-risk-a-fixed-percentage-of-my-equity-per-trade).
 
-### How can I save the entry price in a strategy?
+### How can I save the entry price in a strategy? {#how-can-i-save-the-entry-price-in-a-strategy}
 
 Scripts can access the entry price for a _specific trade_, or the average entry price for a _position_.
 
@@ -158,7 +158,7 @@ The [strategy.position\_avg\_price](https://www.tradingview.com/pine-script-refe
 
 The [strategy.opentrades.entry\_price()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.opentrades.entry_price) function returns the entry price for a given trade ID. To find the entry price for the most recent open trade, and remembering that the trade indexes start at zero, use `float entryPrice = strategy.opentrades.entry_price(strategy.opentrades - 1)`.
 
-### How do I filter trades by a date or time range?
+### How do I filter trades by a date or time range? {#how-do-i-filter-trades-by-a-date-or-time-range}
 
 Using a date and time range filter in a strategy allows trades to be simulated only during a certain time period. Such filters can be useful to backtest specific historical periods, or to focus on particular times of the trading day.
 
@@ -227,9 +227,9 @@ Note that:
 -   We set the `confirm` argument to `true` for the inputs that define the time range. When the script is first added to the chart, it prompts the user to confirm the values by clicking on the chart.
 -   We use a constant string `TZ` in our script to represent the time zone (set to `"GMT+0"` by default). Adjust this string to the local time zone or the exchange’s time zone. We use a constant rather than an input so that we can include the time zone in input titles.
 
-## Order execution and management
+## Order execution and management {#order-execution-and-management}
 
-### Why are my orders executed on the bar following my triggers?
+### Why are my orders executed on the bar following my triggers? {#why-are-my-orders-executed-on-the-bar-following-my-triggers}
 
 Each historical bar in a chart is composed of a single set of [open](https://www.tradingview.com/pine-script-reference/v6/#var_open), [high](https://www.tradingview.com/pine-script-reference/v6/#var_high), [low](https://www.tradingview.com/pine-script-reference/v6/#var_low) and [close](https://www.tradingview.com/pine-script-reference/v6/#var_close) (OHLC) data. Pine scripts execute on this data once per historical bar, at the **close** of the bar.
 
@@ -246,7 +246,7 @@ An alternative method is to specify the `immediately` parameter as `true` in a [
 
 However, processing orders on close might not give accurate results. For instance, if an alert occurs at the close of the session’s last bar, the actual order can be executed only on the next trading day, since the bar is already closed. In contrast, the emulator would simulate the order being filled at the previous day’s close. This discrepancy can lead to repainting, where the behavior of the strategy’s simulation on historical bars differs from that seen in live trading.
 
-### How can I use multiple take-profit levels to close a position?
+### How can I use multiple take-profit levels to close a position? {#how-can-i-use-multiple-take-profit-levels-to-close-a-position}
 
 Setting up a strategy with multiple take profit levels enables traders to scale out of trades in segments to secure profits incrementally.
 
@@ -255,7 +255,7 @@ There are two main methods for scaling out at varying levels:
 -   Multiple [strategy.exit](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.exit) calls. This method is most suitable when each take-profit level has a corresponding stop loss.
 -   An [OCA reduce group](https://www.tradingview.com/pine-script-docs/concepts/strategies/#strategyocareduce). This method is ideal for a different number of take-profit levels and stop losses.
 
-#### Multiple ​`strategy.exit()`​ functions
+#### Multiple `strategy.exit()` functions {#multiple-strategyexit-functions}
 
 Each [strategy.exit()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.exit) call can set a bracket order for a specific take-profit and stop-loss level. However, if a strategy uses multiple [strategy.exit()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.exit) functions with the **same** stop level, each function call triggers a _separate_ order (and therefore multiple order alerts). If order alerts are configured to trigger real trades, ensure that the trade system handles multiple alerts at the same stop level appropriately.
 
@@ -303,7 +303,7 @@ Note that:
 
 -   We use persistent global variables for the take-profit and stop-loss levels so that we can plot them. Otherwise, declaring the variables in the first [if](https://www.tradingview.com/pine-script-reference/v6/#kw_if) block would be simpler.
 
-#### Using ​`strategy.oca.reduce`​
+#### Using `strategy.oca.reduce` {#using-strategyocareduce}
 
 Creating exit orders as a group, using the [strategy.oca.reduce](https://www.tradingview.com/pine-script-docs/concepts/strategies/#strategyocareduce) type, ensures that when one exit order from the group is filled, the quantity of the remaining orders is reduced accordingly. This method is ideal in scripts that have an unequal number of take-profit levels to stops.
 
@@ -349,17 +349,17 @@ plot(limit1, "Limit 1", color.green, style = plot.style_linebr)
 plot(limit2, "Limit 2", color.green, style = plot.style_linebr)
 ```
 
-### How can I execute a trade partway through a bar?
+### How can I execute a trade partway through a bar? {#how-can-i-execute-a-trade-partway-through-a-bar}
 
 On [historical bars](https://www.tradingview.com/pine-script-docs/language/execution-model/#executions-on-historical-bars), Pine scripts can access only a single set of [open](https://www.tradingview.com/pine-script-reference/v6/#var_open), [high](https://www.tradingview.com/pine-script-reference/v6/#var_high), [low](https://www.tradingview.com/pine-script-reference/v6/#var_low) and [close](https://www.tradingview.com/pine-script-reference/v6/#var_close) (OHLC) data per bar. Consequently, strategies are calculated once, at the close of each bar. This limitation means it’s not possible to evaluate logical conditions that occur mid-bar, such as a price cross, on historical data.
 
-#### Using ​`calc_on_every_tick`​
+#### Using `calc_on_every_tick` {#using-calc_on_every_tick}
 
 Strategies running on [realtime bars](https://www.tradingview.com/pine-script-docs/language/execution-model/#executions-on-realtime-bars) can simulate orders partway through a bar by enabling the [calc\_on\_every\_tick](https://www.tradingview.com/pine-script-docs/concepts/strategies/#calc_on_every_tick) parameter. This setting allows the strategy to process each tick (incoming price update) and execute trades on the tick after a logical condition occurs.
 
 NoticeIn contrast to realtime bars, historical bars do not contain data for each incoming tick. Those bars contain only confirmed price data. Consequently, a strategy that enables calculation on every tick might [repaint](https://www.tradingview.com/pine-script-docs/concepts/repainting/) on elapsed realtime bars after reloading, because those bars become _historical_ and no longer contain data for each tick before their close. Therefore, we recommend setting `calc_on_every_tick` to `false` while backtesting.
 
-#### Using predefined prices
+#### Using predefined prices {#using-predefined-prices}
 
 Stop or limit orders at predefined prices _can_ execute orders partway through a bar, even when the strategy does not enable the `calc_on_every_tick` parameter. This method is effective on both realtime _and_ historical data. Even though orders are processed on the close of historical bars, the broker emulator simulates an order fill at the predefined price level, if the broker determines that price has hit that level during the bar. For information about the assumptions that the broker emulator makes about price movements, see the [Broker emulator](https://www.tradingview.com/pine-script-docs/concepts/strategies/#broker-emulator) section of the User Manual.
 
@@ -396,13 +396,13 @@ plot(stopLoss,   "SL", color.red,   style = plot.style_linebr)
 plot(takeProfit, "TP", color.green, style = plot.style_linebr)
 ```
 
-### How can I exit a trade in the same bar as it opens?
+### How can I exit a trade in the same bar as it opens? {#how-can-i-exit-a-trade-in-the-same-bar-as-it-opens}
 
 Sometimes, strategy testers want to be able to exit a trade in the same bar as the entry. By default, if an exit condition occurs during the same bar that a trade is opened, the broker emulator closes the trade at the open of the _next_ bar. To learn why this happens, refer to [this FAQ entry](https://www.tradingview.com/pine-script-docs/faq/strategies/#why-are-my-orders-executed-on-the-bar-following-my-triggers).
 
 To override this default behavior, either specify exit prices, or exit with a market order at the bar close.
 
-#### Specifying exit prices
+#### Specifying exit prices {#specifying-exit-prices}
 
 If the entry command also sets stop-loss or take-profit orders to trigger an exit when certain price levels are reached, then the trade can exit during the same bar that it opens.
 
@@ -423,7 +423,7 @@ if buyCondition and strategy.position_size == 0.0
     strategy.exit("exit", "buy", profit = exitTickSizeInput, loss = exitTickSizeInput)
 ```
 
-#### Using a market order at bar close
+#### Using a market order at bar close {#using-a-market-order-at-bar-close}
 
 Another method to exit a trade in the same bar that it opens is to use a market order at the bar’s close, by setting the `immediately` argument to `true` in the [strategy.close()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.close) function.
 
@@ -445,15 +445,15 @@ strategy.close("buy", immediately = true)
 
 NoticeThe `immediately` parameter operates in a similar way to [process\_orders\_on\_close](https://www.tradingview.com/pine-script-docs/concepts/strategies/#process_orders_on_close), but it is specific to the [strategy.close()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.close) and [strategy.close\_all()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.close_all) functions. The emulator calculates the close order using bar closing prices, but the same prices might not always be attainable in realtime trading. Additionally, this behavior can cause [repainting](https://www.tradingview.com/pine-script-docs/concepts/repainting/).
 
-## Advanced order types and conditions
+## Advanced order types and conditions {#advanced-order-types-and-conditions}
 
-### How can I set stop-loss and take-profit levels as a percentage from my entry point?
+### How can I set stop-loss and take-profit levels as a percentage from my entry point? {#how-can-i-set-stop-loss-and-take-profit-levels-as-a-percentage-from-my-entry-point}
 
 To set exit orders as a percentage from the entry price, the script needs the average entry price calculated by the broker emulator (which is affected by conditions including multiple entries and slippage). However, the built-in variable [strategy.position\_avg\_price](https://www.tradingview.com/pine-script-reference/v6/#var_strategy.position_avg_price) returns [na](https://www.tradingview.com/pine-script-reference/v6/#var_na) until the close of the entry bar. This means that take-profit and stop-loss orders based on the entry price can only be placed during the _next_ bar.
 
 If programmers want strategies to be able to close trades on the same bar that they are opened, there are two workarounds, each of which have their own benefits and limitations: altering the emulator behavior and using a different, fixed value.
 
-#### Using ​`calc_on_order_fills`​
+#### Using `calc_on_order_fills` {#using-calc_on_order_fills}
 
 Setting the [calc\_on\_order\_fills](https://www.tradingview.com/pine-script-docs/concepts/strategies/#calc_on_order_fills) argument of the [strategy()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy) declaration function to `true` recalculates the strategy immediately after simulating an order fill. This setting provides access to data such as the current average price of a position on an unconfirmed bar.
 
@@ -499,7 +499,7 @@ Note that:
 
 -   If we change `calc_on_order_fills` to `false` in this script, the exit orders are placed on the bar _after_ the entry bar, and can fill at very different levels depending on the movement of price.
 
-#### Using predefined prices
+#### Using predefined prices {#using-predefined-prices-1}
 
 The following example script calculates the stop and limit orders based on the _closing price_ of the signal bar. The disadvantage of this approach is that the close price might not match the average opening price exactly. The advantage is that this method doesn’t introduce potential _lookahead bias_ like using `calc_on_order_fills`.
 
@@ -534,7 +534,7 @@ plot(stopLoss,   "SL", color.red,   style = plot.style_linebr)
 plot(takeProfit, "TP", color.green, style = plot.style_linebr)
 ```
 
-### How do I move my stop-loss order to breakeven?
+### How do I move my stop-loss order to breakeven? {#how-do-i-move-my-stop-loss-order-to-breakeven}
 
 Moving a stop-loss order to breakeven can be a useful technique to manage risk.
 
@@ -590,7 +590,7 @@ Note that:
 
 -   This strategy uses [strategy.position\_avg\_price](https://www.tradingview.com/pine-script-reference/v6/#var_strategy.position_avg_price) as the breakeven level. However, the real breakeven price of a trade is affected by slippage and commission.
 
-### How do I place a trailing stop loss?
+### How do I place a trailing stop loss? {#how-do-i-place-a-trailing-stop-loss}
 
 A trailing stop loss limits a trader’s losses while allowing a position to remain open as long as the price moves favorably.
 
@@ -600,7 +600,7 @@ Trailing stops set in the [strategy.exit()](https://www.tradingview.com/pine-scr
 
 Custom trailing stop values are typically updated at the close of each bar, and so do not capture realtime intrabar price movements with the same responsiveness. This delay helps to avoid repainting strategy results.
 
-#### Using built-in trailing stop functionality
+#### Using built-in trailing stop functionality {#using-built-in-trailing-stop-functionality}
 
 To set a trailing stop in the [strategy.exit()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.exit) function, specify both _when_ the trail should activate and _how far_ behind price it should trail.
 
@@ -679,7 +679,7 @@ if strategy.position_size == 0
     trailingStop := na
 ```
 
-#### Coding a custom trailing stop
+#### Coding a custom trailing stop {#coding-a-custom-trailing-stop}
 
 A custom trailing stop can use different activation conditions, and can trail in a different way, to the trailing stop built into the [strategy.exit()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.exit) function. To work correctly, a custom trailing stop must calculate the stop price on each bar that the stop is active, and call the [strategy.exit()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.exit) function on each bar to set the `stop` price.
 
@@ -754,7 +754,7 @@ Note that:
 
 -   Because strategies run once per bar, the trailing stop price in this example script updates at the close of each bar. During realtime bars the _previous_ bar’s stop value is used. This approach, while slightly delayed compared to using the built-in trailing stop described in the FAQ entry about how to place a trailing stop loss [using built-in trailing stop functionality](https://www.tradingview.com/pine-script-docs/faq/strategies/#using-built-in-trailing-stop-functionality), ensures that the trailing stop price is not subject to assumptions about intrabar price movements, and thus avoids repainting.
 
-### How can I set a time-based condition to close out a position?
+### How can I set a time-based condition to close out a position? {#how-can-i-set-a-time-based-condition-to-close-out-a-position}
 
 To close positions after a certain amount of time has passed, track the entry time for each trade and close the position using [strategy.close()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.close) after the timeout.
 
@@ -804,7 +804,7 @@ Note that:
 -   The script uses the [built-in](https://www.tradingview.com/pine-script-docs/language/built-ins) functions [strategy.opentrades.entry\_time()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.opentrades.entry_time) and [strategy.opentrades.entry\_id()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.opentrades.entry_id) to measure trade duration and identify individual trades.
 -   The [strategy.close()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.close) function uses the `immediately` argument to simulate trades at the end of the bar that exceeds the timer, rather than waiting for the opening of the next bar. Consequently, when a 120-second timeout is applied and the script runs on a 1-minute chart, it gives the appearance that trades last exactly two bars.
 
-### How can I configure a bracket order with a specific risk-to-reward (R:R ) ratio?
+### How can I configure a bracket order with a specific risk-to-reward (R:R ) ratio? {#how-can-i-configure-a-bracket-order-with-a-specific-risk-to-reward-rr-ratio}
 
 To create a bracket order, define a stop-loss and a take-profit order using a single [strategy.exit()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.exit) call. To apply a specific risk-to-reward ratio, calculate the distance between the entry point and the stop-loss level. This stop distance represents the “risk”. Then place the take-profit order a certain multiple of the stop distance away. The distance to the take-profit order represents the “reward”, and the ratio between them is the risk:reward (R:R ) ratio.
 
@@ -850,7 +850,7 @@ fill(plotStop, plotEntry, color.new(color.red,   80))
 fill(plotTP, plotEntry, color.new(color.green, 80))
 ```
 
-### How can I risk a fixed percentage of my equity per trade?
+### How can I risk a fixed percentage of my equity per trade? {#how-can-i-risk-a-fixed-percentage-of-my-equity-per-trade}
 
 Adjusting the position size to risk a fixed percentage of equity normalizes risk exposure, regardless of equity fluctuations, and helps avoid disproportionate risks across a strategy’s trading history.
 
@@ -926,9 +926,9 @@ Note that:
 
 -   The stop distance in our example script is set to a constant value for demonstration purposes. In practice, the stop distance normally varies for each trade.
 
-## Strategy optimization and testing
+## Strategy optimization and testing {#strategy-optimization-and-testing}
 
-### Why did my trade results change dramatically overnight?
+### Why did my trade results change dramatically overnight? {#why-did-my-trade-results-change-dramatically-overnight}
 
 Strategy results can vary over time depending on where the historical data starts. The starting point of the data set aligns with the start of the nearest day, week, month or year, depending on the chart timeframe. Additionally, different TradingView plans provide access to varying amounts of historical bars. Refer to the User Manual entry on [starting points](https://www.tradingview.com/pine-script-docs/concepts/repainting/#starting-points) for a discussion of these factors.
 
@@ -946,7 +946,7 @@ Users with [Premium and higher plans](https://www.tradingview.com/pricing/) have
 
 Use the Bar Replay feature on the first chart bar to extend the dataset backward, allowing a strategy to run on an additional full dataset prior to the current range. This process can be repeated a few times to analyze multiple datasets.
 
-### Why is backtesting on Heikin Ashi and other non-standard charts not recommended?
+### Why is backtesting on Heikin Ashi and other non-standard charts not recommended? {#why-is-backtesting-on-heikin-ashi-and-other-non-standard-charts-not-recommended}
 
 Non-standard charts like [Heikin Ashi](https://www.tradingview.com/support/solutions/43000619436-heikin-ashi/), [Renko](https://www.tradingview.com/support/solutions/43000502284-renko-charts/), [Line Break](https://www.tradingview.com/support/solutions/43000502273-line-break-charts/), [Kagi](https://www.tradingview.com/support/solutions/43000502272-kagi-charts/), [Point & Figure](https://www.tradingview.com/support/solutions/43000502276-point-and-figure-pnf-charts/), and [Range Charts](https://www.tradingview.com/support/solutions/43000474007-what-s-range-interval-and-how-do-i-select-it/) offer unique perspectives on price action. However, these chart types are not suited for [strategy backtesting](https://www.tradingview.com/pine-script-docs/concepts/strategies/#notes-on-testing-strategies) or automated trading systems execution, because the prices and time intervals do not match market prices and times.
 
@@ -960,7 +960,7 @@ Programmers can specify the `fill_orders_on_standard_ohlc` parameter of the [str
 
 For a more detailed analysis of how non-standard chart types affect strategy results, refer to [this script](https://www.tradingview.com/script/q9laJNG9-Backtesting-on-Non-Standard-Charts-Caution-PineCoders-FAQ/) from the [PineCoders](https://www.tradingview.com/u/PineCoders/) account.
 
-### How can I backtest deeper into history?
+### How can I backtest deeper into history? {#how-can-i-backtest-deeper-into-history}
 
 Different TradingView [plans](https://www.tradingview.com/pricing/) give access to different amounts of historical information. To conduct more comprehensive backtesting in Pine Script, exploring further into an asset’s historical data, use Bar Replay or Deep Backtesting.
 
@@ -972,7 +972,7 @@ Starting the [Bar Replay](https://www.tradingview.com/support/solutions/43000712
 
 For TradingView users with [Premium and higher plans](https://www.tradingview.com/pricing/), the [Deep Backtesting](https://www.tradingview.com/support/folders/43000584695/) feature calculates the strategy on _all_ historical data available for the selected symbol. The results are displayed in the Strategy Tester but are not visible on the chart. The results from Deep Backtesting might be different from results from the [Strategy Tester](https://www.tradingview.com/pine-script-docs/concepts/strategies/#strategy-tester) in regular mode, as explained in [this Help Center article](https://www.tradingview.com/support/solutions/43000666266/).
 
-### How can I backtest multiple symbols?
+### How can I backtest multiple symbols? {#how-can-i-backtest-multiple-symbols}
 
 Each Pine Script strategy runs on one symbol at a time. To evaluate a strategy across various markets or instruments:
 
@@ -980,7 +980,7 @@ Each Pine Script strategy runs on one symbol at a time. To evaluate a strategy a
 -   Use TradingView’s watchlist feature to organize and quickly access different symbols.
 -   Export the results from the [Strategy Tester](https://www.tradingview.com/pine-script-docs/concepts/strategies/#strategy-tester) and use external tools such as spreadsheet software to compare the performance of a strategy on different symbols.
 
-### What does Bar Magnifier do?
+### What does Bar Magnifier do? {#what-does-bar-magnifier-do}
 
 The [Bar Magnifier](https://www.tradingview.com/pine-script-docs/concepts/strategies/#bar-magnifier) feature, available for TradingView [Premium and Ultimate](https://www.tradingview.com/pricing/) account holders, significantly enhances the accuracy of order fills in strategy backtests. This tool uses data from lower timeframes to obtain more detailed price movement within a bar, which can result in more precise order fills. When selected, Bar Magnifier mode replaces the assumptions that the [broker emulator](https://www.tradingview.com/pine-script-docs/concepts/strategies/#broker-emulator) must make about price movement using only a single set of OHLC values for each historical bar.
 
@@ -1003,13 +1003,13 @@ The Bar Magnifier chooses the lower timeframe based on the chart timeframe:
 
 To fully appreciate the effectiveness of Bar Magnifier, refer to the script demonstrations in the section about [Bar Magnifier](https://www.tradingview.com/pine-script-docs/concepts/strategies/#bar-magnifier) in the User Manual.
 
-## Advanced features and integration
+## Advanced features and integration {#advanced-features-and-integration}
 
-### Can my strategy script place orders with TradingView brokers?
+### Can my strategy script place orders with TradingView brokers? {#can-my-strategy-script-place-orders-with-tradingview-brokers}
 
 Pine Script strategies and indicators cannot directly place orders on exchanges. Traders can use external tools or platforms that can interpret alert signals from Pine scripts using [webhooks](https://www.tradingview.com/support/solutions/43000529348-about-webhooks/) and execute trades accordingly.
 
-### How can I add a time delay between orders?
+### How can I add a time delay between orders? {#how-can-i-add-a-time-delay-between-orders}
 
 Adding a time delay between orders can help to prevent too many trades in a short time. Strategies can also prevent trading for a time after a series of losses. Here’s how to set up a time delay between orders:
 
@@ -1095,7 +1095,7 @@ Strategies cannot evaluate delays when the market is closed, because there are n
 
 If the delay value is not divisible by the duration of a chart bar, each delay lasts at least one additional chart bar. For instance, setting a delay of 100 seconds on a 1-minute chart effectively means a minimum of two bars before the delay is exceeded.
 
-### How can I calculate custom statistics in a strategy?
+### How can I calculate custom statistics in a strategy? {#how-can-i-calculate-custom-statistics-in-a-strategy}
 
 To track metrics other than the default metrics that the Strategy Tester tracks, strategies can calculate custom statistics. These calculations might need to detect order executions, track closed trades, monitor entries into trades, and assess whether a trade is active. Changes in [built-in](https://www.tradingview.com/pine-script-docs/language/built-ins/#built-in-variables) variables such as [strategy.opentrades](https://www.tradingview.com/pine-script-reference/v6/#var_strategy.opentrades) and [strategy.closedtrades](https://www.tradingview.com/pine-script-reference/v6/#var_strategy.closedtrades) can track the execution of orders.
 
@@ -1165,7 +1165,7 @@ Note that:
 -   We round the [open](https://www.tradingview.com/pine-script-reference/v6/#var_open), [high](https://www.tradingview.com/pine-script-reference/v6/#var_high), [low](https://www.tradingview.com/pine-script-reference/v6/#var_low) and [close](https://www.tradingview.com/pine-script-reference/v6/#var_close) (OHLC) built-in variables to the symbol’s precision. This rounding ensures that any statistics the script calculates align within the [Strategy Tester](https://www.tradingview.com/pine-script-docs/concepts/strategies/#strategy-tester) and with strategy order-related built-in variables.
 -   The script creates global variables for the changes in built-in variables for open and closed trades so that the [ta.change](https://www.tradingview.com/pine-script-reference/v6/#fun_ta.change) function is called on every bar for consistency.
 
-### How do I incorporate leverage into my strategy?
+### How do I incorporate leverage into my strategy? {#how-do-i-incorporate-leverage-into-my-strategy}
 
 Trading with _leverage_ means borrowing capital from a broker to control larger position sizes than the amount of capital risked. This amplifies both potential profits and losses, making it a powerful but risky tool. The amount of the trader’s capital that they risk is called the _margin_.
 
@@ -1179,7 +1179,7 @@ leverage, incurs significant losses that cause the strategy’s account balance 
 
 For more information on using leverage in strategies, see the Help Center article [How do I simulate trading with leverage?](https://www.tradingview.com/support/solutions/43000717375-how-do-i-simulate-trading-with-leverage/)
 
-### Can you hedge in a Pine Script strategy?
+### Can you hedge in a Pine Script strategy? {#can-you-hedge-in-a-pine-script-strategy}
 
 When traders offset the risk of one position by opening another position at the same time, this is called _hedging_.
 
@@ -1191,7 +1191,7 @@ The main ways to hedge an open position are:
 
 Strategies cannot use these methods, because Pine strategies can only have positions open in one direction at a time, either long or short. Pine strategies run on only the chart asset and cannot open positions in different assets.
 
-### Can I connect my strategies to my paper trading account?
+### Can I connect my strategies to my paper trading account? {#can-i-connect-my-strategies-to-my-paper-trading-account}
 
 Pine Script does not support placing orders using the brokers integrated via the Trading Panel, or using TradingView’s built-in [paper trading account](https://www.tradingview.com/support/solutions/43000516466-paper-trading-main-functionality/). The Strategy Tester closely mimics a paper trading account by simulating orders and tracking theoretical positions and capital in a risk-free environment.
 
@@ -1199,9 +1199,9 @@ Strategies can customize [order fill alerts](https://www.tradingview.com/pine-sc
 
 TipWhen configuring alerts for forward testing, it is often helpful to restrict the strategy’s logic to remove the effects of historical trades by using a [date filter](https://www.tradingview.com/pine-script-docs/faq/strategies/#how-do-i-filter-trades-by-a-date-or-time-range) set to today’s date.
 
-## Troubleshooting and specific issues
+## Troubleshooting and specific issues {#troubleshooting-and-specific-issues}
 
-### Why are no trades executed after I add the strategy to the chart?
+### Why are no trades executed after I add the strategy to the chart? {#why-are-no-trades-executed-after-i-add-the-strategy-to-the-chart}
 
 If a strategy that is running on the chart does not place any orders, the Strategy Tester’s “Overview” tab displays the message, “This strategy did not generate any orders throughout the testing range.” By contrast, while no strategy is loaded and visible on the chart, the Strategy Tester displays a different message: “To test a strategy, apply it to the chart.”
 
@@ -1221,7 +1221,7 @@ Check for runtime errors indicated by a red exclamation mark on the chart pane n
 
 For more detailed guidance and troubleshooting tips, refer to the dedicated article on this topic in the [Help Center](https://www.tradingview.com/support/solutions/43000478450-i-ve-successfully-added-a-strategy-to-my-chart-but-it-doesn-t-generate-orders/).
 
-### Why does my strategy not place any orders on recent bars?
+### Why does my strategy not place any orders on recent bars? {#why-does-my-strategy-not-place-any-orders-on-recent-bars}
 
 If a strategy places one or more orders early in the testing range but then stops placing orders, check the following issues.
 
@@ -1233,7 +1233,7 @@ Check whether the simulated account balance experienced a total loss of equity e
 
 Some programmers define entry conditions that rely on having no positions currently open. Make sure to explicitly close trades by specifying corresponding exit conditions for all trades. Without explicit instructions to close an open position using [strategy.close()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.close) or [strategy.exit()](https://www.tradingview.com/pine-script-reference/v6/#fun_strategy.exit) commands, the strategy might display only a single entry order early in the chart’s history and in the _List of Trades_ tab. If trades are not closed, they do not generate results in the _Overview_.
 
-### Why is my strategy repainting?
+### Why is my strategy repainting? {#why-is-my-strategy-repainting}
 
 Pine scripts _repaint_ if they behave differently on historical and realtime bars. If strategies repaint, their backtesting results are not reliable because they do not accurately represent the strategy’s behavior in realtime.
 
@@ -1249,7 +1249,7 @@ Additionally, using unfixed data from a higher timeframe can cause repainting. I
 
 Although these are the most common causes of repainting in strategies, they are not the only causes. For additional information, refer to the section on [repainting](https://www.tradingview.com/pine-script-docs/concepts/repainting/) in the User Manual.
 
-### How do I turn off alerts for stop loss and take profit orders?
+### How do I turn off alerts for stop loss and take profit orders? {#how-do-i-turn-off-alerts-for-stop-loss-and-take-profit-orders}
 
 In automated trading strategies, it is common practice to set stop-loss and take-profit orders at the same time as an entry order, using the alert from the entry order as a trigger. In this case, sending alerts for the stop-loss and take-profit order fills can be unnecessary or even problematic. To disable alerts for a specific order placement command, set the `disable_alert` parameter to `true`. The broker emulator still simulates the fills for these orders, but sends no alerts for them.
 
