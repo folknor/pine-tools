@@ -45,8 +45,9 @@ file rather than renumbering.
   task #4
 - [INV009](INV009-cannot-call-fns-mostly-column-shifts/notes.md) —
   analysis, "Cannot call" FNs, column shifts, polymorphic bypass,
-  pine-data unions. **CORRECTED 2026-05-28: all 3 claimed FNs are
-  TV-accepted (verified) — zero real FNs; see G002.**
+  pine-data unions. **RE-CORRECTED 2026-06-02: the 2026-05-28 "all
+  TV-accepted" correction was itself wrong (position-keying artifact);
+  isolated --tv probes show all 3 are real CE10123 FNs. See INV014 / G002.**
 - [INV010](INV010-udf-tuple-return-types/notes.md) — type-inference,
   inferTupleElementTypes, UDF tuple destructure,
   bool-as-series-float
@@ -58,3 +59,6 @@ file rather than renumbering.
 - [INV013](INV013-polymorphic-arg-validation/notes.md) — polymorphic
   arg-validation bypass removed, union param types, v6-only arg checks,
   v4/v5 leniency
+- [INV014](INV014-const-arg-enforcement/notes.md) — const-arg enforcement
+  (CE10123), overload return-qualifier resolution, qualifier-stripping,
+  `input.time(timestamp(...))`, exhaustive `--tv` audit, disproves G002

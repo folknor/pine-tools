@@ -418,3 +418,214 @@ export function getPolymorphicReturnType(
 			return null;
 	}
 }
+
+// ===========================================================================
+// const-argument enforcement (INV014)
+//
+// Some built-in params require a COMPILE-TIME CONSTANT argument: TV rejects a
+// non-const value with CE10123 ("a const X is expected"). Our internal type
+// model strips the const/simple/input qualifier (mapToPineType collapses them
+// all to the base type), so the ordinary assignability check can't see the
+// violation. These helpers read the RAW qualifier straight from pine-data so
+// the checker can enforce it. Verified against `pine-lint --tv` — see
+// investigations/INV014 (and the G002 correction: TV does enforce plot(title)).
+// ===========================================================================
+
+const CONST_SCALAR_BASES = new Set(["int", "float", "bool", "string", "color"]);
+const QUALIFIER_RANK: Record<string, number> = {
+	const: 0,
+	input: 1,
+	simple: 2,
+	series: 3,
+};
+
+// Leading qualifier of a raw pine-data OR internal type string. "const int" ->
+// "const", "series<int>" -> "series", "int" -> undefined.
+function leadingQualifier(type: string): string | undefined {
+	const m = type.trim().match(/^(const|input|simple|series)\b/);
+	return m ? m[1] : undefined;
+}
+
+function qrank(q: string | undefined): number {
+	return q ? (QUALIFIER_RANK[q] ?? 0) : 0;
+}
+
+// Base type with any qualifier stripped. Handles space form ("const int" ->
+// "int"), bracket form ("series<int>" -> "int"), unions ("const int/float" ->
+// "int/float"), and the bare scalar ("int" -> "int").
+function baseOfRawType(type: string): string {
+	const s = type.trim();
+	const bracket = s.match(/^(?:const|input|simple|series)<(.+)>$/);
+	if (bracket) return bracket[1].trim();
+	return s.replace(/^(const|input|simple|series)\s+/, "").trim();
+}
+
+// Does a param of this raw type STRICTLY require a const argument? Structural,
+// data-derived:
+//  - must be `const` qualified,
+//  - base must be a plain scalar or a union of scalars (int/float, int/string),
+//  - enumerated bases (plot_display, scale_type, enum) are excluded — those are
+//    governed by allowedValues, not const-ness,
+//  - blobs that also accept non-const forms are excluded (input()'s
+//    "const ... or source-type built-ins").
+export function typeRequiresConst(rawType: string): boolean {
+	const t = rawType.trim();
+	if (!/^const\b/.test(t)) return false;
+	if (/\bor\b/.test(t) || /source/i.test(t)) return false;
+	return baseOfRawType(t)
+		.split("/")
+		.every((b) => CONST_SCALAR_BASES.has(b.trim()));
+}
+
+interface OverloadView {
+	parameters: Array<{ name: string; type: string }>;
+	returns: string;
+}
+
+function overloadViews(func: PineFunction): OverloadView[] {
+	if (func.overloads && func.overloads.length > 0) {
+		return func.overloads as OverloadView[];
+	}
+	return [{ parameters: func.parameters, returns: func.returns }];
+}
+
+// A param requires const iff it appears in >=1 overload and EVERY overload that
+// contains it types it const-required. If any overload accepts it non-const
+// (e.g. timestamp's series-string dateString overload), TV can resolve to that
+// overload, so we must not flag. Param-name based, so no full call resolution
+// is needed — sound for the qualifier question.
+export function paramRequiresConst(
+	functionName: string,
+	paramName: string,
+): boolean {
+	const func = FUNCTIONS_BY_NAME.get(functionName);
+	if (!func) return false;
+	let seen = false;
+	for (const ov of overloadViews(func)) {
+		const p = ov.parameters.find((x) => x.name === paramName);
+		if (!p) continue;
+		seen = true;
+		if (!typeRequiresConst(p.type)) return false;
+	}
+	return seen;
+}
+
+// Positional counterpart of paramRequiresConst. A POSITIONAL argument's param
+// is ambiguous across overloads with different shapes (e.g. fill's color-form vs
+// value-form), so map by INDEX only among overloads whose arity could match the
+// call (>= positionalCount params), and require unanimous agreement: every such
+// overload must have a const-required param with the SAME name at that index.
+// Otherwise TV could resolve to a lenient overload, so we must not flag.
+// Returns the param name + raw const type to quote, or null to skip.
+export function positionalConstParam(
+	functionName: string,
+	index: number,
+	positionalCount: number,
+): { name: string; docType: string } | null {
+	const func = FUNCTIONS_BY_NAME.get(functionName);
+	if (!func) return null;
+	const views = overloadViews(func);
+	const candidates = views.filter(
+		(ov) => ov.parameters.length >= positionalCount,
+	);
+	const pool = candidates.length > 0 ? candidates : views;
+	let name: string | undefined;
+	let docType: string | undefined;
+	for (const ov of pool) {
+		const p = ov.parameters[index];
+		if (!p || !typeRequiresConst(p.type)) return null;
+		if (name === undefined) {
+			name = p.name;
+			docType = p.type;
+		} else if (name !== p.name) {
+			return null;
+		}
+	}
+	return name !== undefined && docType !== undefined ? { name, docType } : null;
+}
+
+// The raw const type to quote in the CE10123 message (e.g. "const int"), taken
+// from the first overload that documents the param. Assumes paramRequiresConst
+// already returned true.
+export function getConstParamDocType(
+	functionName: string,
+	paramName: string,
+): string | undefined {
+	const func = FUNCTIONS_BY_NAME.get(functionName);
+	if (!func) return undefined;
+	for (const ov of overloadViews(func)) {
+		const p = ov.parameters.find((x) => x.name === paramName);
+		if (p) return p.type;
+	}
+	return undefined;
+}
+
+// Qualifier + base of a built-in VARIABLE (close -> series/float,
+// syminfo.tickerid -> simple/string). Used to decide whether a bare/member
+// reference is a non-const argument. Undefined for non-builtins.
+export function getBuiltinVarInfo(
+	name: string,
+): { qualifier: string; base: string } | undefined {
+	const v = VARIABLES_BY_NAME.get(name);
+	if (!v) return undefined;
+	return { qualifier: v.qualifier, base: baseOfRawType(String(v.type)) };
+}
+
+// A built-in CONSTANT (color.red, display.none, barmerge.gaps_off) — these are
+// const-qualified by definition.
+export function isBuiltinConstant(name: string): boolean {
+	return CONSTANTS_BY_NAME.has(name);
+}
+
+function baseCompatible(argBase: string, paramBase: string): boolean {
+	if (!paramBase || /unknown|\bany\b/.test(paramBase)) return true;
+	if (argBase === "unknown" || argBase === "na") return true;
+	const numeric = (x: string) => x === "int" || x === "float";
+	for (const pb of paramBase.split("/").map((s) => s.trim())) {
+		if (pb === argBase) return true;
+		if (numeric(argBase) && numeric(pb)) return true;
+	}
+	return false;
+}
+
+// Resolve the RAW return type (with qualifier, e.g. "simple int") of a built-in
+// call, accounting for overloads — the merged top-level `returns` is frozen to
+// overload #0 and loses this. Used to decide whether a call ARGUMENT is const:
+// timestamp("UTC", y, m, d, ...) resolves to the timezone overload -> simple int
+// (not the const-int dateString overload). Positional matching only; returns
+// undefined for unknown/user functions.
+export function resolveCallReturnRaw(
+	functionName: string,
+	argTypes: PineType[],
+): string | undefined {
+	const func = FUNCTIONS_BY_NAME.get(functionName);
+	if (!func) return undefined;
+	const views = overloadViews(func);
+	const argBases = argTypes.map((t) => baseOfRawType(String(t)));
+	const anySeriesArg = argTypes.some((t) => leadingQualifier(String(t)) === "series");
+
+	const candidates = views.filter((ov) => {
+		if (argBases.length > ov.parameters.length) return false;
+		for (let i = 0; i < argBases.length; i++) {
+			if (!baseCompatible(argBases[i], baseOfRawType(ov.parameters[i].type))) {
+				return false;
+			}
+		}
+		return true;
+	});
+	const pool = candidates.length > 0 ? candidates : views;
+
+	// With const/simple args, TV picks the lowest-qualifier matching overload.
+	let best = pool[0].returns;
+	for (const ov of pool) {
+		if (qrank(leadingQualifier(ov.returns)) < qrank(leadingQualifier(best))) {
+			best = ov.returns;
+		}
+	}
+	// A series argument forces at least a series result.
+	if (anySeriesArg && qrank(leadingQualifier(best)) < qrank("series")) {
+		const ser = pool.find((ov) => leadingQualifier(ov.returns) === "series");
+		best = ser ? ser.returns : best.replace(/^(const|input|simple)\b/, "series");
+	}
+	return best;
+}

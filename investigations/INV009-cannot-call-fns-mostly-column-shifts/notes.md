@@ -1,19 +1,42 @@
 # INV009 — most "Cannot call …" FNs are column shifts, not missed bugs
 
-**Status:** ⚠️ **CORRECTED 2026-05-28.** The original analysis below was
-itself unverified and WRONG about its central claim. The "3 true FNs"
-were never reproduced or checked against TV (a methodology violation —
-see CLAUDE.md "Per-disagreement workflow" / "Disagreements are claims,
-not bugs"). When finally verified with `pine-lint --tv` on 2026-05-28,
-**all three are TV-ACCEPTED** — there are ZERO real FNs in this category:
+**Status:** ⚠️ **RE-CORRECTED 2026-06-02 — the 2026-05-28 correction was
+itself wrong; the ORIGINAL claim (these ARE real FNs) stands.** Isolated,
+single-construct `pine-lint --tv` probes on 2026-06-02 show TV flags all
+three with CE10123:
 
-| call                                   | `--tv` verdict (2026-05-28) |
+| call                                   | `--tv` verdict (2026-06-02, isolated) |
+|----------------------------------------|---------------------------------------|
+| `nz(close > open)` — `nz(series<bool>)`| **CE10123** — `simple int` expected   |
+| `int(true)` — `int(bool)`              | **CE10123** — `simple int` expected   |
+| `plot(close, title=<series string>)`   | **CE10123** — `const string` expected |
+
+So these are **real false negatives** we still miss (the
+`FUNCTION_PARAM_TYPE_OVERRIDES` widening masks them — see below). The
+`plot.title` const case is now structurally handled by INV014; the
+`nz`/`int` base-type cases are tracked as a follow-up in `TODO.md`.
+
+The 2026-05-28 correction trusted `find-real-failures.mjs`'s `(line,col)`
+keying, which counts TV errors reported at a *different column* than ours
+as "TV-silent" — so it flipped real CE10123 errors into apparent
+acceptance. Lesson: verify accepted-type claims with isolated `--tv`
+probes that read TV's structured `ctx`, never with corpus position-diffs.
+See `investigations/INV014` and the corrected `gotchas/G002`.
+
+---
+
+**Status (2026-05-28 correction — now DISPROVEN, kept for the record):**
+⚠️ The original analysis below was unverified; this block "corrected" it to
+say all three are TV-ACCEPTED. That conclusion is itself wrong (see the
+re-correction above). Original 2026-05-28 table claimed:
+
+| call                                   | claimed verdict (WRONG)     |
 |----------------------------------------|-----------------------------|
-| `nz(close > open)` — `nz(series<bool>)`| TV accepts (no error)       |
-| `int(true)` — `int(bool)`              | TV accepts (no error)       |
-| `plot(close, title=trend)` series str  | TV accepts (no error)       |
+| `nz(close > open)` — `nz(series<bool>)`| "TV accepts" (false)        |
+| `int(true)` — `int(bool)`              | "TV accepts" (false)        |
+| `plot(close, title=trend)` series str  | "TV accepts" (false)        |
 
-Consequences:
+Consequences (as written 2026-05-28, now invalid):
 - `nz`/`fixnan` accept all primitives (bool/string beyond the documented
   int/float/color); `int` accepts bool; `plot.title` accepts series
   string. The reference UNDER-documents these — see

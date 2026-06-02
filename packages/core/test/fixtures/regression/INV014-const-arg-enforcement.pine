@@ -1,0 +1,8 @@
+// @test regression/INV014-const-arg-enforcement
+// @description input.time's defval requires `const int`, but timestamp("UTC", y, m, d, ...) resolves to the 7-arg timezone overload returning `simple int`, which TV rejects with CE10123 - and now so do we. Catching it needs the const qualifier we normally strip, plus per-overload return-type resolution. The const-required param set and per-overload qualifiers are data-driven (builtins.ts), verified exhaustively vs pine-lint --tv. See investigations/INV014-const-arg-enforcement/notes.md.
+// @expects parse: success
+// @expects error: line=3, message="was used but a"
+//@version=6
+indicator("INV014 const-arg enforcement")
+t = input.time(timestamp("UTC", 2026, 2, 1, 0, 0))
+plot(t)

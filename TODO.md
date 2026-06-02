@@ -87,6 +87,22 @@ IDs so the two stay in sync.
   + `reextract:dom` (see CLAUDE.md "Re-running type logic WITHOUT scraping"),
   so full `--force` re-scrapes should be rare — only when TV's DOM *structure*
   changes.
+- **#28 — remove the disproven `FUNCTION_PARAM_TYPE_OVERRIDES`
+  (G002 fallout).** All five entries in `generate.ts`
+  (`nz.source`, `nz.replacement`, `fixnan.source`, `int.x`, `plot.title`)
+  were added on G002's authority, which INV014 disproved with isolated
+  `--tv` probes (2026-06-02): TV flags `nz(<bool>/<string>)`, `int(true)`,
+  and `plot(title=<non-const>)` with CE10123. The widenings cause real
+  false negatives. Removing them is offline (`pnpm run generate`, no
+  scrape) and would (a) let INV014's const-arg check fire on `plot.title`
+  (currently masked, typed `series string`), and (b) restore base-type
+  checking for `nz`/`fixnan`/`int`. Deferred from INV014 because the
+  `nz`/`fixnan`/`int` cases are a *base-type* axis with broader corpus
+  impact — needs its own regression pass to confirm each new appearance is
+  TV-real (the representative cases already are). Re-verify the full
+  accepted-type matrix per param with isolated `--tv` probes (reading TV's
+  `ctx`), NOT corpus position-diffs, before removing. See `gotchas/G002`
+  (retracted) and `investigations/INV014`.
 - **Minor data residue (record-only, low value):** `ta.vwap.anchor`'s default
   and the "X by default" phrasing are deliberately unparsed (see
   `parse-default.ts`). Skip unless a consumer needs them. (`since`/`deprecated`,
@@ -105,10 +121,11 @@ index.
 
 - [G001](gotchas/G001-tv-pine-lint-not-spec.md) — TV's pine-lint is an
   unreliable comparator, not a stable spec.
-- [G002](gotchas/G002-reference-underdocuments-accepted-types.md) — TV's
-  reference under-documents accepted param types; the linter accepts more
-  (e.g. `nz`/`fixnan` take bool/string; `int` takes bool). Verify with
-  `--tv`, not just the overload list.
+- [G002](gotchas/G002-reference-underdocuments-accepted-types.md) —
+  **RETRACTED 2026-06-02.** Claimed the linter accepts more than the
+  reference documents (`nz`/`fixnan` bool/string, `int` bool, `plot.title`
+  non-const); isolated `--tv` probes show TV flags all of them (CE10123).
+  The `FUNCTION_PARAM_TYPE_OVERRIDES` it justified are invalid — see #28.
 
 Authoritative per-occurrence list lives in
 `lint-reports/failures-by-category.json`. For every category below the JSON

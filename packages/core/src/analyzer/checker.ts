@@ -26,15 +26,21 @@ import {
 	type ArgumentInfo,
 	buildFunctionSignatures,
 	type FunctionSignature,
+	getBuiltinVarInfo,
+	getConstParamDocType,
 	getMinArgsForVariadic,
 	getPolymorphicReturnType,
 	hasOverloads,
+	isBuiltinConstant,
 	isTopLevelOnly,
 	isVariadicFunction,
 	KNOWN_NAMESPACES,
 	mapReturnTypeToPineType,
 	mapToPineType,
 	NAMESPACE_PROPERTIES,
+	paramRequiresConst,
+	positionalConstParam,
+	resolveCallReturnRaw,
 } from "./builtins";
 import { type Symbol as SymbolInfo, SymbolTable } from "./symbols";
 import { type PineType, TypeChecker } from "./types";
@@ -998,6 +1004,133 @@ export class UnifiedPineValidator {
 
 		// Special case validations
 		this.validateSpecialCases(call, functionName, args);
+
+		// CE10123: const-required params receiving a non-const argument. see INV014
+		this.checkConstArgs(call, functionName, signature, version);
+	}
+
+	// CE10123: a parameter that requires a compile-time constant received a
+	// provably non-const argument. Our internal types drop the const/simple/input
+	// qualifier (mapToPineType collapses them), so this reads the raw qualifier
+	// from pine-data directly. Both the const-required set and the per-overload
+	// return qualifiers are data-driven (see builtins.ts) and were verified
+	// exhaustively against `pine-lint --tv`. see INV014.
+	private checkConstArgs(
+		call: CallExpression,
+		functionName: string,
+		signature: FunctionSignature,
+		version: string,
+	): void {
+		if (version !== "6") return; // arg-type checks are v6-only. see G004
+		const args = call.arguments;
+		const positionalCount = args.filter((a) => !a.name).length;
+		let positionalIndex = -1;
+		for (let i = 0; i < args.length; i++) {
+			const arg = args[i];
+			// Resolve which const-required param this argument targets. Named args
+			// are unambiguous (by name across overloads); positional args must be
+			// resolved arity-aware (overloads can reshuffle positions). see INV014
+			let paramName: string | undefined;
+			let docType: string | undefined;
+			if (arg.name) {
+				if (paramRequiresConst(functionName, arg.name)) {
+					paramName = arg.name;
+					docType = getConstParamDocType(functionName, arg.name) ?? "const";
+				}
+			} else {
+				positionalIndex++;
+				const hit = positionalConstParam(
+					functionName,
+					positionalIndex,
+					positionalCount,
+				);
+				if (hit) {
+					paramName = hit.name;
+					docType = hit.docType;
+				}
+			}
+			if (!paramName || !docType) continue;
+			const desc = this.describeNonConstArg(arg.value, version);
+			if (!desc) continue;
+			this.errors.push({
+				line: arg.value.line,
+				column: arg.value.column,
+				length: 0,
+				message:
+					'Cannot call "{funId}" with argument "{argDisplayName}"="{argUserFriendlyRepresentation}". An argument of "{argumentType}" type was used but a "{currentTypeDocStr}" {typePostfix} is expected.',
+				severity: DiagnosticSeverity.Error,
+				code: "CE10123",
+				ctx: {
+					argDisplayName: paramName,
+					argUserFriendlyRepresentation: desc.repr,
+					argumentType: desc.typeStr,
+					currentTypeDocStr: docType,
+					funId: functionName,
+					typePostfix: "",
+				},
+			});
+		}
+	}
+
+	// Decide whether an argument expression is PROVABLY non-const, and if so
+	// describe it (argumentType + user-friendly repr) for the CE10123 message.
+	// Deliberately conservative: returns null whenever we can't be certain
+	// (user variables, composite expressions, user-defined functions), so we
+	// never flag something TV would accept. Catches the common cases: built-in
+	// calls whose resolved overload returns simple/series/input (e.g.
+	// timestamp("UTC", y, m, d, ...)) and non-const built-in variables. see INV014
+	private describeNonConstArg(
+		expr: Expression,
+		version: string,
+	): { typeStr: string; repr: string } | null {
+		switch (expr.type) {
+			case "CallExpression": {
+				const ce = expr as CallExpression;
+				let name = "";
+				if (ce.callee.type === "Identifier") {
+					name = (ce.callee as Identifier).name;
+				} else if (ce.callee.type === "MemberExpression") {
+					const m = ce.callee as MemberExpression;
+					if (m.object.type === "Identifier") {
+						name = `${(m.object as Identifier).name}.${m.property.name}`;
+					}
+				}
+				if (!name) return null;
+				const argTypes = ce.arguments.map((a) =>
+					this.inferExpressionType(a.value, version),
+				);
+				const raw = resolveCallReturnRaw(name, argTypes);
+				// Only a positively non-const (simple/series/input) resolved return
+				// is grounds to flag; const or unknown -> leave it alone.
+				if (raw && /^(simple|series|input)\b/.test(raw)) {
+					return { typeStr: raw, repr: `call "${name}" (${raw})` };
+				}
+				return null;
+			}
+			case "Identifier": {
+				const info = getBuiltinVarInfo((expr as Identifier).name);
+				if (info && info.qualifier !== "const") {
+					return {
+						typeStr: `${info.qualifier} ${info.base}`,
+						repr: (expr as Identifier).name,
+					};
+				}
+				return null;
+			}
+			case "MemberExpression": {
+				const m = expr as MemberExpression;
+				if (m.object.type !== "Identifier") return null;
+				const name = `${(m.object as Identifier).name}.${m.property.name}`;
+				if (isBuiltinConstant(name)) return null;
+				const info = getBuiltinVarInfo(name);
+				if (info && info.qualifier !== "const") {
+					return { typeStr: `${info.qualifier} ${info.base}`, repr: name };
+				}
+				return null;
+			}
+			default:
+				return null;
+		}
 	}
 
 	/**

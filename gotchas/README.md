@@ -29,9 +29,10 @@ found, and the lesson worth remembering.
 
 - [G001](G001-tv-pine-lint-not-spec.md) — pine-lint, --tv, TradingView,
   reference-not-spec, non-determinism, error-recovery, warning-vs-error
-- [G002](G002-reference-underdocuments-accepted-types.md) — reference vs
-  linter, overloads, accepted-types, nz/fixnan/na/int/plot,
-  under-documentation, FUNCTION_PARAM_TYPE_OVERRIDES
+- [G002](G002-reference-underdocuments-accepted-types.md) — **RETRACTED
+  2026-06-02**: claimed the reference under-documents accepted types
+  (nz/fixnan/na/int/plot); isolated --tv probes disprove every case. The
+  FUNCTION_PARAM_TYPE_OVERRIDES it justified are invalid. See INV014.
 - [G004](G004-version-detection-leniency.md) — version detection,
   //@version directive, whitespace tolerance, default-to-v6, declared
   v4/v5 leniency, NAMESPACE_PROPERTIES, DEPRECATED_V5_CONSTANTS

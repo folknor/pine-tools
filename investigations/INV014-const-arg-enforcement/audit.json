@@ -1,0 +1,1616 @@
+{
+  "probedOn": "2026-06-02",
+  "summary": {
+    "ENFORCED": 161,
+    "AMBIGUOUS": 17,
+    "LENIENT": 3
+  },
+  "results": [
+    {
+      "fn": "alertcondition",
+      "param": "title",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\nalertcondition(condition=close, title=syminfo.tickerid)"
+    },
+    {
+      "fn": "alertcondition",
+      "param": "message",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\nalertcondition(condition=close, message=syminfo.tickerid)"
+    },
+    {
+      "fn": "array.sort",
+      "param": "sort_field",
+      "type": "const int/string",
+      "verdict": "ENFORCED",
+      "expected": "const int",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ntype T\n    int f\nvar a = array.new<T>()\narray.sort(a, sort_field=syminfo.tickerid)\nplot(close)"
+    },
+    {
+      "fn": "array.sort_indices",
+      "param": "sort_field",
+      "type": "const int/string",
+      "verdict": "ENFORCED",
+      "expected": "const int",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ntype T\n    int f\nvar a = array.new<T>()\nx = array.sort_indices(a, sort_field=syminfo.tickerid)\nplot(close)"
+    },
+    {
+      "fn": "barcolor",
+      "param": "title",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\nbarcolor(color=close, title=syminfo.tickerid)"
+    },
+    {
+      "fn": "bgcolor",
+      "param": "title",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\nbgcolor(color=close, title=syminfo.tickerid)"
+    },
+    {
+      "fn": "bgcolor",
+      "param": "force_overlay",
+      "type": "const bool",
+      "verdict": "ENFORCED",
+      "expected": "const bool",
+      "passed": "simple bool",
+      "src": "//@version=6\nindicator(\"x\")\nbgcolor(color=close, force_overlay=timeframe.isdaily)"
+    },
+    {
+      "fn": "box.new",
+      "param": "force_overlay",
+      "type": "const bool",
+      "verdict": "ENFORCED",
+      "expected": "const bool",
+      "passed": "simple bool",
+      "src": "//@version=6\nindicator(\"x\")\nbox.new(bar_index, close, bar_index, close, force_overlay=timeframe.isdaily)"
+    },
+    {
+      "fn": "fill",
+      "param": "title",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\np1 = plot(close)\np2 = plot(open)\nfill(p1, p2, title=syminfo.tickerid, color=color.red)"
+    },
+    {
+      "fn": "fill",
+      "param": "fillgaps",
+      "type": "const bool",
+      "verdict": "ENFORCED",
+      "expected": "const bool",
+      "passed": "simple bool",
+      "src": "//@version=6\nindicator(\"x\")\np1 = plot(close)\np2 = plot(open)\nfill(p1, p2, title=\"t\", color=color.red, fillgaps=timeframe.isdaily)"
+    },
+    {
+      "fn": "hline",
+      "param": "title",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\nhline(price=1.0, title=syminfo.tickerid)"
+    },
+    {
+      "fn": "indicator",
+      "param": "title",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(title=syminfo.tickerid)\nplot(close)"
+    },
+    {
+      "fn": "indicator",
+      "param": "shorttitle",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(title=\"x\", shorttitle=syminfo.tickerid)\nplot(close)"
+    },
+    {
+      "fn": "indicator",
+      "param": "overlay",
+      "type": "const bool",
+      "verdict": "ENFORCED",
+      "expected": "const bool",
+      "passed": "simple bool",
+      "src": "//@version=6\nindicator(title=\"x\", overlay=timeframe.isdaily)\nplot(close)"
+    },
+    {
+      "fn": "indicator",
+      "param": "format",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(title=\"x\", format=syminfo.tickerid)\nplot(close)"
+    },
+    {
+      "fn": "indicator",
+      "param": "precision",
+      "type": "const int",
+      "verdict": "ENFORCED",
+      "expected": "const int",
+      "passed": "simple int",
+      "src": "//@version=6\nindicator(title=\"x\", precision=int(syminfo.mintick))\nplot(close)"
+    },
+    {
+      "fn": "indicator",
+      "param": "scale",
+      "type": "const scale_type",
+      "verdict": "AMBIGUOUS",
+      "detail": "CE10068:Invalid argument \"{argumentName}\" in \"{funName}\" call. Possi",
+      "src": "//@version=6\nindicator(title=\"x\", scale=int(syminfo.mintick))\nplot(close)"
+    },
+    {
+      "fn": "indicator",
+      "param": "max_bars_back",
+      "type": "const int",
+      "verdict": "ENFORCED",
+      "expected": "const int",
+      "passed": "simple int",
+      "src": "//@version=6\nindicator(title=\"x\", max_bars_back=int(syminfo.mintick))\nplot(close)"
+    },
+    {
+      "fn": "indicator",
+      "param": "timeframe",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(title=\"x\", timeframe=syminfo.tickerid)\nplot(close)"
+    },
+    {
+      "fn": "indicator",
+      "param": "timeframe_gaps",
+      "type": "const bool",
+      "verdict": "ENFORCED",
+      "expected": "const bool",
+      "passed": "simple bool",
+      "src": "//@version=6\nindicator(title=\"x\", timeframe_gaps=timeframe.isdaily)\nplot(close)"
+    },
+    {
+      "fn": "indicator",
+      "param": "explicit_plot_zorder",
+      "type": "const bool",
+      "verdict": "ENFORCED",
+      "expected": "const bool",
+      "passed": "simple bool",
+      "src": "//@version=6\nindicator(title=\"x\", explicit_plot_zorder=timeframe.isdaily)\nplot(close)"
+    },
+    {
+      "fn": "indicator",
+      "param": "max_lines_count",
+      "type": "const int",
+      "verdict": "ENFORCED",
+      "expected": "const int",
+      "passed": "simple int",
+      "src": "//@version=6\nindicator(title=\"x\", max_lines_count=int(syminfo.mintick))\nplot(close)"
+    },
+    {
+      "fn": "indicator",
+      "param": "max_labels_count",
+      "type": "const int",
+      "verdict": "ENFORCED",
+      "expected": "const int",
+      "passed": "simple int",
+      "src": "//@version=6\nindicator(title=\"x\", max_labels_count=int(syminfo.mintick))\nplot(close)"
+    },
+    {
+      "fn": "indicator",
+      "param": "max_boxes_count",
+      "type": "const int",
+      "verdict": "ENFORCED",
+      "expected": "const int",
+      "passed": "simple int",
+      "src": "//@version=6\nindicator(title=\"x\", max_boxes_count=int(syminfo.mintick))\nplot(close)"
+    },
+    {
+      "fn": "indicator",
+      "param": "calc_bars_count",
+      "type": "const int",
+      "verdict": "ENFORCED",
+      "expected": "const int",
+      "passed": "simple int",
+      "src": "//@version=6\nindicator(title=\"x\", calc_bars_count=int(syminfo.mintick))\nplot(close)"
+    },
+    {
+      "fn": "indicator",
+      "param": "max_polylines_count",
+      "type": "const int",
+      "verdict": "ENFORCED",
+      "expected": "const int",
+      "passed": "simple int",
+      "src": "//@version=6\nindicator(title=\"x\", max_polylines_count=int(syminfo.mintick))\nplot(close)"
+    },
+    {
+      "fn": "indicator",
+      "param": "dynamic_requests",
+      "type": "const bool",
+      "verdict": "ENFORCED",
+      "expected": "const bool",
+      "passed": "simple bool",
+      "src": "//@version=6\nindicator(title=\"x\", dynamic_requests=timeframe.isdaily)\nplot(close)"
+    },
+    {
+      "fn": "indicator",
+      "param": "behind_chart",
+      "type": "const bool",
+      "verdict": "ENFORCED",
+      "expected": "const bool",
+      "passed": "simple bool",
+      "src": "//@version=6\nindicator(title=\"x\", behind_chart=timeframe.isdaily)\nplot(close)"
+    },
+    {
+      "fn": "input",
+      "param": "defval",
+      "type": "const int/float/bool/string/color or source-type built-ins",
+      "verdict": "LENIENT",
+      "src": "//@version=6\nindicator(\"x\")\ninput(defval=syminfo.mintick)"
+    },
+    {
+      "fn": "input",
+      "param": "title",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput(defval=\"x\", title=syminfo.tickerid)"
+    },
+    {
+      "fn": "input",
+      "param": "tooltip",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput(defval=\"x\", tooltip=syminfo.tickerid)"
+    },
+    {
+      "fn": "input",
+      "param": "inline",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput(defval=\"x\", inline=syminfo.tickerid)"
+    },
+    {
+      "fn": "input",
+      "param": "group",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput(defval=\"x\", group=syminfo.tickerid)"
+    },
+    {
+      "fn": "input",
+      "param": "display",
+      "type": "const plot_display",
+      "verdict": "AMBIGUOUS",
+      "detail": "CE10068:Invalid argument \"{argumentName}\" in \"{funName}\" call. Possi",
+      "src": "//@version=6\nindicator(\"x\")\ninput(defval=\"x\", display=int(syminfo.mintick))"
+    },
+    {
+      "fn": "input.bool",
+      "param": "defval",
+      "type": "const bool",
+      "verdict": "ENFORCED",
+      "expected": "const bool",
+      "passed": "simple bool",
+      "src": "//@version=6\nindicator(\"x\")\ninput.bool(defval=timeframe.isdaily)"
+    },
+    {
+      "fn": "input.bool",
+      "param": "title",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput.bool(defval=true, title=syminfo.tickerid)"
+    },
+    {
+      "fn": "input.bool",
+      "param": "tooltip",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput.bool(defval=true, tooltip=syminfo.tickerid)"
+    },
+    {
+      "fn": "input.bool",
+      "param": "inline",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput.bool(defval=true, inline=syminfo.tickerid)"
+    },
+    {
+      "fn": "input.bool",
+      "param": "group",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput.bool(defval=true, group=syminfo.tickerid)"
+    },
+    {
+      "fn": "input.bool",
+      "param": "confirm",
+      "type": "const bool",
+      "verdict": "ENFORCED",
+      "expected": "const bool",
+      "passed": "simple bool",
+      "src": "//@version=6\nindicator(\"x\")\ninput.bool(defval=true, confirm=timeframe.isdaily)"
+    },
+    {
+      "fn": "input.bool",
+      "param": "display",
+      "type": "const plot_display",
+      "verdict": "AMBIGUOUS",
+      "detail": "CE10068:Invalid argument \"{argumentName}\" in \"{funName}\" call. Possi",
+      "src": "//@version=6\nindicator(\"x\")\ninput.bool(defval=true, display=int(syminfo.mintick))"
+    },
+    {
+      "fn": "input.color",
+      "param": "defval",
+      "type": "const color",
+      "verdict": "ENFORCED",
+      "expected": "const color",
+      "passed": "simple color",
+      "src": "//@version=6\nindicator(\"x\")\ninput.color(defval=color.new(color.red, int(syminfo.mintick)))"
+    },
+    {
+      "fn": "input.color",
+      "param": "title",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput.color(defval=color.red, title=syminfo.tickerid)"
+    },
+    {
+      "fn": "input.color",
+      "param": "tooltip",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput.color(defval=color.red, tooltip=syminfo.tickerid)"
+    },
+    {
+      "fn": "input.color",
+      "param": "inline",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput.color(defval=color.red, inline=syminfo.tickerid)"
+    },
+    {
+      "fn": "input.color",
+      "param": "group",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput.color(defval=color.red, group=syminfo.tickerid)"
+    },
+    {
+      "fn": "input.color",
+      "param": "confirm",
+      "type": "const bool",
+      "verdict": "ENFORCED",
+      "expected": "const bool",
+      "passed": "simple bool",
+      "src": "//@version=6\nindicator(\"x\")\ninput.color(defval=color.red, confirm=timeframe.isdaily)"
+    },
+    {
+      "fn": "input.color",
+      "param": "display",
+      "type": "const plot_display",
+      "verdict": "AMBIGUOUS",
+      "detail": "CE10068:Invalid argument \"{argumentName}\" in \"{funName}\" call. Possi",
+      "src": "//@version=6\nindicator(\"x\")\ninput.color(defval=color.red, display=int(syminfo.mintick))"
+    },
+    {
+      "fn": "input.enum",
+      "param": "defval",
+      "type": "const enum",
+      "verdict": "LENIENT",
+      "src": "//@version=6\nindicator(\"x\")\nenum E\n    a\n    b\nvar E e = E.a\ne := bar_index % 2 == 0 ? E.a : E.b\nx = input.enum(e)\nplot(close)"
+    },
+    {
+      "fn": "input.enum",
+      "param": "title",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\nenum E\n    a\n    b\nx = input.enum(defval=E.a, title=syminfo.tickerid)\nplot(close)"
+    },
+    {
+      "fn": "input.enum",
+      "param": "tooltip",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\nenum E\n    a\n    b\nx = input.enum(defval=E.a, tooltip=syminfo.tickerid)\nplot(close)"
+    },
+    {
+      "fn": "input.enum",
+      "param": "inline",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\nenum E\n    a\n    b\nx = input.enum(defval=E.a, inline=syminfo.tickerid)\nplot(close)"
+    },
+    {
+      "fn": "input.enum",
+      "param": "group",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\nenum E\n    a\n    b\nx = input.enum(defval=E.a, group=syminfo.tickerid)\nplot(close)"
+    },
+    {
+      "fn": "input.enum",
+      "param": "confirm",
+      "type": "const bool",
+      "verdict": "ENFORCED",
+      "expected": "const bool",
+      "passed": "simple bool",
+      "src": "//@version=6\nindicator(\"x\")\nenum E\n    a\n    b\nx = input.enum(defval=E.a, confirm=timeframe.isdaily)\nplot(close)"
+    },
+    {
+      "fn": "input.enum",
+      "param": "display",
+      "type": "const plot_display",
+      "verdict": "AMBIGUOUS",
+      "detail": "CE10068:Invalid argument \"{argumentName}\" in \"{funName}\" call. Possi",
+      "src": "//@version=6\nindicator(\"x\")\nenum E\n    a\n    b\nx = input.enum(defval=E.a, display=int(syminfo.mintick))\nplot(close)"
+    },
+    {
+      "fn": "input.float",
+      "param": "defval",
+      "type": "const int/float",
+      "verdict": "ENFORCED",
+      "expected": "const float",
+      "passed": "simple float",
+      "src": "//@version=6\nindicator(\"x\")\ninput.float(defval=syminfo.mintick)"
+    },
+    {
+      "fn": "input.float",
+      "param": "title",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput.float(defval=1.0, title=syminfo.tickerid)"
+    },
+    {
+      "fn": "input.float",
+      "param": "tooltip",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput.float(defval=1.0, tooltip=syminfo.tickerid)"
+    },
+    {
+      "fn": "input.float",
+      "param": "inline",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput.float(defval=1.0, inline=syminfo.tickerid)"
+    },
+    {
+      "fn": "input.float",
+      "param": "group",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput.float(defval=1.0, group=syminfo.tickerid)"
+    },
+    {
+      "fn": "input.float",
+      "param": "confirm",
+      "type": "const bool",
+      "verdict": "ENFORCED",
+      "expected": "const bool",
+      "passed": "simple bool",
+      "src": "//@version=6\nindicator(\"x\")\ninput.float(defval=1.0, confirm=timeframe.isdaily)"
+    },
+    {
+      "fn": "input.float",
+      "param": "display",
+      "type": "const plot_display",
+      "verdict": "AMBIGUOUS",
+      "detail": "CE10068:Invalid argument \"{argumentName}\" in \"{funName}\" call. Possi",
+      "src": "//@version=6\nindicator(\"x\")\ninput.float(defval=1.0, display=int(syminfo.mintick))"
+    },
+    {
+      "fn": "input.int",
+      "param": "defval",
+      "type": "const int",
+      "verdict": "ENFORCED",
+      "expected": "const int",
+      "passed": "simple int",
+      "src": "//@version=6\nindicator(\"x\")\ninput.int(defval=int(syminfo.mintick))"
+    },
+    {
+      "fn": "input.int",
+      "param": "title",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput.int(defval=1, title=syminfo.tickerid)"
+    },
+    {
+      "fn": "input.int",
+      "param": "tooltip",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput.int(defval=1, tooltip=syminfo.tickerid)"
+    },
+    {
+      "fn": "input.int",
+      "param": "inline",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput.int(defval=1, inline=syminfo.tickerid)"
+    },
+    {
+      "fn": "input.int",
+      "param": "group",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput.int(defval=1, group=syminfo.tickerid)"
+    },
+    {
+      "fn": "input.int",
+      "param": "confirm",
+      "type": "const bool",
+      "verdict": "ENFORCED",
+      "expected": "const bool",
+      "passed": "simple bool",
+      "src": "//@version=6\nindicator(\"x\")\ninput.int(defval=1, confirm=timeframe.isdaily)"
+    },
+    {
+      "fn": "input.int",
+      "param": "display",
+      "type": "const plot_display",
+      "verdict": "AMBIGUOUS",
+      "detail": "CE10068:Invalid argument \"{argumentName}\" in \"{funName}\" call. Possi",
+      "src": "//@version=6\nindicator(\"x\")\ninput.int(defval=1, display=int(syminfo.mintick))"
+    },
+    {
+      "fn": "input.price",
+      "param": "defval",
+      "type": "const int/float",
+      "verdict": "ENFORCED",
+      "expected": "const float",
+      "passed": "simple float",
+      "src": "//@version=6\nindicator(\"x\")\ninput.price(defval=syminfo.mintick)"
+    },
+    {
+      "fn": "input.price",
+      "param": "title",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput.price(defval=1.0, title=syminfo.tickerid)"
+    },
+    {
+      "fn": "input.price",
+      "param": "tooltip",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput.price(defval=1.0, tooltip=syminfo.tickerid)"
+    },
+    {
+      "fn": "input.price",
+      "param": "inline",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput.price(defval=1.0, inline=syminfo.tickerid)"
+    },
+    {
+      "fn": "input.price",
+      "param": "group",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput.price(defval=1.0, group=syminfo.tickerid)"
+    },
+    {
+      "fn": "input.price",
+      "param": "confirm",
+      "type": "const bool",
+      "verdict": "ENFORCED",
+      "expected": "const bool",
+      "passed": "simple bool",
+      "src": "//@version=6\nindicator(\"x\")\ninput.price(defval=1.0, confirm=timeframe.isdaily)"
+    },
+    {
+      "fn": "input.price",
+      "param": "display",
+      "type": "const plot_display",
+      "verdict": "AMBIGUOUS",
+      "detail": "CE10068:Invalid argument \"{argumentName}\" in \"{funName}\" call. Possi",
+      "src": "//@version=6\nindicator(\"x\")\ninput.price(defval=1.0, display=int(syminfo.mintick))"
+    },
+    {
+      "fn": "input.session",
+      "param": "defval",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput.session(defval=syminfo.tickerid)"
+    },
+    {
+      "fn": "input.session",
+      "param": "title",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput.session(defval=\"x\", title=syminfo.tickerid)"
+    },
+    {
+      "fn": "input.session",
+      "param": "tooltip",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput.session(defval=\"x\", tooltip=syminfo.tickerid)"
+    },
+    {
+      "fn": "input.session",
+      "param": "inline",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput.session(defval=\"x\", inline=syminfo.tickerid)"
+    },
+    {
+      "fn": "input.session",
+      "param": "group",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput.session(defval=\"x\", group=syminfo.tickerid)"
+    },
+    {
+      "fn": "input.session",
+      "param": "confirm",
+      "type": "const bool",
+      "verdict": "ENFORCED",
+      "expected": "const bool",
+      "passed": "simple bool",
+      "src": "//@version=6\nindicator(\"x\")\ninput.session(defval=\"x\", confirm=timeframe.isdaily)"
+    },
+    {
+      "fn": "input.session",
+      "param": "display",
+      "type": "const plot_display",
+      "verdict": "AMBIGUOUS",
+      "detail": "CE10068:Invalid argument \"{argumentName}\" in \"{funName}\" call. Possi",
+      "src": "//@version=6\nindicator(\"x\")\ninput.session(defval=\"x\", display=int(syminfo.mintick))"
+    },
+    {
+      "fn": "input.source",
+      "param": "title",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput.source(defval=close, title=syminfo.tickerid)"
+    },
+    {
+      "fn": "input.source",
+      "param": "tooltip",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput.source(defval=close, tooltip=syminfo.tickerid)"
+    },
+    {
+      "fn": "input.source",
+      "param": "inline",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput.source(defval=close, inline=syminfo.tickerid)"
+    },
+    {
+      "fn": "input.source",
+      "param": "group",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput.source(defval=close, group=syminfo.tickerid)"
+    },
+    {
+      "fn": "input.source",
+      "param": "display",
+      "type": "const plot_display",
+      "verdict": "AMBIGUOUS",
+      "detail": "CE10068:Invalid argument \"{argumentName}\" in \"{funName}\" call. Possi",
+      "src": "//@version=6\nindicator(\"x\")\ninput.source(defval=close, display=int(syminfo.mintick))"
+    },
+    {
+      "fn": "input.source",
+      "param": "confirm",
+      "type": "const bool",
+      "verdict": "ENFORCED",
+      "expected": "const bool",
+      "passed": "simple bool",
+      "src": "//@version=6\nindicator(\"x\")\ninput.source(defval=close, confirm=timeframe.isdaily)"
+    },
+    {
+      "fn": "input.string",
+      "param": "defval",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput.string(defval=syminfo.tickerid)"
+    },
+    {
+      "fn": "input.string",
+      "param": "title",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput.string(defval=\"x\", title=syminfo.tickerid)"
+    },
+    {
+      "fn": "input.string",
+      "param": "tooltip",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput.string(defval=\"x\", tooltip=syminfo.tickerid)"
+    },
+    {
+      "fn": "input.string",
+      "param": "inline",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput.string(defval=\"x\", inline=syminfo.tickerid)"
+    },
+    {
+      "fn": "input.string",
+      "param": "group",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput.string(defval=\"x\", group=syminfo.tickerid)"
+    },
+    {
+      "fn": "input.string",
+      "param": "confirm",
+      "type": "const bool",
+      "verdict": "ENFORCED",
+      "expected": "const bool",
+      "passed": "simple bool",
+      "src": "//@version=6\nindicator(\"x\")\ninput.string(defval=\"x\", confirm=timeframe.isdaily)"
+    },
+    {
+      "fn": "input.string",
+      "param": "display",
+      "type": "const plot_display",
+      "verdict": "AMBIGUOUS",
+      "detail": "CE10068:Invalid argument \"{argumentName}\" in \"{funName}\" call. Possi",
+      "src": "//@version=6\nindicator(\"x\")\ninput.string(defval=\"x\", display=int(syminfo.mintick))"
+    },
+    {
+      "fn": "input.symbol",
+      "param": "defval",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput.symbol(defval=syminfo.tickerid)"
+    },
+    {
+      "fn": "input.symbol",
+      "param": "title",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput.symbol(defval=\"x\", title=syminfo.tickerid)"
+    },
+    {
+      "fn": "input.symbol",
+      "param": "tooltip",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput.symbol(defval=\"x\", tooltip=syminfo.tickerid)"
+    },
+    {
+      "fn": "input.symbol",
+      "param": "inline",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput.symbol(defval=\"x\", inline=syminfo.tickerid)"
+    },
+    {
+      "fn": "input.symbol",
+      "param": "group",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput.symbol(defval=\"x\", group=syminfo.tickerid)"
+    },
+    {
+      "fn": "input.symbol",
+      "param": "confirm",
+      "type": "const bool",
+      "verdict": "ENFORCED",
+      "expected": "const bool",
+      "passed": "simple bool",
+      "src": "//@version=6\nindicator(\"x\")\ninput.symbol(defval=\"x\", confirm=timeframe.isdaily)"
+    },
+    {
+      "fn": "input.symbol",
+      "param": "display",
+      "type": "const plot_display",
+      "verdict": "AMBIGUOUS",
+      "detail": "CE10068:Invalid argument \"{argumentName}\" in \"{funName}\" call. Possi",
+      "src": "//@version=6\nindicator(\"x\")\ninput.symbol(defval=\"x\", display=int(syminfo.mintick))"
+    },
+    {
+      "fn": "input.text_area",
+      "param": "defval",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput.text_area(defval=syminfo.tickerid)"
+    },
+    {
+      "fn": "input.text_area",
+      "param": "title",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput.text_area(defval=\"x\", title=syminfo.tickerid)"
+    },
+    {
+      "fn": "input.text_area",
+      "param": "tooltip",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput.text_area(defval=\"x\", tooltip=syminfo.tickerid)"
+    },
+    {
+      "fn": "input.text_area",
+      "param": "group",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput.text_area(defval=\"x\", group=syminfo.tickerid)"
+    },
+    {
+      "fn": "input.text_area",
+      "param": "confirm",
+      "type": "const bool",
+      "verdict": "ENFORCED",
+      "expected": "const bool",
+      "passed": "simple bool",
+      "src": "//@version=6\nindicator(\"x\")\ninput.text_area(defval=\"x\", confirm=timeframe.isdaily)"
+    },
+    {
+      "fn": "input.text_area",
+      "param": "display",
+      "type": "const plot_display",
+      "verdict": "AMBIGUOUS",
+      "detail": "CE10068:Invalid argument \"{argumentName}\" in \"{funName}\" call. Possi",
+      "src": "//@version=6\nindicator(\"x\")\ninput.text_area(defval=\"x\", display=int(syminfo.mintick))"
+    },
+    {
+      "fn": "input.time",
+      "param": "defval",
+      "type": "const int",
+      "verdict": "ENFORCED",
+      "expected": "const int",
+      "passed": "simple int",
+      "src": "//@version=6\nindicator(\"x\")\ninput.time(defval=int(syminfo.mintick))"
+    },
+    {
+      "fn": "input.time",
+      "param": "title",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput.time(defval=1, title=syminfo.tickerid)"
+    },
+    {
+      "fn": "input.time",
+      "param": "tooltip",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput.time(defval=1, tooltip=syminfo.tickerid)"
+    },
+    {
+      "fn": "input.time",
+      "param": "inline",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput.time(defval=1, inline=syminfo.tickerid)"
+    },
+    {
+      "fn": "input.time",
+      "param": "group",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput.time(defval=1, group=syminfo.tickerid)"
+    },
+    {
+      "fn": "input.time",
+      "param": "confirm",
+      "type": "const bool",
+      "verdict": "ENFORCED",
+      "expected": "const bool",
+      "passed": "simple bool",
+      "src": "//@version=6\nindicator(\"x\")\ninput.time(defval=1, confirm=timeframe.isdaily)"
+    },
+    {
+      "fn": "input.time",
+      "param": "display",
+      "type": "const plot_display",
+      "verdict": "AMBIGUOUS",
+      "detail": "CE10068:Invalid argument \"{argumentName}\" in \"{funName}\" call. Possi",
+      "src": "//@version=6\nindicator(\"x\")\ninput.time(defval=1, display=int(syminfo.mintick))"
+    },
+    {
+      "fn": "input.timeframe",
+      "param": "defval",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput.timeframe(defval=syminfo.tickerid)"
+    },
+    {
+      "fn": "input.timeframe",
+      "param": "title",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput.timeframe(defval=\"x\", title=syminfo.tickerid)"
+    },
+    {
+      "fn": "input.timeframe",
+      "param": "tooltip",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput.timeframe(defval=\"x\", tooltip=syminfo.tickerid)"
+    },
+    {
+      "fn": "input.timeframe",
+      "param": "inline",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput.timeframe(defval=\"x\", inline=syminfo.tickerid)"
+    },
+    {
+      "fn": "input.timeframe",
+      "param": "group",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\ninput.timeframe(defval=\"x\", group=syminfo.tickerid)"
+    },
+    {
+      "fn": "input.timeframe",
+      "param": "confirm",
+      "type": "const bool",
+      "verdict": "ENFORCED",
+      "expected": "const bool",
+      "passed": "simple bool",
+      "src": "//@version=6\nindicator(\"x\")\ninput.timeframe(defval=\"x\", confirm=timeframe.isdaily)"
+    },
+    {
+      "fn": "input.timeframe",
+      "param": "display",
+      "type": "const plot_display",
+      "verdict": "AMBIGUOUS",
+      "detail": "CE10068:Invalid argument \"{argumentName}\" in \"{funName}\" call. Possi",
+      "src": "//@version=6\nindicator(\"x\")\ninput.timeframe(defval=\"x\", display=int(syminfo.mintick))"
+    },
+    {
+      "fn": "label.new",
+      "param": "force_overlay",
+      "type": "const bool",
+      "verdict": "ENFORCED",
+      "expected": "const bool",
+      "passed": "simple bool",
+      "src": "//@version=6\nindicator(\"x\")\nlabel.new(bar_index, close, force_overlay=timeframe.isdaily)"
+    },
+    {
+      "fn": "library",
+      "param": "title",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nlibrary(title=syminfo.tickerid)"
+    },
+    {
+      "fn": "library",
+      "param": "overlay",
+      "type": "const bool",
+      "verdict": "ENFORCED",
+      "expected": "const bool",
+      "passed": "simple bool",
+      "src": "//@version=6\nlibrary(title=\"x\", overlay=timeframe.isdaily)"
+    },
+    {
+      "fn": "library",
+      "param": "dynamic_requests",
+      "type": "const bool",
+      "verdict": "ENFORCED",
+      "expected": "const bool",
+      "passed": "simple bool",
+      "src": "//@version=6\nlibrary(title=\"x\", dynamic_requests=timeframe.isdaily)"
+    },
+    {
+      "fn": "line.new",
+      "param": "force_overlay",
+      "type": "const bool",
+      "verdict": "ENFORCED",
+      "expected": "const bool",
+      "passed": "simple bool",
+      "src": "//@version=6\nindicator(\"x\")\nline.new(bar_index, close, bar_index, close, force_overlay=timeframe.isdaily)"
+    },
+    {
+      "fn": "matrix.sort",
+      "param": "sort_field",
+      "type": "const int/string",
+      "verdict": "ENFORCED",
+      "expected": "const int",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\nvar m = matrix.new<float>(1, 1, 0.0)\nmatrix.sort(m, sort_field=syminfo.tickerid)\nplot(close)"
+    },
+    {
+      "fn": "max_bars_back",
+      "param": "num",
+      "type": "const int",
+      "verdict": "AMBIGUOUS",
+      "detail": "CE10013:Mismatched input {unexpectedToken} expecting set {expecting}",
+      "src": "//@version=6\nindicator(\"x\")\nmax_bars_back(var=close, num=int(syminfo.mintick))"
+    },
+    {
+      "fn": "plot",
+      "param": "force_overlay",
+      "type": "const bool",
+      "verdict": "ENFORCED",
+      "expected": "const bool",
+      "passed": "simple bool",
+      "src": "//@version=6\nindicator(\"x\")\nplot(series=close, force_overlay=timeframe.isdaily)"
+    },
+    {
+      "fn": "plotarrow",
+      "param": "title",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\nplotarrow(series=close, title=syminfo.tickerid)"
+    },
+    {
+      "fn": "plotarrow",
+      "param": "force_overlay",
+      "type": "const bool",
+      "verdict": "ENFORCED",
+      "expected": "const bool",
+      "passed": "simple bool",
+      "src": "//@version=6\nindicator(\"x\")\nplotarrow(series=close, force_overlay=timeframe.isdaily)"
+    },
+    {
+      "fn": "plotbar",
+      "param": "title",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\nplotbar(open=close, high=close, low=close, close=close, title=syminfo.tickerid)"
+    },
+    {
+      "fn": "plotbar",
+      "param": "force_overlay",
+      "type": "const bool",
+      "verdict": "ENFORCED",
+      "expected": "const bool",
+      "passed": "simple bool",
+      "src": "//@version=6\nindicator(\"x\")\nplotbar(open=close, high=close, low=close, close=close, force_overlay=timeframe.isdaily)"
+    },
+    {
+      "fn": "plotcandle",
+      "param": "title",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\nplotcandle(open=close, high=close, low=close, close=close, title=syminfo.tickerid)"
+    },
+    {
+      "fn": "plotcandle",
+      "param": "force_overlay",
+      "type": "const bool",
+      "verdict": "ENFORCED",
+      "expected": "const bool",
+      "passed": "simple bool",
+      "src": "//@version=6\nindicator(\"x\")\nplotcandle(open=close, high=close, low=close, close=close, force_overlay=timeframe.isdaily)"
+    },
+    {
+      "fn": "plotchar",
+      "param": "title",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\nplotchar(series=close, title=syminfo.tickerid)"
+    },
+    {
+      "fn": "plotchar",
+      "param": "text",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\nplotchar(series=close, text=syminfo.tickerid)"
+    },
+    {
+      "fn": "plotchar",
+      "param": "size",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\nplotchar(series=close, size=syminfo.tickerid)"
+    },
+    {
+      "fn": "plotchar",
+      "param": "force_overlay",
+      "type": "const bool",
+      "verdict": "ENFORCED",
+      "expected": "const bool",
+      "passed": "simple bool",
+      "src": "//@version=6\nindicator(\"x\")\nplotchar(series=close, force_overlay=timeframe.isdaily)"
+    },
+    {
+      "fn": "plotshape",
+      "param": "title",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\nplotshape(series=close, title=syminfo.tickerid)"
+    },
+    {
+      "fn": "plotshape",
+      "param": "text",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\nplotshape(series=close, text=syminfo.tickerid)"
+    },
+    {
+      "fn": "plotshape",
+      "param": "size",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nindicator(\"x\")\nplotshape(series=close, size=syminfo.tickerid)"
+    },
+    {
+      "fn": "plotshape",
+      "param": "force_overlay",
+      "type": "const bool",
+      "verdict": "ENFORCED",
+      "expected": "const bool",
+      "passed": "simple bool",
+      "src": "//@version=6\nindicator(\"x\")\nplotshape(series=close, force_overlay=timeframe.isdaily)"
+    },
+    {
+      "fn": "polyline.new",
+      "param": "force_overlay",
+      "type": "const bool",
+      "verdict": "ENFORCED",
+      "expected": "const bool",
+      "passed": "simple bool",
+      "src": "//@version=6\nindicator(\"x\")\nvar pts = array.new<chart.point>()\npolyline.new(pts, force_overlay=timeframe.isdaily)"
+    },
+    {
+      "fn": "strategy",
+      "param": "title",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nstrategy(title=syminfo.tickerid)\nplot(close)"
+    },
+    {
+      "fn": "strategy",
+      "param": "shorttitle",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nstrategy(title=\"x\", shorttitle=syminfo.tickerid)\nplot(close)"
+    },
+    {
+      "fn": "strategy",
+      "param": "overlay",
+      "type": "const bool",
+      "verdict": "ENFORCED",
+      "expected": "const bool",
+      "passed": "simple bool",
+      "src": "//@version=6\nstrategy(title=\"x\", overlay=timeframe.isdaily)\nplot(close)"
+    },
+    {
+      "fn": "strategy",
+      "param": "format",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nstrategy(title=\"x\", format=syminfo.tickerid)\nplot(close)"
+    },
+    {
+      "fn": "strategy",
+      "param": "precision",
+      "type": "const int",
+      "verdict": "ENFORCED",
+      "expected": "const int",
+      "passed": "simple int",
+      "src": "//@version=6\nstrategy(title=\"x\", precision=int(syminfo.mintick))\nplot(close)"
+    },
+    {
+      "fn": "strategy",
+      "param": "scale",
+      "type": "const scale_type",
+      "verdict": "AMBIGUOUS",
+      "detail": "CE10068:Invalid argument \"{argumentName}\" in \"{funName}\" call. Possi",
+      "src": "//@version=6\nstrategy(title=\"x\", scale=int(syminfo.mintick))\nplot(close)"
+    },
+    {
+      "fn": "strategy",
+      "param": "pyramiding",
+      "type": "const int",
+      "verdict": "ENFORCED",
+      "expected": "const int",
+      "passed": "simple int",
+      "src": "//@version=6\nstrategy(title=\"x\", pyramiding=int(syminfo.mintick))\nplot(close)"
+    },
+    {
+      "fn": "strategy",
+      "param": "calc_on_order_fills",
+      "type": "const bool",
+      "verdict": "ENFORCED",
+      "expected": "const bool",
+      "passed": "simple bool",
+      "src": "//@version=6\nstrategy(title=\"x\", calc_on_order_fills=timeframe.isdaily)\nplot(close)"
+    },
+    {
+      "fn": "strategy",
+      "param": "calc_on_every_tick",
+      "type": "const bool",
+      "verdict": "ENFORCED",
+      "expected": "const bool",
+      "passed": "simple bool",
+      "src": "//@version=6\nstrategy(title=\"x\", calc_on_every_tick=timeframe.isdaily)\nplot(close)"
+    },
+    {
+      "fn": "strategy",
+      "param": "max_bars_back",
+      "type": "const int",
+      "verdict": "ENFORCED",
+      "expected": "const int",
+      "passed": "simple int",
+      "src": "//@version=6\nstrategy(title=\"x\", max_bars_back=int(syminfo.mintick))\nplot(close)"
+    },
+    {
+      "fn": "strategy",
+      "param": "backtest_fill_limits_assumption",
+      "type": "const int",
+      "verdict": "ENFORCED",
+      "expected": "const int",
+      "passed": "simple int",
+      "src": "//@version=6\nstrategy(title=\"x\", backtest_fill_limits_assumption=int(syminfo.mintick))\nplot(close)"
+    },
+    {
+      "fn": "strategy",
+      "param": "default_qty_type",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nstrategy(title=\"x\", default_qty_type=syminfo.tickerid)\nplot(close)"
+    },
+    {
+      "fn": "strategy",
+      "param": "default_qty_value",
+      "type": "const int/float",
+      "verdict": "ENFORCED",
+      "expected": "const float",
+      "passed": "simple float",
+      "src": "//@version=6\nstrategy(title=\"x\", default_qty_value=syminfo.mintick)\nplot(close)"
+    },
+    {
+      "fn": "strategy",
+      "param": "initial_capital",
+      "type": "const int/float",
+      "verdict": "ENFORCED",
+      "expected": "const float",
+      "passed": "simple float",
+      "src": "//@version=6\nstrategy(title=\"x\", initial_capital=syminfo.mintick)\nplot(close)"
+    },
+    {
+      "fn": "strategy",
+      "param": "currency",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nstrategy(title=\"x\", currency=syminfo.tickerid)\nplot(close)"
+    },
+    {
+      "fn": "strategy",
+      "param": "slippage",
+      "type": "const int",
+      "verdict": "ENFORCED",
+      "expected": "const int",
+      "passed": "simple int",
+      "src": "//@version=6\nstrategy(title=\"x\", slippage=int(syminfo.mintick))\nplot(close)"
+    },
+    {
+      "fn": "strategy",
+      "param": "commission_type",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nstrategy(title=\"x\", commission_type=syminfo.tickerid)\nplot(close)"
+    },
+    {
+      "fn": "strategy",
+      "param": "commission_value",
+      "type": "const int/float",
+      "verdict": "ENFORCED",
+      "expected": "const float",
+      "passed": "simple float",
+      "src": "//@version=6\nstrategy(title=\"x\", commission_value=syminfo.mintick)\nplot(close)"
+    },
+    {
+      "fn": "strategy",
+      "param": "process_orders_on_close",
+      "type": "const bool",
+      "verdict": "ENFORCED",
+      "expected": "const bool",
+      "passed": "simple bool",
+      "src": "//@version=6\nstrategy(title=\"x\", process_orders_on_close=timeframe.isdaily)\nplot(close)"
+    },
+    {
+      "fn": "strategy",
+      "param": "close_entries_rule",
+      "type": "const string",
+      "verdict": "ENFORCED",
+      "expected": "const string",
+      "passed": "simple string",
+      "src": "//@version=6\nstrategy(title=\"x\", close_entries_rule=syminfo.tickerid)\nplot(close)"
+    },
+    {
+      "fn": "strategy",
+      "param": "margin_long",
+      "type": "const int/float",
+      "verdict": "ENFORCED",
+      "expected": "const float",
+      "passed": "simple float",
+      "src": "//@version=6\nstrategy(title=\"x\", margin_long=syminfo.mintick)\nplot(close)"
+    },
+    {
+      "fn": "strategy",
+      "param": "margin_short",
+      "type": "const int/float",
+      "verdict": "ENFORCED",
+      "expected": "const float",
+      "passed": "simple float",
+      "src": "//@version=6\nstrategy(title=\"x\", margin_short=syminfo.mintick)\nplot(close)"
+    },
+    {
+      "fn": "strategy",
+      "param": "explicit_plot_zorder",
+      "type": "const bool",
+      "verdict": "ENFORCED",
+      "expected": "const bool",
+      "passed": "simple bool",
+      "src": "//@version=6\nstrategy(title=\"x\", explicit_plot_zorder=timeframe.isdaily)\nplot(close)"
+    },
+    {
+      "fn": "strategy",
+      "param": "max_lines_count",
+      "type": "const int",
+      "verdict": "ENFORCED",
+      "expected": "const int",
+      "passed": "simple int",
+      "src": "//@version=6\nstrategy(title=\"x\", max_lines_count=int(syminfo.mintick))\nplot(close)"
+    },
+    {
+      "fn": "strategy",
+      "param": "max_labels_count",
+      "type": "const int",
+      "verdict": "ENFORCED",
+      "expected": "const int",
+      "passed": "simple int",
+      "src": "//@version=6\nstrategy(title=\"x\", max_labels_count=int(syminfo.mintick))\nplot(close)"
+    },
+    {
+      "fn": "strategy",
+      "param": "max_boxes_count",
+      "type": "const int",
+      "verdict": "ENFORCED",
+      "expected": "const int",
+      "passed": "simple int",
+      "src": "//@version=6\nstrategy(title=\"x\", max_boxes_count=int(syminfo.mintick))\nplot(close)"
+    },
+    {
+      "fn": "strategy",
+      "param": "calc_bars_count",
+      "type": "const int",
+      "verdict": "ENFORCED",
+      "expected": "const int",
+      "passed": "simple int",
+      "src": "//@version=6\nstrategy(title=\"x\", calc_bars_count=int(syminfo.mintick))\nplot(close)"
+    },
+    {
+      "fn": "strategy",
+      "param": "risk_free_rate",
+      "type": "const int/float",
+      "verdict": "ENFORCED",
+      "expected": "const float",
+      "passed": "simple float",
+      "src": "//@version=6\nstrategy(title=\"x\", risk_free_rate=syminfo.mintick)\nplot(close)"
+    },
+    {
+      "fn": "strategy",
+      "param": "use_bar_magnifier",
+      "type": "const bool",
+      "verdict": "ENFORCED",
+      "expected": "const bool",
+      "passed": "simple bool",
+      "src": "//@version=6\nstrategy(title=\"x\", use_bar_magnifier=timeframe.isdaily)\nplot(close)"
+    },
+    {
+      "fn": "strategy",
+      "param": "fill_orders_on_standard_ohlc",
+      "type": "const bool",
+      "verdict": "ENFORCED",
+      "expected": "const bool",
+      "passed": "simple bool",
+      "src": "//@version=6\nstrategy(title=\"x\", fill_orders_on_standard_ohlc=timeframe.isdaily)\nplot(close)"
+    },
+    {
+      "fn": "strategy",
+      "param": "max_polylines_count",
+      "type": "const int",
+      "verdict": "ENFORCED",
+      "expected": "const int",
+      "passed": "simple int",
+      "src": "//@version=6\nstrategy(title=\"x\", max_polylines_count=int(syminfo.mintick))\nplot(close)"
+    },
+    {
+      "fn": "strategy",
+      "param": "dynamic_requests",
+      "type": "const bool",
+      "verdict": "ENFORCED",
+      "expected": "const bool",
+      "passed": "simple bool",
+      "src": "//@version=6\nstrategy(title=\"x\", dynamic_requests=timeframe.isdaily)\nplot(close)"
+    },
+    {
+      "fn": "strategy",
+      "param": "behind_chart",
+      "type": "const bool",
+      "verdict": "ENFORCED",
+      "expected": "const bool",
+      "passed": "simple bool",
+      "src": "//@version=6\nstrategy(title=\"x\", behind_chart=timeframe.isdaily)\nplot(close)"
+    },
+    {
+      "fn": "table.new",
+      "param": "force_overlay",
+      "type": "const bool",
+      "verdict": "ENFORCED",
+      "expected": "const bool",
+      "passed": "simple bool",
+      "src": "//@version=6\nindicator(\"x\")\ntable.new(position.top_left, 1, 1, force_overlay=timeframe.isdaily)"
+    },
+    {
+      "fn": "timestamp",
+      "param": "dateString",
+      "type": "const string",
+      "verdict": "LENIENT",
+      "src": "//@version=6\nindicator(\"x\")\ntimestamp(dateString=syminfo.tickerid)"
+    }
+  ]
+}

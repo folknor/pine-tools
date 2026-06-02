@@ -1,0 +1,10 @@
+// @test regression/INV014-const-arg-valid
+// @description The const-arg check (INV014) must NOT flag genuinely-const arguments. timestamp(constString) resolves to the const-int overload; color.new(const, const) const-folds to const color; const arithmetic stays const. All three are accepted by pine-lint --tv. Guards the overload-resolution / const-fold leniency against future over-flagging.
+// @expects parse: success
+// @expects no-errors
+//@version=6
+indicator("INV014 valid const forms")
+a = input.time(timestamp("20 Jul 2021 00:00 +0300"))
+c = input.color(color.new(color.red, 50))
+n = input.int(60 * 60)
+plot(a + n, color = c)

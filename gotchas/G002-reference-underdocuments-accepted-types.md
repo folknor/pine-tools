@@ -1,52 +1,71 @@
 # G002 — TradingView's reference under-documents accepted param types
 
 **Keywords:** reference-vs-linter, overloads, accepted-types, nz, fixnan,
-na, int, plot, under-documentation, FUNCTION_PARAM_TYPE_OVERRIDES
+na, int, plot, under-documentation, FUNCTION_PARAM_TYPE_OVERRIDES,
+RETRACTED, position-keying-artifact
 
-## Observation (verified 2026-05-28 via `pine-lint --tv`)
+## ⚠️ RETRACTED 2026-06-02 — every claim below was wrong
 
-TV's **reference manual** lists *fewer* accepted parameter types than its
-**linter** actually accepts. The documented overloads are a subset of
-what's valid. Concrete, TV-verified cases:
+This gotcha claimed TV's *linter* accepts more param types than its
+*reference* documents. **Direct, isolated `pine-lint --tv` probes on
+2026-06-02 disprove all of it.** TV flags every example with CE10123:
 
-| call                     | reference overloads        | `--tv` also accepts        |
-|--------------------------|----------------------------|----------------------------|
-| `nz(x)` / `fixnan(x)`    | int / float / color        | **bool, string**           |
-| `na(x)`                  | (series-bool overload only) | **every type** (universal) |
-| `int(x)`                 | int / float                | **bool** (`int(true)` ok)  |
-| `plot(title=…)`          | const string               | **series string** (non-const) |
+| isolated `--tv` probe (2026-06-02) | original G002 claim | actual TV verdict |
+|---|---|---|
+| `plot(title=syminfo.tickerid)` (simple string) | accepts non-const | **CE10123** — `const string` expected |
+| `plot(title=str.tostring(close))` (series string) | accepts non-const | **CE10123** — `const string` expected |
+| `nz(close > open)` (series bool) | accepts bool | **CE10123** — `simple int` expected |
+| `nz(syminfo.tickerid)` (simple string) | accepts string | **CE10123** — `simple int` expected |
+| `int(true)` | accepts bool | **CE10123** — `simple int` expected |
+| `na(close > open)` | universal (any type) | **CE10123** — `simple float` expected |
 
-Crucially these extra types are **not in the reference at all** — no
-overload lists them — so scraping the reference can never recover them.
-The only source is the linter (`--tv` differential testing).
+The reference's documented types are NOT a lower bound that the linter
+widens — at least for these calls, the linter enforces them (and the
+qualifier) *exactly*. Controls confirm: `plot(title="ok")` is clean.
 
-## The trap it caused
+### Why the original conclusion was wrong
 
-INV009 listed `nz(close>open)`, `int(true)`, and `plot(title=non-const)`
-as three "missed FNs" (TV-only errors our linter doesn't catch). **All
-three were wrong** — TV accepts all of them (verified 2026-05-28). They
-were position-based heuristic artifacts from `find-real-failures.mjs`
-(TV reports at the operand column, we report at the call/operator column;
-the `(line,col)` keying counted them as TV-only). So the entire premise
-of the "tighten the polymorphic bypass to catch these FNs" work (#8 /
-#17 Phase 2) was false: there were no real FNs, and dropping the bypass
-would only have produced false positives.
+G002's "verification" trusted the very position-keying artifact it warned
+about, and drew it backwards. TV reports these at the **operand column**;
+we report at the **call/operator column**. `find-real-failures.mjs` keys by
+`(line, col)`, so TV's real CE10123 landed at a different position than
+ours and was miscounted as **"TV-silent"** → mislabelled a false positive
+on our side → "TV must accept it." It does not. (Whether TV's behavior also
+changed between 2026-05-28 and 2026-06-02 is unknowable, but the isolated
+single-construct probes above are unambiguous as of today, and that is what
+our linter must match.)
 
-## Lesson
+### Fallout — `FUNCTION_PARAM_TYPE_OVERRIDES` is invalid
 
-The reference overload list is a **lower bound** on accepted types, not
-the full set. When a parameter's accepted types matter, verify with
-`--tv`; don't trust the reference overloads alone. Because the extras
-can't be scraped, bake TV-verified sets into pine-data via
-`FUNCTION_PARAM_TYPE_OVERRIDES` in `packages/pipeline/src/generate.ts`
-(hardcoded, but the knowledge then lands in the generated JSON). The
-na-handling family (`na`/`nz`/`fixnan`) accept all na-able types; the
-reference only documents a subset.
+The whole point of G002 was to justify baking these "extra accepted types"
+into pine-data via `FUNCTION_PARAM_TYPE_OVERRIDES` in
+`packages/pipeline/src/generate.ts`. All five entries
+(`nz.source`, `nz.replacement`, `fixnan.source`, `int.x`, `plot.title`) are
+therefore wrong, and they cause real **false negatives**: our linter passes
+`plot(title=<non-const>)`, `nz(<bool>/<string>)`, and `int(true)`, which TV
+rejects. `plot.title` being widened to `series string` also *masks*
+INV014's const-arg check for that param (it would otherwise fire).
+
+Removing the overrides + regenerating pine-data + a corpus regression pass
+is a base-type-axis change with broader impact than INV014, so it is its
+own work item — tracked in `TODO.md`. See `investigations/INV014`.
+
+## Lesson (the durable one)
+
+Verify accepted-type questions with **isolated, single-construct** `--tv`
+probes that read TV's structured `ctx` (it names the exact param and the
+expected type), NOT with corpus position-diffs — `(line,col)` keying
+silently flips real TV errors into apparent silence when the two linters
+anchor a diagnostic at different columns. The reference + a direct probe
+beat any heuristic over aggregate corpus output.
 
 ## References
 
-- INV009 — corrected: all three of its "FNs" disproven here.
-- TODO #8 — closed (no real FNs); #17 blocker #2 — resolved (data widened).
-- [G001](G001-tv-pine-lint-not-spec.md) — the linter is also unreliable as
-  a *spec*; this is the complementary quirk on the *reference* side.
-- `packages/pipeline/src/generate.ts` `FUNCTION_PARAM_TYPE_OVERRIDES`.
+- INV014 — const-arg enforcement; the work that disproved this gotcha.
+- INV009 — its "zero real FNs" conclusion is overturned by the same
+  evidence (the three "TV-accepted" cases are real CE10123 errors).
+- [G001](G001-tv-pine-lint-not-spec.md) — the linter is unreliable as a
+  *spec*; the complementary point here is that *corpus position-diffs* are
+  unreliable as evidence about the linter.
+- `packages/pipeline/src/generate.ts` `FUNCTION_PARAM_TYPE_OVERRIDES`
+  (to be removed — see TODO).
