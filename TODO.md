@@ -1,6 +1,6 @@
 # TODO
 
-> **Read first**: [CLAUDE.md](CLAUDE.md) — Methodology. We aim to be MORE
+> **Read first**: [CLAUDE.md](CLAUDE.md) - Methodology. We aim to be MORE
 > correct than TradingView's pine-lint. The "false positive" / "false
 > negative" labels below are TV-diff heuristics, not verdicts. Treat
 > them as navigation aids; investigate each before acting.
@@ -8,17 +8,17 @@
 Discrepancies between our linter and TradingView's pine-lint over 748 v6
 fixtures.
 
-- **disagreements where we flag and TV doesn't** ("FP"-labelled) —
+- **disagreements where we flag and TV doesn't** ("FP"-labelled) - 
   some are genuine over-strictness in our linter, some are us
   correctly catching what TV missed (see INV001 for the canonical
   example).
 - **disagreements where TV flags and we don't** ("FN"-labelled).
 
-Current counts live in `lint-reports/failures-by-category.json` —
+Current counts live in `lint-reports/failures-by-category.json` - 
 regenerate with `node scripts/find-real-failures.mjs` followed by
 `node scripts/categorize-failures.mjs`. Past investigations are
 indexed at [investigations/README.md](investigations/README.md)
-and are not duplicated here — TODO.md is for *pending* work only.
+and are not duplicated here - TODO.md is for *pending* work only.
 
 ## Pending follow-ups
 
@@ -26,24 +26,28 @@ Open work items, each either deferred from an investigation or queued
 as a discrete next step. Sequential numbering matches the task-tool
 IDs so the two stay in sync.
 
-- **#3 — `chart.point` flagged "Unknown property 'point' on namespace
+- **#3 - `chart.point` flagged "Unknown property 'point' on namespace
   'chart'" (checker bug, not data).** `chart.point` is a type with
   constructors (`chart.point.new`/`.now`); a bare `chart.point` reference
   trips the unknown-property check. This is type-as-namespace handling in
   the checker, not missing data. (`barmerge.lookhead_on`, also surfaced
-  here, is a user typo TV flags too — not a bug.)
-- **#4 — over-strict "cannot be called from a local scope" FPs.** Was
+  here, is a user typo TV flags too - not a bug.)
+- **#4 - over-strict "cannot be called from a local scope" FPs.** Was
   31 across 6 files; INV008 cut it to 15. Most of the residual is in
   one file (`d40d7b52…pine`, 11 hits) whose trigger pattern resists
-  minimal-repro extraction — `head -446` is clean, `head -447`
+  minimal-repro extraction - `head -446` is clean, `head -447`
   (adding the wrap-continuation line of a `plotshape(…)` call) tips
   it. Needs more bisection. The other five files have one hit each
   and probably need their own minimal repros.
-- **#9 — type-inference where we infer non-bool but TV infers bool.**
+- **#9 - type-inference where we infer non-bool but TV infers bool.**
   Umbrella task. Several big wins landed via INV005, INV010, INV011;
   remaining FPs need a fresh corpus diff and per-category dives. The
-  current top non-cascade category likely needs a new pass.
-- **#18 — built-in color constants infer as `undetermined type`.**
+  current top non-cascade category likely needs a new pass. Robust
+  UDF-return inference here would also let INV016's union-arg check and
+  INV014's const-arg check drop their conservative reliability gates (both
+  currently skip args typed via UDF returns / user vars to avoid FPs, so
+  they miss real violations that flow through a variable).
+- **#18 - built-in color constants infer as `undetermined type`.**
   Surfaced by INV011. The "Ternary branches must have compatible types"
   cluster is now down to **31** (from ~117+) after the variable/constant
   scraping and display-flag fixes, but a residue of "Got 'color' and
@@ -51,9 +55,9 @@ IDs so the two stay in sync.
   `type: "color"`, but minimal repros mimicking the pattern lint cleanly.
   The `"undetermined type"` label in pine-lint's variable-list output
   comes from `astExtractor.ts`, a separate path from the validator's
-  `inferExpressionType` — investigating may need to reconcile the two
+  `inferExpressionType` - investigating may need to reconcile the two
   type-inference paths.
-- **#20 — refine INV012 with a context-aware synchronize.** Current
+- **#20 - refine INV012 with a context-aware synchronize.** Current
   `synchronize()` skips to the next column-1 statement after a parse
   error. Correct in aggregate (−1270 cascade FPs across the corpus)
   but occasionally skips legitimate declarations between the error
@@ -61,41 +65,55 @@ IDs so the two stay in sync.
   "Undefined variable …" appearances that surfaced after INV012.
   Sampling suggests *most* of those are real findings the cascade
   was hiding (e.g. comma-pair declarations our parser doesn't
-  recognise), not sync over-skipping — so the upside here is smaller
+  recognise), not sync over-skipping - so the upside here is smaller
   than it first looked. **Half-measure attempted** (looser sync that
   preferred next-NEWLINE over column-1 when followed by a plausible
-  statement-start keyword) — produced 2244 *new* cascade FPs and was
+  statement-start keyword) - produced 2244 *new* cascade FPs and was
   reverted. The real fix needs a parser-state stack tracking
   "currently inside function body / switch arm / if body / type
   body" and a sync that skips to the end of *that* context, not the
   next column-1. Bigger refactor; defer until someone has appetite
   for the stack-threading work.
-- **#21 — retire the remaining hardcoded function metadata in
+- **#21 - retire the remaining hardcoded function metadata in
   `generate.ts`.** Still hand-coded because TV doesn't expose them cleanly:
   `getFunctionFlags.topLevelOnly` (15 fns, "global scope only"), the
   `polymorphic` category map (~25 fns → see #17), and `isParameterOptional`
-  + `commonOptionalParams` — prose-matching heuristics for argument
+  + `commonOptionalParams` - prose-matching heuristics for argument
   optionality, the last cousin of the retired `inferVariableType` /
   `inferConstantType` guessers. (The `variadic` map stays: its `minArgs`
-  values are authoritative where the scrape over/under-counts —
+  values are authoritative where the scrape over/under-counts - 
   `array.from`/`str.format` valid with 1 arg, `math.sum` not variadic.)
-- **#22 — `--only <names>` / `--only-overloaded` scrape flag.** The only
+- **#22 - `--only <names>` / `--only-overloaded` scrape flag.** The only
   remaining scrape-load reduction: a flag for a targeted re-scrape of just
   the named entries, instead of hand-deleting their `.cache/function-details/`
   files and running plain `scrape`. Lower priority now that both type-logic
   and DOM-extraction iteration are fully offline via the `.cache/dom` mirror
   + `reextract:dom` (see CLAUDE.md "Re-running type logic WITHOUT scraping"),
-  so full `--force` re-scrapes should be rare — only when TV's DOM *structure*
+  so full `--force` re-scrapes should be rare - only when TV's DOM *structure*
   changes.
+- **#29 - re-baseline the TV inventory + harden the diff tooling against
+  silent `--tv` failures.** INV014/INV015 found that `pine-lint --tv` used to
+  print `{success:false, errors:[]}` on a network failure, which
+  `find-real-failures.mjs` / `compare-tv.mjs` read (`result?.errors ?? errors
+  ?? []`) as "TV reported no errors" - i.e. a swallowed failure looks identical
+  to "TV accepts." The CLI side is fixed (failures now emit no stdout + a
+  non-zero exit), but: (a) **regenerate `lint-reports/real-failures.json` +
+  `failures-by-category.json`** with the fixed CLI - the committed inventory
+  predates both the fix and the substantial INV014/15/16 changes, so its FP/FN
+  classifications (and the regression-check annotations that read them) may
+  carry misclassifications from swallowed failures (the exact bug behind G002);
+  (b) harden `find-real-failures.mjs` / `compare-tv.mjs` to treat a non-zero
+  exit / missing `success:true` as "TV unavailable" (skip + flag), not as an
+  empty error list - defense-in-depth beyond the CLI fix. See INV015 / gotchas/G002.
 - **Minor data residue (record-only, low value):** `ta.vwap.anchor`'s default
   and the "X by default" phrasing are deliberately unparsed (see
   `parse-default.ts`). Skip unless a consumer needs them. (`since`/`deprecated`,
   formerly #27, resolved: TV exposes no version-introduced data so `since` was
-  dropped; `deprecated` is parsed from the description — only `request.quandl`
-  in v6.) The "Returns" prose, "Remarks", and "See also" cross-references — once
-  uncaptured — now ship on every catalog as `returnsDescription`/`remarks`/
+  dropped; `deprecated` is parsed from the description - only `request.quandl`
+  in v6.) The "Returns" prose, "Remarks", and "See also" cross-references - once
+  uncaptured - now ship on every catalog as `returnsDescription`/`remarks`/
   `seeAlso`, and operators ship as their own `operators.{ts,json}` catalog
-  (reference data for external consumers; the checker ignores both — see the
+  (reference data for external consumers; the checker ignores both - see the
   Data Pipeline section in CLAUDE.md).
 
 ## Gotchas
@@ -103,13 +121,13 @@ IDs so the two stay in sync.
 See [gotchas/README.md](gotchas/README.md) for the format and full
 index.
 
-- [G001](gotchas/G001-tv-pine-lint-not-spec.md) — TV's pine-lint is an
+- [G001](gotchas/G001-tv-pine-lint-not-spec.md) - TV's pine-lint is an
   unreliable comparator, not a stable spec.
-- [G002](gotchas/G002-reference-underdocuments-accepted-types.md) —
+- [G002](gotchas/G002-reference-underdocuments-accepted-types.md) - 
   **RETRACTED 2026-06-02.** Claimed the linter accepts more than the
   reference documents (`nz`/`fixnan` bool/string, `int` bool, `plot.title`
   non-const); isolated `--tv` probes show TV flags all of them (CE10123).
-  The `FUNCTION_PARAM_TYPE_OVERRIDES` it justified are invalid — see #28.
+  The `FUNCTION_PARAM_TYPE_OVERRIDES` it justified are invalid - see #28.
 
 Authoritative per-occurrence list lives in
 `lint-reports/failures-by-category.json`. For every category below the JSON
@@ -124,7 +142,7 @@ count.
 | `scripts/compare-tv.mjs` | One file at a time: runs local + `--tv` in parallel, prints the error diff (local-only / tv-only) for that file. Pass `--json` to emit machine-readable output. Repro tool. |
 | `scripts/find-real-failures.mjs` | Runs local + `--tv` on every v6 fixture, records per-file false positives (we flag, TV doesn't) and false negatives (TV flags, we don't). Writes `lint-reports/real-failures.json`. Hits TV ~750 times (~2 min at concurrency 4). |
 | `scripts/categorize-failures.mjs` | Reads `real-failures.json`, normalizes error messages into templates (strips line numbers, variable names, etc.), groups every occurrence under one of 48 / 19 categories, writes `lint-reports/failures-by-category.json`. |
-| `scripts/snapshot-local-lint.mjs` | Runs `pine-lint` (local) on every fixture and writes `lint-reports/local-baseline.json` — sorted per-file error lists. The regression contract. Re-run after every intentional change. |
+| `scripts/snapshot-local-lint.mjs` | Runs `pine-lint` (local) on every fixture and writes `lint-reports/local-baseline.json` - sorted per-file error lists. The regression contract. Re-run after every intentional change. |
 | `scripts/regression-check.mjs` | Reruns local lint over the corpus and diffs against the baseline. **No network.** Annotates disappeared errors against `real-failures.json` to distinguish "fixed a known FP" from "stopped catching a real error". Exits non-zero on any new error appearance. |
 | `scripts/audit-fixtures.mjs` | Scans every `.pine` fixture under `packages/core/test/fixtures/` without running vitest. Flags fixtures with malformed `@expects` directives and fixtures whose only assertion is a total `errors: N` count (no per-error coverage), printing suggested `// @expects error: line=N, message="..."` directives ready to paste. Exits non-zero on malformed directives. Wrapper: `pnpm run audit:fixtures` (also rebuilds the compiled helpers it imports). |
 
@@ -136,7 +154,7 @@ node scripts/compare-tv.mjs fixtures/<hash>.pine
 
 ---
 
-## Regression check — the local-only loop (paramount before any parser/lexer/type work)
+## Regression check - the local-only loop (paramount before any parser/lexer/type work)
 
 Before touching the parser, lexer, or type checker, snapshot the baseline:
 
@@ -185,9 +203,15 @@ This refreshes `lint-reports/real-failures.json` and
 `lint-reports/failures-by-category.json`, which the local regression check
 reads to annotate disappearances.
 
+WARNING: The committed inventory is **stale and suspect**: it predates both the
+INV014/15/16 changes and the `--tv`-failure fix, so it may carry
+classifications from swallowed `--tv` failures (errors:[] read as "TV
+accepts"). Re-run the two commands above with the fixed CLI before trusting
+the FP/FN counts or the regression annotations. Tracked as #29.
+
 ---
 
-## Parser — error recovery cascades
+## Parser - error recovery cascades
 
 One bad token causes hundreds of downstream "Unexpected token" hits because
 recovery has no synchronization point. Adding a `synchronize()` that
@@ -220,10 +244,10 @@ to column 1, etc.) should collapse most of these.
 | 1 | 1 | `Missing comma before '*' argument` |
 
 Example: `fixtures/0c053259a16ba1b4aa4898add6830d5fe0e6bcb90766e1595ca40c08f5644da8.pine`
-— TV reports 1 error at L61 (invalid `series float` qualifier in function
+ - TV reports 1 error at L61 (invalid `series float` qualifier in function
 parameter); we report 525, all cascade.
 
-## Parser — syntax we silently accept (false negatives)
+## Parser - syntax we silently accept (false negatives)
 
 These are real syntax errors in the user's code that we don't surface.
 
@@ -242,7 +266,7 @@ These are real syntax errors in the user's code that we don't surface.
 
 ---
 
-## Type checker — over-strict bool / arg / assign rules
+## Type checker - over-strict bool / arg / assign rules
 
 Per task #9 the root cause is more likely our type inference producing
 non-bool types where TV correctly produces bool. Much reduced this round:
@@ -266,9 +290,9 @@ bool-operator and ternary FPs.
 
 **Right approach**: pick a specific FP, trace through `inferExpressionType`
 in `checker.ts` to see why we produce e.g. `series<float>` for what
-should be `series<bool>`. Don't relax the bool checks — they're correct.
+should be `series<bool>`. Don't relax the bool checks - they're correct.
 
-## Type checker — false negatives
+## Type checker - false negatives
 
 | count | files | category |
 |---|---|---|
@@ -281,20 +305,20 @@ should be `series<bool>`. Don't relax the bool checks — they're correct.
 | 2 | 2 | `Value with NA type cannot be assigned to a variable that was defined without type keyword` |
 | 1 | 1 | `Incorrect field type "{id}" of enum "{enumName}"` |
 
-The 16 missed argument-type-mismatches are particularly worth chasing —
+The 16 missed argument-type-mismatches are particularly worth chasing - 
 these are real runtime bugs in the user's code that we'd hide. Look first
 at functions registered with `type: "unknown"` parameters (see
-`hasOverloads()` in `builtins.ts`) — that bypass skips positional type
+`hasOverloads()` in `builtins.ts`) - that bypass skips positional type
 checking.
 
 ---
 
-## Symbols — undefined-variable clusters
+## Symbols - undefined-variable clusters
 
 `Undefined variable '*'` (1086 hits in 38 files) and `Undefined variable '*'.
 Did you mean '*'?` (1072 hits in 41 files) dominate the count, but most of
 both come from a handful of files where the same name appears dozens of
-times. The JSON groups occurrences per category — find the names that
+times. The JSON groups occurrences per category - find the names that
 repeat:
 
 | ~count | name | example fixture |
@@ -320,13 +344,13 @@ files) is the same shape applied to identifiers in syntactic positions.
 
 ---
 
-## Checker — local-scope restrictions probably too strict
+## Checker - local-scope restrictions probably too strict
 
 `Function '*' cannot be called from a local scope` fires 15 times across 5
 files for `plot`, `plotshape`, `plotcandle`, `alertcondition`, `barcolor`,
 `bgcolor`, `fill` (down from 31 after INV008; see #4). Some of these
 (`alertcondition` in particular) may actually be callable from `if`/`for`
-bodies in v6 — verify per-function with TV.
+bodies in v6 - verify per-function with TV.
 
 ---
 
@@ -334,7 +358,7 @@ bodies in v6 — verify per-function with TV.
 
 - `lint-reports/real-failures.json` has 2 entries where TV returned
   unparseable output (`tvOk: false`). Worth checking whether TV truncates
-  responses past some size — affects how trustable the comparison is for
+  responses past some size - affects how trustable the comparison is for
   large fixtures.
 - A few categories ("All exported functions args should be typified",
   "Exported variable should have const modifier and type") look like

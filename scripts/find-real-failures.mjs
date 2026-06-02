@@ -14,7 +14,7 @@
 //   genuine and not coincidental.
 //
 // The labels are navigation aids, not verdicts. Per CLAUDE.md, TV silence
-// is evidence — not authority. A `localOnly` finding may be us being
+// is evidence - not authority. A `localOnly` finding may be us being
 // over-strict OR us correctly catching what TV missed. See gotcha G001.
 //
 // Usage: node scripts/find-real-failures.mjs [--limit N] [--concurrency K]
@@ -107,7 +107,7 @@ async function main() {
 			const localOnly = localE.errors.filter((e) => !tvByPos.has(`${e.line}:${e.col}`));
 			const tvOnly = tvE.errors.filter((e) => !localByPos.has(`${e.line}:${e.col}`));
 
-			// Same position, different message — both linters caught
+			// Same position, different message - both linters caught
 			// something at (line, col) but worded it differently. Usually
 			// this is just two correct linters with different wording; we
 			// surface it so reviewers can spot the rare case where it's
@@ -226,11 +226,11 @@ async function main() {
 		for (const f of summary.localUnparseableFiles) console.log(`  ${f}`);
 	}
 
-	console.log(`\ntop 15 local-only messages (we flag, TV silent — investigate per category):`);
+	console.log(`\ntop 15 local-only messages (we flag, TV silent - investigate per category):`);
 	for (const [m, c] of [...localOnlyByMessage.entries()].sort((a, b) => b[1] - a[1]).slice(0, 15)) {
 		console.log(`  ${String(c).padStart(5)}  ${m}`);
 	}
-	console.log(`\ntop 15 tv-only messages (TV flags, we silent — investigate per category):`);
+	console.log(`\ntop 15 tv-only messages (TV flags, we silent - investigate per category):`);
 	for (const [m, c] of [...tvOnlyByMessage.entries()].sort((a, b) => b[1] - a[1]).slice(0, 15)) {
 		console.log(`  ${String(c).padStart(5)}  ${m}`);
 	}

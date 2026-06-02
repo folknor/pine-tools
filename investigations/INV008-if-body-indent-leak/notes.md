@@ -1,4 +1,4 @@
-# INV008 — `if` body swallowed everything at the same indent
+# INV008 - `if` body swallowed everything at the same indent
 
 **Status:** Fixed. `ifStatement` now requires the body's indent to be
 strictly greater than the `if` keyword's own indent.
@@ -21,12 +21,12 @@ overlap = input.bool(true)  // ← gets absorbed as "if body"
 was parsed as a column-1 `if` whose body extended to *every*
 subsequent statement at column 1, i.e. to end-of-file. Every
 declaration past that point lived inside the phantom if-body's scope,
-not at the global scope — which is why `overlap` (declared on
+not at the global scope - which is why `overlap` (declared on
 line 817 of `fixtures/8439b2366…pine`) wasn't visible at line 1057
 inside `fnOB()`. Looked like a "scope visibility" bug; was actually a
 parser block-extent bug.
 
-This is the same root cause as task #4 — `plot`, `plotshape`,
+This is the same root cause as task #4 - `plot`, `plotshape`,
 `barcolor`, etc. flagged as "cannot be called from a local scope" in
 real fixtures. Once the if-body extends past where it should, every
 non-locally-callable function lands in a "local" scope and flags.
@@ -77,7 +77,7 @@ body. The `if` block's scope (and the blockDepth counter)
 correspondingly never closed.
 
 Captured `_baseIndent` already existed in the function but was unused
-(name-prefixed with `_`) — the original author recognised this was a
+(name-prefixed with `_`) - the original author recognised this was a
 gap but didn't wire the check up.
 
 ## Fix
@@ -89,7 +89,7 @@ const ifIndent = startToken.indent ?? 0;
 // ...
 if (consequentIndent === null && currentToken.line > startToken.line) {
     if (currentIndent <= ifIndent) {
-        // No properly-indented body — the `if` has no consequent.
+        // No properly-indented body - the `if` has no consequent.
         break;
     }
     consequentIndent = currentIndent;
@@ -115,17 +115,17 @@ Inline `// see INV008` reference at the change site.
   (`the candle is red, stop` etc.) that our parser now reaches and
   reports as undefined. TV is silent on these (TV stops at first
   error and never sees them), so they appear as `localOnly` in the
-  TV-diff — methodology says we're more-correct than TV, not in
+  TV-diff - methodology says we're more-correct than TV, not in
   conflict with it. They're not regressions.
 - 1 "TV-also-flagged" disappearance: that's `8439b2366…pine:1057
-  Undefined variable 'overlap'` — the exact bug we fixed. The
+  Undefined variable 'overlap'` - the exact bug we fixed. The
   annotation is stale (TV actually says 0 errors on this file in
   fresh `--tv`).
 
 ## Methodology notes captured
 
 - "Top-level variables not visible from deeply nested blocks" (the
-  original task #15 framing) was the *symptom* — the actual mechanism
+  original task #15 framing) was the *symptom* - the actual mechanism
   was top-level variables being declared inside a phantom if-body
   scope at parse time. When something looks like a scope-walk
   problem, also check whether the parser is honestly placing

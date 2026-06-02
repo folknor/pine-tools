@@ -1,4 +1,4 @@
-# INV005 — UDF parameter type was hardcoded `series<float>` regardless of annotation
+# INV005 - UDF parameter type was hardcoded `series<float>` regardless of annotation
 
 **Status:** Fixed. `inferFunctionReturnType` honours each parameter's
 type annotation; only untyped UDF params still default to `series<float>`.
@@ -45,12 +45,12 @@ hardcoded type:
    after the temporary scope exits, the wrong types stick to the
    nodes. When the main validation pass runs `validateBinaryExpression`
    on `a and b`, it calls `inferExpressionType(a)` again, hits the
-   cache, and reads `series<float>` — emitting the
+   cache, and reads `series<float>` - emitting the
    `Operator 'and' requires bool operands` error against the original
    declared `bool`.
 
 The hardcoded type was labelled "Default assumption for UDF params"
-in the source — useful for untyped functions, harmful when the user
+in the source - useful for untyped functions, harmful when the user
 actually wrote a type.
 
 ## Fix
@@ -73,7 +73,7 @@ Inline `// see INV005` reference at the change site.
 - Local regression-check on the corpus: 26 TV-silent disappearances
   (genuine false-positive removals), 0 TV-also-flagged disappearances
   (we did not stop catching anything TV catches), 2 newly-visible FPs
-  in the same file from an *unrelated* name-shadowing bug — see below.
+  in the same file from an *unrelated* name-shadowing bug - see below.
 - 152/152 tests pass.
 
 ## Adjacent finding (not fixed here)
@@ -101,7 +101,7 @@ variable's type) and the binary expression reports
 
 Two things would help here, both out of scope for INV005:
 
-1. Methods and variables shouldn't occupy the same symbol-table slot —
+1. Methods and variables shouldn't occupy the same symbol-table slot - 
    `method n(...)` and `int n` are different namespaces in Pine, but
    we conflate them.
 2. Whatever we *do* store for a method should not be its return type.

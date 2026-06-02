@@ -1,4 +1,4 @@
-# INV007 — blank line inside a `type` / `enum` body ended the body-skip early
+# INV007 - blank line inside a `type` / `enum` body ended the body-skip early
 
 **Status:** Fixed. The `typeOrEnumDeclaration` body-skip now skips
 `NEWLINE` tokens before checking indent.
@@ -50,7 +50,7 @@ if (
 ```
 
 A blank-line `NEWLINE` with `indent: 0` satisfies all four predicates
-and breaks out — so the rest of the type body parses as top level.
+and breaks out - so the rest of the type body parses as top level.
 
 ## Fix
 
@@ -65,7 +65,7 @@ if (currentToken.type === TokenType.NEWLINE) {
 ```
 
 We considered fixing the lexer to set `indent: undefined` on `NEWLINE`
-tokens, which would have been a one-line change. Tried it — and the
+tokens, which would have been a one-line change. Tried it - and the
 regression check immediately surfaced 47 new "Undefined variable …"
 appearances across other fixtures. The reason: several block-parser
 sites in `parser.ts` use `this.peek().indent || 0` to decide whether a
@@ -84,11 +84,11 @@ Inline `// see INV007` reference at the change site.
 - Two large library fixtures both regressed all of their false
   positives caused by leaked type-body fields:
   `93badd17…pine` 157 → 138, `fffe6a2f…pine` 45 → 45 (was already
-  clean of this class — no blank line in its type body).
+  clean of this class - no blank line in its type body).
 - Regression check: 0 new error appearances, 115 TV-silent
   disappearances (correct FP removals), 0 truly TV-also-flagged
   disappearances. The 1 reported TV-also-flagged is at
-  `93badd17…pine:142:10` — same position the fix removes — and
+  `93badd17…pine:142:10` - same position the fix removes - and
   fresh `pine-lint --tv` on that file now reports 0 errors, so the
   annotation is a stale-reference artifact (see INV003's
   methodology note about refreshing baselines and TV references
@@ -100,11 +100,11 @@ Inline `// see INV007` reference at the change site.
 ## Adjacent finding (separate from this fix)
 
 `fixtures/8439b2366…pine:1057` still reports `Undefined variable
-'overlap'` — that one wasn't caused by a blank line in a type body.
+'overlap'` - that one wasn't caused by a blank line in a type body.
 The `overlap` variable IS declared at the top level (line 817) but
 isn't visible at line 1057. Task #15 was originally opened thinking
 both `is_extended` and `overlap` were the same bug; INV007 covers
-`is_extended`. `overlap` is a different scope-visibility issue —
+`is_extended`. `overlap` is a different scope-visibility issue - 
 re-pointed task #15 to that single remaining case.
 
 ## Methodology notes captured

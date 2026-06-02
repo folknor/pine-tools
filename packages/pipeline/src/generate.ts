@@ -246,7 +246,7 @@ function parseQualifiedType(raw: string): { type: string; qualifier: string } {
 }
 
 // Variables whose TV detail page exposes no machine-readable "Type" field.
-// Empty by design — populate only if the scrape surfaces such cases.
+// Empty by design - populate only if the scrape surfaces such cases.
 const VARIABLE_TYPE_OVERRIDES: Record<
 	string,
 	{ type: string; qualifier: string }
@@ -260,7 +260,7 @@ function constantBaseType(raw: string): string {
 }
 
 // Constants whose TV detail page exposes no machine-readable "Type" field.
-// Empty by design — populate only if the scrape surfaces such cases.
+// Empty by design - populate only if the scrape surfaces such cases.
 const CONSTANT_TYPE_OVERRIDES: Record<string, string> = {};
 
 // Function params (`<fn>.<param>`) where TV's LINTER accepts a type the scraped
@@ -270,7 +270,7 @@ const CONSTANT_TYPE_OVERRIDES: Record<string, string> = {};
 // `--tv`-verified record from 2026-05-28 that TV under-documents acceptance. As
 // of 2026-06-02, isolated `pine-lint --tv` probes flag every one of those calls
 // with CE10123 (nz(<bool>/<string>), int(true), plot(title=<non-const>)), so the
-// widenings now contradict TV and were a false-negative source — removed.
+// widenings now contradict TV and were a false-negative source - removed.
 // The 2026-05-28 "TV accepts" verdict was a measurement error, not a TV change
 // (see G002): a failed `--tv` probe used to print `{success:false, errors:[]}`,
 // which the diff tooling reads as "no TV errors" = "accepts" (now fixed). Baking
@@ -283,7 +283,7 @@ const FUNCTION_PARAM_TYPE_OVERRIDES: Record<string, string> = {};
 // from the overload dump. `input`'s return follows `defval`, but its defval type
 // is documented as un-parseable prose ("const int/float/bool/string/color or
 // source-type built-ins"), so the structural detector can't match it. This
-// override is the single generate-time source for these — it replaces the stale
+// override is the single generate-time source for these - it replaces the stale
 // discovered `function-behavior.json` (retired). see TODO #17.
 const RETURN_TYPE_PARAM_OVERRIDES: Record<string, string> = {
 	input: "defval",
@@ -464,7 +464,7 @@ function parseParamNamesFromSignature(sig: string): string[] {
 
 // Build the per-overload signature list for an overloaded function from the
 // scraped dump. Each overload carries its EXACT (non-unioned) param types from
-// `overloadArgs` and its own return type from the overload signature string —
+// `overloadArgs` and its own return type from the overload signature string - 
 // detail the merged top-level fields flatten away. Returns undefined for
 // non-overloaded functions (the merged view fully describes them).
 //
@@ -567,7 +567,7 @@ function generateFunctions(
 
 		// Union per-param types across overloads from the captured overloadArgs
 		// dump (offline; see union-types.ts). Only params present in every
-		// overload are unioned — others keep their scraped type.
+		// overload are unioned - others keep their scraped type.
 		const unionedParams = unionOverloadParams(detail);
 		// Backfill descriptions for params that appear only in a later overload
 		// (blank in the merged view scraped from overload #0). see TODO #25
@@ -575,7 +575,7 @@ function generateFunctions(
 		const parameters = (detail.parameters || []).map((p) => {
 			const description = p.description || descByName.get(p.name) || "";
 			const allowed = parseAllowedValues(description);
-			// A param is either an enum or a numeric range, never both — skip the
+			// A param is either an enum or a numeric range, never both - skip the
 			// range scan when an enum was found (its prose can contain stray digits).
 			const range = allowed ? undefined : parseNumericRange(description);
 			return {
@@ -599,10 +599,10 @@ function generateFunctions(
 		// is the single type the checker consumes, and overload #0's weak
 		// qualifier (const) coerces everywhere, so it's the permissive/safe
 		// choice. The full, accurate per-overload returns live in `overloads[]`
-		// (authoritative for overloaded functions) — unioning them up to the top
+		// (authoritative for overloaded functions) - unioning them up to the top
 		// level instead widens qualifiers (const->series) and regressed 104
 		// fixtures / introduced FPs. see TODO #26
-		// Deprecation note, when the description flags it (rare in v6 — e.g.
+		// Deprecation note, when the description flags it (rare in v6 - e.g.
 		// request.quandl). Capture the sentence mentioning "deprecated". see #27
 		const depMatch = (detail.description || "").match(
 			/([^.]*\bdeprecated\b[^.]*\.)/i,
@@ -689,7 +689,7 @@ function generateVariables(
 	// Build the authoritative name list from the crawl (standalone + namespaced
 	// members), then resolve each variable's type from the scrape. The old
 	// hand-maintained `namespaceVars` array and `inferVariableType()` heuristics
-	// are retired — TV's "Type" field is the source of truth now.
+	// are retired - TV's "Type" field is the source of truth now.
 	const names: string[] = [
 		...(constructs.builtInVariables?.standalone?.items || []),
 	];

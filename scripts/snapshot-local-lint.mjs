@@ -26,7 +26,7 @@ const OUT = resolve("lint-reports/local-baseline.json");
 try {
 	await access(FIXTURES);
 } catch {
-	console.error(`No ${FIXTURES} — run scripts/collect-pine-fixtures.mjs first.`);
+	console.error(`No ${FIXTURES} - run scripts/collect-pine-fixtures.mjs first.`);
 	process.exit(2);
 }
 

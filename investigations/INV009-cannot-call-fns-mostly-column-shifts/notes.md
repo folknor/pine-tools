@@ -1,18 +1,18 @@
-# INV009 — most "Cannot call …" FNs are column shifts, not missed bugs
+# INV009 - most "Cannot call …" FNs are column shifts, not missed bugs
 
-**Status:** ⚠️ **RE-MEASURED 2026-06-02 — the 2026-05-28 "TV-accepts"
+**Status:** **RE-MEASURED 2026-06-02 - the 2026-05-28 "TV-accepts"
 correction no longer holds; today's TV matches the ORIGINAL "these ARE real
 FNs" reading.** Isolated, single-construct `pine-lint --tv` probes on
 2026-06-02 show TV flags all three with CE10123:
 
 | call                                   | `--tv` verdict (2026-06-02, isolated) |
 |----------------------------------------|---------------------------------------|
-| `nz(close > open)` — `nz(series<bool>)`| **CE10123** — `simple int` expected   |
-| `int(true)` — `int(bool)`              | **CE10123** — `simple int` expected   |
-| `plot(close, title=<series string>)`   | **CE10123** — `const string` expected |
+| `nz(close > open)` - `nz(series<bool>)`| **CE10123** - `simple int` expected   |
+| `int(true)` - `int(bool)`              | **CE10123** - `simple int` expected   |
+| `plot(close, title=<series string>)`   | **CE10123** - `const string` expected |
 
 So these are **real false negatives** we still miss (the
-`FUNCTION_PARAM_TYPE_OVERRIDES` widening masked them — removed in INV015). The
+`FUNCTION_PARAM_TYPE_OVERRIDES` widening masked them - removed in INV015). The
 `plot.title` const case is now structurally handled by INV014; the
 `nz`/`int` base-type cases are tracked as a follow-up in `TODO.md`.
 
@@ -34,37 +34,37 @@ measurement error then, not a TV change.** A mature linter doesn't flip basic
 rules in two days, so it's (a) the 2026-05-28 measurement was wrong or (b)
 mine is. **(b) is ruled out:** `--tv` flags `nz(close > open)` while our local
 validator does not (we skip union params), and `--tv` accepts the valid
-`nz(close)` — so `--tv` is genuinely TV, not a local echo. That leaves (a),
+`nz(close)` - so `--tv` is genuinely TV, not a local echo. That leaves (a),
 with a concrete mechanism: on a network failure `pine-lint --tv` used to print
 `{success:false, errors:[]}`, which the diff tooling reads as "no TV errors" =
 "TV accepts" (a single transient failure on 2026-05-28 would do it). Now fixed
-— a failed `--tv` probe emits no stdout and exits non-zero. See `gotchas/G002`.
+ - a failed `--tv` probe emits no stdout and exits non-zero. See `gotchas/G002`.
 
 ---
 
-**Status (2026-05-28 correction — contradicted by 2026-06-02 `--tv`, kept for
-the record):** ⚠️ The original analysis below was unverified; this block
+**Status (2026-05-28 correction - contradicted by 2026-06-02 `--tv`, kept for
+the record):** The original analysis below was unverified; this block
 "corrected" it to say all three are TV-ACCEPTED, verified with `--tv` on
 2026-05-28. That verdict was a measurement error (most likely a swallowed
-`--tv` network failure read as empty errors — see the top block and
+`--tv` network failure read as empty errors - see the top block and
 `gotchas/G002`), contradicted by the 2026-06-02 measurement above. Original
 2026-05-28 table claimed:
 
 | call                                   | claimed 2026-05-28 | 2026-06-02      |
 |----------------------------------------|--------------------|-----------------|
-| `nz(close > open)` — `nz(series<bool>)`| "TV accepts"       | CE10123 (flags) |
-| `int(true)` — `int(bool)`              | "TV accepts"       | CE10123 (flags) |
+| `nz(close > open)` - `nz(series<bool>)`| "TV accepts"       | CE10123 (flags) |
+| `int(true)` - `int(bool)`              | "TV accepts"       | CE10123 (flags) |
 | `plot(close, title=trend)` series str  | "TV accepts"       | CE10123 (flags) |
 
 Consequences (as written 2026-05-28, now superseded):
 - `nz`/`fixnan` accept all primitives (bool/string beyond the documented
   int/float/color); `int` accepts bool; `plot.title` accepts series
-  string. The reference UNDER-documents these — see
+  string. The reference UNDER-documents these - see
   [G002](../../gotchas/G002-reference-underdocuments-accepted-types.md).
   Baked into pine-data via `FUNCTION_PARAM_TYPE_OVERRIDES` (generate.ts).
 - **Task #8 is closed** (no real FNs). The polymorphic bypass in
   `validateFunctionArguments` was CORRECT (TV accepts these broad calls);
-  the "tighten the bypass" plan (#17 Phase 2) is abandoned — it would
+  the "tighten the bypass" plan (#17 Phase 2) is abandoned - it would
   only add false positives.
 - **Lesson:** an INV that asserts FNs without `--tv` verification can
   manufacture phantom work. Verify every disagreement before recording it.
@@ -79,8 +79,8 @@ created a follow-up tooling task.
 
 ## Summary
 
-The TV-only "Cannot call '{funId}' with argument …" category — 16
-hits across 8 files — looked like 16 real argument-type-mismatches
+The TV-only "Cannot call '{funId}' with argument …" category - 16
+hits across 8 files - looked like 16 real argument-type-mismatches
 our linter misses. Classifying each one against our actual output
 shows:
 
@@ -112,14 +112,14 @@ if (functionHasOverloads || functionIsPolymorphic) continue; // for positional
 The bypass exists because pine-data's signatures for polymorphic /
 overloaded functions list only the first overload's types. Removing
 the bypass without first widening the data would convert these 3 FNs
-into many FPs on valid calls (`nz(close)`, `plot(close)`, etc.) — net
+into many FPs on valid calls (`nz(close)`, `plot(close)`, etc.) - net
 loss in correctness.
 
 The proper fix lives upstream: regenerate pine-data so polymorphic
 functions list all accepted parameter type unions (not just the first
 overload), then tighten the bypass to "only skip when the union
 includes the actual arg type or `unknown`". Tracked as a follow-up
-under task #3 (pine-data) — the scraper needs to emit unions for
+under task #3 (pine-data) - the scraper needs to emit unions for
 overloaded params, not pick one.
 
 ## Methodology notes captured

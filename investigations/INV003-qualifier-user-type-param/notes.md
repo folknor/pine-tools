@@ -1,4 +1,4 @@
-# INV003 — `simple <UserType> <name>` parameters dropped during parse
+# INV003 - `simple <UserType> <name>` parameters dropped during parse
 
 **Status:** Fixed. `parseFunctionParams` now folds a user-defined
 type-name (IDENTIFIER) into the type annotation after a qualifier.
@@ -9,7 +9,7 @@ type-name (IDENTIFIER) into the type annotation after a qualifier.
 ## Summary
 
 Method / function parameters declared with a *type qualifier*
-(`simple`, `series`) followed by a *user-defined type name* — e.g.
+(`simple`, `series`) followed by a *user-defined type name* - e.g.
 
 ```pine
 export method to_string(simple Timezone timezone) =>
@@ -57,7 +57,7 @@ errors: 2
 
 After fix: 0 errors.
 
-The `export enum` half of this repro is INV002 — both fixes are needed
+The `export enum` half of this repro is INV002 - both fixes are needed
 for the full library example to come clean.
 
 ## Root cause
@@ -65,7 +65,7 @@ for the full library example to come clean.
 `packages/core/src/parser/parser.ts`, `parseFunctionParams()`. The
 qualifier loop walks tokens while `isTypeKeyword()` returns true.
 `isTypeKeyword()` is built from `VAR_TYPE_KEYWORDS` (the eleven
-builtin type names) plus `simple` and `series` — a fixed,
+builtin type names) plus `simple` and `series` - a fixed,
 keyword-only set. User-defined types are IDENTIFIER tokens; they
 never matched.
 
@@ -73,7 +73,7 @@ The downstream consequence is what makes this look like a scope bug.
 Once `parseFunctionParams` returns without a `timezone` parameter,
 the symbol-table population for the function body never registers the
 name, and validation reports every body reference as undefined. Two
-real fixture cascades grew out of this single parser hole —
+real fixture cascades grew out of this single parser hole - 
 `fffe6a2f…pine` alone had 95 `Undefined variable 'Timezone'` cascade
 hits driven by the same root cause as INV002.
 
@@ -102,17 +102,17 @@ if (
 
 Why this is safe in the corners worth checking:
 
-- `OrderBlock block` (no qualifier, user-type, name) — `typeKeywords`
+- `OrderBlock block` (no qualifier, user-type, name) - `typeKeywords`
   is empty, the new check skips, the existing fall-through still
   handles it.
-- `simple int x` (qualifier + builtin + name) — the loop already
+- `simple int x` (qualifier + builtin + name) - the loop already
   consumed both keywords, current is the param-name IDENTIFIER,
   `peekNext()` is `,`/`)`/`=`; the new check does not fire.
-- `simple array<Tz> arr` (qualifier + generic with user inner) — the
+- `simple array<Tz> arr` (qualifier + generic with user inner) - the
   generic-type block runs first and welds `<Tz>` onto `array`, leaving
   the current token as `arr` and `peekNext()` as `,`/`)`/`=`; the new
   check does not fire.
-- `simple x` (qualifier alone, then param-name) — current is the name
+- `simple x` (qualifier alone, then param-name) - current is the name
   IDENTIFIER and `peekNext()` is `,`/`)`/`=`, not IDENTIFIER/KEYWORD;
   the new check does not fire.
 
@@ -130,7 +130,7 @@ Inline `// see INV003` reference in `parser.ts` points readers here.
   locks the parameter form in. 150/150 tests pass.
 - Local-only regression-check showed a net −8 errors on
   `6874e636…pine` (improvement) but +5 newly-visible `Undefined
-  variable 'block'` cascade hits — adjacent finding documented below.
+  variable 'block'` cascade hits - adjacent finding documented below.
 
 ## Adjacent findings (not fixed here)
 
@@ -140,17 +140,17 @@ Inline `// see INV003` reference in `parser.ts` points readers here.
   `(OrderBlock block, float[] opens, float[] tops, …)`. The
   array-suffix syntax is recognised by `parseGenericTypeSuffix` for
   variable declarations but never extended to `parseFunctionParams`.
-  Was hidden behind this bug — when the parser couldn't get past
-  `simple Tz` it never tried to parse the rest of the list — so it
+  Was hidden behind this bug - when the parser couldn't get past
+  `simple Tz` it never tried to parse the rest of the list - so it
   only surfaces now that INV003 lets the earlier parameters land.
   Separate investigation.
 - **Bool parameters are typed as `series<float>` for `and`/`or`
-  inference.** Visible in `2387d4e1…pine:97` —
+  inference.** Visible in `2387d4e1…pine:97` - 
   `getCond(bool var1, simple Operator op, bool var2)` now parses,
   and the body `Operator.all => var1 and var2` reports
   `Operator 'and' requires bool operands, but left operand is
   series<float>`. Falls under task #9 (type inference produces
-  non-bool where TV produces bool). Not unique to INV003 — it just
+  non-bool where TV produces bool). Not unique to INV003 - it just
   newly affects this fixture.
 
 ## Methodology notes captured

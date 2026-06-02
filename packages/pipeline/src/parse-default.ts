@@ -6,11 +6,11 @@
  * default field, so we parse the value token that follows the "the default
  * (value) is" phrase. The returned string is the Pine default EXPRESSION as
  * written (e.g. "0", "true", "na", "alert.freq_once_per_bar", "" for an empty
- * string) — not a typed value.
+ * string) - not a typed value.
  *
  * Dynamic / inherited defaults that have no literal value are represented by a
  * MAGIC SENTINEL. A default is a sentinel iff it is in MAGIC_DEFAULTS or starts
- * with "ARG:" — NOT merely by being uppercase, since some literal Pine values
+ * with "ARG:" - NOT merely by being uppercase, since some literal Pine values
  * are uppercase too (e.g. strategy.close_entries_rule defaults to the literal
  * "FIFO"). Everything else is a literal Pine expression (`na`, `true`, `0`,
  * `alert.freq_once_per_bar`, `"FIFO"`, `""`). See MAGIC_DEFAULTS / TODO #25:
@@ -21,7 +21,7 @@
  *   SOURCE_LENGTH   the length of the source string
  *   ARG:<name>      the value of a sibling argument (e.g. ARG:start_column)
  *
- * The "X by default" phrasing is intentionally NOT handled — its few literal
+ * The "X by default" phrasing is intentionally NOT handled - its few literal
  * cases (ta.pivothigh's "'High'") are ambiguous (the `high` built-in vs the
  * label "High"). Anything still unrecognized returns undefined.
  */
@@ -70,7 +70,7 @@ export function parseDefault(description: string): string | undefined {
 	if (!m) return undefined;
 	const rest = m[1].trimStart();
 
-	// Quoted literal — match up to the SAME closing quote so embedded other
+	// Quoted literal - match up to the SAME closing quote so embedded other
 	// quotes survive (e.g. "yyyy-MM-dd'T'HH:mm:ssZ").
 	const q = rest.match(/^(['"`])(.*?)\1/);
 	if (q) return q[2];
@@ -96,7 +96,7 @@ export function parseDefault(description: string): string | undefined {
 		const lw = w[1].toLowerCase();
 		if (lw === "true" || lw === "false" || lw === "na") return lw;
 		if (WORDNUM[lw] !== undefined) return WORDNUM[lw];
-		// A lone value token terminated by "." or ")" (e.g. "close.") — but not an
+		// A lone value token terminated by "." or ")" (e.g. "close.") - but not an
 		// English stopword that begins a referential phrase.
 		const after = rest.slice(w[1].length).trimStart();
 		if (!STOP.has(lw) && /^[.)]/.test(after)) return w[1];
@@ -121,7 +121,7 @@ function parseDynamicDefault(rest: string): string | undefined {
 	if (arg) return `ARG:${arg[1]}`;
 	if (/the length of the source string/i.test(rest)) return "SOURCE_LENGTH";
 	// Anything else (e.g. ta.vwap.anchor's "equivalent to passing
-	// timeframe.change() with \"1D\" as its argument" — too awkward to
+	// timeframe.change() with \"1D\" as its argument" - too awkward to
 	// reconstruct faithfully) is left undefined rather than captured wrong.
 	return undefined;
 }

@@ -6,7 +6,7 @@
 //      (would fail when run; surfaces them as a batch).
 //   2. fixtures that only assert a total `errors: N` / `warnings: N`
 //      count without any per-error `error: line=N, message="..."`
-//      assertions — those tests pass even if our linter starts
+//      assertions - those tests pass even if our linter starts
 //      emitting the right count at the wrong lines.
 //   3. for category-2 fixtures, prints suggested per-error directives
 //      based on what our linter currently emits, ready to paste in.

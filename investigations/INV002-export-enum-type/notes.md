@@ -1,4 +1,4 @@
-# INV002 — `export enum` and `export type` were never parsed
+# INV002 - `export enum` and `export type` were never parsed
 
 **Status:** Fixed. Parser now dispatches `export enum`/`export type` to
 the same body-parser as their non-exported forms.
@@ -12,7 +12,7 @@ A Pine v6 library declares its public surface with `export`. For
 functions and methods that meant `export funcName(...) =>` and
 `export method methodName(...) =>`. Types and enums use the same form:
 `export enum Foo` and `export type Bar`. Our parser handled the first
-two but never the second two — `exportDeclaration()` only checked for
+two but never the second two - `exportDeclaration()` only checked for
 `method`; everything else fell into the "function declaration" path
 and tripped the `Expected function name after 'export'` consume.
 
@@ -81,7 +81,7 @@ points share one implementation. The `// see INV002` comment in
 
 The AST node returned by the exported form is the same
 `TypeDeclaration` / `EnumDeclaration` shape as the non-exported form.
-There is no `isExport` flag on those node types today — the linter
+There is no `isExport` flag on those node types today - the linter
 doesn't need one yet, since the only consumer is the symbol-table
 registration that fires for both cases identically. If a future check
 needs to know "was this declaration exported?", add the flag then.
@@ -108,7 +108,7 @@ export method to_string(simple Timezone timezone) =>
 The parameter `timezone` is declared with the type-qualifier syntax
 `simple Timezone timezone` (`simple` qualifier, `Timezone` type,
 `timezone` name). The parser appears not to be registering this
-parameter in the method body's scope — likely because the
+parameter in the method body's scope - likely because the
 `simple <type> <name>` form isn't fully handled by
 `parseFunctionParams`. That's a separate investigation.
 

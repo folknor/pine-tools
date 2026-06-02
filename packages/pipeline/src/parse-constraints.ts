@@ -35,7 +35,7 @@ function valueSpan(description: string): string | undefined {
 /**
  * The fixed set of values a parameter accepts, as written (namespaced constants
  * like "display.all", or quoted-string literals like "TTM"). Returns undefined
- * when no enumerated set is documented (free prose, or only a numeric range —
+ * when no enumerated set is documented (free prose, or only a numeric range - 
  * use parseNumericRange for that).
  */
 export function parseAllowedValues(description: string): string[] | undefined {

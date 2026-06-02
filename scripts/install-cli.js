@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 // Rebuild the CLI bundle and copy it to `~/.local/bin/pine-lint` as a real
-// file (not a symlink — some harnesses mis-handle symlinks). The bundle
+// file (not a symlink - some harnesses mis-handle symlinks). The bundle
 // produced by build-extension.js already carries a `#!/usr/bin/env node`
 // shebang, so the copy is directly executable once we chmod +x.
 // Re-run this whenever the CLI source changes.

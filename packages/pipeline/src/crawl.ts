@@ -213,7 +213,7 @@ export async function crawlPineScriptReference(): Promise<CrawlResult> {
 			});
 
 			// Extract keywords from code blocks throughout the page. (Operators are
-			// discovered from the #op_ TOC links above, not here — a char-class
+			// discovered from the #op_ TOC links above, not here - a char-class
 			// regex over code produced garbage like `=-`, `><`, `=|:=`.)
 			const codeBlocks = document.querySelectorAll("code, pre");
 
@@ -236,7 +236,7 @@ export async function crawlPineScriptReference(): Promise<CrawlResult> {
 
 			// Separate variables into standalone and namespaced. Keep the full
 			// member name per namespace (not just the prefix) so scrape + generate
-			// can resolve each variable's detail page — mirrors how functions and
+			// can resolve each variable's detail page - mirrors how functions and
 			// constants are captured below.
 			const standaloneVariables: string[] = [];
 			const variableNamespaces = new Set<string>();

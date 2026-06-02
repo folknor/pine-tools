@@ -1,4 +1,4 @@
-# INV004 — `T[]` array-suffix never parsed in function / method parameters
+# INV004 - `T[]` array-suffix never parsed in function / method parameters
 
 **Status:** Fixed. `parseFunctionParams` recognises the `T[]` form, and
 `mapToPineType` normalises it to `array<T>`.
@@ -26,7 +26,7 @@ parameter symbols, so every reference like `array.size(xs)` read as
 `Undefined variable 'xs'`.
 
 `parseGenericTypeSuffix` already understood `T[]` for variable
-declarations — the suffix form was just never wired into the
+declarations - the suffix form was just never wired into the
 parameter parser.
 
 ## Repro
@@ -53,7 +53,7 @@ After fix: 0 errors.
 
 ## Root cause
 
-`packages/core/src/parser/parser.ts`, `parseFunctionParams()` —
+`packages/core/src/parser/parser.ts`, `parseFunctionParams()` - 
 specifically the continuation condition of the type-keyword loop.
 
 ## Fix
@@ -108,7 +108,7 @@ appearances in the regression check, broken down by template:
   1  Cannot assign array<int> to array<float>
 ```
 
-None are caused by INV004 — every one of these is a downstream check
+None are caused by INV004 - every one of these is a downstream check
 that previously couldn't run because the parser gave up early. They
 are existing issues now visible:
 
@@ -116,12 +116,12 @@ are existing issues now visible:
   mismatches in `Cannot assign` are normalisation bugs in
   `isAssignable` for qualified collection element types.
 - The `to float and type` patterns look like a separate inference bug
-  where the `type` keyword leaks into type strings — worth a focused
+  where the `type` keyword leaks into type strings - worth a focused
   look.
 - The bool-context issues (`Ternary branches`, `'and' requires bool`)
   fall under INV001 / task #9 (type-inference root causes).
 
-No new TODO task was created for the umbrella here — each downstream
+No new TODO task was created for the umbrella here - each downstream
 category has its own existing task; specific fixtures can be linked
 from the task descriptions as they're worked.
 
@@ -129,8 +129,8 @@ from the task descriptions as they're worked.
 
 - A parser fix in a high-traffic spot will *always* surface
   previously-masked downstream issues. Don't pattern-match them as
-  regressions — read the messages and confirm they're not in the same
+  regressions - read the messages and confirm they're not in the same
   category as the fix itself before counting them as new bugs.
 - The "two equivalent forms" pattern (`T[]` vs `array<T>`,
-  `simple T` vs `simple<T>`, etc.) is a Pine theme — every parser
+  `simple T` vs `simple<T>`, etc.) is a Pine theme - every parser
   path that handles one is a candidate for missing the other.

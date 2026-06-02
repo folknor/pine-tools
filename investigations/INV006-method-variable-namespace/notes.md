@@ -1,4 +1,4 @@
-# INV006 — methods and variables shared a symbol-table slot
+# INV006 - methods and variables shared a symbol-table slot
 
 **Status:** Fixed. `Scope` now stores methods in a separate `methods`
 map; bare-identifier lookups consult only the variable namespace, and
@@ -15,9 +15,9 @@ Pine v6 allows a variable and a method to share a name:
 int n = bar_index
 method n(float v) => not na(v)
 
-x = n - 1          // bare identifier — resolves to the variable
-y = n(5.0)         // call — resolves to the method
-z = (5.0).n()      // method call — resolves to the method
+x = n - 1          // bare identifier - resolves to the variable
+y = n(5.0)         // call - resolves to the method
+z = (5.0).n()      // method call - resolves to the method
 ```
 
 Our `Scope` used a single `Map<string, Symbol>` for all symbols. The
@@ -115,11 +115,11 @@ namespace-split pattern extends straightforwardly.
     `93badd17…pine:142`. Both files declare the names at the top
     level *and* declare a same-named method. Before INV006 the
     method's symbol satisfied the variable lookup (with the wrong
-    type — masking a real type bug); after INV006 the variable
+    type - masking a real type bug); after INV006 the variable
     lookup uses the variable namespace, and the bare-identifier
     reference inside a deep nested block doesn't reach the
     top-level variable because of an independent scope-visibility
-    issue. TV emits 0 errors on both positions — so these are FPs
+    issue. TV emits 0 errors on both positions - so these are FPs
     of our scope tracking, not caused by INV006. Captured as a
     follow-up task.
 
@@ -127,7 +127,7 @@ namespace-split pattern extends straightforwardly.
 
 Top-level variables don't appear to be visible from inside deeply
 nested blocks of certain user-defined functions / methods. Two of the
-20 regression "appearances" surfaced this — both at positions where
+20 regression "appearances" surfaced this - both at positions where
 TV is silent. Reproducible against `8439b2366…pine:1057` and
 `93badd17…pine:142`. Likely a `Scope.lookup` walk that bottoms out
 before reaching the global scope under some condition; needs a focused
@@ -136,13 +136,13 @@ minimal repro.
 ## Methodology notes captured
 
 - Adding a new symbol *kind* with its own storage requires touching
-  every consumer of `symbols` — `getAllSymbols`, `getUnusedSymbols`,
+  every consumer of `symbols` - `getAllSymbols`, `getUnusedSymbols`,
   `markUsed`, `findSimilarSymbols`, plus all the `lookup` call sites
   in the checker. Easy to miss one; the regression check caught the
   resulting "Did you mean" suggestion shift.
 - "Suggestion-shift" appearances (same `(line, col)`, same first
   half of the message, different "Did you mean" tail) should
   probably be reframed in `regression-check.mjs` as "message changed
-  at known position" rather than "new error appearance" — closing
+  at known position" rather than "new error appearance" - closing
   the loop with the `samePositionDifferentMessage` category that
   `find-real-failures.mjs` already has. Adding to the tooling backlog.

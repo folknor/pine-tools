@@ -3,7 +3,7 @@
  *
  * The scraper captures every overload's argument types into `overloadArgs`
  * (a per-overload list of {name,type}); this module turns that raw dump into a
- * single type string per parameter — entirely offline, so the rule can be
+ * single type string per parameter - entirely offline, so the rule can be
  * iterated without re-scraping TradingView. See TODO #17.
  */
 
@@ -88,7 +88,7 @@ function mergePrimitives(fragments: string[]): string | null {
  *     (array.abs: array<int/float> ∪ array<int> → array<int/float>)
  *  3. all identical → keep that string (e.g. "series sort_order")
  *  4. differing/mixed (a broad overload alongside narrower ones) → "unknown"
- *     — the universal-param case (na.x: "simple int/float" in overload #0 vs the
+ * - the universal-param case (na.x: "simple int/float" in overload #0 vs the
  *       everything-accepting type in the `series bool` overload).
  */
 export function unionTypes(typeStrings: string[]): string {
@@ -129,7 +129,7 @@ export function unionTypes(typeStrings: string[]): string {
 }
 
 /**
- * Are the overloads NESTED — i.e. does every overload's ordered parameter-name
+ * Are the overloads NESTED - i.e. does every overload's ordered parameter-name
  * list match a prefix of the longest overload's list? If so, the overloads
  * differ only by trailing OPTIONAL parameters (e.g. math.round's `precision`,
  * input.int's `minval`/`maxval`/`step`): the 1-arg form is a prefix of the
@@ -154,7 +154,7 @@ function overloadsAreNested(overloadArgs: OverloadArg[][]): boolean {
  * Compute union types for an overloaded function's parameters from its
  * `overloadArgs` capture.
  *
- * For NESTED overloads (prefix-chain — see overloadsAreNested) every captured
+ * For NESTED overloads (prefix-chain - see overloadsAreNested) every captured
  * parameter is unioned over the overloads where it appears, because trailing
  * params are simply optional. For DIVERGENT overloads only parameters present
  * in EVERY overload are unioned; the rest are left out so the caller keeps them
@@ -194,7 +194,7 @@ function baseType(s: string): string {
 /**
  * Detect a "return-follows-source" parameter: an overloaded function whose
  * return type varies in lockstep with ONE scalar parameter (e.g. ta.valuewhen,
- * ta.change — the return is the type of `source`, but the scraped static return
+ * ta.change - the return is the type of `source`, but the scraped static return
  * is frozen to overload #0). Returns that param's name, or null.
  *
  * Conservative on purpose: requires the return to vary over primitives, NO
@@ -232,7 +232,7 @@ export function detectReturnTypeParam(detail: OverloadCapture): string | null {
 			bases.size === returnBases.size &&
 			[...returnBases].every((b) => bases.has(b))
 		) {
-			if (match) return null; // ambiguous — more than one scalar match
+			if (match) return null; // ambiguous - more than one scalar match
 			match = name;
 		}
 	}

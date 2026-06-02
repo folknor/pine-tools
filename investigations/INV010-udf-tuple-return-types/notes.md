@@ -1,4 +1,4 @@
-# INV010 — destructured UDF tuple elements defaulted to `series<float>`
+# INV010 - destructured UDF tuple elements defaulted to `series<float>`
 
 **Status:** Fixed. The checker now captures the per-element types of
 a UDF's tuple-return expression at validate time, and
@@ -22,7 +22,7 @@ z = x and y > 0     // ← "Operator 'and' requires bool operands,
 
 The function `f` returns a 2-tuple `[bool, int]`. Our linter typed
 both destructured variables as `series<float>` because
-`inferTupleElementTypes` only handled `request.security` calls — every
+`inferTupleElementTypes` only handled `request.security` calls - every
 other tuple-returning call (including user-defined functions and
 methods) fell through to `defineTupleVariables`, which defaults
 unknown element types to `series<float>`.
@@ -31,11 +31,11 @@ The fallout was a class of false positives anywhere a script's UDF
 returns a tuple and the caller used a destructured element in a
 bool / int / color / string context:
 
-- `x and y`, `cond ? x : y` — INV001 / bool-context FPs
-- `x + something_int` when x is actually bool — `cannot apply '+'`
+- `x and y`, `cond ? x : y` - INV001 / bool-context FPs
+- `x + something_int` when x is actually bool - `cannot apply '+'`
   FPs
 - `array.push(arr, x)` when arr is `array<bool>` and x is the
-  destructured-bool — assignment / argument FPs
+  destructured-bool - assignment / argument FPs
 
 ## Root cause
 
@@ -56,8 +56,8 @@ In `validateStatement` for `FunctionDeclaration` and
 
 1. Looks at the body's last statement (`ExpressionStatement` or
    `ReturnStatement`).
-2. If its expression is an `ArrayExpression` — i.e. the function
-   returns a tuple literal — re-enters a temporary scope mirroring
+2. If its expression is an `ArrayExpression` - i.e. the function
+   returns a tuple literal - re-enters a temporary scope mirroring
    `inferFunctionReturnType`'s setup (params with declared types,
    plus `collectDeclarations` of the body) and infers each tuple
    element's type via `inferExpressionType`.
@@ -97,19 +97,19 @@ a UDF: if `elementTypes` is still empty after the
 ## Adjacent findings (not fixed here)
 
 Some of the 16 new appearances are real over-strict-checker
-findings now visible (e.g. `cannot apply '<=' to color and int` —
+findings now visible (e.g. `cannot apply '<=' to color and int` - 
 real bugs in user code that TV is silent on, methodology says we're
 more-correct-than-TV). Others are FPs from over-strict color
-arithmetic that need their own investigation — out of scope for
+arithmetic that need their own investigation - out of scope for
 INV010.
 
 ## Methodology notes captured
 
 - A "tuple destructure default" is a high-leverage type-inference
-  bug — one function returning a 10-element tuple silently mistypes
+  bug - one function returning a 10-element tuple silently mistypes
   10 variables, and any downstream use compounds. Look for
   `defineTuple…` or any code that fills unknown types in bulk when
   hunting `series<float>`-as-bool FPs.
 - Storing per-validation-run inferred data in a side map keyed by
   symbol name is a lightweight alternative to extending the `Symbol`
-  shape — clears cleanly with the existing `expressionTypes` map.
+  shape - clears cleanly with the existing `expressionTypes` map.

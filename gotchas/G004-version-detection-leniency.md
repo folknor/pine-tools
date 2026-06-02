@@ -1,4 +1,4 @@
-# G004 — version detection drives leniency; a missing directive defaults to v6
+# G004 - version detection drives leniency; a missing directive defaults to v6
 
 **Status:** active
 **Discovered:** 2026-05-29
@@ -12,8 +12,8 @@ Two related problems:
 1. Scripts that deliberately declare an older language version
    (`//@version=5`, `//@version=4`) were getting scolded with v6-only
    nudges and errors that don't apply to the version they target.
-2. A version directive written with whitespace — `// @version=5`,
-   `//@version = 5` — was not recognised at all. The lexer only matched
+2. A version directive written with whitespace - `// @version=5`,
+   `//@version = 5` - was not recognised at all. The lexer only matched
    the gremlin-free `//@version=X`, so a spaced directive fell through to
    the "no directive" path, which defaults to `"6"`, and the script was
    then linted as v6.
@@ -31,7 +31,7 @@ Version leniency was being faked by masking v6 facts globally instead of
 keying behaviour to the detected version. Meanwhile detection itself was
 brittle: a single regex (`/\/\/@version=(\d+)/`) with no tolerance for
 whitespace, feeding a `getDetectedVersion() || "6"` fallback. A
-mis-detected directive is invisible — it just quietly becomes v6.
+mis-detected directive is invisible - it just quietly becomes v6.
 
 ## Lesson
 
@@ -50,7 +50,7 @@ mis-detected directive is invisible — it just quietly becomes v6.
   v5 instead of silently defaulting to v6.
 - **Detect the version from the comment; do NOT reclassify the token.**
   The first cut skipped leading whitespace in `scanComment` *before* the
-  `peek() === "@"` annotation test. That detected spaced directives — but
+  `peek() === "@"` annotation test. That detected spaced directives - but
   it also turned every `// @function` / `// @param` / `// @returns` doc
   comment into an `ANNOTATION` token, which the parser doesn't expect
   mid-body, cascading 200+ phantom "Unexpected token" / "Expected )"
@@ -64,14 +64,14 @@ mis-detected directive is invisible — it just quietly becomes v6.
 
 see G004 in:
 
-- `parser/lexer.ts` — `extractVersionFromAnnotation` runs on regular
+- `parser/lexer.ts` - `extractVersionFromAnnotation` runs on regular
   COMMENT tokens too (not just `//@`-prefixed ANNOTATION tokens), with a
   whitespace-tolerant `/\/\/\s*@version\s*=\s*(\d+)/` match. Spaced
   directives stay COMMENT tokens; only detection changes.
-- `analyzer/builtins.ts` — `NAMESPACE_PROPERTIES` is now built purely from
+- `analyzer/builtins.ts` - `NAMESPACE_PROPERTIES` is now built purely from
   scraped pine-data; the hand-coded v4/v5 / alias entries were removed.
-- `language-service/.../diagnostics.ts` — v6-only pattern nudges
+- `language-service/.../diagnostics.ts` - v6-only pattern nudges
   (`//@version=6` header, `input.timeframe`, `math.clamp`) gated behind
   `isV6 = detectedVersion === "6"`.
-- `analyzer/checker.ts` — the `DEPRECATED_V5_CONSTANTS` warning path was
+- `analyzer/checker.ts` - the `DEPRECATED_V5_CONSTANTS` warning path was
   removed along with the table (it was the last consumer).

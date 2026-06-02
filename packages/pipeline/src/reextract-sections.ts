@@ -1,9 +1,9 @@
 #!/usr/bin/env -S node --experimental-strip-types
 
 /**
- * Re-derive each reference item's prose sub-sections — `returnsDescription`,
- * `remarks`, `seeAlso` — from the local DOM mirror (.cache/dom/<name>/base.html),
- * OFFLINE — no network. Sibling of reextract-overload-args.ts: same idea, same
+ * Re-derive each reference item's prose sub-sections - `returnsDescription`,
+ * `remarks`, `seeAlso` - from the local DOM mirror (.cache/dom/<name>/base.html),
+ * OFFLINE - no network. Sibling of reextract-overload-args.ts: same idea, same
  * source-of-truth (TV's rendered HTML captured by `scrape`), different fields.
  *
  * It rewrites those three fields in place on every catalog entry of
@@ -11,7 +11,7 @@
  * generate.ts emits them into the per-catalog JSON. Always run after `scrape`
  * (alongside reextract:dom) and before `generate`.
  *
- * Mirror coverage note: `scrape` snapshots every catalog — functions, types,
+ * Mirror coverage note: `scrape` snapshots every catalog - functions, types,
  * annotations, variables, constants, operators, and keywords. An entry with no
  * `base.html` yet (e.g. a member scraped before mirroring existed) is skipped
  * here and reported as "missing mirror" until a re-scrape backfills it.
@@ -109,7 +109,7 @@ function main(): void {
 
 	// Index every name to the set of catalogs it appears in. A seeAlso entry is
 	// a true self-reference (safe to strip) only when its name lives in no
-	// catalog other than the symbol's own — otherwise it points to a same-named
+	// catalog other than the symbol's own - otherwise it points to a same-named
 	// sibling in a different catalog and must be kept.
 	const nameToCatalogs = new Map<string, Set<string>>();
 	for (const { key } of CATALOGS) {

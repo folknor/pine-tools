@@ -21,7 +21,7 @@ export interface Symbol {
 export class Scope {
 	// Variables / functions / parameters live in one namespace, methods in
 	// another. Pine allows `int n = bar_index` and `method n(float v) =>
-	// not na(v)` to coexist — a bare `n` resolves to the variable, while
+	// not na(v)` to coexist - a bare `n` resolves to the variable, while
 	// `n(5.0)` / `(5.0).n()` resolve to the method. see INV006.
 	private symbols: Map<string, Symbol> = new Map();
 	private methods: Map<string, Symbol> = new Map();
@@ -47,7 +47,7 @@ export class Scope {
 		return undefined;
 	}
 
-	// Lookup for call sites — accepts methods too. Variables take
+	// Lookup for call sites - accepts methods too. Variables take
 	// precedence (which would error elsewhere if the variable isn't
 	// callable), then methods, then walk parents.
 	lookupCallable(name: string): Symbol | undefined {

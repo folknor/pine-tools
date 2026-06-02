@@ -2,7 +2,7 @@
 
 /**
  * Re-derive every overloaded function's per-overload `overloadArgs` from the
- * local DOM mirror (.cache/dom/<name>/overload-<i>.html), OFFLINE — no network.
+ * local DOM mirror (.cache/dom/<name>/overload-<i>.html), OFFLINE - no network.
  *
  * The mirror is captured by `scrape` (see saveDomSnapshot / TODO #22). This tool
  * lets DOM-extraction logic (the arg-type parser in arg-parse.ts) be iterated

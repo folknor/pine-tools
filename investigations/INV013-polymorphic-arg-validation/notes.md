@@ -1,4 +1,4 @@
-# INV013 — validate args on polymorphic functions now that pine-data emits union types
+# INV013 - validate args on polymorphic functions now that pine-data emits union types
 
 **Status:** resolved (TODO #24)
 **Repro:** `packages/core/test/fixtures/regression/INV013-polymorphic-arg-typecheck.pine`
@@ -10,7 +10,7 @@
 INV009). It existed because pine-data used to list only overload #0's param
 types, so checking polymorphic/overloaded args against that one form produced
 false positives. Consequence: real argument-type mismatches on these functions
-were missed FNs — e.g. `math.round(close, "x")` (the `precision` param is
+were missed FNs - e.g. `math.round(close, "x")` (the `precision` param is
 `series int`) went unflagged though TradingView flags it.
 
 ## What changed
@@ -20,7 +20,7 @@ were missed FNs — e.g. `math.round(close, "x")` (the `precision` param is
 - Union types (e.g. `series int/float`, nz's widened
   `series int/float/bool/string/color`) map to `unknown` via `mapToPineType`
   and are skipped by the existing `param.type !== "unknown"` guard. So removing
-  the polymorphic bypass only validates **cleanly-typed** params — exactly the
+  the polymorphic bypass only validates **cleanly-typed** params - exactly the
   cases where a single concrete type is known and a mismatch is real.
 - The bypass (`functionIsPolymorphic` in the named- and positional-arg checks)
   was removed. `functionHasOverloads` (a function with any still-`unknown`
@@ -33,7 +33,7 @@ new appearances).
 
 ## v6-only arg checks (the v4/v5 caveat)
 
-Removing the bypass first surfaced 20 false positives — all on `//@version=4`
+Removing the bypass first surfaced 20 false positives - all on `//@version=4`
 scripts using the legacy `input(defval, title, type, …)` form (v6 removed the
 `type` param, so arg 3 maps to `tooltip: string` and `input.color` mismatches).
 pine-data ships only **v6** signatures, so validating v4/v5 calls against them

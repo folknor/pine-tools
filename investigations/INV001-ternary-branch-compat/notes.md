@@ -1,4 +1,4 @@
-# INV001 — Ternary branches must have compatible types
+# INV001 - Ternary branches must have compatible types
 
 **Status:** Decided. The check is kept; we are stricter than TV here on
 purpose.
@@ -11,18 +11,18 @@ purpose.
 `cond ? a : b` requires `a` and `b` to be type-compatible (numeric ↔
 numeric, bool ↔ bool, string ↔ string, color ↔ color, plus
 series/simple stripping). Cross-type branches like `cond ? 1 :
-color.red` or `cond ? "x" : 3.14` are nonsense values — the result
+color.red` or `cond ? "x" : 3.14` are nonsense values - the result
 cannot be assigned to a typed variable and has no usable meaning.
 
 `pine-lint` (TradingView's reference linter) is **silent** on these
-cases — it does not flag them. We flag them anyway because the code is
+cases - it does not flag them. We flag them anyway because the code is
 broken regardless of what TV says. This is the canonical example of
 the methodology rule "TV silence is evidence, not authority" (see
 [CLAUDE.md](../../CLAUDE.md)).
 
 ## Timeline
 
-### 2026-05-27 — Removed (wrongly), then restored
+### 2026-05-27 - Removed (wrongly), then restored
 
 A differential test against `pine-lint --tv` over 748 v6 fixtures
 showed 43 hits of `Ternary branches must have compatible types. Got
@@ -52,7 +52,7 @@ explaining its strictness:
 > compatible in ternary)
 
 That comment turned out to be wrong about *TradingView's* enforcement
-— TV does accept these mixes — but the original author's *intent*
+ - TV does accept these mixes - but the original author's *intent*
 (reject nonsense ternary results) was right.
 
 Claude removed the check based purely on TV's silence (commit
@@ -68,7 +68,7 @@ The check was then restored.
 - Keep `areTernaryBranchTypesCompatible` exactly as it was.
 - Add an inline `// see INV001` reference at the call site so future
   readers don't repeat the removal.
-- The 43 hits remain in the TV-diff report — but they are **not** false
+- The 43 hits remain in the TV-diff report - but they are **not** false
   positives. They are real findings TV missed.
 
 ## How to verify

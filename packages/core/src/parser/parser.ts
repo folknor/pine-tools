@@ -525,7 +525,7 @@ export class Parser {
 		}
 
 		// Parse the consequent block using indentation tracking. The body
-		// must be indented STRICTLY MORE than the `if` keyword itself —
+		// must be indented STRICTLY MORE than the `if` keyword itself - 
 		// otherwise we'd swallow any following same-column statements as
 		// the body and the `if`'s scope would leak to end-of-file. That
 		// happened in real fixtures when malformed continuation text
@@ -543,7 +543,7 @@ export class Parser {
 			// Set expected consequent indentation from first statement
 			if (consequentIndent === null && currentToken.line > startToken.line) {
 				if (currentIndent <= ifIndent) {
-					// No properly-indented body — the `if` has no consequent.
+					// No properly-indented body - the `if` has no consequent.
 					break;
 				}
 				consequentIndent = currentIndent;
@@ -957,7 +957,7 @@ export class Parser {
 			return this.methodDeclaration(true);
 		}
 
-		// `export enum Name ...` / `export type Name ...` — Pine v6 library
+		// `export enum Name ...` / `export type Name ...` - Pine v6 library
 		// exports. Without this branch the parser falls into the function-
 		// declaration path below, hits a parse error ("Expected function name
 		// after 'export'") and the enum never registers as a symbol, so every
@@ -989,7 +989,7 @@ export class Parser {
 	/**
 	 * Parse a type or enum declaration body, given the already-consumed
 	 * `type`/`enum` keyword. The body is an indented block that we skip
-	 * (members are not currently tracked in the AST — only the declaration
+	 * (members are not currently tracked in the AST - only the declaration
 	 * itself, so it can be registered as a namespace symbol).
 	 */
 	private typeOrEnumDeclaration(
@@ -1018,7 +1018,7 @@ export class Parser {
 					// leading-whitespace count as their `indent` (e.g. 0 for
 					// an empty line). A NEWLINE is not a content token, so
 					// we must skip it before deciding whether the body has
-					// ended — otherwise a blank line inside a type body
+					// ended - otherwise a blank line inside a type body
 					// (indent 0) terminates the skip and field declarations
 					// past it leak into top-level parsing. see INV007.
 					if (currentToken.type === TokenType.NEWLINE) {
@@ -1551,7 +1551,7 @@ export class Parser {
 					next?.type === TokenType.IDENTIFIER ||
 					next?.type === TokenType.KEYWORD || // Any keyword can be a param name (e.g., 'type', 'color')
 					(next?.type === TokenType.COMPARE && next.value === "<") ||
-					next?.type === TokenType.LBRACKET // array suffix `T[]` — see INV004
+					next?.type === TokenType.LBRACKET // array suffix `T[]` - see INV004
 				) {
 					// More type info or param name follows
 					typeKeywords.push(this.advance().value);
@@ -1587,7 +1587,7 @@ export class Parser {
 				typeKeywords[typeKeywords.length - 1] += genericType;
 			}
 
-			// `simple Tz timezone` / `series Tz timezone` — a qualifier
+			// `simple Tz timezone` / `series Tz timezone` - a qualifier
 			// followed by a user-defined type name (IDENTIFIER, not a
 			// type-keyword) followed by the param name. The qualifier loop
 			// above stops as soon as it sees an IDENTIFIER, so without this
@@ -1789,7 +1789,7 @@ export class Parser {
 	// start to the top-level parse loop, each producing its own error).
 	//
 	// The heuristic: walk until the next token that starts a NEW line
-	// AT COLUMN 1 — i.e. a true top-level statement, dedented out of
+	// AT COLUMN 1 - i.e. a true top-level statement, dedented out of
 	// whatever nested context the error happened in. Same effect as the
 	// previous behaviour when the next line *is* at column 1, but skips
 	// over nested broken code (switch arm bodies, function bodies, …)
@@ -1797,7 +1797,7 @@ export class Parser {
 	// statement.
 	//
 	// Fallback anchors: top-level statement-start keywords (`if`, `for`,
-	// `while`, `var`, `varip`, `const`) — kept for cases where the bad
+	// `while`, `var`, `varip`, `const`) - kept for cases where the bad
 	// token *is* at column 1 and we want to resume immediately. see INV012.
 	private synchronize(): void {
 		this.advance();
@@ -1805,12 +1805,12 @@ export class Parser {
 		while (!this.isAtEnd()) {
 			const token = this.peek();
 
-			// Token starts a new line at column 1 — a true top-level
+			// Token starts a new line at column 1 - a true top-level
 			// statement boundary, regardless of what indented context the
 			// error originally came from.
 			if (token.indent === 0 && token.line > 1) return;
 
-			// Statement-start keyword we recognise — resume here.
+			// Statement-start keyword we recognise - resume here.
 			if (token.type === TokenType.KEYWORD) {
 				if (
 					["if", "for", "while", "var", "varip", "const"].includes(token.value)

@@ -187,7 +187,7 @@ async function main() {
 			// indistinguishable from "TV reported no errors": diff tooling that
 			// reads `result?.errors ?? errors ?? []` (find-real-failures,
 			// compare-tv) silently treats a network blip as "TV accepts". That is
-			// the most plausible cause of the 2026-05-28 mis-verification — see
+			// the most plausible cause of the 2026-05-28 mis-verification - see
 			// gotchas/G002, INV014. Emit nothing on stdout; report the reason on
 			// stderr and signal failure with a distinct non-zero exit code so a
 			// failed probe can never be parsed as a clean result.

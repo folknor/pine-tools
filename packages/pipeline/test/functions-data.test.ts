@@ -13,13 +13,13 @@ type Fn = {
 
 const byName = new Map((functions as Fn[]).map((f) => [f.name, f]));
 
-describe("generated functions.json — overload exposure (TODO #25)", () => {
+describe("generated functions.json - overload exposure (TODO #25)", () => {
 	it("exposes per-overload structure for an overloaded function", () => {
 		const round = byName.get("math.round");
 		expect(round?.overloads, "math.round should expose overloads").toBeDefined();
 		// All 8 qualifier/arity forms are present.
 		expect(round?.overloads?.length).toBe(8);
-		// The two-arg (number, precision) form must be visible — it is flattened
+		// The two-arg (number, precision) form must be visible - it is flattened
 		// out of the merged top-level syntax/returns.
 		const twoArg = round?.overloads?.find((o) => o.parameters.length === 2);
 		expect(twoArg?.parameters.map((p) => p.name)).toEqual(["number", "precision"]);
@@ -42,7 +42,7 @@ describe("generated functions.json — overload exposure (TODO #25)", () => {
 	});
 
 	it("omits the overloads field for non-overloaded functions", () => {
-		// `alert` has a single signature — fully described by the merged fields.
+		// `alert` has a single signature - fully described by the merged fields.
 		expect(byName.get("alert")?.overloads).toBeUndefined();
 	});
 

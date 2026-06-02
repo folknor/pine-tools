@@ -1,4 +1,4 @@
-# INV012 — parser error recovery skipped to next NEWLINE, not next top-level statement
+# INV012 - parser error recovery skipped to next NEWLINE, not next top-level statement
 
 **Status:** Fixed. `synchronize()` now skips to the next token at
 column 1 (a true top-level statement boundary), not just the next
@@ -14,7 +14,7 @@ When the parser threw on a token it didn't recognise, the existing
 `synchronize()` advanced to the next NEWLINE and resumed parsing
 statements. If the bad token was *inside* a nested expression
 (switch-arm body, function body, deeply indented `if` body, …), the
-next non-newline token was still inside that expression — the
+next non-newline token was still inside that expression - the
 top-level `parse()` loop would try to parse it as a statement, fail
 again, and cascade. The canonical victim
 (`fixtures/0c053259…pine`, ~2100 lines with one bad `:=` inside a
@@ -44,14 +44,14 @@ plot(f())
 Before fix:
 
 ```
-errors: many — one for the `:=`, then cascading "Unexpected token"s
+errors: many - one for the `:=`, then cascading "Unexpected token"s
 across the rest of the file.
 ```
 
 After fix:
 
 ```
-errors: ~3 — the original `:=` and a small number of immediate
+errors: ~3 - the original `:=` and a small number of immediate
 downstream tokens. No bleeding into top-level code.
 ```
 
@@ -70,7 +70,7 @@ while (!this.isAtEnd()) {
 
 resumes the moment it sees any newline boundary. For an error at
 indent 12 inside a switch arm, the next newline is the very next
-line — still at indent 12, still inside the same broken structure.
+line - still at indent 12, still inside the same broken structure.
 The top-level parse loop calls `statement()` on that token, which
 treats it as a fresh top-level statement (`=>`, `:=`, etc.) and
 errors out again. Repeat 500+ times.
@@ -78,7 +78,7 @@ errors out again. Repeat 500+ times.
 ## Fix
 
 Sync to "next token starting a new line at column 1". The token's
-`indent` field gives us that for free — at column 1 means the lexer
+`indent` field gives us that for free - at column 1 means the lexer
 saw it at the start of a line with no leading whitespace.
 
 ```ts
@@ -104,7 +104,7 @@ Inline `// see INV012` reference at the change site.
   disappearances** (cascade FPs gone), 0 TV-also-flagged
   disappearances (we did not stop catching anything TV catches), 84
   message-changed at same position. 534 new appearances are
-  *previously-masked* findings now reachable — sampling shows these
+  *previously-masked* findings now reachable - sampling shows these
   are real undefined-variable references in user code (e.g.
   `upper = 0.,lower = 0.` comma-separated declarations our parser
   doesn't recognise, so `lower` is genuinely not in scope when
@@ -129,7 +129,7 @@ context-stack infrastructure; deferring.
 ## Methodology notes captured
 
 - A parser fix that *reduces* cascade noise is almost always a net
-  improvement even if it surfaces new "appearances" — those new
+  improvement even if it surfaces new "appearances" - those new
   appearances are findings the cascade was hiding. Read a sample
   before counting them as regressions.
 - The `indent === 0 && line > 1` predicate is a cheap proxy for "this

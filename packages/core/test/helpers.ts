@@ -27,7 +27,7 @@ export interface TestExpectations {
 	warnings?: ExpectedError[];
 	errorCount?: number;
 	warningCount?: number;
-	directiveErrors?: string[]; // malformed/unknown directives — fail the test
+	directiveErrors?: string[]; // malformed/unknown directives - fail the test
 }
 
 /**
@@ -48,8 +48,8 @@ export interface ParsedTestFile {
  *   // @description <text>
  *   // @expects parse: success|fail
  *   // @expects no-errors
- *   // @expects errors: N           — assert exactly N errors total
- *   // @expects warnings: N         — assert exactly N warnings total
+ *   // @expects errors: N - assert exactly N errors total
+ *   // @expects warnings: N - assert exactly N warnings total
  *   // @expects error: line=N, message="text"
  *   // @expects error: message=/regex/
  *   // @expects warning: line=N, message="text"
@@ -126,7 +126,7 @@ function parseExpectsDirective(
 		return;
 	}
 
-	// `errors: N` / `warnings: N` — total-count assertions
+	// `errors: N` / `warnings: N` - total-count assertions
 	const countMatch = value.match(/^(errors|warnings):\s*(\d+)\s*$/);
 	if (countMatch) {
 		const [, kind, n] = countMatch;
@@ -228,7 +228,7 @@ export function runTest(
 		failures: [],
 	};
 
-	// Surface any directive-level errors before doing anything else —
+	// Surface any directive-level errors before doing anything else - 
 	// silently swallowing typos is what made several existing fixtures
 	// no-ops for years.
 	if (expectations.directiveErrors && expectations.directiveErrors.length > 0) {

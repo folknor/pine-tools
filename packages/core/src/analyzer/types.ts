@@ -41,8 +41,8 @@ export interface TypeInfo {
 export namespace TypeChecker {
 	// Pine's qualifier lattice is const ≤ input ≤ simple ≤ series. For
 	// type-compatibility purposes `const<T>` and `input<T>` behave exactly like
-	// `simple<T>` — they coerce up to simple/series and down to the base type the
-	// same way — so collapse those bracket forms to `simple<T>`. Without this the
+	// `simple<T>` - they coerce up to simple/series and down to the base type the
+	// same way - so collapse those bracket forms to `simple<T>`. Without this the
 	// explicit coercion pairs and is*Type predicates below (which enumerate only
 	// series/simple/base) reject input-qualified built-ins such as
 	// `chart.bg_color` (input<color>) and `chart.left_visible_bar_time` (input<int>).
@@ -174,7 +174,7 @@ export namespace TypeChecker {
 
 		// Array type coercion: array<type> or array<unknown> (unresolved element
 		// type) is assignable to any array. This handles cases where type
-		// inference couldn't determine the element type — we can't prove the
+		// inference couldn't determine the element type - we can't prove the
 		// assignment is wrong, so accept it rather than emit a false positive.
 		const fromStr = from as string;
 		const toStr = to as string;

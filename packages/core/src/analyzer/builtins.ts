@@ -301,7 +301,7 @@ export function getPolymorphicReturnType(
 	argInfos?: ArgumentInfo[],
 ): PineType | null {
 	// Resolve a return-follows-source param from the generated
-	// flags.returnTypeParam (the single source — detected offline from the
+	// flags.returnTypeParam (the single source - detected offline from the
 	// overload dump, with a small override map; see union-types.ts / generate.ts
 	// RETURN_TYPE_PARAM_OVERRIDES; e.g. ta.valuewhen -> source, input -> defval).
 	// Without this, such functions fall back to the static return frozen to
@@ -353,7 +353,7 @@ export function getPolymorphicReturnType(
 			}
 		}
 
-		// "type" is our placeholder for an unresolved / user-defined-type arg —
+		// "type" is our placeholder for an unresolved / user-defined-type arg - 
 		// treat it like "unknown" and fall through to the static return rather
 		// than propagating "type" into downstream arithmetic (avoids FPs like
 		// `math.abs(<unresolved>) % 2`).
@@ -427,7 +427,7 @@ export function getPolymorphicReturnType(
 // model strips the const/simple/input qualifier (mapToPineType collapses them
 // all to the base type), so the ordinary assignability check can't see the
 // violation. These helpers read the RAW qualifier straight from pine-data so
-// the checker can enforce it. Verified against `pine-lint --tv` — see
+// the checker can enforce it. Verified against `pine-lint --tv` - see
 // investigations/INV014 (and the G002 correction: TV does enforce plot(title)).
 // ===========================================================================
 
@@ -464,7 +464,7 @@ function baseOfRawType(type: string): string {
 // data-derived:
 //  - must be `const` qualified,
 //  - base must be a plain scalar or a union of scalars (int/float, int/string),
-//  - enumerated bases (plot_display, scale_type, enum) are excluded — those are
+//  - enumerated bases (plot_display, scale_type, enum) are excluded - those are
 //    governed by allowedValues, not const-ness,
 //  - blobs that also accept non-const forms are excluded (input()'s
 //    "const ... or source-type built-ins").
@@ -493,7 +493,7 @@ function overloadViews(func: PineFunction): OverloadView[] {
 // contains it types it const-required. If any overload accepts it non-const
 // (e.g. timestamp's series-string dateString overload), TV can resolve to that
 // overload, so we must not flag. Param-name based, so no full call resolution
-// is needed — sound for the qualifier question.
+// is needed - sound for the qualifier question.
 export function paramRequiresConst(
 	functionName: string,
 	paramName: string,
@@ -562,7 +562,7 @@ export function getConstParamDocType(
 
 // Scalar base members of a union param type ("series int/float/color" ->
 // ["int","float","color"]). null unless it's a union (contains "/") of plain
-// scalars — we only validate clean scalar unions, never containers/objects/
+// scalars - we only validate clean scalar unions, never containers/objects/
 // genuine "unknown". The merged param type is already the union across overloads
 // (union-types.ts), so this set is exactly what TV accepts at that param. INV016.
 export function getScalarUnionMembers(rawType: string): string[] | null {
@@ -601,7 +601,7 @@ export function getBuiltinVarInfo(
 	return { qualifier: v.qualifier, base: baseOfRawType(String(v.type)) };
 }
 
-// A built-in CONSTANT (color.red, display.none, barmerge.gaps_off) — these are
+// A built-in CONSTANT (color.red, display.none, barmerge.gaps_off) - these are
 // const-qualified by definition.
 export function isBuiltinConstant(name: string): boolean {
 	return CONSTANTS_BY_NAME.has(name);
@@ -619,7 +619,7 @@ function baseCompatible(argBase: string, paramBase: string): boolean {
 }
 
 // Resolve the RAW return type (with qualifier, e.g. "simple int") of a built-in
-// call, accounting for overloads — the merged top-level `returns` is frozen to
+// call, accounting for overloads - the merged top-level `returns` is frozen to
 // overload #0 and loses this. Used to decide whether a call ARGUMENT is const:
 // timestamp("UTC", y, m, d, ...) resolves to the timezone overload -> simple int
 // (not the const-int dateString overload). Positional matching only; returns

@@ -438,7 +438,7 @@ export class UnifiedPineValidator {
 					);
 				}
 
-				// see INV010 — same tuple-return capture as FunctionDeclaration.
+				// see INV010 - same tuple-return capture as FunctionDeclaration.
 				const tupleTypes = this.inferUdfTupleReturnTypes(
 					statement.body,
 					version,
@@ -713,7 +713,7 @@ export class UnifiedPineValidator {
 			);
 		}
 
-		// Check that both branches have compatible types — stricter than
+		// Check that both branches have compatible types - stricter than
 		// isAssignable. pine-lint --tv accepts cross-type mixes here
 		// (color|string, color|int, even simple<string>|series<float>) but
 		// those are nonsense values that can't be assigned to a typed
@@ -923,7 +923,7 @@ export class UnifiedPineValidator {
 		// widened "series int/float/bool/string/color") collapse to "unknown"
 		// via mapToPineType and are skipped by the `!== "unknown"` guard, so only
 		// CLEAN-typed params are checked (catches e.g. math.round(close, "x"));
-		// (2) arg-type checks are v6-only — pine-data ships v6 signatures, and
+		// (2) arg-type checks are v6-only - pine-data ships v6 signatures, and
 		// validating v4/v5 calls against them is unsound (e.g. input's removed
 		// `type` param), so legacy scripts are left lenient. see G004 / #24.
 		// `functionHasOverloads` (any still-unknown param) still bypasses
@@ -956,7 +956,7 @@ export class UnifiedPineValidator {
 			}
 
 			// Check positional argument. Functions with any still-unknown param
-			// (overloaded) skip positional checking — positions are ambiguous
+			// (overloaded) skip positional checking - positions are ambiguous
 			// across overload forms. Cleanly-typed params (incl. ex-polymorphic
 			// ones) are validated on v6 scripts.
 			if (i < positionalArgs.length) {
@@ -1018,7 +1018,7 @@ export class UnifiedPineValidator {
 	// Whether an expression's inferred type is trustworthy enough to flag an
 	// arg-type mismatch on. Literals and operator expressions have solid type
 	// rules; built-in vars/constants/calls carry types straight from pine-data.
-	// User identifiers and user-defined-function calls are excluded — our
+	// User identifiers and user-defined-function calls are excluded - our
 	// inference for those is the known-shaky path (UDF returns, etc.), and a
 	// wrong base there would surface as a false positive. see INV016.
 	private isReliablyTyped(expr: Expression): boolean {
@@ -1048,7 +1048,7 @@ export class UnifiedPineValidator {
 						name = `${(mm.object as Identifier).name}.${mm.property.name}`;
 					}
 				}
-				// Built-in call (return type from pine-data) — trust it; a UDF call
+				// Built-in call (return type from pine-data) - trust it; a UDF call
 				// is not in functionSignatures, so it's excluded.
 				return name !== "" && this.functionSignatures.has(name);
 			}
@@ -1060,7 +1060,7 @@ export class UnifiedPineValidator {
 	// Validate arguments against UNION-typed params (e.g. nz's
 	// `series int/float/color`, int's `series int/float`). The main arg loop maps
 	// a union to "unknown" via mapToPineType and skips it (the INV013 safety net),
-	// so nz(<bool>)/int(true) — real CE10123 errors in TV — slipped through. The
+	// so nz(<bool>)/int(true) - real CE10123 errors in TV - slipped through. The
 	// merged param type is already the cross-overload union (union-types.ts), so
 	// an arg whose base is outside it is rejected by every overload. Conservative:
 	// only flags a KNOWN scalar base that's absent from the union (int/float are
@@ -1096,7 +1096,7 @@ export class UnifiedPineValidator {
 			if (!members) continue;
 			// Only trust the arg's type when it comes from a reliable source.
 			// Broad union-checking otherwise amplifies every type-inference gap
-			// (UDF returns, user vars) into a false positive on valid code — e.g.
+			// (UDF returns, user vars) into a false positive on valid code - e.g.
 			// `color.from_gradient(Vol, ...)` where `Vol = someUdf()` is a float we
 			// mis-infer as bool. Mirrors describeNonConstArg's conservatism. INV016
 			if (!this.isReliablyTyped(arg.value)) continue;
@@ -1297,7 +1297,7 @@ export class UnifiedPineValidator {
 		this.symbolTable.enterScope();
 
 		// Add function parameters to temporary scope. Honour the declared
-		// type when present — without this, a `bool a` parameter would be
+		// type when present - without this, a `bool a` parameter would be
 		// registered as `series<float>` here, the body's `a and b`
 		// expression would be cached with `a: series<float>`, and the
 		// subsequent full validation pass would read the wrong type from
@@ -1386,7 +1386,7 @@ export class UnifiedPineValidator {
 			}
 
 			// User-defined function whose body's last expression is a
-			// tuple — recover the per-element types we captured when the
+			// tuple - recover the per-element types we captured when the
 			// function was validated. Without this every element defaults
 			// to `series<float>` and a destructured bool / int / color
 			// element gets wrongly typed downstream. see INV010.
@@ -1540,7 +1540,7 @@ export class UnifiedPineValidator {
 					}
 				}
 
-				// array.from(arg0, ...) — element type is taken from the first argument,
+				// array.from(arg0, ...) - element type is taken from the first argument,
 				// matching pine-lint (e.g. array.from(1,2,3) -> array<int>).
 				if (funcName === "array.from" && callExpr.arguments.length > 0) {
 					const elem = this.inferExpressionType(

@@ -11,7 +11,7 @@
  * header, so e.g. the "Returns" prose never bleeds into "Remarks".
  *
  * This runs offline over the `.cache/dom` mirror (see reextract-sections.ts),
- * the same way overloadArgs are re-derived — TV's rendered HTML is the source,
+ * the same way overloadArgs are re-derived - TV's rendered HTML is the source,
  * never the network. Whitespace is collapsed (spaces/tabs runs → one space)
  * while paragraph and `<br>` breaks become newlines, so the output is stable
  * regardless of source-HTML indentation.
@@ -139,7 +139,7 @@ export function extractSections(html: string): ReferenceSections {
 		const re = /<a [^>]*>([\s\S]*?)<\/a>/g;
 		let m: RegExpExecArray | null;
 		while ((m = re.exec(seeAlsoSlice))) {
-			// Cross-ref labels render as "array.max()" / "na" — drop the trailing
+			// Cross-ref labels render as "array.max()" / "na" - drop the trailing
 			// "()" so the value is the bare symbol consumers can look up. Generic
 			// constructors render with placeholder type args ("map.new<type,type>",
 			// "array.new<type>"); strip those too so the value is the bare lookup key.

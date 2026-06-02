@@ -13,7 +13,7 @@
  * The single parenthesised type (and description) applies to every listed name.
  * We capture the name list before that first type, the description after it, and
  * emit one entry per name, dropping the "..." ellipsis. This is the only place
- * the variadic arg types are exposed — TV does not render per-arg type rows for
+ * the variadic arg types are exposed - TV does not render per-arg type rows for
  * them, so without this they stay "unknown". see TODO #22 / #25
  *
  * Whitespace is collapsed first so the live scrape (parentElement.textContent)

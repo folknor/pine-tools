@@ -109,14 +109,14 @@ for (const e of tv.slice(0, 30)) {
 }
 if (tv.length > 30) console.log(`  … +${tv.length - 30} more`);
 
-console.log(`\n=== local-only (we flag, TV silent — ${localOnly.length}) ===`);
+console.log(`\n=== local-only (we flag, TV silent - ${localOnly.length}) ===`);
 const localByMsg = new Map();
 for (const e of localOnly) localByMsg.set(e.message, (localByMsg.get(e.message) ?? 0) + 1);
 for (const [m, c] of [...localByMsg.entries()].sort((a, b) => b[1] - a[1]).slice(0, 15)) {
 	console.log(`  ${String(c).padStart(4)}  ${m}`);
 }
 
-console.log(`\n=== tv-only (TV flags, we silent — ${tvOnly.length}) ===`);
+console.log(`\n=== tv-only (TV flags, we silent - ${tvOnly.length}) ===`);
 const tvByMsg = new Map();
 for (const e of tvOnly) tvByMsg.set(e.message, (tvByMsg.get(e.message) ?? 0) + 1);
 for (const [m, c] of [...tvByMsg.entries()].sort((a, b) => b[1] - a[1]).slice(0, 15)) {

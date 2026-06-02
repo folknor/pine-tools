@@ -1,4 +1,4 @@
-# INV011 — bundled CLI couldn't load `function-behavior.json`
+# INV011 - bundled CLI couldn't load `function-behavior.json`
 
 **Status:** Fixed. `function-behavior.json` is now imported as an ES
 module so it's inlined by both TSC (via `resolveJsonModule`) and
@@ -29,14 +29,14 @@ plot(x ? 1 : 0)
 
 Variable type display: `x type: input int` (the legacy "first arg
 type" fallback returned whatever it landed on, which mapped to int).
-Across the corpus, 723 FPs disappear when this is fixed — almost
+Across the corpus, 723 FPs disappear when this is fixed - almost
 entirely `Ternary condition must be bool, got color`, `Operator 'and'
 requires bool operands, but … operand is color`, etc., all rooted in
 `input(<X>, …)` returning the wrong type.
 
 Running the same code through the *un-bundled* compiled dist (via
 `require("./dist/packages/core/src/analyzer/checker.js")`) produced
-zero errors — the bug was bundle-only. Same source, different
+zero errors - the bug was bundle-only. Same source, different
 deployment.
 
 ## Root cause
@@ -49,7 +49,7 @@ sibling `function-behavior.json` end up in the same directory in
 into a single `cli.js`; the `__dirname` reference at runtime points
 to wherever that bundle lives. After `install:cli` copies the bundle
 to `~/.local/bin/pine-lint`, the path becomes
-`~/.local/bin/function-behavior.json` — a file that doesn't exist —
+`~/.local/bin/function-behavior.json` - a file that doesn't exist - 
 and the `try/catch` silently returns an empty behavior table.
 
 ## Fix
@@ -75,11 +75,11 @@ Inline `// see INV011` reference at the change site.
 
 ## Verification
 
-- Minimal repro: `x = input(false, …); plot(x ? 1 : 0)` — 1 error → 0
+- Minimal repro: `x = input(false, …); plot(x ? 1 : 0)` - 1 error → 0
   errors. Variable type now reads `input const bool`.
 - Corpus regression check: **723 TV-silent disappearances** (correct
   FP removals), 0 TV-also-flagged disappearances, 88 message-changes
-  at same position (suggestion shifts), 139 new appearances —
+  at same position (suggestion shifts), 139 new appearances - 
   predominantly `Ternary branches must have compatible types. Got
   'color' and 'string'` from a related but distinct bug (see Adjacent
   finding below).
@@ -90,7 +90,7 @@ Inline `// see INV011` reference at the change site.
 
 ## Adjacent finding (not fixed here)
 
-`color.silver`, `color.red`, etc. — the built-in color constants —
+`color.silver`, `color.red`, etc. - the built-in color constants - 
 infer as `undetermined type` rather than `const color`. That breaks
 the polymorphic resolution for `input(color.silver, …)` (defval type
 unknown, return type stays `undetermined type`) and is the source of
@@ -101,7 +101,7 @@ unknown, return type stays `undetermined type`) and is the source of
 - "Different result from TSC compile vs esbuild bundle" is a
   characteristic class of bug. When a behaviour change is local to
   the installed CLI but absent from a direct dist invocation, suspect
-  bundling — `__dirname`, dynamic `require()`, runtime file reads,
+  bundling - `__dirname`, dynamic `require()`, runtime file reads,
   and side-effectful module evaluation are the usual culprits.
 - A `try { … } catch { return empty }` over a file read silently
   converts a deployment bug into a correctness bug. Prefer explicit

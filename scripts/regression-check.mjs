@@ -5,10 +5,10 @@
 // For every fixture, diffs the current per-file error set against the
 // baseline. Errors are keyed by (line, col, message):
 //
-//   appeared      — in current, not in baseline. Regression candidates.
-//   disappeared   — in baseline, not in current. Cross-referenced against
+//   appeared - in current, not in baseline. Regression candidates.
+//   disappeared - in baseline, not in current. Cross-referenced against
 //                   lint-reports/real-failures.json (if present) to mark:
-//   messageChanged — an "appeared" and a "disappeared" share the same
+//   messageChanged - an "appeared" and a "disappeared" share the same
 //                   (line, col) but have different messages. Almost
 //                   always the same finding under different wording
 //                   (e.g. a "Did you mean" suggestion that shifted), so
@@ -19,7 +19,7 @@
 //                                     (could be us correctly stopping
 //                                     over-strict flagging OR us
 //                                     incorrectly stopping a finding TV
-//                                     missed — investigate)
+//                                     missed - investigate)
 //                   tvSilent: false → TV also flags this position; us
 //                                     going silent is suspicious and
 //                                     warrants a --tv recheck
@@ -28,7 +28,7 @@
 //                                     since last find-real-failures run)
 //
 // Writes lint-reports/regression-report.json. Exits non-zero if any new
-// errors appeared. Per CLAUDE.md, neither label is a verdict — both are
+// errors appeared. Per CLAUDE.md, neither label is a verdict - both are
 // navigation aids for human investigation. See G001.
 //
 // Usage: node scripts/regression-check.mjs [--concurrency N]
@@ -51,7 +51,7 @@ const OUT = resolve("lint-reports/regression-report.json");
 try {
 	await access(FIXTURES);
 } catch {
-	console.error(`No ${FIXTURES} — run scripts/collect-pine-fixtures.mjs first.`);
+	console.error(`No ${FIXTURES} - run scripts/collect-pine-fixtures.mjs first.`);
 	process.exit(2);
 }
 
@@ -65,7 +65,7 @@ try {
 
 // Build the per-fixture set of positions where TV is silent and we
 // previously flagged, from the TV-diff report. If the report is missing
-// the script still works — disappearances simply can't be annotated.
+// the script still works - disappearances simply can't be annotated.
 const tvSilentPositions = new Map();
 let tvAvailable = false;
 try {
@@ -77,7 +77,7 @@ try {
 	}
 	tvAvailable = true;
 } catch {
-	console.warn(`No TV reference at ${TV_REF} — disappearance annotations disabled.`);
+	console.warn(`No TV reference at ${TV_REF} - disappearance annotations disabled.`);
 }
 
 function run(file) {
@@ -161,7 +161,7 @@ for (const name of entries) {
 	const rawAppeared = cur.errors.filter((e) => !oldKeys.has(`${e.line}:${e.col}:${e.message}`));
 	const rawDisappeared = base.errors.filter((e) => !newKeys.has(`${e.line}:${e.col}:${e.message}`));
 
-	// "Message changed at same position" — when an appeared and a
+	// "Message changed at same position" - when an appeared and a
 	// disappeared error share the same (line, col) but differ only in
 	// message, they're almost always the same underlying finding with
 	// different wording (e.g. a "Did you mean" suggestion that shifted
@@ -249,8 +249,8 @@ console.log(`fixtures changed:             ${totals.filesChanged}`);
 console.log(`fixtures added (no baseline): ${report.filesAdded.length}`);
 console.log(`fixtures removed:             ${report.filesRemoved.length}`);
 console.log(`new error appearances:        ${totals.newAppearances}${totals.newAppearances ? "  ← REGRESSION CANDIDATES" : ""}`);
-console.log(`message changed at same pos:  ${totals.messageChanged}  (same line:col, different wording — usually a suggestion shift, not a regression)`);
-console.log(`disappeared, TV-silent here:  ${totals.disappearedTvSilent}  (we used to flag where TV is silent — investigate per category, not auto-good)`);
+console.log(`message changed at same pos:  ${totals.messageChanged}  (same line:col, different wording - usually a suggestion shift, not a regression)`);
+console.log(`disappeared, TV-silent here:  ${totals.disappearedTvSilent}  (we used to flag where TV is silent - investigate per category, not auto-good)`);
 console.log(`disappeared, TV-also-flagged: ${totals.disappearedTvFlagged}${totals.disappearedTvFlagged ? "  ← we stopped flagging something TV catches; verify with --tv" : ""}`);
 console.log(`disappeared, unverifiable:    ${totals.disappearedUnverifiable}  (file outside TV reference; v4/v5/non-v6 or added since last find-real-failures run)`);
 

@@ -112,8 +112,8 @@ interface MemberDetails {
 
 // A built-in TYPE detail page (its own reference entry, e.g. `chart.point`,
 // `line`, `int`). Unlike functions these have no syntax/params; they carry a
-// description, examples, and — only for the few non-opaque types like
-// chart.point — a Fields list. The opaque ID types (line/label/box/table/…) are
+// description, examples, and - only for the few non-opaque types like
+// chart.point - a Fields list. The opaque ID types (line/label/box/table/…) are
 // manipulated via `.*()` functions and expose no fields. See TODO #25.
 interface TypeDetails {
 	name: string;
@@ -146,7 +146,7 @@ interface OperatorDetails {
 }
 
 // A language keyword detail page (`for`, `and`, `import`, …), reached via the
-// `kw_<name>` anchor — with a `const_<name>` fallback for the literal keywords
+// `kw_<name>` anchor - with a `const_<name>` fallback for the literal keywords
 // `true`/`false`, which TV documents under the constants anchor. Carries a
 // description and (rarely) a syntax line; Remarks/See-also prose are re-derived
 // offline from the mirror by reextract-sections.ts, same as every other catalog.
@@ -203,7 +203,7 @@ function isCacheValid(cacheFilePath: string): boolean {
 // Whether a DOM mirror snapshot exists for an item. The mirror dir uses the
 // saveDomSnapshot safeName (keeps dots), distinct from the cache key. Members
 // (var/const) were not mirrored historically, so a valid details cache can
-// coexist with a missing mirror — the orchestrator re-scrapes those to backfill
+// coexist with a missing mirror - the orchestrator re-scrapes those to backfill
 // the snapshot the offline reextract passes need.
 function hasMirror(name: string, mirrorPrefix = ""): boolean {
 	const safeName = `${mirrorPrefix}${name}`.replace(/[^a-zA-Z0-9_.-]/g, "_");
@@ -649,11 +649,11 @@ export async function scrapeFunctionDetails(
 
 				// Extract examples. Functions can have multiple example snippets,
 				// rendered as separate sibling .tv-pine-reference-item__example
-				// blocks — querySelectorAll captures all of them.
+				// blocks - querySelectorAll captures all of them.
 				// Use innerText (not textContent) so <br> and block-element boundaries
 				// produce real newlines instead of being silently collapsed.
 				// TradingView emits &nbsp; for every space inside code blocks, so
-				// normalize U+00A0 back to regular spaces — otherwise pasted examples
+				// normalize U+00A0 back to regular spaces - otherwise pasted examples
 				// fail to parse as Pine Script.
 				const exampleEls = element.querySelectorAll(
 					".tv-pine-reference-item__example code",
@@ -1392,7 +1392,7 @@ export async function scrapeAllFunctions(
 	console.log(`   Annotations from cache: ${annotationsFromCache.length}`);
 	console.log(`   Annotations to scrape: ${annotationsToScrape.length}`);
 
-	// Build operator list from the crawl (its own reference section — the bare
+	// Build operator list from the crawl (its own reference section - the bare
 	// symbols documented under `#op_`).
 	const operatorNames: string[] = [
 		...((inputData.operators?.items as string[] | undefined) || []),

@@ -119,8 +119,8 @@ const output = {
 await writeFile("lint-reports/failures-by-category.json", JSON.stringify(output, null, 2));
 
 console.log(`scanned ${output.scanned} v6 files`);
-console.log(`local-only: ${output.totals.localOnly} hits in ${output.totals.localOnlyCategories} categories  (we flag, TV silent — investigate)`);
-console.log(`tv-only:    ${output.totals.tvOnly} hits in ${output.totals.tvOnlyCategories} categories  (TV flags, we silent — investigate)`);
+console.log(`local-only: ${output.totals.localOnly} hits in ${output.totals.localOnlyCategories} categories  (we flag, TV silent - investigate)`);
+console.log(`tv-only:    ${output.totals.tvOnly} hits in ${output.totals.tvOnlyCategories} categories  (TV flags, we silent - investigate)`);
 console.log(`\nlocal-only categories (all ${output.totals.localOnlyCategories}):`);
 for (const c of output.localOnly) {
 	console.log(`  ${String(c.count).padStart(5)}  in ${String(c.distinctFiles).padStart(3)} files  |  ${c.template}`);

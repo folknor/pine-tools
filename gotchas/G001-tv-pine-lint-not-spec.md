@@ -1,4 +1,4 @@
-# G001 — TradingView's pine-lint is not a stable spec
+# G001 - TradingView's pine-lint is not a stable spec
 
 **Keywords:** pine-lint, --tv, TradingView, reference-not-spec,
 non-determinism, error-recovery, warning-vs-error
@@ -12,13 +12,13 @@ modes we have personally observed in this project:
 - **Stops at the first error.** A single bad token early in a file
   often produces one error in TV's response and silences everything
   else. We have a fixture (`0c053259…pine`) where TV reports 1 error at
-  line 61 (`series float source` — invalid type qualifier in a function
+  line 61 (`series float source` - invalid type qualifier in a function
   parameter) and a *real* user-visible bug at line 197 is masked
   entirely.
 - **Blames whitespace for distant syntax errors.** Known anecdotally
   from real Pine development: a missing `)` several lines up surfaces
   as a complaint about indentation/whitespace at the next token. Don't
-  trust TV's error *location* — verify against the source.
+  trust TV's error *location* - verify against the source.
 - **Non-deterministic on identical input.** Re-submitting the same
   script can yield slightly different responses (we've seen warning
   sets shift; less commonly, error sets shift). Don't treat a single
@@ -42,8 +42,8 @@ modes we have personally observed in this project:
 
 ## Lesson
 
-`--tv` is a *comparator* — useful to surface discrepancies we should
-look at — and never a source of truth. Workflow:
+`--tv` is a *comparator* - useful to surface discrepancies we should
+look at - and never a source of truth. Workflow:
 
 1. Find a disagreement via `scripts/find-real-failures.mjs` or
    `scripts/compare-tv.mjs`.
@@ -59,10 +59,10 @@ This is the foundational gotcha behind the methodology in
 
 ## References
 
-- INV001 — the canonical example of TV being wrong to be silent
+- INV001 - the canonical example of TV being wrong to be silent
   (cross-type ternary branches).
-- `scripts/compare-tv.mjs` — the per-file repro tool that surfaces
+- `scripts/compare-tv.mjs` - the per-file repro tool that surfaces
   TV-vs-us discrepancies.
-- `scripts/find-real-failures.mjs` — the corpus-wide TV diff (notes
+- `scripts/find-real-failures.mjs` - the corpus-wide TV diff (notes
   that its `localOnly` / `tvOnly` labels are navigation aids, not
   verdicts).

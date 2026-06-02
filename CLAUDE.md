@@ -16,6 +16,8 @@ pnpm test             # Run tests
 
 - Don't use gremlins! Em-dash, en-dash, strange quotes, whatever - they're
   all verboten.
+- No emojis in docs (notes, gotchas, READMEs, TODO, commit messages, etc.).
+  Plain text only - use a word like "WARNING"/"NOTE" instead of a symbol.
 - Don't remind the user of the rules. They wrote them, so they know them.
 - The user can exempt you from any rule at any time.
 - Subagents must always be launched in the foreground (never
@@ -119,7 +121,7 @@ Subagent prompt rules:
 
 ---
 
-## Methodology — we aim to be MORE correct than TradingView's pine-lint
+## Methodology - we aim to be MORE correct than TradingView's pine-lint
 
 TradingView's `pine-lint` is a reference, not the spec. It has real bugs:
 it stops at the first error, blames whitespace for a missing `)`
@@ -131,7 +133,7 @@ what TV misses.
 ### Hard rules
 
 - **TV silence is evidence, not authority.** When TV is silent and we
-  flag an expression, that is a disagreement — it might be us being
+  flag an expression, that is a disagreement - it might be us being
   wrong, or it might be us correctly catching something TV missed.
   Investigate the expression itself before deciding.
 - **Never relax a check just because TV is silent.** If the existing
@@ -148,7 +150,7 @@ For every concrete TV-vs-us discrepancy we choose to act on:
 
 1. **Reproduce** with a minimal `.pine` fixture in
    `packages/core/test/fixtures/regression/`. The discovery test runner
-   picks it up automatically — a repro that doesn't fail-on-regression
+   picks it up automatically - a repro that doesn't fail-on-regression
    is just a paragraph with code in it. Use the
    `// @expects error: line=N, message="..."` directive form (the bare
    `// @expects errors: N` is currently ignored by the runner).
@@ -165,21 +167,21 @@ For every concrete TV-vs-us discrepancy we choose to act on:
 
    A prose conclusion ("TV accepts/rejects X") without the probe + output
    is not acceptable. A `--tv` verdict is a point-in-time measurement, not
-   a permanent fact (TV is an unreliable comparator — G001), so it must be
+   a permanent fact (TV is an unreliable comparator - G001), so it must be
    re-runnable by anyone; a later contradiction is grounds to re-measure,
    not to assume the earlier author erred.
 
    **Confirm TV actually answered.** An empty error list is NOT proof of
-   acceptance — a crashed/timed-out `--tv` call can look identical to "TV
+   acceptance - a crashed/timed-out `--tv` call can look identical to "TV
    reported no errors." Record `success:true` / real TV output, and when a
    result claims "TV accepts," sanity-check that `--tv` *disagrees* with our
    local validator somewhere (proving it reached TV, not a fallback/empty
    result). This exact ambiguity manufactured the false gotcha G002.
 3. **Annotate code decisions inline** with a `// see INV###` or
-   `// see G###` pointer. Don't wax lyrical in the code — the long
+   `// see G###` pointer. Don't wax lyrical in the code - the long
    reasoning lives in the markdown.
 4. **Record side-knowledge as gotchas.** A gotcha is something *we
-   can't fix* that we need to remember when working — Pine language
+   can't fix* that we need to remember when working - Pine language
    quirks, TV linter behaviors, scraping anomalies in upstream docs.
    It is *not* a known bug in our own code (those go in TODO.md as
    work items). Examples: "TV's parser flakes on multiline strings",
@@ -210,7 +212,7 @@ so a reader can scan the entire trail of decisions from one place.
 - Syntax highlighting patterns
 
 Variable and constant **types** (incl. qualifier) are scraped from each
-reference page's "Type" field — never guess them by namespace. The old
+reference page's "Type" field - never guess them by namespace. The old
 `inferVariableType` / `inferConstantType` heuristics were retired for
 exactly that reason; don't reintroduce that pattern.
 
@@ -308,8 +310,8 @@ All API data is scraped from TradingView docs and generated:
 |---------|--------|
 | `crawl` | `pine-data/raw/v6/v6-language-constructs.json` (TOC inventory of every reference section) |
 | `scrape` | `pine-data/raw/v6/complete-v6-details.json` (+ DOM mirror under `.cache/dom/`) |
-| `reextract:dom` | re-derives `overloadArgs` from the mirror, **offline** — run after every `scrape` (see below) |
-| `reextract:sections` | re-derives `returnsDescription`/`remarks`/`seeAlso` from the mirror, **offline** — run after every `scrape` (see below) |
+| `reextract:dom` | re-derives `overloadArgs` from the mirror, **offline** - run after every `scrape` (see below) |
+| `reextract:sections` | re-derives `returnsDescription`/`remarks`/`seeAlso` from the mirror, **offline** - run after every `scrape` (see below) |
 | `generate` | `pine-data/v6/*.ts` + `*.json` (vendor-friendly snapshot for downstream Rust/non-node consumers) |
 | `generate:syntax` | `syntaxes/pine.tmLanguage.json` |
 | `scrape:manual` | `pine-data/raw/v6/manual-pages.json` (page inventory) + `.cache/manual/v6/*.html` mirror |
@@ -321,11 +323,11 @@ The commands above the `scrape:manual` row build the **reference** (`pine-data`)
 structured API facts the linter consumes. `scrape:manual`/`generate:manual` are a
 **separate, parallel pipeline** for the prose **Manual**
 (`https://www.tradingview.com/pine-script-docs/`). It is documentation output
-only — Markdown for humans/RAG, **not** consumed by the checker, and it touches
+only - Markdown for humans/RAG, **not** consumed by the checker, and it touches
 nothing in `pine-data` or the reference flow.
 
 It mirrors the reference pipeline's split: `scrape:manual` is the only network
-step (the Manual is a static Astro site — plain `fetch`, no Puppeteer; it reads
+step (the Manual is a static Astro site - plain `fetch`, no Puppeteer; it reads
 the full page list from any page's sidebar), and `generate:manual` is offline and
 deterministic, so the converter (`manual-to-markdown.ts`, Turndown + GFM + a few
 custom rules for `div.pine-colorizer` / `div.expressive-code` / heading anchors)
@@ -343,12 +345,12 @@ have none.
 Every reference item also carries the prose sub-sections the structured fields
 otherwise drop, for downstream/external consumers: `returnsDescription` (the
 Returns *sentence*, distinct from the typed `returns`), `remarks` (free-text
-caveats — na-handling, every-bar-calling, side effects), and `seeAlso` (bare
+caveats - na-handling, every-bar-calling, side effects), and `seeAlso` (bare
 cross-ref symbol names). These are re-derived offline by `reextract:sections`
-from the `.cache/dom` mirror; **our own checker does not read them** — they are
+from the `.cache/dom` mirror; **our own checker does not read them** - they are
 reference data only.
 
-**Operators are emitted as reference data** (`operators.{ts,json}` —
+**Operators are emitted as reference data** (`operators.{ts,json}` - 
 description/syntax/examples + the prose sub-sections), for external consumers of
 pine-data. This does NOT change the Data-vs-Syntax split: operators are still
 grammar the parser hardcodes and the checker does not consume the catalog. The
@@ -358,10 +360,10 @@ slug avoids the `?:`/`+=`/`==` filename collisions a naive safe-name produces).
 
 **Regenerating is safe** - customizations are in the scripts, not output files.
 
-⚠️ **Always run `pnpm run reextract:dom` AND `pnpm run reextract:sections`
+**WARNING: Always run `pnpm run reextract:dom` AND `pnpm run reextract:sections`
 after any `scrape`.** A `scrape` rebuilds `complete-v6-details.json` from the
 per-function cache (`.cache/function-details/`), which holds the scrape's *own*
-extraction — NOT the offline re-derivation. Skipping `reextract:dom` reverts the
+extraction - NOT the offline re-derivation. Skipping `reextract:dom` reverts the
 variadic `overloadArgs` (e.g. `math.max` → empty) and per-overload descriptions
 to the cache's pre-fix state; skipping `reextract:sections` drops every
 catalog's `returnsDescription`/`remarks`/`seeAlso`. The standard refresh is:
@@ -370,13 +372,13 @@ catalog's `returnsDescription`/`remarks`/`seeAlso`. The standard refresh is:
 
 Note: `scrape` now also DOM-mirrors variables and constants (under
 `var__<name>`/`const__<name>`) and operators (`op__<hex-slug>`), not just
-functions/types/annotations — so `reextract:sections` can re-derive their prose
+functions/types/annotations - so `reextract:sections` can re-derive their prose
 offline. The first scrape after this change re-fetches the un-mirrored members
 (a valid details cache with a missing mirror triggers a re-scrape of that item).
 
 ### Re-running type logic WITHOUT scraping
 
-**Be sparing with `scrape` — it hits TradingView's site.** Most type work does
+**Be sparing with `scrape` - it hits TradingView's site.** Most type work does
 **not** need a re-scrape. The scrape captures every overloaded function's
 *per-overload* argument types into `overloadArgs` (the "overload dump") inside
 `pine-data/raw/v6/complete-v6-details.json`. The union of those into a single
@@ -386,25 +388,25 @@ rules:
 
 ```bash
 # 1. edit packages/pipeline/src/union-types.ts (the offline union rule)
-pnpm run generate          # recompute pine-data from the existing dump — NO network
+pnpm run generate          # recompute pine-data from the existing dump - NO network
 pnpm run install:cli       # rebuild the CLI bundle
 node scripts/regression-check.mjs   # verify against the snapshot baseline
 ```
 
-`pnpm run generate` is deterministic and offline — re-running it produces a
+`pnpm run generate` is deterministic and offline - re-running it produces a
 byte-identical `functions.json`.
 
 **Changing what is *extracted* from the DOM is also offline now.** Every
 `scrape` mirrors each function's rendered element to `.cache/dom/<name>/{base,
-overload-<i>}.html` (gitignored — a local build artifact; we never commit TV's
+overload-<i>}.html` (gitignored - a local build artifact; we never commit TV's
 HTML to this public repo). So a DOM-*extraction* change does **not** need a
 re-scrape either:
 
 ```bash
 # 1. edit packages/pipeline/src/arg-parse.ts (the shared arg-type parser) or
 #    packages/pipeline/src/section-parse.ts (the Returns/Remarks/See-also parser)
-pnpm run reextract:dom       # re-derive overloadArgs from .cache/dom — NO network
-pnpm run reextract:sections  # re-derive returnsDescription/remarks/seeAlso — NO network
+pnpm run reextract:dom       # re-derive overloadArgs from .cache/dom - NO network
+pnpm run reextract:sections  # re-derive returnsDescription/remarks/seeAlso - NO network
 pnpm run generate            # recompute pine-data from the corrected dump
 pnpm run install:cli
 node scripts/regression-check.mjs
@@ -412,14 +414,14 @@ node scripts/regression-check.mjs
 
 The mirror is built as a byproduct of any normal `scrape`. **Only re-scrape
 (hitting TV) when the mirror is missing or TV's DOM *structure* itself changed**
-— e.g. a new field that isn't captured in the snapshot at all. The overload arg
+ - e.g. a new field that isn't captured in the snapshot at all. The overload arg
 widget renders dynamically per sub-anchor, so the mirror snapshots each overload
 separately (`scrape.ts` `saveDomSnapshot`). See TODO #22.
 
 ### Polymorphic Functions
 
 Return-type/polymorphism behavior has a **single source**: the generated
-`flags` on each function in `pine-data/v6/functions.json` —
+`flags` on each function in `pine-data/v6/functions.json` - 
 `flags.polymorphic` (`"input"` | `"element"` | `"numeric"`, from the hardcoded
 map in `generate.ts`) and `flags.returnTypeParam` (auto-detected offline by
 `detectReturnTypeParam` in `union-types.ts`, with the small
@@ -434,7 +436,7 @@ map in `generate.ts`) and `flags.returnTypeParam` (auto-detected offline by
 ```
 
 `input(defval=42)` → `input int`, `input(defval=2.0)` → `input float`. (The
-former discovered `function-behavior.json` second source was retired — see
+former discovered `function-behavior.json` second source was retired - see
 TODO #17 / git log.)
 
 ---
@@ -459,7 +461,7 @@ TODO #17 / git log.)
 
 - **Legacy color constants** - v4/v5 scripts use bare `red`, `green`, etc. In v6, must use `color.red`. Not fixing since these are pre-v6 scripts.
 - **Invalid parameter names** - Some scripts use deprecated params like `type` (input) and `when` (strategy). These are v5 params not valid in v6.
-- **Argument type-checking is v6-only** - pine-data ships only v6 signatures, so we don't validate argument *types* on `//@version=4`/`5` scripts (their signatures differ — e.g. v4 `input`'s `type` param). Legacy scripts are left lenient; arg-type mismatches are flagged only for v6. See INV013 / G004.
+- **Argument type-checking is v6-only** - pine-data ships only v6 signatures, so we don't validate argument *types* on `//@version=4`/`5` scripts (their signatures differ - e.g. v4 `input`'s `type` param). Legacy scripts are left lenient; arg-type mismatches are flagged only for v6. See INV013 / G004.
 - **Nested inline switches with tuples** - Deeply nested inline switches with tuple assignments inside case bodies are not yet fully supported. Basic inline switch with tuples works.
 - **Built-in unused variable warnings** - The core validator (`UnifiedPineValidator`) incorrectly reports built-in variables/keywords as "declared but never used". This is a bug in the unused variable detection logic that needs to exclude built-ins from the check. Location: `packages/core/src/analyzer/checker.ts`.
 
@@ -562,11 +564,11 @@ Run `pnpm run debug:diff -- --count 20 --verbose` to see current discrepancies.
 ## pine-lint CLI & TradingView authority
 
 `pine-lint` is **this repo's own CLI** (bundled from `packages/cli/src/cli.ts`,
-installed to `~/.local/bin/pine-lint` by `pnpm run install:cli` — re-run after
+installed to `~/.local/bin/pine-lint` by `pnpm run install:cli` - re-run after
 any CLI source change). Run bare, it executes our offline parser + validator;
 with `--tv` it forwards the source to TradingView's `translate_light` endpoint
 and returns TV's response instead. TradingView is the source of truth for Pine
-v6 *validity* — when our checker disagrees, TV (via `--tv`) wins. (But see the
+v6 *validity* - when our checker disagrees, TV (via `--tv`) wins. (But see the
 Methodology section above: TV *silence* is evidence, not authority.)
 
 Usage (JSON on stdout, matching the pine-lint format):
@@ -580,7 +582,7 @@ pine-lint --tv --full-response <file.pine>    # keep the verbose "scopes" block 
 ```
 
 `scripts/compare-tv.mjs <file.pine>` runs both at once and prints the
-local-only / tv-only error diff — the everyday repro tool.
+local-only / tv-only error diff - the everyday repro tool.
 
 ---
 
@@ -595,9 +597,9 @@ pnpm run debug:diff -- --count 20 --save    # Save discrepancies to JSON
 ```
 
 **What it finds:**
-- ❌ **Only in TradingView** - Errors we're missing (false negatives)
-- ⚠️ **Only in Internal** - Errors we report that TV doesn't (false positives)
-- 📝 **Different messages** - Same error, different wording
+- **Only in TradingView** - Errors we're missing (false negatives)
+- **Only in Internal** - Errors we report that TV doesn't (false positives)
+- **Different messages** - Same error, different wording
 
 ---
 

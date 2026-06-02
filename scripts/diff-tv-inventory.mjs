@@ -21,7 +21,7 @@ const ours = {
 	fun: names("pine-data/v6/functions.json"),
 };
 
-// TV catalog names by category. Function TOC text may carry "()" — strip it.
+// TV catalog names by category. Function TOC text may carry "()" - strip it.
 const tv = { var: new Set(), const: new Set(), fun: new Set() };
 for (const item of probe.catalog) {
 	if (!(item.category in tv)) continue;
@@ -49,7 +49,7 @@ fs.writeFileSync(OUT, JSON.stringify(diff, null, 2));
 for (const cat of ["var", "const", "fun"]) {
 	const d = diff[cat];
 	console.log(
-		`\n=== ${cat}: TV ${d.tvCount} / ours ${d.oursCount} — missing ${d.missingCount}, extra ${d.extraCount} ===`,
+		`\n=== ${cat}: TV ${d.tvCount} / ours ${d.oursCount} - missing ${d.missingCount}, extra ${d.extraCount} ===`,
 	);
 	console.log("MISSING (in TV, not us):");
 	console.log("  " + (d.missing.join(", ") || "(none)"));

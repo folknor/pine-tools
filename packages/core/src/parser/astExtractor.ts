@@ -484,7 +484,7 @@ export class ASTExtractor {
 					}
 				}
 
-				// array.from(arg0, arg1, ...) — element type comes from the first arg
+				// array.from(arg0, arg1, ...) - element type comes from the first arg
 				if (funcName === "array.from" && call.arguments.length > 0) {
 					const elem = this.inferExpressionType(call.arguments[0].value);
 					return `array<${stripTypeQualifier(elem)}>`;
