@@ -1,9 +1,9 @@
 # INV009 — most "Cannot call …" FNs are column shifts, not missed bugs
 
-**Status:** ⚠️ **RE-CORRECTED 2026-06-02 — the 2026-05-28 correction was
-itself wrong; the ORIGINAL claim (these ARE real FNs) stands.** Isolated,
-single-construct `pine-lint --tv` probes on 2026-06-02 show TV flags all
-three with CE10123:
+**Status:** ⚠️ **RE-MEASURED 2026-06-02 — the 2026-05-28 "TV-accepts"
+correction no longer holds; today's TV matches the ORIGINAL "these ARE real
+FNs" reading.** Isolated, single-construct `pine-lint --tv` probes on
+2026-06-02 show TV flags all three with CE10123:
 
 | call                                   | `--tv` verdict (2026-06-02, isolated) |
 |----------------------------------------|---------------------------------------|
@@ -12,31 +12,51 @@ three with CE10123:
 | `plot(close, title=<series string>)`   | **CE10123** — `const string` expected |
 
 So these are **real false negatives** we still miss (the
-`FUNCTION_PARAM_TYPE_OVERRIDES` widening masks them — see below). The
+`FUNCTION_PARAM_TYPE_OVERRIDES` widening masked them — removed in INV015). The
 `plot.title` const case is now structurally handled by INV014; the
 `nz`/`int` base-type cases are tracked as a follow-up in `TODO.md`.
 
-The 2026-05-28 correction trusted `find-real-failures.mjs`'s `(line,col)`
-keying, which counts TV errors reported at a *different column* than ours
-as "TV-silent" — so it flipped real CE10123 errors into apparent
-acceptance. Lesson: verify accepted-type claims with isolated `--tv`
-probes that read TV's structured `ctx`, never with corpus position-diffs.
-See `investigations/INV014` and the corrected `gotchas/G002`.
+**Validation (2026-06-02, isolated `--tv`):**
+
+```pine
+//@version=6
+indicator("x")
+plot(nz(close > open))               // -> CE10123: series bool, simple int expected
+y = int(true)                        // -> CE10123: literal bool, simple int expected
+plot(close, title = syminfo.tickerid)// -> CE10123: simple string, const string expected
+```
+
+All three flag, stable across re-runs and in full-file context (the original
+fixtures `440b10c3…`, `b4b219dd…`, `5291ac4…`).
+
+Why this contradicts the 2026-05-28 "TV-accepts" correction: **a `--tv`
+measurement error then, not a TV change.** A mature linter doesn't flip basic
+rules in two days, so it's (a) the 2026-05-28 measurement was wrong or (b)
+mine is. **(b) is ruled out:** `--tv` flags `nz(close > open)` while our local
+validator does not (we skip union params), and `--tv` accepts the valid
+`nz(close)` — so `--tv` is genuinely TV, not a local echo. That leaves (a),
+with a concrete mechanism: on a network failure `pine-lint --tv` used to print
+`{success:false, errors:[]}`, which the diff tooling reads as "no TV errors" =
+"TV accepts" (a single transient failure on 2026-05-28 would do it). Now fixed
+— a failed `--tv` probe emits no stdout and exits non-zero. See `gotchas/G002`.
 
 ---
 
-**Status (2026-05-28 correction — now DISPROVEN, kept for the record):**
-⚠️ The original analysis below was unverified; this block "corrected" it to
-say all three are TV-ACCEPTED. That conclusion is itself wrong (see the
-re-correction above). Original 2026-05-28 table claimed:
+**Status (2026-05-28 correction — contradicted by 2026-06-02 `--tv`, kept for
+the record):** ⚠️ The original analysis below was unverified; this block
+"corrected" it to say all three are TV-ACCEPTED, verified with `--tv` on
+2026-05-28. That verdict was a measurement error (most likely a swallowed
+`--tv` network failure read as empty errors — see the top block and
+`gotchas/G002`), contradicted by the 2026-06-02 measurement above. Original
+2026-05-28 table claimed:
 
-| call                                   | claimed verdict (WRONG)     |
-|----------------------------------------|-----------------------------|
-| `nz(close > open)` — `nz(series<bool>)`| "TV accepts" (false)        |
-| `int(true)` — `int(bool)`              | "TV accepts" (false)        |
-| `plot(close, title=trend)` series str  | "TV accepts" (false)        |
+| call                                   | claimed 2026-05-28 | 2026-06-02      |
+|----------------------------------------|--------------------|-----------------|
+| `nz(close > open)` — `nz(series<bool>)`| "TV accepts"       | CE10123 (flags) |
+| `int(true)` — `int(bool)`              | "TV accepts"       | CE10123 (flags) |
+| `plot(close, title=trend)` series str  | "TV accepts"       | CE10123 (flags) |
 
-Consequences (as written 2026-05-28, now invalid):
+Consequences (as written 2026-05-28, now superseded):
 - `nz`/`fixnan` accept all primitives (bool/string beyond the documented
   int/float/color); `int` accepts bool; `plot.title` accepts series
   string. The reference UNDER-documents these — see
@@ -49,7 +69,8 @@ Consequences (as written 2026-05-28, now invalid):
 - **Lesson:** an INV that asserts FNs without `--tv` verification can
   manufacture phantom work. Verify every disagreement before recording it.
 
-The original (now-disproven) analysis follows for the record.
+The original analysis (disowned by the 2026-05-28 correction, but whose "3 real
+FNs" reading matches the 2026-06-02 measurement) follows for the record.
 
 ---
 

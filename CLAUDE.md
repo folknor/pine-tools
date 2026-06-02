@@ -156,6 +156,25 @@ For every concrete TV-vs-us discrepancy we choose to act on:
    `notes.md` and the repro file (or a pointer to the regression
    fixture). Sequential numbering, never reuse. Index entries live in
    `investigations/README.md` and are surfaced in `TODO.md`.
+
+   **Every finding validated with `pine-lint --tv` MUST record, in the
+   investigation, both:**
+   - **the exact `.pine` script(s)** sent to `--tv` (the reproducible
+     probe, not a paraphrase), and
+   - **TV's results** for them (the verdict / raw output), dated.
+
+   A prose conclusion ("TV accepts/rejects X") without the probe + output
+   is not acceptable. A `--tv` verdict is a point-in-time measurement, not
+   a permanent fact (TV is an unreliable comparator — G001), so it must be
+   re-runnable by anyone; a later contradiction is grounds to re-measure,
+   not to assume the earlier author erred.
+
+   **Confirm TV actually answered.** An empty error list is NOT proof of
+   acceptance — a crashed/timed-out `--tv` call can look identical to "TV
+   reported no errors." Record `success:true` / real TV output, and when a
+   result claims "TV accepts," sanity-check that `--tv` *disagrees* with our
+   local validator somewhere (proving it reached TV, not a fallback/empty
+   result). This exact ambiguity manufactured the false gotcha G002.
 3. **Annotate code decisions inline** with a `// see INV###` or
    `// see G###` pointer. Don't wax lyrical in the code — the long
    reasoning lives in the markdown.
@@ -166,7 +185,9 @@ For every concrete TV-vs-us discrepancy we choose to act on:
    work items). Examples: "TV's parser flakes on multiline strings",
    "Pine v6 deprecates multiline string literals but still parses
    them". Add `gotchas/G###.md` with as much context as possible.
-   Index in `gotchas/README.md`, surfaced in `TODO.md`.
+   Index in `gotchas/README.md`, surfaced in `TODO.md`. The same `--tv`
+   rule as step 2 applies: any gotcha recording TV behavior must carry the
+   exact probe `.pine` script(s) and TV's dated results.
 
 ### Indexes
 

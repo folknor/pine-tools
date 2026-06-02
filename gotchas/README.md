@@ -17,6 +17,18 @@ turns out wrong, mark it superseded inside the file; don't renumber.
 The body should include: the symptom we hit, the cause we eventually
 found, and the lesson worth remembering.
 
+**`--tv` validation is mandatory to record.** Any gotcha documenting
+TradingView behavior must carry, in the file:
+
+1. the exact `.pine` script(s) sent to `pine-lint --tv` — the
+   reproducible probe, not a paraphrase, and
+2. TV's results for them (verdict / raw output), dated.
+
+A `--tv` verdict is a point-in-time measurement, not a permanent fact
+(TV's linter changes — see [G001](G001-tv-pine-lint-not-spec.md)). G002
+is the cautionary case: a `--tv`-verified widening that silently expired
+when TV's behavior diverged, with no stored probe to re-check it.
+
 ## How to use this folder
 
 - Add an entry to the **Index** below: link + a few keywords.

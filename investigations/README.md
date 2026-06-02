@@ -15,6 +15,18 @@ should link to the regression fixture that exercises the decision. If
 an investigation is later overturned, mark it superseded inside the
 file rather than renumbering.
 
+**`--tv` validation is mandatory to record.** Any finding validated
+against TradingView must include, in the investigation:
+
+1. the exact `.pine` script(s) sent to `pine-lint --tv` — the
+   reproducible probe, not a paraphrase, and
+2. TV's results for them (verdict / raw output), dated.
+
+A prose verdict without the probe + output is not acceptable. A `--tv`
+result is a point-in-time measurement, not a permanent fact (TV's linter
+changes — see `gotchas/G001`), so it must be re-runnable; a later
+contradiction means re-measure, not "the earlier author was wrong."
+
 ## How to use this folder
 
 - Add an entry to the **Index** below: link + a few keywords.
@@ -45,9 +57,9 @@ file rather than renumbering.
   task #4
 - [INV009](INV009-cannot-call-fns-mostly-column-shifts/notes.md) —
   analysis, "Cannot call" FNs, column shifts, polymorphic bypass,
-  pine-data unions. **RE-CORRECTED 2026-06-02: the 2026-05-28 "all
-  TV-accepted" correction was itself wrong (position-keying artifact);
-  isolated --tv probes show all 3 are real CE10123 FNs. See INV014 / G002.**
+  pine-data unions. **RE-MEASURED 2026-06-02: isolated --tv probes show all 3
+  are real CE10123 FNs, contradicting the 2026-05-28 "all TV-accepted"
+  correction (a `--tv` measurement error — see G002). See INV014 / G002.**
 - [INV010](INV010-udf-tuple-return-types/notes.md) — type-inference,
   inferTupleElementTypes, UDF tuple destructure,
   bool-as-series-float
@@ -61,4 +73,9 @@ file rather than renumbering.
   v4/v5 leniency
 - [INV014](INV014-const-arg-enforcement/notes.md) — const-arg enforcement
   (CE10123), overload return-qualifier resolution, qualifier-stripping,
-  `input.time(timestamp(...))`, exhaustive `--tv` audit, disproves G002
+  `input.time(timestamp(...))`, exhaustive `--tv` audit, supersedes G002's
+  widenings (a `--tv` measurement error)
+- [INV015](INV015-remove-disproven-overrides/notes.md) — removed the
+  now-stale `FUNCTION_PARAM_TYPE_OVERRIDES` (G002 superseded); `plot.title`
+  const-enforcement now fires; `nz`/`fixnan`/`int` need union-param
+  validation (the checker skips union-typed params — INV013 safety net)

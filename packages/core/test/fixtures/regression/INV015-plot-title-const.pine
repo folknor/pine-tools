@@ -1,0 +1,7 @@
+// @test regression/INV015-plot-title-const
+// @description G002 (disproven in INV014) had widened plot.title to `series string` via FUNCTION_PARAM_TYPE_OVERRIDES, masking the fact that TV requires `const string`. INV015 removed that override, so plot.title reverts to const string and INV014's const-arg check now fires on a non-const title - matching TV (CE10123). See investigations/INV015-remove-disproven-overrides/notes.md.
+// @expects parse: success
+// @expects error: line=3, message="was used but a"
+//@version=6
+indicator("INV015 plot title const")
+plot(close, title = syminfo.tickerid)

@@ -1,7 +1,7 @@
 /**
  * Pine Script V6 Functions
  * Auto-generated from TradingView documentation
- * Generated: 2026-05-30T22:49:01.816Z
+ * Generated: 2026-06-02T20:19:20.028Z
  * Total: 475 functions
  */
 
@@ -5218,7 +5218,7 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "source",
-        "type": "series int/float/bool/string/color",
+        "type": "series int/float/color",
         "description": "Source used for the calculation.",
         "required": false
       }
@@ -7606,7 +7606,7 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "x",
-        "type": "series int/float/bool",
+        "type": "series int/float",
         "description": "The value to convert to the specified type, usually na.",
         "required": false
       }
@@ -14140,13 +14140,13 @@ export const FUNCTIONS: PineFunction[] = [
     "parameters": [
       {
         "name": "source",
-        "type": "series int/float/bool/string/color",
+        "type": "series int/float/color",
         "description": "The source series to process.",
         "required": false
       },
       {
         "name": "replacement",
-        "type": "series int/float/bool/string/color",
+        "type": "series int/float/color",
         "description": "Optional. The value the function uses to replace na values in the source series. The default depends on the source type: 0 for \"int\", 0.0 for \"float\", or #00000000 for \"color\".",
         "required": false
       }
@@ -14282,7 +14282,7 @@ export const FUNCTIONS: PineFunction[] = [
       },
       {
         "name": "title",
-        "type": "series string",
+        "type": "const string",
         "description": "Title of the plot.",
         "required": false
       },

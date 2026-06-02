@@ -87,22 +87,19 @@ IDs so the two stay in sync.
   + `reextract:dom` (see CLAUDE.md "Re-running type logic WITHOUT scraping"),
   so full `--force` re-scrapes should be rare — only when TV's DOM *structure*
   changes.
-- **#28 — remove the disproven `FUNCTION_PARAM_TYPE_OVERRIDES`
-  (G002 fallout).** All five entries in `generate.ts`
-  (`nz.source`, `nz.replacement`, `fixnan.source`, `int.x`, `plot.title`)
-  were added on G002's authority, which INV014 disproved with isolated
-  `--tv` probes (2026-06-02): TV flags `nz(<bool>/<string>)`, `int(true)`,
-  and `plot(title=<non-const>)` with CE10123. The widenings cause real
-  false negatives. Removing them is offline (`pnpm run generate`, no
-  scrape) and would (a) let INV014's const-arg check fire on `plot.title`
-  (currently masked, typed `series string`), and (b) restore base-type
-  checking for `nz`/`fixnan`/`int`. Deferred from INV014 because the
-  `nz`/`fixnan`/`int` cases are a *base-type* axis with broader corpus
-  impact — needs its own regression pass to confirm each new appearance is
-  TV-real (the representative cases already are). Re-verify the full
-  accepted-type matrix per param with isolated `--tv` probes (reading TV's
-  `ctx`), NOT corpus position-diffs, before removing. See `gotchas/G002`
-  (retracted) and `investigations/INV014`.
+- **#28 — validate union-typed arguments (catch the `nz`/`fixnan`/`int`
+  base-type FNs).** INV015 removed the now-stale `FUNCTION_PARAM_TYPE_OVERRIDES`,
+  reverting `nz.source/replacement`/`fixnan.source` to `series int/float/color`
+  and `int.x` to `series int/float`. But these are *union* types, and the checker
+  still misses `nz(<bool>/<string>)` and `int(true)` because
+  `validateFunctionArguments` skips any param whose `mapToPineType` is `"unknown"`
+  — and a union collapses to `"unknown"` (the INV013/#17 safety net). The fix:
+  when the raw param type is a scalar union, validate the arg's base against the
+  member set (`isUnionTypeMatch` in `types.ts` already exists; the gap is the
+  checker never reaches it). TV-confirmed FNs: `nz(close > open)`, `nz(<string>)`,
+  `int(true)` all CE10123. Corpus-wide FP risk (many functions take union params),
+  so needs its own regression pass verifying each new appearance against TV. See
+  `investigations/INV015-remove-disproven-overrides` and INV014.
 - **Minor data residue (record-only, low value):** `ta.vwap.anchor`'s default
   and the "X by default" phrasing are deliberately unparsed (see
   `parse-default.ts`). Skip unless a consumer needs them. (`since`/`deprecated`,

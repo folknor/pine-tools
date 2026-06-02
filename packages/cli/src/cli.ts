@@ -182,15 +182,19 @@ async function main() {
 			console.log(JSON.stringify(tvResult));
 			process.exit(tvResult.success === false ? 1 : 0);
 		} catch (e) {
-			const msg = (e as Error).message;
-			console.log(
-				JSON.stringify({
-					success: false,
-					error: `Network request failed: ${msg}`,
-					errors: [],
-				}),
+			// A failed TV probe must NOT print a result-shaped payload. The old
+			// code emitted `{success:false, errors:[]}` on stdout, which is
+			// indistinguishable from "TV reported no errors": diff tooling that
+			// reads `result?.errors ?? errors ?? []` (find-real-failures,
+			// compare-tv) silently treats a network blip as "TV accepts". That is
+			// the most plausible cause of the 2026-05-28 mis-verification — see
+			// gotchas/G002, INV014. Emit nothing on stdout; report the reason on
+			// stderr and signal failure with a distinct non-zero exit code so a
+			// failed probe can never be parsed as a clean result.
+			console.error(
+				`pine-lint --tv: TradingView request failed: ${(e as Error).message}`,
 			);
-			process.exit(1);
+			process.exit(2);
 		}
 	}
 

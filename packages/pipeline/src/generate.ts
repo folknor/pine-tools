@@ -263,24 +263,21 @@ function constantBaseType(raw: string): string {
 // Empty by design — populate only if the scrape surfaces such cases.
 const CONSTANT_TYPE_OVERRIDES: Record<string, string> = {};
 
-// Function params (`<fn>.<param>`) that TV's LINTER accepts more broadly than
-// its REFERENCE documents. These can't be scraped (the extra types aren't in the
-// reference at all), so we bake the TV-verified set into the generated JSON here.
-// All entries verified with `pine-lint --tv` on 2026-05-28 (see gotchas/G001 and
-// INV009): every "FN" INV009 attributed to these calls is actually TV-accepted,
-// so the values below are the true accepted sets, not guesses.
-//   - na-handling family: `nz`/`fixnan` reference only int/float/color, but the
-//     linter also accepts bool and string. (`na` is universal → "unknown" via
-//     the overload-union rule already.)
-//   - `int(<bool>)` is accepted (bool->int); `plot(title=<series string>)` is
-//     accepted (title need not be const).
-const FUNCTION_PARAM_TYPE_OVERRIDES: Record<string, string> = {
-	"nz.source": "series int/float/bool/string/color",
-	"nz.replacement": "series int/float/bool/string/color",
-	"fixnan.source": "series int/float/bool/string/color",
-	"int.x": "series int/float/bool",
-	"plot.title": "series string",
-};
+// Function params (`<fn>.<param>`) where TV's LINTER accepts a type the scraped
+// REFERENCE doesn't express. Empty by design.
+//
+// This map formerly widened nz/fixnan/int/plot.title on G002's authority, a
+// `--tv`-verified record from 2026-05-28 that TV under-documents acceptance. As
+// of 2026-06-02, isolated `pine-lint --tv` probes flag every one of those calls
+// with CE10123 (nz(<bool>/<string>), int(true), plot(title=<non-const>)), so the
+// widenings now contradict TV and were a false-negative source — removed.
+// The 2026-05-28 "TV accepts" verdict was a measurement error, not a TV change
+// (see G002): a failed `--tv` probe used to print `{success:false, errors:[]}`,
+// which the diff tooling reads as "no TV errors" = "accepts" (now fixed). Baking
+// that one-off verdict here, with nothing to re-check it, is why it survived
+// silently. Any future entry needs a dated, re-runnable isolated `--tv` probe
+// recorded alongside it. See gotchas/G002 (superseded) and INV014 / INV015.
+const FUNCTION_PARAM_TYPE_OVERRIDES: Record<string, string> = {};
 
 // Return-follows-param functions that `detectReturnTypeParam` can't auto-derive
 // from the overload dump. `input`'s return follows `defval`, but its defval type

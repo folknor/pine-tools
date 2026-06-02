@@ -1,71 +1,102 @@
 # G002 — TradingView's reference under-documents accepted param types
 
 **Keywords:** reference-vs-linter, overloads, accepted-types, nz, fixnan,
-na, int, plot, under-documentation, FUNCTION_PARAM_TYPE_OVERRIDES,
-RETRACTED, position-keying-artifact
+na, int, plot, FUNCTION_PARAM_TYPE_OVERRIDES, SUPERSEDED, swallowed-tv-failure,
+failed-probe-misread, stale-override
 
-## ⚠️ RETRACTED 2026-06-02 — every claim below was wrong
+## ⚠️ SUPERSEDED 2026-06-02 — the widenings were a swallowed `--tv` failure
 
-This gotcha claimed TV's *linter* accepts more param types than its
-*reference* documents. **Direct, isolated `pine-lint --tv` probes on
-2026-06-02 disprove all of it.** TV flags every example with CE10123:
+This gotcha recorded that TV's *linter* accepts more param types than its
+*reference* documents, verified with `pine-lint --tv` on **2026-05-28**
+(commit `71f6122`). As of **2026-06-02**, direct isolated `--tv` probes show
+TV now **flags every one** with CE10123:
 
-| isolated `--tv` probe (2026-06-02) | original G002 claim | actual TV verdict |
+| isolated `--tv` probe | claimed 2026-05-28 | actual 2026-06-02 |
 |---|---|---|
-| `plot(title=syminfo.tickerid)` (simple string) | accepts non-const | **CE10123** — `const string` expected |
-| `plot(title=str.tostring(close))` (series string) | accepts non-const | **CE10123** — `const string` expected |
-| `nz(close > open)` (series bool) | accepts bool | **CE10123** — `simple int` expected |
-| `nz(syminfo.tickerid)` (simple string) | accepts string | **CE10123** — `simple int` expected |
-| `int(true)` | accepts bool | **CE10123** — `simple int` expected |
-| `na(close > open)` | universal (any type) | **CE10123** — `simple float` expected |
+| `plot(title=syminfo.tickerid)` (simple string) | accepts | **CE10123** — `const string` |
+| `plot(title=str.tostring(close))` (series string) | accepts | **CE10123** — `const string` |
+| `nz(close > open)` (series bool) | accepts | **CE10123** — `simple int` |
+| `nz(syminfo.tickerid)` (simple string) | accepts | **CE10123** — `simple int` |
+| `int(true)` | accepts | **CE10123** — `simple int` |
+| `na(close > open)` | universal | **CE10123** — `simple float` |
 
-The reference's documented types are NOT a lower bound that the linter
-widens — at least for these calls, the linter enforces them (and the
-qualifier) *exactly*. Controls confirm: `plot(title="ok")` is clean.
+Stable on re-runs (not TV flakiness), reproduced in full-file context, and
+control `plot(title="ok")` is clean. So as of today the reference is NOT a
+lower bound the linter widens — TV enforces these types (and qualifiers)
+exactly.
 
-### Why the original conclusion was wrong
+### Why it differs from 2026-05-28 — a measurement error, not a TV change
 
-G002's "verification" trusted the very position-keying artifact it warned
-about, and drew it backwards. TV reports these at the **operand column**;
-we report at the **call/operator column**. `find-real-failures.mjs` keys by
-`(line, col)`, so TV's real CE10123 landed at a different position than
-ours and was miscounted as **"TV-silent"** → mislabelled a false positive
-on our side → "TV must accept it." It does not. (Whether TV's behavior also
-changed between 2026-05-28 and 2026-06-02 is unknowable, but the isolated
-single-construct probes above are unambiguous as of today, and that is what
-our linter must match.)
+Two dated `--tv` measurements, opposite results, five days apart:
 
-### Fallout — `FUNCTION_PARAM_TYPE_OVERRIDES` is invalid
+- **2026-05-28** (commit `71f6122`): *"Differential-tested ... all three are
+  TV-ACCEPTED."*
+- **2026-06-02** (probes above): all flagged with CE10123.
 
-The whole point of G002 was to justify baking these "extra accepted types"
-into pine-data via `FUNCTION_PARAM_TYPE_OVERRIDES` in
-`packages/pipeline/src/generate.ts`. All five entries
-(`nz.source`, `nz.replacement`, `fixnan.source`, `int.x`, `plot.title`) are
-therefore wrong, and they cause real **false negatives**: our linter passes
-`plot(title=<non-const>)`, `nz(<bool>/<string>)`, and `int(true)`, which TV
-rejects. `plot.title` being widened to `series string` also *masks*
-INV014's const-arg check for that param (it would otherwise fire).
+A production type-checker does not flip basic rules in two days, so the likely
+options are (a) the 2026-05-28 measurement was wrong, or (b) the 2026-06-02
+measurement is wrong. **(b) is ruled out:** `pine-lint --tv` flags
+`nz(close > open)` while our *local* validator does not (we skip union params),
+and `--tv` cleanly accepts the valid `nz(close)` — so `--tv` is genuinely
+hitting TradingView (not echoing local) and discriminates valid from invalid.
+The 2026-06-02 result is sound.
 
-Removing the overrides + regenerating pine-data + a corpus regression pass
-is a base-type-axis change with broader impact than INV014, so it is its
-own work item — tracked in `TODO.md`. See `investigations/INV014`.
+That leaves **(a): the 2026-05-28 measurement was wrong** — and there is a
+concrete, code-grounded mechanism (no TV change needed). On a network failure
+`pine-lint --tv` *used to* print `{success:false, errors:[]}` to stdout
+(cli.ts), and the diff tooling reads `result?.errors ?? errors ?? []`
+(`find-real-failures.mjs:59`, `compare-tv.mjs:36`) → `[]` → "TV reported no
+errors" → recorded as **"TV accepts."** A single transient `--tv` failure on
+2026-05-28 would produce exactly the false "TV-ACCEPTED" verdict for the
+constructs probed at that moment. I can't *prove* that is what happened (no
+logs from then), but it requires no TV behavior change, unlike the alternative.
+**This hole is now fixed:** a failed `--tv` probe emits nothing on stdout and
+exits non-zero, so it can never be parsed as a clean result. The 2026-05-28
+*reasoning* was fine; the tooling could silently feed it a failed probe.
+
+### Why it persisted silently — a permanent override with no re-check
+
+The bad measurement then survived because it was baked into pine-data as a
+**permanent** override (`FUNCTION_PARAM_TYPE_OVERRIDES` in
+`packages/pipeline/src/generate.ts`), with no expiry, no re-verification guard,
+and no test that would fail when it diverged from TV. So the false "accepts"
+became a silent false-negative source: our linter passed
+`plot(title=<non-const>)`, `nz(<bool>/<string>)`, `int(true)`, which TV
+rejects.
+
+**Resolved (INV015):** the override map is emptied and pine-data regenerated.
+`plot.title` is back to `const string`, so INV014's const-arg check now flags
+`plot(title=<non-const>)`. The `nz`/`fixnan`/`int` cases revert to *union*
+types (`series int/float/color`, `series int/float`) the checker still skips
+(it passes over union-typed params — the INV013 safety net), so those
+base-type FNs await union-param validation — TODO #28.
 
 ## Lesson (the durable one)
 
-Verify accepted-type questions with **isolated, single-construct** `--tv`
-probes that read TV's structured `ctx` (it names the exact param and the
-expected type), NOT with corpus position-diffs — `(line,col)` keying
-silently flips real TV errors into apparent silence when the two linters
-anchor a diagnostic at different columns. The reference + a direct probe
-beat any heuristic over aggregate corpus output.
+1. **A failed external probe must not be parseable as a clean result.**
+   `errors: []` from a crashed/timed-out `--tv` call is indistinguishable from
+   "TV reported no errors" — that ambiguity manufactured this entire false
+   gotcha. Fixed: `--tv` failures now emit nothing on stdout + a non-zero exit.
+   When recording a TV verdict, confirm TV actually answered (`success:true` /
+   real output), not just that the error list was empty.
+2. **Don't bake a TV-only verdict into pine-data permanently** without a dated,
+   re-runnable probe guarding it — a one-off measurement frozen as a permanent
+   fact has nothing to catch it when it was wrong (or later changes).
+3. When a current `--tv` finding contradicts a dated note, re-probe in
+   isolation, confirm `--tv` disagrees with our local validator (proving it's
+   really TV), and prefer "the earlier *measurement* was wrong" over "TV
+   changed" — a mature linter rarely flips basic rules in days.
 
 ## References
 
-- INV014 — const-arg enforcement; the work that disproved this gotcha.
-- INV009 — its "zero real FNs" conclusion is overturned by the same
-  evidence (the three "TV-accepted" cases are real CE10123 errors).
-- [G001](G001-tv-pine-lint-not-spec.md) — the linter is unreliable as a
-  *spec*; the complementary point here is that *corpus position-diffs* are
-  unreliable as evidence about the linter.
+- INV014 — const-arg enforcement; surfaced that TV now flags `plot.title` and
+  the na/cast family while auditing const params.
+- INV015 — removed the stale overrides this note had justified.
+- INV009 — its *original* "these are real FNs" reading matches today's TV; its
+  2026-05-28 "TV-accepts" correction was a `--tv` measurement error (likely a
+  swallowed network failure read as empty errors).
+- [G001](G001-tv-pine-lint-not-spec.md) — TV's pine-lint is an unreliable
+  comparator; this gotcha shows a second-order trap: the *tooling* around it
+  silently turned a failed probe into a false "TV accepts."
 - `packages/pipeline/src/generate.ts` `FUNCTION_PARAM_TYPE_OVERRIDES`
-  (to be removed — see TODO).
+  (now empty — see INV015 / TODO #28).

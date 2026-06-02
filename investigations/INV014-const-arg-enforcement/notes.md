@@ -43,31 +43,42 @@ call is genuinely invalid; TV is right and we were silently wrong.
    survives). So even with correct overload resolution, `simple int → const int`
    maps to `int → int` and passes. We don't track const-ness at all. (`builtins.ts`.)
 
-## The trap (gotcha G002) — and that it was wrong
+## The trap (gotcha G002) — and that it no longer holds
 
 The obvious fix ("enforce every param the reference types `const`") looked unsafe
-because `gotchas/G002` claimed TV *under-documents* — specifically that
-`plot(title=…)` accepts a non-const `series string`. If true, blanket
-enforcement would false-positive.
+because `gotchas/G002` recorded that TV *under-documents* — specifically that
+`plot(title=…)` accepts a non-const `series string` (verified with `--tv` on
+2026-05-28). If still true, blanket enforcement would false-positive.
 
 So we **probed TV directly** (`scripts/probe-const-enforcement.mjs`, 2026-06-02)
-instead of trusting the reference. Result: **G002 was wrong.** Direct isolated
-`--tv` probes flag *every* one of its "TV accepts" claims with CE10123:
+instead of trusting the note. As of 2026-06-02, isolated `--tv` probes flag
+*every* one of G002's "TV accepts" cases with CE10123:
 
-| probe (isolated `--tv`, 2026-06-02) | TV verdict |
-|---|---|
-| `plot(title=syminfo.tickerid)` (simple string) | CE10123 — `const string` expected |
-| `plot(title=str.tostring(close))` (series string) | CE10123 — `const string` expected |
-| `plot(title="ok")` (const) | clean (control) |
-| `nz(close > open)` (series bool) | CE10123 — `simple int` expected |
-| `nz(syminfo.tickerid)` (simple string) | CE10123 — `simple int` expected |
-| `int(true)` | CE10123 — `simple int` expected |
-| `na(close > open)` | CE10123 — `simple float` expected |
+**Probes and results (isolated `--tv`, 2026-06-02):**
 
-G002's error was the position-keying artifact it itself warned about, drawn the
-*wrong way*: TV reports at the operand column, we at the call column, so the
-`(line,col)` diff counted these as "TV-silent" when TV actually flags them at a
-different column. G002 is now corrected; see also the adjacent finding below.
+```pine
+//@version=6
+indicator("x")
+plot(close, title = syminfo.tickerid)    // CE10123 — simple string, const string expected
+plot(close, title = str.tostring(close)) // CE10123 — series string, const string expected
+plot(close, title = "ok")                // clean (control)
+plot(nz(close > open))                    // CE10123 — series bool, simple int expected
+plot(nz(syminfo.tickerid) == "" ? 1 : 0) // CE10123 — simple string, simple int expected
+y = int(true)                             // CE10123 — literal bool, simple int expected
+plot(na(close > open) ? 1 : 0)            // CE10123 — series bool, simple float expected
+```
+
+This contradicts G002's 2026-05-28 record. The cause is a **`--tv` measurement
+error then, not a TV change**: `--tv` flags `nz(close > open)` where our local
+validator does not, and accepts the valid `nz(close)`, so the 2026-06-02
+result is genuinely TV (not a local echo) — and a failed `--tv` probe used to
+print `{success:false, errors:[]}`, which the diff tooling reads as "TV
+accepts" (now fixed: failed probes emit no stdout + exit non-zero). Earlier
+drafts of these notes guessed "position-keying" then "TV changed"; both were
+unsupported and are removed — see `gotchas/G002` for the full account. The
+const-arg check here rests on the 2026-06-02 measurement plus the reference
+(and the user's report that TV rejected their script). See the adjacent finding
+below.
 
 ## The exhaustive audit
 
@@ -139,8 +150,8 @@ already encode everything.
 
 `FUNCTION_PARAM_TYPE_OVERRIDES` in `packages/pipeline/src/generate.ts` (5 entries:
 `nz.source`, `nz.replacement`, `fixnan.source`, `int.x`, `plot.title`) was added
-solely on G002's authority and is therefore **entirely disproven** — TV flags all
-of them. The widenings cause real false negatives we still have:
+solely on G002's authority and **no longer holds as of 2026-06-02** — TV now flags
+all of them. The widenings cause real false negatives we still have:
 `plot(title=<non-const>)`, `nz(<bool>/<string>)`, `int(true)` all pass our linter
 but are CE10123 in TV. Notably `plot.title` is *masked* by its override (typed
 `series string` in pine-data), so INV014's machinery would catch it the moment the
