@@ -560,6 +560,36 @@ export function getConstParamDocType(
 	return undefined;
 }
 
+// Scalar base members of a union param type ("series int/float/color" ->
+// ["int","float","color"]). null unless it's a union (contains "/") of plain
+// scalars — we only validate clean scalar unions, never containers/objects/
+// genuine "unknown". The merged param type is already the union across overloads
+// (union-types.ts), so this set is exactly what TV accepts at that param. INV016.
+export function getScalarUnionMembers(rawType: string): string[] | null {
+	const base = baseOfRawType(rawType);
+	if (!base.includes("/")) return null;
+	const members = base.split("/").map((s) => s.trim());
+	return members.every((m) => CONST_SCALAR_BASES.has(m)) ? members : null;
+}
+
+export function namedParamUnionMembers(
+	functionName: string,
+	paramName: string,
+): string[] | null {
+	const p = FUNCTIONS_BY_NAME.get(functionName)?.parameters.find(
+		(x) => x.name === paramName,
+	);
+	return p ? getScalarUnionMembers(p.type) : null;
+}
+
+export function positionalParamUnionMembers(
+	functionName: string,
+	index: number,
+): string[] | null {
+	const p = FUNCTIONS_BY_NAME.get(functionName)?.parameters[index];
+	return p ? getScalarUnionMembers(p.type) : null;
+}
+
 // Qualifier + base of a built-in VARIABLE (close -> series/float,
 // syminfo.tickerid -> simple/string). Used to decide whether a bare/member
 // reference is a non-const argument. Undefined for non-builtins.

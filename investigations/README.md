@@ -75,6 +75,9 @@ contradiction means re-measure, not "the earlier author was wrong."
   (CE10123), overload return-qualifier resolution, qualifier-stripping,
   `input.time(timestamp(...))`, exhaustive `--tv` audit, supersedes G002's
   widenings (a `--tv` measurement error)
+- [INV016](INV016-union-arg-validation/notes.md) — validate union-typed
+  args (`nz`/`fixnan`/`int` base-type FNs); reliability gate; fixed
+  polymorphic-fallback-to-color mis-inference (−21 FPs). Completes #28.
 - [INV015](INV015-remove-disproven-overrides/notes.md) — removed the
   now-stale `FUNCTION_PARAM_TYPE_OVERRIDES` (G002 superseded); `plot.title`
   const-enforcement now fires; `nz`/`fixnan`/`int` need union-param

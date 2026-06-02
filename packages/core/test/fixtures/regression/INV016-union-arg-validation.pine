@@ -1,0 +1,10 @@
+// @test regression/INV016-union-arg-validation
+// @description Union-typed params (nz's series int/float/color, int's series int/float) were skipped by the arg checker (a union maps to "unknown"), so nz(<bool>) and int(true) - real CE10123 errors in TV - slipped through. INV016 validates the arg's base against the union's member set when the arg is reliably typed. Both flagged here, matching TV. See investigations/INV016-union-arg-validation/notes.md.
+// @expects parse: success
+// @expects error: line=3, message="expected int/float/color, got series<bool>"
+// @expects error: line=4, message="expected int/float, got bool"
+//@version=6
+indicator("INV016 union-arg validation")
+plot(nz(close > open) ? 1 : 0)
+x = int(true)
+plot(x)

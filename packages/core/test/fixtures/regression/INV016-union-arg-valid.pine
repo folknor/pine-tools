@@ -1,0 +1,13 @@
+// @test regression/INV016-union-arg-valid
+// @description Union-arg validation (INV016) must accept in-set args and must NOT flag args whose type comes from an unreliable source (UDF returns, user vars) - that conservatism is what keeps it FP-free. nz(close)/math.max/int(close)/nz(<color>) are all in-set; the UDF-typed value is deliberately left unchecked.
+// @expects parse: success
+// @expects no-errors
+//@version=6
+indicator("INV016 union-arg valid")
+myVal() => 0.0
+v = myVal()
+plot(nz(close))
+plot(math.max(close, open))
+x = int(close)
+bgcolor(nz(close > open ? color.red : color.green))
+plot(nz(v) + x)

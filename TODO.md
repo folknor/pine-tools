@@ -87,19 +87,6 @@ IDs so the two stay in sync.
   + `reextract:dom` (see CLAUDE.md "Re-running type logic WITHOUT scraping"),
   so full `--force` re-scrapes should be rare — only when TV's DOM *structure*
   changes.
-- **#28 — validate union-typed arguments (catch the `nz`/`fixnan`/`int`
-  base-type FNs).** INV015 removed the now-stale `FUNCTION_PARAM_TYPE_OVERRIDES`,
-  reverting `nz.source/replacement`/`fixnan.source` to `series int/float/color`
-  and `int.x` to `series int/float`. But these are *union* types, and the checker
-  still misses `nz(<bool>/<string>)` and `int(true)` because
-  `validateFunctionArguments` skips any param whose `mapToPineType` is `"unknown"`
-  — and a union collapses to `"unknown"` (the INV013/#17 safety net). The fix:
-  when the raw param type is a scalar union, validate the arg's base against the
-  member set (`isUnionTypeMatch` in `types.ts` already exists; the gap is the
-  checker never reaches it). TV-confirmed FNs: `nz(close > open)`, `nz(<string>)`,
-  `int(true)` all CE10123. Corpus-wide FP risk (many functions take union params),
-  so needs its own regression pass verifying each new appearance against TV. See
-  `investigations/INV015-remove-disproven-overrides` and INV014.
 - **Minor data residue (record-only, low value):** `ta.vwap.anchor`'s default
   and the "X by default" phrasing are deliberately unparsed (see
   `parse-default.ts`). Skip unless a consumer needs them. (`since`/`deprecated`,

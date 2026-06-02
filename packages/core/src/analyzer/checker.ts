@@ -30,6 +30,7 @@ import {
 	getConstParamDocType,
 	getMinArgsForVariadic,
 	getPolymorphicReturnType,
+	getPolymorphicType,
 	hasOverloads,
 	isBuiltinConstant,
 	isTopLevelOnly,
@@ -38,8 +39,10 @@ import {
 	mapReturnTypeToPineType,
 	mapToPineType,
 	NAMESPACE_PROPERTIES,
+	namedParamUnionMembers,
 	paramRequiresConst,
 	positionalConstParam,
+	positionalParamUnionMembers,
 	resolveCallReturnRaw,
 } from "./builtins";
 import { type Symbol as SymbolInfo, SymbolTable } from "./symbols";
@@ -1007,6 +1010,113 @@ export class UnifiedPineValidator {
 
 		// CE10123: const-required params receiving a non-const argument. see INV014
 		this.checkConstArgs(call, functionName, signature, version);
+
+		// Base-type check for union-typed params the main loop skips. see INV016
+		this.checkUnionArgs(call, functionName, version);
+	}
+
+	// Whether an expression's inferred type is trustworthy enough to flag an
+	// arg-type mismatch on. Literals and operator expressions have solid type
+	// rules; built-in vars/constants/calls carry types straight from pine-data.
+	// User identifiers and user-defined-function calls are excluded — our
+	// inference for those is the known-shaky path (UDF returns, etc.), and a
+	// wrong base there would surface as a false positive. see INV016.
+	private isReliablyTyped(expr: Expression): boolean {
+		switch (expr.type) {
+			case "Literal":
+			case "BinaryExpression":
+			case "UnaryExpression":
+				return true;
+			case "Identifier":
+				return getBuiltinVarInfo((expr as Identifier).name) !== undefined;
+			case "MemberExpression": {
+				const m = expr as MemberExpression;
+				if (m.object.type !== "Identifier") return false;
+				const name = `${(m.object as Identifier).name}.${m.property.name}`;
+				return (
+					isBuiltinConstant(name) || getBuiltinVarInfo(name) !== undefined
+				);
+			}
+			case "CallExpression": {
+				const ce = expr as CallExpression;
+				let name = "";
+				if (ce.callee.type === "Identifier") {
+					name = (ce.callee as Identifier).name;
+				} else if (ce.callee.type === "MemberExpression") {
+					const mm = ce.callee as MemberExpression;
+					if (mm.object.type === "Identifier") {
+						name = `${(mm.object as Identifier).name}.${mm.property.name}`;
+					}
+				}
+				// Built-in call (return type from pine-data) — trust it; a UDF call
+				// is not in functionSignatures, so it's excluded.
+				return name !== "" && this.functionSignatures.has(name);
+			}
+			default:
+				return false;
+		}
+	}
+
+	// Validate arguments against UNION-typed params (e.g. nz's
+	// `series int/float/color`, int's `series int/float`). The main arg loop maps
+	// a union to "unknown" via mapToPineType and skips it (the INV013 safety net),
+	// so nz(<bool>)/int(true) — real CE10123 errors in TV — slipped through. The
+	// merged param type is already the cross-overload union (union-types.ts), so
+	// an arg whose base is outside it is rejected by every overload. Conservative:
+	// only flags a KNOWN scalar base that's absent from the union (int/float are
+	// interchangeable); unknown/na/non-scalar args are left alone, so no FPs.
+	// Positional checking is skipped for overloaded funcs (ambiguous positions),
+	// matching the main loop. see INV016.
+	private checkUnionArgs(
+		call: CallExpression,
+		functionName: string,
+		version: string,
+	): void {
+		if (version !== "6") return; // arg-type checks are v6-only. see G004
+		const SCALARS = new Set(["int", "float", "bool", "string", "color"]);
+		const functionHasOverloads = hasOverloads(functionName);
+		let positionalNum = 0;
+		let sawNamed = false;
+		for (const arg of call.arguments) {
+			let members: string[] | null;
+			let where: string;
+			if (arg.name) {
+				sawNamed = true;
+				members = namedParamUnionMembers(functionName, arg.name);
+				where = `parameter '${arg.name}'`;
+			} else {
+				positionalNum++;
+				// A positional arg after a named one is malformed ordering (TV's
+				// own error); positional->param indices are unreliable, so don't
+				// emit a misleading type mismatch on top. see INV016
+				if (sawNamed || functionHasOverloads) continue;
+				members = positionalParamUnionMembers(functionName, positionalNum - 1);
+				where = `argument ${positionalNum}`;
+			}
+			if (!members) continue;
+			// Only trust the arg's type when it comes from a reliable source.
+			// Broad union-checking otherwise amplifies every type-inference gap
+			// (UDF returns, user vars) into a false positive on valid code — e.g.
+			// `color.from_gradient(Vol, ...)` where `Vol = someUdf()` is a float we
+			// mis-infer as bool. Mirrors describeNonConstArg's conservatism. INV016
+			if (!this.isReliablyTyped(arg.value)) continue;
+			const argType = this.inferExpressionType(arg.value, version);
+			const argBase = this.getBaseType(argType);
+			if (!SCALARS.has(argBase)) continue; // unknown/na/non-scalar -> skip
+			const numeric = argBase === "int" || argBase === "float";
+			const ok =
+				members.includes(argBase) ||
+				(numeric && (members.includes("int") || members.includes("float")));
+			if (!ok) {
+				this.addError(
+					arg.value.line,
+					arg.value.column,
+					0,
+					`Type mismatch for ${where}: expected ${members.join("/")}, got ${argType}`,
+					DiagnosticSeverity.Error,
+				);
+			}
+		}
 	}
 
 	// CE10123: a parameter that requires a compile-time constant received a
@@ -1465,6 +1575,16 @@ export class UnifiedPineValidator {
 				);
 				if (polyReturnType) {
 					type = polyReturnType;
+					break;
+				}
+
+				// A polymorphic function whose return follows an argument we
+				// couldn't type must NOT fall back to its frozen overload-#0 return.
+				// nz/fixnan freeze to "simple color", so nz(<unresolved>) would be
+				// mis-typed as color and spuriously trip downstream arg-type checks
+				// (e.g. int(nz(tonumber(x)))). Yield unknown instead. see INV016
+				if (getPolymorphicType(funcName)) {
+					type = "unknown";
 					break;
 				}
 
