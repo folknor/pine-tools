@@ -11,6 +11,12 @@
  *      one source line per `.ec-line`.
  *   3. `hN.md-heading`       - the heading text is wrapped in a self-link plus an
  *      anchor-link SVG icon we don't want in the output.
+ *   4. `div.tv-informer`     - a Tip/Note/Notice callout box. The label lives in a
+ *      `.tv-informer-header` span (TV has no per-type class); re-emitted as a
+ *      GitHub-flavored alert (`> [!TIP]` ...) so downstream renderers style it.
+ *   5. `<img>`               - manual screenshots (hashed `_astro` build URLs, alt
+ *      text is always "image" or a constant name that duplicates adjacent prose);
+ *      dropped entirely - zero text value for a Markdown/JSON consumer.
  *
  * This module is offline and deterministic: it takes raw page HTML (from the
  * `.cache/manual` mirror) and returns Markdown. No network, no DOM globals -
@@ -21,6 +27,23 @@ import TurndownService from "turndown";
 import { gfm } from "turndown-plugin-gfm";
 
 const SITE_ORIGIN = "https://www.tradingview.com";
+
+/**
+ * Map a manual callout's header label (`.tv-informer-header` text, lowercased)
+ * to a GitHub-flavored alert keyword. GFM supports only these five keywords, so
+ * TV's "Notice" (an emphatic clarification, distinct from plain "Note") folds
+ * into IMPORTANT to keep it visually distinct from NOTE. Warning/Caution/Danger
+ * /Important don't occur in the v6 manual today but are mapped for robustness.
+ */
+const ALERT_BY_LABEL: Record<string, string> = {
+	tip: "TIP",
+	note: "NOTE",
+	notice: "IMPORTANT",
+	important: "IMPORTANT",
+	warning: "WARNING",
+	caution: "CAUTION",
+	danger: "CAUTION",
+};
 
 /** Extract the inner HTML of the page's content node (`#slot-container`). */
 export function extractContentHtml(pageHtml: string): string {
@@ -105,6 +128,47 @@ function buildTurndown(): TurndownService {
 					: (pre?.textContent ?? "").replace(/^\n+|\n+$/g, "");
 			return `\n\n\`\`\`${fenceLang}\n${code}\n\`\`\`\n\n`;
 		},
+	});
+
+	// A Tip/Note/Notice callout box -> GitHub-flavored alert. The label is read
+	// from the `.tv-informer-header` span (stripped from the body by its own rule
+	// below); the converted body is re-indented as a `>`-prefixed blockquote.
+	td.addRule("tvInformer", {
+		// The wrapper is an `<aside class="tv-informer not-content">` (not a div),
+		// so match on the class alone rather than the tag name.
+		filter: (node) => hasClass(node, "tv-informer"),
+		replacement: (content, node) => {
+			const header = (node as unknown as Element).querySelector(
+				".tv-informer-header",
+			);
+			const label = (header?.textContent ?? "").trim().toLowerCase();
+			const type = ALERT_BY_LABEL[label] ?? "NOTE";
+			const body = content
+				.replace(/^\n+|\n+$/g, "")
+				// Collapse runs of blank/whitespace-only lines (left by dropped images
+				// or `<br>` separators) to a single gap before quoting.
+				.replace(/\n[ \t]*(?:\n[ \t]*)+/g, "\n\n")
+				.replace(/^/gm, "> ")
+				.replace(/^>[ \t]*$/gm, ">"); // tidy blank continuation lines
+			return `\n\n> [!${type}]\n${body}\n\n`;
+		},
+	});
+
+	// The callout's icon SVG and header label carry no body text - the alert rule
+	// reads the label off the node directly, so strip both from the content.
+	td.addRule("tvInformerChrome", {
+		filter: (node) =>
+			hasClass(node, "tv-informer-icon") ||
+			hasClass(node, "tv-informer-header"),
+		replacement: () => "",
+	});
+
+	// Drop every image. Manual screenshots use hashed `_astro` build URLs with no
+	// stable identity and useless alt text; they're pure noise for a text/JSON
+	// consumer. No image is link-wrapped, so this leaves no empty `[](...)`.
+	td.addRule("dropImages", {
+		filter: "img",
+		replacement: () => "",
 	});
 
 	// Drop the anchor-link icon TradingView injects into every heading.
