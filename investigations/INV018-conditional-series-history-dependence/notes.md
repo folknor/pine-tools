@@ -151,6 +151,12 @@ in the discriminant-less form). Loops stay ungated. Unprovable
 expressions (UDT fields, unknown calls) count as NOT series - zero FPs
 on the input-selector idiom at the cost of rare FNs.
 
+**CORRECTION 2026-06-04 (INV022):** the gate on AND/OR RIGHT OPERANDS
+was an extrapolation from probes 6-7 (which covered if/switch only)
+and is WRONG - TV warns CW10002 even when the left operand is a plain
+`input.bool(...)` (probed). The gate now applies to if/ternary/switch
+only; and/or right operands are always conditional. See INV022.
+
 **Probe 10** - UDF params: `f(float source, int length, string t)` with
 `switch t` arms - TV infers `series string` for the unqualified param
 and WARNS both arms; `simple string t` is silent; probe at

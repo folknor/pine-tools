@@ -510,12 +510,13 @@ export class SemanticAnalyzer {
 
 	private analyzeBinaryExpression(expr: BinaryExpression): void {
 		this.analyzeExpression(expr.left);
-		// The right operand of and/or is conditional only when the LEFT
-		// operand (which always executes and gates it) is series-qualified.
-		if (
-			(expr.operator === "and" || expr.operator === "or") &&
-			this.isSeriesishExpression(expr.left)
-		) {
+		// The right operand of and/or is ALWAYS conditional - unlike the
+		// if/ternary/switch gates, TV warns CW10002 even when the left
+		// operand is an input (`input.bool() and ta.crossover(...)` warns;
+		// `input.bool() ? ta.rsi(...) : x` does not - probed 2026-06-04,
+		// see INV022). INV018's series-condition gate was an
+		// over-extrapolation here.
+		if (expr.operator === "and" || expr.operator === "or") {
 			this.enterConditionalScope("andor");
 			this.analyzeExpression(expr.right);
 			this.exitConditionalScope();

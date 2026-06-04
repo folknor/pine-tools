@@ -161,16 +161,14 @@ IDs so the two stay in sync.
   accumulated over a comment-stripped single-space join; inverted in
   `scripts/lib/tv-positions.mjs` (used by both diff scripts), bails
   to the raw position when the continuation shape doesn't hold.
-- **#39 - CONDITIONAL_SERIES misses and/or chains in call arguments.**
-  Surfaced while verifying #38: TV warns CW10002 on
-  `alertcondition((not is_sess1) and ta.crossover(...), ...)` and
-  `plotshape(cond and ta.crossover(...) ? x : na, ...)`
-  (`93badd17…pine` TV lines 1921-2021, `076a1244…pine` 322/328/334)
-  but we stay silent. Looks like the and/or scan doesn't descend into
-  call arguments, and/or the series-condition gate mis-judges the
-  governing operand there. ~57 tv-only warning records in the 06-04
-  inventory. INV018 round 3 material - probe the exact gating before
-  changing the analyzer.
+- ~~#39~~ **CLOSED 2026-06-04** - see
+  [INV022](investigations/INV022-andor-right-always-conditional/notes.md).
+  Not a call-argument descent problem: INV018's series-condition gate
+  on and/or right operands was an over-extrapolation. Probed: TV warns
+  CW10002 on `input.bool() and ta.crossover(...)` (input left operand!)
+  while the input-gated TERNARY stays silent - and/or right operands
+  are always conditional; the gate stands for if/ternary/switch. Gate
+  removed for and/or; the two heavy fixtures now diff zero tv-only.
 - ~~#35~~ **CLOSED 2026-06-04.** Single-line function/method arrow
   bodies parse comma-separated statement units via a shared
   parseInlineStatementUnit (also adopted by inline switch arms): the

@@ -106,3 +106,8 @@ contradiction means re-measure, not "the earlier author was wrong."
   occurrence; same series-condition gate as INV018 (input-gated arms
   silent, loops always, function top-level bodies exempt - probed
   with a TYPED UDF to rule out endpoint blindness). Closes TODO #37.
+- [INV022](INV022-andor-right-always-conditional/notes.md) - and/or
+  right operands are ALWAYS conditional (CW10002 fires under an input
+  left operand - probed); INV018's series gate there was an
+  over-extrapolation and is removed. Gate stands for
+  if/ternary/switch. Closes TODO #39.

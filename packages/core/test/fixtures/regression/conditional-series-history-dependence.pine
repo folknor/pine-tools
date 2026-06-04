@@ -1,13 +1,14 @@
 // @test regression/conditional-series-history-dependence
-// @description CONDITIONAL_SERIES fires on TV's CW10003 criterion (po: errors/CW10003): HISTORY-DEPENDENT calls (ta.*, or user functions indexing their OWN scope values with []) executed conditionally - in if/loop bodies, ternary branches, and/or right operands, and switch arms - with TV's context-specific wording (CW10003 block / CW10004 ternary / CW10002 and-or, probed 2026-06-04, see INV018). It must NOT fire on: side-effect functions (label.new - the page exempts them; probed: TV emits no warning), stateless functions (math.max - the page's named example), str.* formatting, calls in always-executed positions (and/or LEFT operand, ternary condition), or UDFs that only index GLOBAL series (close[1] - a global's history is consistent regardless of call pattern; INV018 probe 4). NOTE: TV's translate_light endpoint does not emit the UDF warning at all (silent even on the manual's own example - INV018 probe 5); the manual documents it, so we keep it.
+// @description CONDITIONAL_SERIES fires on TV's CW10003 criterion (po: errors/CW10003): HISTORY-DEPENDENT calls (ta.*, or user functions indexing their OWN scope values with []) executed conditionally - in if/loop bodies, ternary branches, and/or right operands, and switch arms - with TV's context-specific wording (CW10003 block / CW10004 ternary / CW10002 and-or, probed 2026-06-04, see INV018). The series-condition gate applies to if/ternary/switch ONLY: and/or right operands warn even under an input left operand (ok2 below - probed 2026-06-04, INV022; INV018 had over-extrapolated the gate there). It must NOT fire on: side-effect functions (label.new - the page exempts them; probed: TV emits no warning), stateless functions (math.max - the page's named example), str.* formatting, calls in always-executed positions (and/or LEFT operand, ternary condition), input-gated if/ternary/switch branches (probes 6-9), or UDFs that only index GLOBAL series (close[1] - a global's history is consistent regardless of call pattern; INV018 probe 4). NOTE: TV's translate_light endpoint does not emit the UDF warning at all (silent even on the manual's own example - INV018 probe 5); the manual documents it, so we keep it.
 // @expects parse: success
-// @expects warnings: 6
+// @expects warnings: 7
 // @expects warning: line=7, message="The function 'ta.sma' should be called on each calculation"
 // @expects warning: line=12, message="The function 'prevVal' should be called on each calculation"
 // @expects warning: line=15, message="The function 'ta.rsi' should be called on each calculation"
 // @expects warning: line=17, message="The 'ta.crossover()' call inside the conditional expression might not execute on every bar"
 // @expects warning: line=20, message="The function 'ta.highest' should be called on each calculation"
 // @expects warning: line=28, message="The function 'ta.lowest' should be called on each calculation"
+// @expects warning: line=42, message="The 'ta.crossover()' call inside the conditional expression might not execute on every bar"
 //@version=6
 indicator("x")
 prevClose() => close[1]
