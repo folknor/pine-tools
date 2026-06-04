@@ -1,0 +1,30 @@
+// @test regression/INV024-qualified-type-declarations
+// @description A `series`/`simple` qualifier leading a type-annotated declaration (`series bool x = ...`), or following var/varip (`var series float c = ...`), must parse as ONE declaration. Previously the qualifier split the statement: inside a function body it truncated the body (spilling the remaining locals to top level, breaking tuple-return typing and producing undefined-variable cascades), and after var/varip the whole declaration was silently dropped. TV accepts all these forms (probed 2026-06-04). See investigations/INV024-qualified-type-declarations/notes.md.
+// @expects parse: success
+// @expects no-errors
+//@version=6
+indicator("t")
+
+// Top-level qualifier-led declarations.
+series float a = close
+simple int b = 1
+series bool flag = close > open
+
+// Qualifier after var/varip.
+var series float c = close
+varip simple int counter = 0
+
+// Comma-separated qualified units.
+series int m1 = 1, series int m2 = 2
+
+// Qualified declarations inside a function body must stay IN the body:
+// the tuple return below only types correctly when the body is intact.
+f() =>
+    series bool found = flag
+    series int size = b
+    [found, size]
+
+[x, y] = f()
+q = x and close > open
+plot(q ? 1 : 0)
+plot(y + a + c + m1 + m2 + counter)

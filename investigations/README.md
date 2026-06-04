@@ -116,3 +116,9 @@ contradiction means re-measure, not "the earlier author was wrong."
   the built-in was referenced earlier in source (any scope, global
   redecls too; no prior use = CW10011 only). Checker-side, v6-only.
   Closes TODO #40.
+- [INV024](INV024-qualified-type-declarations/notes.md) - parser,
+  `series`/`simple` qualifier-led declarations split the statement
+  (function bodies truncated, `var series` decls dropped); qualifier
+  now folds into the annotation; subscripted-target recovery
+  (`type name[i] = ...`, TV's "Mismatched input '['" probed). Found
+  under TODO #9; -324 corpus error records.

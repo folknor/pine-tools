@@ -197,13 +197,18 @@ export class Parser {
 					// peekNext guard keeps namespace calls (`color.new(...)`,
 					// peekNext is DOT) in the expression branch below.
 					if (
-						this.isVarTypeKeyword() &&
-						(this.peekNext()?.type === TokenType.IDENTIFIER ||
-							this.peekNext()?.type === TokenType.LBRACKET ||
-							(this.peekNext()?.type === TokenType.COMPARE &&
-								this.peekNext()?.value === "<"))
+						(this.isVarTypeKeyword() &&
+							(this.peekNext()?.type === TokenType.IDENTIFIER ||
+								this.peekNext()?.type === TokenType.LBRACKET ||
+								(this.peekNext()?.type === TokenType.COMPARE &&
+									this.peekNext()?.value === "<"))) ||
+						this.isQualifiedVarTypeKeyword()
 					) {
 						let unitType = this.advance().value;
+						if (this.isVarTypeKeyword()) {
+							// qualifier consumed above - append the base type
+							unitType += ` ${this.advance().value}`;
+						}
 						unitType += this.parseGenericTypeSuffix();
 						statements.push(this.variableDeclaration(null, unitType));
 						continue;
@@ -252,9 +257,15 @@ export class Parser {
 
 		// Type-annotated variable declaration without var: int x = 1, float y = 2.0, array<float> z = array.new<float>()
 		// Also handles comma-separated: int _m2 = 0, int _m3 = 0, int _m4 = 0
-		if (this.isVarTypeKeyword()) {
+		// An optional `series`/`simple` qualifier may lead (`series bool
+		// x = ...`); it folds into the annotation. see INV024.
+		if (this.isVarTypeKeyword() || this.isQualifiedVarTypeKeyword()) {
 			const checkpoint = this.current;
 			let typeAnnotation = this.advance().value;
+			if (this.isVarTypeKeyword()) {
+				// qualifier consumed above - append the base type
+				typeAnnotation += ` ${this.advance().value}`;
+			}
 			typeAnnotation += this.parseGenericTypeSuffix();
 
 			// Check if next token is identifier followed by =
@@ -274,8 +285,12 @@ export class Parser {
 						// Each subsequent part can be:
 						// 1. type identifier = expression (new type)
 						// 2. identifier = expression (inherits last type)
-						if (this.isVarTypeKeyword()) {
+						if (this.isVarTypeKeyword() || this.isQualifiedVarTypeKeyword()) {
 							let nextType = this.advance().value;
+							if (this.isVarTypeKeyword()) {
+								// qualifier consumed above - append the base type
+								nextType += ` ${this.advance().value}`;
+							}
 							nextType += this.parseGenericTypeSuffix();
 
 							if (
@@ -309,6 +324,61 @@ export class Parser {
 				}
 
 				return firstDecl;
+			}
+
+			// Recovery: `type name[expr] = ...` - a subscripted declaration
+			// target. TV reports one error at the '[' ("Mismatched input '['
+			// expecting '='", probed 2026-06-04 - see INV024). Without this
+			// the backtrack re-parses the line as junk expression statements,
+			// breaking the enclosing block and cascading undefined-variable
+			// errors over the rest of the file. Parse it as a declaration,
+			// skip the subscript, record the one error TV reports.
+			if (
+				this.check(TokenType.IDENTIFIER) &&
+				this.peekNext()?.type === TokenType.LBRACKET
+			) {
+				// Scan without consuming: IDENT [ ... ] =
+				let i = this.current + 1; // at LBRACKET
+				let depth = 0;
+				while (i < this.tokens.length) {
+					const t = this.tokens[i].type;
+					if (t === TokenType.LBRACKET) {
+						depth++;
+					} else if (t === TokenType.RBRACKET) {
+						depth--;
+						if (depth === 0) break;
+					} else if (t === TokenType.NEWLINE) {
+						break;
+					}
+					i++;
+				}
+				if (
+					depth === 0 &&
+					this.tokens[i]?.type === TokenType.RBRACKET &&
+					this.tokens[i + 1]?.type === TokenType.ASSIGN &&
+					this.tokens[i + 1]?.value === "="
+				) {
+					const nameToken = this.advance(); // IDENT
+					const bracket = this.peek(); // LBRACKET
+					this.parserErrors.push({
+						line: bracket.line,
+						column: bracket.column,
+						message: "Mismatched input '[' expecting '='",
+					});
+					this.current = i + 1; // at ASSIGN
+					this.advance(); // consume '='
+					this.skipWrapContinuationNewline();
+					const init = this.expression();
+					return {
+						type: "VariableDeclaration",
+						name: nameToken.value,
+						varType: null,
+						init,
+						typeAnnotation: { name: typeAnnotation },
+						line: nameToken.line,
+						column: nameToken.column,
+					};
+				}
 			}
 
 			// Not a variable declaration, backtrack
@@ -552,9 +622,18 @@ export class Parser {
 
 		let typeAnnotation: string | undefined;
 
+		// An optional `series`/`simple` qualifier may follow var/varip
+		// (`var series float c = ...`); it folds into the annotation. TV
+		// rejects the qualifier-after-const combination (CE10147, probed
+		// 2026-06-04) - we parse it leniently. see INV024.
+		let qualifier = "";
+		if (this.isQualifiedVarTypeKeyword()) {
+			qualifier = `${this.advance().value} `;
+		}
+
 		// Check if next token is also a type keyword (e.g., var float x = 1.0)
 		if (this.isVarTypeKeyword()) {
-			typeAnnotation = this.advance().value;
+			typeAnnotation = qualifier + this.advance().value;
 			typeAnnotation += this.parseGenericTypeSuffix();
 		} else {
 			typeAnnotation = this.tryUserTypeAnnotation() ?? undefined;
@@ -1823,6 +1902,24 @@ export class Parser {
 	/** Check if current token is a variable type keyword (not a qualifier) */
 	private isVarTypeKeyword(): boolean {
 		return this.check([TokenType.KEYWORD, [...VAR_TYPE_KEYWORDS]]);
+	}
+
+	/**
+	 * Check for a `series`/`simple` qualifier directly followed by a base
+	 * type keyword - the qualifier-led declaration form
+	 * (`series bool x = ...`). Callers consume the qualifier and fold it
+	 * into the annotation; mapToPineType understands the combined string
+	 * ("series bool" -> series<bool>). see INV024.
+	 */
+	private isQualifiedVarTypeKeyword(): boolean {
+		if (!this.check([TokenType.KEYWORD, ["series", "simple"]])) {
+			return false;
+		}
+		const next = this.peekNext();
+		return (
+			next?.type === TokenType.KEYWORD &&
+			(VAR_TYPE_KEYWORDS as readonly string[]).includes(next.value)
+		);
 	}
 
 	/**

@@ -48,6 +48,14 @@ IDs so the two stay in sync.
   INV014's const-arg check drop their conservative reliability gates (both
   currently skip args typed via UDF returns / user vars to avoid FPs, so
   they miss real violations that flow through a variable).
+  2026-06-04 progress: the biggest single cluster (11 bool-operand FPs in
+  `0277c9c016df…`) was not type inference at all but a parser bug -
+  `series`/`simple` qualifier-led declarations split the statement and
+  truncated function bodies - see
+  [INV024](investigations/INV024-qualified-type-declarations/notes.md)
+  (-324 corpus error records). Follow-up surfaced there: CE10147
+  (qualifier after const / without type, TV-probed) is now a cheap
+  checker FN to add.
 - **#18 - built-in color constants infer as `undetermined type`.**
   Surfaced by INV011. The "Ternary branches must have compatible types"
   cluster is now down to **31** (from ~117+) after the variable/constant
@@ -290,19 +298,21 @@ The reports live in `lint-reports/` which is **gitignored** - so this
 section records the latest measurement (the JSONs also embed
 `generatedAt` + `gitCommit` since #29):
 
-**Measured 2026-06-04 (~11:20 UTC) at commit `9d64b4c`** (post #37/#38/
-#39/#40 and the G005 line-ending fix; 748 v6 fixtures, 1 file with no
-TV verdict - `6874e636…`, a transient empty response): **955 local-only
-error records / 57 tv-only** (was 1561/57 at `6644c91`). Warning
-channel: local 2180 / TV 376, local-only 1834, **tv-only 26** (was
-164) - the #37 rules and INV022 cleared the tv-only side; the
-remaining 26 are UDF-call CW10003s our UDF scan misses, three
-shadowing stragglers in `fca605cb…`, and ternary-wording position
-cases. The warning local-only count is dominated by UNUSED_VARIABLE
-(TV has no such channel) plus our deliberate
-warn-inside-untyped-UDF-bodies stance (INV018), and is inflated by TV
-emitting NO warnings at all for files with compile errors (it stops
-at the first error - G001) while we warn regardless.
+**Measured 2026-06-04 (~13:15 UTC), working tree on `a472f3a` +
+INV024** (qualified-declaration parser fix; 748 v6 fixtures, 1 file
+with no TV verdict - `6874e636…`, the usual transient): **903
+local-only error records / 57 tv-only** (was 955/57 at `9d64b4c`,
+1561/57 at `6644c91`). INV024 cleared the whole 'and'/'not'
+bool-operand cluster and part of the undefined-variable counts; its
+larger wins (-324 baseline records) sit in v4/v5 fixtures outside
+this v6 diff. Warning channel: local 2175 / TV 376, local-only 1829,
+**tv-only 26** - the remaining 26 are UDF-call CW10003s our UDF scan
+misses, three shadowing stragglers in `fca605cb…`, and
+ternary-wording position cases. The warning local-only count is
+dominated by UNUSED_VARIABLE (TV has no such channel) plus our
+deliberate warn-inside-untyped-UDF-bodies stance (INV018), and is
+inflated by TV emitting NO warnings at all for files with compile
+errors (it stops at the first error - G001) while we warn regardless.
 
 ---
 
@@ -311,12 +321,12 @@ at the first error - G001) while we warn regardless.
 One bad token causes downstream "Unexpected token" hits because recovery
 synchronizes coarsely (see #20). Much compressed since the original
 inventory (the table once started at 1086+1072+549). Counts from the
-2026-06-04 `9d64b4c` measurement:
+2026-06-04 post-INV024 measurement:
 
 | count | files | category |
 |---|---|---|
-| 444 | 10 | `Undefined variable '*'. Did you mean '*'?` *(mostly recovery artifacts, see Symbols below)* |
-| 231 | 13 | `Undefined variable '*'` *(also partly recovery)* |
+| 421 | 7 | `Undefined variable '*'. Did you mean '*'?` *(mostly recovery artifacts, see Symbols below)* |
+| 229 | 12 | `Undefined variable '*'` *(also partly recovery)* |
 | 78 | 4 | `Unexpected token: \n` |
 | 45 | 3 | `Unexpected token: =>` |
 | 17 | 2 | `Expected variable name` |
@@ -362,16 +372,17 @@ bool-operator and ternary FPs.
 | 17 | 10 | `Cannot assign * to *` |
 | 10 | 4 | `Condition must be boolean, got *` |
 | 9 | 6 | `Type mismatch: cannot apply '*' to * and *` |
-| 5 | 1 | `Operator 'and' requires bool operands, but left operand is *` |
-| 4 | 1 | `Type mismatch: 'not' operator requires bool, got *` |
 | 4 | 2 | `Operator 'and' requires bool operands, but right operand is *` |
-| 4 | 3 | `Ternary condition must be bool, got *` |
 | 3 | 2 | `Operator 'or' requires bool operands, but left operand is *` |
 | 2 | 2 | `Type mismatch for argument *: expected *, got *` |
+| 2 | 2 | `Ternary condition must be bool, got *` |
 | 1 | 1 | `Operator 'or' requires bool operands, but right operand is *` |
 
-(2026-06-04 `9d64b4c`: the cannot-apply category fell 75 -> 9 and
-argument mismatches 16 -> 2 since the previous table)
+(2026-06-04 post-INV024: the 'and'-left-operand (5) and
+'not'-requires-bool (4) categories vanished entirely - all in
+`0277c9c016df…`, a qualified-declaration parse split, not type
+inference. Earlier the same day at `9d64b4c`: cannot-apply fell
+75 -> 9 and argument mismatches 16 -> 2)
 
 **Right approach**: pick a specific FP, trace through `inferExpressionType`
 in `checker.ts` to see why we produce e.g. `series<float>` for what
@@ -401,11 +412,11 @@ same-pos-different-message channel before assuming a clean miss).
 
 ## Symbols - undefined-variable clusters
 
-`Undefined variable '*'. Did you mean '*'?` (444 hits in 10 files) and
-`Undefined variable '*'` (231 hits in 13 files) still dominate the count
-(2026-06-04 `9d64b4c`), but the concentration is now extreme: ONE fixture
-(`4d78be7e…`) accounts for 5 of the 6 top names (~250 hits). The JSON
-groups occurrences per category - the names that repeat:
+`Undefined variable '*'. Did you mean '*'?` (421 hits in 7 files) and
+`Undefined variable '*'` (229 hits in 12 files) still dominate the count
+(2026-06-04 post-INV024), but the concentration is now extreme: ONE
+fixture (`4d78be7e…`) accounts for 5 of the 6 top names (~250 hits). The
+JSON groups occurrences per category - the names that repeat:
 
 | ~count | name | example fixture |
 |---|---|---|
