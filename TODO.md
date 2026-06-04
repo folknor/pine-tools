@@ -177,13 +177,12 @@ IDs so the two stay in sync.
   VariableDeclaration (Pine's `=` declares - emitting assignments left
   the names undeclared), `:=`/compound emit AssignmentStatement.
   Multi-line bodies already kept full statements.
-- **Re-measure #4 and the INV012 cascade counts** against the post-#31
-  baseline - the old numbers predate correct block scoping (#31/#33/#34
-  fixed the if/while/for statement leak, else attachment, nbsp
-  indentation, tuple/typed for-in iterators, multi-line bracket groups,
-  inline switch-arm statements, and the INV017 wrap-indent rule; see
-  [plan/31-if-body-statement-leak.md](plan/31-if-body-statement-leak.md)
-  Resolution section).
+- ~~Re-measure #4 and the INV012 cascade counts~~ **DONE 2026-06-04** -
+  the category tables below now reflect the `9d64b4c` measurement
+  (955 local-only, vs the ~2200+ in the pre-#31 tables). The cascade
+  story compressed dramatically: "Unexpected token: \n" went 549 -> 78
+  (4 files), and the two undefined-variable categories went 1086+1072
+  -> 231+444 (concentrated in ~13 files).
 - **Minor data residue (record-only, low value):** `ta.vwap.anchor`'s default
   and the "X by default" phrasing are deliberately unparsed (see
   `parse-default.ts`). Skip unless a consumer needs them. (`since`/`deprecated`,
@@ -291,61 +290,41 @@ The reports live in `lint-reports/` which is **gitignored** - so this
 section records the latest measurement (the JSONs also embed
 `generatedAt` + `gitCommit` since #29):
 
-**Measured 2026-06-04 (~08:48 UTC) at commit `6644c91`** (post #31/#33/#34,
-fixed CLI, 748 v6 fixtures): 1561 local-only error records / 57 tv-only,
-after excluding 3 files with no TV verdict (truncated responses - the
-CLI flush bug, fixed since; on recheck those 3 diff clean or
-near-clean). The same-day FP-cluster session (import-alias
-registration, namespaced/array/user types in declarations and params,
-var-comma sequences, `var const`, `map<k,v>` suffixes, unary plus,
-annotation-token filtering, same-line precedence + wraps) cleared the
-largest local-only clusters; expect materially lower numbers on the
-next run.
-
-NOTE: that measurement also predates the #38 lexer line-ending fix
-(G005). Positions on the 522 `\r\r\n` fixtures have since shifted to
-TV's numbering, and the 130 CR-only fixtures - which previously lexed
-as one comment line and produced ZERO local diagnostics - are now
-actually linted. Expect both sides of the inventory to move for those
-files on the next `find-real-failures` run.
+**Measured 2026-06-04 (~11:20 UTC) at commit `9d64b4c`** (post #37/#38/
+#39/#40 and the G005 line-ending fix; 748 v6 fixtures, 1 file with no
+TV verdict - `6874e636…`, a transient empty response): **955 local-only
+error records / 57 tv-only** (was 1561/57 at `6644c91`). Warning
+channel: local 2180 / TV 376, local-only 1834, **tv-only 26** (was
+164) - the #37 rules and INV022 cleared the tv-only side; the
+remaining 26 are UDF-call CW10003s our UDF scan misses, three
+shadowing stragglers in `fca605cb…`, and ternary-wording position
+cases. The warning local-only count is dominated by UNUSED_VARIABLE
+(TV has no such channel) plus our deliberate
+warn-inside-untyped-UDF-bodies stance (INV018), and is inflated by TV
+emitting NO warnings at all for files with compile errors (it stops
+at the first error - G001) while we warn regardless.
 
 ---
 
 ## Parser - error recovery cascades
 
-One bad token causes hundreds of downstream "Unexpected token" hits because
-recovery has no synchronization point. Adding a `synchronize()` that
-discards tokens until a statement-boundary anchor (top-level keyword, dedent
-to column 1, etc.) should collapse most of these.
+One bad token causes downstream "Unexpected token" hits because recovery
+synchronizes coarsely (see #20). Much compressed since the original
+inventory (the table once started at 1086+1072+549). Counts from the
+2026-06-04 `9d64b4c` measurement:
 
 | count | files | category |
 |---|---|---|
-| 1086 | 38 | `Undefined variable '*'` *(many are recovery artifacts, see Symbols below)* |
-| 1072 | 41 | `Undefined variable '*'. Did you mean '*'?` *(also partly recovery)* |
-| 549 | 12 | `Unexpected token: \n` |
-| 103 | 9 | `Unexpected token: =>` |
-| 55 | 7 | `Expected variable name` |
-| 54 | 4 | `Unexpected token: =` |
-| 45 | 16 | `Expected iterator variable` |
-| 42 | 11 | `Unexpected token: .` |
-| 38 | 11 | `Unexpected token: ,` |
-| 33 | 8 | `Unexpected token: )` |
-| 14 | 5 | `Expected ")" after arguments` |
-| 14 | 3 | `Expected ")" after method parameters` |
-| 7 | 5 | `Unexpected token: :=` |
-| 7 | 3 | `Unexpected token: :` |
-| 6 | 3 | `Unexpected token: ]` |
-| 5 | 4 | `Unexpected token: +` |
-| 3 | 3 | `Expected ']'` |
-| 1 | 1 | `Expected function name after 'export'` |
-| 1 | 1 | `Expected type name` |
-| 1 | 1 | `Expected method name after 'method'` |
-| 1 | 1 | `Unexpected token: ==` |
-| 1 | 1 | `Missing comma before '*' argument` |
-
-Example: `fixtures/0c053259a16ba1b4aa4898add6830d5fe0e6bcb90766e1595ca40c08f5644da8.pine`
- - TV reports 1 error at L61 (invalid `series float` qualifier in function
-parameter); we report 525, all cascade.
+| 444 | 10 | `Undefined variable '*'. Did you mean '*'?` *(mostly recovery artifacts, see Symbols below)* |
+| 231 | 13 | `Undefined variable '*'` *(also partly recovery)* |
+| 78 | 4 | `Unexpected token: \n` |
+| 45 | 3 | `Unexpected token: =>` |
+| 17 | 2 | `Expected variable name` |
+| 10 | 4 | `Unexpected token: )` |
+| 9 | 4 | `Unexpected token: :` |
+| 6 | 1 | `Unexpected token: .` |
+| 5 | 1 | `Unexpected token: =` |
+| 2-1 | - | long tail: `:=` `]` `?` `==`, `Expected ')'`/`']'`/type/method/export names |
 
 ## Parser - syntax we silently accept (false negatives)
 
@@ -355,14 +334,17 @@ These are real syntax errors in the user's code that we don't surface.
 |---|---|---|
 | 6 | 6 | `no viable alternative at character {unexpectedToken}` |
 | 5 | 5 | `Missing enclosing character in the literal string` (unterminated string) |
-| 5 | 5 | `Syntax error at input {value}` |
-| 3 | 3 | `"{typeKeyword}" is not a valid type keyword` |
+| 4 | 4 | `Syntax error at input {value}` (end-of-line continuation, `:=`, `[`) |
+| 3 | 3 | `"{typeKeyword}" is not a valid type keyword` (`source`, `plot`) |
 | 2 | 2 | `Incorrect "for" statement. Expecting "to <expression>"` |
 | 2 | 2 | `"{variableName}" is already defined` |
 | 2 | 1 | `All exported functions args should be typified` |
 | 1 | 1 | `Script doesn't contain any statements` |
 | 1 | 1 | `Syntax error: Missing closing parenthesis` |
 | 1 | 1 | `Exported variable should have const modifier and type` |
+
+(unchanged in count since the previous measurement - none of the
+recent parser work targeted these)
 
 ---
 
@@ -376,17 +358,20 @@ bool-operator and ternary FPs.
 
 | count | files | category |
 |---|---|---|
-| 75 | 30 | `Type mismatch: cannot apply '*' to * and *` |
-| 44 | 19 | `Cannot assign * to *` |
-| 31 | 12 | `Ternary branches must have compatible types. Got '*' and '*'` |
-| 16 | 6 | `Type mismatch for argument *: expected *, got *` |
-| 11 | 5 | `Condition must be boolean, got *` |
-| 6 | 3 | `Operator 'and' requires bool operands, but right operand is *` |
+| 23 | 11 | `Ternary branches must have compatible types. Got '*' and '*'` (#18) |
+| 17 | 10 | `Cannot assign * to *` |
+| 10 | 4 | `Condition must be boolean, got *` |
+| 9 | 6 | `Type mismatch: cannot apply '*' to * and *` |
 | 5 | 1 | `Operator 'and' requires bool operands, but left operand is *` |
-| 5 | 3 | `Operator 'or' requires bool operands, but left operand is *` |
 | 4 | 1 | `Type mismatch: 'not' operator requires bool, got *` |
-| 3 | 2 | `Ternary condition must be bool, got *` |
+| 4 | 2 | `Operator 'and' requires bool operands, but right operand is *` |
+| 4 | 3 | `Ternary condition must be bool, got *` |
+| 3 | 2 | `Operator 'or' requires bool operands, but left operand is *` |
+| 2 | 2 | `Type mismatch for argument *: expected *, got *` |
 | 1 | 1 | `Operator 'or' requires bool operands, but right operand is *` |
+
+(2026-06-04 `9d64b4c`: the cannot-apply category fell 75 -> 9 and
+argument mismatches 16 -> 2 since the previous table)
 
 **Right approach**: pick a specific FP, trace through `inferExpressionType`
 in `checker.ts` to see why we produce e.g. `series<float>` for what
@@ -396,38 +381,40 @@ should be `series<bool>`. Don't relax the bool checks - they're correct.
 
 | count | files | category |
 |---|---|---|
-| 16 | 8 | `Cannot call "{funId}" with argument ...` (arg type mismatches on built-ins we miss) |
+| 14 | 9 | `Cannot call "operator *" with argument ...` (operator operand-type errors - mostly and/or/?:/- with non-bool / cross-type operands) |
 | 3 | 3 | `Cannot assign * to *` (TV catches assignment type errors we don't) |
 | 2 | 2 | `Could not find {kind} '{fullName}'` |
 | 2 | 1 | `Cannot use a collection in a type template of another collection` |
 | 2 | 1 | `The condition of the "{blockName}" statement must evaluate to a "bool" value` |
 | 2 | 1 | `Undeclared identifier "{identifier}"` |
 | 2 | 2 | `Value with NA type cannot be assigned to a variable that was defined without type keyword` |
+| 1 | 1 | `Cannot call "plot" with argument "title"=... (series string for const string)` |
 | 1 | 1 | `Incorrect field type "{id}" of enum "{enumName}"` |
 
-The 16 missed argument-type-mismatches are particularly worth chasing - 
-these are real runtime bugs in the user's code that we'd hide. Look first
-at functions registered with `type: "unknown"` parameters (see
-`hasOverloads()` in `builtins.ts`) - that bypass skips positional type
-checking.
+The operator-argument cluster is particularly worth chasing - these are
+real type errors in the user's code that we'd hide, and several look
+adjacent to checks we already have (our bool-operand checks fire on
+some of these files but at different positions/wordings - see the
+same-pos-different-message channel before assuming a clean miss).
 
 ---
 
 ## Symbols - undefined-variable clusters
 
-`Undefined variable '*'` (1086 hits in 38 files) and `Undefined variable '*'.
-Did you mean '*'?` (1072 hits in 41 files) dominate the count, but most of
-both come from a handful of files where the same name appears dozens of
-times. The JSON groups occurrences per category - find the names that
-repeat:
+`Undefined variable '*'. Did you mean '*'?` (444 hits in 10 files) and
+`Undefined variable '*'` (231 hits in 13 files) still dominate the count
+(2026-06-04 `9d64b4c`), but the concentration is now extreme: ONE fixture
+(`4d78be7e…`) accounts for 5 of the 6 top names (~250 hits). The JSON
+groups occurrences per category - the names that repeat:
 
 | ~count | name | example fixture |
 |---|---|---|
-| 64 | `fvg` | `4d78be7e3f7e6ab005629fa3e77f339e1107cfdf026d883dfca1e9c2797d9c5d.pine` |
-| 60 | `exiu` | `e1a8cc990e645380ff1c4fa0718ab38012db5ac3df5221efd66e859acd8091ae.pine` |
-| 55 | `stuff` | `4d78be7e3f7e6ab005629fa3e77f339e1107cfdf026d883dfca1e9c2797d9c5d.pine` |
-| 55 | `this` | `6874e63621f8bc08b944708a25d8859bd487a769f8553ed75fea33ea49cd00a6.pine` |
-| 54 | `dr` | `6293fd713714b37c8f108b12e64e92399f72036aac8ff8f9f2933ac09e042022.pine` |
+| 82 | `ms` | `4d78be7e3f7e6ab005629fa3e77f339e1107cfdf026d883dfca1e9c2797d9c5d.pine` |
+| 51 | `stuff` | `4d78be7e…` (same file) |
+| 48 | `current` | `4d78be7e…` (same file) |
+| 41 | `idx` | `4d78be7e…` (same file) |
+| 27 | `metric` | `4d78be7e…` (same file) |
+| 26 | `src` | `8439b2366942bce6a16fdcf91c567bbef766a03dd098b57d1f2f7ff946ed5bc0.pine` |
 
 Per-file root causes are almost always one of:
 
@@ -436,32 +423,38 @@ Per-file root causes are almost always one of:
 - block scope leaking the wrong way
 - recovery cascade swallowing the declaration so later references look unbound
 
-Pick one file at a time, find where the name is "defined," fix one root
-cause, watch many false positives evaporate.
+Pick one file at a time - starting with `4d78be7e…` - find where the name
+is "defined," fix one root cause, watch many false positives evaporate.
 
-The `Unexpected identifier '*' - did you mean '*'?` category (19 hits, 6
-files) is the same shape applied to identifiers in syntactic positions.
+The `Unexpected identifier '*' - did you mean '*'?` category (6 hits, 1
+file) is the same shape applied to identifiers in syntactic positions.
 
 ---
 
-## Checker - local-scope restrictions probably too strict
+## Checker - local-scope restrictions
 
-`Function '*' cannot be called from a local scope` fires 15 times across 5
-files for `plot`, `plotshape`, `plotcandle`, `alertcondition`, `barcolor`,
-`bgcolor`, `fill` (down from 31 after INV008; see #4). Some of these
-(`alertcondition` in particular) may actually be callable from `if`/`for`
-bodies in v6 - verify per-function with TV.
+`Function '*' cannot be called from a local scope` is down to 5 hits in 1
+file (31 -> 15 -> 5 across INV008 and the #31/#33/#34 parser work), and
+those 5 are TRUE positives - `plot()` inside `if showZones`, probed
+directly against TV (CE10188; see the closed #4 above). Nothing left to
+relax here.
 
 ---
 
 ## Open questions worth answering before tackling individual fixes
 
-- `lint-reports/real-failures.json` has 2 entries where TV returned
-  unparseable output (`tvOk: false`). Worth checking whether TV truncates
-  responses past some size - affects how trustable the comparison is for
-  large fixtures.
+- ~~TV unparseable responses~~ - root-caused in #29 (our own CLI
+  truncated >64KB responses on process.exit; fixed). The remaining
+  occasional `tvOk: false` is a transient empty response from TV
+  (e.g. `6874e636…` in the 2026-06-04 run; a retry succeeds) - retry
+  before reading anything into it.
 - A few categories ("All exported functions args should be typified",
   "Exported variable should have const modifier and type") look like
   library-only constraints. Decide whether we want to implement those at all
   before counting them as bugs.
+- TV emits NO warnings for files with compile errors (stops at the
+  first error - G001), so warning local-only counts are structurally
+  inflated for error-bearing fixtures. Any future warning-channel
+  comparison should consider filtering to files where TV reported
+  zero errors.
 
