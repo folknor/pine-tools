@@ -132,19 +132,17 @@ IDs so the two stay in sync.
   `nz`/`request.security` probed clean). Measurement 2026-06-04: local
   1889 / TV 376 warnings, tv-only 164 (mostly the #37 missing rules +
   wrapped-line position artifacts).
-- **#37 - three TV warning rules we don't implement** (from the #36
-  tv-only diff, INV018): (a) ~~multiline-string deprecation warning~~
-  **DONE 2026-06-04** - CW10001 implemented, see
+- ~~#37~~ **CLOSED 2026-06-04** - all three missing TV warning rules
+  implemented, each probed and recorded in its own investigation:
+  (a) CW10001 multiline-string deprecation -
   [INV019](investigations/INV019-cw10001-multiline-string-deprecation/notes.md)
   (also fixed the lexer stamping line-spanning tokens at their END
-  line with negative columns); (b) ~~variable shadowing~~ **DONE
-  2026-06-04** - CW10013 + CW10011 implemented from a lexical scope
-  stack, see
+  line with negative columns); (b) CW10013/CW10011 variable shadowing
+  from a lexical scope stack -
   [INV020](investigations/INV020-cw10013-variable-shadowing/notes.md);
-  (c) local-variable history-referencing - the CW10003 page's NOTE
-  variant, "The variable 'X' is declared in local scope... obtaining
-  its historical values is unreliable" (~14 hits). (c) still needs its
-  own probe set before implementing.
+  (c) CW10018 history of conditionally-declared locals, sharing the
+  INV018 series-condition gate -
+  [INV021](investigations/INV021-cw10018-local-variable-history/notes.md).
 - **#40 - CE10190 built-in-shadow error is a checker FN.** Probed in
   INV020: `open = 1.0` in a local scope after `open` was used as a
   built-in draws BOTH CW10011 and the error CE10190 "Cannot shadow the

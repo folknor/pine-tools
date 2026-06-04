@@ -66,6 +66,12 @@ export class SemanticAnalyzer {
 	// order - TV only warns when the parent declaration precedes the
 	// shadowing one (probed 2026-06-04, see INV020). Frame 0 is global.
 	private scopeNames: Array<Set<string>> = [];
+	// Parallel stack of names declared while inConditionalScope - i.e. in
+	// a scope that "may not be executed at every update" (series-gated if
+	// or switch arms, any loop body; function top-level bodies do NOT
+	// count). `[]`-indexing these draws TV's CW10018 (probed 2026-06-04,
+	// see INV021). Pushed/popped together with scopeNames.
+	private conditionalLocalFrames: Array<Set<string>> = [];
 
 	analyze(ast: Program): SemanticWarning[] {
 		this.warnings = [];
@@ -77,6 +83,7 @@ export class SemanticAnalyzer {
 		this.conditionalScopeKinds = [];
 		this.seriesVars.clear();
 		this.scopeNames = [new Set()];
+		this.conditionalLocalFrames = [new Set()];
 
 		// First pass: collect all variable declarations
 		this.collectVariableDeclarations(ast);
@@ -204,6 +211,14 @@ export class SemanticAnalyzer {
 			);
 		}
 		this.scopeNames[this.scopeNames.length - 1].add(name);
+		// A declaration made under a series-gated condition or inside a
+		// loop body lives in a scope that may not run every bar - record
+		// it for the CW10018 history check (see INV021).
+		if (this.inConditionalScope) {
+			this.conditionalLocalFrames[
+				this.conditionalLocalFrames.length - 1
+			].add(name);
+		}
 	}
 
 	// Run `fn` inside a fresh lexical scope frame (if/loop/function body,
@@ -211,11 +226,20 @@ export class SemanticAnalyzer {
 	// frames are the "parent scope" for CW10013.
 	private withScopeFrame(fn: () => void): void {
 		this.scopeNames.push(new Set());
+		this.conditionalLocalFrames.push(new Set());
 		try {
 			fn();
 		} finally {
 			this.scopeNames.pop();
+			this.conditionalLocalFrames.pop();
 		}
+	}
+
+	private isConditionalLocal(name: string): boolean {
+		// Inner scopes are always at least as conditional as their parent,
+		// so a hit in ANY live frame means the visible binding was declared
+		// under conditional execution.
+		return this.conditionalLocalFrames.some((frame) => frame.has(name));
 	}
 
 	private analyzeFunctionDeclaration(
@@ -401,6 +425,26 @@ export class SemanticAnalyzer {
 				break;
 
 			case "IndexExpression":
+				// CW10018: `[]` on a variable declared in a conditional scope
+				// - its history series has gaps, so historical values are
+				// unreliable. Per OCCURRENCE, anchored at the indexed
+				// identifier (probed 2026-06-04, see INV021). Same series-
+				// condition gate as CONDITIONAL_SERIES: input-gated arms are
+				// silent, loops always count, and the warning keys on the
+				// DECLARATION's scope, not the reference's.
+				if (
+					expr.object.type === "Identifier" &&
+					this.isConditionalLocal(expr.object.name)
+				) {
+					this.addWarning(
+						expr.object.line,
+						expr.object.column,
+						expr.object.name.length,
+						`The variable '${expr.object.name}' is declared in local scope, which may not be executed at every update. So, obtaining its historical values may lead to unexpected results`,
+						DiagnosticSeverity.Warning,
+						"LOCAL_HISTORY",
+					);
+				}
 				this.analyzeExpression(expr.object);
 				this.analyzeExpression(expr.index);
 				break;

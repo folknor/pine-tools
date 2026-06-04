@@ -101,3 +101,8 @@ contradiction means re-measure, not "the earlier author was wrong."
   and CW10011 (shadowing built-in VARIABLE, any scope; function/
   namespace names silent) implemented from a lexical scope stack.
   Found CE10190 as a checker FN (TODO #40). Part of TODO #37.
+- [INV021](INV021-cw10018-local-variable-history/notes.md) - CW10018
+  (history of conditionally-declared locals) implemented per `[]`
+  occurrence; same series-condition gate as INV018 (input-gated arms
+  silent, loops always, function top-level bodies exempt - probed
+  with a TYPED UDF to rule out endpoint blindness). Closes TODO #37.

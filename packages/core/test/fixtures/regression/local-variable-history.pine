@@ -1,0 +1,31 @@
+// @test regression/local-variable-history
+// @description TV's CW10018 (probed 2026-06-04, INV021): referencing the history ([]) of a variable DECLARED in a conditional scope warns per occurrence, anchored at the indexed identifier. The gate matches CONDITIONAL_SERIES: series-gated if arms and loop bodies count (var declarations included - the persistence does not exempt them); input-gated arms are silent (cl[1] below), function top-level locals are silent, and globals are silent (g[1]) even when reassigned conditionally.
+// @expects parse: success
+// @expects warnings: 5
+// @expects warning: line=7, message="The variable 'loc' is declared in local scope"
+// @expects warning: line=9, message="The variable 'vloc' is declared in local scope"
+// @expects warning: line=18, message="The variable 'mg' is declared in local scope"
+// @expects warning: line=22, message="The variable 'fl' is declared in local scope"
+//@version=6
+indicator("x")
+var g = 0.0
+useA = input.bool(true)
+if close > open
+    loc = 0.0
+    loc := na(loc[1]) ? 1.0 : loc[1] + 1
+    var vloc = 0.0
+    vloc := vloc[1] + 1
+    g := loc + vloc
+if useA
+    cl = close * 2
+    g := cl + cl[1]
+ma2(string type, float src) =>
+    float result = 0.0
+    if type == "M"
+        mg = src * 2
+        result := mg[1]
+    result
+for i = 0 to 5
+    fl = close * i
+    g := fl + fl[1]
+plot(g + g[1] + ma2("M", close))
