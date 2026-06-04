@@ -56,16 +56,19 @@ IDs so the two stay in sync.
   (-324 corpus error records). Follow-up surfaced there: CE10147
   (qualifier after const / without type, TV-probed) is now a cheap
   checker FN to add.
-- **#18 - built-in color constants infer as `undetermined type`.**
-  Surfaced by INV011. The "Ternary branches must have compatible types"
-  cluster is now down to **31** (from ~117+) after the variable/constant
-  scraping and display-flag fixes, but a residue of "Got 'color' and
-  'string'" FPs remains. The constants ARE in `CONSTANTS_BY_NAME` with
-  `type: "color"`, but minimal repros mimicking the pattern lint cleanly.
-  The `"undetermined type"` label in pine-lint's variable-list output
-  comes from `astExtractor.ts`, a separate path from the validator's
-  `inferExpressionType` - investigating may need to reconcile the two
-  type-inference paths.
+- **#18 - ~~ternary "Got 'color' and 'string'" FP residue~~ resolved**
+  via [INV026](investigations/INV026-literal-color-and-param-guess-fps/notes.md)
+  (2026-06-04): the residue was never the color *constants* (those were
+  fine in `CONSTANTS_BY_NAME`) but hex color *literals* (`#00ff41`)
+  inferred as 'string', plus the UDF return-type inference pass
+  poisoning the shared expression-type cache with `series<float>`
+  guesses for untyped params, plus `ta.valuewhen`-style
+  return-follows-param builtins falling back to a frozen overload-#0
+  'color' return. Cluster 18 -> 3, and the 3 are our own synthetic
+  fixture's deliberate true positives. Still open from the original
+  item: pine-lint's variable-list output (`astExtractor.ts`) labels
+  some built-in color constants `"undetermined type"` - a separate
+  display-path quirk, cosmetic, not a validator issue.
 - **#20 - refine INV012 with a context-aware synchronize.** Current
   `synchronize()` skips to the next column-1 statement after a parse
   error. Correct in aggregate (−1270 cascade FPs across the corpus)
@@ -298,11 +301,20 @@ The reports live in `lint-reports/` which is **gitignored** - so this
 section records the latest measurement (the JSONs also embed
 `generatedAt` + `gitCommit` since #29):
 
-**Measured 2026-06-04 (~14:15 UTC), working tree on `40119dc` +
-INV025** (string-continuation lexer fix + post-TV-stop bucketing in
-`find-real-failures`; 748 v6 fixtures, 1 file with no TV verdict -
-`6874e636…`, the usual transient): **125 confirmable local-only error
-records / 52 tv-only**, plus **985 local-only past TV's stop point**
+**Measured 2026-06-04 (~15:30 UTC), working tree on `cb11335` +
+INV026** (hex-literal color inference, inference-pass cache isolation,
+return-follows-param fallback; 748 v6 fixtures, 1 file with no TV
+verdict - `6874e636…`, the usual transient): **104 confirmable
+local-only error records / 52 tv-only**, plus 980 past TV's stop
+point. INV026 cleared 15 of the 18 ternary-branch FPs (the 3 left are
+our own synthetic fixture's deliberate true positives) and most of the
+cannot-apply category (7 -> 3); the corpus baseline dropped 585
+guessed-type records (21636 -> 21051).
+
+Previous measurement the same day (~14:15 UTC, `40119dc` + INV025,
+string-continuation lexer fix + post-TV-stop bucketing): **125
+confirmable local-only / 52 tv-only**, plus **985 local-only past TV's
+stop point**
 (no TV verdict - errors strictly after the last error TV reported on a
 TV-erroring file; TV stops there, so these cascades on mangled
 hard-wrapped sources are unconfirmable and now bucketed separately
@@ -371,20 +383,22 @@ bool-operator and ternary FPs.
 
 | count | files | category |
 |---|---|---|
-| 18 | 8 | `Ternary branches must have compatible types. Got '*' and '*'` (#18) |
-| 14 | 7 | `Cannot assign * to *` |
-| 7 | 5 | `Type mismatch: cannot apply '*' to * and *` |
+| 13 | 6 | `Cannot assign * to *` |
 | 4 | 2 | `Operator 'and' requires bool operands, but right operand is *` |
 | 4 | 3 | `Condition must be boolean, got *` |
+| 3 | 2 | `Type mismatch: cannot apply '*' to * and *` |
+| 3 | 1 | `Ternary branches must have compatible types. Got '*' and '*'` (our own synthetic fixture's deliberate true positives - TV flags them too, at the argument position; see INV026) |
 | 2 | 2 | `Ternary condition must be bool, got *` |
-| 1 | 1 | `Type mismatch for argument *: expected *, got *` |
 | 1 | 1 | `Operator 'or' requires bool operands, but right operand is *` |
 
-(2026-06-04 post-INV025 confirmable counts - the drops vs the morning
-measurement are post-TV-stop bucketing, not fixes. Earlier the same
-day: INV024 cleared the 'and'-left-operand and 'not'-requires-bool
-categories; at `9d64b4c` cannot-apply fell 75 -> 9 and argument
-mismatches 16 -> 2)
+(2026-06-04 post-INV026 confirmable counts: the ternary-branch FP
+cluster (#18, was 18 in 8 files) is resolved - hex color literals
+inferred as string, inference-pass cache poisoning, and the
+ta.valuewhen frozen-overload fallback; cannot-apply fell 7 -> 3 and
+the argument-mismatch category emptied from the same root causes.
+Earlier the same day: INV024 cleared the 'and'-left-operand and
+'not'-requires-bool categories; at `9d64b4c` cannot-apply fell
+75 -> 9)
 
 **Right approach**: pick a specific FP, trace through `inferExpressionType`
 in `checker.ts` to see why we produce e.g. `series<float>` for what

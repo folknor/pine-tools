@@ -279,6 +279,15 @@ export function getPolymorphicType(functionName: string): string | undefined {
 	return func?.flags?.polymorphic;
 }
 
+// Check if a function's return type follows one of its parameters
+// (flags.returnTypeParam, e.g. ta.valuewhen -> source). Such a function's
+// static `returns` is frozen to overload #0 and must not be used as a
+// fallback when the determining argument can't be typed. see #18
+export function hasReturnTypeParam(functionName: string): boolean {
+	const func = FUNCTIONS_BY_NAME.get(functionName);
+	return func?.flags?.returnTypeParam !== undefined;
+}
+
 // Check if a function has overloads (detected by having parameters with unknown type)
 // Functions with overloads have merged parameters from all overloads, some with type "unknown"
 export function hasOverloads(functionName: string): boolean {

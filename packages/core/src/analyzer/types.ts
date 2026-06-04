@@ -298,7 +298,15 @@ export namespace TypeChecker {
 			return Number.isInteger(value) ? "int" : "float";
 		}
 		if (typeof value === "boolean") return "bool";
-		if (typeof value === "string") return "string";
+		if (typeof value === "string") {
+			// Hex color literals reach the AST as the bare lexeme (#RRGGBB /
+			// #RRGGBBAA - the lexer admits exactly 6 or 8 hex digits), while
+			// string literals keep their surrounding quotes in `value`, so the
+			// `#` prefix is unambiguous here. Typing these as 'string' was the
+			// root of the string-vs-color ternary FP cluster. see #18
+			if (/^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$/.test(value)) return "color";
+			return "string";
+		}
 		return "unknown";
 	}
 

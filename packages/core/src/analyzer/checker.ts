@@ -31,6 +31,7 @@ import {
 	getMinArgsForVariadic,
 	getPolymorphicReturnType,
 	getPolymorphicType,
+	hasReturnTypeParam,
 	hasOverloads,
 	isBuiltinConstant,
 	isTopLevelOnly,
@@ -1400,6 +1401,16 @@ export class UnifiedPineValidator {
 		// Enter a temporary scope for type inference
 		this.symbolTable.enterScope();
 
+		// Isolate the expression-type cache for the duration of this pass.
+		// This pass guesses `series<float>` for untyped params (below), and
+		// caching body-expression types under that guess poisons the later
+		// validation pass, which registers untyped params as `unknown`: e.g.
+		// `cond ? "1440" : tf` was cached as string|series<float> here and
+		// then flagged as an incompatible ternary, where an uncached lookup
+		// would have skipped the check. see INV005 / #18.
+		const savedExpressionTypes = this.expressionTypes;
+		this.expressionTypes = new Map();
+
 		// Add function parameters to temporary scope. Honour the declared
 		// type when present - without this, a `bool a` parameter would be
 		// registered as `series<float>` here, the body's `a and b`
@@ -1450,8 +1461,9 @@ export class UnifiedPineValidator {
 			}
 		}
 
-		// Exit the temporary scope
+		// Exit the temporary scope and drop this pass's cache entries
 		this.symbolTable.exitScope();
+		this.expressionTypes = savedExpressionTypes;
 
 		return returnType;
 	}
@@ -1686,8 +1698,11 @@ export class UnifiedPineValidator {
 				// couldn't type must NOT fall back to its frozen overload-#0 return.
 				// nz/fixnan freeze to "simple color", so nz(<unresolved>) would be
 				// mis-typed as color and spuriously trip downstream arg-type checks
-				// (e.g. int(nz(tonumber(x)))). Yield unknown instead. see INV016
-				if (getPolymorphicType(funcName)) {
+				// (e.g. int(nz(tonumber(x)))). Yield unknown instead. see INV016.
+				// Same for return-follows-param functions without the polymorphic
+				// flag: ta.valuewhen freezes to color, so valuewhen(c, <untyped
+				// param>, 0) minus another one was flagged as color arithmetic. see #18
+				if (getPolymorphicType(funcName) || hasReturnTypeParam(funcName)) {
 					type = "unknown";
 					break;
 				}

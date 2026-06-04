@@ -1,0 +1,26 @@
+// @test regression/INV026-literal-color-and-param-guess
+// @description Three FP sources around guessed types, all TV-accepted (probed 2026-06-04, see investigations/INV026-literal-color-and-param-guess-fps/notes.md): (1) hex color literals (#RRGGBB / #RRGGBBAA) must infer as 'color', not 'string', in ternary branches; (2) expression types cached during the UDF return-type inference pass (which guesses series<float> for untyped params) must not leak into the validation pass, which types those params 'unknown'; (3) a return-follows-param builtin (ta.valuewhen) whose determining argument is untyped must yield 'unknown', not its frozen overload-#0 static return (color).
+// @expects parse: success
+// @expects no-errors
+//@version=6
+indicator("t")
+
+// (1) hex color literals in ternaries, 6- and 8-digit forms
+c1 = close > open ? #00ff41 : color.gray
+c2 = close > open ? color.yellow : #ff174480
+bgcolor(c1)
+bgcolor(c2)
+
+// (2) untyped param in a ternary branch - param is 'unknown', not a
+// guessed series<float>, so no branch-compatibility claim is possible
+selectTimeframeFromInput(tf) =>
+    syminfo.session == session.extended and tf == "1D" ? "1440" : tf
+
+// (3) ta.valuewhen on an untyped param must not freeze to color
+f(cond_, v_) =>
+    y1 = ta.valuewhen(cond_, v_, 0)
+    y2 = ta.valuewhen(cond_, v_, 1)
+    (y2 - y1) / 2
+
+plot(close, title=selectTimeframeFromInput("1D"))
+plot(f(close > open, close))

@@ -1,0 +1,6 @@
+//@version=6
+indicator("x")
+c = close > open ? #00ff41 : color.gray
+c2 = close > open ? color.yellow : #ff174480
+bgcolor(c)
+bgcolor(c2)

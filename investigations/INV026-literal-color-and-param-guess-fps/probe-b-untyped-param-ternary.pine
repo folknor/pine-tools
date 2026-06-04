@@ -1,0 +1,5 @@
+//@version=6
+indicator("x")
+selectTimeframeFromInput(tf) =>
+    syminfo.session == session.extended and tf == "1D" ? "1440" : tf
+plot(close, title=selectTimeframeFromInput("1D"))

@@ -129,3 +129,11 @@ contradiction means re-measure, not "the earlier author was wrong."
   (openLine, 1) - probed, indent need NOT avoid multiples of 4 (unlike
   INV017 expression wraps). Five corpus CE10017 FNs fixed; motivated
   the find-real-failures post-TV-stop bucketing.
+- [INV026](INV026-literal-color-and-param-guess-fps/notes.md) - the
+  18-hit ternary-FP cluster (#18): hex color literals inferred as
+  'string'; the UDF return-type inference pass poisoning the shared
+  expression-type cache with series<float> param guesses; and
+  return-follows-param builtins (ta.valuewhen) falling back to a
+  frozen overload-#0 'color' return when the source arg is untyped.
+  TV probes: all three patterns accepted, params/results typed
+  "undetermined type". INV001's strict branch check itself stands.
