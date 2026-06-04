@@ -63,6 +63,11 @@ export class UnifiedPineValidator {
 	// rather than defaulting everything to `series<float>`. see INV010.
 	private udfTupleReturnTypes: Map<string, PineType[]> = new Map();
 	private blockDepth: number = 0;
+	// Built-in variables referenced (as built-ins) so far, in source
+	// order. Declaring a variable with one of these names afterwards is
+	// TV's CE10190; without a prior use it is only the CW10011 warning
+	// (probed 2026-06-04, see INV023 / TODO #40).
+	private usedBuiltins: Set<string> = new Set();
 
 	constructor() {
 		this.symbolTable = new SymbolTable();
@@ -74,6 +79,7 @@ export class UnifiedPineValidator {
 		this.symbolTable = new SymbolTable();
 		this.expressionTypes.clear();
 		this.udfTupleReturnTypes.clear();
+		this.usedBuiltins.clear();
 
 		// Single pass: collect declarations and validate together
 		// This ensures function parameters are in scope during validation
@@ -168,10 +174,39 @@ export class UnifiedPineValidator {
 		}
 	}
 
+	// TV's CE10190 (probed 2026-06-04, see INV023 / TODO #40): declaring
+	// a variable named after a built-in VARIABLE errors when the built-in
+	// was referenced anywhere EARLIER in source - any scope, global
+	// redeclarations included. Without a prior use only the CW10011
+	// warning (SemanticAnalyzer channel) applies. v6-only, like the other
+	// shadow/unused machinery - legacy scripts stay lenient (G004).
+	private checkBuiltinShadowDeclaration(
+		name: string,
+		line: number,
+		column: number,
+		version: string,
+	): void {
+		if (version !== "6") return;
+		if (!this.usedBuiltins.has(name)) return;
+		this.addError(
+			line,
+			column,
+			name.length,
+			`Cannot shadow the built-in variable '${name}' because it has already been used as a built-in.`,
+			DiagnosticSeverity.Error,
+		);
+	}
+
 	private validateStatement(statement: Statement, version: string = "6"): void {
 		const _prevBlockDepth = this.blockDepth;
 		switch (statement.type) {
 			case "VariableDeclaration": {
+				this.checkBuiltinShadowDeclaration(
+					statement.name,
+					statement.line,
+					statement.column,
+					version,
+				);
 				// First, register the variable in the symbol table
 				const symbol: SymbolInfo = {
 					name: statement.name,
@@ -223,6 +258,14 @@ export class UnifiedPineValidator {
 			case "TupleDeclaration": {
 				// Handle tuple destructuring: [a, b, c] = expr
 				const tupleDecl = statement as TupleDeclaration;
+				for (const name of tupleDecl.names) {
+					this.checkBuiltinShadowDeclaration(
+						name,
+						tupleDecl.line,
+						tupleDecl.column,
+						version,
+					);
+				}
 				const elementTypes = this.inferTupleElementTypes(tupleDecl, version);
 				this.defineTupleVariables(tupleDecl, elementTypes);
 
@@ -669,6 +712,14 @@ export class UnifiedPineValidator {
 
 		// Mark as used
 		this.symbolTable.markUsed(identifier.name);
+
+		// Built-in symbols are seeded at line 0; a reference resolving to
+		// one is a use "as a built-in" for the CE10190 check (a user
+		// declaration shadowing it resolves to the user symbol instead,
+		// so post-shadow references don't count). see INV023 / TODO #40.
+		if (symbol.line === 0 && getBuiltinVarInfo(identifier.name)) {
+			this.usedBuiltins.add(identifier.name);
+		}
 	}
 
 	private validateBinaryExpression(

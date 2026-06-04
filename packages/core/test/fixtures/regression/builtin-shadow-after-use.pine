@@ -1,0 +1,15 @@
+// @test regression/builtin-shadow-after-use
+// @description TV's CE10190 (probed 2026-06-04, INV023): declaring a variable named after a built-in VARIABLE is an ERROR when the built-in was referenced anywhere earlier in source (any scope; global redeclarations too). Without a prior use it stays a warning-only case (CW10011 - hlc3 below gets no error). Both declarations still draw the CW10011 shadow warning on the SemanticAnalyzer channel.
+// @expects parse: success
+// @expects errors: 1
+// @expects error: line=5, message="Cannot shadow the built-in variable 'hl2' because it has already been used as a built-in."
+// @expects warning: line=5, message="Shadowing built-in variable 'hl2'"
+// @expects warning: line=7, message="Shadowing built-in variable 'hlc3'"
+//@version=6
+indicator("x")
+y = hl2 + 1
+if close > open
+    hl2 = 1.0
+    label.new(bar_index, hl2)
+hlc3 = 2.0
+plot(y + hlc3)

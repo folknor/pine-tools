@@ -143,12 +143,13 @@ IDs so the two stay in sync.
   (c) CW10018 history of conditionally-declared locals, sharing the
   INV018 series-condition gate -
   [INV021](investigations/INV021-cw10018-local-variable-history/notes.md).
-- **#40 - CE10190 built-in-shadow error is a checker FN.** Probed in
-  INV020: `open = 1.0` in a local scope after `open` was used as a
-  built-in draws BOTH CW10011 and the error CE10190 "Cannot shadow the
-  built-in variable 'open' because it has already been used as a
-  built-in". We emit neither error nor any equivalent. Error channel -
-  belongs in the checker, not the SemanticAnalyzer.
+- ~~#40~~ **CLOSED 2026-06-04** - see
+  [INV023](investigations/INV023-ce10190-builtin-shadow-after-use/notes.md).
+  CE10190 implemented in the checker (v6-only): declaring a variable
+  named after a built-in errors when the built-in was referenced
+  earlier in source (any scope, global redeclarations too; four
+  probes). Zero corpus hits - it never appeared in the FN inventory;
+  it came from the INV020 probing.
 - ~~#38~~ **CLOSED 2026-06-04** - the "position artifacts" were TWO
   separate conventions, both probed and recorded in
   [G005](gotchas/G005-tv-diagnostic-position-conventions.md):

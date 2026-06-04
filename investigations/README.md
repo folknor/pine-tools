@@ -111,3 +111,8 @@ contradiction means re-measure, not "the earlier author was wrong."
   left operand - probed); INV018's series gate there was an
   over-extrapolation and is removed. Gate stands for
   if/ternary/switch. Closes TODO #39.
+- [INV023](INV023-ce10190-builtin-shadow-after-use/notes.md) -
+  CE10190: declaring a variable named after a built-in errors when
+  the built-in was referenced earlier in source (any scope, global
+  redecls too; no prior use = CW10011 only). Checker-side, v6-only.
+  Closes TODO #40.
