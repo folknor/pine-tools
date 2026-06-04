@@ -1,10 +1,10 @@
 // @test parse-errors/invalid-operator
-// @description Invalid operator sequence should fail
+// @description Invalid operator sequence should fail. NOTE: `1 ++ 2` is NOT invalid - TV parses it as `1 + (+2)` via unary plus (probed 2026-06-04: --tv returns no errors, x typed "const int"), and so do we. `1 ** 2` IS invalid (TV CE10156 "Syntax error at input '*'", same probe date).
 // @expects parse: fail
 
 //@version=6
 indicator("Parse Error Test")
 
-x = 1 ++ 2
+x = 1 ** 2
 
 plot(x)

@@ -298,6 +298,7 @@ export class ExpressionParser {
 
 		if (
 			this.p.match(TokenType.MINUS) ||
+			this.p.match(TokenType.PLUS) || // unary plus: `+1`
 			this.p.match([TokenType.KEYWORD, ["not"]])
 		) {
 			const operator = this.p.previous().value;

@@ -245,8 +245,15 @@ async function main() {
 			if (parsed.human) {
 				process.exit(printHuman(tvResult as HumanPayload, label));
 			}
-			console.log(JSON.stringify(tvResult));
-			process.exit(tvResult.success === false ? 1 : 0);
+			// Exit only after stdout flushes - process.exit() right after a
+			// large console.log TRUNCATES the output (TV responses with big
+			// imports metadata exceed the pipe buffer), and a truncated JSON
+			// reads as "no verdict" downstream. Same pattern as the local
+			// path below.
+			process.stdout.write(`${JSON.stringify(tvResult)}\n`, () => {
+				process.exit(tvResult.success === false ? 1 : 0);
+			});
+			return;
 		} catch (e) {
 			// A failed TV probe must NOT print a result-shaped payload. The old
 			// code emitted `{success:false, errors:[]}` on stdout, which is

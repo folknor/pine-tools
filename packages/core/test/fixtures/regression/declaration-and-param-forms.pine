@@ -1,0 +1,48 @@
+// @test regression/declaration-and-param-forms
+// @description Declaration and parameter forms found in TV-clean published scripts that we failed to parse or resolve (2026-06-04 re-measure, see TODO "Periodic re-baseline"): import-alias namespace resolution for non-call member chains, namespaced/user types (with [] and generics) in declarations and function params, var-comma sequences incl. mixed and trailing-comma forms, `var const`, unary plus, and //@-annotation comments inside bodies.
+// @expects parse: success
+// @expects warnings: 0
+//@version=6
+indicator("x")
+
+// Annotation-style doc comments inside a body must not truncate the block
+calcOffset(chart.point startPt, chart.point endPt) =>
+    //@param startPt First point.
+    //@returns Offset price.
+    (startPt.price - endPt.price) * 0.5
+
+// UDT + array-suffix and namespaced types in params
+type BarInfo
+    int t = 0
+sumTimes(BarInfo[] biList, minTime) =>
+    float total = 0.0
+    for [i, bi] in biList
+        if bi.t >= minTime
+            total += bi.t + i
+    total
+
+// Namespaced/builtin-namespaced types, [] suffix, map generics in declarations
+var chart.point[] pivots = array.new<chart.point>()
+var map<string, float> levels = map.new<string, float>()
+
+// var-comma sequences: uniform, mixed with expressions, trailing comma
+var float r1 = na, var float r2 = na
+var line ln1 = line(na), line.delete(ln1), var label lb1 = label(na)
+var line ln2 = line(na), var line ln3 = line(na),
+var const float anchor = 100.0
+
+// User-type comma declarations + type inheritance
+BarInfo b1 = BarInfo.new(1), BarInfo b2 = BarInfo.new(2)
+
+// Wrapped declaration value (continuation indent, not a multiple of 4)
+float stepped =
+  switch
+    close > open => +1
+    => -1
+
+plot(sumTimes(biList = array.from(b1, b2), minTime = anchor))
+plot(pivots.size())
+plot(levels.size())
+plot(r1 + r2 + stepped)
+plot(ln2 == ln3 ? 1 : 0)
+plot(lb1 == lb1 ? 1 : 0)

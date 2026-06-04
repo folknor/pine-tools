@@ -26,27 +26,49 @@ function run(spawnArgs) {
 		const c = spawn("pine-lint", spawnArgs, { stdio: ["ignore", "pipe", "pipe"] });
 		let out = "";
 		c.stdout.on("data", (d) => (out += d));
-		c.on("close", () => res(out));
+		c.on("close", (code) => res({ out, code }));
 	});
 }
 
+// An unparseable response means "no verdict", NOT "no errors" - diffing
+// against it would dump the entire other side into localOnly/tvOnly (the
+// swallowed-failure bug behind G002). see TODO #29.
 function pickErrors(raw) {
 	try {
 		const j = JSON.parse(raw);
 		const errs = j.result?.errors ?? j.errors ?? [];
-		return errs.map((e) => ({
-			line: e.start?.line,
-			col: e.start?.column,
-			message: e.message,
-		}));
+		return {
+			ok: true,
+			errors: errs.map((e) => ({
+				line: e.start?.line,
+				col: e.start?.column,
+				message: e.message,
+			})),
+		};
 	} catch (e) {
-		return [{ line: 0, col: 0, message: `[parse fail: ${e.message}] ${raw.slice(0, 200)}` }];
+		return { ok: false, errors: [], parseError: `${e.message}; raw: ${raw.slice(0, 200)}` };
 	}
 }
 
-const [localRaw, tvRaw] = await Promise.all([run([file]), run(["--tv", file])]);
-const local = pickErrors(localRaw);
-const tv = pickErrors(tvRaw);
+const [localRes, tvRes] = await Promise.all([run([file]), run(["--tv", file])]);
+const localE = pickErrors(localRes.out);
+const tvE = pickErrors(tvRes.out);
+
+if (!localE.ok || !tvE.ok) {
+	const side = !tvE.ok ? "tv" : "local";
+	const detail = (!tvE.ok ? tvE : localE).parseError;
+	const exitCode = !tvE.ok ? tvRes.code : localRes.code;
+	if (jsonMode) {
+		console.log(JSON.stringify({ file, unavailable: side, exitCode, detail }, null, 2));
+	} else {
+		console.error(`${side} side unavailable (exit ${exitCode}) - no verdict, skipping diff`);
+		console.error(`  ${detail}`);
+	}
+	process.exit(2);
+}
+
+const local = localE.errors;
+const tv = tvE.errors;
 
 // Diff by (line, col). Same-position-different-message pairs are surfaced
 // separately rather than counted as agreement (so a reviewer can confirm

@@ -11,7 +11,7 @@
 // Usage: node scripts/snapshot-local-lint.mjs [--concurrency N]
 
 import { readdir, writeFile, mkdir, access } from "node:fs/promises";
-import { spawn } from "node:child_process";
+import { execSync, spawn } from "node:child_process";
 import { resolve, join } from "node:path";
 
 const args = process.argv.slice(2);
@@ -60,8 +60,19 @@ function pickErrors(raw) {
 }
 
 const entries = (await readdir(FIXTURES)).filter((n) => n.endsWith(".pine")).sort();
+
+// Record the validator commit the snapshot was taken against - a baseline
+// without provenance can't be trusted after the working tree moves on.
+let gitCommit = "unknown";
+try {
+	gitCommit = execSync("git rev-parse HEAD", { encoding: "utf-8" }).trim();
+} catch {
+	// not a git checkout - leave "unknown"
+}
+
 const baseline = {
 	generatedAt: new Date().toISOString(),
+	gitCommit,
 	fixtureCount: entries.length,
 	files: {},
 };

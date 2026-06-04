@@ -105,6 +105,10 @@ function bucketsToOutput(buckets) {
 
 const output = {
 	generatedFrom: "lint-reports/real-failures.json",
+	// Provenance carried through from the source measurement - a TV
+	// verdict is a point-in-time fact (G001).
+	generatedAt: report.summary.generatedAt ?? null,
+	gitCommit: report.summary.gitCommit ?? null,
 	scanned: report.summary.scanned,
 	totals: {
 		localOnly: localOnly.length,

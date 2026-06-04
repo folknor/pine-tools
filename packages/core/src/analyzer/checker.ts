@@ -519,8 +519,25 @@ export class UnifiedPineValidator {
 			}
 
 			case "ImportStatement": {
-				// Import statements don't need validation beyond registering the alias
-				// (already done in collectDeclarations)
+				// Register the import alias as a namespace symbol. validate()
+				// runs a SINGLE top-level pass through validateStatement -
+				// collectDeclarations only runs inside block bodies - so
+				// registering here is what makes `exiu.Operator.crossover`
+				// resolve. (Plain `alias.fn(...)` calls never noticed the
+				// missing symbol because call validation routes namespaced
+				// callees elsewhere; non-call member access reaches
+				// validateIdentifier and errored.) see plan/31 re-measure.
+				if (statement.alias) {
+					this.symbolTable.define({
+						name: statement.alias,
+						type: "unknown", // Library type
+						line: statement.line,
+						column: statement.column,
+						used: false,
+						kind: "variable", // Treat as namespace
+						declaredWith: null,
+					});
+				}
 				break;
 			}
 

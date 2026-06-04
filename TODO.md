@@ -32,13 +32,14 @@ IDs so the two stay in sync.
   trips the unknown-property check. This is type-as-namespace handling in
   the checker, not missing data. (`barmerge.lookhead_on`, also surfaced
   here, is a user typo TV flags too - not a bug.)
-- **#4 - over-strict "cannot be called from a local scope" FPs.** Was
-  31 across 6 files; INV008 cut it to 15. Most of the residual is in
-  one file (`d40d7b52…pine`, 11 hits) whose trigger pattern resists
-  minimal-repro extraction - `head -446` is clean, `head -447`
-  (adding the wrap-continuation line of a `plotshape(…)` call) tips
-  it. Needs more bisection. The other five files have one hit each
-  and probably need their own minimal repros.
+- ~~#4~~ **CLOSED 2026-06-04.** "Cannot be called from a local scope" is
+  down to 5 hits in 1 file (was 31 -> 15 -> 5 across INV008 and the
+  #31/#33/#34 parser work), and those 5 are TRUE positives: `plot()`
+  inside `if showZones` in `577f110…pine:824-828`. TV is silent there
+  only because it stops at that file's line-475 syntax error; probed
+  directly, TV rejects plot-in-if with CE10188 "Cannot use 'plot' in
+  local scope" (pine-lint --tv, 2026-06-04, minimal probe
+  `if close > open` / `    plot(close)`).
 - **#9 - type-inference where we infer non-bool but TV infers bool.**
   Umbrella task. Several big wins landed via INV005, INV010, INV011;
   remaining FPs need a fresh corpus diff and per-category dives. The
@@ -91,20 +92,17 @@ IDs so the two stay in sync.
   + `reextract:dom` (see CLAUDE.md "Re-running type logic WITHOUT scraping"),
   so full `--force` re-scrapes should be rare - only when TV's DOM *structure*
   changes.
-- **#29 - re-baseline the TV inventory + harden the diff tooling against
-  silent `--tv` failures.** INV014/INV015 found that `pine-lint --tv` used to
-  print `{success:false, errors:[]}` on a network failure, which
-  `find-real-failures.mjs` / `compare-tv.mjs` read (`result?.errors ?? errors
-  ?? []`) as "TV reported no errors" - i.e. a swallowed failure looks identical
-  to "TV accepts." The CLI side is fixed (failures now emit no stdout + a
-  non-zero exit), but: (a) **regenerate `lint-reports/real-failures.json` +
-  `failures-by-category.json`** with the fixed CLI - the committed inventory
-  predates both the fix and the substantial INV014/15/16 changes, so its FP/FN
-  classifications (and the regression-check annotations that read them) may
-  carry misclassifications from swallowed failures (the exact bug behind G002);
-  (b) harden `find-real-failures.mjs` / `compare-tv.mjs` to treat a non-zero
-  exit / missing `success:true` as "TV unavailable" (skip + flag), not as an
-  empty error list - defense-in-depth beyond the CLI fix. See INV015 / gotchas/G002.
+- ~~#29~~ **CLOSED 2026-06-04.** (a) Inventory regenerated with the fixed
+  CLI (see the dated measurement under "Periodic re-baseline" below).
+  (b) `find-real-failures.mjs` and `compare-tv.mjs` now treat an
+  unparseable side as "no verdict" - the file is flagged and skipped,
+  never diffed against an empty error list. Both reports also embed
+  `generatedAt` + `gitCommit` provenance (a TV verdict is a
+  point-in-time fact - G001). Bonus root cause found while rechecking
+  the 3 "unparseable" files: the `--tv` CLI path called `process.exit()`
+  straight after `console.log`, TRUNCATING large responses (>64KB pipe
+  buffer) mid-JSON - exactly what made those 3 files unparseable. Fixed
+  with the write-callback pattern the local path already used.
 - **#30 - consider rich (MarkupContent) diagnostic messages.** LSP 3.18
   (vscode-languageserver 10) widened `Diagnostic.message` to
   `string | MarkupContent`. Our language-service diagnostics are plain
@@ -234,11 +232,20 @@ This refreshes `lint-reports/real-failures.json` and
 `lint-reports/failures-by-category.json`, which the local regression check
 reads to annotate disappearances.
 
-WARNING: The committed inventory is **stale and suspect**: it predates both the
-INV014/15/16 changes and the `--tv`-failure fix, so it may carry
-classifications from swallowed `--tv` failures (errors:[] read as "TV
-accepts"). Re-run the two commands above with the fixed CLI before trusting
-the FP/FN counts or the regression annotations. Tracked as #29.
+The reports live in `lint-reports/` which is **gitignored** - so this
+section records the latest measurement (the JSONs also embed
+`generatedAt` + `gitCommit` since #29):
+
+**Measured 2026-06-04 (~08:48 UTC) at commit `6644c91`** (post #31/#33/#34,
+fixed CLI, 748 v6 fixtures): 1561 local-only error records / 57 tv-only,
+after excluding 3 files with no TV verdict (truncated responses - the
+CLI flush bug, fixed since; on recheck those 3 diff clean or
+near-clean). The same-day FP-cluster session (import-alias
+registration, namespaced/array/user types in declarations and params,
+var-comma sequences, `var const`, `map<k,v>` suffixes, unary plus,
+annotation-token filtering, same-line precedence + wraps) cleared the
+largest local-only clusters; expect materially lower numbers on the
+next run.
 
 ---
 

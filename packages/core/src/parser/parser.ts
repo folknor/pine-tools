@@ -31,10 +31,20 @@ export class Parser {
 
 	constructor(source: string) {
 		const lexer = new Lexer(source);
+		// ANNOTATION tokens (//@version, //@function, //@param doc comments)
+		// are trivia to the parser, same as comments - //@version is already
+		// extracted at the lexer level. Leaving them in the stream truncated
+		// any BLOCK containing one: statement() returned null for them, and
+		// block loops read a null statement as end-of-block, so a
+		// `//@returns` line inside a function body leaked the rest of the
+		// body to top level.
 		this.tokens = lexer
 			.tokenize()
 			.filter(
-				(t) => t.type !== TokenType.WHITESPACE && t.type !== TokenType.COMMENT,
+				(t) =>
+					t.type !== TokenType.WHITESPACE &&
+					t.type !== TokenType.COMMENT &&
+					t.type !== TokenType.ANNOTATION,
 			);
 		this.lexerErrors = lexer.getErrors();
 		this.detectedVersion = lexer.getDetectedVersion();
@@ -97,11 +107,8 @@ export class Parser {
 			return null;
 		}
 
-		// Skip annotations
-		if (this.check(TokenType.ANNOTATION)) {
-			this.advance();
-			return null;
-		}
+		// NOTE: ANNOTATION tokens never reach this point - they are filtered
+		// out with comments in the constructor (see there for why).
 
 		// Import statement: import User/Library/Version [as alias]
 		if (this.match([TokenType.KEYWORD, ["import"]])) {
@@ -167,16 +174,80 @@ export class Parser {
 		// int name = expr
 		// float name = expr
 		if (this.match([TokenType.KEYWORD, ["var", "varip", "const"]])) {
-			const varKeyword = this.previous().value as "var" | "varip" | "const";
-			let typeAnnotation: string | undefined;
+			const firstDecl = this.varDeclarationAfterKeyword();
 
-			// Check if next token is also a type keyword (e.g., var float x = 1.0)
-			if (this.isVarTypeKeyword()) {
-				typeAnnotation = this.advance().value;
-				typeAnnotation += this.parseGenericTypeSuffix();
+			// Comma-separated sequence starting with a var declaration:
+			// `var float R1 = na, var float R2 = na`, or mixed with
+			// expressions/assignments:
+			// `var line up = na, line.delete(up), var label lb = na`
+			if (this.check(TokenType.COMMA)) {
+				const statements: AST.Statement[] = [firstDecl];
+				while (this.match(TokenType.COMMA)) {
+					// Tolerate a trailing comma at end of line
+					// (`var a = line(na), var b = line(na),`) - real
+					// published scripts carry them.
+					if (this.check(TokenType.NEWLINE) || this.isAtEnd()) {
+						break;
+					}
+					if (this.match([TokenType.KEYWORD, ["var", "varip", "const"]])) {
+						statements.push(this.varDeclarationAfterKeyword());
+						continue;
+					}
+					// Type-annotated unit: `..., float [] recRet = na`. The
+					// peekNext guard keeps namespace calls (`color.new(...)`,
+					// peekNext is DOT) in the expression branch below.
+					if (
+						this.isVarTypeKeyword() &&
+						(this.peekNext()?.type === TokenType.IDENTIFIER ||
+							this.peekNext()?.type === TokenType.LBRACKET ||
+							(this.peekNext()?.type === TokenType.COMPARE &&
+								this.peekNext()?.value === "<"))
+					) {
+						let unitType = this.advance().value;
+						unitType += this.parseGenericTypeSuffix();
+						statements.push(this.variableDeclaration(null, unitType));
+						continue;
+					}
+					{
+						const userType = this.tryUserTypeAnnotation();
+						if (userType) {
+							statements.push(this.variableDeclaration(null, userType));
+							continue;
+						}
+					}
+					const expr = this.expression();
+					if (
+						this.check(TokenType.ASSIGN) ||
+						this.check(TokenType.COMPOUND_ASSIGN)
+					) {
+						const op = this.advance().value;
+						const value = this.expression();
+						statements.push({
+							type: "AssignmentStatement",
+							target: expr,
+							operator: op,
+							value,
+							line: expr.line,
+							column: expr.column,
+						});
+					} else {
+						statements.push({
+							type: "ExpressionStatement",
+							expression: expr,
+							line: expr.line,
+							column: expr.column,
+						});
+					}
+				}
+				return {
+					type: "SequenceStatement",
+					statements,
+					line: firstDecl.line,
+					column: firstDecl.column,
+				};
 			}
 
-			return this.variableDeclaration(varKeyword, typeAnnotation);
+			return firstDecl;
 		}
 
 		// Type-annotated variable declaration without var: int x = 1, float y = 2.0, array<float> z = array.new<float>()
@@ -291,15 +362,45 @@ export class Parser {
 		}
 
 		// Check for user-defined type annotation: TypeName varName = expr
-		// This handles UDT declarations like: Candle cdl = data.get(i)
-		if (
-			this.check(TokenType.IDENTIFIER) &&
-			this.peekNext()?.type === TokenType.IDENTIFIER &&
-			this.tokens[this.current + 2]?.type === TokenType.ASSIGN &&
-			this.tokens[this.current + 2]?.value === "="
-		) {
-			const typeName = this.advance().value; // consume type name
-			return this.variableDeclaration(null, typeName);
+		// (e.g. `Candle cdl = data.get(i)`) or the namespaced form
+		// `lib.TypeName varName = expr` from an import alias. Handles
+		// comma-separated declarations (`BarVol b1 = ..., BarVol b2 = ...`)
+		// like the type-keyword branch below.
+		{
+			const userType = this.tryUserTypeAnnotation();
+			if (userType) {
+				const firstDecl = this.variableDeclaration(null, userType);
+
+				if (this.check(TokenType.COMMA)) {
+					const statements: AST.Statement[] = [firstDecl];
+					let lastType = userType;
+
+					while (this.match(TokenType.COMMA)) {
+						const nextType = this.tryUserTypeAnnotation();
+						if (nextType) {
+							statements.push(this.variableDeclaration(null, nextType));
+							lastType = nextType;
+						} else if (
+							this.check(TokenType.IDENTIFIER) &&
+							this.peekNext()?.type === TokenType.ASSIGN
+						) {
+							// Untyped declaration - inherits last type
+							statements.push(this.variableDeclaration(null, lastType));
+						} else {
+							break;
+						}
+					}
+
+					return {
+						type: "SequenceStatement",
+						statements,
+						line: firstDecl.line,
+						column: firstDecl.column,
+					};
+				}
+
+				return firstDecl;
+			}
 		}
 
 		// Check if it's an identifier followed by = (variable declaration without var)
@@ -346,6 +447,7 @@ export class Parser {
 				this.match(TokenType.COMPOUND_ASSIGN)
 			) {
 				const operator = this.previous().value;
+				this.skipWrapContinuationNewline();
 				const value = this.expression();
 				const firstAssignment: AST.AssignmentStatement = {
 					type: "AssignmentStatement",
@@ -432,6 +534,108 @@ export class Parser {
 		};
 	}
 
+	/**
+	 * Parse one declaration after an already-consumed var/varip/const
+	 * keyword: optional type annotation (built-in keyword, generic suffix,
+	 * or user-defined incl. the namespaced `lib.MyType` form from an
+	 * import alias), then `name = expr`.
+	 */
+	private varDeclarationAfterKeyword(): AST.VariableDeclaration {
+		const varKeyword = this.previous().value as "var" | "varip" | "const";
+
+		// `var const array<float> xs = ...` - a `const` qualifier may follow
+		// var/varip (TV accepts the combination). The persistence mode stays
+		// `var`; the redundant qualifier is consumed and dropped.
+		if (varKeyword !== "const") {
+			this.match([TokenType.KEYWORD, ["const"]]);
+		}
+
+		let typeAnnotation: string | undefined;
+
+		// Check if next token is also a type keyword (e.g., var float x = 1.0)
+		if (this.isVarTypeKeyword()) {
+			typeAnnotation = this.advance().value;
+			typeAnnotation += this.parseGenericTypeSuffix();
+		} else {
+			typeAnnotation = this.tryUserTypeAnnotation() ?? undefined;
+		}
+
+		return this.variableDeclaration(varKeyword, typeAnnotation);
+	}
+
+	/**
+	 * Try to consume a user-defined/namespaced type annotation when the
+	 * lookahead is exactly `Type name =` with Type being one of:
+	 *
+	 *     MyType            (user-defined type)
+	 *     lib.MyType        (type from an import alias)
+	 *     chart.point[]     (namespaced built-in / any of the above + [])
+	 *
+	 * Returns the dotted type name (incl. a `[]` suffix), or null without
+	 * consuming anything. The trailing `name =` requirement keeps this
+	 * from misreading member access or calls as declarations.
+	 */
+	private tryUserTypeAnnotation(): string | null {
+		if (!this.check(TokenType.IDENTIFIER)) {
+			return null;
+		}
+
+		// Scan the candidate without consuming: IDENT (. IDENT)? ([])?
+		let i = this.current;
+		let typeName = this.tokens[i].value;
+		i++;
+		if (
+			this.tokens[i]?.type === TokenType.DOT &&
+			this.tokens[i + 1]?.type === TokenType.IDENTIFIER
+		) {
+			typeName += `.${this.tokens[i + 1].value}`;
+			i += 2;
+		}
+		if (
+			this.tokens[i]?.type === TokenType.LBRACKET &&
+			this.tokens[i + 1]?.type === TokenType.RBRACKET
+		) {
+			typeName += "[]";
+			i += 2;
+		}
+
+		// Require `name =` to follow, otherwise this is not a declaration
+		if (
+			this.tokens[i]?.type === TokenType.IDENTIFIER &&
+			this.tokens[i + 1]?.type === TokenType.ASSIGN &&
+			this.tokens[i + 1]?.value === "="
+		) {
+			this.current = i; // consume the type tokens; `name` is next
+			return typeName;
+		}
+		return null;
+	}
+
+	/**
+	 * Skip a line break that is a wrap continuation: the next line's
+	 * content is indented by a NON-multiple of 4 (Pine's line-wrapping
+	 * rule - see INV017). Used right after `=`/`:=` so forms like
+	 *     float step =
+	 *       switch
+	 *           ...
+	 * parse as one declaration. A multiple-of-4 next line is a block
+	 * statement and is left alone.
+	 */
+	private skipWrapContinuationNewline(): void {
+		while (this.check(TokenType.NEWLINE)) {
+			const next = this.peekNext();
+			if (next?.type === TokenType.NEWLINE) {
+				// blank line inside the wrap - keep looking
+				this.advance();
+				continue;
+			}
+			if (next && (next.indent ?? 0) % 4 !== 0) {
+				this.advance();
+			}
+			break;
+		}
+	}
+
 	private variableDeclaration(
 		varType: "var" | "varip" | "const" | null,
 		typeName?: string,
@@ -440,6 +644,7 @@ export class Parser {
 
 		let init: AST.Expression | null = null;
 		if (this.match(TokenType.ASSIGN)) {
+			this.skipWrapContinuationNewline();
 			init = this.expression();
 		}
 
@@ -1260,74 +1465,80 @@ export class Parser {
 	 *   switch x
 	 *       -1 => ...
 	 * from being parsed as "switch (x - 1)" instead of "switch x" with case "-1".
+	 *
+	 * Binary operators are parsed with proper precedence (a small
+	 * precedence climber over same-line tokens). The original flat
+	 * left-associative loop mangled mixed expressions:
+	 * `a < b and c < d` became `((a < b) and c) < d`, producing bogus
+	 * "cannot apply '<' to bool and float" errors in switch arms.
 	 */
 	private parseSwitchDiscriminant(switchLine: number): AST.Expression {
-		// Parse the first operand
-		let expr = this.unary();
+		const saved = this.sameLineAnchor;
+		this.sameLineAnchor = switchLine;
+		try {
+			return this.parseSameLineBinary(0);
+		} finally {
+			this.sameLineAnchor = saved;
+		}
+	}
 
-		// Continue parsing binary operators only if they're on the same line
+	// Precedence levels for parseSameLineBinary, loosest first.
+	private static readonly SAME_LINE_PRECEDENCE: ReadonlyArray<
+		(token: Token) => boolean
+	> = [
+		(t) => t.type === TokenType.KEYWORD && t.value === "or",
+		(t) => t.type === TokenType.KEYWORD && t.value === "and",
+		(t) => t.type === TokenType.COMPARE,
+		(t) => t.type === TokenType.PLUS || t.type === TokenType.MINUS,
+		(t) =>
+			t.type === TokenType.MULTIPLY ||
+			t.type === TokenType.DIVIDE ||
+			t.type === TokenType.MODULO,
+	];
+
+	// The line the restricted same-line parser is currently anchored to.
+	// Advances when a wrap continuation (non-multiple-of-4 indent, see
+	// INV017) carries the expression onto a new line, so wrapped switch
+	// arms like `5 => f(a) + \n     f(b)` parse as one expression while
+	// the next ARM (multiple-of-4 indent) still terminates it.
+	private sameLineAnchor = 0;
+
+	private parseSameLineBinary(level: number): AST.Expression {
+		if (level >= Parser.SAME_LINE_PRECEDENCE.length) {
+			return this.unary();
+		}
+
+		let expr = this.parseSameLineBinary(level + 1);
+		const matches = Parser.SAME_LINE_PRECEDENCE[level];
+
 		while (!this.isAtEnd()) {
-			// Stop at newline - don't continue to next line
 			if (this.check(TokenType.NEWLINE)) {
-				break;
-			}
-
-			// Check for binary operators on the same line
-			const currentToken = this.peek();
-			if (currentToken.line !== switchLine) {
-				break;
-			}
-
-			// Handle binary operators
-			if (
-				this.match(
-					TokenType.PLUS,
-					TokenType.MINUS,
-					TokenType.MULTIPLY,
-					TokenType.DIVIDE,
-					TokenType.MODULO,
-				)
-			) {
-				const operator = this.previous().value;
-				const right = this.unary();
-				expr = {
-					type: "BinaryExpression",
-					operator,
-					left: expr,
-					right,
-					line: expr.line,
-					column: expr.column,
-				};
-			} else if (this.match(TokenType.COMPARE)) {
-				const operator = this.previous().value;
-				const right = this.unary();
-				expr = {
-					type: "BinaryExpression",
-					operator,
-					left: expr,
-					right,
-					line: expr.line,
-					column: expr.column,
-				};
-			} else if (this.check(TokenType.KEYWORD)) {
-				const keyword = this.peek().value;
-				if (keyword === "and" || keyword === "or") {
-					this.advance();
-					const right = this.unary();
-					expr = {
-						type: "BinaryExpression",
-						operator: keyword,
-						left: expr,
-						right,
-						line: expr.line,
-						column: expr.column,
-					};
+				// Operator-leading wrap: `expr\n  + more`
+				const next = this.peekNext();
+				if (next && (next.indent ?? 0) % 4 !== 0 && matches(next)) {
+					this.advance(); // consume the newline
+					this.sameLineAnchor = next.line;
 				} else {
 					break;
 				}
-			} else {
+			}
+			const currentToken = this.peek();
+			if (currentToken.line !== this.sameLineAnchor || !matches(currentToken)) {
 				break;
 			}
+			this.advance();
+			// Operator-trailing wrap: `expr +\n  more`
+			this.skipWrapContinuationNewline();
+			this.sameLineAnchor = this.peek().line;
+			const right = this.parseSameLineBinary(level + 1);
+			expr = {
+				type: "BinaryExpression",
+				operator: currentToken.value,
+				left: expr,
+				right,
+				line: expr.line,
+				column: expr.column,
+			};
 		}
 
 		return expr;
@@ -1566,31 +1777,26 @@ export class Parser {
 	 * Returns the suffix to append to the base type, or empty string if no generic syntax found.
 	 */
 	private parseGenericTypeSuffix(): string {
-		// Check for generic type syntax: array<float>, matrix<int>, etc.
+		// Check for generic type syntax: array<float>, matrix<int>,
+		// map<string, float>, array<chart.point>, nested generics. Consume
+		// until the matching `>` with depth counting - the same approach as
+		// the function-param type parser, which handles commas and dotted
+		// member types that a token-by-token whitelist missed.
 		if (this.check(TokenType.COMPARE) && this.peek().value === "<") {
 			this.advance(); // consume <
-			let suffix = "";
-			// Consume the type parameter (e.g., "float")
-			if (this.check(TokenType.IDENTIFIER) || this.check(TokenType.KEYWORD)) {
-				suffix = `<${this.advance().value}`;
-				// Handle nested generics like array<array<float>>
-				while (this.check(TokenType.COMPARE) && this.peek().value === "<") {
-					this.advance(); // consume <
-					if (
-						this.check(TokenType.IDENTIFIER) ||
-						this.check(TokenType.KEYWORD)
-					) {
-						suffix += `<${this.advance().value}`;
-					}
-					if (this.check(TokenType.COMPARE) && this.peek().value === ">") {
-						this.advance(); // consume >
-						suffix += ">";
-					}
+			let suffix = "<";
+			let depth = 1;
+			while (!this.isAtEnd() && depth > 0) {
+				const token = this.advance();
+				if (token.type === TokenType.COMPARE && token.value === "<") {
+					depth++;
+				} else if (token.type === TokenType.COMPARE && token.value === ">") {
+					depth--;
 				}
-				// Consume closing >
-				if (this.check(TokenType.COMPARE) && this.peek().value === ">") {
-					this.advance(); // consume >
-					suffix += ">";
+				suffix += token.value;
+				// Add space after comma for readability
+				if (token.type === TokenType.COMMA && depth > 0) {
+					suffix += " ";
 				}
 			}
 			return suffix;
@@ -1698,6 +1904,15 @@ export class Parser {
 			if (typeKeywords.length > 0 && this.check(TokenType.IDENTIFIER)) {
 				const next = this.peekNext();
 				if (
+					next?.type === TokenType.DOT &&
+					this.tokens[this.current + 2]?.type === TokenType.IDENTIFIER
+				) {
+					// Qualifier + namespaced type: `series chart.point p`
+					let dotted = this.advance().value;
+					this.advance(); // consume .
+					dotted += `.${this.advance().value}`;
+					typeKeywords.push(dotted);
+				} else if (
 					next?.type === TokenType.IDENTIFIER ||
 					next?.type === TokenType.KEYWORD
 				) {
@@ -1738,10 +1953,34 @@ export class Parser {
 					TokenType.IDENTIFIER,
 					"Expected parameter name or type",
 				);
+				let typeName = firstIdent.value;
 
-				// Check if next token is an identifier (then first was type, second is name)
-				if (this.check(TokenType.IDENTIFIER)) {
-					typeAnnotation = { name: firstIdent.value };
+				// `ns.Type name` - namespaced type (`chart.point start`,
+				// `lib.MyType x` from an import alias)
+				if (
+					this.check(TokenType.DOT) &&
+					this.peekNext()?.type === TokenType.IDENTIFIER
+				) {
+					this.advance(); // consume .
+					typeName += `.${this.advance().value}`;
+				}
+
+				// `UserType[] name` - array suffix on a user-defined type
+				// (`barInfo[] biList`). Same shape INV004 fixed for built-in
+				// types, in the user-type path.
+				if (
+					this.check(TokenType.LBRACKET) &&
+					this.peekNext()?.type === TokenType.RBRACKET
+				) {
+					this.advance(); // consume [
+					this.advance(); // consume ]
+					typeName += "[]";
+				}
+
+				// Check if next token is an identifier (then first was type,
+				// second is name; keywords are usable as param names)
+				if (this.check(TokenType.IDENTIFIER) || this.check(TokenType.KEYWORD)) {
+					typeAnnotation = { name: typeName };
 					paramName = this.advance().value;
 				} else {
 					// First identifier is the parameter name

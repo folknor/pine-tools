@@ -21,7 +21,7 @@
 
 import { readdir, readFile, writeFile, mkdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { spawn } from "node:child_process";
+import { execSync, spawn } from "node:child_process";
 
 const args = process.argv.slice(2);
 let limit = Number.POSITIVE_INFINITY;
@@ -91,6 +91,32 @@ async function main() {
 			const localE = pickErrors(local.out);
 			const tvE = pickErrors(tv.out);
 
+			// An unparseable side means "no verdict", not "no errors" - diffing
+			// against its empty error list would dump the entire other side
+			// into localOnly/tvOnly (the swallowed-failure bug behind G002).
+			// Record the file as unavailable and skip the comparison. see #29.
+			if (!localE.ok || !tvE.ok) {
+				fileReports[i] = {
+					file,
+					localOk: localE.ok,
+					tvOk: tvE.ok,
+					localErrorCount: localE.errors.length,
+					tvErrorCount: tvE.errors.length,
+					localOnly: [],
+					tvOnly: [],
+					samePositionDifferentMessage: [],
+					localParseError: localE.parseError,
+					tvParseError: tvE.parseError,
+					tvExitCode: tv.code,
+				};
+				done++;
+				if (done % 25 === 0 || done === targets.length) {
+					const elapsed = ((Date.now() - startAll) / 1000).toFixed(1);
+					process.stderr.write(`  ${done}/${targets.length} (${elapsed}s)\n`);
+				}
+				continue;
+			}
+
 			const tvByPos = new Map();
 			for (const e of tvE.errors) {
 				const k = `${e.line}:${e.col}`;
@@ -152,8 +178,18 @@ async function main() {
 	}
 	await Promise.all(Array.from({ length: concurrency }, worker));
 
-	// Aggregate
+	// Aggregate. A TV measurement is a point-in-time fact (G001), so the
+	// report records WHEN it was taken and against WHICH commit of our
+	// validator - without these the FP/FN counts can't be trusted later.
+	let gitCommit = "unknown";
+	try {
+		gitCommit = execSync("git rev-parse HEAD", { encoding: "utf-8" }).trim();
+	} catch {
+		// not a git checkout - leave "unknown"
+	}
 	const summary = {
+		generatedAt: new Date().toISOString(),
+		gitCommit,
 		v6Total: v6Paths.length,
 		scanned: targets.length,
 		filesWithLocalOnly: 0,
