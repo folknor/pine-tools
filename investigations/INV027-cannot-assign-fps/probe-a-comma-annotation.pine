@@ -1,0 +1,5 @@
+//@version=6
+indicator("x")
+bool show_div = input.bool(false, "d"), div_len = input.int(10, "l")
+int lookback = div_len
+plot(show_div ? lookback : 0)

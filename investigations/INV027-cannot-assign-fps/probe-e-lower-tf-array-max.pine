@@ -1,0 +1,7 @@
+//@version=6
+indicator("x")
+sub = request.security_lower_tf(syminfo.tickerid, "1", close)
+float subHi = na
+if array.size(sub) > 0
+    subHi := array.max(sub)
+plot(subHi)

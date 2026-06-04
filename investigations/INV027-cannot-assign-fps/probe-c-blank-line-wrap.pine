@@ -1,0 +1,10 @@
+//@version=6
+indicator("x")
+color finalMaColor =
+
+     close > open
+
+         ? color.new(color.green, 0)
+
+     : color.new(color.red, 0)
+plot(close, color = finalMaColor)

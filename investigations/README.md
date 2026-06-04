@@ -137,3 +137,10 @@ contradiction means re-measure, not "the earlier author was wrong."
   frozen overload-#0 'color' return when the source arg is untyped.
   TV probes: all three patterns accepted, params/results typed
   "undetermined type". INV001's strict branch check itself stands.
+- [INV027](INV027-cannot-assign-fps/notes.md) - the "Cannot assign"
+  FP cluster: generic placeholder returns (matrix.transpose ->
+  matrix<type>) now resolve from the collection arg's element type;
+  request.security_lower_tf's array<type> follows the expression arg;
+  a comma-declaration annotation binds only to its own unit (TV-probed:
+  `bool a = true, b = 1` types b const int); blank lines are allowed
+  inside a wrapped ternary. All probed; 13-hit cluster cleared.

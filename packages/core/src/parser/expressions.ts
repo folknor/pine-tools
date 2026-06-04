@@ -26,11 +26,17 @@ export class ExpressionParser {
 	ternary(): AST.Expression {
 		const expr = this.logicalOr();
 
-		// Handle line continuation: newline followed by ? (ternary operator at line start)
+		// Handle line continuation: newline(s) followed by ? (ternary operator
+		// at line start). Blank lines between the condition and the `?` are
+		// part of the wrap - TV joins them (probed 2026-06-04, see INV027) -
+		// so look past consecutive NEWLINEs, not just one.
 		if (this.p.check(TokenType.NEWLINE)) {
-			const nextToken = this.p.peekNext();
-			if (nextToken && nextToken.type === TokenType.TERNARY) {
-				this.p.advance(); // skip newline
+			let i = this.p.current;
+			while (this.p.tokens[i]?.type === TokenType.NEWLINE) i++;
+			if (this.p.tokens[i]?.type === TokenType.TERNARY) {
+				while (this.p.check(TokenType.NEWLINE)) {
+					this.p.advance();
+				}
 			}
 		}
 

@@ -1,0 +1,5 @@
+//@version=6
+indicator("x")
+bool a = true, b = 1
+bool c = b == 1 ? a : false
+plot(c ? 1 : 0)

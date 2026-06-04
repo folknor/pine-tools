@@ -1677,6 +1677,27 @@ export class UnifiedPineValidator {
 					}
 				}
 
+				// request.security_lower_tf returns one array element per intrabar:
+				// its static return is the placeholder array<type>, with the element
+				// type following the expression argument (request.security above is
+				// the same idea without the array wrapper). Left unresolved, the
+				// placeholder propagated into array.max(sub) -> 'type' and tripped
+				// the assignment check. see INV027
+				if (
+					funcName === "request.security_lower_tf" &&
+					callExpr.arguments.length >= 3
+				) {
+					const exprArg = callExpr.arguments[2].value;
+					if (exprArg.type !== "ArrayExpression") {
+						const elem = this.inferExpressionType(exprArg, version);
+						if (elem !== "unknown") {
+							const m = elem.match(/^(?:series|simple|input|const)<(.+)>$/);
+							type = `array<${m ? m[1] : elem}>` as PineType;
+							break;
+						}
+					}
+				}
+
 				// First check if this is a polymorphic function
 				// Build argument info with names for data-driven polymorphism
 				const argInfos: ArgumentInfo[] = callExpr.arguments.map((arg) => ({
@@ -1689,7 +1710,15 @@ export class UnifiedPineValidator {
 					argTypes,
 					argInfos,
 				);
-				if (polyReturnType) {
+				// The 'type' placeholder (an unresolved generic element) must never
+				// leak into compatibility checks - e.g. the 'element' rule extracts
+				// 'type' from an arg typed array<type>. Fall through to the
+				// unknown guard below instead. see INV027
+				if (
+					polyReturnType &&
+					(polyReturnType as string) !== "type" &&
+					!polyReturnType.includes("<type>")
+				) {
 					type = polyReturnType;
 					break;
 				}
@@ -1710,7 +1739,30 @@ export class UnifiedPineValidator {
 				// Then check function signatures for built-ins
 				const signature = this.functionSignatures.get(funcName);
 				if (signature?.returns) {
-					type = mapReturnTypeToPineType(signature.returns);
+					const ret = signature.returns;
+					// A generic placeholder return ("type", "matrix<type>", ...)
+					// follows the element type of the function's collection
+					// argument (e.g. matrix.transpose(matrix<bool>) -> matrix<bool>).
+					// Resolve it from the first concretely-typed collection arg;
+					// when none is available yield unknown - the placeholder must
+					// never reach compatibility checks. (A two-parameter map<k,v>
+					// placeholder can't be resolved this way; it degrades to
+					// unknown via the same path.) see INV027
+					if (ret === "type" || ret.includes("<type>")) {
+						let elem: string | null = null;
+						for (const ai of argInfos) {
+							const m = ai.type.match(/^(?:array|matrix)<(.+)>$/);
+							if (m && m[1] !== "type" && m[1] !== "unknown") {
+								elem = m[1];
+								break;
+							}
+						}
+						type = elem
+							? ((ret === "type" ? elem : ret.replace("type", elem)) as PineType)
+							: "unknown";
+						break;
+					}
+					type = mapReturnTypeToPineType(ret);
 					break;
 				}
 

@@ -301,14 +301,28 @@ The reports live in `lint-reports/` which is **gitignored** - so this
 section records the latest measurement (the JSONs also embed
 `generatedAt` + `gitCommit` since #29):
 
-**Measured 2026-06-04 (~15:30 UTC), working tree on `cb11335` +
-INV026** (hex-literal color inference, inference-pass cache isolation,
-return-follows-param fallback; 748 v6 fixtures, 1 file with no TV
-verdict - `6874e636…`, the usual transient): **104 confirmable
-local-only error records / 52 tv-only**, plus 980 past TV's stop
-point. INV026 cleared 15 of the 18 ternary-branch FPs (the 3 left are
-our own synthetic fixture's deliberate true positives) and most of the
-cannot-apply category (7 -> 3); the corpus baseline dropped 585
+**Measured 2026-06-04 (~16:30 UTC), working tree on `f42cd6f` +
+INV027** (placeholder-generic returns, security_lower_tf element type,
+comma-declaration annotation binding, blank-line ternary wraps; 748 v6
+fixtures, all with TV verdicts - `6874e636…` answered for the FIRST
+time): **286 confirmable local-only error records / 52 tv-only**, plus
+979 past TV's stop point. The jump from 104 is NOT a regression: the
+"Cannot assign" category (13) is cleared and every INV027 site is
+clean, but `6874e636…` - previously tvUnparseable on every run, so
+never counted - entered the pool with **201 undefined-variable records
+against TV's clean 0-error verdict**. It is a valid 3000-line UDT- and
+method-heavy script (BigBeluga order blocks); our errors are almost
+certainly UDT-method/scope resolution (`bull_ob.create_profile()`,
+`this.broken`, objects declared in one if-body and used in later ones).
+That single file is now the biggest lever in the inventory by far.
+Excluding it: 85 confirmable local-only. Corpus baseline 21051 -> 20941.
+
+Previous measurement the same day (~15:30 UTC, `cb11335` + INV026,
+hex-literal color inference, inference-pass cache isolation,
+return-follows-param fallback): **104 confirmable local-only / 52
+tv-only**. INV026 cleared 15 of the 18 ternary-branch FPs (the 3 left
+are our own synthetic fixture's deliberate true positives) and most of
+the cannot-apply category (7 -> 3); the corpus baseline dropped 585
 guessed-type records (21636 -> 21051).
 
 Previous measurement the same day (~14:15 UTC, `40119dc` + INV025,
@@ -383,22 +397,23 @@ bool-operator and ternary FPs.
 
 | count | files | category |
 |---|---|---|
-| 13 | 6 | `Cannot assign * to *` |
+| 5 | 3 | `Condition must be boolean, got *` |
 | 4 | 2 | `Operator 'and' requires bool operands, but right operand is *` |
-| 4 | 3 | `Condition must be boolean, got *` |
-| 3 | 2 | `Type mismatch: cannot apply '*' to * and *` |
+| 4 | 1 | `Type mismatch for argument *: expected *, got *` |
 | 3 | 1 | `Ternary branches must have compatible types. Got '*' and '*'` (our own synthetic fixture's deliberate true positives - TV flags them too, at the argument position; see INV026) |
 | 2 | 2 | `Ternary condition must be bool, got *` |
+| 2 | 1 | `Type mismatch: cannot apply '*' to * and *` |
 | 1 | 1 | `Operator 'or' requires bool operands, but right operand is *` |
 
-(2026-06-04 post-INV026 confirmable counts: the ternary-branch FP
-cluster (#18, was 18 in 8 files) is resolved - hex color literals
-inferred as string, inference-pass cache poisoning, and the
-ta.valuewhen frozen-overload fallback; cannot-apply fell 7 -> 3 and
-the argument-mismatch category emptied from the same root causes.
-Earlier the same day: INV024 cleared the 'and'-left-operand and
-'not'-requires-bool categories; at `9d64b4c` cannot-apply fell
-75 -> 9)
+(2026-06-04 post-INV027 confirmable counts: the "Cannot assign"
+category - 13 in 6 files - is resolved via INV027 (placeholder-generic
+returns, security_lower_tf element typing, comma-declaration annotation
+binding, blank-line ternary wraps). Earlier the same day: INV026
+resolved the ternary-branch FP cluster (#18, was 18 in 8 files; hex
+color literals inferred as string, inference-pass cache poisoning, the
+ta.valuewhen frozen-overload fallback); INV024 cleared the
+'and'-left-operand and 'not'-requires-bool categories; at `9d64b4c`
+cannot-apply fell 75 -> 9)
 
 **Right approach**: pick a specific FP, trace through `inferExpressionType`
 in `checker.ts` to see why we produce e.g. `series<float>` for what
@@ -428,14 +443,25 @@ same-pos-different-message channel before assuming a clean miss).
 
 ## Symbols - undefined-variable clusters
 
-The giant clusters are gone from the confirmable inventory (2026-06-04
-post-INV025): the former top fixture `4d78be7e…` (~250 hits) turned out
-to be a hard-wrapped mangle of a published script that TV rejects at its
-first broken string literal - INV025 made us match that CE10017, and the
-post-TV-stop bucketing moved its cascade (and `8439b236…`'s `src`
-cluster) out of the signal. What remains is `Undefined variable '*'`
-(27 hits in 6 files) + the did-you-mean variant (15 in 5), small enough
-to chase per-file now.
+One giant cluster left (2026-06-04 post-INV027): **`6874e636…` - 201
+undefined-variable records against TV's clean 0-error verdict.** The
+file had been tvUnparseable on every previous inventory run, so it
+never counted; this run TV answered. It is a valid, published
+3000-line UDT- and method-heavy script (BigBeluga order blocks):
+`OrderBlock` objects created in `if barstate.isfirst`-style local
+scopes, used across later if-bodies, plus UDT methods
+(`bull_ob.create_profile()`, `this.broken`) and wrapped `if`
+conditions whose ternaries span blank lines. Likely one or two scope /
+UDT-method resolution bugs, same shape as the historical per-file root
+causes below. **This single file is the biggest lever in the
+inventory.** Excluding it, what remains is small: `Undefined variable
+'*'` 15 hits in 6 files + the did-you-mean variant (21 in 6,
+overlapping), chaseable per-file.
+
+The earlier giant clusters are resolved: `4d78be7e…` (~250 hits) was a
+hard-wrapped mangle TV rejects at its first broken string literal -
+INV025 made us match that CE10017, and the post-TV-stop bucketing
+moved its cascade (and `8439b236…`'s `src` cluster) out of the signal.
 
 Per-file root causes are almost always one of:
 
@@ -466,9 +492,12 @@ relax here.
 
 - ~~TV unparseable responses~~ - root-caused in #29 (our own CLI
   truncated >64KB responses on process.exit; fixed). The remaining
-  occasional `tvOk: false` is a transient empty response from TV
-  (e.g. `6874e636…` in the 2026-06-04 run; a retry succeeds) - retry
-  before reading anything into it.
+  occasional `tvOk: false` is a transient empty response from TV -
+  retry before reading anything into it. (`6874e636…` failed on every
+  inventory run until 2026-06-04 ~16:30, then answered with a clean
+  0-error verdict - so even a repeatedly-failing file is eventually
+  measurable, and its first verdict surfaced a 201-record FP cluster;
+  see the Symbols section.)
 - A few categories ("All exported functions args should be typified",
   "Exported variable should have const modifier and type") look like
   library-only constraints. Decide whether we want to implement those at all

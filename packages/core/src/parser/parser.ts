@@ -279,12 +279,11 @@ export class Parser {
 				// Check for comma-separated declarations: int x = 0, int y = 0 OR int x = 0, y = 1
 				if (this.check(TokenType.COMMA)) {
 					const statements: AST.Statement[] = [firstDecl];
-					let lastType = typeAnnotation; // Track last used type for inheritance
 
 					while (this.match(TokenType.COMMA)) {
 						// Each subsequent part can be:
-						// 1. type identifier = expression (new type)
-						// 2. identifier = expression (inherits last type)
+						// 1. type identifier = expression (own annotation)
+						// 2. identifier = expression (untyped)
 						if (this.isVarTypeKeyword() || this.isQualifiedVarTypeKeyword()) {
 							let nextType = this.advance().value;
 							if (this.isVarTypeKeyword()) {
@@ -299,7 +298,6 @@ export class Parser {
 							) {
 								const nextDecl = this.variableDeclaration(null, nextType);
 								statements.push(nextDecl);
-								lastType = nextType;
 							} else {
 								break;
 							}
@@ -307,8 +305,12 @@ export class Parser {
 							this.check(TokenType.IDENTIFIER) &&
 							this.peekNext()?.type === TokenType.ASSIGN
 						) {
-							// Untyped declaration - inherits last type
-							const nextDecl = this.variableDeclaration(null, lastType);
+							// Untyped unit - typed independently from its initializer.
+							// An annotation binds only to the unit it directly precedes:
+							// TV types `bool a = true, b = 1` as const bool, const int
+							// (probed 2026-06-04). Inheriting the previous unit's
+							// annotation manufactured int-to-bool FPs. see INV027
+							const nextDecl = this.variableDeclaration(null, undefined);
 							statements.push(nextDecl);
 						} else {
 							break;

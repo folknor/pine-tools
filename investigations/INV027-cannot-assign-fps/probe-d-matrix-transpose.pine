@@ -1,0 +1,6 @@
+//@version=6
+indicator("x")
+var matrix<bool> m  = matrix.new<bool>(2, 2, false)
+var matrix<bool> mT = matrix.new<bool>(2, 2, false)
+mT := matrix.transpose(m)
+plot(matrix.get(mT, 0, 0) ? 1 : 0)
