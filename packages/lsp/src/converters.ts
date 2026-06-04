@@ -139,7 +139,11 @@ export function convertLSPDiagnostic(diagnostic: LSPDiagnostic): Diagnostic {
 	return {
 		range: diagnostic.range,
 		severity: diagnostic.severity as number,
-		message: diagnostic.message,
+		// LSP 3.18 allows MarkupContent messages; our diagnostics are plain strings
+		message:
+			typeof diagnostic.message === "string"
+				? diagnostic.message
+				: diagnostic.message.value,
 		source: diagnostic.source,
 		code: diagnostic.code?.toString(),
 	};

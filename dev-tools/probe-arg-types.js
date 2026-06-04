@@ -51,9 +51,9 @@ try {
 		await new Promise((r) => setTimeout(r, 250));
 		const argTypes = await page.evaluate((t) => {
 			const el = document.getElementById(`fun_${t}`);
-			const selected = el.querySelector(
-				".tv-pine-reference-item__syntax.selected",
-			)?.textContent?.trim();
+			const selected = el
+				.querySelector(".tv-pine-reference-item__syntax.selected")
+				?.textContent?.trim();
 			const argTypes = Array.from(
 				el.querySelectorAll(".tv-pine-reference-item__arg-type"),
 			).map((n) => n.textContent?.trim());

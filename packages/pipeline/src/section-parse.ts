@@ -75,9 +75,8 @@ const SUB_HEADER_RE =
 // next sub-header (or end of input). null if that section is absent.
 function sliceSection(html: string, label: string): string | null {
 	SUB_HEADER_RE.lastIndex = 0;
-	let m: RegExpExecArray | null;
 	const headers: Array<{ label: string; end: number }> = [];
-	while ((m = SUB_HEADER_RE.exec(html))) {
+	for (const m of html.matchAll(SUB_HEADER_RE)) {
 		headers.push({
 			label: stripTags(m[1]).trim().toLowerCase(),
 			end: m.index + m[0].length,
@@ -86,7 +85,8 @@ function sliceSection(html: string, label: string): string | null {
 	for (let i = 0; i < headers.length; i++) {
 		if (headers[i].label !== label.toLowerCase()) continue;
 		const start = headers[i].end;
-		const stop = i + 1 < headers.length ? findHeaderStart(html, start) : html.length;
+		const stop =
+			i + 1 < headers.length ? findHeaderStart(html, start) : html.length;
 		return html.slice(start, stop);
 	}
 	return null;
@@ -109,8 +109,7 @@ function proseFromSlice(slice: string): string {
 	const re =
 		/<div class="tv-pine-reference-item__text tv-text">([\s\S]*?)<\/div>/g;
 	const parts: string[] = [];
-	let m: RegExpExecArray | null;
-	while ((m = re.exec(slice))) {
+	for (const m of slice.matchAll(re)) {
 		if (m[1].includes("tv-pine-reference-item__arg-type")) continue;
 		const prose = normalizeProse(m[1]);
 		if (prose) parts.push(prose);
@@ -137,8 +136,7 @@ export function extractSections(html: string): ReferenceSections {
 	if (seeAlsoSlice) {
 		const names: string[] = [];
 		const re = /<a [^>]*>([\s\S]*?)<\/a>/g;
-		let m: RegExpExecArray | null;
-		while ((m = re.exec(seeAlsoSlice))) {
+		for (const m of seeAlsoSlice.matchAll(re)) {
 			// Cross-ref labels render as "array.max()" / "na" - drop the trailing
 			// "()" so the value is the bare symbol consumers can look up. Generic
 			// constructors render with placeholder type args ("map.new<type,type>",

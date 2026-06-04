@@ -525,7 +525,7 @@ export class Parser {
 		}
 
 		// Parse the consequent block using indentation tracking. The body
-		// must be indented STRICTLY MORE than the `if` keyword itself - 
+		// must be indented STRICTLY MORE than the `if` keyword itself -
 		// otherwise we'd swallow any following same-column statements as
 		// the body and the `if`'s scope would leak to end-of-file. That
 		// happened in real fixtures when malformed continuation text

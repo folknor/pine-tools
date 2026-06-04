@@ -35,10 +35,7 @@ const DETAILS_FILE = path.join(
 // entities that actually appear in arg-type spans (&lt; &gt;, plus &amp; for
 // safety) to match what the live scrape's node.textContent would have produced.
 function decodeEntities(s: string): string {
-	return s
-		.replace(/&lt;/g, "<")
-		.replace(/&gt;/g, ">")
-		.replace(/&amp;/g, "&");
+	return s.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
 }
 
 function stripTags(s: string): string {
@@ -56,8 +53,7 @@ function argTypesFromHtml(
 	// scrape's parentElement.textContent. (No arg row nests a <div>, verified.)
 	const re =
 		/<div class="tv-pine-reference-item__text tv-text">([\s\S]*?)<\/div>/g;
-	let m: RegExpExecArray | null;
-	while ((m = re.exec(html))) {
+	for (const m of html.matchAll(re)) {
 		const inner = m[1];
 		if (!inner.includes("tv-pine-reference-item__arg-type")) continue;
 		const text = decodeEntities(stripTags(inner));

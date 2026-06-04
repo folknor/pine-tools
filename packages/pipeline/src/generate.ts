@@ -13,10 +13,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
-import {
-	parseAllowedValues,
-	parseNumericRange,
-} from "./parse-constraints.ts";
+import { parseAllowedValues, parseNumericRange } from "./parse-constraints.ts";
 import { parseDefault } from "./parse-default.ts";
 import { detectReturnTypeParam, unionOverloadParams } from "./union-types.ts";
 
@@ -464,7 +461,7 @@ function parseParamNamesFromSignature(sig: string): string[] {
 
 // Build the per-overload signature list for an overloaded function from the
 // scraped dump. Each overload carries its EXACT (non-unioned) param types from
-// `overloadArgs` and its own return type from the overload signature string - 
+// `overloadArgs` and its own return type from the overload signature string -
 // detail the merged top-level fields flatten away. Returns undefined for
 // non-overloaded functions (the merged view fully describes them).
 //
@@ -911,7 +908,8 @@ function generateTypes(
 			namespace: name.includes(".") ? name.split(".")[0] : undefined,
 			kind: TYPE_KINDS[name] ?? "object",
 			description: sc?.description || undefined,
-			examples: sc?.examples && sc.examples.length > 0 ? sc.examples : undefined,
+			examples:
+				sc?.examples && sc.examples.length > 0 ? sc.examples : undefined,
 			fields: sc?.fields && sc.fields.length > 0 ? sc.fields : undefined,
 			...(sc ? pickProse(sc) : {}),
 		};
@@ -964,7 +962,8 @@ function generateAnnotations(
 			name,
 			description: sc?.description || "",
 			syntax: sc?.syntax || undefined,
-			examples: sc?.examples && sc.examples.length > 0 ? sc.examples : undefined,
+			examples:
+				sc?.examples && sc.examples.length > 0 ? sc.examples : undefined,
 			...(sc ? pickProse(sc) : {}),
 		};
 	});
@@ -1016,7 +1015,8 @@ function generateOperators(
 			name,
 			syntax: sc?.syntax || undefined,
 			description: sc?.description || "",
-			examples: sc?.examples && sc.examples.length > 0 ? sc.examples : undefined,
+			examples:
+				sc?.examples && sc.examples.length > 0 ? sc.examples : undefined,
 			...(sc ? pickProse(sc) : {}),
 		};
 	});

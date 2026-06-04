@@ -820,7 +820,9 @@ export async function scrapeMemberDetails(
 
 		return details;
 	} catch (error) {
-		console.log(`Failed to scrape ${kind} ${name}: ${(error as Error).message}`);
+		console.log(
+			`Failed to scrape ${kind} ${name}: ${(error as Error).message}`,
+		);
 		return null;
 	}
 }
@@ -985,7 +987,13 @@ export async function scrapeAnnotationDetails(
 					if (text) examples.push(text);
 				}
 
-				return { resolvedName, syntax, description, examples, html: el.outerHTML };
+				return {
+					resolvedName,
+					syntax,
+					description,
+					examples,
+					html: el.outerHTML,
+				};
 			},
 			elementId,
 			name,
@@ -1074,7 +1082,13 @@ export async function scrapeOperatorDetails(
 					if (text) examples.push(text);
 				}
 
-				return { resolvedName, syntax, description, examples, html: el.outerHTML };
+				return {
+					resolvedName,
+					syntax,
+					description,
+					examples,
+					html: el.outerHTML,
+				};
 			},
 			elementId,
 			symbol,
@@ -1166,7 +1180,13 @@ export async function scrapeKeywordDetails(
 						if (text) examples.push(text);
 					}
 
-					return { resolvedName, syntax, description, examples, html: el.outerHTML };
+					return {
+						resolvedName,
+						syntax,
+						description,
+						examples,
+						html: el.outerHTML,
+					};
 				},
 				elementId,
 				name,
@@ -1744,10 +1764,10 @@ export async function scrapeAllFunctions(
 		`   Constants captured: ${Object.keys(allDetails.constants).length}`,
 	);
 	console.log(`   Total types: ${allDetails.metadata.totalTypes}`);
-	console.log(`   Types captured: ${Object.keys(allDetails.types || {}).length}`);
 	console.log(
-		`   Total annotations: ${allDetails.metadata.totalAnnotations}`,
+		`   Types captured: ${Object.keys(allDetails.types || {}).length}`,
 	);
+	console.log(`   Total annotations: ${allDetails.metadata.totalAnnotations}`);
 	console.log(
 		`   Annotations captured: ${Object.keys(allDetails.annotations || {}).length}`,
 	);

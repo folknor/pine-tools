@@ -146,7 +146,12 @@ function main(): void {
 				continue;
 			}
 			if (
-				applySections(name, detail, fs.readFileSync(file, "utf8"), isSelfReference)
+				applySections(
+					name,
+					detail,
+					fs.readFileSync(file, "utf8"),
+					isSelfReference,
+				)
 			)
 				changed++;
 		}

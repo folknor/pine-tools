@@ -353,7 +353,7 @@ export function getPolymorphicReturnType(
 			}
 		}
 
-		// "type" is our placeholder for an unresolved / user-defined-type arg - 
+		// "type" is our placeholder for an unresolved / user-defined-type arg -
 		// treat it like "unknown" and fall through to the static return rather
 		// than propagating "type" into downstream arithmetic (avoids FPs like
 		// `math.abs(<unresolved>) % 2`).
@@ -632,7 +632,9 @@ export function resolveCallReturnRaw(
 	if (!func) return undefined;
 	const views = overloadViews(func);
 	const argBases = argTypes.map((t) => baseOfRawType(String(t)));
-	const anySeriesArg = argTypes.some((t) => leadingQualifier(String(t)) === "series");
+	const anySeriesArg = argTypes.some(
+		(t) => leadingQualifier(String(t)) === "series",
+	);
 
 	const candidates = views.filter((ov) => {
 		if (argBases.length > ov.parameters.length) return false;
@@ -655,7 +657,9 @@ export function resolveCallReturnRaw(
 	// A series argument forces at least a series result.
 	if (anySeriesArg && qrank(leadingQualifier(best)) < qrank("series")) {
 		const ser = pool.find((ov) => leadingQualifier(ov.returns) === "series");
-		best = ser ? ser.returns : best.replace(/^(const|input|simple)\b/, "series");
+		best = ser
+			? ser.returns
+			: best.replace(/^(const|input|simple)\b/, "series");
 	}
 	return best;
 }

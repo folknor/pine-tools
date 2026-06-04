@@ -1033,9 +1033,7 @@ export class UnifiedPineValidator {
 				const m = expr as MemberExpression;
 				if (m.object.type !== "Identifier") return false;
 				const name = `${(m.object as Identifier).name}.${m.property.name}`;
-				return (
-					isBuiltinConstant(name) || getBuiltinVarInfo(name) !== undefined
-				);
+				return isBuiltinConstant(name) || getBuiltinVarInfo(name) !== undefined;
 			}
 			case "CallExpression": {
 				const ce = expr as CallExpression;

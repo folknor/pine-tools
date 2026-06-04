@@ -105,6 +105,15 @@ IDs so the two stay in sync.
   (b) harden `find-real-failures.mjs` / `compare-tv.mjs` to treat a non-zero
   exit / missing `success:true` as "TV unavailable" (skip + flag), not as an
   empty error list - defense-in-depth beyond the CLI fix. See INV015 / gotchas/G002.
+- **#30 - consider rich (MarkupContent) diagnostic messages.** LSP 3.18
+  (vscode-languageserver 10) widened `Diagnostic.message` to
+  `string | MarkupContent`. Our language-service diagnostics are plain
+  strings, and `convertLSPDiagnostic` in `packages/lsp/src/converters.ts`
+  flattens any MarkupContent to its `.value`. We could instead emit
+  markdown messages (code spans around symbols/types, links to TV
+  reference pages, INV/G pointers) where the client advertises support.
+  Requires widening the internal `Diagnostic.message` type or adding a
+  parallel rich field, plus a capability check before sending markup.
 - **Minor data residue (record-only, low value):** `ta.vwap.anchor`'s default
   and the "X by default" phrasing are deliberately unparsed (see
   `parse-default.ts`). Skip unless a consumer needs them. (`since`/`deprecated`,

@@ -160,7 +160,9 @@ function overloadsAreNested(overloadArgs: OverloadArg[][]): boolean {
  * in EVERY overload are unioned; the rest are left out so the caller keeps them
  * "unknown" and `hasOverloads()` still bypasses positional validation.
  */
-export function unionOverloadParams(detail: OverloadCapture): Map<string, string> {
+export function unionOverloadParams(
+	detail: OverloadCapture,
+): Map<string, string> {
 	const result = new Map<string, string>();
 	const overloadArgs = detail.overloadArgs;
 	if (!overloadArgs || overloadArgs.length < 2) return result;
