@@ -292,6 +292,36 @@ The dev tools handle temp files, JSON parsing, and output formatting automatical
 
 ---
 
+## Pine reference oracle (`po`)
+
+`po` (Pine v6 oracle CLI, installed on PATH) is the local source of truth for
+*what a Pine identifier is and how the language behaves* - the reference you
+consult while implementing builtins and reading corpus scripts. It is backed by
+a baked `pine-data` snapshot (run `po version` for the snapshot date and
+catalog counts: ~475 functions, 161 variables, 237 constants, 28 keywords,
+20 types, 10 annotations, 21 operators, plus the 76-page / 1140-section
+indexed manual). Output is always text.
+
+- `po lookup <NAME>` - structured entry for one identifier: signature,
+  per-argument prose (name / type / required), return type + description,
+  remarks, runnable example(s), and see-also. This is the data `nordquant`'s
+  `list_indicators`/`get_indicator_info` re-served less richly, which is why
+  those CLI verbs were cut (see `docs/roadmap.md` M8). `--list` switches to
+  catalog mode; narrow with
+  `--kind <function|variable|constant|keyword|type|annotation|operator>`
+  (`--kind '?'` prints the kinds with counts) and/or `--grep <text>` (matches
+  name, namespace, or detail).
+- `po search <QUERY>` - full-text search over the Pine User Manual prose for
+  conceptual "how does X work" questions (e.g. repaint, lookahead, session
+  semantics). Accepts a query, a `page#anchor` section ref, or a page path;
+  `--limit <N>` caps the hits (default 8). Returns a compact list of matching
+  sections (one `<hash>  page / heading / subheading` line each), not the
+  prose. Print a section with `po show <hash>...` (space-separated hashes for
+  several at once).
+- Don't use `po validate`, use `pine-lint` instead.
+
+---
+
 **Library Import Resolution Usage:**
 ```pine
 /// @source ./libs/my-library.pine
