@@ -112,15 +112,21 @@ IDs so the two stay in sync.
   reference pages, INV/G pointers) where the client advertises support.
   Requires widening the internal `Diagnostic.message` type or adding a
   parallel rich field, plus a capability check before sending markup.
-- **#32 - re-found CONDITIONAL_SERIES on history-dependence.** The #31
-  parser fix put statements 2..n back inside conditional scope, which
-  unmasks this rule's too-wide net (`isSeriesFunction` matches every
-  drawing constructor and `str.*` by namespace/return type). TV's
-  documented criterion is history-dependent calls (po: errors/CW10003),
-  which also exempts side-effect functions (`label.new`) and names
-  `math.max` stateless. Extend scope to ternary / `and`/`or` operands /
-  switch arms while at it (TV warns there; our `inConditionalScope` is
-  only set by if/for/while). See plan/31 Finding 7.
+- ~~#32~~ **CLOSED 2026-06-04** - see
+  [INV018](investigations/INV018-conditional-series-history-dependence/notes.md).
+  CONDITIONAL_SERIES now fires on history-dependence
+  (`flags.historyDependent` baked into pine-data for ta.*, plus a UDF
+  body scan for `[]`/transitive calls), covers ternary / and-or /
+  switch arms with TV's per-context wording (CW10002/3/4, probed), and
+  no longer flags drawing/str.* side-effect calls. Discovered en route:
+  `--tv` responses carry a `warnings` array - warning-channel
+  differential testing is now possible (follow-up below).
+- **#36 - differential-test WARNINGS against TV.** INV018's probes
+  showed translate_light returns a `warnings` array (CW codes) beside
+  `errors`; find-real-failures/compare-tv currently diff errors only.
+  Extending them to warnings would let us verify CONDITIONAL_SERIES
+  (and future warning rules) corpus-wide instead of by spot probes.
+  Also probe whether `fixnan` is history-dependent for TV.
 - **#35 - arrow-function inline bodies still drop statements.** #33 gave
   switch arms a `statements` list (inline and multi-line); function/
   method arrow bodies (`f(x) => a := x, a * 2` and the multi-line

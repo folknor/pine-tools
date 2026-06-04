@@ -30,6 +30,10 @@ export interface SemanticWarning {
 	rule: string;
 }
 
+// Why a region is conditional - selects the CONDITIONAL_SERIES wording
+// (TV's CW10003 / CW10004 / CW10002 respectively).
+type ConditionalScopeKind = "block" | "ternary" | "andor";
+
 export class SemanticAnalyzer {
 	private warnings: SemanticWarning[] = [];
 	private inConditionalScope: boolean = false;
@@ -39,6 +43,14 @@ export class SemanticAnalyzer {
 	private declaredVariables: Map<string, { line: number; column: number }> =
 		new Map();
 	private usedVariables: Set<string> = new Set();
+	// User functions/methods whose bodies are history-dependent (use the
+	// `[]` operator or call history-dependent functions) - populated in
+	// the collect pass, in source order, so declaration-before-use makes
+	// transitive UDF->UDF dependence resolve. see TODO #32.
+	private historyDependentUdfs: Set<string> = new Set();
+	// Innermost-first record of WHY we are in conditional scope - drives
+	// the context-specific CONDITIONAL_SERIES wording (TV's CW10002/3/4).
+	private conditionalScopeKinds: ConditionalScopeKind[] = [];
 
 	analyze(ast: Program): SemanticWarning[] {
 		this.warnings = [];
@@ -46,6 +58,8 @@ export class SemanticAnalyzer {
 		this.conditionalScopeDepth = 0;
 		this.declaredVariables.clear();
 		this.usedVariables.clear();
+		this.historyDependentUdfs.clear();
+		this.conditionalScopeKinds = [];
 
 		// First pass: collect all variable declarations
 		this.collectVariableDeclarations(ast);
@@ -276,27 +290,52 @@ export class SemanticAnalyzer {
 		this.analyzeExpression(expr.object);
 	}
 
+	// CW10003 also covers history-dependent calls executed conditionally by
+	// ternary and and/or operations and inside switch arms (po:
+	// errors/CW10003; the manual's switch example warns on ta.crossover in
+	// an arm). Lazy evaluation decides what is conditional: an and/or's
+	// LEFT operand and a ternary's condition always execute; the right
+	// operand / branches only sometimes. see TODO #32.
+
 	private analyzeBinaryExpression(expr: BinaryExpression): void {
 		this.analyzeExpression(expr.left);
-		this.analyzeExpression(expr.right);
+		if (expr.operator === "and" || expr.operator === "or") {
+			this.enterConditionalScope("andor");
+			this.analyzeExpression(expr.right);
+			this.exitConditionalScope();
+		} else {
+			this.analyzeExpression(expr.right);
+		}
 	}
 
 	private analyzeTernaryExpression(expr: TernaryExpression): void {
 		this.analyzeExpression(expr.condition);
+		this.enterConditionalScope("ternary");
 		this.analyzeExpression(expr.consequent);
 		this.analyzeExpression(expr.alternate);
+		this.exitConditionalScope();
 	}
 
 	private analyzeSwitchExpression(expr: SwitchExpression): void {
 		if (expr.discriminant) {
 			this.analyzeExpression(expr.discriminant);
 		}
-		for (const switchCase of expr.cases) {
+		for (const [index, switchCase] of expr.cases.entries()) {
 			if (switchCase.condition) {
-				this.analyzeExpression(switchCase.condition);
+				// The FIRST arm's condition always executes; later
+				// conditions only evaluate when earlier ones were false.
+				if (index === 0) {
+					this.analyzeExpression(switchCase.condition);
+				} else {
+					this.enterConditionalScope();
+					this.analyzeExpression(switchCase.condition);
+					this.exitConditionalScope();
+				}
 			}
+			// Arm bodies execute only when their condition matches.
 			// `result` is contained in the last statement, so walk
 			// `statements` INSTEAD of `result` when present (see SwitchCase).
+			this.enterConditionalScope();
 			if (switchCase.statements) {
 				for (const stmt of switchCase.statements) {
 					this.analyzeStatement(stmt);
@@ -304,15 +343,18 @@ export class SemanticAnalyzer {
 			} else {
 				this.analyzeExpression(switchCase.result);
 			}
+			this.exitConditionalScope();
 		}
 	}
 
-	private enterConditionalScope(): void {
+	private enterConditionalScope(kind: ConditionalScopeKind = "block"): void {
+		this.conditionalScopeKinds.push(kind);
 		this.conditionalScopeDepth++;
 		this.inConditionalScope = true;
 	}
 
 	private exitConditionalScope(): void {
+		this.conditionalScopeKinds.pop();
 		this.conditionalScopeDepth--;
 		if (this.conditionalScopeDepth === 0) {
 			this.inConditionalScope = false;
@@ -331,37 +373,51 @@ export class SemanticAnalyzer {
 			}
 		}
 
-		// Check if this is a series function that should not be called conditionally
-		if (this.isSeriesFunction(functionName)) {
+		// Warn only on HISTORY-DEPENDENT calls executed conditionally -
+		// TV's CW10003 criterion. The wording follows the innermost
+		// conditional context, matching TV's three codes (probed
+		// 2026-06-04, see INV018): CW10003 for local blocks, CW10004 for
+		// ternary branches, CW10002 for and/or operands.
+		// see plan/31 Finding 7 / TODO #32.
+		if (this.isHistoryDependentFunction(functionName)) {
+			const kind =
+				this.conditionalScopeKinds[this.conditionalScopeKinds.length - 1] ??
+				"block";
+			const message =
+				kind === "andor"
+					? `The '${functionName}()' call inside the conditional expression might not execute on every bar, which can cause inconsistent calculations because the function depends on historical results. For consistency, assign the call's result to a global variable and use that variable in the expression instead.`
+					: kind === "ternary"
+						? `The function '${functionName}' should be called on each calculation for consistency. It is recommended to extract the call from the ternary operator or from the scope`
+						: `The function '${functionName}' should be called on each calculation for consistency. It is recommended to extract the call from this scope`;
 			this.addWarning(
 				call.line,
 				call.column,
 				functionName.length,
-				`The function '${functionName}' should be called on each calculation for consistency. It is recommended to extract the call from this scope`,
+				message,
 				DiagnosticSeverity.Warning,
 				"CONDITIONAL_SERIES",
 			);
 		}
 	}
 
-	private isSeriesFunction(functionName: string): boolean {
-		// Check if function returns a series type using pine-data
-		// These functions should not be called conditionally
+	/**
+	 * A function is history-dependent when it relies on values from PAST
+	 * executions of its own scope - the `[]` operator or internal state -
+	 * so a conditional/iterative call builds an inconsistent time series
+	 * (po: errors/CW10003). Built-ins carry `flags.historyDependent` from
+	 * pine-data (the ta.* namespace); user functions/methods are detected
+	 * by scanning their bodies (see scanStatementsForHistoryDependence).
+	 * Side-effect functions (label.new) and stateless ones (math.max) are
+	 * deliberately not flagged - the same page exempts them. The former
+	 * return-type/namespace net (any `series` return, ta./request./str.)
+	 * flagged canonical conditional drawing and string formatting.
+	 */
+	private isHistoryDependentFunction(functionName: string): boolean {
 		const func = FUNCTIONS_BY_NAME.get(functionName);
-		if (func?.returns) {
-			// Check if return type is series
-			if (func.returns.startsWith("series")) {
-				return true;
-			}
+		if (func?.flags?.historyDependent) {
+			return true;
 		}
-
-		// Fallback: namespace-based heuristic for functions not in pine-data
-		// or for user-defined functions that follow naming conventions
-		return (
-			functionName.startsWith("ta.") ||
-			functionName.startsWith("request.") ||
-			functionName.startsWith("str.")
-		);
+		return this.historyDependentUdfs.has(functionName);
 	}
 
 	private collectVariableDeclarations(ast: Program): void {
@@ -405,6 +461,11 @@ export class SemanticAnalyzer {
 						});
 					}
 				}
+				// Record history-dependent user functions for the
+				// CONDITIONAL_SERIES check. see TODO #32.
+				if (this.scanStatementsForHistoryDependence(statement.body)) {
+					this.historyDependentUdfs.add(statement.name);
+				}
 				break;
 
 			// for/for-in iterator names are deliberately NOT collected: an
@@ -416,6 +477,120 @@ export class SemanticAnalyzer {
 		// statement variants so a new variant can't silently go unwalked.
 		for (const child of this.childStatements(statement)) {
 			this.collectDeclarationsInStatement(child);
+		}
+	}
+
+	/**
+	 * Scan a statement block for history-dependence: a use of the `[]`
+	 * operator (IndexExpression) or a call to a history-dependent function
+	 * (built-in flag or an already-recorded UDF). Mirrors TV's CW10003
+	 * criterion for user functions - the page's own example is
+	 * `previousValue(source) => source[1]`. see TODO #32.
+	 */
+	private scanStatementsForHistoryDependence(statements: Statement[]): boolean {
+		for (const statement of statements) {
+			for (const expr of this.statementExpressions(statement)) {
+				if (this.scanExpressionForHistoryDependence(expr)) {
+					return true;
+				}
+			}
+			if (
+				this.scanStatementsForHistoryDependence(this.childStatements(statement))
+			) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/** Enumerate a statement's direct child expressions. */
+	private statementExpressions(statement: Statement): Expression[] {
+		switch (statement.type) {
+			case "VariableDeclaration":
+				return statement.init ? [statement.init] : [];
+			case "TupleDeclaration":
+				return [statement.init];
+			case "ExpressionStatement":
+				return [statement.expression];
+			case "AssignmentStatement":
+				return [statement.target, statement.value];
+			case "ReturnStatement":
+				return [statement.value];
+			case "IfStatement":
+				return [statement.condition];
+			case "WhileStatement":
+				return [statement.condition];
+			case "ForStatement":
+				return [
+					statement.from,
+					statement.to,
+					...(statement.step ? [statement.step] : []),
+				];
+			case "ForInStatement":
+				return [statement.collection];
+			default:
+				return [];
+		}
+	}
+
+	private scanExpressionForHistoryDependence(expr: Expression): boolean {
+		switch (expr.type) {
+			case "IndexExpression":
+				// The `[]` history-referencing operator
+				return true;
+			case "CallExpression": {
+				let name = "";
+				if (expr.callee.type === "Identifier") {
+					name = expr.callee.name;
+				} else if (
+					expr.callee.type === "MemberExpression" &&
+					expr.callee.object.type === "Identifier"
+				) {
+					name = `${expr.callee.object.name}.${expr.callee.property.name}`;
+				}
+				if (name && this.isHistoryDependentFunction(name)) {
+					return true;
+				}
+				return expr.arguments.some((a) =>
+					this.scanExpressionForHistoryDependence(a.value),
+				);
+			}
+			case "MemberExpression":
+				return this.scanExpressionForHistoryDependence(expr.object);
+			case "BinaryExpression":
+				return (
+					this.scanExpressionForHistoryDependence(expr.left) ||
+					this.scanExpressionForHistoryDependence(expr.right)
+				);
+			case "UnaryExpression":
+				return this.scanExpressionForHistoryDependence(expr.argument);
+			case "TernaryExpression":
+				return (
+					this.scanExpressionForHistoryDependence(expr.condition) ||
+					this.scanExpressionForHistoryDependence(expr.consequent) ||
+					this.scanExpressionForHistoryDependence(expr.alternate)
+				);
+			case "ArrayExpression":
+				return expr.elements.some((e) =>
+					this.scanExpressionForHistoryDependence(e),
+				);
+			case "SwitchExpression":
+				return (
+					(expr.discriminant
+						? this.scanExpressionForHistoryDependence(expr.discriminant)
+						: false) ||
+					expr.cases.some(
+						(c) =>
+							(c.condition
+								? this.scanExpressionForHistoryDependence(c.condition)
+								: false) ||
+							(c.statements
+								? this.scanStatementsForHistoryDependence(c.statements)
+								: this.scanExpressionForHistoryDependence(c.result)),
+					)
+				);
+			default:
+				return false;
 		}
 	}
 

@@ -1,0 +1,43 @@
+// @test regression/conditional-series-history-dependence
+// @description CONDITIONAL_SERIES fires on TV's CW10003 criterion (po: errors/CW10003): HISTORY-DEPENDENT calls (ta.*, or user functions using the [] operator) executed conditionally - in if/loop bodies, ternary branches, and/or right operands, and switch arms - with TV's context-specific wording (CW10003 block / CW10004 ternary / CW10002 and-or, probed 2026-06-04, see INV018). It must NOT fire on side-effect functions (label.new - the page exempts them; probed: TV emits no warning), stateless functions (math.max - the page's named example), str.* formatting, or on calls in always-executed positions (and/or LEFT operand, ternary condition). See TODO #32 / plan/31 Finding 7.
+// @expects parse: success
+// @expects warnings: 6
+// @expects warning: line=6, message="The function 'ta.sma' should be called on each calculation"
+// @expects warning: line=11, message="The function 'prevClose' should be called on each calculation"
+// @expects warning: line=13, message="The function 'ta.rsi' should be called on each calculation"
+// @expects warning: line=15, message="The 'ta.crossover()' call inside the conditional expression might not execute on every bar"
+// @expects warning: line=18, message="The function 'ta.highest' should be called on each calculation"
+// @expects warning: line=26, message="The function 'ta.lowest' should be called on each calculation"
+//@version=6
+indicator("x")
+prevClose() => close[1]
+var float v = na
+if close > open
+    v := ta.sma(close, 20)
+    label.new(bar_index, close)
+    m = math.max(close, open)
+    s = str.tostring(m)
+    label.set_text(label.new(bar_index, close), s)
+    v := prevClose()
+
+t = close > open ? ta.rsi(close, 14) : na
+
+ok = close > open and ta.crossover(close, open)
+
+x = switch
+    close > open => ta.highest(high, 10)
+    => na
+
+// Always-executed positions must NOT warn:
+left = ta.change(close) > 0 and close > open
+cond = ta.atr(14) > 1 ? close : open
+
+for i = 0 to 5
+    v := ta.lowest(low, 10)
+
+plot(v)
+plot(t)
+plot(ok ? 1 : 0)
+plot(x)
+plot(left ? 1 : 0)
+plot(cond)

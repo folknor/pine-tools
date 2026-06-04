@@ -86,3 +86,8 @@ contradiction means re-measure, not "the earlier author was wrong."
   continuation lines must not be indented by a multiple of 4 (TV CE10013,
   probed); unrestricted continuation glued switch arms into calls.
   Found under TODO #33.
+- [INV018](INV018-conditional-series-history-dependence/notes.md) -
+  CONDITIONAL_SERIES re-founded on history-dependence (flags from
+  pine-data + UDF body scan), scope extended to ternary/and-or/switch,
+  TV's CW10002/3/4 wordings probed. Also: --tv responses DO carry a
+  `warnings` array. Closes TODO #32.

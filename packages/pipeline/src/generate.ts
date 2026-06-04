@@ -359,6 +359,22 @@ function getFunctionFlags(name: string): Record<string, unknown> | undefined {
 		flags.polymorphic = polymorphic[name];
 	}
 
+	// History-dependent functions: rely on values from PAST executions of
+	// their own scope (the `[]` operator or internal state), so calling
+	// them conditionally/iteratively builds an inconsistent time series -
+	// TV's CW10003 criterion (po: errors/CW10003, "such as those in the
+	// `ta` namespace"). The whole ta.* namespace is rolling/stateful by
+	// design. Deliberately NOT flagged: side-effect functions (label.new
+	// etc. - the same page explains forcing them every-bar would be
+	// wrong), stateless functions (math.max is the page's named example),
+	// and str./request.* (the old namespace heuristic flagged them and
+	// produced FP waves - see plan/31 Finding 7). `fixnan` also carries
+	// internal state (returns the last non-na value) - unprobed whether
+	// TV warns on it; left unflagged until measured.
+	if (name.startsWith("ta.")) {
+		flags.historyDependent = true;
+	}
+
 	return Object.keys(flags).length > 0 ? flags : undefined;
 }
 

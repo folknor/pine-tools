@@ -1,7 +1,7 @@
 /**
  * Pine Script V6 Functions
  * Auto-generated from TradingView documentation
- * Generated: 2026-06-02T20:19:20.028Z
+ * Generated: 2026-06-04T09:26:35.629Z
  * Total: 475 functions
  */
 
@@ -19082,6 +19082,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
+    "flags": {
+      "historyDependent": true
+    },
     "examples": [
       "//@version=6\nindicator(\"ta.alma\", overlay=true)\nplot(ta.alma(close, 9, 0.85, 6))\n\n// same on pine, but much less efficient\npine_alma(series, windowsize, offset, sigma) =>\n    m = offset * (windowsize - 1)\n    //m = math.floor(offset * (windowsize - 1)) // Used as m when math.floor=true\n    s = windowsize / sigma\n    norm = 0.0\n    sum = 0.0\n    for i = 0 to windowsize - 1\n        weight = math.exp(-1 * math.pow(i - m, 2) / (2 * math.pow(s, 2)))\n        norm := norm + weight\n        sum := sum + series[windowsize - i - 1] * weight\n    sum / norm\nplot(pine_alma(close, 9, 0.85, 6))"
     ],
@@ -19110,6 +19113,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
+    "flags": {
+      "historyDependent": true
+    },
     "examples": [
       "//@version=6\nindicator(\"ta.atr\")\nplot(ta.atr(14))\n\n//the same on pine\npine_atr(length) =>\n    trueRange = na(high[1])? high-low : math.max(math.max(high - low, math.abs(high - close[1])), math.abs(low - close[1]))\n    //true range can be also calculated with ta.tr(true)\n    ta.rma(trueRange, length)\n\nplot(pine_atr(14))"
     ],
@@ -19134,6 +19140,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series int",
+    "flags": {
+      "historyDependent": true
+    },
     "examples": [
       "//@version=6\nindicator(\"ta.barssince\")\n// get number of bars since last color.green bar\nplot(ta.barssince(close >= open))"
     ],
@@ -19173,6 +19182,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "[series float, series float, series float]",
+    "flags": {
+      "historyDependent": true
+    },
     "examples": [
       "//@version=6\nindicator(\"ta.bb\")\n\n[middle, upper, lower] = ta.bb(close, 5, 4)\nplot(middle, color=color.yellow)\nplot(upper, color=color.yellow)\nplot(lower, color=color.yellow)\n\n// the same on pine\nf_bb(src, length, mult) =>\n    float basis = ta.sma(src, length)\n    float dev = mult * ta.stdev(src, length)\n    [basis, basis + dev, basis - dev]\n\n[pineMiddle, pineUpper, pineLower] = f_bb(close, 5, 4)\n\nplot(pineMiddle)\nplot(pineUpper)\nplot(pineLower)"
     ],
@@ -19210,6 +19222,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
+    "flags": {
+      "historyDependent": true
+    },
     "examples": [
       "//@version=6\nindicator(\"ta.bbw\")\n\nplot(ta.bbw(close, 5, 4), color=color.yellow)\n\n// the same on pine\nf_bbw(src, length, mult) =>\n    float basis = ta.sma(src, length)\n    float dev = mult * ta.stdev(src, length)\n    (((basis + dev) - (basis - dev)) / basis) * 100\n\nplot(f_bbw(close, 5, 4))"
     ],
@@ -19241,6 +19256,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
+    "flags": {
+      "historyDependent": true
+    },
     "examples": [],
     "returnsDescription": "Commodity channel index of source for length bars back.",
     "remarks": "na values in the source series are ignored."
@@ -19267,6 +19285,7 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "returns": "series int",
     "flags": {
+      "historyDependent": true,
       "returnTypeParam": "source"
     },
     "overloads": [
@@ -19355,6 +19374,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
+    "flags": {
+      "historyDependent": true
+    },
     "examples": [
       "//@version=6\nindicator(\"ta.cmo\")\nplot(ta.cmo(close, 5), color=color.yellow)\n\n// the same on pine\nf_cmo(src, length) =>\n    float mom = ta.change(src)\n    float sm1 = math.sum((mom >= 0) ? mom : 0.0, length)\n    float sm2 = math.sum((mom >= 0) ? 0.0 : -mom, length)\n    100 * (sm1 - sm2) / (sm1 + sm2)\n\nplot(f_cmo(close, 5))"
     ],
@@ -19386,6 +19408,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
+    "flags": {
+      "historyDependent": true
+    },
     "examples": [
       "//@version=6\nindicator(\"ta.cog\", overlay=true)\nplot(ta.cog(close, 10))\n\n// the same on pine\npine_cog(source, length) =>\n    sum = math.sum(source, length)\n    num = 0.0\n    for i = 0 to length - 1\n        price = source[i]\n        num := num + price * (i + 1)\n    -num / sum\n\nplot(pine_cog(close, 10))"
     ],
@@ -19421,6 +19446,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
+    "flags": {
+      "historyDependent": true
+    },
     "examples": [],
     "returnsDescription": "Correlation coefficient.",
     "remarks": "na values in the source series are ignored; the function calculates on the length quantity of non-na values.",
@@ -19448,6 +19476,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series bool",
+    "flags": {
+      "historyDependent": true
+    },
     "examples": [],
     "returnsDescription": "true if two series have crossed each other, otherwise false.",
     "seeAlso": [
@@ -19474,6 +19505,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series bool",
+    "flags": {
+      "historyDependent": true
+    },
     "examples": [],
     "returnsDescription": "true if source1 crossed over source2 otherwise false."
   },
@@ -19497,6 +19531,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series bool",
+    "flags": {
+      "historyDependent": true
+    },
     "examples": [],
     "returnsDescription": "true if source1 crossed under source2 otherwise false."
   },
@@ -19514,6 +19551,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
+    "flags": {
+      "historyDependent": true
+    },
     "examples": [],
     "returnsDescription": "Total sum series.",
     "seeAlso": [
@@ -19540,6 +19580,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
+    "flags": {
+      "historyDependent": true
+    },
     "examples": [
       "//@version=6\nindicator(\"ta.dev\")\nplot(ta.dev(close, 10))\n\n// the same on pine\npine_dev(source, length) =>\n    mean = ta.sma(source, length)\n    sum = 0.0\n    for i = 0 to length - 1\n        val = source[i]\n        sum := sum + math.abs(val - mean)\n    dev = sum/length\nplot(pine_dev(close, 10))"
     ],
@@ -19570,6 +19613,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "[series float, series float, series float]",
+    "flags": {
+      "historyDependent": true
+    },
     "examples": [
       "//@version=6\nindicator(title=\"Directional Movement Index\", shorttitle=\"DMI\", format=format.price, precision=4)\nlen = input.int(17, minval=1, title=\"DI Length\")\nlensig = input.int(14, title=\"ADX Smoothing\", minval=1)\n[diplus, diminus, adx] = ta.dmi(len, lensig)\nplot(adx, color=color.red, title=\"ADX\")\nplot(diplus, color=color.blue, title=\"+DI\")\nplot(diminus, color=color.orange, title=\"-DI\")"
     ],
@@ -19600,6 +19646,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
+    "flags": {
+      "historyDependent": true
+    },
     "examples": [
       "//@version=6\nindicator(\"ta.ema\")\nplot(ta.ema(close, 15))\n\n//the same on pine\npine_ema(src, length) =>\n    alpha = 2 / (length + 1)\n    sum = 0.0\n    sum := na(sum[1]) ? src : alpha * src + (1 - alpha) * nz(sum[1])\nplot(pine_ema(close,15))"
     ],
@@ -19634,6 +19683,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series bool",
+    "flags": {
+      "historyDependent": true
+    },
     "examples": [],
     "returnsDescription": "true if current source value is less than any previous source value for length bars back, false otherwise.",
     "remarks": "na values in the source series are ignored; the function calculates on the length quantity of non-na values.",
@@ -19661,6 +19713,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
+    "flags": {
+      "historyDependent": true
+    },
     "examples": [],
     "returnsDescription": "Highest value in the series.",
     "remarks": "Two args version: source is a series and length is the number of bars back.\nOne arg version: length is the number of bars back. Algorithm uses high as a source series.\nna values in the source series are ignored.",
@@ -19692,6 +19747,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series int",
+    "flags": {
+      "historyDependent": true
+    },
     "examples": [],
     "returnsDescription": "Offset to the highest bar.",
     "remarks": "Two args version: source is a series and length is the number of bars back.\nOne arg version: length is the number of bars back. Algorithm uses high as a source series.\nna values in the source series are ignored.",
@@ -19723,6 +19781,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
+    "flags": {
+      "historyDependent": true
+    },
     "examples": [
       "//@version=6\nindicator(\"Hull Moving Average\")\nsrc = input(defval=close, title=\"Source\")\nlength = input(defval=9, title=\"Length\")\nhmaBuildIn = ta.hma(src, length)\nplot(hmaBuildIn, title=\"Hull MA\", color=#674EA7)"
     ],
@@ -19768,6 +19829,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "[series float, series float, series float]",
+    "flags": {
+      "historyDependent": true
+    },
     "examples": [
       "//@version=6\nindicator(\"ta.kc\")\n\n[middle, upper, lower] = ta.kc(close, 5, 4)\nplot(middle, color=color.yellow)\nplot(upper, color=color.yellow)\nplot(lower, color=color.yellow)\n\n\n// the same on pine\nf_kc(src, length, mult, useTrueRange) =>\n    float basis = ta.ema(src, length)\n    float span = (useTrueRange) ? ta.tr : (high - low)\n    float rangeEma = ta.ema(span, length)\n    [basis, basis + rangeEma * mult, basis - rangeEma * mult]\n\n[pineMiddle, pineUpper, pineLower] = f_kc(close, 5, 4, true)\n\nplot(pineMiddle)\nplot(pineUpper)\nplot(pineLower)"
     ],
@@ -19811,6 +19875,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
+    "flags": {
+      "historyDependent": true
+    },
     "examples": [
       "//@version=6\nindicator(\"ta.kcw\")\n\nplot(ta.kcw(close, 5, 4), color=color.yellow)\n\n// the same on pine\nf_kcw(src, length, mult, useTrueRange) =>\n    float basis = ta.ema(src, length)\n    float span = (useTrueRange) ? ta.tr : (high - low)\n    float rangeEma = ta.ema(span, length)\n\n    ((basis + rangeEma * mult) - (basis - rangeEma * mult)) / basis\n\nplot(f_kcw(close, 5, 4, true))"
     ],
@@ -19849,6 +19916,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
+    "flags": {
+      "historyDependent": true
+    },
     "examples": [],
     "returnsDescription": "Linear regression curve.",
     "remarks": "na values in the source series are included in calculations and will produce an na result."
@@ -19873,6 +19943,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
+    "flags": {
+      "historyDependent": true
+    },
     "examples": [],
     "returnsDescription": "Lowest value in the series.",
     "remarks": "Two args version: source is a series and length is the number of bars back.\nOne arg version: length is the number of bars back. Algorithm uses low as a source series.\nna values in the source series are ignored.",
@@ -19904,6 +19977,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series int",
+    "flags": {
+      "historyDependent": true
+    },
     "examples": [],
     "returnsDescription": "Offset to the lowest bar.",
     "remarks": "Two args version: source is a series and length is the number of bars back.\nOne arg version: length is the number of bars back. Algorithm uses low as a source series.\nna values in the source series are ignored.",
@@ -19947,6 +20023,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "[series float, series float, series float]",
+    "flags": {
+      "historyDependent": true
+    },
     "examples": [
       "//@version=6\nindicator(\"MACD\")\n[macdLine, signalLine, histLine] = ta.macd(close, 12, 26, 9)\nplot(macdLine, color=color.blue)\nplot(signalLine, color=color.orange)\nplot(histLine, color=color.red, style=plot.style_histogram)",
       "//@version=6\nindicator(\"MACD\")\n[_, signalLine, _] = ta.macd(close, 12, 26, 9)\nplot(signalLine, color=color.orange)"
@@ -19972,6 +20051,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
+    "flags": {
+      "historyDependent": true
+    },
     "examples": [],
     "remarks": "na"
   },
@@ -19996,6 +20078,7 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "returns": "series int",
     "flags": {
+      "historyDependent": true,
       "returnTypeParam": "source"
     },
     "overloads": [
@@ -20058,6 +20141,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
+    "flags": {
+      "historyDependent": true
+    },
     "examples": [
       "//@version=6\nindicator(\"Money Flow Index\")\n\nplot(ta.mfi(hlc3, 14), color=color.yellow)\n\n// the same on pine\npine_mfi(src, length) =>\n    float upper = math.sum(volume * (ta.change(src) <= 0.0 ? 0.0 : src), length)\n    float lower = math.sum(volume * (ta.change(src) >= 0.0 ? 0.0 : src), length)\n    mfi = 100.0 - (100.0 / (1.0 + upper / lower))\n    mfi\n\nplot(pine_mfi(hlc3, 14))"
     ],
@@ -20082,6 +20168,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
+    "flags": {
+      "historyDependent": true
+    },
     "examples": [],
     "remarks": "na"
   },
@@ -20106,6 +20195,7 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "returns": "series int",
     "flags": {
+      "historyDependent": true,
       "returnTypeParam": "source"
     },
     "overloads": [
@@ -20168,6 +20258,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
+    "flags": {
+      "historyDependent": true
+    },
     "examples": [],
     "returnsDescription": "Momentum of source price and source price length bars ago.",
     "remarks": "na values in the source series are included in calculations and will produce an na result.",
@@ -20201,6 +20294,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
+    "flags": {
+      "historyDependent": true
+    },
     "examples": [],
     "returnsDescription": "P-th percentile of source series for length bars back.",
     "remarks": "Note that a percentile calculated using this method will NOT always be a member of the input data set.\nna values in the source series are included in calculations and will produce an na result.",
@@ -20234,6 +20330,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
+    "flags": {
+      "historyDependent": true
+    },
     "examples": [],
     "returnsDescription": "P-th percentile of source series for length bars back.",
     "remarks": "Using the Nearest Rank method on lengths less than 100 bars back can result in the same number being used for more than one percentile.\nA percentile calculated using the Nearest Rank method will always be a member of the input data set.\nThe 100th percentile is defined to be the largest value in the input data set.\nna values in the source series are ignored.",
@@ -20261,6 +20360,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
+    "flags": {
+      "historyDependent": true
+    },
     "examples": [],
     "returnsDescription": "Percent rank of source for length bars back.",
     "remarks": "na values in the source series are included in calculations and will produce an na result."
@@ -20300,6 +20402,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "array<float>",
+    "flags": {
+      "historyDependent": true
+    },
     "examples": [
       "//@version=6\nindicator(\"Weekly Pivots\", max_lines_count=500, overlay=true)\ntimeframe = \"1W\"\ntypeInput = input.string(\"Traditional\", \"Type\", options=[\"Traditional\", \"Fibonacci\", \"Woodie\", \"Classic\", \"DM\", \"Camarilla\"])\nweekChange = timeframe.change(timeframe)\npivotPointsArray = ta.pivot_point_levels(typeInput, weekChange)\nif weekChange\n    for pivotLevel in pivotPointsArray\n        line.new(time, pivotLevel, time + timeframe.in_seconds(timeframe) * 1000, pivotLevel, xloc=xloc.bar_time)"
     ],
@@ -20332,6 +20437,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
+    "flags": {
+      "historyDependent": true
+    },
     "overloads": [
       {
         "parameters": [
@@ -20406,6 +20514,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
+    "flags": {
+      "historyDependent": true
+    },
     "overloads": [
       {
         "parameters": [
@@ -20475,6 +20586,7 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "returns": "series int",
     "flags": {
+      "historyDependent": true,
       "returnTypeParam": "source"
     },
     "overloads": [
@@ -20537,6 +20649,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
+    "flags": {
+      "historyDependent": true
+    },
     "examples": [],
     "returnsDescription": "The Rank Correlation Index, a value between -100 to 100."
   },
@@ -20560,6 +20675,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series bool",
+    "flags": {
+      "historyDependent": true
+    },
     "examples": [],
     "returnsDescription": "true if current source is greater than any previous source for length bars back, false otherwise.",
     "remarks": "na values in the source series are ignored.",
@@ -20587,6 +20705,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
+    "flags": {
+      "historyDependent": true
+    },
     "examples": [
       "//@version=6\nindicator(\"ta.rma\")\nplot(ta.rma(close, 15))\n\n//the same on pine\npine_rma(src, length) =>\n    alpha = 1/length\n    sum = 0.0\n    sum := na(sum[1]) ? ta.sma(src, length) : alpha * src + (1 - alpha) * nz(sum[1])\nplot(pine_rma(close, 15))"
     ],
@@ -20622,6 +20743,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
+    "flags": {
+      "historyDependent": true
+    },
     "examples": [],
     "returnsDescription": "The rate of change of source for length bars back.",
     "remarks": "na values in the source series are included in calculations and will produce an na result."
@@ -20646,6 +20770,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
+    "flags": {
+      "historyDependent": true
+    },
     "examples": [
       "//@version=6\nindicator(\"ta.rsi\")\nplot(ta.rsi(close, 7))\n\n// same on pine, but less efficient\npine_rsi(x, y) =>\n    u = math.max(x - x[1], 0) // upward ta.change\n    d = math.max(x[1] - x, 0) // downward ta.change\n    rs = ta.rma(u, y) / ta.rma(d, y)\n    res = 100 - 100 / (1 + rs)\n    res\n\nplot(pine_rsi(close, 7))"
     ],
@@ -20681,6 +20808,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
+    "flags": {
+      "historyDependent": true
+    },
     "examples": [
       "//@version=6\nindicator(\"ta.sar\")\nplot(ta.sar(0.02, 0.02, 0.2), style=plot.style_cross, linewidth=3)\n\n// The same on Pine Script®\npine_sar(start, inc, max) =>\n    var float result = na\n    var float maxMin = na\n    var float acceleration = na\n    var bool isBelow = false\n    bool isFirstTrendBar = false\n\n    if bar_index == 1\n        if close > close[1]\n            isBelow := true\n            maxMin := high\n            result := low[1]\n        else\n            isBelow := false\n            maxMin := low\n            result := high[1]\n        isFirstTrendBar := true\n        acceleration := start\n\n    result := result + acceleration * (maxMin - result)\n\n    if isBelow\n        if result > low\n            isFirstTrendBar := true\n            isBelow := false\n            result := math.max(high, maxMin)\n            maxMin := low\n            acceleration := start\n    else\n        if result < high\n            isFirstTrendBar := true\n            isBelow := true\n            result := math.min(low, maxMin)\n            maxMin := high\n            acceleration := start\n            \n    if not isFirstTrendBar\n        if isBelow\n            if high > maxMin\n                maxMin := high\n                acceleration := math.min(acceleration + inc, max)\n        else\n            if low < maxMin\n                maxMin := low\n                acceleration := math.min(acceleration + inc, max)\n\n    if isBelow\n        result := math.min(result, low[1])\n        if bar_index > 1\n            result := math.min(result, low[2])\n        \n    else\n        result := math.max(result, high[1])\n        if bar_index > 1\n            result := math.max(result, high[2])\n\n    result\n\nplot(pine_sar(0.02, 0.02, 0.2), style=plot.style_cross, linewidth=3)"
     ],
@@ -20706,6 +20836,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
+    "flags": {
+      "historyDependent": true
+    },
     "examples": [
       "//@version=6\nindicator(\"ta.sma\")\nplot(ta.sma(close, 15))\n\n// same on pine, but much less efficient\npine_sma(x, y) =>\n    sum = 0.0\n    for i = 0 to y - 1\n        sum := sum + x[i] / y\n    sum\nplot(pine_sma(close, 15))"
     ],
@@ -20747,6 +20880,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
+    "flags": {
+      "historyDependent": true
+    },
     "examples": [
       "//@version=6\nindicator(\"ta.stdev\")\nplot(ta.stdev(close, 5))\n\n//the same on pine\nisZero(val, eps) => math.abs(val) <= eps\n\nSUM(fst, snd) =>\n    EPS = 1e-10\n    res = fst + snd\n    if isZero(res, EPS)\n        res := 0\n    else\n        if not isZero(res, 1e-4)\n            res := res\n        else\n            15\n\npine_stdev(src, length) =>\n    avg = ta.sma(src, length)\n    sumOfSquareDeviations = 0.0\n    for i = 0 to length - 1\n        sum = SUM(src[i], -avg)\n        sumOfSquareDeviations := sumOfSquareDeviations + sum * sum\n\n    stdev = math.sqrt(sumOfSquareDeviations / length)\nplot(pine_stdev(close, 5))"
     ],
@@ -20789,6 +20925,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
+    "flags": {
+      "historyDependent": true
+    },
     "examples": [],
     "returnsDescription": "Stochastic.",
     "remarks": "na values in the source series are ignored.",
@@ -20816,6 +20955,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "[series float, series float]",
+    "flags": {
+      "historyDependent": true
+    },
     "examples": [
       "//@version=6\nindicator(\"Pine Script® Supertrend\")\n\n[supertrend, direction] = ta.supertrend(3, 10)\nplot(direction < 0 ? supertrend : na, \"Up direction\", color = color.green, style=plot.style_linebr)\nplot(direction > 0 ? supertrend : na, \"Down direction\", color = color.red, style=plot.style_linebr)\n\n// The same on Pine Script®\npine_supertrend(factor, atrPeriod) =>\n    src = hl2\n    atr = ta.atr(atrPeriod)\n    upperBand = src + factor * atr\n    lowerBand = src - factor * atr\n    prevLowerBand = nz(lowerBand[1])\n    prevUpperBand = nz(upperBand[1])\n\n    lowerBand := lowerBand > prevLowerBand or close[1] < prevLowerBand ? lowerBand : prevLowerBand\n    upperBand := upperBand < prevUpperBand or close[1] > prevUpperBand ? upperBand : prevUpperBand\n    int _direction = na\n    float superTrend = na\n    prevSuperTrend = superTrend[1]\n    if na(atr[1])\n        _direction := 1\n    else if prevSuperTrend == prevUpperBand\n        _direction := close > upperBand ? -1 : 1\n    else\n        _direction := close < lowerBand ? 1 : -1\n    superTrend := _direction == -1 ? lowerBand : upperBand\n    [superTrend, _direction]\n\n[Pine_Supertrend, pineDirection] = pine_supertrend(3, 10)\nplot(pineDirection < 0 ? Pine_Supertrend : na, \"Up direction\", color = color.green, style=plot.style_linebr)\nplot(pineDirection > 0 ? Pine_Supertrend : na, \"Down direction\", color = color.red, style=plot.style_linebr)"
     ],
@@ -20838,6 +20980,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
+    "flags": {
+      "historyDependent": true
+    },
     "examples": [
       "//@version=6\nindicator(\"ta.swma\")\nplot(ta.swma(close))\n\n// same on pine, but less efficient\npine_swma(x) =>\n    x[3] * 1 / 6 + x[2] * 2 / 6 + x[1] * 2 / 6 + x[0] * 1 / 6\nplot(pine_swma(close))"
     ],
@@ -20866,6 +21011,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
+    "flags": {
+      "historyDependent": true
+    },
     "examples": [],
     "returnsDescription": "True range. It is math.max(high - low, math.abs(high - close[1]), math.abs(low - close[1])).",
     "remarks": "ta.tr(false) is exactly the same as ta.tr.",
@@ -20900,6 +21048,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
+    "flags": {
+      "historyDependent": true
+    },
     "examples": [],
     "returnsDescription": "True strength index. A value in range [-1, 1].",
     "remarks": "na values in the source series are ignored; the function calculates on the length quantity of non-na values."
@@ -20931,6 +21082,7 @@ export const FUNCTIONS: PineFunction[] = [
     ],
     "returns": "series color",
     "flags": {
+      "historyDependent": true,
       "returnTypeParam": "source"
     },
     "overloads": [
@@ -21066,6 +21218,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
+    "flags": {
+      "historyDependent": true
+    },
     "examples": [],
     "returnsDescription": "Variance of source for length bars back.",
     "remarks": "If biased is true, function will calculate using a biased estimate of the entire population, if false - unbiased estimate of a sample.\nna values in the source series are ignored; the function calculates on the length quantity of non-na values.",
@@ -21101,6 +21256,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
+    "flags": {
+      "historyDependent": true
+    },
     "overloads": [
       {
         "parameters": [
@@ -21174,6 +21332,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
+    "flags": {
+      "historyDependent": true
+    },
     "examples": [
       "//@version=6\nindicator(\"ta.vwma\")\nplot(ta.vwma(close, 15))\n\n// same on pine, but less efficient\npine_vwma(x, y) =>\n    ta.sma(x * volume, y) / ta.sma(volume, y)\nplot(pine_vwma(close, 15))"
     ],
@@ -21208,6 +21369,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
+    "flags": {
+      "historyDependent": true
+    },
     "examples": [
       "//@version=6\nindicator(\"ta.wma\")\nplot(ta.wma(close, 15))\n\n// same on pine, but much less efficient\npine_wma(x, y) =>\n    norm = 0.0\n    sum = 0.0\n    for i = 0 to y - 1\n        weight = (y - i) * y\n        norm := norm + weight\n        sum := sum + x[i] * weight\n    sum / norm\nplot(pine_wma(close, 15))"
     ],
@@ -21236,6 +21400,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
+    "flags": {
+      "historyDependent": true
+    },
     "examples": [
       "//@version=6\nindicator(\"Williams %R\", shorttitle=\"%R\", format=format.price, precision=2)\nplot(ta.wpr(14), title=\"%R\", color=color.new(#ff6d00, 0))"
     ],

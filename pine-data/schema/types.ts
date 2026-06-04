@@ -127,6 +127,13 @@ export interface FunctionFlags {
 	 * argument's actual type instead of the static return. See union-types.ts.
 	 */
 	returnTypeParam?: string;
+	/**
+	 * Relies on values from past executions of its own scope (the `[]`
+	 * operator or internal state, e.g. the ta.* namespace), so a
+	 * conditional/iterative call builds an inconsistent time series -
+	 * TV's CW10003 criterion. Drives the CONDITIONAL_SERIES warning.
+	 */
+	historyDependent?: boolean;
 }
 
 /**
