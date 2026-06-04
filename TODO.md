@@ -121,12 +121,32 @@ IDs so the two stay in sync.
   no longer flags drawing/str.* side-effect calls. Discovered en route:
   `--tv` responses carry a `warnings` array - warning-channel
   differential testing is now possible (follow-up below).
-- **#36 - differential-test WARNINGS against TV.** INV018's probes
-  showed translate_light returns a `warnings` array (CW codes) beside
-  `errors`; find-real-failures/compare-tv currently diff errors only.
-  Extending them to warnings would let us verify CONDITIONAL_SERIES
-  (and future warning rules) corpus-wide instead of by spot probes.
-  Also probe whether `fixnan` is history-dependent for TV.
+- ~~#36~~ **CLOSED 2026-06-04** - find-real-failures/compare-tv now diff
+  the `warnings` channel by position (summary + topWarning* in the
+  report). The first runs drove a round of CONDITIONAL_SERIES
+  refinements, all probed and recorded in INV018: the series-condition
+  gate (warn only when the governing condition/discriminant is
+  series-qualified, tracked through assignments; loops always),
+  `[]`-on-globals exemption in UDF scanning, params-are-series-by-
+  default, and `fixnan`/`math.sum` flagged historyDependent (probed;
+  `nz`/`request.security` probed clean). Measurement 2026-06-04: local
+  1889 / TV 376 warnings, tv-only 164 (mostly the #37 missing rules +
+  wrapped-line position artifacts).
+- **#37 - three TV warning rules we don't implement** (from the #36
+  tv-only diff, INV018): (a) multiline-string deprecation warning
+  (37 corpus hits); (b) variable shadowing - "Shadowing variable 'X'
+  which exists in parent scope. Did you want to use the ':=' operator
+  instead of '='?" (~23 hits); (c) local-variable history-referencing -
+  the CW10003 page's NOTE variant, "The variable 'X' is declared in
+  local scope... obtaining its historical values is unreliable"
+  (~14 hits). Each needs its own probe set before implementing.
+- **#38 - warning-diff position artifacts on wrapped lines.** TV's
+  warning positions use LOGICAL-line columns (accumulating across
+  wraps, e.g. col 103 on a 60-char physical line), so the position-
+  keyed warning diff splits matching warnings into local-only +
+  tv-only pairs on wrapped expressions. Either map TV logical columns
+  back to physical positions or fuzzy-match by function name + line
+  range when comparing warnings.
 - **#35 - arrow-function inline bodies still drop statements.** #33 gave
   switch arms a `statements` list (inline and multi-line); function/
   method arrow bodies (`f(x) => a := x, a * 2` and the multi-line

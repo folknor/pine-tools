@@ -112,10 +112,70 @@ assumptions treated it as errors-only.
   conditional `ta.cross*` and two genuinely history-dependent UDFs).
 - Error channel unchanged (regression check: 0 changed fixtures).
 
-## Follow-ups
+## Round 2 (#36, same day): warning-channel differential + the series-condition model
 
-- The `warnings` array in `--tv` responses opens the door to
-  differential testing of WARNINGS, not just errors - the diff tooling
-  currently compares errors only.
-- `fixnan` (and possibly `barstate`-coupled functions) may be
-  history-dependent for TV; probe before flagging.
+The diff tooling (find-real-failures / compare-tv) now diffs the
+`warnings` channel by position alongside errors. The first corpus run
+immediately produced refinements, each probed:
+
+**Probe 4** - `prevClose() => close[1]` called conditionally: TV silent.
+A GLOBAL series' history is committed every bar regardless of when a
+call executes, so `[]` on globals is consistent. Our UDF scan now counts
+`[]` only on the function's OWN scope values (params/locals).
+
+**Probe 5** - the manual's verbatim CW10003 UDF example
+(`previousValue(source) => source[1]`, conditional named-arg call): the
+translate_light endpoint emits NO warning and does not even infer the
+UDF's return type (returnedTypes []). The endpoint's warning engine
+skips untyped UDF bodies entirely. The manual documents the warning, so
+we keep our UDF detection - endpoint silence is evidence, not authority.
+
+**Probes 6-9** - the GOVERNING CONDITION must be a series:
+
+- `if input.bool(...)` + ta.sma: TV SILENT (same branch every bar).
+- `switch <input string>` arms with ta.*: TV SILENT - including fully
+  typed UDF variants with `simple string` discriminants. This is the
+  ubiquitous MA-selector idiom (TV's own template).
+- `switch <series int>` discriminant / discriminant-less `switch` with
+  series conditions: TV WARNS on all arms (incl. the default arm).
+- `b = close > open` then `if b`: TV WARNS - the qualifier is tracked
+  through variable assignment.
+- `for i = 0 to 5` (const bounds): TV WARNS - iterative execution is
+  unconditional (multiple executions per bar break the series).
+
+Implemented as `isSeriesishExpression` + a `seriesVars` set built in
+source order (declarations AND `:=` reassignments), gating every
+conditional-scope entry: if branches, ternary branches, and/or right
+operands, switch arms (series discriminant, or any series arm condition
+in the discriminant-less form). Loops stay ungated. Unprovable
+expressions (UDT fields, unknown calls) count as NOT series - zero FPs
+on the input-selector idiom at the cost of rare FNs.
+
+**Probe 10** - UDF params: `f(float source, int length, string t)` with
+`switch t` arms - TV infers `series string` for the unqualified param
+and WARNS both arms; `simple string t` is silent; probe at
+`00a1c14f…pine:246` showed `if direction == 1` (typed `int` param)
+warning too. So params are series by default unless annotated
+simple/const/input - implemented via `withSeriesParams` (both analyzer
+passes), matching TV's printed inference exactly.
+
+`fixnan` and `math.sum` probed: TV warns CW10003 on conditional calls
+to both - flagged historyDependent in generate.ts. `nz` and
+`request.security` probed clean - not flagged.
+
+## Warning-channel measurement (2026-06-04 ~11:50 UTC, post-fix)
+
+748 v6 fixtures: local 1889 warnings / TV 376; local-only 1681,
+tv-only 164. Composition:
+
+- local-only is dominated by UNUSED_VARIABLE (TV never reports unused
+  variables - not a comparable channel) plus CONDITIONAL_SERIES inside
+  UNTYPED UDF bodies, where the endpoint does no analysis (probe 5) but
+  TV's own qualifier rules say series (probe 10) - we are deliberately
+  more correct than the endpoint there.
+- tv-only: 37 multiline-string deprecation warnings, ~23 variable-
+  shadowing warnings, ~14 local-variable-history warnings (the CW10003
+  page's NOTE) - three rules we don't implement (TODO #37) - plus
+  position artifacts on wrapped lines (TV's columns accumulate across
+  the LOGICAL line, e.g. col 103 on a 60-char physical line, so the
+  position-keyed diff splits matching warnings into both columns).

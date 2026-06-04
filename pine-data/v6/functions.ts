@@ -1,7 +1,7 @@
 /**
  * Pine Script V6 Functions
  * Auto-generated from TradingView documentation
- * Generated: 2026-06-04T09:26:35.629Z
+ * Generated: 2026-06-04T09:48:20.775Z
  * Total: 475 functions
  */
 
@@ -5226,6 +5226,7 @@ export const FUNCTIONS: PineFunction[] = [
     "returns": "series color",
     "flags": {
       "polymorphic": "input",
+      "historyDependent": true,
       "returnTypeParam": "source"
     },
     "overloads": [
@@ -11837,7 +11838,8 @@ export const FUNCTIONS: PineFunction[] = [
     "flags": {
       "variadic": true,
       "minArgs": 1,
-      "polymorphic": "numeric"
+      "polymorphic": "numeric",
+      "historyDependent": true
     },
     "examples": [],
     "returnsDescription": "Sum of source for length bars back.",

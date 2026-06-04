@@ -53,19 +53,80 @@ function run(args) {
 	});
 }
 
-function pickErrors(raw) {
+// Fill TV's message templates ("The function {functionName} ..." + ctx)
+// so warning/error text is readable in reports.
+function fillTemplate(message, ctx) {
+	if (!ctx) return message;
+	return message.replace(/\{(\w+)\}/g, (m, key) => ctx[key] ?? m);
+}
+
+// Picks both diagnostics channels: TV's translate_light returns a
+// `warnings` array (CW codes) beside `errors` - see INV018 / TODO #36.
+function pickDiagnostics(raw) {
 	try {
 		const j = JSON.parse(raw);
-		const errs = j.result?.errors ?? j.errors ?? [];
-		return { ok: true, errors: errs.map((e) => ({ line: e.start?.line ?? 0, col: e.start?.column ?? 0, message: e.message ?? "" })) };
+		const mapDiag = (e) => ({
+			line: e.start?.line ?? 0,
+			col: e.start?.column ?? 0,
+			message: fillTemplate(e.message ?? "", e.ctx),
+		});
+		return {
+			ok: true,
+			errors: (j.result?.errors ?? j.errors ?? []).map(mapDiag),
+			warnings: (j.result?.warnings ?? j.warnings ?? []).map(mapDiag),
+		};
 	} catch (e) {
-		return { ok: false, errors: [], parseError: e.message };
+		return { ok: false, errors: [], warnings: [], parseError: e.message };
 	}
 }
 
 async function isV6(file) {
 	const src = await readFile(file, "utf8");
 	return /\/\/\s*@version\s*=\s*6/.test(src);
+}
+
+function emptyWarningDiff() {
+	return { localCount: 0, tvCount: 0, localOnly: [], tvOnly: [] };
+}
+
+// Diff two diagnostic lists by (line, col). Same-position-different-
+// message pairs are surfaced separately rather than counted as
+// disagreement (usually two correct linters with different wording).
+function diffByPosition(localList, tvList) {
+	const localByPos = new Map();
+	for (const e of localList) {
+		const k = `${e.line}:${e.col}`;
+		if (!localByPos.has(k)) localByPos.set(k, []);
+		localByPos.get(k).push(e);
+	}
+	const tvByPos = new Map();
+	for (const e of tvList) {
+		const k = `${e.line}:${e.col}`;
+		if (!tvByPos.has(k)) tvByPos.set(k, []);
+		tvByPos.get(k).push(e);
+	}
+
+	const localOnly = localList.filter((e) => !tvByPos.has(`${e.line}:${e.col}`));
+	const tvOnly = tvList.filter((e) => !localByPos.has(`${e.line}:${e.col}`));
+
+	const samePositionDifferentMessage = [];
+	for (const [k, locals] of localByPos.entries()) {
+		const tvs = tvByPos.get(k);
+		if (!tvs) continue;
+		for (const l of locals) {
+			for (const t of tvs) {
+				if (l.message !== t.message) {
+					samePositionDifferentMessage.push({
+						line: l.line,
+						col: l.col,
+						localMessage: l.message,
+						tvMessage: t.message,
+					});
+				}
+			}
+		}
+	}
+	return { localOnly, tvOnly, samePositionDifferentMessage };
 }
 
 async function main() {
@@ -88,8 +149,8 @@ async function main() {
 			if (i >= targets.length) return;
 			const file = targets[i];
 			const [local, tv] = await Promise.all([run([file]), run(["--tv", file])]);
-			const localE = pickErrors(local.out);
-			const tvE = pickErrors(tv.out);
+			const localE = pickDiagnostics(local.out);
+			const tvE = pickDiagnostics(tv.out);
 
 			// An unparseable side means "no verdict", not "no errors" - diffing
 			// against its empty error list would dump the entire other side
@@ -105,6 +166,7 @@ async function main() {
 					localOnly: [],
 					tvOnly: [],
 					samePositionDifferentMessage: [],
+					warnings: emptyWarningDiff(),
 					localParseError: localE.parseError,
 					tvParseError: tvE.parseError,
 					tvExitCode: tv.code,
@@ -117,44 +179,8 @@ async function main() {
 				continue;
 			}
 
-			const tvByPos = new Map();
-			for (const e of tvE.errors) {
-				const k = `${e.line}:${e.col}`;
-				if (!tvByPos.has(k)) tvByPos.set(k, []);
-				tvByPos.get(k).push(e);
-			}
-			const localByPos = new Map();
-			for (const e of localE.errors) {
-				const k = `${e.line}:${e.col}`;
-				if (!localByPos.has(k)) localByPos.set(k, []);
-				localByPos.get(k).push(e);
-			}
-
-			const localOnly = localE.errors.filter((e) => !tvByPos.has(`${e.line}:${e.col}`));
-			const tvOnly = tvE.errors.filter((e) => !localByPos.has(`${e.line}:${e.col}`));
-
-			// Same position, different message - both linters caught
-			// something at (line, col) but worded it differently. Usually
-			// this is just two correct linters with different wording; we
-			// surface it so reviewers can spot the rare case where it's
-			// actually two genuinely different bugs at the same column.
-			const samePositionDifferentMessage = [];
-			for (const [k, locals] of localByPos.entries()) {
-				const tvs = tvByPos.get(k);
-				if (!tvs) continue;
-				for (const local of locals) {
-					for (const tv of tvs) {
-						if (local.message !== tv.message) {
-							samePositionDifferentMessage.push({
-								line: local.line,
-								col: local.col,
-								localMessage: local.message,
-								tvMessage: tv.message,
-							});
-						}
-					}
-				}
-			}
+			const errorDiff = diffByPosition(localE.errors, tvE.errors);
+			const warningDiff = diffByPosition(localE.warnings, tvE.warnings);
 
 			fileReports[i] = {
 				file,
@@ -162,9 +188,16 @@ async function main() {
 				tvOk: tvE.ok,
 				localErrorCount: localE.errors.length,
 				tvErrorCount: tvE.errors.length,
-				localOnly,
-				tvOnly,
-				samePositionDifferentMessage,
+				localOnly: errorDiff.localOnly,
+				tvOnly: errorDiff.tvOnly,
+				samePositionDifferentMessage: errorDiff.samePositionDifferentMessage,
+				// WARNING channel (CW codes) - see INV018 / TODO #36
+				warnings: {
+					localCount: localE.warnings.length,
+					tvCount: tvE.warnings.length,
+					localOnly: warningDiff.localOnly,
+					tvOnly: warningDiff.tvOnly,
+				},
 				localParseError: localE.parseError,
 				tvParseError: tvE.parseError,
 				tvExitCode: tv.code,
@@ -202,11 +235,20 @@ async function main() {
 		localUnparseableFiles: [],
 		tvUnparseable: 0,
 		localUnparseable: 0,
+		// WARNING channel (CW codes) - see INV018 / TODO #36
+		totalLocalWarnings: 0,
+		totalTvWarnings: 0,
+		totalWarningLocalOnly: 0,
+		totalWarningTvOnly: 0,
 	};
 	const localOnlyByMessage = new Map();
 	const tvOnlyByMessage = new Map();
 	const localOnlyExamples = new Map();
 	const tvOnlyExamples = new Map();
+	const warnLocalOnlyByMessage = new Map();
+	const warnTvOnlyByMessage = new Map();
+	const warnLocalOnlyExamples = new Map();
+	const warnTvOnlyExamples = new Map();
 	for (const r of fileReports) {
 		if (!r.localOk) {
 			summary.localUnparseable++;
@@ -234,6 +276,21 @@ async function main() {
 			tvOnlyByMessage.set(m, (tvOnlyByMessage.get(m) ?? 0) + 1);
 			if (!tvOnlyExamples.has(m)) tvOnlyExamples.set(m, { file: r.file, line: e.line, col: e.col });
 		}
+		const w = r.warnings ?? emptyWarningDiff();
+		summary.totalLocalWarnings += w.localCount;
+		summary.totalTvWarnings += w.tvCount;
+		summary.totalWarningLocalOnly += w.localOnly.length;
+		summary.totalWarningTvOnly += w.tvOnly.length;
+		for (const e of w.localOnly) {
+			const m = e.message.slice(0, 200);
+			warnLocalOnlyByMessage.set(m, (warnLocalOnlyByMessage.get(m) ?? 0) + 1);
+			if (!warnLocalOnlyExamples.has(m)) warnLocalOnlyExamples.set(m, { file: r.file, line: e.line, col: e.col });
+		}
+		for (const e of w.tvOnly) {
+			const m = e.message.slice(0, 200);
+			warnTvOnlyByMessage.set(m, (warnTvOnlyByMessage.get(m) ?? 0) + 1);
+			if (!warnTvOnlyExamples.has(m)) warnTvOnlyExamples.set(m, { file: r.file, line: e.line, col: e.col });
+		}
 	}
 
 	await mkdir(OUT_DIR, { recursive: true });
@@ -242,6 +299,8 @@ async function main() {
 		summary,
 		topLocalOnly: [...localOnlyByMessage.entries()].sort((a, b) => b[1] - a[1]).slice(0, 50).map(([m, c]) => ({ message: m, count: c, example: localOnlyExamples.get(m) })),
 		topTvOnly: [...tvOnlyByMessage.entries()].sort((a, b) => b[1] - a[1]).slice(0, 50).map(([m, c]) => ({ message: m, count: c, example: tvOnlyExamples.get(m) })),
+		topWarningLocalOnly: [...warnLocalOnlyByMessage.entries()].sort((a, b) => b[1] - a[1]).slice(0, 50).map(([m, c]) => ({ message: m, count: c, example: warnLocalOnlyExamples.get(m) })),
+		topWarningTvOnly: [...warnTvOnlyByMessage.entries()].sort((a, b) => b[1] - a[1]).slice(0, 50).map(([m, c]) => ({ message: m, count: c, example: warnTvOnlyExamples.get(m) })),
 		files: fileReports,
 	}, null, 2));
 
@@ -269,6 +328,20 @@ async function main() {
 	console.log(`\ntop 15 tv-only messages (TV flags, we silent - investigate per category):`);
 	for (const [m, c] of [...tvOnlyByMessage.entries()].sort((a, b) => b[1] - a[1]).slice(0, 15)) {
 		console.log(`  ${String(c).padStart(5)}  ${m}`);
+	}
+
+	console.log(`\n=== warnings (CW codes; position-diffed - see TODO #36) ===`);
+	console.log(`total local warnings:                ${summary.totalLocalWarnings}`);
+	console.log(`total tv warnings:                   ${summary.totalTvWarnings}`);
+	console.log(`warning local-only (we warn, TV no): ${summary.totalWarningLocalOnly}`);
+	console.log(`warning tv-only (TV warns, we no):   ${summary.totalWarningTvOnly}`);
+	console.log(`\ntop 15 warning local-only messages:`);
+	for (const [m, c] of [...warnLocalOnlyByMessage.entries()].sort((a, b) => b[1] - a[1]).slice(0, 15)) {
+		console.log(`  ${String(c).padStart(5)}  ${m.slice(0, 130)}`);
+	}
+	console.log(`\ntop 15 warning tv-only messages:`);
+	for (const [m, c] of [...warnTvOnlyByMessage.entries()].sort((a, b) => b[1] - a[1]).slice(0, 15)) {
+		console.log(`  ${String(c).padStart(5)}  ${m.slice(0, 130)}`);
 	}
 	console.log(`\nfull report: ${reportPath}`);
 }

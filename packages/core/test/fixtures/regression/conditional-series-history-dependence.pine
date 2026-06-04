@@ -1,16 +1,17 @@
 // @test regression/conditional-series-history-dependence
-// @description CONDITIONAL_SERIES fires on TV's CW10003 criterion (po: errors/CW10003): HISTORY-DEPENDENT calls (ta.*, or user functions using the [] operator) executed conditionally - in if/loop bodies, ternary branches, and/or right operands, and switch arms - with TV's context-specific wording (CW10003 block / CW10004 ternary / CW10002 and-or, probed 2026-06-04, see INV018). It must NOT fire on side-effect functions (label.new - the page exempts them; probed: TV emits no warning), stateless functions (math.max - the page's named example), str.* formatting, or on calls in always-executed positions (and/or LEFT operand, ternary condition). See TODO #32 / plan/31 Finding 7.
+// @description CONDITIONAL_SERIES fires on TV's CW10003 criterion (po: errors/CW10003): HISTORY-DEPENDENT calls (ta.*, or user functions indexing their OWN scope values with []) executed conditionally - in if/loop bodies, ternary branches, and/or right operands, and switch arms - with TV's context-specific wording (CW10003 block / CW10004 ternary / CW10002 and-or, probed 2026-06-04, see INV018). It must NOT fire on: side-effect functions (label.new - the page exempts them; probed: TV emits no warning), stateless functions (math.max - the page's named example), str.* formatting, calls in always-executed positions (and/or LEFT operand, ternary condition), or UDFs that only index GLOBAL series (close[1] - a global's history is consistent regardless of call pattern; INV018 probe 4). NOTE: TV's translate_light endpoint does not emit the UDF warning at all (silent even on the manual's own example - INV018 probe 5); the manual documents it, so we keep it.
 // @expects parse: success
 // @expects warnings: 6
-// @expects warning: line=6, message="The function 'ta.sma' should be called on each calculation"
-// @expects warning: line=11, message="The function 'prevClose' should be called on each calculation"
-// @expects warning: line=13, message="The function 'ta.rsi' should be called on each calculation"
-// @expects warning: line=15, message="The 'ta.crossover()' call inside the conditional expression might not execute on every bar"
-// @expects warning: line=18, message="The function 'ta.highest' should be called on each calculation"
-// @expects warning: line=26, message="The function 'ta.lowest' should be called on each calculation"
+// @expects warning: line=7, message="The function 'ta.sma' should be called on each calculation"
+// @expects warning: line=12, message="The function 'prevVal' should be called on each calculation"
+// @expects warning: line=15, message="The function 'ta.rsi' should be called on each calculation"
+// @expects warning: line=17, message="The 'ta.crossover()' call inside the conditional expression might not execute on every bar"
+// @expects warning: line=20, message="The function 'ta.highest' should be called on each calculation"
+// @expects warning: line=28, message="The function 'ta.lowest' should be called on each calculation"
 //@version=6
 indicator("x")
 prevClose() => close[1]
+prevVal(src) => src[1]
 var float v = na
 if close > open
     v := ta.sma(close, 20)
@@ -18,6 +19,7 @@ if close > open
     m = math.max(close, open)
     s = str.tostring(m)
     label.set_text(label.new(bar_index, close), s)
+    v := prevVal(close)
     v := prevClose()
 
 t = close > open ? ta.rsi(close, 14) : na
@@ -35,6 +37,24 @@ cond = ta.atr(14) > 1 ? close : open
 for i = 0 to 5
     v := ta.lowest(low, 10)
 
+// NON-series conditions must NOT warn: an input/simple condition selects
+// the same branch on every bar, so local calls stay consistent (probed:
+// TV is silent on all of these - INV018 probes 6-9).
+useSmooth = input.bool(true)
+maType = input.string("SMA")
+var float u = na
+if useSmooth
+    u := ta.sma(close, 20)
+sel = switch maType
+    "SMA" => ta.sma(close, 14)
+    => ta.ema(close, 14)
+t2 = useSmooth ? ta.rsi(close, 14) : na
+ok2 = useSmooth and ta.crossover(close, open)
+
+plot(u)
+plot(sel)
+plot(t2)
+plot(ok2 ? 1 : 0)
 plot(v)
 plot(t)
 plot(ok ? 1 : 0)

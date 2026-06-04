@@ -364,14 +364,16 @@ function getFunctionFlags(name: string): Record<string, unknown> | undefined {
 	// them conditionally/iteratively builds an inconsistent time series -
 	// TV's CW10003 criterion (po: errors/CW10003, "such as those in the
 	// `ta` namespace"). The whole ta.* namespace is rolling/stateful by
-	// design. Deliberately NOT flagged: side-effect functions (label.new
-	// etc. - the same page explains forcing them every-bar would be
-	// wrong), stateless functions (math.max is the page's named example),
-	// and str./request.* (the old namespace heuristic flagged them and
-	// produced FP waves - see plan/31 Finding 7). `fixnan` also carries
-	// internal state (returns the last non-na value) - unprobed whether
-	// TV warns on it; left unflagged until measured.
-	if (name.startsWith("ta.")) {
+	// design; `fixnan` (returns the last non-na value) and `math.sum` (a
+	// sliding window despite its namespace) were probed 2026-06-04 - TV
+	// warns CW10003 on conditional calls to both (see INV018).
+	// Deliberately NOT flagged: side-effect functions (label.new etc. -
+	// the same page explains forcing them every-bar would be wrong),
+	// stateless functions (math.max is the page's named example, `nz`
+	// probed clean), and str./request.* (the old namespace heuristic
+	// flagged them and produced FP waves - see plan/31 Finding 7;
+	// conditional request.security probed clean).
+	if (name.startsWith("ta.") || name === "fixnan" || name === "math.sum") {
 		flags.historyDependent = true;
 	}
 

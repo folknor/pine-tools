@@ -30,29 +30,44 @@ function run(spawnArgs) {
 	});
 }
 
+// Fill TV's message templates ("The function {functionName} ..." + ctx)
+// so the text is human-readable in the diff output.
+function fillTemplate(message, ctx) {
+	if (!ctx) return message;
+	return message.replace(/\{(\w+)\}/g, (m, key) => ctx[key] ?? m);
+}
+
 // An unparseable response means "no verdict", NOT "no errors" - diffing
 // against it would dump the entire other side into localOnly/tvOnly (the
 // swallowed-failure bug behind G002). see TODO #29.
-function pickErrors(raw) {
+// Picks both diagnostics channels: TV's translate_light returns a
+// `warnings` array (CW codes) beside `errors` - see INV018 / TODO #36.
+function pickDiagnostics(raw) {
 	try {
 		const j = JSON.parse(raw);
-		const errs = j.result?.errors ?? j.errors ?? [];
+		const mapDiag = (e) => ({
+			line: e.start?.line,
+			col: e.start?.column,
+			message: fillTemplate(e.message ?? "", e.ctx),
+		});
 		return {
 			ok: true,
-			errors: errs.map((e) => ({
-				line: e.start?.line,
-				col: e.start?.column,
-				message: e.message,
-			})),
+			errors: (j.result?.errors ?? j.errors ?? []).map(mapDiag),
+			warnings: (j.result?.warnings ?? j.warnings ?? []).map(mapDiag),
 		};
 	} catch (e) {
-		return { ok: false, errors: [], parseError: `${e.message}; raw: ${raw.slice(0, 200)}` };
+		return {
+			ok: false,
+			errors: [],
+			warnings: [],
+			parseError: `${e.message}; raw: ${raw.slice(0, 200)}`,
+		};
 	}
 }
 
 const [localRes, tvRes] = await Promise.all([run([file]), run(["--tv", file])]);
-const localE = pickErrors(localRes.out);
-const tvE = pickErrors(tvRes.out);
+const localE = pickDiagnostics(localRes.out);
+const tvE = pickDiagnostics(tvRes.out);
 
 if (!localE.ok || !tvE.ok) {
 	const side = !tvE.ok ? "tv" : "local";
@@ -73,39 +88,48 @@ const tv = tvE.errors;
 // Diff by (line, col). Same-position-different-message pairs are surfaced
 // separately rather than counted as agreement (so a reviewer can confirm
 // the overlap is the same bug under two vocabularies).
-const localByPos = new Map();
-for (const e of local) {
-	const k = `${e.line}:${e.col}`;
-	if (!localByPos.has(k)) localByPos.set(k, []);
-	localByPos.get(k).push(e);
-}
-const tvByPos = new Map();
-for (const e of tv) {
-	const k = `${e.line}:${e.col}`;
-	if (!tvByPos.has(k)) tvByPos.set(k, []);
-	tvByPos.get(k).push(e);
-}
+function diffByPosition(localList, tvList) {
+	const localByPos = new Map();
+	for (const e of localList) {
+		const k = `${e.line}:${e.col}`;
+		if (!localByPos.has(k)) localByPos.set(k, []);
+		localByPos.get(k).push(e);
+	}
+	const tvByPos = new Map();
+	for (const e of tvList) {
+		const k = `${e.line}:${e.col}`;
+		if (!tvByPos.has(k)) tvByPos.set(k, []);
+		tvByPos.get(k).push(e);
+	}
 
-const localOnly = local.filter((e) => !tvByPos.has(`${e.line}:${e.col}`));
-const tvOnly = tv.filter((e) => !localByPos.has(`${e.line}:${e.col}`));
+	const localOnly = localList.filter((e) => !tvByPos.has(`${e.line}:${e.col}`));
+	const tvOnly = tvList.filter((e) => !localByPos.has(`${e.line}:${e.col}`));
 
-const samePositionDifferentMessage = [];
-for (const [k, locals] of localByPos.entries()) {
-	const tvs = tvByPos.get(k);
-	if (!tvs) continue;
-	for (const local of locals) {
-		for (const tv of tvs) {
-			if (local.message !== tv.message) {
-				samePositionDifferentMessage.push({
-					line: local.line,
-					col: local.col,
-					localMessage: local.message,
-					tvMessage: tv.message,
-				});
+	const samePositionDifferentMessage = [];
+	for (const [k, locals] of localByPos.entries()) {
+		const tvs = tvByPos.get(k);
+		if (!tvs) continue;
+		for (const l of locals) {
+			for (const t of tvs) {
+				if (l.message !== t.message) {
+					samePositionDifferentMessage.push({
+						line: l.line,
+						col: l.col,
+						localMessage: l.message,
+						tvMessage: t.message,
+					});
+				}
 			}
 		}
 	}
+	return { localOnly, tvOnly, samePositionDifferentMessage };
 }
+
+const { localOnly, tvOnly, samePositionDifferentMessage } = diffByPosition(
+	local,
+	tv,
+);
+const warningDiff = diffByPosition(localE.warnings, tvE.warnings);
 
 if (jsonMode) {
 	console.log(JSON.stringify({
@@ -115,6 +139,13 @@ if (jsonMode) {
 		localOnly,
 		tvOnly,
 		samePositionDifferentMessage,
+		warnings: {
+			local: localE.warnings,
+			tv: tvE.warnings,
+			localOnly: warningDiff.localOnly,
+			tvOnly: warningDiff.tvOnly,
+			samePositionDifferentMessage: warningDiff.samePositionDifferentMessage,
+		},
 	}, null, 2));
 	process.exit(0);
 }
@@ -156,4 +187,15 @@ if (samePositionDifferentMessage.length > 0) {
 	if (samePositionDifferentMessage.length > 10) {
 		console.log(`  … +${samePositionDifferentMessage.length - 10} more`);
 	}
+}
+
+// WARNING channel (CW codes) - see INV018 / TODO #36
+console.log(
+	`\n=== warnings: local ${localE.warnings.length} / tv ${tvE.warnings.length}, local-only ${warningDiff.localOnly.length} / tv-only ${warningDiff.tvOnly.length} ===`,
+);
+for (const e of warningDiff.localOnly.slice(0, 15)) {
+	console.log(`  local-only ${e.line}:${e.col}  ${e.message.slice(0, 90)}`);
+}
+for (const e of warningDiff.tvOnly.slice(0, 15)) {
+	console.log(`  tv-only    ${e.line}:${e.col}  ${e.message.slice(0, 90)}`);
 }
