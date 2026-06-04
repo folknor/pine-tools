@@ -178,6 +178,31 @@ describe("while statement blocks", () => {
 	});
 });
 
+describe("inline arrow bodies", () => {
+	it("parses comma-separated statements in single-line function bodies (#35)", () => {
+		const ast = parse(
+			["f(x) => a := x, a * 2", "y = f(close)", "plot(y)"].join("\n"),
+		);
+
+		expect(types(ast.body)).toEqual([
+			"FunctionDeclaration",
+			"VariableDeclaration",
+			"ExpressionStatement",
+		]);
+		const fn = ast.body[0] as AST.FunctionDeclaration;
+		expect(types(fn.body)).toEqual(["AssignmentStatement", "ReturnStatement"]);
+		const ret = fn.body[1] as AST.ReturnStatement;
+		expect(ret.value.type).toBe("BinaryExpression");
+	});
+
+	it("keeps plain single-expression arrow bodies as a lone ReturnStatement", () => {
+		const ast = parse(["f(x) => x * 2", "plot(f(close))"].join("\n"));
+
+		const fn = ast.body[0] as AST.FunctionDeclaration;
+		expect(types(fn.body)).toEqual(["ReturnStatement"]);
+	});
+});
+
 describe("switch arm bodies", () => {
 	it("parses inline statement arms (cond => a := b) (#33)", () => {
 		const ast = parse(

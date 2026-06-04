@@ -1021,15 +1021,12 @@ export class Parser {
 		// Check if next token is on a new line with deeper indentation
 		const nextToken = this.peek();
 		if (nextToken.line === line) {
-			// Single-line function: same line as =>
+			// Single-line function: same line as =>. Like inline switch
+			// arms (TODO #33/#35), the body can be a comma-separated
+			// statement sequence ending in the return value:
+			//   f(x) => a := x, a * 2
 			try {
-				const expr = this.expression();
-				body.push({
-					type: "ReturnStatement",
-					value: expr,
-					line: expr.line,
-					column: expr.column,
-				} as AST.ReturnStatement);
+				body.push(...this.parseInlineArrowBody());
 			} catch (_e) {
 				// Error parsing expression - function may be incomplete
 			}
@@ -1308,15 +1305,11 @@ export class Parser {
 		// Check if next token is on a new line with deeper indentation
 		const nextToken = this.peek();
 		if (nextToken.line === line) {
-			// Single-line method: same line as =>
+			// Single-line method: same line as =>. Comma-separated statement
+			// units ending in the return value, like inline switch arms and
+			// function bodies. see TODO #35.
 			try {
-				const expr = this.expression();
-				body.push({
-					type: "ReturnStatement",
-					value: expr,
-					line: expr.line,
-					column: expr.column,
-				} as AST.ReturnStatement);
+				body.push(...this.parseInlineArrowBody());
 			} catch (_e) {
 				// Error parsing expression - method may be incomplete
 			}
@@ -1692,29 +1685,11 @@ export class Parser {
 		const statements: AST.Statement[] = [];
 
 		for (;;) {
-			const expr = this.parseSingleLineExpression(arrowToken.line);
-			if (
-				this.check(TokenType.ASSIGN) ||
-				this.check(TokenType.COMPOUND_ASSIGN)
-			) {
-				const op = this.advance().value;
-				const value = this.parseSingleLineExpression(arrowToken.line);
-				statements.push({
-					type: "AssignmentStatement",
-					target: expr,
-					operator: op,
-					value,
-					line: expr.line,
-					column: expr.column,
-				});
-			} else {
-				statements.push({
-					type: "ExpressionStatement",
-					expression: expr,
-					line: expr.line,
-					column: expr.column,
-				});
-			}
+			statements.push(
+				this.parseInlineStatementUnit(() =>
+					this.parseSingleLineExpression(arrowToken.line),
+				),
+			);
 			if (!this.match(TokenType.COMMA)) {
 				break;
 			}
@@ -1734,6 +1709,84 @@ export class Parser {
 		}
 
 		return { result: this.armResultExpression(statements), statements };
+	}
+
+	/**
+	 * Parse an inline (same line as `=>`) function/method body: one or
+	 * more comma-separated statement units, the LAST becoming the return
+	 * value. `f(x) => a := x, a * 2` yields
+	 * [AssignmentStatement, ReturnStatement(a * 2)]. see TODO #35.
+	 */
+	private parseInlineArrowBody(): AST.Statement[] {
+		const statements: AST.Statement[] = [];
+
+		for (;;) {
+			statements.push(this.parseInlineStatementUnit(() => this.expression()));
+			if (!this.match(TokenType.COMMA)) {
+				break;
+			}
+			// Tolerate a trailing comma at end of line
+			if (this.check(TokenType.NEWLINE) || this.isAtEnd()) {
+				break;
+			}
+		}
+
+		// The last unit is the function's return value
+		const lastStmt = statements[statements.length - 1];
+		if (lastStmt.type === "ExpressionStatement") {
+			statements[statements.length - 1] = {
+				type: "ReturnStatement",
+				value: lastStmt.expression,
+				line: lastStmt.line,
+				column: lastStmt.column,
+			};
+		}
+		return statements;
+	}
+
+	/**
+	 * Parse one inline statement unit: an expression optionally followed
+	 * by an assignment operator. `name = expr` DECLARES (Pine's `=`), so
+	 * it yields a VariableDeclaration - emitting an AssignmentStatement
+	 * there left the name undeclared and produced "Undefined variable"
+	 * errors on later uses. `:=`/compound ops yield AssignmentStatement.
+	 */
+	private parseInlineStatementUnit(
+		parseExpr: () => AST.Expression,
+	): AST.Statement {
+		const expr = parseExpr();
+		if (this.check(TokenType.ASSIGN) || this.check(TokenType.COMPOUND_ASSIGN)) {
+			const opToken = this.advance();
+			const value = parseExpr();
+			if (
+				opToken.type === TokenType.ASSIGN &&
+				opToken.value === "=" &&
+				expr.type === "Identifier"
+			) {
+				return {
+					type: "VariableDeclaration",
+					name: expr.name,
+					varType: null,
+					init: value,
+					line: expr.line,
+					column: expr.column,
+				};
+			}
+			return {
+				type: "AssignmentStatement",
+				target: expr,
+				operator: opToken.value,
+				value,
+				line: expr.line,
+				column: expr.column,
+			};
+		}
+		return {
+			type: "ExpressionStatement",
+			expression: expr,
+			line: expr.line,
+			column: expr.column,
+		};
 	}
 
 	/**

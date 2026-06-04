@@ -147,12 +147,13 @@ IDs so the two stay in sync.
   tv-only pairs on wrapped expressions. Either map TV logical columns
   back to physical positions or fuzzy-match by function name + line
   range when comparing warnings.
-- **#35 - arrow-function inline bodies still drop statements.** #33 gave
-  switch arms a `statements` list (inline and multi-line); function/
-  method arrow bodies (`f(x) => a := x, a * 2` and the multi-line
-  equivalent) still keep only the final expression in some paths - the
-  old "Multi-statement arrow bodies lose intermediate statements" note.
-  Worth aligning with the SwitchCase.statements approach.
+- ~~#35~~ **CLOSED 2026-06-04.** Single-line function/method arrow
+  bodies parse comma-separated statement units via a shared
+  parseInlineStatementUnit (also adopted by inline switch arms): the
+  last unit becomes the ReturnStatement, `name = expr` units emit
+  VariableDeclaration (Pine's `=` declares - emitting assignments left
+  the names undeclared), `:=`/compound emit AssignmentStatement.
+  Multi-line bodies already kept full statements.
 - **Re-measure #4 and the INV012 cascade counts** against the post-#31
   baseline - the old numbers predate correct block scoping (#31/#33/#34
   fixed the if/while/for statement leak, else attachment, nbsp
