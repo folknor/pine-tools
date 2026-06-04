@@ -28,6 +28,9 @@ Options:
                             and return its response instead of running locally
       --full-response       With --tv, keep the verbose "scopes" block in the result
                             (stripped by default)
+  -H, --human               Human-readable output: one "file:line:col: severity: message"
+                            line per finding plus a summary, instead of the JSON
+                            payload. Exits 1 when there are errors. Works with --tv.
   -V, --version             Print the build timestamp and exit
   -h, --help                Show this help and exit
 
@@ -46,6 +49,7 @@ interface ParsedArgs {
 	stdin: boolean;
 	tv: boolean;
 	fullResponse: boolean;
+	human: boolean;
 }
 
 function parseArgs(argv: string[]): ParsedArgs {
@@ -55,6 +59,7 @@ function parseArgs(argv: string[]): ParsedArgs {
 		stdin: false,
 		tv: false,
 		fullResponse: false,
+		human: false,
 	};
 	for (let i = 0; i < argv.length; i++) {
 		const arg = argv[i];
@@ -72,6 +77,8 @@ function parseArgs(argv: string[]): ParsedArgs {
 			parsed.tv = true;
 		} else if (arg === "--full-response") {
 			parsed.fullResponse = true;
+		} else if (arg === "-H" || arg === "--human") {
+			parsed.human = true;
 		} else if (arg === "-") {
 			parsed.stdin = true;
 		} else if (arg.startsWith("-")) {
@@ -115,6 +122,59 @@ async function checkWithTradingView(code: string): Promise<unknown> {
 	}
 }
 
+interface HumanPayload {
+	success?: boolean;
+	error?: string;
+	reason?: string; // TV's name for the failure message
+	errors?: PineLintError[];
+	result?: { errors?: PineLintError[]; warnings?: PineLintError[] };
+}
+
+// TV messages are templates ("Undeclared identifier \"{identifier}\"") with the
+// values in `ctx`; substitute them. Local messages have no placeholders and
+// pass through unchanged.
+function fillTemplate(e: PineLintError): string {
+	if (!e.ctx) return e.message;
+	return e.message.replace(/\{(\w+)\}/g, (match, key) => {
+		const value = (e.ctx as Record<string, unknown>)[key];
+		return value === undefined ? match : String(value);
+	});
+}
+
+// Render a pine-lint-shaped payload (local or --tv; both share the format) as
+// human-readable lines: "file:line:col: severity: message" per finding plus a
+// summary. Returns the exit code: 0 clean, 1 when there are errors.
+function printHuman(payload: HumanPayload, label: string): number {
+	if (payload.success === false) {
+		console.error(
+			`${label}: ${payload.error ?? payload.reason ?? "validation failed"}`,
+		);
+		return 1;
+	}
+	// TV has been seen putting errors both under result and at the top level.
+	const errors = payload.result?.errors ?? payload.errors ?? [];
+	const warnings = payload.result?.warnings ?? [];
+	const line = (severity: string, e: PineLintError) =>
+		`${label}:${e.start.line}:${e.start.column}: ${severity}: ${fillTemplate(e)}`;
+	for (const e of errors) console.log(line("error", e));
+	for (const w of warnings) console.log(line("warning", w));
+	if (errors.length === 0 && warnings.length === 0) {
+		console.log(`${label}: clean`);
+	} else {
+		const counts: string[] = [];
+		if (errors.length > 0) {
+			counts.push(`${errors.length} error${errors.length === 1 ? "" : "s"}`);
+		}
+		if (warnings.length > 0) {
+			counts.push(
+				`${warnings.length} warning${warnings.length === 1 ? "" : "s"}`,
+			);
+		}
+		console.log(`${label}: ${counts.join(", ")}`);
+	}
+	return errors.length > 0 ? 1 : 0;
+}
+
 async function main() {
 	let parsed: ParsedArgs;
 	try {
@@ -152,9 +212,11 @@ async function main() {
 	}
 
 	let code: string;
+	let label = "<code>";
 	if (parsed.code !== undefined) {
 		code = parsed.code;
 	} else if (parsed.stdin) {
+		label = "<stdin>";
 		code = fs.readFileSync(0, "utf-8");
 	} else {
 		const filePath = parsed.filePath as string;
@@ -167,6 +229,7 @@ async function main() {
 			console.log(JSON.stringify(output, null, 2));
 			process.exit(1);
 		}
+		label = filePath;
 		code = fs.readFileSync(absolutePath, "utf-8");
 	}
 
@@ -178,6 +241,9 @@ async function main() {
 			};
 			if (!parsed.fullResponse && tvResult.result) {
 				delete tvResult.result.scopes;
+			}
+			if (parsed.human) {
+				process.exit(printHuman(tvResult as HumanPayload, label));
 			}
 			console.log(JSON.stringify(tvResult));
 			process.exit(tvResult.success === false ? 1 : 0);
@@ -285,6 +351,9 @@ async function main() {
 			success: true,
 			result,
 		};
+		if (parsed.human) {
+			process.exit(printHuman(output as HumanPayload, label));
+		}
 		// Write to stdout and wait for drain before exiting
 		const jsonOutput = JSON.stringify(output, null, 2);
 		process.stdout.write(`${jsonOutput}\n`, () => {
@@ -296,6 +365,9 @@ async function main() {
 			success: false,
 			error: error.message || String(e),
 		};
+		if (parsed.human) {
+			process.exit(printHuman(output as HumanPayload, label));
+		}
 		console.log(JSON.stringify(output, null, 2));
 		process.exit(1);
 	}
