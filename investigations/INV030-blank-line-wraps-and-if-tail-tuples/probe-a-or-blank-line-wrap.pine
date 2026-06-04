@@ -1,0 +1,8 @@
+//@version=6
+indicator("x")
+bool is_indecision = close > open and volume > 0
+
+ or close == open
+
+ or open == close
+plot(is_indecision ? 1 : 0)

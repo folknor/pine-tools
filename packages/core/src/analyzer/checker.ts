@@ -11,6 +11,7 @@ import type {
 	ExpressionStatement,
 	FunctionParam,
 	Identifier,
+	IfStatement,
 	IndexExpression,
 	Literal,
 	MemberExpression,
@@ -1554,30 +1555,51 @@ export class UnifiedPineValidator {
 	 * scope inferFunctionReturnType uses. Returns undefined when the
 	 * body doesn't return a tuple. see INV010.
 	 */
+	// Find the tuple expression a statement-tail evaluates to. A UDF can
+	// return its tuple not just as a trailing expression / return, but from
+	// the tail of an if/else (`if cond` ... `[true, obj]` / `else` ...
+	// `[false, na]`). Descend branch tails; prefer the consequent (the
+	// alternate is often the `[false, na]` default whose element types are
+	// less informative). see INV030
+	private tailTupleExpr(stmt: Statement): ArrayExpression | undefined {
+		if (stmt.type === "ExpressionStatement") {
+			const expr = (stmt as ExpressionStatement).expression;
+			if (expr.type === "ArrayExpression") return expr as ArrayExpression;
+			return undefined;
+		}
+		if (stmt.type === "ReturnStatement") {
+			const value = (stmt as ReturnStatement).value;
+			if (value?.type === "ArrayExpression") return value as ArrayExpression;
+			return undefined;
+		}
+		if (stmt.type === "IfStatement") {
+			const ifStmt = stmt as IfStatement;
+			for (const branch of [ifStmt.consequent, ifStmt.alternate]) {
+				if (branch && branch.length > 0) {
+					const found = this.tailTupleExpr(branch[branch.length - 1]);
+					if (found) return found;
+				}
+			}
+		}
+		return undefined;
+	}
+
 	private inferUdfTupleReturnTypes(
 		body: Statement[],
 		version: string,
 		params?: FunctionParam[],
 	): PineType[] | undefined {
 		if (body.length === 0) return undefined;
-		const last = body[body.length - 1];
-
-		let tupleExpr: ArrayExpression | undefined;
-		if (last.type === "ExpressionStatement") {
-			const expr = (last as ExpressionStatement).expression;
-			if (expr.type === "ArrayExpression") {
-				tupleExpr = expr as ArrayExpression;
-			}
-		} else if (last.type === "ReturnStatement") {
-			const value = (last as ReturnStatement).value;
-			if (value?.type === "ArrayExpression") {
-				tupleExpr = value as ArrayExpression;
-			}
-		}
+		const tupleExpr = this.tailTupleExpr(body[body.length - 1]);
 		if (!tupleExpr) return undefined;
 
 		// Mirror inferFunctionReturnType's temp-scope setup so the
-		// element-type inference sees the parameters and any locals.
+		// element-type inference sees the parameters and any locals - and
+		// its cache isolation: this pass guesses series<float> for untyped
+		// params, and caching under that guess poisons the validation pass.
+		// see INV026.
+		const savedExpressionTypes = this.expressionTypes;
+		this.expressionTypes = new Map();
 		this.symbolTable.enterScope();
 		if (params) {
 			for (const param of params) {
@@ -1604,6 +1626,7 @@ export class UnifiedPineValidator {
 			types.push(this.inferExpressionType(elem, version));
 		}
 		this.symbolTable.exitScope();
+		this.expressionTypes = savedExpressionTypes;
 		return types;
 	}
 

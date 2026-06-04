@@ -301,12 +301,21 @@ The reports live in `lint-reports/` which is **gitignored** - so this
 section records the latest measurement (the JSONs also embed
 `generatedAt` + `gitCommit` since #29):
 
-**Measured 2026-06-04 (~18:00 UTC), working tree on `637c236` +
-INV029** (mid-line NBSP CE10005 + refusal handling in
-find-real-failures; 748 v6 fixtures, `6874e636…` answered this run):
-**279 confirmable local-only error records / 36 tv-only / 29
-same-pos-different-message**, plus 986 past TV's stop point. The 279
-is 78 + `6874e636…`'s 201 (it answers intermittently; see Symbols).
+**Measured 2026-06-04 (~19:00 UTC), working tree on `635192b` +
+INV030** (blank-line operator wraps + if-tail tuple capture; 748 v6
+fixtures, `6874e636…` did not answer this run): **77 confirmable
+local-only error records / 36 tv-only / 29 same-pos-different-message**,
+plus 986 past TV's stop point. INV030 resolved the `6874e636…` cluster
+outright - 201 records -> **0 errors**, matching TV's clean verdict -
+by generalizing INV027's blank-line wrap handling to all binary
+operator continuations (gated on INV017's wrap-indent rule) and
+capturing UDF tuple returns from if/else tails. Corpus baseline
+21060 -> 20683 (-377, the cascade and its knock-on type FPs).
+
+Previous measurement the same day (~18:00 UTC, `637c236` + INV029,
+mid-line NBSP CE10005 + refusal handling in find-real-failures;
+`6874e636…` answered that run): **279 confirmable local-only / 36
+tv-only / 29 samePos** (279 = 78 + `6874e636…`'s then-unfixed 201).
 INV029 cleared the whole `no viable alternative at character` FN
 category (6 files, all matching TV's exact anchors) and exposed that
 TV's translate_light REFUSES files whose `//@version` annotation is
@@ -468,25 +477,17 @@ genuine gaps.
 
 ## Symbols - undefined-variable clusters
 
-One giant cluster left (2026-06-04 post-INV027): **`6874e636…` - 201
-undefined-variable records against TV's clean 0-error verdict.** The
-file had been tvUnparseable on every previous inventory run, so it
-never counted; this run TV answered. It is a valid, published
-3000-line UDT- and method-heavy script (BigBeluga order blocks):
-`OrderBlock` objects created in `if barstate.isfirst`-style local
-scopes, used across later if-bodies, plus UDT methods
-(`bull_ob.create_profile()`, `this.broken`) and wrapped `if`
-conditions whose ternaries span blank lines. Likely one or two scope /
-UDT-method resolution bugs, same shape as the historical per-file root
-causes below. **This single file is the biggest lever in the
-inventory.** Excluding it, what remains is small: `Undefined variable
-'*'` 15 hits in 6 files + the did-you-mean variant (21 in 6,
-overlapping), chaseable per-file.
-
-The earlier giant clusters are resolved: `4d78be7e…` (~250 hits) was a
+The giant clusters are all resolved (2026-06-04): `6874e636…` (201
+records vs TV's clean verdict) was NOT scope or UDT-method resolution -
+a wrapped `or` chain with blank lines between continuation lines
+truncated a ~600-line function body, spilling its locals to top level
+(INV030; the file now lints 0 errors). `4d78be7e…` (~250 hits) was a
 hard-wrapped mangle TV rejects at its first broken string literal -
 INV025 made us match that CE10017, and the post-TV-stop bucketing
 moved its cascade (and `8439b236…`'s `src` cluster) out of the signal.
+
+What remains is small: `Undefined variable '*'` 27 hits in 6 files +
+the did-you-mean variant (15 in 5, overlapping), chaseable per-file.
 
 Per-file root causes are almost always one of:
 

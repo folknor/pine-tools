@@ -1,0 +1,28 @@
+// @test regression/INV030-blank-line-wraps-and-if-tail-tuples
+// @description Two FP sources from the 6874e636 cluster (201 records vs TV's clean verdict), both TV-probed 2026-06-04 (see investigations/INV030-blank-line-wraps-and-if-tail-tuples/notes.md): (1) operator continuations (or/and/comparison/+ -/* / %) may have BLANK LINES between the operand line and the operator line - TV joins them when the operator line satisfies the wrap-indent rule (indent not a multiple of 4, INV017); previously only the ternary handled blank lines (INV027) and a wrapped `or` chain truncated the enclosing function body, spilling its locals to top level as a 200-record undefined-variable cascade. (2) A UDF returning its tuple from an if/else TAIL (both branches end in tuple literals) gets its element types captured (TV: f -> [series bool, series float]); previously only a trailing expression/return was captured and the elements defaulted to series<float>, flagging `if alert_` as non-bool.
+// @expects parse: success
+// @expects no-errors
+//@version=6
+indicator("t")
+
+// (1) or-chain wrapped across blank lines (continuation indent 1, valid wrap)
+bool is_indecision = close > open and volume > 0
+
+ or close == open
+
+ or open == close
+
+// (2) tuple returned from an if/else tail
+f(bool enabled) =>
+    if enabled
+        [true, close]
+    else
+        [false, na]
+
+[alert_, val] = f(true)
+state = if alert_
+    val
+else
+    na
+plot(is_indecision ? 1 : 0)
+plot(state)

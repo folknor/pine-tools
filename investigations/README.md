@@ -157,3 +157,11 @@ contradiction means re-measure, not "the earlier author was wrong."
   whitespace; as indentation TV wrap-joins the line (we deliberately
   keep reading it as block indent - plan/31). One error per file,
   matching TV's stop-at-first. All six corpus FN positions match.
+- [INV030](INV030-blank-line-wraps-and-if-tail-tuples/notes.md) - the
+  6874e636 cluster (201 records vs TV's clean verdict): ALL binary
+  operator continuations now skip blank lines like INV027's ternary
+  (blank-line path gated on INV017's wrap-indent rule - an ungated
+  version glued `    -1 =>` switch arms), and UDF tuple returns are
+  captured from if/else tails (previously only trailing
+  expression/return; elements defaulted to series<float>). Both
+  probed. File now lints 0 errors, matching TV.

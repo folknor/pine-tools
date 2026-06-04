@@ -19,6 +19,32 @@ import type { Parser } from "./parser";
 export class ExpressionParser {
 	constructor(public p: Parser) {}
 
+	// Operator line-wrap lookahead. A wrapped continuation may carry BLANK
+	// LINES between the operand line and the operator line - TV joins them
+	// (probed: INV027 ternary `?`, INV030 logical `or`) - so look past
+	// consecutive NEWLINEs, not just one. When the first real token
+	// satisfies `matches`, consume the newlines and report a continuation;
+	// otherwise consume nothing.
+	//
+	// The blank-line path (more than one NEWLINE) additionally requires the
+	// operator line to satisfy Pine's wrap-indent rule (indent not a
+	// multiple of 4 - see INV017): without it, a switch arm like `    -1 =>`
+	// after a blank line reads as a `- 1` continuation of the previous
+	// arm's body. The single-NEWLINE path keeps its historical leniency.
+	private skipWrapNewlines(matches: (t: Token) => boolean): boolean {
+		if (!this.p.check(TokenType.NEWLINE)) return false;
+		let i = this.p.current;
+		while (this.p.tokens[i]?.type === TokenType.NEWLINE) i++;
+		const tok = this.p.tokens[i];
+		if (!tok || !matches(tok)) return false;
+		const newlines = i - this.p.current;
+		if (newlines > 1 && (tok.indent ?? 0) % 4 === 0) return false;
+		while (this.p.check(TokenType.NEWLINE)) {
+			this.p.advance();
+		}
+		return true;
+	}
+
 	expression(): AST.Expression {
 		return this.ternary();
 	}
@@ -27,18 +53,8 @@ export class ExpressionParser {
 		const expr = this.logicalOr();
 
 		// Handle line continuation: newline(s) followed by ? (ternary operator
-		// at line start). Blank lines between the condition and the `?` are
-		// part of the wrap - TV joins them (probed 2026-06-04, see INV027) -
-		// so look past consecutive NEWLINEs, not just one.
-		if (this.p.check(TokenType.NEWLINE)) {
-			let i = this.p.current;
-			while (this.p.tokens[i]?.type === TokenType.NEWLINE) i++;
-			if (this.p.tokens[i]?.type === TokenType.TERNARY) {
-				while (this.p.check(TokenType.NEWLINE)) {
-					this.p.advance();
-				}
-			}
-		}
+		// at line start). see skipWrapNewlines / INV027
+		this.skipWrapNewlines((t) => t.type === TokenType.TERNARY);
 
 		if (this.p.match(TokenType.TERNARY)) {
 			// Skip newlines after ? for multi-line ternary
@@ -74,19 +90,15 @@ export class ExpressionParser {
 		let expr = this.logicalAnd();
 
 		while (true) {
-			// Skip newlines that are clearly line continuations
-			if (this.p.check(TokenType.NEWLINE)) {
-				const nextToken = this.p.peekNext();
-				// If next token is 'or', it's a line continuation
-				if (
-					nextToken &&
-					nextToken.type === TokenType.KEYWORD &&
-					nextToken.value === "or"
-				) {
-					this.p.advance(); // skip newline
-				} else {
-					break; // Not a continuation, end the expression
-				}
+			// Skip newlines (incl. blank lines - see skipWrapNewlines) that
+			// are line continuations: next real token is 'or'
+			if (
+				this.p.check(TokenType.NEWLINE) &&
+				!this.skipWrapNewlines(
+					(t) => t.type === TokenType.KEYWORD && t.value === "or",
+				)
+			) {
+				break; // Not a continuation, end the expression
 			}
 
 			if (this.p.match([TokenType.KEYWORD, ["or"]])) {
@@ -116,19 +128,15 @@ export class ExpressionParser {
 		let expr = this.comparison();
 
 		while (true) {
-			// Skip newlines that are clearly line continuations
-			if (this.p.check(TokenType.NEWLINE)) {
-				const nextToken = this.p.peekNext();
-				// If next token is 'and', it's a line continuation
-				if (
-					nextToken &&
-					nextToken.type === TokenType.KEYWORD &&
-					nextToken.value === "and"
-				) {
-					this.p.advance(); // skip newline
-				} else {
-					break; // Not a continuation, end the expression
-				}
+			// Skip newlines (incl. blank lines - see skipWrapNewlines) that
+			// are line continuations: next real token is 'and'
+			if (
+				this.p.check(TokenType.NEWLINE) &&
+				!this.skipWrapNewlines(
+					(t) => t.type === TokenType.KEYWORD && t.value === "and",
+				)
+			) {
+				break; // Not a continuation, end the expression
 			}
 
 			if (this.p.match([TokenType.KEYWORD, ["and"]])) {
@@ -158,15 +166,13 @@ export class ExpressionParser {
 		let expr = this.addition();
 
 		while (true) {
-			// Skip newlines that are clearly line continuations
-			if (this.p.check(TokenType.NEWLINE)) {
-				const nextToken = this.p.peekNext();
-				// If next token is a comparison operator, it's a line continuation
-				if (nextToken && nextToken.type === TokenType.COMPARE) {
-					this.p.advance(); // skip newline
-				} else {
-					break; // Not a continuation, end the expression
-				}
+			// Skip newlines (incl. blank lines - see skipWrapNewlines) that
+			// are line continuations: next real token is a comparison operator
+			if (
+				this.p.check(TokenType.NEWLINE) &&
+				!this.skipWrapNewlines((t) => t.type === TokenType.COMPARE)
+			) {
+				break; // Not a continuation, end the expression
 			}
 
 			if (this.p.match(TokenType.COMPARE)) {
@@ -196,19 +202,15 @@ export class ExpressionParser {
 		let expr = this.multiplication();
 
 		while (true) {
-			// Skip newlines that are clearly line continuations
-			if (this.p.check(TokenType.NEWLINE)) {
-				const nextToken = this.p.peekNext();
-				// If next token is + or -, it's a line continuation
-				if (
-					nextToken &&
-					(nextToken.type === TokenType.PLUS ||
-						nextToken.type === TokenType.MINUS)
-				) {
-					this.p.advance(); // skip newline
-				} else {
-					break; // Not a continuation, end the expression
-				}
+			// Skip newlines (incl. blank lines - see skipWrapNewlines) that
+			// are line continuations: next real token is + or -
+			if (
+				this.p.check(TokenType.NEWLINE) &&
+				!this.skipWrapNewlines(
+					(t) => t.type === TokenType.PLUS || t.type === TokenType.MINUS,
+				)
+			) {
+				break; // Not a continuation, end the expression
 			}
 
 			if (this.p.match(TokenType.PLUS, TokenType.MINUS)) {
@@ -238,25 +240,23 @@ export class ExpressionParser {
 		let expr = this.unary();
 
 		while (true) {
-			// Skip newlines that are clearly line continuations
-			if (this.p.check(TokenType.NEWLINE)) {
-				const nextToken = this.p.peekNext();
-				// If next token is *, /, or %, it's a line continuation
-				// OR if we just processed a binary operator and next token is an identifier/literal/paren
-				if (
-					nextToken &&
-					(nextToken.type === TokenType.MULTIPLY ||
-						nextToken.type === TokenType.DIVIDE ||
-						nextToken.type === TokenType.MODULO ||
+			// Skip newlines (incl. blank lines - see skipWrapNewlines) that
+			// are line continuations: next real token is *, /, or % - OR we
+			// just processed a '/' and the next real token starts an operand
+			if (
+				this.p.check(TokenType.NEWLINE) &&
+				!this.skipWrapNewlines(
+					(t) =>
+						t.type === TokenType.MULTIPLY ||
+						t.type === TokenType.DIVIDE ||
+						t.type === TokenType.MODULO ||
 						(this.p.previous().type === TokenType.DIVIDE &&
-							(nextToken.type === TokenType.IDENTIFIER ||
-								nextToken.type === TokenType.NUMBER ||
-								nextToken.type === TokenType.LPAREN)))
-				) {
-					this.p.advance(); // skip newline
-				} else {
-					break; // Not a continuation, end the expression
-				}
+							(t.type === TokenType.IDENTIFIER ||
+								t.type === TokenType.NUMBER ||
+								t.type === TokenType.LPAREN)),
+				)
+			) {
+				break; // Not a continuation, end the expression
 			}
 
 			if (

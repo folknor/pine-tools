@@ -1,0 +1,9 @@
+//@version=6
+indicator("x")
+f(bool enabled) =>
+    if enabled
+        [true, close]
+    else
+        [false, na]
+[alert_, val] = f(true)
+plot(alert_ ? val : na)
