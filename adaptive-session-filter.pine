@@ -1,0 +1,248 @@
+//@version=6
+indicator("Adaptive Session Filter", overlay = true)
+
+// ----------------------------------------------------------------------------
+// ABOUT
+//
+// Multi-filter confluence system with time-adaptive RSI thresholds:
+// - EMA trend filter
+// - MACD momentum filter (fast 3/24/4 parameters)
+// - RSI(3) with different thresholds for day vs night sessions
+// - SuperTrend trend confirmation
+// - Institutional volume filter (>1.2x average)
+// - Wick spike filter (prevents excessive spike candles)
+//
+// WHY PROFITABLE: Six-factor confluence creates extremely selective entries.
+// Time-adaptive RSI adjusts to different market behavior during trading sessions
+// (day sessions require higher RSI for long, night sessions use extreme thresholds).
+// Volume filter ensures institutional participation. Wick filter prevents entries
+// on manipulation spikes. All factors must align - patient, high-probability system.
+
+// ----------------------------------------------------------------------------
+// ATTRIBUTION
+//
+// Based on: ./pine-strategies/strategies-todo/876543787-1000.pine
+// Original: "ETH/USD Strategy [Wunder Secure Full v2]" (Portuguese)
+// Reimplemented with: v6 syntax, English translation, converted to indicator,
+//                     clarified time-adaptive logic
+
+// ----------------------------------------------------------------------------
+// CHANGELOG
+//
+// 2025-12-25: Initial v6 reimplementation from v5 original
+
+// ----------------------------------------------------------------------------
+// GROUPS
+//
+string grpStrategy = "Risk Management"
+string grpTrend = "Trend Filters"
+string grpMomentum = "Momentum & Oscillator"
+string grpSession = "Session-Adaptive RSI"
+string grpFilters = "Volume & Wick Filters"
+string grpVisual = "Visual Settings"
+
+// ----------------------------------------------------------------------------
+// INPUTS
+
+// Risk Management
+int atrLen = input.int(15, "ATR Length", minval = 1, group = grpStrategy)
+float atrMultSl = input.float(1.5, "Stop Loss ATR Multiplier", minval = 0.1, maxval = 5.0, step = 0.1, group = grpStrategy)
+float atrMultTp = input.float(2.5, "Take Profit ATR Multiplier", minval = 0.1, maxval = 10.0, step = 0.1, group = grpStrategy)
+
+// Trend Filters
+int emaLen = input.int(61, "EMA Trend Length", minval = 1, group = grpTrend)
+bool useSupertrendFilter = input.bool(true, "Use SuperTrend Filter", group = grpTrend)
+float stFactor = input.float(1.2, "SuperTrend Factor", minval = 0.1, maxval = 10.0, step = 0.1, group = grpTrend)
+int stAtrLen = input.int(15, "SuperTrend ATR Length", minval = 1, group = grpTrend)
+
+// Momentum & Oscillator
+int rsiLen = input.int(3, "RSI Length", minval = 1, group = grpMomentum, tooltip = "Original uses very fast RSI(3)")
+int macdFast = input.int(3, "MACD Fast", minval = 1, group = grpMomentum)
+int macdSlow = input.int(24, "MACD Slow", minval = 1, group = grpMomentum)
+int macdSignal = input.int(4, "MACD Signal", minval = 1, group = grpMomentum)
+
+// Session-Adaptive RSI
+int sessionStart = input.int(10, "Day Session Start (Hour UTC)", minval = 0, maxval = 23, group = grpSession)
+int sessionEnd = input.int(16, "Day Session End (Hour UTC)", minval = 0, maxval = 23, group = grpSession)
+int rsiMinLongDay = input.int(46, "RSI Min Long (Day)", minval = 0, maxval = 100, group = grpSession)
+int rsiMinLongNight = input.int(83, "RSI Min Long (Night)", minval = 0, maxval = 100, group = grpSession, tooltip = "Extreme threshold for night - buys overbought!")
+int rsiMaxShortDay = input.int(58, "RSI Max Short (Day)", minval = 0, maxval = 100, group = grpSession)
+int rsiMaxShortNight = input.int(40, "RSI Max Short (Night)", minval = 0, maxval = 100, group = grpSession)
+
+// Filters
+bool useVolumeFilter = input.bool(true, "Use Institutional Volume Filter", group = grpFilters)
+float volumeMult = input.float(1.2, "Volume Multiplier", minval = 1.0, maxval = 5.0, step = 0.1, group = grpFilters, tooltip = "Require volume > this multiple of 20-period average")
+bool useWickFilter = input.bool(true, "Use Wick Spike Filter", group = grpFilters)
+float wickMax = input.float(12.0, "Max Wick Ratio", minval = 1.0, maxval = 50.0, step = 0.5, group = grpFilters, tooltip = "Reject candles where total range / body > this ratio")
+
+// Visual
+color colorBullish = input.color(color.new(color.green, 0), "Bullish Color", group = grpVisual)
+color colorBearish = input.color(color.new(color.red, 0), "Bearish Color", group = grpVisual)
+
+// ----------------------------------------------------------------------------
+// INDICATORS
+
+// Trend
+float ema = ta.ema(close, emaLen)
+
+// Momentum
+[macdLine, signalLine, macdHist] = ta.macd(close, macdFast, macdSlow, macdSignal)
+
+// Oscillator
+float rsi = ta.rsi(close, rsiLen)
+
+// SuperTrend
+float atrSt = ta.atr(stAtrLen)
+float upperBand = hl2 + stFactor * atrSt
+float lowerBand = hl2 - stFactor * atrSt
+var bool inUpTrend = true
+if close > upperBand
+    inUpTrend := true
+else if close < lowerBand
+    inUpTrend := false
+
+// ATR
+float atr = ta.atr(atrLen)
+
+// ----------------------------------------------------------------------------
+// FILTERS
+
+// Session-adaptive RSI thresholds
+bool isDaySession = hour >= sessionStart and hour <= sessionEnd
+float rsiMinLong = isDaySession ? rsiMinLongDay : rsiMinLongNight
+float rsiMaxShort = isDaySession ? rsiMaxShortDay : rsiMaxShortNight
+
+// Volume filter (institutional participation)
+float avgVolume = ta.sma(volume, 20)
+bool volumeOk = not useVolumeFilter or volume > volumeMult * avgVolume
+
+// Wick filter (spike protection)
+float candleBody = math.abs(close - open)
+float candleRange = high - low
+float wickRatio = candleRange / math.max(candleBody, 0.0001)
+bool wickOk = not useWickFilter or wickRatio <= wickMax
+
+// SuperTrend filter
+bool supertrendOk = not useSupertrendFilter or true  // Will use in entry logic
+
+// ----------------------------------------------------------------------------
+// SIGNAL GENERATION
+
+// Base conditions
+bool trendBullish = close > ema
+bool trendBearish = close < ema
+bool macdBullish = macdLine > signalLine
+bool macdBearish = macdLine < signalLine
+bool rsiOkLong = rsi > rsiMinLong
+bool rsiOkShort = rsi < rsiMaxShort
+
+// Confluence entries (all filters must pass)
+bool longEntry = trendBullish and macdBullish and rsiOkLong and volumeOk and wickOk and (not useSupertrendFilter or inUpTrend)
+bool shortEntry = trendBearish and macdBearish and rsiOkShort and volumeOk and wickOk and (not useSupertrendFilter or not inUpTrend)
+
+// ----------------------------------------------------------------------------
+// RISK MANAGEMENT
+
+var float entryPrice = na
+var bool isLong = false
+var bool isShort = false
+var float stopLoss = na
+var float takeProfit = na
+
+if longEntry and not isLong and not isShort
+    entryPrice := close
+    isLong := true
+    isShort := false
+    stopLoss := entryPrice - (atr * atrMultSl)
+    takeProfit := entryPrice + (atr * atrMultTp)
+
+if shortEntry and not isLong and not isShort
+    entryPrice := close
+    isLong := false
+    isShort := true
+    stopLoss := entryPrice + (atr * atrMultSl)
+    takeProfit := entryPrice - (atr * atrMultTp)
+
+// Reversal exits (optional technical exit)
+bool longReversal = isLong and (macdLine < signalLine or rsi < rsiMinLong or close < ema)
+bool shortReversal = isShort and (macdLine > signalLine or rsi > rsiMaxShort or close > ema)
+
+bool hitTp = false
+bool hitSl = false
+bool reversalExit = false
+
+if isLong
+    if high >= takeProfit
+        hitTp := true
+        isLong := false
+        entryPrice := na
+        stopLoss := na
+        takeProfit := na
+    else if low <= stopLoss
+        hitSl := true
+        isLong := false
+        entryPrice := na
+        stopLoss := na
+        takeProfit := na
+    else if longReversal
+        reversalExit := true
+        isLong := false
+        entryPrice := na
+        stopLoss := na
+        takeProfit := na
+
+if isShort
+    if low <= takeProfit
+        hitTp := true
+        isShort := false
+        entryPrice := na
+        stopLoss := na
+        takeProfit := na
+    else if high >= stopLoss
+        hitSl := true
+        isShort := false
+        entryPrice := na
+        stopLoss := na
+        takeProfit := na
+    else if shortReversal
+        reversalExit := true
+        isShort := false
+        entryPrice := na
+        stopLoss := na
+        takeProfit := na
+
+// ----------------------------------------------------------------------------
+// VISUAL ELEMENTS
+
+// EMA trend line
+plot(ema, title = "EMA Trend", color = color.new(color.orange, 0), linewidth = 2)
+
+// SuperTrend bands
+plot(useSupertrendFilter ? upperBand : na, title = "ST Upper", color = color.new(color.red, 50), linewidth = 1)
+plot(useSupertrendFilter ? lowerBand : na, title = "ST Lower", color = color.new(color.green, 50), linewidth = 1)
+
+// Entries
+plotshape(longEntry, title = "BUY", text = "BUY", style = shape.triangleup, location = location.belowbar, color = colorBullish, textcolor = color.white, size = size.normal)
+plotshape(shortEntry, title = "SELL", text = "SELL", style = shape.triangledown, location = location.abovebar, color = colorBearish, textcolor = color.white, size = size.normal)
+
+// Exits
+plotshape(hitTp, title = "TP", text = "TP", style = shape.circle, location = location.abovebar, color = color.new(color.green, 0), size = size.small)
+plotshape(hitSl, title = "SL", text = "SL", style = shape.xcross, location = location.belowbar, color = color.new(color.red, 0), size = size.small)
+plotshape(reversalExit, title = "Reversal Exit", text = "REV", style = shape.labeldown, location = location.abovebar, color = color.new(color.gray, 0), textcolor = color.white, size = size.tiny)
+
+// Active levels
+plot(isLong or isShort ? stopLoss : na, title = "Stop Loss", color = colorBearish, style = plot.style_linebr, linewidth = 2)
+plot(isLong or isShort ? takeProfit : na, title = "Take Profit", color = colorBullish, style = plot.style_linebr, linewidth = 2)
+
+// Background
+bgcolor(useSupertrendFilter ? (inUpTrend ? color.new(color.green, 92) : color.new(color.red, 92)) : na, title = "ST Trend")
+bgcolor(isLong ? color.new(colorBullish, 95) : isShort ? color.new(colorBearish, 95) : na, title = "Position")
+
+// ----------------------------------------------------------------------------
+// ALERTS
+
+alertcondition(longEntry, title = "Long Signal", message = "Adaptive Session Filter: LONG - All 6 filters aligned (EMA/MACD/RSI/Vol/Wick/ST)")
+alertcondition(shortEntry, title = "Short Signal", message = "Adaptive Session Filter: SHORT - All 6 filters aligned")
+alertcondition(hitTp, title = "Take Profit", message = "Adaptive Session Filter: TP Hit")
+alertcondition(hitSl, title = "Stop Loss", message = "Adaptive Session Filter: SL Hit")
+alertcondition(reversalExit, title = "Reversal Exit", message = "Adaptive Session Filter: Technical Reversal Exit")
