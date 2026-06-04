@@ -1,0 +1,29 @@
+// @test regression/variable-shadowing
+// @description TV's CW10013/CW10011 shadow warnings (probed 2026-06-04, INV020). CW10013 fires on any declaration form (plain =, var, typed, tuple member, loop iterator) in a non-global scope whose name was declared EARLIER (source order) in an enclosing scope. CW10011 fires for built-in VARIABLE names in any scope and any form; built-in function/namespace names are silent. Negatives pinned here: function params do not warn (h's param a), and a parent declared AFTER the local scope does not warn (g's local e vs global e on the next line).
+// @expects parse: success
+// @expects warnings: 5
+// @expects warning: line=14, message="The function 'ta.sma' should be called"
+// @expects warning: line=14, message="Shadowing variable 'a' which exists in parent scope"
+// @expects warning: line=15, message="Shadowing variable 'b' which exists in parent scope"
+// @expects warning: line=16, message="Shadowing built-in variable 'hl2'"
+// @expects warning: line=18, message="Shadowing variable 'i' which exists in parent scope"
+//@version=6
+indicator("x")
+a = 0.0
+b = 0.0
+i = 0
+h(a) =>
+    loc = a * 2
+    loc
+g() =>
+    e = 1.0
+    e
+e = 2.0
+if close > open
+    a = ta.sma(close, 14)
+    var b = 2.0
+    hl2 = 1.0
+    label.new(bar_index, a + b + hl2)
+for i = 0 to 3
+    label.new(i, close)
+plot(a + b + e + i + h(close) + g())

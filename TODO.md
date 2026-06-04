@@ -137,13 +137,20 @@ IDs so the two stay in sync.
   **DONE 2026-06-04** - CW10001 implemented, see
   [INV019](investigations/INV019-cw10001-multiline-string-deprecation/notes.md)
   (also fixed the lexer stamping line-spanning tokens at their END
-  line with negative columns); (b) variable shadowing - "Shadowing
-  variable 'X' which exists in parent scope. Did you want to use the
-  ':=' operator instead of '='?" (~23 hits); (c) local-variable
-  history-referencing - the CW10003 page's NOTE variant, "The variable
-  'X' is declared in local scope... obtaining its historical values is
-  unreliable" (~14 hits). (b) and (c) still need their own probe sets
-  before implementing.
+  line with negative columns); (b) ~~variable shadowing~~ **DONE
+  2026-06-04** - CW10013 + CW10011 implemented from a lexical scope
+  stack, see
+  [INV020](investigations/INV020-cw10013-variable-shadowing/notes.md);
+  (c) local-variable history-referencing - the CW10003 page's NOTE
+  variant, "The variable 'X' is declared in local scope... obtaining
+  its historical values is unreliable" (~14 hits). (c) still needs its
+  own probe set before implementing.
+- **#40 - CE10190 built-in-shadow error is a checker FN.** Probed in
+  INV020: `open = 1.0` in a local scope after `open` was used as a
+  built-in draws BOTH CW10011 and the error CE10190 "Cannot shadow the
+  built-in variable 'open' because it has already been used as a
+  built-in". We emit neither error nor any equivalent. Error channel -
+  belongs in the checker, not the SemanticAnalyzer.
 - ~~#38~~ **CLOSED 2026-06-04** - the "position artifacts" were TWO
   separate conventions, both probed and recorded in
   [G005](gotchas/G005-tv-diagnostic-position-conventions.md):

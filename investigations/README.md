@@ -96,3 +96,8 @@ contradiction means re-measure, not "the earlier author was wrong."
   verbatim, anchored col 1 of the literal's opening line, probed).
   Lexer addToken position bug for line-spanning tokens fixed en route.
   Part of TODO #37.
+- [INV020](INV020-cw10013-variable-shadowing/notes.md) - CW10013
+  (shadowing parent-scope variable, source-order gated, params exempt)
+  and CW10011 (shadowing built-in VARIABLE, any scope; function/
+  namespace names silent) implemented from a lexical scope stack.
+  Found CE10190 as a checker FN (TODO #40). Part of TODO #37.

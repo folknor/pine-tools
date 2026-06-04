@@ -61,6 +61,11 @@ export class SemanticAnalyzer {
 	// collect pass in source order, so `b = close > open` then `if b`
 	// resolves. Drives the series-condition gate (see seriesish docs).
 	private seriesVars: Set<string> = new Set();
+	// Lexical scope stack for shadow detection (TV's CW10013/CW10011):
+	// each frame holds the names declared SO FAR in that scope, in source
+	// order - TV only warns when the parent declaration precedes the
+	// shadowing one (probed 2026-06-04, see INV020). Frame 0 is global.
+	private scopeNames: Array<Set<string>> = [];
 
 	analyze(ast: Program): SemanticWarning[] {
 		this.warnings = [];
@@ -71,6 +76,7 @@ export class SemanticAnalyzer {
 		this.historyDependentUdfs.clear();
 		this.conditionalScopeKinds = [];
 		this.seriesVars.clear();
+		this.scopeNames = [new Set()];
 
 		// First pass: collect all variable declarations
 		this.collectVariableDeclarations(ast);
@@ -93,7 +99,13 @@ export class SemanticAnalyzer {
 				break;
 
 			case "TupleDeclaration":
-				// [a, b, c] = f(...) - the RHS is a normal expression
+				// [a, b, c] = f(...) - each member is a declaration for
+				// shadow purposes (TV warns CW10013 per member, anchored at
+				// the tuple statement - probed, INV020); the RHS is a normal
+				// expression.
+				for (const name of statement.names) {
+					this.declareName(name, statement.line, statement.column);
+				}
 				this.analyzeExpression(statement.init);
 				break;
 
@@ -140,10 +152,69 @@ export class SemanticAnalyzer {
 	}
 
 	private analyzeVariableDeclaration(declaration: VariableDeclaration): void {
-		// Check for unused variables will be handled at the symbol table level
-		// Just analyze the initialization expression
+		this.declareName(declaration.name, declaration.line, declaration.column);
+		// Unused-variable tracking is handled at the symbol table level -
+		// here we only record the name for shadow detection and walk init.
 		if (declaration.init) {
 			this.analyzeExpression(declaration.init);
+		}
+	}
+
+	/**
+	 * Record a declaration into the current scope frame and emit TV's
+	 * shadow warnings (probed 2026-06-04, see INV020 / TODO #37):
+	 *
+	 * - CW10011 "Shadowing built-in variable 'X'" - fires in ANY scope
+	 *   (global included) and for every declaration form (plain, var,
+	 *   typed, tuple member, loop iterator). Built-in VARIABLES only -
+	 *   built-in function and namespace names are silent (probed: nz,
+	 *   str).
+	 * - CW10013 "Shadowing variable 'X' which exists in parent scope..."
+	 *   - fires for declarations in a non-global scope whose name was
+	 *   declared EARLIER (source order) in any enclosing scope. Function
+	 *   params do not warn (probed), so they are added via addNameOnly.
+	 *
+	 * When the name is a built-in, only CW10011 fires (TV emitted just
+	 * CW10011 for `open` in a local scope even though built-ins "exist
+	 * in parent scope" in spirit).
+	 */
+	private declareName(name: string, line: number, column: number): void {
+		if (VARIABLES_BY_NAME.has(name)) {
+			this.addWarning(
+				line,
+				column,
+				name.length,
+				`Shadowing built-in variable '${name}'`,
+				DiagnosticSeverity.Warning,
+				"SHADOW_BUILTIN",
+			);
+		} else if (
+			this.scopeNames.length > 1 &&
+			this.scopeNames
+				.slice(0, -1)
+				.some((frame) => frame.has(name))
+		) {
+			this.addWarning(
+				line,
+				column,
+				name.length,
+				`Shadowing variable '${name}' which exists in parent scope. Did you want to use the ':=' operator instead of '=' ?`,
+				DiagnosticSeverity.Warning,
+				"SHADOW_VARIABLE",
+			);
+		}
+		this.scopeNames[this.scopeNames.length - 1].add(name);
+	}
+
+	// Run `fn` inside a fresh lexical scope frame (if/loop/function body,
+	// switch arm). Declarations inside land in the frame; enclosing
+	// frames are the "parent scope" for CW10013.
+	private withScopeFrame(fn: () => void): void {
+		this.scopeNames.push(new Set());
+		try {
+			fn();
+		} finally {
+			this.scopeNames.pop();
 		}
 	}
 
@@ -152,9 +223,17 @@ export class SemanticAnalyzer {
 	): void {
 		// Analyze function/method body with params marked series
 		this.withSeriesParams(declaration.params, () => {
-			for (const statement of declaration.body) {
-				this.analyzeStatement(statement);
-			}
+			this.withScopeFrame(() => {
+				// Params are scope names but do NOT shadow-warn (probed:
+				// a param named after an earlier global is silent - INV020).
+				const frame = this.scopeNames[this.scopeNames.length - 1];
+				for (const param of declaration.params) {
+					if (param.name) frame.add(param.name);
+				}
+				for (const statement of declaration.body) {
+					this.analyzeStatement(statement);
+				}
+			});
 		});
 	}
 
@@ -200,13 +279,17 @@ export class SemanticAnalyzer {
 		this.analyzeExpression(statement.condition);
 
 		if (conditional) this.enterConditionalScope();
-		for (const stmt of statement.consequent) {
-			this.analyzeStatement(stmt);
-		}
-		if (statement.alternate) {
-			for (const stmt of statement.alternate) {
+		this.withScopeFrame(() => {
+			for (const stmt of statement.consequent) {
 				this.analyzeStatement(stmt);
 			}
+		});
+		if (statement.alternate) {
+			this.withScopeFrame(() => {
+				for (const stmt of statement.alternate!) {
+					this.analyzeStatement(stmt);
+				}
+			});
 		}
 		if (conditional) this.exitConditionalScope();
 	}
@@ -226,10 +309,33 @@ export class SemanticAnalyzer {
 			this.analyzeExpression(statement.collection);
 		}
 
-		// Analyze loop body
-		for (const stmt of statement.body) {
-			this.analyzeStatement(stmt);
-		}
+		this.withScopeFrame(() => {
+			// The iterator is a declaration in the loop's scope; TV anchors
+			// its shadow warning at the iterator NAME, which sits right
+			// after `for ` (probed - INV020). The tuple for-in form `for
+			// [i, v] in` puts the first name one further (past `[`) and the
+			// second after `name, `.
+			const base = statement.column + "for ".length;
+			if (statement.type === "ForStatement") {
+				this.declareName(statement.iterator, statement.line, base);
+			} else {
+				const tuple = statement.iterator2 !== undefined;
+				const first = tuple ? base + 1 : base;
+				this.declareName(statement.iterator, statement.line, first);
+				if (statement.iterator2 !== undefined) {
+					this.declareName(
+						statement.iterator2,
+						statement.line,
+						first + statement.iterator.length + ", ".length,
+					);
+				}
+			}
+
+			// Analyze loop body
+			for (const stmt of statement.body) {
+				this.analyzeStatement(stmt);
+			}
+		});
 
 		// Exit conditional scope
 		this.exitConditionalScope();
@@ -244,10 +350,11 @@ export class SemanticAnalyzer {
 			this.analyzeExpression(statement.condition);
 		}
 
-		// Analyze loop body
-		for (const stmt of statement.body) {
-			this.analyzeStatement(stmt);
-		}
+		this.withScopeFrame(() => {
+			for (const stmt of statement.body) {
+				this.analyzeStatement(stmt);
+			}
+		});
 
 		// Exit conditional scope
 		this.exitConditionalScope();
@@ -414,9 +521,11 @@ export class SemanticAnalyzer {
 			// `statements` INSTEAD of `result` when present (see SwitchCase).
 			if (conditional) this.enterConditionalScope();
 			if (switchCase.statements) {
-				for (const stmt of switchCase.statements) {
-					this.analyzeStatement(stmt);
-				}
+				this.withScopeFrame(() => {
+					for (const stmt of switchCase.statements!) {
+						this.analyzeStatement(stmt);
+					}
+				});
 			} else {
 				this.analyzeExpression(switchCase.result);
 			}
