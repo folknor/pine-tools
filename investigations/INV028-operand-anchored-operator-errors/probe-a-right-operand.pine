@@ -1,0 +1,4 @@
+//@version=6
+indicator("x")
+y = true and "hello"
+plot(y ? 1 : 0)

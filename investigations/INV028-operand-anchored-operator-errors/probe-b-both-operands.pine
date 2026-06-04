@@ -1,0 +1,7 @@
+//@version=6
+indicator("x")
+ph = ta.pivothigh(5, 5)
+pl = ta.pivotlow(5, 5)
+if ph or pl
+    label.new(bar_index, high)
+plot(close)

@@ -301,21 +301,33 @@ The reports live in `lint-reports/` which is **gitignored** - so this
 section records the latest measurement (the JSONs also embed
 `generatedAt` + `gitCommit` since #29):
 
-**Measured 2026-06-04 (~16:30 UTC), working tree on `f42cd6f` +
-INV027** (placeholder-generic returns, security_lower_tf element type,
-comma-declaration annotation binding, blank-line ternary wraps; 748 v6
-fixtures, all with TV verdicts - `6874e636…` answered for the FIRST
-time): **286 confirmable local-only error records / 52 tv-only**, plus
-979 past TV's stop point. The jump from 104 is NOT a regression: the
-"Cannot assign" category (13) is cleared and every INV027 site is
-clean, but `6874e636…` - previously tvUnparseable on every run, so
-never counted - entered the pool with **201 undefined-variable records
-against TV's clean 0-error verdict**. It is a valid 3000-line UDT- and
-method-heavy script (BigBeluga order blocks); our errors are almost
-certainly UDT-method/scope resolution (`bull_ob.create_profile()`,
-`this.broken`, objects declared in one if-body and used in later ones).
-That single file is now the biggest lever in the inventory by far.
-Excluding it: 85 confirmable local-only. Corpus baseline 21051 -> 20941.
+**Measured 2026-06-04 (~17:15 UTC), working tree on `fe1b880` +
+INV028** (operand-anchored operator errors; 748 v6 fixtures,
+`6874e636…` back to tvUnparseable this run - its TV verdict IS
+transient): **78 confirmable local-only error records / 42 tv-only /
+29 same-pos-different-message**, plus 986 past TV's stop point. INV028
+moved the 10 decodable "Cannot call operator" anchor-mismatch pairs
+into the wording channel (tv-only 52 -> 42, samePos 19 -> 29); the 3
+left are `35a58bb9…`'s ternary trio (TV's branch-priority anchor not
+decoded - see the INV). Corpus baseline 20941 -> 21051 (+674
+per-operand doubles, 657 of them legacy-truthiness sites on v2/v4/v5
+scripts where the left operand was already flagged).
+
+Previous measurement the same day (~16:30 UTC, `f42cd6f` + INV027,
+placeholder-generic returns, security_lower_tf element type,
+comma-declaration annotation binding, blank-line ternary wraps; the
+one run where `6874e636…` answered): **286 confirmable local-only /
+52 tv-only**. The jump from 104 was NOT a regression: the "Cannot
+assign" category (13) was cleared, but `6874e636…` - tvUnparseable on
+every other run, so never counted - entered the pool with **201
+undefined-variable records against TV's clean 0-error verdict**. It is
+a valid 3000-line UDT- and method-heavy script (BigBeluga order
+blocks); our errors are almost certainly UDT-method/scope resolution
+(`bull_ob.create_profile()`, `this.broken`, objects declared in one
+if-body and used in later ones). That single file remains the biggest
+lever in the inventory (it just isn't counted in runs where TV fails).
+Excluding it: 85 confirmable local-only. Corpus baseline
+21051 -> 20941.
 
 Previous measurement the same day (~15:30 UTC, `cb11335` + INV026,
 hex-literal color inference, inference-pass cache isolation,
@@ -423,7 +435,7 @@ should be `series<bool>`. Don't relax the bool checks - they're correct.
 
 | count | files | category |
 |---|---|---|
-| 13 | 9 | `Cannot call "operator *" with argument ...` (operator operand-type errors - mostly and/or/?:/- with non-bool / cross-type operands) |
+| 3 | 1 | `Cannot call "operator ?:" with argument ...` (was 13 in 9 files - never a detection gap, just anchor mismatch; resolved by INV028's operand-anchored errors. The 3 left are `35a58bb9…`'s ternary trio, where TV anchors at one branch by undecoded type-priority rules; we detect all three at the ternary) |
 | 3 | 3 | `Cannot assign * to *` (TV catches assignment type errors we don't) |
 | 2 | 2 | `Could not find {kind} '{fullName}'` |
 | 2 | 1 | `Cannot use a collection in a type template of another collection` |
@@ -433,11 +445,9 @@ should be `series<bool>`. Don't relax the bool checks - they're correct.
 | 1 | 1 | `Cannot call "plot" with argument "title"=... (series string for const string)` |
 | 1 | 1 | `Incorrect field type "{id}" of enum "{enumName}"` |
 
-The operator-argument cluster is particularly worth chasing - these are
-real type errors in the user's code that we'd hide, and several look
-adjacent to checks we already have (our bool-operand checks fire on
-some of these files but at different positions/wordings - see the
-same-pos-different-message channel before assuming a clean miss).
+The operator-argument cluster is resolved (INV028): every site was
+already detected, anchored differently. The remaining rows above are
+genuine gaps.
 
 ---
 

@@ -1,7 +1,7 @@
 // @test validation/type-errors-operators
 // @description Type errors for operators (ternary, logical, arithmetic, comparison)
 // @expects parse: success
-// @expects errors: 9
+// @expects errors: 10
 // @expects error: line=5, message="Ternary condition must be bool, got int"
 // @expects error: line=8, message="Operator 'and' requires bool operands, but left operand is int"
 // @expects error: line=9, message="Operator 'or' requires bool operands, but right operand is int"
@@ -10,7 +10,8 @@
 // @expects error: line=14, message="Type mismatch: cannot apply '-' to int and bool"
 // @expects error: line=17, message="Type mismatch: cannot apply '+' to color and int"
 // @expects error: line=18, message="Type mismatch: cannot apply '*' to int and color"
-// @expects error: line=21, message="Type mismatch: cannot apply '>' to color and color"
+// @expects error: line=21, column=6, message="Type mismatch: cannot apply '>' to color and color"
+// @expects error: line=21, column=18, message="Type mismatch: cannot apply '>' to color and color"
 
 //@version=6
 indicator("Operator Type Errors")

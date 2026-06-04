@@ -753,37 +753,68 @@ export class UnifiedPineValidator {
 		// Note: TypeChecker.areTypesCompatible (types.ts) also checks this, but we check here
 		// first to provide better error messages that identify which operand is wrong.
 		// The areTypesCompatible check below serves as a fallback for edge cases.
+		// Errors anchor at the offending OPERAND, one error per bad operand -
+		// TV's convention (`true and "hello"` errors at the string's column;
+		// `if ph or pl` with two float operands gets two errors). Matching the
+		// anchors keeps the position-keyed TV diff clean. see INV028
 		if (expr.operator === "and" || expr.operator === "or") {
+			let reported = false;
 			if (leftType !== "unknown" && !TypeChecker.isBoolType(leftType)) {
 				this.addError(
-					expr.line,
-					expr.column,
-					expr.operator.length,
+					expr.left.line || expr.line,
+					expr.left.column || expr.column,
+					1,
 					`Operator '${expr.operator}' requires bool operands, but left operand is ${leftType}`,
 					DiagnosticSeverity.Error,
 				);
-				return; // Don't report additional errors for this expression
+				reported = true;
 			}
 			if (rightType !== "unknown" && !TypeChecker.isBoolType(rightType)) {
 				this.addError(
-					expr.line,
-					expr.column,
-					expr.operator.length,
+					expr.right.line || expr.line,
+					expr.right.column || expr.column,
+					1,
 					`Operator '${expr.operator}' requires bool operands, but right operand is ${rightType}`,
 					DiagnosticSeverity.Error,
 				);
-				return; // Don't report additional errors for this expression
+				reported = true;
+			}
+			if (reported) {
+				return; // Don't double-report via the compatibility fallback
 			}
 		}
 
 		if (!TypeChecker.areTypesCompatible(leftType, rightType, expr.operator)) {
-			this.addError(
-				expr.line,
-				expr.column,
-				1,
-				`Type mismatch: cannot apply '${expr.operator}' to ${leftType} and ${rightType}`,
-				DiagnosticSeverity.Error,
-			);
+			// Anchor at the operand that breaks the operator's operand class
+			// when that is decidable (arithmetic/comparison want numeric
+			// operands - `2 * color.blue` errors at the color, `color.red >
+			// color.blue` at both); fall back to the whole expression for
+			// mutual incompatibilities. see INV028
+			const ARITH_OR_COMPARE = ["-", "*", "/", "%", "<", ">", "<=", ">="];
+			const offenders: Expression[] = [];
+			if (ARITH_OR_COMPARE.includes(expr.operator)) {
+				if (!TypeChecker.isNumericType(leftType)) offenders.push(expr.left);
+				if (!TypeChecker.isNumericType(rightType)) offenders.push(expr.right);
+			}
+			if (offenders.length > 0) {
+				for (const operand of offenders) {
+					this.addError(
+						operand.line || expr.line,
+						operand.column || expr.column,
+						1,
+						`Type mismatch: cannot apply '${expr.operator}' to ${leftType} and ${rightType}`,
+						DiagnosticSeverity.Error,
+					);
+				}
+			} else {
+				this.addError(
+					expr.line,
+					expr.column,
+					1,
+					`Type mismatch: cannot apply '${expr.operator}' to ${leftType} and ${rightType}`,
+					DiagnosticSeverity.Error,
+				);
+			}
 		}
 	}
 

@@ -144,3 +144,10 @@ contradiction means re-measure, not "the earlier author was wrong."
   a comma-declaration annotation binds only to its own unit (TV-probed:
   `bool a = true, b = 1` types b const int); blank lines are allowed
   inside a wrapped ternary. All probed; 13-hit cluster cleared.
+- [INV028](INV028-operand-anchored-operator-errors/notes.md) - TV's
+  CE10123 operator errors anchor at the offending OPERAND, one error
+  per bad operand (`if ph or pl` with two float operands = two errors,
+  probed). Our and/or and arithmetic/comparison errors re-anchored to
+  match; the 13-hit tv-only "Cannot call operator" cluster was never
+  a detection gap, just anchor mismatch counted twice by the
+  position-keyed diff.
