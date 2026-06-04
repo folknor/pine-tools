@@ -338,6 +338,8 @@ export class Lexer {
 
 	private scanBlockComment(): void {
 		const start = this.pos - 1;
+		const startLine = this.line;
+		const startColumn = this.column - 1;
 		this.advance(); // consume *
 
 		while (!this.isAtEnd()) {
@@ -354,7 +356,10 @@ export class Lexer {
 		}
 
 		const value = this.source.substring(start, this.pos);
-		this.addToken(TokenType.COMMENT, value, value.length);
+		this.addToken(TokenType.COMMENT, value, value.length, {
+			line: startLine,
+			column: startColumn,
+		});
 	}
 
 	private scanString(quote: string): void {
@@ -391,13 +396,19 @@ export class Lexer {
 				message: `mismatched character '<EOF>' expecting '${quote}'`,
 			});
 			const value = this.source.substring(start, this.pos);
-			this.addToken(TokenType.STRING, value, value.length);
+			this.addToken(TokenType.STRING, value, value.length, {
+				line: startLine,
+				column: startColumn,
+			});
 			return;
 		}
 
 		this.advance(); // Closing quote
 		const value = this.source.substring(start, this.pos);
-		this.addToken(TokenType.STRING, value, value.length);
+		this.addToken(TokenType.STRING, value, value.length, {
+			line: startLine,
+			column: startColumn,
+		});
 	}
 
 	private scanNumber(): void {
@@ -550,7 +561,16 @@ export class Lexer {
 		return this.isAlpha(char) || this.isDigit(char);
 	}
 
-	private addToken(type: TokenType, value: string, length: number): void {
+	// `at` overrides the token's stamped position - required for tokens
+	// that can span lines (strings, block comments), where the default
+	// `this.column - length` arithmetic lands on the END line with a
+	// nonsense (often negative) column. see TODO #37 / INV019.
+	private addToken(
+		type: TokenType,
+		value: string,
+		length: number,
+		at?: { line: number; column: number },
+	): void {
 		// Only set indent on the first real token of each line
 		let indentValue = this.atLineStart ? this.currentIndent : undefined;
 
@@ -581,8 +601,8 @@ export class Lexer {
 		this.tokens.push({
 			type,
 			value,
-			line: this.line,
-			column: this.column - length,
+			line: at?.line ?? this.line,
+			column: at?.column ?? this.column - length,
 			length,
 			indent: indentValue,
 		});

@@ -133,13 +133,17 @@ IDs so the two stay in sync.
   1889 / TV 376 warnings, tv-only 164 (mostly the #37 missing rules +
   wrapped-line position artifacts).
 - **#37 - three TV warning rules we don't implement** (from the #36
-  tv-only diff, INV018): (a) multiline-string deprecation warning
-  (37 corpus hits); (b) variable shadowing - "Shadowing variable 'X'
-  which exists in parent scope. Did you want to use the ':=' operator
-  instead of '='?" (~23 hits); (c) local-variable history-referencing -
-  the CW10003 page's NOTE variant, "The variable 'X' is declared in
-  local scope... obtaining its historical values is unreliable"
-  (~14 hits). Each needs its own probe set before implementing.
+  tv-only diff, INV018): (a) ~~multiline-string deprecation warning~~
+  **DONE 2026-06-04** - CW10001 implemented, see
+  [INV019](investigations/INV019-cw10001-multiline-string-deprecation/notes.md)
+  (also fixed the lexer stamping line-spanning tokens at their END
+  line with negative columns); (b) variable shadowing - "Shadowing
+  variable 'X' which exists in parent scope. Did you want to use the
+  ':=' operator instead of '='?" (~23 hits); (c) local-variable
+  history-referencing - the CW10003 page's NOTE variant, "The variable
+  'X' is declared in local scope... obtaining its historical values is
+  unreliable" (~14 hits). (b) and (c) still need their own probe sets
+  before implementing.
 - ~~#38~~ **CLOSED 2026-06-04** - the "position artifacts" were TWO
   separate conventions, both probed and recorded in
   [G005](gotchas/G005-tv-diagnostic-position-conventions.md):

@@ -91,3 +91,8 @@ contradiction means re-measure, not "the earlier author was wrong."
   pine-data + UDF body scan), scope extended to ternary/and-or/switch,
   TV's CW10002/3/4 wordings probed. Also: --tv responses DO carry a
   `warnings` array. Closes TODO #32.
+- [INV019](INV019-cw10001-multiline-string-deprecation/notes.md) -
+  CW10001 multiline-string deprecation warning implemented (TV wording
+  verbatim, anchored col 1 of the literal's opening line, probed).
+  Lexer addToken position bug for line-spanning tokens fixed en route.
+  Part of TODO #37.

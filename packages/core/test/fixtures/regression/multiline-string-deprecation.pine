@@ -1,0 +1,16 @@
+// @test regression/multiline-string-deprecation
+// @description CW10001: a quoted string literal spanning multiple physical lines is deprecated in v6. TV warns once per literal, anchored at COLUMN 1 of the line where the literal opens - regardless of statement indentation or the literal's position in the expression (probed 2026-06-04, see INV019 / TODO #37). Escaped "\n" inside a single-line literal must NOT warn.
+// @expects parse: success
+// @expects warnings: 2
+// @expects warning: line=3, message="across multiple lines is deprecated"
+// @expects warning: line=5, message="across multiple lines is deprecated"
+//@version=6
+indicator("x")
+string TT = "Line 1
+     Line 2"
+tip = "a" + "first
+     second"
+ok = "single line with escaped \n newline"
+plot(close, title=TT)
+plot(close, title=tip)
+plot(close, title=ok)

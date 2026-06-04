@@ -11,6 +11,7 @@ import type {
 	ForStatement,
 	FunctionDeclaration,
 	IfStatement,
+	Literal,
 	MemberExpression,
 	MethodDeclaration,
 	Program,
@@ -20,6 +21,10 @@ import type {
 	VariableDeclaration,
 	WhileStatement,
 } from "./ast";
+
+// TV's CW10001 wording, verbatim (probed 2026-06-04, see INV019).
+const MULTILINE_STRING_MESSAGE =
+	"Defining a string enclosed in a single pair of quotation marks (\") or apostrophes (') across multiple lines is deprecated. Split the string into smaller strings and concatenate them with the `+` operator instead (\"like \" + \"this\"). Alternatively, to create a multiline string, enclose the text in three pairs of apostrophes ('''like this''') or quotation marks (\"\"\"like this\"\"\").";
 
 export interface SemanticWarning {
 	line: number;
@@ -302,7 +307,7 @@ export class SemanticAnalyzer {
 				this.usedVariables.add(expr.name);
 				break;
 			case "Literal":
-				// No further analysis needed for literals
+				this.checkMultilineStringLiteral(expr);
 				break;
 		}
 	}
@@ -324,6 +329,25 @@ export class SemanticAnalyzer {
 
 	private analyzeMemberExpression(expr: MemberExpression): void {
 		this.analyzeExpression(expr.object);
+	}
+
+	// CW10001: a quoted string literal spanning multiple physical lines is
+	// deprecated in v6. TV anchors the warning at COLUMN 1 of the line
+	// where the literal opens, regardless of statement indentation or
+	// where in the expression the literal sits (probed 2026-06-04, see
+	// INV019 / TODO #37). The raw lexeme preserves the source newlines,
+	// so spanning is detectable directly.
+	private checkMultilineStringLiteral(literal: Literal): void {
+		if (typeof literal.value !== "string") return;
+		if (!/[\r\n]/.test(literal.raw)) return;
+		this.addWarning(
+			literal.line,
+			1,
+			1, // TV's end convention is opaque (see INV019); the diff keys on start
+			MULTILINE_STRING_MESSAGE,
+			DiagnosticSeverity.Warning,
+			"MULTILINE_STRING",
+		);
 	}
 
 	// CW10003 also covers history-dependent calls executed conditionally by
