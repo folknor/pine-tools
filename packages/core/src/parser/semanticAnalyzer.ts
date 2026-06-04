@@ -31,7 +31,10 @@ export class SemanticAnalyzer {
 	private warnings: SemanticWarning[] = [];
 	private inConditionalScope: boolean = false;
 	private conditionalScopeDepth: number = 0;
-	private declaredVariables: Set<string> = new Set();
+	// name -> declaration position, so unused-variable warnings can point at
+	// the declaration instead of 0:0
+	private declaredVariables: Map<string, { line: number; column: number }> =
+		new Map();
 	private usedVariables: Set<string> = new Set();
 
 	analyze(ast: Program): SemanticWarning[] {
@@ -342,15 +345,22 @@ export class SemanticAnalyzer {
 		switch (statement.type) {
 			case "VariableDeclaration":
 				if (statement.name) {
-					this.declaredVariables.add(statement.name);
+					this.declaredVariables.set(statement.name, {
+						line: statement.line,
+						column: statement.column,
+					});
 				}
 				break;
 
 			case "FunctionDeclaration":
-				// Collect function parameters
+				// Collect function parameters. FunctionParam carries no position of
+				// its own; point at the declaring function instead.
 				for (const param of statement.params) {
 					if (param.name) {
-						this.declaredVariables.add(param.name);
+						this.declaredVariables.set(param.name, {
+							line: statement.line,
+							column: statement.column,
+						});
 					}
 				}
 				// Recursively collect declarations in function body
@@ -383,13 +393,13 @@ export class SemanticAnalyzer {
 	}
 
 	private checkUnusedVariables(): void {
-		for (const variableName of this.declaredVariables) {
+		for (const [variableName, pos] of this.declaredVariables) {
 			if (!this.usedVariables.has(variableName)) {
 				// Skip common variables that are often used for plotting or external reference
 				if (!this.isCommonlyUsedVariable(variableName)) {
 					this.addWarning(
-						0, // We don't have line info for declarations
-						0,
+						pos.line,
+						pos.column,
 						variableName.length,
 						`Variable '${variableName}' is declared but never used`,
 						DiagnosticSeverity.Warning,
