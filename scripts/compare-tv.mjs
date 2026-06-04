@@ -12,6 +12,8 @@
 // disagreement (see find-real-failures.mjs for the rationale).
 
 import { spawn } from "node:child_process";
+import { readFile } from "node:fs/promises";
+import { remapTvDiagnostics } from "./lib/tv-positions.mjs";
 
 const args = process.argv.slice(2);
 const jsonMode = args.includes("--json");
@@ -65,9 +67,17 @@ function pickDiagnostics(raw) {
 	}
 }
 
-const [localRes, tvRes] = await Promise.all([run([file]), run(["--tv", file])]);
+const [localRes, tvRes, source] = await Promise.all([
+	run([file]),
+	run(["--tv", file]),
+	readFile(file, "utf8"),
+]);
 const localE = pickDiagnostics(localRes.out);
 const tvE = pickDiagnostics(tvRes.out);
+// TV reports wrapped statements at logical-line columns; map them back
+// to physical positions before the position-keyed diff. see G005 / #38.
+tvE.errors = remapTvDiagnostics(source, tvE.errors);
+tvE.warnings = remapTvDiagnostics(source, tvE.warnings);
 
 if (!localE.ok || !tvE.ok) {
 	const side = !tvE.ok ? "tv" : "local";

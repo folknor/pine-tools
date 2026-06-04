@@ -140,13 +140,28 @@ IDs so the two stay in sync.
   the CW10003 page's NOTE variant, "The variable 'X' is declared in
   local scope... obtaining its historical values is unreliable"
   (~14 hits). Each needs its own probe set before implementing.
-- **#38 - warning-diff position artifacts on wrapped lines.** TV's
-  warning positions use LOGICAL-line columns (accumulating across
-  wraps, e.g. col 103 on a 60-char physical line), so the position-
-  keyed warning diff splits matching warnings into local-only +
-  tv-only pairs on wrapped expressions. Either map TV logical columns
-  back to physical positions or fuzzy-match by function name + line
-  range when comparing warnings.
+- ~~#38~~ **CLOSED 2026-06-04** - the "position artifacts" were TWO
+  separate conventions, both probed and recorded in
+  [G005](gotchas/G005-tv-diagnostic-position-conventions.md):
+  (a) line splitting - our lexer skipped `\r`, so the 522 fixtures
+  with `\r\r\n` endings had halved line numbers vs TV and the 130
+  CR-only fixtures lexed as ONE comment line with zero diagnostics;
+  fixed in `lexer.ts` (lone `\r` breaks, `\r\n` breaks at the `\n`),
+  tests in `lexer-line-endings.test.ts`; (b) wrapped statements - TV
+  anchors at the logical line's first physical line with columns
+  accumulated over a comment-stripped single-space join; inverted in
+  `scripts/lib/tv-positions.mjs` (used by both diff scripts), bails
+  to the raw position when the continuation shape doesn't hold.
+- **#39 - CONDITIONAL_SERIES misses and/or chains in call arguments.**
+  Surfaced while verifying #38: TV warns CW10002 on
+  `alertcondition((not is_sess1) and ta.crossover(...), ...)` and
+  `plotshape(cond and ta.crossover(...) ? x : na, ...)`
+  (`93badd17…pine` TV lines 1921-2021, `076a1244…pine` 322/328/334)
+  but we stay silent. Looks like the and/or scan doesn't descend into
+  call arguments, and/or the series-condition gate mis-judges the
+  governing operand there. ~57 tv-only warning records in the 06-04
+  inventory. INV018 round 3 material - probe the exact gating before
+  changing the analyzer.
 - ~~#35~~ **CLOSED 2026-06-04.** Single-line function/method arrow
   bodies parse comma-separated statement units via a shared
   parseInlineStatementUnit (also adopted by inline switch arms): the
@@ -184,6 +199,11 @@ index.
   reference documents (`nz`/`fixnan` bool/string, `int` bool, `plot.title`
   non-const); isolated `--tv` probes show TV flags all of them (CE10123).
   The `FUNCTION_PARAM_TYPE_OVERRIDES` it justified are invalid - see #28.
+- [G005](gotchas/G005-tv-diagnostic-position-conventions.md) - TV's
+  diagnostic position conventions: lines split at `\r\n`|`\r`|`\n`
+  (so `\r\r\n` files double their line numbers), wrapped statements
+  reported at logical-line columns (comment-stripped single-space
+  join). Both probed 2026-06-04.
 
 Authoritative per-occurrence list lives in
 `lint-reports/failures-by-category.json`. For every category below the JSON
@@ -273,6 +293,13 @@ var-comma sequences, `var const`, `map<k,v>` suffixes, unary plus,
 annotation-token filtering, same-line precedence + wraps) cleared the
 largest local-only clusters; expect materially lower numbers on the
 next run.
+
+NOTE: that measurement also predates the #38 lexer line-ending fix
+(G005). Positions on the 522 `\r\r\n` fixtures have since shifted to
+TV's numbering, and the 130 CR-only fixtures - which previously lexed
+as one comment line and produced ZERO local diagnostics - are now
+actually linted. Expect both sides of the inventory to move for those
+files on the next `find-real-failures` run.
 
 ---
 

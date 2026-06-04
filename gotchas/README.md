@@ -49,3 +49,6 @@ when TV's behavior diverged, with no stored probe to re-check it.
   //@version directive, whitespace tolerance, default-to-v6, declared
   v4/v5 leniency, NAMESPACE_PROPERTIES, DEPRECATED_V5_CONSTANTS
   (G003 intentionally unused)
+- [G005](G005-tv-diagnostic-position-conventions.md) - TV positions,
+  line terminators (\r\r\n doubling, CR-only), wrapped statements,
+  logical-line columns, join rule, diff artifacts, TODO #38

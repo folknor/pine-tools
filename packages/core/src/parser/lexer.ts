@@ -114,17 +114,19 @@ export class Lexer {
 				break;
 
 			case "\r":
-				// Skip carriage return
+				// A lone \r is a line terminator; \r\n pairs break at the \n.
+				// TV, VS Code, and LSP all split on \r\n | \r | \n, so a file
+				// with \r\r\n endings holds TWO breaks per line and a CR-only
+				// file breaks at every \r. Skipping \r entirely made CR-only
+				// files one giant comment line and halved \r\r\n line numbers
+				// against TV's. see G005 / TODO #38.
+				if (this.peek() !== "\n") {
+					this.handleLineBreak();
+				}
 				break;
 
 			case "\n":
-				if (this.bracketDepth === 0) {
-					this.addToken(TokenType.NEWLINE, "\n", 1);
-				}
-				this.line++;
-				this.column = 1;
-				this.atLineStart = true;
-				this.currentIndent = 0;
+				this.handleLineBreak();
 				break;
 
 			case "(":
@@ -274,6 +276,17 @@ export class Lexer {
 		}
 	}
 
+	// Shared by the "\n" and lone-"\r" cases in scanToken. see G005.
+	private handleLineBreak(): void {
+		if (this.bracketDepth === 0) {
+			this.addToken(TokenType.NEWLINE, "\n", 1);
+		}
+		this.line++;
+		this.column = 1;
+		this.atLineStart = true;
+		this.currentIndent = 0;
+	}
+
 	private scanComment(): void {
 		const start = this.pos - 1;
 		const _startColumn = this.column - 1;
@@ -283,7 +296,7 @@ export class Lexer {
 
 		// Check for annotation (//@version=6)
 		if (this.peek() === "@") {
-			while (this.peek() !== "\n" && !this.isAtEnd()) {
+			while (this.peek() !== "\n" && this.peek() !== "\r" && !this.isAtEnd()) {
 				this.advance();
 			}
 			const value = this.source.substring(start, this.pos);
@@ -294,8 +307,8 @@ export class Lexer {
 			return;
 		}
 
-		// Regular comment
-		while (this.peek() !== "\n" && !this.isAtEnd()) {
+		// Regular comment (a lone \r terminates the line too - see G005)
+		while (this.peek() !== "\n" && this.peek() !== "\r" && !this.isAtEnd()) {
 			this.advance();
 		}
 		const value = this.source.substring(start, this.pos);
@@ -333,7 +346,7 @@ export class Lexer {
 				this.advance(); // /
 				break;
 			}
-			if (this.peek() === "\n") {
+			if (this.peek() === "\n" || (this.peek() === "\r" && this.peekNext() !== "\n")) {
 				this.line++;
 				this.column = 0;
 			}
@@ -357,10 +370,11 @@ export class Lexer {
 				if (!this.isAtEnd()) {
 					this.advance(); // Skip escaped char
 				}
-			} else if (this.peek() === "\n") {
+			} else if (this.peek() === "\n" || (this.peek() === "\r" && this.peekNext() !== "\n")) {
 				// Multiline strings are valid in Pine Script v6 (though deprecated)
 				// Each wrapped line adds exactly one space regardless of indentation
 				// We preserve the raw source; normalization happens at a higher level if needed
+				// (\r\n breaks at the \n; a lone \r is its own break - see G005)
 				this.line++;
 				this.column = 0;
 				this.advance(); // consume the newline

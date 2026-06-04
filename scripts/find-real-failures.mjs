@@ -22,6 +22,7 @@
 import { readdir, readFile, writeFile, mkdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { execSync, spawn } from "node:child_process";
+import { remapTvDiagnostics } from "./lib/tv-positions.mjs";
 
 const args = process.argv.slice(2);
 let limit = Number.POSITIVE_INFINITY;
@@ -148,9 +149,18 @@ async function main() {
 			const i = next++;
 			if (i >= targets.length) return;
 			const file = targets[i];
-			const [local, tv] = await Promise.all([run([file]), run(["--tv", file])]);
+			const [local, tv, source] = await Promise.all([
+				run([file]),
+				run(["--tv", file]),
+				readFile(file, "utf8"),
+			]);
 			const localE = pickDiagnostics(local.out);
 			const tvE = pickDiagnostics(tv.out);
+			// TV reports wrapped statements at logical-line columns; map them
+			// back to physical positions before the position-keyed diff.
+			// see G005 / #38.
+			tvE.errors = remapTvDiagnostics(source, tvE.errors);
+			tvE.warnings = remapTvDiagnostics(source, tvE.warnings);
 
 			// An unparseable side means "no verdict", not "no errors" - diffing
 			// against its empty error list would dump the entire other side
