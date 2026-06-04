@@ -75,6 +75,21 @@ function fillTemplate(message, ctx) {
 function pickDiagnostics(raw) {
 	try {
 		const j = JSON.parse(raw);
+		// A refusal carries no verdict: TV's translate_light returns
+		// {"success":false,"reason":"Supported versions are >= 5","result":null}
+		// for files whose //@version annotation it cannot read (e.g.
+		// NBSP-mangled "// @version=6" - see INV029). Counting its empty
+		// error list as "TV reports no errors" is the G002 swallowed-failure
+		// bug. success:false WITH a result payload stays a valid verdict
+		// (that is the errors-found shape).
+		if ((j.result === null || j.result === undefined) && !Array.isArray(j.errors)) {
+			return {
+				ok: false,
+				errors: [],
+				warnings: [],
+				parseError: j.reason || "null result (refusal, no verdict)",
+			};
+		}
 		const mapDiag = (e) => ({
 			line: e.start?.line ?? 0,
 			col: e.start?.column ?? 0,

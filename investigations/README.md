@@ -151,3 +151,9 @@ contradiction means re-measure, not "the earlier author was wrong."
   match; the 13-hit tv-only "Cannot call operator" cluster was never
   a detection gap, just anchor mismatch counted twice by the
   position-keyed diff.
+- [INV029](INV029-nbsp-between-tokens/notes.md) - U+00A0: mid-line at
+  bracket depth 0 is TV's CE10005 ("no viable alternative at
+  character"), anchored at the NBSP; inside ( ) / [ ] it is accepted
+  whitespace; as indentation TV wrap-joins the line (we deliberately
+  keep reading it as block indent - plan/31). One error per file,
+  matching TV's stop-at-first. All six corpus FN positions match.

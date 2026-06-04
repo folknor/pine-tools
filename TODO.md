@@ -301,17 +301,29 @@ The reports live in `lint-reports/` which is **gitignored** - so this
 section records the latest measurement (the JSONs also embed
 `generatedAt` + `gitCommit` since #29):
 
-**Measured 2026-06-04 (~17:15 UTC), working tree on `fe1b880` +
-INV028** (operand-anchored operator errors; 748 v6 fixtures,
-`6874e636…` back to tvUnparseable this run - its TV verdict IS
-transient): **78 confirmable local-only error records / 42 tv-only /
-29 same-pos-different-message**, plus 986 past TV's stop point. INV028
-moved the 10 decodable "Cannot call operator" anchor-mismatch pairs
-into the wording channel (tv-only 52 -> 42, samePos 19 -> 29); the 3
-left are `35a58bb9…`'s ternary trio (TV's branch-priority anchor not
-decoded - see the INV). Corpus baseline 20941 -> 21051 (+674
-per-operand doubles, 657 of them legacy-truthiness sites on v2/v4/v5
-scripts where the left operand was already flagged).
+**Measured 2026-06-04 (~18:00 UTC), working tree on `637c236` +
+INV029** (mid-line NBSP CE10005 + refusal handling in
+find-real-failures; 748 v6 fixtures, `6874e636…` answered this run):
+**279 confirmable local-only error records / 36 tv-only / 29
+same-pos-different-message**, plus 986 past TV's stop point. The 279
+is 78 + `6874e636…`'s 201 (it answers intermittently; see Symbols).
+INV029 cleared the whole `no viable alternative at character` FN
+category (6 files, all matching TV's exact anchors) and exposed that
+TV's translate_light REFUSES files whose `//@version` annotation is
+NBSP-mangled ("Supported versions are >= 5", null result) - a refusal
+find-real-failures previously counted as "TV reports no errors" (the
+G002 shape); it now buckets those as no-verdict (3 files). Corpus
+baseline 21051 -> 21060 (+9: one CE10005 per NBSP-obfuscated file).
+
+Previous measurement the same day (~17:15 UTC, `fe1b880` + INV028,
+operand-anchored operator errors; `6874e636…` tvUnparseable that run):
+**78 confirmable local-only / 42 tv-only / 29 samePos**. INV028 moved
+the 10 decodable "Cannot call operator" anchor-mismatch pairs into the
+wording channel (tv-only 52 -> 42, samePos 19 -> 29); the 3 left are
+`35a58bb9…`'s ternary trio (TV's branch-priority anchor not decoded -
+see the INV). Corpus baseline 20941 -> 21051 (+674 per-operand
+doubles, 657 of them legacy-truthiness sites on v2/v4/v5 scripts
+where the left operand was already flagged).
 
 Previous measurement the same day (~16:30 UTC, `f42cd6f` + INV027,
 placeholder-generic returns, security_lower_tf element type,
@@ -383,7 +395,6 @@ These are real syntax errors in the user's code that we don't surface.
 
 | count | files | category |
 |---|---|---|
-| 6 | 6 | `no viable alternative at character {unexpectedToken}` |
 | 6 | 5 | `Syntax error at input {value}` (end-of-line continuation, new line, `:=`, `[`) |
 | 3 | 3 | `"{typeKeyword}" is not a valid type keyword` (`source`, `plot`) |
 | 2 | 2 | `Incorrect "for" statement. Expecting "to <expression>"` |
@@ -395,7 +406,11 @@ These are real syntax errors in the user's code that we don't surface.
 | 1 | 1 | `Cannot read properties of undefined (reading 'pinePos')` (a TV-side crash string, not a real diagnostic) |
 
 (2026-06-04 post-INV025: the `Missing enclosing character in the
-literal string` category - 5 files - is fixed and gone; see INV025)
+literal string` category - 5 files - is fixed and gone; see INV025.
+Post-INV029: the `no viable alternative at character` category - 6
+files, mid-line NBSP at bracket depth 0 - is fixed and gone; see
+INV029, which also covers TV refusing NBSP-mangled `//@version`
+annotations outright)
 
 ---
 

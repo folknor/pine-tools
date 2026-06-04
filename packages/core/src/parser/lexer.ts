@@ -70,6 +70,8 @@ export class Lexer {
 	private atLineStart: boolean = true; // Track if we're at the start of a line
 	private lexerErrors: LexerError[] = [];
 	private detectedVersion: string | null = null;
+	// One CE10005 per file - NBSP-obfuscated scripts carry thousands. see INV029
+	private nbspErrorReported: boolean = false;
 	// Open ( / [ nesting depth. Newlines inside a bracket group are
 	// continuations, not statement boundaries, so no NEWLINE token is
 	// emitted while depth > 0 - this is what lets `x = (` ... `)` and
@@ -104,12 +106,34 @@ export class Lexer {
 			case "\t":
 			case "\u00a0":
 				// Count indentation at line start. U+00A0 (non-breaking
-				// space) appears as indentation in real published scripts
-				// (TV accepts it); silently dropping it gave body tokens
-				// indent 0 and made function bodies swallow the rest of
-				// the file. see plan/31.
+				// space) appears as indentation in real published scripts;
+				// silently dropping it gave body tokens indent 0 and made
+				// function bodies swallow the rest of the file. see plan/31.
+				// (TV does NOT treat NBSP indentation as block indent - it
+				// wrap-joins such lines - but our lenient reading keeps
+				// bodies intact; see INV029 probe b.)
 				if (this.atLineStart) {
 					this.currentIndent += char === "\t" ? 4 : 1;
+				} else if (
+					char === "\u00a0" &&
+					this.bracketDepth === 0 &&
+					!this.nbspErrorReported
+				) {
+					// Mid-line NBSP at bracket depth 0 is a lexical error in
+					// TV: CE10005 "no viable alternative at character",
+					// anchored at the NBSP itself. Inside ( ) / [ ] TV accepts
+					// NBSP as plain whitespace (both probed 2026-06-04 - see
+					// INV029). Report only the FIRST one: NBSP-obfuscated
+					// published scripts carry tens of thousands of NBSPs (one
+					// corpus file has 41749), and TV itself emits exactly one
+					// CE10005 and stops. Recover by treating it as a plain
+					// space so downstream diagnostics survive.
+					this.nbspErrorReported = true;
+					this.lexerErrors.push({
+						line: this.line,
+						column: this.column - 1,
+						message: 'no viable alternative at character "\u00a0"',
+					});
 				}
 				break;
 
