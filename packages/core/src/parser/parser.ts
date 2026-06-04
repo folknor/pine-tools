@@ -594,6 +594,12 @@ export class Parser {
 
 		this.consume(TokenType.RBRACKET, 'Expected "]"');
 		this.consume(TokenType.ASSIGN, 'Expected "=" after tuple');
+		// The RHS may start on a wrapped (possibly blank-line-separated)
+		// continuation line, same as variableDeclaration's init. Without
+		// this, `[a, b] = ` + blank + wrapped RHS backtracked into an
+		// ArrayExpression USE of the names - undefined-variable FPs at the
+		// destructure site. see INV031
+		this.skipWrapContinuationNewline();
 
 		const init = this.expression();
 
@@ -633,8 +639,14 @@ export class Parser {
 			qualifier = `${this.advance().value} `;
 		}
 
-		// Check if next token is also a type keyword (e.g., var float x = 1.0)
-		if (this.isVarTypeKeyword()) {
+		// Check if next token is also a type keyword (e.g., var float x = 1.0).
+		// A type keyword directly followed by `=` is the variable NAME, not
+		// an annotation (`var color = na` declares `color`) - leave it for
+		// variableDeclaration, which accepts keyword names. see INV031
+		if (
+			this.isVarTypeKeyword() &&
+			this.peekNext()?.type !== TokenType.ASSIGN
+		) {
 			typeAnnotation = qualifier + this.advance().value;
 			typeAnnotation += this.parseGenericTypeSuffix();
 		} else {
@@ -721,7 +733,14 @@ export class Parser {
 		varType: "var" | "varip" | "const" | null,
 		typeName?: string,
 	): AST.VariableDeclaration {
-		const token = this.consume(TokenType.IDENTIFIER, "Expected variable name");
+		// A type keyword can BE the variable name when directly followed by
+		// `=` - `var color color = na`, `line line = na` are idiomatic Pine
+		// and TV accepts them (probed, see INV031). Without this the consume
+		// threw and shredded the enclosing block.
+		const token =
+			this.isVarTypeKeyword() && this.peekNext()?.type === TokenType.ASSIGN
+				? this.advance()
+				: this.consume(TokenType.IDENTIFIER, "Expected variable name");
 
 		let init: AST.Expression | null = null;
 		if (this.match(TokenType.ASSIGN)) {
@@ -869,7 +888,9 @@ export class Parser {
 		return body;
 	}
 
-	private ifStatement(): AST.IfStatement {
+	// Public so ExpressionParser can parse if-EXPRESSIONS
+	// (`int m = if cond` ...) with the same machinery. see INV031
+	public ifStatement(): AST.IfStatement {
 		const startToken = this.previous();
 		const condition = this.expression();
 

@@ -1,0 +1,13 @@
+//@version=6
+indicator("x")
+bands(float src, int len) =>
+    basis = ta.sma(src, len)
+    dev = ta.stdev(src, len)
+    [basis, basis + dev, basis - dev]
+
+[mid, upper, lower] =
+
+     bands(close, 20)
+plot(mid)
+plot(upper)
+plot(lower)

@@ -11,6 +11,7 @@ import type {
 	ExpressionStatement,
 	FunctionParam,
 	Identifier,
+	IfExpression,
 	IfStatement,
 	IndexExpression,
 	Literal,
@@ -682,6 +683,28 @@ export class UnifiedPineValidator {
 					} else {
 						this.validateExpression(switchCase.result, version);
 					}
+				}
+				break;
+			}
+
+			case "IfExpression": {
+				// An if/else in expression position - branches are statement
+				// blocks, each its own local scope (mirrors SwitchExpression
+				// arm handling above). see INV031
+				const ifExpr = expr as IfExpression;
+				this.validateExpression(ifExpr.condition, version);
+				for (const branch of [ifExpr.consequent, ifExpr.alternate]) {
+					if (!branch) continue;
+					this.symbolTable.enterScope();
+					this.blockDepth++;
+					for (const stmt of branch) {
+						this.collectDeclarations(stmt, version);
+					}
+					for (const stmt of branch) {
+						this.validateStatement(stmt, version);
+					}
+					this.blockDepth--;
+					this.symbolTable.exitScope();
 				}
 				break;
 			}
@@ -1945,6 +1968,20 @@ export class UnifiedPineValidator {
 				const switchExpr = expr as SwitchExpression;
 				if (switchExpr.cases.length > 0) {
 					type = this.inferExpressionType(switchExpr.cases[0].result, version);
+				}
+				break;
+			}
+
+			case "IfExpression": {
+				// The value is the consequent's tail expression (mirrors the
+				// SwitchExpression first-arm rule above). see INV031
+				const ifExpr = expr as IfExpression;
+				const tail = ifExpr.consequent[ifExpr.consequent.length - 1];
+				if (tail?.type === "ExpressionStatement") {
+					type = this.inferExpressionType(
+						(tail as ExpressionStatement).expression,
+						version,
+					);
 				}
 				break;
 			}

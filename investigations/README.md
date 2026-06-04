@@ -165,3 +165,11 @@ contradiction means re-measure, not "the earlier author was wrong."
   captured from if/else tails (previously only trailing
   expression/return; elements defaulted to series<float>). Both
   probed. File now lints 0 errors, matching TV.
+- [INV031](INV031-undefined-variable-stragglers/notes.md) - the last
+  fixable undefined-variable FPs (34 records, 3 TV-clean files):
+  tuple-destructure RHS on a blank-line wrap (the missing
+  skipWrapContinuationNewline); type keywords as variable names
+  (`var color color = na` - TV types it series color, probed); and
+  if-EXPRESSIONS (`int m = if cond` ...) - new IfExpression node
+  mirroring SwitchExpression, parsed with the statement machinery.
+  All three files now lint 0 errors.

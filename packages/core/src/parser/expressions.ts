@@ -685,6 +685,22 @@ export class ExpressionParser {
 			return this.p.switchExpression();
 		}
 
+		// If expression (`int m = if cond` ... `else` ...) - Pine statements
+		// return their tail value. Previously `if` fell through to the
+		// generic keyword-as-Identifier branch, which shredded the enclosing
+		// block. Parse with the statement machinery, re-tag. see INV031
+		if (this.p.match([TokenType.KEYWORD, ["if"]])) {
+			const stmt = this.p.ifStatement();
+			return {
+				type: "IfExpression",
+				condition: stmt.condition,
+				consequent: stmt.consequent,
+				alternate: stmt.alternate,
+				line: stmt.line,
+				column: stmt.column,
+			};
+		}
+
 		// Identifier
 		if (this.p.match(TokenType.IDENTIFIER) || this.p.match(TokenType.KEYWORD)) {
 			const token = this.p.previous();

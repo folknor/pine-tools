@@ -1,0 +1,10 @@
+//@version=6
+indicator("x")
+monthClamp(int mon, bool roll = false) =>
+    int m = if roll
+        int normalized = mon
+        ((normalized - 1) % 12) + 1
+    else
+        math.min(math.max(mon, 1), 12)
+    m + 1
+plot(monthClamp(14, true))

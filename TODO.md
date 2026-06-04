@@ -301,11 +301,20 @@ The reports live in `lint-reports/` which is **gitignored** - so this
 section records the latest measurement (the JSONs also embed
 `generatedAt` + `gitCommit` since #29):
 
-**Measured 2026-06-04 (~19:00 UTC), working tree on `635192b` +
-INV030** (blank-line operator wraps + if-tail tuple capture; 748 v6
-fixtures, `6874e636…` did not answer this run): **77 confirmable
-local-only error records / 36 tv-only / 29 same-pos-different-message**,
-plus 986 past TV's stop point. INV030 resolved the `6874e636…` cluster
+**Measured 2026-06-04 (~20:00 UTC), working tree on `42d522f` +
+INV031** (tuple blank-line RHS, type-keyword names, if-expressions;
+748 v6 fixtures, `6874e636…` + the 3 NBSP-refusal files no-verdict
+this run): **42 confirmable local-only error records / 36 tv-only /
+29 same-pos-different-message**, plus 919 past TV's stop point. The
+undefined-variable categories collapsed from 27+15 to 3+5 - the three
+TV-clean carrier files (`d88ffa83…`, `ca2e4ee7…`, `fffe6a2f…`) lint 0
+errors; the remainder sits in lexical-abort mangled files with no
+real TV verdict (see INV031 notes). Corpus baseline 20683 -> 20120.
+
+Previous measurement the same day (~19:00 UTC, `635192b` + INV030,
+blank-line operator wraps + if-tail tuple capture; `6874e636…` did not
+answer): **77 confirmable local-only / 36 tv-only / 29 samePos**, plus
+986 past TV's stop point. INV030 resolved the `6874e636…` cluster
 outright - 201 records -> **0 errors**, matching TV's clean verdict -
 by generalizing INV027's blank-line wrap handling to all binary
 operator continuations (gated on INV017's wrap-indent rule) and
@@ -390,13 +399,16 @@ the previous counts lived. Confirmable counts:
 
 | count | files | category |
 |---|---|---|
-| 27 | 6 | `Undefined variable '*'` *(partly recovery, see Symbols below)* |
-| 15 | 5 | `Undefined variable '*'. Did you mean '*'?` |
 | 6 | 1 | `Unexpected identifier '*' - did you mean '*'?` |
 | 6 | 1 | `Unexpected token: .` |
 | 5 | 1 | `Unexpected token: \n` |
-| 5 | 4 | `Unexpected token: :` |
-| 2-1 | - | long tail: `:=` `)` `?` `=>` `==`, `Expected method name after 'method'`, `Expected variable name` |
+| 5 | 3 | `Undefined variable '*'. Did you mean '*'?` *(lexical-abort files, see Symbols below)* |
+| 3 | 3 | `Unexpected token: :` |
+| 3 | 3 | `Undefined variable '*'` |
+| 2-1 | - | long tail: `:=` `)` `=>` `==`, `Expected method name after 'method'` |
+
+(2026-06-04 post-INV031: the undefined-variable categories fell
+27+15 -> 3+5; the giant clusters' history is in the Symbols section)
 
 ## Parser - syntax we silently accept (false negatives)
 
@@ -485,9 +497,11 @@ truncated a ~600-line function body, spilling its locals to top level
 hard-wrapped mangle TV rejects at its first broken string literal -
 INV025 made us match that CE10017, and the post-TV-stop bucketing
 moved its cascade (and `8439b236…`'s `src` cluster) out of the signal.
-
-What remains is small: `Undefined variable '*'` 27 hits in 6 files +
-the did-you-mean variant (15 in 5, overlapping), chaseable per-file.
+The last fixable stragglers (34 records in 3 TV-clean files) fell to
+INV031: tuple-destructure RHS on a blank-line wrap, type keywords as
+variable names (`var color color = na`), and if-EXPRESSIONS
+(`int m = if cond` ...). What remains (3 + 5 hits) sits in
+lexical-abort mangled files with no real TV verdict.
 
 Per-file root causes are almost always one of:
 

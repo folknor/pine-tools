@@ -156,7 +156,19 @@ export type Expression =
 	| TernaryExpression
 	| ArrayExpression
 	| IndexExpression
-	| SwitchExpression;
+	| SwitchExpression
+	| IfExpression;
+
+// An if/else in expression position (`int m = if cond` ... `else` ...) -
+// Pine statements return their tail value. Parsed with the statement
+// machinery (Parser.ifStatement) and re-tagged; the branch arrays have
+// IfStatement's shape. see INV031
+export interface IfExpression extends ASTNode {
+	type: "IfExpression";
+	condition: Expression;
+	consequent: Statement[];
+	alternate?: Statement[];
+}
 
 export interface SwitchCase {
 	condition?: Expression; // undefined for default case

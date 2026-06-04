@@ -1,0 +1,6 @@
+//@version=6
+indicator("x")
+var color color = na
+var line line = na
+color := close > open ? #00ff41 : #ff1744
+bgcolor(color)
