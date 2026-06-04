@@ -483,3 +483,47 @@ undefined-variable errors (block locals no longer leak into the
 enclosing scope - Pine blocks are real scopes) plus cascade
 repositioning inside files with unrelated pre-existing parse errors.
 The remainder map to the follow-ups above.
+
+## Follow-up resolution: #33 + #34 (2026-06-04, same day)
+
+Both parser follow-ups landed in the next session:
+
+- **#34 (multi-line bracket groups)**: fixed at the LEXER - NEWLINE
+  tokens are not emitted while inside an open `(`/`[` group (depth
+  clamped at 0 so a stray `)` can't poison the rest of a broken file).
+  Newlines inside brackets are continuations, not statement boundaries,
+  per the manual's "no restriction inside parentheses" wrap rule. This
+  fixed `x = (` ... `)` groupings, and made the parser's explicit
+  newline-skips inside call/param parsing redundant-but-harmless.
+- **#33 (inline switch-arm statements)**: `SwitchCase` gained a
+  `statements?: Statement[]` field carrying the FULL arm body - both
+  for inline forms (`cond => a := b`, `=> f(), na`, trailing commas
+  tolerated) and multi-line blocks, which previously kept only the
+  final expression. `result` remains the arm's value (the last
+  statement's expression/value/init); walkers visit `statements`
+  INSTEAD of `result` when present. The checker now validates arm
+  statements in a per-arm scope; the SemanticAnalyzer walks them.
+- **INV017 (found under #33)**: the postfix line-continuation
+  heuristic continued expressions onto any next line starting with an
+  operator/`(`/`.`, gluing switch arms into calls (`1(a - b)`). Pine's
+  documented wrap rule - continuation indent must not be a multiple of
+  4 - is now enforced; TV probes (CE10013) recorded in
+  investigations/INV017.
+- Also fixed while triaging: an indented tuple line after a switch arm
+  (`    [a, b]` as a function's tuple return) was parsed as SUBSCRIPT
+  on the switch result - the "new statement" check for `[` only looked
+  at column 1. Now: a `[` directly preceded by a NEWLINE token starts a
+  new statement (inside brackets no NEWLINEs exist post-#34, so wrapped
+  subscripts like `f(...)\n  [1])` keep working).
+
+Corpus diff after #33+#34 (same pre-#31 baseline): ~3500 disappeared vs
+~590 appeared; every appearance category triaged - correct
+block-scoping errors, UDF-return/tuple inference FPs (the documented
+#9/#18/INV010 umbrella, now visible on newly-validated arm statements),
+cascade repositioning in malformed files, and two expected sites from
+the INV017 tightening (our own synthetic fixture + glued comment text).
+
+Remaining from the original follow-up list: #32 (CONDITIONAL_SERIES
+re-foundation) and the #4/INV012 re-measure. New: #35 (arrow-function
+bodies still drop intermediate statements; align with the
+SwitchCase.statements approach).

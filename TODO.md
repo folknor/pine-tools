@@ -123,19 +123,17 @@ IDs so the two stay in sync.
   `math.max` stateless. Extend scope to ternary / `and`/`or` operands /
   switch arms while at it (TV warns there; our `inConditionalScope` is
   only set by if/for/while). See plan/31 Finding 7.
-- **#33 - inline switch-arm statements fail to parse.** `cond => x := y`
-  and `=> f(), na` error ("Unexpected token: :=" / ",") because
-  `parseSwitchCaseBody` parses inline bodies as pure expressions;
-  multi-line arm bodies are fine. ~12 corpus sites, surfaced by the #31
-  fix. Same family: arrow-function inline bodies.
-- **#34 - parenthesized expressions spanning lines fail to parse.**
-  `x = (` newline `"a" + ...` newline `)` errors with "Unexpected
-  token: \n" - expression parsing does not skip newlines inside an open
-  paren group. ~18 corpus sites, all TV-valid. Surfaced by the #31 fix.
+- **#35 - arrow-function inline bodies still drop statements.** #33 gave
+  switch arms a `statements` list (inline and multi-line); function/
+  method arrow bodies (`f(x) => a := x, a * 2` and the multi-line
+  equivalent) still keep only the final expression in some paths - the
+  old "Multi-statement arrow bodies lose intermediate statements" note.
+  Worth aligning with the SwitchCase.statements approach.
 - **Re-measure #4 and the INV012 cascade counts** against the post-#31
-  baseline - the old numbers predate correct block scoping (#31 fixed
-  the if/while/for statement leak, else attachment, nbsp indentation,
-  and tuple/typed for-in iterators; see
+  baseline - the old numbers predate correct block scoping (#31/#33/#34
+  fixed the if/while/for statement leak, else attachment, nbsp
+  indentation, tuple/typed for-in iterators, multi-line bracket groups,
+  inline switch-arm statements, and the INV017 wrap-indent rule; see
   [plan/31-if-body-statement-leak.md](plan/31-if-body-statement-leak.md)
   Resolution section).
 - **Minor data residue (record-only, low value):** `ta.vwap.anchor`'s default

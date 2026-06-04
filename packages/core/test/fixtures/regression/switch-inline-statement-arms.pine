@@ -1,0 +1,17 @@
+// @test regression/switch-inline-statement-arms
+// @description Inline switch arms holding statements - reassignment (`cond => a := b`) and a comma sequence ending in the arm value (`=> f(), na`) - must parse and validate cleanly. parseSwitchCaseBody previously parsed inline bodies as pure expressions and errored on `:=` / `,`. Repro distilled from corpus fixtures a7978a / 0c053259. See TODO #33.
+// @expects parse: success
+// @expects no-errors
+// @expects warnings: 0
+//@version=6
+indicator("x")
+var float a = na
+b = close * 2.0
+switch
+    close > open => a := b
+    => a := b * 2
+y = switch
+    close > open => nz(a), close
+    => open
+plot(a)
+plot(y)

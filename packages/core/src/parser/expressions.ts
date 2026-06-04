@@ -323,12 +323,21 @@ export class ExpressionParser {
 			if (this.p.check(TokenType.NEWLINE)) {
 				// Check if the next token after newline suggests continuation
 				const nextToken = this.p.peekNext();
-				const _nextNextToken = this.p.tokens[this.p.current + 2];
+
+				// A wrapped continuation line must NOT be indented by a
+				// multiple of 4 - that is Pine's own line-wrapping rule
+				// (a multiple-of-4 indent means a block statement, e.g. a
+				// switch arm or an if body). Without this check, an arm
+				// like `cond => 1` followed by `(a - b) > 2 => ...` glued
+				// into the call `1(a - b)`. TV rejects multiple-of-4 wraps
+				// (CE10013) - probes in INV017. see INV017.
+				const continuationIndent = (nextToken?.indent ?? 0) % 4 !== 0;
 
 				// Allow continuation if next token is an operator, function call, or dot access
 				// But break if it looks like a new statement (LBRACKET is always treated as new statement)
 				if (
 					nextToken &&
+					continuationIndent &&
 					(nextToken.type === TokenType.MULTIPLY ||
 						nextToken.type === TokenType.DIVIDE ||
 						nextToken.type === TokenType.PLUS ||
@@ -473,10 +482,15 @@ export class ExpressionParser {
 					column: expr.column,
 				};
 			} else if (this.p.check(TokenType.LBRACKET)) {
-				// Check if [ is on a new line at the start - likely a tuple declaration, not array access
-				const bracketToken = this.p.peek();
-				if (bracketToken.line > expr.line && (bracketToken.column || 0) <= 1) {
-					// [ at start of new line - not subscript access
+				// A [ that follows a statement-level line break is a new
+				// statement (tuple declaration or tuple return), not subscript
+				// access. The tell is a NEWLINE token directly before it: the
+				// lexer only emits NEWLINE at bracket depth 0, so a wrapped
+				// subscript inside parens (`f(...)\n  [1])`) has none, while an
+				// indented tuple line after e.g. a switch arm sits behind the
+				// NEWLINEs its block loop consumed. (A column-1 check misses
+				// the indented-tuple case.)
+				if (this.p.previous().type === TokenType.NEWLINE) {
 					break;
 				}
 				this.p.advance(); // consume [

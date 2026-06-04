@@ -82,3 +82,7 @@ contradiction means re-measure, not "the earlier author was wrong."
   now-stale `FUNCTION_PARAM_TYPE_OVERRIDES` (G002 superseded); `plot.title`
   const-enforcement now fires; `nz`/`fixnan`/`int` need union-param
   validation (the checker skips union-typed params - INV013 safety net)
+- [INV017](INV017-wrap-indent-multiple-of-4/notes.md) - line-wrap
+  continuation lines must not be indented by a multiple of 4 (TV CE10013,
+  probed); unrestricted continuation glued switch arms into calls.
+  Found under TODO #33.

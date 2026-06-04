@@ -603,7 +603,23 @@ export class UnifiedPineValidator {
 					if (switchCase.condition) {
 						this.validateExpression(switchCase.condition, version);
 					}
-					this.validateExpression(switchCase.result, version);
+					// `result` is contained in the last statement, so walk
+					// `statements` INSTEAD of `result` when present (see
+					// SwitchCase). Each arm body is its own local scope.
+					if (switchCase.statements) {
+						this.symbolTable.enterScope();
+						this.blockDepth++;
+						for (const stmt of switchCase.statements) {
+							this.collectDeclarations(stmt, version);
+						}
+						for (const stmt of switchCase.statements) {
+							this.validateStatement(stmt, version);
+						}
+						this.blockDepth--;
+						this.symbolTable.exitScope();
+					} else {
+						this.validateExpression(switchCase.result, version);
+					}
 				}
 				break;
 			}

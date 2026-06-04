@@ -178,6 +178,82 @@ describe("while statement blocks", () => {
 	});
 });
 
+describe("switch arm bodies", () => {
+	it("parses inline statement arms (cond => a := b) (#33)", () => {
+		const ast = parse(
+			[
+				"var float a = na",
+				"b = 2.0",
+				"switch",
+				"    close > open => a := b",
+				"    => a := b * 2",
+				"plot(a)",
+			].join("\n"),
+		);
+
+		expect(types(ast.body)).toEqual([
+			"VariableDeclaration",
+			"VariableDeclaration",
+			"ExpressionStatement",
+			"ExpressionStatement",
+		]);
+		const switchExpr = (ast.body[2] as AST.ExpressionStatement)
+			.expression as AST.SwitchExpression;
+		expect(switchExpr.type).toBe("SwitchExpression");
+		expect(switchExpr.cases).toHaveLength(2);
+		for (const c of switchExpr.cases) {
+			expect(c.statements).toHaveLength(1);
+			expect(c.statements?.[0].type).toBe("AssignmentStatement");
+		}
+		expect(switchExpr.cases[0].condition).toBeDefined();
+		expect(switchExpr.cases[1].condition).toBeUndefined();
+	});
+
+	it("parses inline comma-sequence arms (=> f(), na) (#33)", () => {
+		const ast = parse(
+			[
+				"x = switch",
+				'    close > open => runtime.error("boom"), na',
+				"    => close",
+				"plot(x)",
+			].join("\n"),
+		);
+
+		const decl = ast.body[0] as AST.VariableDeclaration;
+		const switchExpr = decl.init as AST.SwitchExpression;
+		expect(switchExpr.type).toBe("SwitchExpression");
+		expect(switchExpr.cases).toHaveLength(2);
+
+		const seqArm = switchExpr.cases[0];
+		expect(seqArm.statements).toHaveLength(2);
+		expect(seqArm.statements?.[0].type).toBe("ExpressionStatement");
+		expect((seqArm.result as AST.Identifier).name).toBe("na");
+
+		// A lone expression arm carries no statements
+		expect(switchExpr.cases[1].statements).toBeUndefined();
+	});
+
+	it("keeps multi-line arm statements in the AST", () => {
+		const ast = parse(
+			[
+				"x = switch",
+				"    close > open =>",
+				"        y = close * 2",
+				"        y + 1",
+				"    => na",
+				"plot(x)",
+			].join("\n"),
+		);
+
+		const decl = ast.body[0] as AST.VariableDeclaration;
+		const switchExpr = decl.init as AST.SwitchExpression;
+		const arm = switchExpr.cases[0];
+		expect(arm.statements).toHaveLength(2);
+		expect(arm.statements?.[0].type).toBe("VariableDeclaration");
+		expect(arm.result.type).toBe("BinaryExpression");
+	});
+});
+
 describe("for statement blocks", () => {
 	it("keeps multi-statement for bodies intact", () => {
 		const ast = parse(

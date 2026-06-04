@@ -70,6 +70,13 @@ export class Lexer {
 	private atLineStart: boolean = true; // Track if we're at the start of a line
 	private lexerErrors: LexerError[] = [];
 	private detectedVersion: string | null = null;
+	// Open ( / [ nesting depth. Newlines inside a bracket group are
+	// continuations, not statement boundaries, so no NEWLINE token is
+	// emitted while depth > 0 - this is what lets `x = (` ... `)` and
+	// multi-line calls/tuples span lines. Clamped at 0 so a stray `)` in
+	// a broken file can't suppress newlines for the rest of the source.
+	// see TODO #34 / plan/31.
+	private bracketDepth: number = 0;
 
 	constructor(source: string) {
 		this.source = source;
@@ -111,7 +118,9 @@ export class Lexer {
 				break;
 
 			case "\n":
-				this.addToken(TokenType.NEWLINE, "\n", 1);
+				if (this.bracketDepth === 0) {
+					this.addToken(TokenType.NEWLINE, "\n", 1);
+				}
 				this.line++;
 				this.column = 1;
 				this.atLineStart = true;
@@ -119,15 +128,19 @@ export class Lexer {
 				break;
 
 			case "(":
+				this.bracketDepth++;
 				this.addToken(TokenType.LPAREN, "(", 1);
 				break;
 			case ")":
+				this.bracketDepth = Math.max(0, this.bracketDepth - 1);
 				this.addToken(TokenType.RPAREN, ")", 1);
 				break;
 			case "[":
+				this.bracketDepth++;
 				this.addToken(TokenType.LBRACKET, "[", 1);
 				break;
 			case "]":
+				this.bracketDepth = Math.max(0, this.bracketDepth - 1);
 				this.addToken(TokenType.RBRACKET, "]", 1);
 				break;
 			case ",":

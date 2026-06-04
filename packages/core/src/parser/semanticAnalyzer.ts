@@ -295,7 +295,15 @@ export class SemanticAnalyzer {
 			if (switchCase.condition) {
 				this.analyzeExpression(switchCase.condition);
 			}
-			this.analyzeExpression(switchCase.result);
+			// `result` is contained in the last statement, so walk
+			// `statements` INSTEAD of `result` when present (see SwitchCase).
+			if (switchCase.statements) {
+				for (const stmt of switchCase.statements) {
+					this.analyzeStatement(stmt);
+				}
+			} else {
+				this.analyzeExpression(switchCase.result);
+			}
 		}
 	}
 

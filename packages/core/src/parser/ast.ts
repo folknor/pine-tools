@@ -161,6 +161,12 @@ export type Expression =
 export interface SwitchCase {
 	condition?: Expression; // undefined for default case
 	result: Expression;
+	// Full arm body when the arm holds statements (multi-line bodies, or
+	// inline statement forms like `cond => a := b` / `=> f(), na`).
+	// `result` stays the arm's value expression - it is the last
+	// statement's expression/value, so walkers should visit `statements`
+	// INSTEAD OF `result` when present, not both. see TODO #33.
+	statements?: Statement[];
 }
 
 export interface SwitchExpression extends ASTNode {

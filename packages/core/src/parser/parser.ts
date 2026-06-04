@@ -1196,7 +1196,7 @@ export class Parser {
 		}
 
 		// Parse switch cases until we hit a line with less indentation
-		const cases: { condition?: AST.Expression; result: AST.Expression }[] = [];
+		const cases: AST.SwitchCase[] = [];
 		let switchIndent: number | null = null;
 
 		while (!this.isAtEnd()) {
@@ -1226,16 +1226,17 @@ export class Parser {
 
 			// Check for default case (just =>)
 			if (this.match(TokenType.ARROW)) {
-				const result = this.parseSwitchCaseBody(switchIndent || 0);
-				cases.push({ result });
+				cases.push(this.parseSwitchCaseBody(switchIndent || 0));
 				continue;
 			}
 
 			// Parse condition => result
 			const condition = this.expression();
 			if (this.match(TokenType.ARROW)) {
-				const result = this.parseSwitchCaseBody(switchIndent || 0);
-				cases.push({ condition, result });
+				cases.push({
+					condition,
+					...this.parseSwitchCaseBody(switchIndent || 0),
+				});
 			} else {
 				// Not a valid case, stop parsing
 				break;
@@ -1364,22 +1365,26 @@ export class Parser {
 	}
 
 	/**
-	 * Parse switch case body (single-line expression or multi-line block)
-	 * For multi-line case bodies like:
-	 *     condition =>
+	 * Parse a switch case body, returning the arm's value expression plus,
+	 * when the arm carries statements, the full statement list (so the
+	 * analyzers can walk assignments/declarations the value expression
+	 * alone doesn't contain). Handles:
+	 *     condition => expr
+	 *     condition => target := expr        (inline statement, see TODO #33)
+	 *     => f(...), na                      (inline comma sequence)
+	 *     condition =>                       (multi-line block)
 	 *         stmt1
-	 *         stmt2
 	 *         resultExpr
 	 */
-	private parseSwitchCaseBody(caseIndent: number): AST.Expression {
+	private parseSwitchCaseBody(caseIndent: number): {
+		result: AST.Expression;
+		statements?: AST.Statement[];
+	} {
 		const arrowToken = this.previous();
 
 		// Check if there's content on the same line as =>
 		if (!this.check(TokenType.NEWLINE) && !this.isAtEnd()) {
-			// Single-line case: condition => expression
-			// Use restricted parsing to avoid continuing across newlines.
-			// This prevents "=> expr\n    -1 => ..." from being parsed as "expr - 1".
-			return this.parseSingleLineExpression(arrowToken.line);
+			return this.parseInlineSwitchCaseBody(arrowToken);
 		}
 
 		// Multi-line case body: parse statements until indentation decreases
@@ -1391,10 +1396,12 @@ export class Parser {
 		if (this.isAtEnd()) {
 			// No body after =>, return na as placeholder
 			return {
-				type: "Identifier",
-				name: "na",
-				line: arrowToken.line,
-				column: arrowToken.column,
+				result: {
+					type: "Identifier",
+					name: "na",
+					line: arrowToken.line,
+					column: arrowToken.column,
+				},
 			};
 		}
 
@@ -1405,10 +1412,12 @@ export class Parser {
 		// If not more indented than case, treat as empty body
 		if (bodyIndent <= caseIndent) {
 			return {
-				type: "Identifier",
-				name: "na",
-				line: arrowToken.line,
-				column: arrowToken.column,
+				result: {
+					type: "Identifier",
+					name: "na",
+					line: arrowToken.line,
+					column: arrowToken.column,
+				},
 			};
 		}
 
@@ -1427,13 +1436,8 @@ export class Parser {
 			const currentIndent = currentToken.indent || 0;
 
 			// Stop if indentation has decreased to or below case level
+			// (back at case level means we're at the next case)
 			if (currentIndent <= caseIndent) {
-				break;
-			}
-
-			// Also stop if we've returned to the same indentation as case line
-			// (which means we're at the next case)
-			if (currentIndent === caseIndent) {
 				break;
 			}
 
@@ -1446,36 +1450,97 @@ export class Parser {
 			}
 		}
 
-		// The result is the last statement's expression
-		// If the last statement is an ExpressionStatement, use its expression
-		// Otherwise wrap the statements somehow
 		if (bodyStatements.length === 0) {
 			return {
-				type: "Identifier",
-				name: "na",
-				line: arrowToken.line,
-				column: arrowToken.column,
+				result: {
+					type: "Identifier",
+					name: "na",
+					line: arrowToken.line,
+					column: arrowToken.column,
+				},
 			};
 		}
 
-		const lastStmt = bodyStatements[bodyStatements.length - 1];
-		if (lastStmt.type === "ExpressionStatement") {
-			// The last expression is the result
-			// NOTE: Multi-statement arrow bodies lose intermediate statements in the AST.
-			// e.g., `f() => a = 1\n    b = 2\n    a + b` only preserves `a + b`.
-			// A proper fix would add a BlockExpression node containing all statements,
-			// with the last expression as the result. Low priority since it only affects
-			// complex multi-line arrow functions and doesn't cause validation errors.
-			return lastStmt.expression;
+		return {
+			result: this.armResultExpression(bodyStatements),
+			statements: bodyStatements,
+		};
+	}
+
+	/**
+	 * Parse an inline switch case body: one or more comma-separated
+	 * statements on the same line as the `=>`. Each unit is an expression
+	 * optionally followed by an assignment operator (`x := y`, `k += 1`).
+	 * Uses restricted single-line expression parsing so the body doesn't
+	 * continue across newlines into the next case. see TODO #33.
+	 */
+	private parseInlineSwitchCaseBody(arrowToken: Token): {
+		result: AST.Expression;
+		statements?: AST.Statement[];
+	} {
+		const statements: AST.Statement[] = [];
+
+		for (;;) {
+			const expr = this.parseSingleLineExpression(arrowToken.line);
+			if (
+				this.check(TokenType.ASSIGN) ||
+				this.check(TokenType.COMPOUND_ASSIGN)
+			) {
+				const op = this.advance().value;
+				const value = this.parseSingleLineExpression(arrowToken.line);
+				statements.push({
+					type: "AssignmentStatement",
+					target: expr,
+					operator: op,
+					value,
+					line: expr.line,
+					column: expr.column,
+				});
+			} else {
+				statements.push({
+					type: "ExpressionStatement",
+					expression: expr,
+					line: expr.line,
+					column: expr.column,
+				});
+			}
+			if (!this.match(TokenType.COMMA)) {
+				break;
+			}
+			// Tolerate a trailing comma at end of line (`'25' => 1 ,`) -
+			// real published scripts carry them.
+			if (this.check(TokenType.NEWLINE) || this.isAtEnd()) {
+				break;
+			}
 		}
 
-		// If the last statement isn't an expression, still try to return something
-		// This handles cases like variable declarations that should return their value
+		const lastStmt = statements[statements.length - 1];
+
+		// A lone expression arm carries no statement information beyond its
+		// result - omit `statements` so walkers don't visit it twice.
+		if (statements.length === 1 && lastStmt.type === "ExpressionStatement") {
+			return { result: lastStmt.expression };
+		}
+
+		return { result: this.armResultExpression(statements), statements };
+	}
+
+	/**
+	 * Derive a switch arm's value expression from its statement list: the
+	 * last statement's expression/value/init, or `na` when the last
+	 * statement has no value form.
+	 */
+	private armResultExpression(statements: AST.Statement[]): AST.Expression {
+		const lastStmt = statements[statements.length - 1];
+		if (lastStmt.type === "ExpressionStatement") {
+			return lastStmt.expression;
+		}
+		if (lastStmt.type === "AssignmentStatement") {
+			return lastStmt.value;
+		}
 		if (lastStmt.type === "VariableDeclaration" && lastStmt.init) {
 			return lastStmt.init;
 		}
-
-		// Fallback: return na
 		return {
 			type: "Identifier",
 			name: "na",
