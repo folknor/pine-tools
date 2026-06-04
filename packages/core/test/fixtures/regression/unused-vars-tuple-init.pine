@@ -1,0 +1,11 @@
+// @test regression/unused-vars-tuple-init
+// @description A variable used only inside a tuple declaration's RHS must not be reported as unused, and the declared tuple members count as declarations. The SemanticAnalyzer previously never walked TupleDeclaration in either pass. See plan/31 Finding 3.
+// @expects parse: success
+// @expects warnings: 0
+//@version=6
+indicator("x")
+int fastLen = 12
+[m, s, h] = ta.macd(close, fastLen, 26, 9)
+plot(m)
+plot(s)
+plot(h)

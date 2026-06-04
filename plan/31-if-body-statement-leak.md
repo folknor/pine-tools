@@ -1,10 +1,16 @@
 # #31 - `if`/`while` bodies drop statements; SemanticAnalyzer blind spots
 
-Status: pending. Diagnosed 2026-06-04; verified and expanded the same day
+Status: FIXED 2026-06-04 (same day as diagnosis). All findings 1-7
+addressed except Finding 7 (CONDITIONAL_SERIES re-foundation), which
+remains a follow-up as planned. See the Resolution section at the end
+for what shipped, the lateral fixes the corpus diff surfaced, and the
+remaining follow-ups.
+
+Diagnosed 2026-06-04; verified and expanded the same day
 after two independent reviews (every claim below re-verified against the
 code or an AST/CLI repro). Language-behavior claims additionally
 cross-checked against `po` (pine-data snapshot 2026-06-02 plus the
-indexed manual) - `po:` references inline. Not yet fixed.
+indexed manual) - `po:` references inline.
 
 ## Discovery context
 
@@ -388,3 +394,92 @@ Expected end state for the discovery script: exactly one warning
 (`supertrendOk` declared but never used). Verified plausible (its `ta.*`
 calls are all top-level and it draws nothing), but re-measure rather
 than assume.
+
+## Resolution (2026-06-04)
+
+All plan steps executed. Implementation notes where reality differed
+from the plan:
+
+- **Steps 1-3 became one shared helper.** `parseIndentedBlock(startLine,
+  baseIndent, stopAtElse)` in parser.ts now carries both guards
+  (NEWLINE skip + INV008 strict indent) and is used by if-consequent,
+  if-alternate, while, for, and for-in. The function/method body loops
+  kept their own copies (they wrap `statement()` in try/catch recovery
+  and handle same-line bodies) but gained the strict-indent guard via a
+  threaded `baseIndent` param - the delta-debugging below proved the
+  bodyless-declaration swallow was live there too.
+- **`else` attachment is indent-aware**, beyond the plan: an `else` is
+  consumed only when its indent equals the `if`'s, so a dedented `else`
+  attaches to the enclosing `if`, not the innermost one. (The lexer
+  already gives the inline `if` of an `else if` the `else`'s indent, so
+  chains nest correctly.) If-expressions (`x = if cond`) were confirmed
+  unsupported in general - `startToken.indent` is therefore always
+  defined where `ifStatement()` runs.
+- **Steps 4-6 as planned.** The collect pass now recurses through a
+  single `childStatements()` enumeration so a new statement variant
+  can't silently go unwalked; CONDITIONAL_REASSIGNMENT deleted;
+  the fixture runner mirrors the CLI's channels (validator errors +
+  SemanticAnalyzer warnings, v6 only).
+- **Step 7:** `packages/core/test/parser-blocks.test.ts` (15 AST-shape
+  tests) plus 6 regression fixtures (`unused-vars-*.pine`,
+  `unused-tuple-member-flagged.pine`).
+- **Step 8 (Finding 5) done** - the bracket-aware split stayed small
+  (`splitTupleType` in astExtractor.ts); `[m, s, h] = ta.macd(...)`
+  members now report `series float` each.
+- Discovery-script end state: TWO warnings, both correct -
+  `supertrendOk` (predicted) plus `macdHist`, a genuinely unused tuple
+  member that only became flaggable once TupleDeclaration names were
+  collected (the FN-mirror of Finding 3 working as intended).
+
+### Lateral fixes surfaced by the corpus regression diff
+
+Triaged with `scripts/triage-regression.mjs` (new helper that groups
+the regression report's appeared/disappeared records into normalized
+message categories):
+
+- **Lexer: U+00A0 (non-breaking space) indentation.** Real published
+  scripts indent with nbsp; the lexer silently dropped the char, so
+  body tokens read indent 0 and (with the strict guard) function
+  bodies swallowed the rest of the file. Now counted as whitespace
+  (lexer.ts `case " "`). Found via greedy delta-debugging of a
+  library fixture whose top-level plots were flagged as local-scope
+  calls.
+- **Parser: `for [index, value] in` tuple iterators.** Previously
+  "Expected iterator variable" - the parse abort leaked every for-in
+  body corpus-wide (~80 parse errors + ~1300 cascading
+  undefined-variable FPs). `ForInStatement` gained `iterator2?`;
+  checker/astExtractor/semanticAnalyzer updated. Iterator names accept
+  type keywords (`for [i, line] in lines` is real published code).
+- **Parser: `for int i = 0 to 10` typed iterators.** Type annotation
+  consumed and dropped (not tracked in the AST).
+- **Checker: ForInStatement was never dispatched** (`case
+  "ForStatement"` doesn't match the distinct type string) - the same
+  Finding 3 blind spot, in UnifiedPineValidator. For-in bodies and
+  collections are now validated; for-in element iterators are typed
+  "unknown" (lenient) since we don't derive element types yet.
+
+### Follow-ups (not fixed here)
+
+- **Finding 7 stands**: re-found CONDITIONAL_SERIES on
+  history-dependence (po: errors/CW10003) instead of the return-type/
+  namespace net, and extend to ternary / and-or / switch arms.
+- **Inline switch-arm statements**: `cond => x := y` and
+  `=> f(), na` fail to parse (`parseSwitchCaseBody` parses the inline
+  body as a pure expression). Multi-line arm bodies are fine. ~12
+  corpus sites.
+- **Parenthesized expressions spanning lines**: `x = (\n  "a"\n  + "b"\n)`
+  fails ("Unexpected token: \n"). ~18 corpus sites, all TV-valid.
+- **UDF tuple return-type inference** (INV010 / task #18): now that
+  bodies parse fully, mis-inferred tuple member types surface as
+  type-check FPs (e.g. "Cannot assign series<float> to bool", 6 sites).
+- Re-measure task #4 and the INV012 cascade counts against the new
+  baseline (the old numbers predate correct block scoping).
+
+Final corpus diff vs the pre-fix baseline: ~2400 disappeared error
+records (spurious "Unexpected token: \n" from the NEWLINE-dedent bug,
+"Unexpected token: =>", for-in cascades, local-scope FPs at column 1)
+vs ~480 appearances, of which the bulk are correct new
+undefined-variable errors (block locals no longer leak into the
+enclosing scope - Pine blocks are real scopes) plus cascade
+repositioning inside files with unrelated pre-existing parse errors.
+The remainder map to the follow-ups above.

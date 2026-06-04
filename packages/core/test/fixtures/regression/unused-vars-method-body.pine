@@ -1,0 +1,10 @@
+// @test regression/unused-vars-method-body
+// @description A variable used only inside a `method` body must not be reported as unused. The SemanticAnalyzer never walked MethodDeclaration bodies or collected their params. See plan/31 Finding 3.
+// @expects parse: success
+// @expects warnings: 0
+//@version=6
+indicator("x")
+float offsetVal = 5.0
+method shifted(float value) =>
+    value + offsetVal
+plot(close.shifted())

@@ -7,12 +7,15 @@ import type {
 	BinaryExpression,
 	CallExpression,
 	Expression,
+	ForInStatement,
 	ForStatement,
 	FunctionDeclaration,
 	IfStatement,
 	MemberExpression,
+	MethodDeclaration,
 	Program,
 	Statement,
+	SwitchExpression,
 	TernaryExpression,
 	VariableDeclaration,
 	WhileStatement,
@@ -64,11 +67,17 @@ export class SemanticAnalyzer {
 				this.analyzeVariableDeclaration(statement);
 				break;
 
+			case "TupleDeclaration":
+				// [a, b, c] = f(...) - the RHS is a normal expression
+				this.analyzeExpression(statement.init);
+				break;
+
 			case "ExpressionStatement":
 				this.analyzeExpression(statement.expression);
 				break;
 
 			case "FunctionDeclaration":
+			case "MethodDeclaration":
 				this.analyzeFunctionDeclaration(statement);
 				break;
 
@@ -77,6 +86,7 @@ export class SemanticAnalyzer {
 				break;
 
 			case "ForStatement":
+			case "ForInStatement":
 				this.analyzeForStatement(statement);
 				break;
 
@@ -88,9 +98,19 @@ export class SemanticAnalyzer {
 				this.analyzeAssignmentStatement(statement);
 				break;
 
+			case "SequenceStatement":
+				// Comma-separated statements: a = 1, b = 2
+				for (const stmt of statement.statements) {
+					this.analyzeStatement(stmt);
+				}
+				break;
+
 			case "ReturnStatement":
 				this.analyzeExpression(statement.value);
 				break;
+
+			// TypeDeclaration, EnumDeclaration, ImportStatement are name-only
+			// nodes - nothing to walk. see plan/31 Finding 3.
 		}
 	}
 
@@ -102,8 +122,10 @@ export class SemanticAnalyzer {
 		}
 	}
 
-	private analyzeFunctionDeclaration(declaration: FunctionDeclaration): void {
-		// Analyze function body
+	private analyzeFunctionDeclaration(
+		declaration: FunctionDeclaration | MethodDeclaration,
+	): void {
+		// Analyze function/method body
 		for (const statement of declaration.body) {
 			this.analyzeStatement(statement);
 		}
@@ -134,16 +156,19 @@ export class SemanticAnalyzer {
 		}
 	}
 
-	private analyzeForStatement(statement: ForStatement): void {
+	private analyzeForStatement(statement: ForStatement | ForInStatement): void {
 		// Enter conditional scope
 		this.enterConditionalScope();
 
-		// Analyze range expressions
+		// Analyze range/collection expressions
 		if ("from" in statement) {
 			this.analyzeExpression(statement.from);
 		}
 		if ("to" in statement) {
 			this.analyzeExpression(statement.to);
+		}
+		if ("collection" in statement) {
+			this.analyzeExpression(statement.collection);
 		}
 
 		// Analyze loop body
@@ -173,12 +198,13 @@ export class SemanticAnalyzer {
 		this.exitConditionalScope();
 	}
 
+	// NOTE: there is deliberately no rule for reassignment inside conditional
+	// scope. The former CONDITIONAL_REASSIGNMENT rule flagged the canonical
+	// Pine `var` state-machine idiom; TV's CW10003 page shows conditional
+	// reassignment as its recommended fix pattern, not a hazard. The real
+	// hazard - conditionally CALLING series functions - is CONDITIONAL_SERIES.
+	// see plan/31 Finding 4.
 	private analyzeAssignmentStatement(statement: AssignmentStatement): void {
-		// Check for conditional reassignment
-		if (this.inConditionalScope) {
-			this.checkConditionalReassignment(statement);
-		}
-
 		// Analyze target and value expressions
 		this.analyzeExpression(statement.target);
 		this.analyzeExpression(statement.value);
@@ -215,6 +241,10 @@ export class SemanticAnalyzer {
 			case "IndexExpression":
 				this.analyzeExpression(expr.object);
 				this.analyzeExpression(expr.index);
+				break;
+
+			case "SwitchExpression":
+				this.analyzeSwitchExpression(expr);
 				break;
 
 			case "Identifier":
@@ -257,6 +287,18 @@ export class SemanticAnalyzer {
 		this.analyzeExpression(expr.alternate);
 	}
 
+	private analyzeSwitchExpression(expr: SwitchExpression): void {
+		if (expr.discriminant) {
+			this.analyzeExpression(expr.discriminant);
+		}
+		for (const switchCase of expr.cases) {
+			if (switchCase.condition) {
+				this.analyzeExpression(switchCase.condition);
+			}
+			this.analyzeExpression(switchCase.result);
+		}
+	}
+
 	private enterConditionalScope(): void {
 		this.conditionalScopeDepth++;
 		this.inConditionalScope = true;
@@ -290,27 +332,6 @@ export class SemanticAnalyzer {
 				`The function '${functionName}' should be called on each calculation for consistency. It is recommended to extract the call from this scope`,
 				DiagnosticSeverity.Warning,
 				"CONDITIONAL_SERIES",
-			);
-		}
-	}
-
-	private checkConditionalReassignment(statement: AssignmentStatement): void {
-		// Check if this is a reassignment of a series variable (var :=)
-		if (statement.target.type === "Identifier") {
-			const targetName = statement.target.name;
-
-			// NOTE: Simplified heuristic - warns on all conditional reassignments.
-			// A complete implementation would check the symbol table to verify:
-			// 1. Variable was declared with 'var' (making it a series variable)
-			// 2. The reassignment actually affects series coherence
-			// Low priority since false positives are acceptable for this lint rule.
-			this.addWarning(
-				statement.line,
-				statement.column,
-				1, // length of := operator
-				`Reassignment of variable '${targetName}' inside conditional scope may cause series coherence issues`,
-				DiagnosticSeverity.Warning,
-				"CONDITIONAL_REASSIGNMENT",
 			);
 		}
 	}
@@ -352,7 +373,20 @@ export class SemanticAnalyzer {
 				}
 				break;
 
+			case "TupleDeclaration":
+				// [a, b, c] = f(...) - every tuple member is a declaration
+				for (const name of statement.names) {
+					if (name) {
+						this.declaredVariables.set(name, {
+							line: statement.line,
+							column: statement.column,
+						});
+					}
+				}
+				break;
+
 			case "FunctionDeclaration":
+			case "MethodDeclaration":
 				// Collect function parameters. FunctionParam carries no position of
 				// its own; point at the declaring function instead.
 				for (const param of statement.params) {
@@ -363,32 +397,41 @@ export class SemanticAnalyzer {
 						});
 					}
 				}
-				// Recursively collect declarations in function body
-				for (const bodyStatement of statement.body) {
-					this.collectDeclarationsInStatement(bodyStatement);
-				}
 				break;
 
-			case "IfStatement":
-				// Collect declarations in consequent
-				for (const stmt of statement.consequent) {
-					this.collectDeclarationsInStatement(stmt);
-				}
-				// Collect declarations in alternate
-				if (statement.alternate) {
-					for (const stmt of statement.alternate) {
-						this.collectDeclarationsInStatement(stmt);
-					}
-				}
-				break;
+			// for/for-in iterator names are deliberately NOT collected: an
+			// unused iterator is idiomatic (`for [i, v] in` using only `v`),
+			// so flagging it would be noise. see plan/31 Finding 3.
+		}
 
+		// Recurse into child statements - shared across all block-carrying
+		// statement variants so a new variant can't silently go unwalked.
+		for (const child of this.childStatements(statement)) {
+			this.collectDeclarationsInStatement(child);
+		}
+	}
+
+	/**
+	 * Enumerate a statement's direct child statements. The single place that
+	 * knows which Statement variants carry statement blocks. The collect pass
+	 * recurses via this list; analyzeStatement keeps per-type handlers because
+	 * it also manages conditional-scope state, but its case list must cover
+	 * every variant named here. see plan/31 Finding 3.
+	 */
+	private childStatements(statement: Statement): Statement[] {
+		switch (statement.type) {
+			case "FunctionDeclaration":
+			case "MethodDeclaration":
 			case "ForStatement":
+			case "ForInStatement":
 			case "WhileStatement":
-				// Collect declarations in loop body
-				for (const stmt of statement.body) {
-					this.collectDeclarationsInStatement(stmt);
-				}
-				break;
+				return statement.body;
+			case "IfStatement":
+				return [...statement.consequent, ...(statement.alternate ?? [])];
+			case "SequenceStatement":
+				return statement.statements;
+			default:
+				return [];
 		}
 	}
 

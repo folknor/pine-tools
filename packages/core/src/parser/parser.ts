@@ -116,7 +116,7 @@ export class Parser {
 
 		// Method declaration: method methodName(...) => ...
 		if (this.match([TokenType.KEYWORD, ["method"]])) {
-			return this.methodDeclaration(false);
+			return this.methodDeclaration(false, this.previous().indent ?? 0);
 		}
 
 		// If statement
@@ -267,6 +267,7 @@ export class Parser {
 							params,
 							nameToken.line,
 							nameToken.column,
+							nameToken.indent ?? 0,
 						);
 					}
 				} catch (_e) {
@@ -513,97 +514,111 @@ export class Parser {
 		};
 	}
 
-	private ifStatement(): AST.IfStatement {
-		const startToken = this.previous();
-		const condition = this.expression();
+	/**
+	 * Parse an indentation-delimited statement block (if/else/for/while
+	 * bodies). Two guards, both load-bearing - see plan/31:
+	 *
+	 * - NEWLINE tokens carry no indent, so they must be skipped BEFORE
+	 *   any boundary check; reading their `indent || 0` as a dedent
+	 *   ended every block after its first statement (#31 Finding 1).
+	 * - The body must be indented STRICTLY MORE than the introducing
+	 *   keyword (`baseIndent`) - otherwise a bodyless block swallows
+	 *   following same-column statements to end-of-file. see INV008.
+	 *
+	 * Statements on the keyword's own line (e.g. the nested `if` of an
+	 * `else if`) are parsed without indent tracking, matching the old
+	 * loops. `stopAtElse` ends the block at an `else` keyword (the
+	 * if-consequent case); the caller decides whether that `else` is its
+	 * own by comparing indents.
+	 */
+	private parseIndentedBlock(
+		startLine: number,
+		baseIndent: number,
+		stopAtElse = false,
+	): AST.Statement[] {
+		const body: AST.Statement[] = [];
+		let bodyIndent: number | null = null;
 
-		const consequent: AST.Statement[] = [];
-
-		// Skip newlines after condition
-		while (this.check(TokenType.NEWLINE)) {
-			this.advance();
-		}
-
-		// Parse the consequent block using indentation tracking. The body
-		// must be indented STRICTLY MORE than the `if` keyword itself -
-		// otherwise we'd swallow any following same-column statements as
-		// the body and the `if`'s scope would leak to end-of-file. That
-		// happened in real fixtures when malformed continuation text
-		// (`or rename if conflict` left over from a wrap-without-//
-		// comment) parsed as a column-1 `if` and consumed the rest of
-		// the file, hiding subsequent top-level variable declarations.
-		// see INV008.
-		const ifIndent = startToken.indent ?? 0;
-		let consequentIndent: number | null = null;
-
-		while (!this.isAtEnd() && !this.check([TokenType.KEYWORD, ["else"]])) {
+		while (!this.isAtEnd()) {
 			const currentToken = this.peek();
+
+			// Skip NEWLINE tokens when determining body boundaries
+			if (currentToken.type === TokenType.NEWLINE) {
+				this.advance();
+				continue;
+			}
+
+			if (stopAtElse && this.check([TokenType.KEYWORD, ["else"]])) {
+				break;
+			}
+
 			const currentIndent = currentToken.indent || 0;
 
-			// Set expected consequent indentation from first statement
-			if (consequentIndent === null && currentToken.line > startToken.line) {
-				if (currentIndent <= ifIndent) {
-					// No properly-indented body - the `if` has no consequent.
+			// Set expected body indentation from first statement
+			if (bodyIndent === null && currentToken.line > startLine) {
+				if (currentIndent <= baseIndent) {
+					// No properly-indented body - the block is empty. see INV008.
 					break;
 				}
-				consequentIndent = currentIndent;
+				bodyIndent = currentIndent;
 			}
 
 			// Stop if we've returned to base indentation level or less
 			if (
-				consequentIndent !== null &&
-				currentToken.line > startToken.line &&
-				currentIndent < consequentIndent
+				bodyIndent !== null &&
+				currentToken.line > startLine &&
+				currentIndent < bodyIndent
 			) {
 				break;
 			}
 
 			const stmt = this.statement();
 			if (stmt) {
-				consequent.push(stmt);
+				body.push(stmt);
 			} else {
 				break;
 			}
 		}
 
+		return body;
+	}
+
+	private ifStatement(): AST.IfStatement {
+		const startToken = this.previous();
+		const condition = this.expression();
+
+		// Skip newlines after condition
+		while (this.check(TokenType.NEWLINE)) {
+			this.advance();
+		}
+
+		// The strict-indent guard in parseIndentedBlock matters here: a
+		// bodyless `if` once swallowed the rest of the file when malformed
+		// continuation text (`or rename if conflict` left over from a
+		// wrap-without-// comment) parsed as a column-1 `if`. see INV008.
+		const ifIndent = startToken.indent ?? 0;
+		const consequent = this.parseIndentedBlock(startToken.line, ifIndent, true);
+
+		// Attach an `else` only if it sits at the same indent as the `if` -
+		// a shallower `else` belongs to an enclosing `if` and must be left
+		// for that level to consume. (The lexer gives the inline `if` of an
+		// `else if` the `else`'s own indent, so chains nest correctly.)
 		let alternate: AST.Statement[] | undefined;
-		if (this.match([TokenType.KEYWORD, ["else"]])) {
-			const elseToken = this.previous();
-			alternate = [];
+		if (
+			this.check([TokenType.KEYWORD, ["else"]]) &&
+			(this.peek().indent ?? ifIndent) === ifIndent
+		) {
+			const elseToken = this.advance();
 
 			// Skip newlines after 'else' keyword
 			while (this.check(TokenType.NEWLINE)) {
 				this.advance();
 			}
 
-			// Parse the alternate block using indentation tracking
-			let alternateIndent: number | null = null;
-
-			while (!this.isAtEnd()) {
-				const currentToken = this.peek();
-				const currentIndent = currentToken.indent || 0;
-
-				// Set expected alternate indentation from first statement
-				if (alternateIndent === null && currentToken.line > elseToken.line) {
-					alternateIndent = currentIndent;
-				}
-
-				// Stop if we've returned to base indentation level or less
-				if (
-					alternateIndent !== null &&
-					currentToken.line > elseToken.line &&
-					currentIndent < alternateIndent
-				) {
-					break;
-				}
-
-				const stmt = this.statement();
-				if (stmt) {
-					alternate.push(stmt);
-				} else {
-					break;
-				}
-			}
+			alternate = this.parseIndentedBlock(
+				elseToken.line,
+				elseToken.indent ?? ifIndent,
+			);
 		}
 
 		return {
@@ -616,58 +631,88 @@ export class Parser {
 		};
 	}
 
+	/**
+	 * Consume a for-loop iterator name. Type names (`line`, `label`, ...)
+	 * are legal variable names in Pine and appear as iterators in real
+	 * published scripts (`for [i, line] in lines`), so accept type
+	 * keywords alongside identifiers. see plan/31.
+	 */
+	private consumeIteratorName(message: string): string {
+		if (this.check(TokenType.IDENTIFIER) || this.isTypeKeyword()) {
+			return this.advance().value;
+		}
+		throw new Error(`${message} at line ${this.peek().line}`);
+	}
+
 	private forStatement(): AST.ForStatement | AST.ForInStatement {
 		const startToken = this.previous();
-		const iterator = this.consume(
-			TokenType.IDENTIFIER,
-			"Expected iterator variable",
-		).value;
 
-		// Check for "for x in collection" syntax
-		if (this.check(TokenType.KEYWORD) && this.peek().value === "in") {
-			this.advance(); // consume 'in'
+		// Tuple iterator form: for [index, value] in collection
+		if (this.match(TokenType.LBRACKET)) {
+			const iterator = this.consumeIteratorName("Expected iterator variable");
+			this.consume(TokenType.COMMA, 'Expected "," in for-in tuple');
+			const iterator2 = this.consumeIteratorName(
+				"Expected second iterator variable",
+			);
+			this.consume(TokenType.RBRACKET, 'Expected "]" after for-in tuple');
+			if (!this.match([TokenType.KEYWORD, ["in"]])) {
+				throw new Error(
+					`Expected "in" in for loop at line ${this.peek().line}`,
+				);
+			}
 			const collection = this.expression();
-
-			const body: AST.Statement[] = [];
 
 			// Skip newlines after collection expression
 			while (this.check(TokenType.NEWLINE)) {
 				this.advance();
 			}
 
-			// Parse the loop body using indentation tracking
-			let bodyIndent: number | null = null;
+			const body = this.parseIndentedBlock(
+				startToken.line,
+				startToken.indent ?? 0,
+			);
 
-			while (!this.isAtEnd()) {
-				const currentToken = this.peek();
+			return {
+				type: "ForInStatement",
+				iterator,
+				iterator2,
+				collection,
+				body,
+				line: startToken.line,
+				column: startToken.column,
+			};
+		}
 
-				// Skip NEWLINE tokens when determining loop body boundaries
-				if (currentToken.type === TokenType.NEWLINE) {
-					this.advance();
-					continue;
-				}
+		// Optional iterator type annotation: `for int i = 0 to 10` /
+		// `for float v in arr`. A type keyword directly followed by another
+		// name is the annotation; a type keyword followed by `in`/`=` is the
+		// iterator name itself (`for line in lines`). The annotation is
+		// consumed and dropped - iterator types are not tracked in the AST.
+		if (
+			this.isTypeKeyword() &&
+			(this.peekNext()?.type === TokenType.IDENTIFIER ||
+				(this.peekNext()?.type === TokenType.KEYWORD &&
+					TYPE_KEYWORDS.has(this.peekNext()?.value ?? "")))
+		) {
+			this.advance();
+		}
 
-				const currentIndent = currentToken.indent || 0;
+		const iterator = this.consumeIteratorName("Expected iterator variable");
 
-				if (bodyIndent === null && currentToken.line > startToken.line) {
-					bodyIndent = currentIndent;
-				}
+		// Check for "for x in collection" syntax
+		if (this.check(TokenType.KEYWORD) && this.peek().value === "in") {
+			this.advance(); // consume 'in'
+			const collection = this.expression();
 
-				if (
-					bodyIndent !== null &&
-					currentToken.line > startToken.line &&
-					currentIndent < bodyIndent
-				) {
-					break;
-				}
-
-				const stmt = this.statement();
-				if (stmt) {
-					body.push(stmt);
-				} else {
-					break;
-				}
+			// Skip newlines after collection expression
+			while (this.check(TokenType.NEWLINE)) {
+				this.advance();
 			}
+
+			const body = this.parseIndentedBlock(
+				startToken.line,
+				startToken.indent ?? 0,
+			);
 
 			return {
 				type: "ForInStatement",
@@ -690,48 +735,15 @@ export class Parser {
 			step = this.expression();
 		}
 
-		const body: AST.Statement[] = [];
-
 		// Skip newlines after to expression
 		while (this.check(TokenType.NEWLINE)) {
 			this.advance();
 		}
 
-		// Parse the loop body using indentation tracking
-		let bodyIndent: number | null = null;
-
-		while (!this.isAtEnd()) {
-			const currentToken = this.peek();
-
-			// Skip NEWLINE tokens when determining loop body boundaries
-			if (currentToken.type === TokenType.NEWLINE) {
-				this.advance();
-				continue;
-			}
-
-			const currentIndent = currentToken.indent || 0;
-
-			// Set expected body indentation from first statement
-			if (bodyIndent === null && currentToken.line > startToken.line) {
-				bodyIndent = currentIndent;
-			}
-
-			// Stop if we've returned to base indentation level or less
-			if (
-				bodyIndent !== null &&
-				currentToken.line > startToken.line &&
-				currentIndent < bodyIndent
-			) {
-				break;
-			}
-
-			const stmt = this.statement();
-			if (stmt) {
-				body.push(stmt);
-			} else {
-				break;
-			}
-		}
+		const body = this.parseIndentedBlock(
+			startToken.line,
+			startToken.indent ?? 0,
+		);
 
 		return {
 			type: "ForStatement",
@@ -749,9 +761,15 @@ export class Parser {
 		const startToken = this.previous();
 		const condition = this.expression();
 
-		const body: AST.Statement[] = [];
-		const stmt = this.statement();
-		if (stmt) body.push(stmt);
+		// Skip newlines after condition
+		while (this.check(TokenType.NEWLINE)) {
+			this.advance();
+		}
+
+		const body = this.parseIndentedBlock(
+			startToken.line,
+			startToken.indent ?? 0,
+		);
 
 		return {
 			type: "WhileStatement",
@@ -779,6 +797,7 @@ export class Parser {
 		params: AST.FunctionParam[],
 		line: number,
 		column: number,
+		baseIndent = 0,
 	): AST.FunctionDeclaration {
 		// Parse function body using indentation
 		// In Pine Script, function bodies after => can be:
@@ -788,9 +807,6 @@ export class Parser {
 		//        y = x * 2
 		//        y + 1
 		const body: AST.Statement[] = [];
-
-		// Get the base indentation (indentation of the function declaration line)
-		const _baseIndent = this.peek().indent || 0;
 
 		// Skip newlines after the => token
 		while (this.check(TokenType.NEWLINE)) {
@@ -827,8 +843,14 @@ export class Parser {
 					continue;
 				}
 
-				// Set expected body indentation from first statement
+				// Set expected body indentation from first statement. The body
+				// must be indented STRICTLY MORE than the declaration itself -
+				// otherwise a bodyless declaration swallows following
+				// same-column statements to end-of-file. see INV008 / plan/31.
 				if (functionBodyIndent === null && currentToken.line > line) {
+					if (currentIndent <= baseIndent) {
+						break;
+					}
 					functionBodyIndent = currentIndent;
 				}
 
@@ -953,8 +975,12 @@ export class Parser {
 		| AST.MethodDeclaration
 		| AST.TypeDeclaration
 		| AST.EnumDeclaration {
+		// The `export` keyword starts the line, so its indent is the
+		// declaration's base indent (the name token's is undefined).
+		const exportIndent = this.previous().indent ?? 0;
+
 		if (this.match([TokenType.KEYWORD, ["method"]])) {
-			return this.methodDeclaration(true);
+			return this.methodDeclaration(true, exportIndent);
 		}
 
 		// `export enum Name ...` / `export type Name ...` - Pine v6 library
@@ -981,6 +1007,7 @@ export class Parser {
 			params,
 			nameToken.line,
 			nameToken.column,
+			exportIndent,
 		);
 		funcDecl.isExport = true;
 		return funcDecl;
@@ -1051,7 +1078,10 @@ export class Parser {
 	/**
 	 * Parse method declaration: [export] method methodName(...) => ...
 	 */
-	private methodDeclaration(isExport: boolean): AST.MethodDeclaration {
+	private methodDeclaration(
+		isExport: boolean,
+		baseIndent = 0,
+	): AST.MethodDeclaration {
 		const nameToken = this.consume(
 			TokenType.IDENTIFIER,
 			"Expected method name after 'method'",
@@ -1099,8 +1129,13 @@ export class Parser {
 					continue;
 				}
 
-				// Set expected body indentation from first statement
+				// Set expected body indentation from first statement. The body
+				// must be indented STRICTLY MORE than the declaration itself -
+				// see INV008 / plan/31.
 				if (methodBodyIndent === null && currentToken.line > line) {
+					if (currentIndent <= baseIndent) {
+						break;
+					}
 					methodBodyIndent = currentIndent;
 				}
 

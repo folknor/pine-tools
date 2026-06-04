@@ -128,6 +128,9 @@ export interface ForStatement extends ASTNode {
 export interface ForInStatement extends ASTNode {
 	type: "ForInStatement";
 	iterator: string;
+	// Second name of the tuple iterator form `for [index, value] in coll`.
+	// When present, `iterator` is the index and `iterator2` the value.
+	iterator2?: string;
 	collection: Expression;
 	body: Statement[];
 }

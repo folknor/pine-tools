@@ -114,25 +114,30 @@ IDs so the two stay in sync.
   reference pages, INV/G pointers) where the client advertises support.
   Requires widening the internal `Diagnostic.message` type or adding a
   parallel rich field, plus a capability check before sending markup.
-- **#31 - `if`/`while` bodies drop statements; SemanticAnalyzer blind
-  spots.** Foundational parser bug: the `ifStatement()` consequent/alternate
-  loops break on the trailing NEWLINE token (no `indent` -> reads as dedent),
-  so EVERY multi-statement `if` body parses statements 2..n as top-level
-  siblings outside the if-scope - and `else` never attaches at all (the
-  stranded keyword parses as a bare identifier). `whileStatement()` is
-  worse - its body is hardcoded to a single statement - and `forStatement`
-  lacks the INV008 strict-indent guard (a bodyless `for` swallows
-  same-column siblings to EOF). Plus: SemanticAnalyzer never walks
-  `TupleDeclaration`, `ForInStatement`, `MethodDeclaration`,
-  `SequenceStatement`, or `SwitchExpression` (variables used only there
-  are flagged "never used"), the CONDITIONAL_REASSIGNMENT warning is
-  unsound (flags the canonical `var` state-machine idiom TV's CW10003
-  page explicitly blesses) and should be deleted, and tuple members
-  report the whole tuple type instead of their element type. Full
-  diagnosis, verified repros, and fix plan in
-  [plan/31-if-body-statement-leak.md](plan/31-if-body-statement-leak.md).
-  Likely interacts with #4 and the INV012 cascade counts - re-measure both
-  after fixing.
+- **#32 - re-found CONDITIONAL_SERIES on history-dependence.** The #31
+  parser fix put statements 2..n back inside conditional scope, which
+  unmasks this rule's too-wide net (`isSeriesFunction` matches every
+  drawing constructor and `str.*` by namespace/return type). TV's
+  documented criterion is history-dependent calls (po: errors/CW10003),
+  which also exempts side-effect functions (`label.new`) and names
+  `math.max` stateless. Extend scope to ternary / `and`/`or` operands /
+  switch arms while at it (TV warns there; our `inConditionalScope` is
+  only set by if/for/while). See plan/31 Finding 7.
+- **#33 - inline switch-arm statements fail to parse.** `cond => x := y`
+  and `=> f(), na` error ("Unexpected token: :=" / ",") because
+  `parseSwitchCaseBody` parses inline bodies as pure expressions;
+  multi-line arm bodies are fine. ~12 corpus sites, surfaced by the #31
+  fix. Same family: arrow-function inline bodies.
+- **#34 - parenthesized expressions spanning lines fail to parse.**
+  `x = (` newline `"a" + ...` newline `)` errors with "Unexpected
+  token: \n" - expression parsing does not skip newlines inside an open
+  paren group. ~18 corpus sites, all TV-valid. Surfaced by the #31 fix.
+- **Re-measure #4 and the INV012 cascade counts** against the post-#31
+  baseline - the old numbers predate correct block scoping (#31 fixed
+  the if/while/for statement leak, else attachment, nbsp indentation,
+  and tuple/typed for-in iterators; see
+  [plan/31-if-body-statement-leak.md](plan/31-if-body-statement-leak.md)
+  Resolution section).
 - **Minor data residue (record-only, low value):** `ta.vwap.anchor`'s default
   and the "X by default" phrasing are deliberately unparsed (see
   `parse-default.ts`). Skip unless a consumer needs them. (`since`/`deprecated`,

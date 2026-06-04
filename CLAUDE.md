@@ -151,9 +151,11 @@ For every concrete TV-vs-us discrepancy we choose to act on:
 1. **Reproduce** with a minimal `.pine` fixture in
    `packages/core/test/fixtures/regression/`. The discovery test runner
    picks it up automatically - a repro that doesn't fail-on-regression
-   is just a paragraph with code in it. Use the
-   `// @expects error: line=N, message="..."` directive form (the bare
-   `// @expects errors: N` is currently ignored by the runner).
+   is just a paragraph with code in it. Prefer the
+   `// @expects error: line=N, message="..."` directive form; the
+   count forms `// @expects errors: N` / `warnings: N` are also
+   supported. Warnings assert the SemanticAnalyzer channel (same as
+   the CLI); validator warnings are stripped.
 2. **Open an investigation** under `investigations/INV###-name/` with
    `notes.md` and the repro file (or a pointer to the regression
    fixture). Sequential numbering, never reuse. Index entries live in

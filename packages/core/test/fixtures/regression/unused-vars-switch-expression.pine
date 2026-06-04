@@ -1,0 +1,12 @@
+// @test regression/unused-vars-switch-expression
+// @description Variables used only inside switch arms (condition or result) must not be reported as unused. analyzeExpression had no SwitchExpression case, so discriminant and case expressions were invisible. See plan/31 Finding 3.
+// @expects parse: success
+// @expects warnings: 0
+//@version=6
+indicator("x")
+color bullColor = color.green
+color bearColor = color.red
+trendColor = switch
+    close > open => bullColor
+    => bearColor
+plot(close, color = trendColor)

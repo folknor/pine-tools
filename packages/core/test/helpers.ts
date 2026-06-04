@@ -6,6 +6,7 @@
 
 import { Parser } from "../src/parser/parser";
 import { UnifiedPineValidator } from "../src/analyzer/checker";
+import { SemanticAnalyzer } from "../src/parser/semanticAnalyzer";
 import type { Program } from "../src/parser/ast";
 
 /**
@@ -272,12 +273,29 @@ export function runTest(
 		const validator = new UnifiedPineValidator();
 		const version = parser.getDetectedVersion() || "6";
 		const validationResult = validator.validate(ast, version);
-		result.validationErrors = validationResult.map((e) => ({
-			line: e.line,
-			column: e.column,
-			message: e.message,
-			severity: e.severity,
-		}));
+		// Match the CLI's channels (cli.ts): errors come from the validator,
+		// warnings from the SemanticAnalyzer (v6 only) - validator warnings
+		// are stripped. Fixtures thereby assert the same warning channel the
+		// CLI emits. see plan/31.
+		result.validationErrors = validationResult
+			.filter((e) => e.severity === 0)
+			.map((e) => ({
+				line: e.line,
+				column: e.column,
+				message: e.message,
+				severity: e.severity,
+			}));
+		if (version === "6") {
+			const semanticAnalyzer = new SemanticAnalyzer();
+			result.validationErrors.push(
+				...semanticAnalyzer.analyze(ast).map((w) => ({
+					line: w.line,
+					column: w.column,
+					message: w.message,
+					severity: w.severity,
+				})),
+			);
+		}
 
 		// Check no-errors expectation
 		if (expectations.noErrors) {

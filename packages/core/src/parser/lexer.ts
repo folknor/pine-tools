@@ -95,7 +95,12 @@ export class Lexer {
 		switch (char) {
 			case " ":
 			case "\t":
-				// Count indentation at line start
+			case "\u00a0":
+				// Count indentation at line start. U+00A0 (non-breaking
+				// space) appears as indentation in real published scripts
+				// (TV accepts it); silently dropping it gave body tokens
+				// indent 0 and made function bodies swallow the rest of
+				// the file. see plan/31.
 				if (this.atLineStart) {
 					this.currentIndent += char === "\t" ? 4 : 1;
 				}

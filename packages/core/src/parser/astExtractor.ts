@@ -257,10 +257,23 @@ export class ASTExtractor {
 						forInStmt.iterator,
 						forInStmt.line,
 						forInStmt.column,
-						"undetermined type",
+						// In the tuple form `for [index, value] in`, the first
+						// name is the index; alone it is the element.
+						forInStmt.iterator2 ? "series int" : "undetermined type",
 						scopeId,
 					),
 				);
+				if (forInStmt.iterator2) {
+					variables.push(
+						this.createIteratorVariable(
+							forInStmt.iterator2,
+							forInStmt.line,
+							forInStmt.column,
+							"undetermined type",
+							scopeId,
+						),
+					);
+				}
 				this.walkStatements(forInStmt.body, variables, scopeId);
 			} else if (stmt.type === "WhileStatement") {
 				const loopStmt = stmt as { body: Statement[] };
@@ -323,11 +336,19 @@ export class ASTExtractor {
 			}
 		}
 
+		// A `[t1, t2, t3]`-shaped return type lists the member types - index
+		// by position instead of giving every member the whole tuple type.
+		// Fall back to the unsplit string when the member count mismatches.
+		// see plan/31 Finding 5.
+		const memberTypes = this.splitTupleType(baseType);
+		const usableSplit =
+			memberTypes !== null && memberTypes.length === tupleDecl.names.length;
+
 		for (let i = 0; i < tupleDecl.names.length; i++) {
 			const name = tupleDecl.names[i];
 			const variable: PineLintVariable = {
 				name,
-				type: baseType,
+				type: usableSplit ? memberTypes[i] : baseType,
 				definition: {
 					start: { line: tupleDecl.line, column: tupleDecl.column },
 					end: { line: tupleDecl.line, column: tupleDecl.column + name.length },
@@ -340,6 +361,38 @@ export class ASTExtractor {
 		}
 
 		return variables;
+	}
+
+	/**
+	 * Split a tuple type string `[a, b, c]` into its member types at top
+	 * level. Bracket/angle-aware because member types can themselves carry
+	 * commas (`map<string, float>`). Returns null when the string is not a
+	 * bracketed tuple.
+	 */
+	private splitTupleType(type: string): string[] | null {
+		const trimmed = type.trim();
+		if (!trimmed.startsWith("[") || !trimmed.endsWith("]")) {
+			return null;
+		}
+		const inner = trimmed.slice(1, -1);
+		const parts: string[] = [];
+		let depth = 0;
+		let current = "";
+		for (const ch of inner) {
+			if (ch === "<" || ch === "[" || ch === "(") {
+				depth++;
+			} else if (ch === ">" || ch === "]" || ch === ")") {
+				depth--;
+			}
+			if (ch === "," && depth === 0) {
+				parts.push(current.trim());
+				current = "";
+			} else {
+				current += ch;
+			}
+		}
+		parts.push(current.trim());
+		return parts;
 	}
 
 	/**

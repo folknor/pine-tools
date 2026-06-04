@@ -1,0 +1,15 @@
+// @test regression/unused-vars-for-in
+// @description Variables used as a for-in collection or only inside a for-in body must not be reported as unused. The SemanticAnalyzer's "ForStatement" case never matched the distinct "ForInStatement" type string, so neither the collection nor the body was walked. Also covers the tuple iterator form `for [i, v] in`. See plan/31 Finding 3.
+// @expects parse: success
+// @expects warnings: 0
+//@version=6
+indicator("x")
+arr = array.from(1.0, 2.0, 3.0)
+factor = 2.0
+weights = array.from(0.5, 0.25)
+total = 0.0
+for item in arr
+    total := total + item * factor
+for [idx, w] in weights
+    total := total + w * idx
+plot(total)

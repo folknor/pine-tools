@@ -347,15 +347,34 @@ export class UnifiedPineValidator {
 			}
 
 			case "ForStatement":
+			case "ForInStatement":
 				// For loops create a new scope and define the iterator variable
 				this.symbolTable.enterScope();
 				this.blockDepth++;
 
-				// Add the iterator variable to the scope (always int type)
+				// Add the iterator variable to the scope. The counted form's
+				// iterator is always int; the for-in element (single form, or
+				// `iterator2` of `for [index, value] in`) has the collection's
+				// element type, which we don't derive yet - use "unknown" to
+				// stay lenient. see plan/31.
 				if ("iterator" in statement) {
 					this.symbolTable.define({
 						name: statement.iterator,
-						type: "int",
+						type:
+							statement.type === "ForInStatement" && !statement.iterator2
+								? "unknown"
+								: "int",
+						line: statement.line,
+						column: statement.column,
+						used: false,
+						kind: "variable",
+						declaredWith: null,
+					});
+				}
+				if ("iterator2" in statement && statement.iterator2) {
+					this.symbolTable.define({
+						name: statement.iterator2,
+						type: "unknown",
 						line: statement.line,
 						column: statement.column,
 						used: false,
@@ -364,12 +383,15 @@ export class UnifiedPineValidator {
 					});
 				}
 
-				// Validate range expressions
+				// Validate range/collection expressions
 				if ("from" in statement) {
 					this.validateExpression(statement.from, version);
 				}
 				if ("to" in statement) {
 					this.validateExpression(statement.to, version);
+				}
+				if ("collection" in statement) {
+					this.validateExpression(statement.collection, version);
 				}
 
 				// Collect declarations first

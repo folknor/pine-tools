@@ -1,0 +1,10 @@
+// @test regression/unused-tuple-member-flagged
+// @description The mirror image of unused-vars-tuple-init: a genuinely unused tuple member IS flagged once TupleDeclaration names are collected. See plan/31 Finding 3.
+// @expects parse: success
+// @expects warnings: 1
+// @expects warning: line=3, message="Variable 'h' is declared but never used"
+//@version=6
+indicator("x")
+[m, s, h] = ta.macd(close, 12, 26, 9)
+plot(m)
+plot(s)

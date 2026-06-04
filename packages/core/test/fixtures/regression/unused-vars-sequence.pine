@@ -1,0 +1,9 @@
+// @test regression/unused-vars-sequence
+// @description Variables inside comma-separated declarations (SequenceStatement) must be walked and collected: `base` is used in the first inner statement, `a`/`b` are declared by them. NOTE: no --tv probe has confirmed TV accepts this comma form (see plan/31 Finding 3 caveat) - this fixture asserts our analyzer is not blind to nodes our parser emits, not that the syntax is TV-valid.
+// @expects parse: success
+// @expects warnings: 0
+//@version=6
+indicator("x")
+base = 10.0
+a = base + 1, b = a * 2
+plot(b)
