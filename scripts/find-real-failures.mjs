@@ -4,6 +4,15 @@
 // there is a problem at a given (line, column).
 //
 // - localOnly: error we report at (line,col) that TV does not.
+// - localOnlyPostTvStop: local-only error positioned strictly AFTER the
+//   last error TV reported on a file where TV errored. TV stops analyzing
+//   at its last reported error, so it has NO verdict on anything past
+//   that point - these are unconfirmable cascade noise (typically from
+//   mangled/hard-wrapped sources), neither FP claims nor FN evidence.
+//   Bucketed separately so they don't drown the confirmable signal.
+//   Local-only errors BEFORE TV's stop stay in the main bucket even
+//   though TV's semantic phase may not have run there (conservative:
+//   keep them visible). see INV025.
 // - tvOnly:    error TV reports at (line,col) that we do not.
 // - samePositionDifferentMessage: both linters flag the same (line,col)
 //   but worded the error differently. In every case observed so far
@@ -130,6 +139,25 @@ function diffByPosition(localList, tvList) {
 	return { localOnly, tvOnly, samePositionDifferentMessage };
 }
 
+// Split local-only diagnostics at TV's stop point. TV stops analyzing at
+// its last reported error; anything we flag strictly after that position
+// has no TV verdict at all (see header comment). Returns the input
+// untouched when TV reported no errors.
+function splitPostTvStop(localOnly, tvErrors) {
+	if (tvErrors.length === 0) return { confirmable: localOnly, postTvStop: [] };
+	let stop = tvErrors[0];
+	for (const e of tvErrors) {
+		if (e.line > stop.line || (e.line === stop.line && e.col > stop.col)) stop = e;
+	}
+	const confirmable = [];
+	const postTvStop = [];
+	for (const e of localOnly) {
+		const after = e.line > stop.line || (e.line === stop.line && e.col > stop.col);
+		(after ? postTvStop : confirmable).push(e);
+	}
+	return { confirmable, postTvStop };
+}
+
 async function main() {
 	const entries = (await readdir(DIR)).filter((n) => n.endsWith(".pine")).sort();
 	const allPaths = entries.map((n) => join(DIR, n));
@@ -191,6 +219,9 @@ async function main() {
 
 			const errorDiff = diffByPosition(localE.errors, tvE.errors);
 			const warningDiff = diffByPosition(localE.warnings, tvE.warnings);
+			// Past TV's stop point there is no TV verdict - bucket separately.
+			const errSplit = splitPostTvStop(errorDiff.localOnly, tvE.errors);
+			const warnSplit = splitPostTvStop(warningDiff.localOnly, tvE.errors);
 
 			fileReports[i] = {
 				file,
@@ -198,14 +229,16 @@ async function main() {
 				tvOk: tvE.ok,
 				localErrorCount: localE.errors.length,
 				tvErrorCount: tvE.errors.length,
-				localOnly: errorDiff.localOnly,
+				localOnly: errSplit.confirmable,
+				localOnlyPostTvStop: errSplit.postTvStop,
 				tvOnly: errorDiff.tvOnly,
 				samePositionDifferentMessage: errorDiff.samePositionDifferentMessage,
 				// WARNING channel (CW codes) - see INV018 / TODO #36
 				warnings: {
 					localCount: localE.warnings.length,
 					tvCount: tvE.warnings.length,
-					localOnly: warningDiff.localOnly,
+					localOnly: warnSplit.confirmable,
+					localOnlyPostTvStop: warnSplit.postTvStop,
 					tvOnly: warningDiff.tvOnly,
 				},
 				localParseError: localE.parseError,
@@ -239,6 +272,7 @@ async function main() {
 		filesWithTvOnly: 0,
 		filesWithSamePosDifferentMessage: 0,
 		totalLocalOnly: 0,
+		totalLocalOnlyPostTvStop: 0,
 		totalTvOnly: 0,
 		totalSamePosDifferentMessage: 0,
 		tvUnparseableFiles: [],
@@ -249,6 +283,7 @@ async function main() {
 		totalLocalWarnings: 0,
 		totalTvWarnings: 0,
 		totalWarningLocalOnly: 0,
+		totalWarningLocalOnlyPostTvStop: 0,
 		totalWarningTvOnly: 0,
 	};
 	const localOnlyByMessage = new Map();
@@ -275,6 +310,7 @@ async function main() {
 			summary.totalSamePosDifferentMessage += r.samePositionDifferentMessage.length;
 		}
 		summary.totalLocalOnly += r.localOnly.length;
+		summary.totalLocalOnlyPostTvStop += (r.localOnlyPostTvStop ?? []).length;
 		summary.totalTvOnly += r.tvOnly.length;
 		for (const e of r.localOnly) {
 			const m = e.message.slice(0, 200);
@@ -290,6 +326,7 @@ async function main() {
 		summary.totalLocalWarnings += w.localCount;
 		summary.totalTvWarnings += w.tvCount;
 		summary.totalWarningLocalOnly += w.localOnly.length;
+		summary.totalWarningLocalOnlyPostTvStop += (w.localOnlyPostTvStop ?? []).length;
 		summary.totalWarningTvOnly += w.tvOnly.length;
 		for (const e of w.localOnly) {
 			const m = e.message.slice(0, 200);
@@ -320,6 +357,7 @@ async function main() {
 	console.log(`files with tv-only errs:             ${summary.filesWithTvOnly}`);
 	console.log(`files with same-pos different-msg:   ${summary.filesWithSamePosDifferentMessage}`);
 	console.log(`total local-only:                    ${summary.totalLocalOnly}`);
+	console.log(`local-only past TV's stop point:     ${summary.totalLocalOnlyPostTvStop}  (no TV verdict - see header comment)`);
 	console.log(`total tv-only:                       ${summary.totalTvOnly}`);
 	console.log(`total same-pos different-msg pairs:  ${summary.totalSamePosDifferentMessage}`);
 	console.log(`TV response unparseable:             ${summary.tvUnparseable}`);
@@ -344,6 +382,7 @@ async function main() {
 	console.log(`total local warnings:                ${summary.totalLocalWarnings}`);
 	console.log(`total tv warnings:                   ${summary.totalTvWarnings}`);
 	console.log(`warning local-only (we warn, TV no): ${summary.totalWarningLocalOnly}`);
+	console.log(`warning local-only past TV stop:     ${summary.totalWarningLocalOnlyPostTvStop}`);
 	console.log(`warning tv-only (TV warns, we no):   ${summary.totalWarningTvOnly}`);
 	console.log(`\ntop 15 warning local-only messages:`);
 	for (const [m, c] of [...warnLocalOnlyByMessage.entries()].sort((a, b) => b[1] - a[1]).slice(0, 15)) {

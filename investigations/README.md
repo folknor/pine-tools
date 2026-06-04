@@ -122,3 +122,10 @@ contradiction means re-measure, not "the earlier author was wrong."
   now folds into the annotation; subscripted-target recovery
   (`type name[i] = ...`, TV's "Mismatched input '['" probed). Found
   under TODO #9; -324 corpus error records.
+- [INV025](INV025-multiline-string-continuation-indent/notes.md) -
+  lexer, a single-pair string continues onto the next line only if that
+  line starts with whitespace or is blank; a non-whitespace char at
+  column 1 (even the closing quote) terminates it with CE10017 at
+  (openLine, 1) - probed, indent need NOT avoid multiples of 4 (unlike
+  INV017 expression wraps). Five corpus CE10017 FNs fixed; motivated
+  the find-real-failures post-TV-stop bucketing.

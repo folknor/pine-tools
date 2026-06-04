@@ -6,10 +6,12 @@
 //@version=6
 indicator("Multiline Syntax Tests")
 
-// Multiline string (deprecated but valid in v6)
+// Multiline string (deprecated but valid in v6). Continuation lines must
+// start with whitespace - a non-whitespace char at column 1 terminates the
+// literal with CE10017. see INV025
 string multilineStr = "This is line one
-and this is line two
-and line three"
+  and this is line two
+  and line three"
 
 // Multiline array literal
 var arr = [

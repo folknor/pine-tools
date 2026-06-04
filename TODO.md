@@ -298,21 +298,25 @@ The reports live in `lint-reports/` which is **gitignored** - so this
 section records the latest measurement (the JSONs also embed
 `generatedAt` + `gitCommit` since #29):
 
-**Measured 2026-06-04 (~13:15 UTC), working tree on `a472f3a` +
-INV024** (qualified-declaration parser fix; 748 v6 fixtures, 1 file
-with no TV verdict - `6874e636…`, the usual transient): **903
-local-only error records / 57 tv-only** (was 955/57 at `9d64b4c`,
-1561/57 at `6644c91`). INV024 cleared the whole 'and'/'not'
-bool-operand cluster and part of the undefined-variable counts; its
-larger wins (-324 baseline records) sit in v4/v5 fixtures outside
-this v6 diff. Warning channel: local 2175 / TV 376, local-only 1829,
-**tv-only 26** - the remaining 26 are UDF-call CW10003s our UDF scan
-misses, three shadowing stragglers in `fca605cb…`, and
-ternary-wording position cases. The warning local-only count is
-dominated by UNUSED_VARIABLE (TV has no such channel) plus our
-deliberate warn-inside-untyped-UDF-bodies stance (INV018), and is
-inflated by TV emitting NO warnings at all for files with compile
-errors (it stops at the first error - G001) while we warn regardless.
+**Measured 2026-06-04 (~14:15 UTC), working tree on `40119dc` +
+INV025** (string-continuation lexer fix + post-TV-stop bucketing in
+`find-real-failures`; 748 v6 fixtures, 1 file with no TV verdict -
+`6874e636…`, the usual transient): **125 confirmable local-only error
+records / 52 tv-only**, plus **985 local-only past TV's stop point**
+(no TV verdict - errors strictly after the last error TV reported on a
+TV-erroring file; TV stops there, so these cascades on mangled
+hard-wrapped sources are unconfirmable and now bucketed separately
+rather than mixed in). Pre-bucketing equivalent: 1110 mixed local-only
+(was 903 at `a472f3a`+INV024, 955 at `9d64b4c`, 1561 at `6644c91`; the
+1110 includes the honest new cascades INV025 surfaces on 5 broken v6
+files where strings used to swallow wrapped code). INV025 fixed all 5
+CE10017 tv-only FNs (57 -> 52). Warning channel: local 2149 / TV 376,
+local-only 1598 confirmable + 205 past-TV-stop, **tv-only 26** - the
+remaining 26 are UDF-call CW10003s our UDF scan misses, three
+shadowing stragglers in `fca605cb…`, and ternary-wording position
+cases. The warning local-only count is dominated by UNUSED_VARIABLE
+(TV has no such channel) plus our deliberate
+warn-inside-untyped-UDF-bodies stance (INV018).
 
 ---
 
@@ -320,21 +324,20 @@ errors (it stops at the first error - G001) while we warn regardless.
 
 One bad token causes downstream "Unexpected token" hits because recovery
 synchronizes coarsely (see #20). Much compressed since the original
-inventory (the table once started at 1086+1072+549). Counts from the
-2026-06-04 post-INV024 measurement:
+inventory (the table once started at 1086+1072+549), and the 2026-06-04
+post-INV025 measurement now excludes post-TV-stop cascades (985 records
+on mangled hard-wrapped files - no TV verdict), which is where most of
+the previous counts lived. Confirmable counts:
 
 | count | files | category |
 |---|---|---|
-| 421 | 7 | `Undefined variable '*'. Did you mean '*'?` *(mostly recovery artifacts, see Symbols below)* |
-| 229 | 12 | `Undefined variable '*'` *(also partly recovery)* |
-| 78 | 4 | `Unexpected token: \n` |
-| 45 | 3 | `Unexpected token: =>` |
-| 17 | 2 | `Expected variable name` |
-| 10 | 4 | `Unexpected token: )` |
-| 9 | 4 | `Unexpected token: :` |
+| 27 | 6 | `Undefined variable '*'` *(partly recovery, see Symbols below)* |
+| 15 | 5 | `Undefined variable '*'. Did you mean '*'?` |
+| 6 | 1 | `Unexpected identifier '*' - did you mean '*'?` |
 | 6 | 1 | `Unexpected token: .` |
-| 5 | 1 | `Unexpected token: =` |
-| 2-1 | - | long tail: `:=` `]` `?` `==`, `Expected ')'`/`']'`/type/method/export names |
+| 5 | 1 | `Unexpected token: \n` |
+| 5 | 4 | `Unexpected token: :` |
+| 2-1 | - | long tail: `:=` `)` `?` `=>` `==`, `Expected method name after 'method'`, `Expected variable name` |
 
 ## Parser - syntax we silently accept (false negatives)
 
@@ -343,8 +346,7 @@ These are real syntax errors in the user's code that we don't surface.
 | count | files | category |
 |---|---|---|
 | 6 | 6 | `no viable alternative at character {unexpectedToken}` |
-| 5 | 5 | `Missing enclosing character in the literal string` (unterminated string) |
-| 4 | 4 | `Syntax error at input {value}` (end-of-line continuation, `:=`, `[`) |
+| 6 | 5 | `Syntax error at input {value}` (end-of-line continuation, new line, `:=`, `[`) |
 | 3 | 3 | `"{typeKeyword}" is not a valid type keyword` (`source`, `plot`) |
 | 2 | 2 | `Incorrect "for" statement. Expecting "to <expression>"` |
 | 2 | 2 | `"{variableName}" is already defined` |
@@ -352,9 +354,10 @@ These are real syntax errors in the user's code that we don't surface.
 | 1 | 1 | `Script doesn't contain any statements` |
 | 1 | 1 | `Syntax error: Missing closing parenthesis` |
 | 1 | 1 | `Exported variable should have const modifier and type` |
+| 1 | 1 | `Cannot read properties of undefined (reading 'pinePos')` (a TV-side crash string, not a real diagnostic) |
 
-(unchanged in count since the previous measurement - none of the
-recent parser work targeted these)
+(2026-06-04 post-INV025: the `Missing enclosing character in the
+literal string` category - 5 files - is fixed and gone; see INV025)
 
 ---
 
@@ -368,21 +371,20 @@ bool-operator and ternary FPs.
 
 | count | files | category |
 |---|---|---|
-| 23 | 11 | `Ternary branches must have compatible types. Got '*' and '*'` (#18) |
-| 17 | 10 | `Cannot assign * to *` |
-| 10 | 4 | `Condition must be boolean, got *` |
-| 9 | 6 | `Type mismatch: cannot apply '*' to * and *` |
+| 18 | 8 | `Ternary branches must have compatible types. Got '*' and '*'` (#18) |
+| 14 | 7 | `Cannot assign * to *` |
+| 7 | 5 | `Type mismatch: cannot apply '*' to * and *` |
 | 4 | 2 | `Operator 'and' requires bool operands, but right operand is *` |
-| 3 | 2 | `Operator 'or' requires bool operands, but left operand is *` |
-| 2 | 2 | `Type mismatch for argument *: expected *, got *` |
+| 4 | 3 | `Condition must be boolean, got *` |
 | 2 | 2 | `Ternary condition must be bool, got *` |
+| 1 | 1 | `Type mismatch for argument *: expected *, got *` |
 | 1 | 1 | `Operator 'or' requires bool operands, but right operand is *` |
 
-(2026-06-04 post-INV024: the 'and'-left-operand (5) and
-'not'-requires-bool (4) categories vanished entirely - all in
-`0277c9c016df…`, a qualified-declaration parse split, not type
-inference. Earlier the same day at `9d64b4c`: cannot-apply fell
-75 -> 9 and argument mismatches 16 -> 2)
+(2026-06-04 post-INV025 confirmable counts - the drops vs the morning
+measurement are post-TV-stop bucketing, not fixes. Earlier the same
+day: INV024 cleared the 'and'-left-operand and 'not'-requires-bool
+categories; at `9d64b4c` cannot-apply fell 75 -> 9 and argument
+mismatches 16 -> 2)
 
 **Right approach**: pick a specific FP, trace through `inferExpressionType`
 in `checker.ts` to see why we produce e.g. `series<float>` for what
@@ -392,7 +394,7 @@ should be `series<bool>`. Don't relax the bool checks - they're correct.
 
 | count | files | category |
 |---|---|---|
-| 14 | 9 | `Cannot call "operator *" with argument ...` (operator operand-type errors - mostly and/or/?:/- with non-bool / cross-type operands) |
+| 13 | 9 | `Cannot call "operator *" with argument ...` (operator operand-type errors - mostly and/or/?:/- with non-bool / cross-type operands) |
 | 3 | 3 | `Cannot assign * to *` (TV catches assignment type errors we don't) |
 | 2 | 2 | `Could not find {kind} '{fullName}'` |
 | 2 | 1 | `Cannot use a collection in a type template of another collection` |
@@ -412,20 +414,14 @@ same-pos-different-message channel before assuming a clean miss).
 
 ## Symbols - undefined-variable clusters
 
-`Undefined variable '*'. Did you mean '*'?` (421 hits in 7 files) and
-`Undefined variable '*'` (229 hits in 12 files) still dominate the count
-(2026-06-04 post-INV024), but the concentration is now extreme: ONE
-fixture (`4d78be7e…`) accounts for 5 of the 6 top names (~250 hits). The
-JSON groups occurrences per category - the names that repeat:
-
-| ~count | name | example fixture |
-|---|---|---|
-| 82 | `ms` | `4d78be7e3f7e6ab005629fa3e77f339e1107cfdf026d883dfca1e9c2797d9c5d.pine` |
-| 51 | `stuff` | `4d78be7e…` (same file) |
-| 48 | `current` | `4d78be7e…` (same file) |
-| 41 | `idx` | `4d78be7e…` (same file) |
-| 27 | `metric` | `4d78be7e…` (same file) |
-| 26 | `src` | `8439b2366942bce6a16fdcf91c567bbef766a03dd098b57d1f2f7ff946ed5bc0.pine` |
+The giant clusters are gone from the confirmable inventory (2026-06-04
+post-INV025): the former top fixture `4d78be7e…` (~250 hits) turned out
+to be a hard-wrapped mangle of a published script that TV rejects at its
+first broken string literal - INV025 made us match that CE10017, and the
+post-TV-stop bucketing moved its cascade (and `8439b236…`'s `src`
+cluster) out of the signal. What remains is `Undefined variable '*'`
+(27 hits in 6 files) + the did-you-mean variant (15 in 5), small enough
+to chase per-file now.
 
 Per-file root causes are almost always one of:
 
@@ -434,8 +430,8 @@ Per-file root causes are almost always one of:
 - block scope leaking the wrong way
 - recovery cascade swallowing the declaration so later references look unbound
 
-Pick one file at a time - starting with `4d78be7e…` - find where the name
-is "defined," fix one root cause, watch many false positives evaporate.
+Pick one file at a time, find where the name is "defined," fix one root
+cause, watch many false positives evaporate.
 
 The `Unexpected identifier '*' - did you mean '*'?` category (6 hits, 1
 file) is the same shape applied to identifiers in syntactic positions.
@@ -465,7 +461,10 @@ relax here.
   before counting them as bugs.
 - TV emits NO warnings for files with compile errors (stops at the
   first error - G001), so warning local-only counts are structurally
-  inflated for error-bearing fixtures. Any future warning-channel
-  comparison should consider filtering to files where TV reported
-  zero errors.
+  inflated for error-bearing fixtures. The post-TV-stop bucketing
+  (INV025) moves local-only warnings positioned AFTER TV's stop out of
+  the count (205 records), but warnings BEFORE the stop on TV-erroring
+  files still count as confirmable even though TV's warning pass may
+  never have run there - a full fix would bucket ALL local-only
+  warnings on TV-erroring files.
 

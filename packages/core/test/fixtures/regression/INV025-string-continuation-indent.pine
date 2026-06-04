@@ -1,0 +1,8 @@
+// @test regression/INV025-string-continuation-indent
+// @description A single-pair string literal continues onto the next physical line only if that line starts with whitespace or is blank. A non-whitespace character at column 1 (even the closing quote itself) terminates the literal with TV's CE10017, anchored at column 1 of the line where the literal opens. Probed 2026-06-04 - see investigations/INV025-multiline-string-continuation-indent/notes.md.
+// @expects parse: fail
+// @expects error: line=2, column=1, message=/Missing enclosing character in the literal string/
+//@version=6
+indicator('broken
+[1.0.0]', overlay = true)
+plot(close)

@@ -1,0 +1,5 @@
+//@version=6
+indicator("x")
+tt = "Line 1
+	Line 2"
+plot(close, title=tt)

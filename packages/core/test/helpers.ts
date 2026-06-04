@@ -328,35 +328,6 @@ export function runTest(
 			}
 		}
 
-		// Check expected errors
-		if (expectations.errors) {
-			for (const expected of expectations.errors) {
-				const found = result.validationErrors.find((e) => {
-					if (expected.line !== undefined && e.line !== expected.line)
-						return false;
-					if (expected.column !== undefined && e.column !== expected.column)
-						return false;
-					if (expected.message !== undefined) {
-						if (expected.message instanceof RegExp) {
-							if (!expected.message.test(e.message)) return false;
-						} else {
-							if (!e.message.includes(expected.message)) return false;
-						}
-					}
-					return true;
-				});
-
-				if (!found) {
-					result.success = false;
-					const desc = [];
-					if (expected.line !== undefined) desc.push(`line=${expected.line}`);
-					if (expected.message !== undefined)
-						desc.push(`message=${expected.message}`);
-					result.failures.push(`Expected error not found: ${desc.join(", ")}`);
-				}
-			}
-		}
-
 		// Check expected warnings
 		if (expectations.warnings) {
 			for (const expected of expectations.warnings) {
@@ -384,6 +355,42 @@ export function runTest(
 						`Expected warning not found: ${desc.join(", ")}`,
 					);
 				}
+			}
+		}
+	}
+
+	// Check expected errors. Matched against parse (lexer + parser) errors
+	// as well as validation errors, and checked even when parsing failed,
+	// so parse-error fixtures can pin a line + message instead of only
+	// asserting `parse: fail`. see INV025
+	if (expectations.errors) {
+		const allErrors = [
+			...result.parseErrors,
+			...result.validationErrors.filter((e) => e.severity === 0),
+		];
+		for (const expected of expectations.errors) {
+			const found = allErrors.find((e) => {
+				if (expected.line !== undefined && e.line !== expected.line)
+					return false;
+				if (expected.column !== undefined && e.column !== expected.column)
+					return false;
+				if (expected.message !== undefined) {
+					if (expected.message instanceof RegExp) {
+						if (!expected.message.test(e.message)) return false;
+					} else {
+						if (!e.message.includes(expected.message)) return false;
+					}
+				}
+				return true;
+			});
+
+			if (!found) {
+				result.success = false;
+				const desc = [];
+				if (expected.line !== undefined) desc.push(`line=${expected.line}`);
+				if (expected.message !== undefined)
+					desc.push(`message=${expected.message}`);
+				result.failures.push(`Expected error not found: ${desc.join(", ")}`);
 			}
 		}
 	}

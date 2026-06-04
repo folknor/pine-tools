@@ -380,6 +380,34 @@ export class Lexer {
 				// Each wrapped line adds exactly one space regardless of indentation
 				// We preserve the raw source; normalization happens at a higher level if needed
 				// (\r\n breaks at the \n; a lone \r is its own break - see G005)
+				//
+				// The string continues onto the next line only if that line
+				// starts with whitespace or is blank. A non-whitespace char at
+				// column 1 (even the closing quote itself) terminates the
+				// literal with TV's CE10017, anchored at column 1 of the line
+				// where the literal opens. see INV025
+				const after = this.source[this.pos + 1];
+				if (
+					after !== undefined &&
+					after !== " " &&
+					after !== "\t" &&
+					after !== "\u00a0" &&
+					after !== "\n" &&
+					after !== "\r"
+				) {
+					this.lexerErrors.push({
+						line: startLine,
+						column: 1,
+						message:
+							"Missing enclosing character in the literal string. Enclose literal strings using a set of quotation marks (\") or apostrophes (') on the same code line.",
+					});
+					const broken = this.source.substring(start, this.pos);
+					this.addToken(TokenType.STRING, broken, broken.length, {
+						line: startLine,
+						column: startColumn,
+					});
+					return; // the line break is re-scanned as a normal NEWLINE
+				}
 				this.line++;
 				this.column = 0;
 				this.advance(); // consume the newline
