@@ -1,7 +1,9 @@
 // @test syntax/generics
-// @description Generic type parsing with dotted types and multiple type arguments
+// @description Generic type parsing with dotted types and multiple type arguments; nested collection templates are TV's CE10025 (probed 2026-06-05, see INV038)
 // @expects parse: success
-// @expects no-errors
+// @expects errors: 2
+// @expects error: line=20, column=1, message=/Cannot use a collection in a type template/
+// @expects error: line=20, column=17, message=/Cannot use a collection in a type template/
 
 //@version=6
 indicator("Generic Type Parsing Tests")

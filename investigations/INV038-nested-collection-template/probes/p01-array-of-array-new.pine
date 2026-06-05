@@ -1,0 +1,4 @@
+//@version=6
+indicator("p")
+var nestedArr = array.new<array<float>>()
+plot(close)

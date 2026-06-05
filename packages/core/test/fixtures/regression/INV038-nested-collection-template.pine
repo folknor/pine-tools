@@ -1,0 +1,18 @@
+// @test regression/INV038-nested-collection-template
+// @description CE10025: a collection in a type template of another collection (constructor generic, emitted at the call AND the statement start); CE10022 for the array<array<...>> annotation form. Probed 2026-06-05, see INV038.
+// @expects parse: success
+// @expects errors: 5
+// @expects error: line=3, column=1, message=/Cannot use a collection in a type template/
+// @expects error: line=3, column=17, message=/Cannot use a collection in a type template/
+// @expects error: line=4, column=6, message="Arrays of type array are not supported."
+// @expects error: line=5, column=1, message=/Cannot use a collection in a type template/
+// @expects error: line=5, column=9, message=/Cannot use a collection in a type template/
+
+//@version=6
+indicator("INV038")
+var nestedArr = array.new<array<float>>()
+array<array<float>> a = na
+var m = map.new<string, array<float>>()
+var ok = array.new<float>()
+var ok2 = map.new<string, float>()
+plot(close)

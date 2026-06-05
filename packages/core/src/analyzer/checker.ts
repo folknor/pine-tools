@@ -242,6 +242,27 @@ export class UnifiedPineValidator {
 	): void {
 		if (version !== "6" || !statement.typeAnnotation) return;
 		const raw = statement.typeAnnotation.name;
+		// `array<array<float>> a = ...` annotations are TV's CE10022
+		// ("Arrays of type {inner} are not supported."), anchored at the
+		// template span - distinct from the CE10025 constructor-call form.
+		// Probed 2026-06-05. see INV038
+		const nestedAnnotation = raw.match(
+			/^(?:(?:series|simple|input|const)\s+)?array\s*<\s*(array|matrix|map)\b/,
+		);
+		if (nestedAnnotation) {
+			const decl0 = statement as { startLine?: number; startColumn?: number };
+			const stmt = statement as { line: number; column: number };
+			const startColumn = decl0.startColumn ?? stmt.column;
+			const lt = raw.indexOf("<");
+			this.addError(
+				decl0.startLine ?? stmt.line,
+				startColumn + lt,
+				raw.length - lt,
+				`Arrays of type ${nestedAnnotation[1]} are not supported.`,
+				DiagnosticSeverity.Error,
+			);
+			return;
+		}
 		// Strip qualifier prefix, generic suffix, and array suffix:
 		// "series float", "array<MyType>", "Foo[]" all reduce to a base name.
 		const base = raw
@@ -334,6 +355,28 @@ export class UnifiedPineValidator {
 				);
 				this.checkTypeAnnotationName(statement, version);
 				this.checkRedeclaration(statement.name, statement, version);
+				// TV emits CE10025 a SECOND time at the statement start when a
+				// nested-collection constructor is a declaration initializer
+				// (probed: `var x = array.new<array<float>>()` errors at the
+				// call AND at column 1). see INV038
+				if (
+					version === "6" &&
+					statement.init?.type === "CallExpression" &&
+					this.hasCollectionTemplateArg(statement.init as CallExpression)
+				) {
+					const init = statement.init as CallExpression;
+					const startLine = statement.startLine ?? statement.line;
+					const startColumn = statement.startColumn ?? statement.column;
+					this.addError(
+						startLine,
+						startColumn,
+						init.endLine === startLine && init.endColumn
+							? init.endColumn - startColumn
+							: statement.name.length,
+						UnifiedPineValidator.NESTED_COLLECTION_MESSAGE,
+						DiagnosticSeverity.Error,
+					);
+				}
 				// First, register the variable in the symbol table
 				const symbol: SymbolInfo = {
 					name: statement.name,
@@ -1182,10 +1225,34 @@ export class UnifiedPineValidator {
 		return match ? match[1] : (type as string);
 	}
 
+	// A collection type used as a type template argument of another
+	// collection (`array.new<array<float>>`, `map.new<string,
+	// array<float>>`) is TV's CE10025 - probed; TV emits the message
+	// TWICE, at the call and at the enclosing statement start (the
+	// declaration case adds the second). see INV038
+	private static readonly NESTED_COLLECTION_MESSAGE =
+		"Cannot use a collection in a type template of another collection. Create a user-defined type with that collection as a field and use it instead.";
+
+	private hasCollectionTemplateArg(call: CallExpression): boolean {
+		return (call.typeArguments ?? []).some((t) =>
+			/^(array|matrix|map)\s*</.test(t.trim()),
+		);
+	}
+
 	private validateCallExpression(
 		call: CallExpression,
 		version: string = "6",
 	): void {
+		if (version === "6" && this.hasCollectionTemplateArg(call)) {
+			this.addError(
+				call.line,
+				call.column,
+				(call.endColumn ?? call.column + 1) - call.column,
+				UnifiedPineValidator.NESTED_COLLECTION_MESSAGE,
+				DiagnosticSeverity.Error,
+			);
+		}
+
 		// Get function name
 		let functionName = "";
 		if (call.callee.type === "Identifier") {

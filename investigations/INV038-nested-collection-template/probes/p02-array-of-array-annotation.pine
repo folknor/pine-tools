@@ -1,0 +1,4 @@
+//@version=6
+indicator("p")
+array<array<float>> a = na
+plot(close)

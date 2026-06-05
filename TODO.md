@@ -505,7 +505,6 @@ should be `series<bool>`. Don't relax the bool checks - they're correct.
 | count | files | category |
 |---|---|---|
 | 3 | 1 | `Cannot call "operator ?:" with argument ...` (was 13 in 9 files - never a detection gap, just anchor mismatch; resolved by INV028's operand-anchored errors. The 3 left are `35a58bb9…`'s ternary trio, where TV anchors at one branch by undecoded type-priority rules; we detect all three at the ternary) |
-| 2 | 1 | `Cannot use a collection in a type template of another collection` |
 | 2 | 1 | `The condition of the "{blockName}" statement must evaluate to a "bool" value` |
 | 1 | 1 | `Cannot call "plot" with argument "title"=... (series string for const string)` |
 | 1 | 1 | `Incorrect field type "{id}" of enum "{enumName}"` |
@@ -515,9 +514,10 @@ already detected, anchored differently. The `Cannot assign * to *` (3)
 and `Value with NA type ...` (2) categories are resolved by INV032's
 strict declaration/reassignment base-type rule (CE10173/CE10097, 21
 probes). The `Could not find {kind}` category (2) is resolved by
-INV036's CE10271 undefined-callable check, and the
+INV036's CE10271 undefined-callable check, the
 `Undeclared identifier` category (2) by INV037's v6 if-branch
-scoping. The remaining rows above are genuine gaps.
+scoping, and the collection-in-template category (2) by INV038's
+CE10025/CE10022 checks. The remaining rows above are genuine gaps.
 
 ---
 

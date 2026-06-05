@@ -1,0 +1,4 @@
+//@version=6
+indicator("p")
+var m = map.new<string, array<float>>()
+plot(close)

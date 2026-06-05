@@ -219,3 +219,9 @@ contradiction means re-measure, not "the earlier author was wrong."
   declarations). v6-GATED - an ungated draft hit 230 v4/v5 corpus
   records on published working scripts, proving the leak was legal
   pre-v6 (G004).
+- [INV038](INV038-nested-collection-template/notes.md) - CE10025
+  `Cannot use a collection in a type template of another collection`:
+  array/matrix/map as a constructor type argument errors TWICE (at the
+  call and the statement start, matched exactly); the
+  `array<array<float>>` ANNOTATION form is the distinct CE10022
+  `Arrays of type array are not supported.` (3 probes).
