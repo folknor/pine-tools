@@ -1070,6 +1070,30 @@ export class Parser {
 			step = this.expression();
 		}
 
+		// A COMPLETE counted-for header followed by a wrap-continuation line
+		// (indent not a multiple of 4 - INV017's rule) is TV's CE10161: the
+		// continuation glues onto the header, breaking the statement
+		// (`for i = 1 to 7` with a 5-space body line). Probed 2026-06-05 -
+		// anchor at the `for` keyword; a 4-multiple body indent and a
+		// genuinely wrapped header (expression continuing PAST the newline)
+		// are both fine. Recovery: keep treating the lines as the body so
+		// the rest of the file parses. see INV034
+		if (this.check(TokenType.NEWLINE)) {
+			const next = this.peekNext();
+			if (
+				next &&
+				next.type !== TokenType.NEWLINE &&
+				(next.indent ?? 0) % 4 !== 0 &&
+				(next.indent ?? 0) > (startToken.indent ?? 0)
+			) {
+				this.parserErrors.push({
+					line: startToken.line,
+					column: startToken.column,
+					message: 'Incorrect "for" statement. Expecting "to <expression>".',
+				});
+			}
+		}
+
 		// Skip newlines after to expression
 		while (this.check(TokenType.NEWLINE)) {
 			this.advance();

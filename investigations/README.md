@@ -191,3 +191,9 @@ contradiction means re-measure, not "the earlier author was wrong."
   types get the same message - 6 probes). Validated at the statement
   start with a same-physical-line gate so hard-wrap mangle artifacts
   (`IDENT IDENT =` glued across lines) stay unflagged.
+- [INV034](INV034-for-body-wrap-indent/notes.md) - CE10161
+  `Incorrect "for" statement. Expecting "to <expression>".`: a
+  COMPLETE counted-for header whose body line is a wrap continuation
+  (indent not a multiple of 4 - INV017) glues into the header and
+  breaks the statement. Anchored at the `for` keyword; 4-multiple
+  bodies and genuinely wrapped headers stay clean (3 probes).

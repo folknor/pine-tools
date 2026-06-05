@@ -1,0 +1,16 @@
+// @test regression/INV034-for-body-wrap-indent
+// @description CE10161: a complete counted-for header followed by a wrap-continuation line (body indent not a multiple of 4) glues into the header and breaks the statement. 4-multiple bodies and genuinely wrapped headers stay clean. Probed 2026-06-05, see INV034.
+// @expects parse: fail
+// @expects error: line=4, message=/Incorrect .for. statement. Expecting .to <expression>./
+
+//@version=6
+indicator("INV034")
+s = 0.0
+for i = 1 to 7
+     s := s + close[i]
+for j = 1 to 7
+    s := s + close[j]
+for k = 1 to
+     7
+    s := s + close[k]
+plot(s)

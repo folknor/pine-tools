@@ -1,0 +1,7 @@
+//@version=6
+indicator("p")
+s = 0.0
+for i = 1 to
+     7
+    s := s + close[i]
+plot(s)
