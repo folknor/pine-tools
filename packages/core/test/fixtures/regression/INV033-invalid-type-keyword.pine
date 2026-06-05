@@ -1,0 +1,20 @@
+// @test regression/INV033-invalid-type-keyword
+// @description CE10149: a declaration's type annotation must name a known type - built-in keyword, pine-data object type, or an earlier UDT/enum. Probed 2026-06-05, see INV033.
+// @expects parse: success
+// @expects errors: 3
+// @expects error: line=7, message=/.source. is not a valid type keyword/
+// @expects error: line=8, message=/.plot. is not a valid type keyword/
+// @expects error: line=9, message=/.Bar. is not a valid type keyword/
+
+//@version=6
+indicator("INV033")
+type Point2
+    int x = 0
+enum Side
+    left
+source src = close
+plot p = plot(close)
+Bar b = 1
+Point2 pt = Point2.new()
+Side s = Side.left
+plot(src)

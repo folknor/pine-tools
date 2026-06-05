@@ -1,0 +1,4 @@
+//@version=6
+indicator("p")
+source src = input.source(close, "Source")
+plot(src)

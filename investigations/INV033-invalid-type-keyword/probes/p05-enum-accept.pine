@@ -1,0 +1,7 @@
+//@version=6
+indicator("p")
+enum Dir
+    up
+    down
+Dir d = Dir.up
+plot(d == Dir.up ? 1 : 0)

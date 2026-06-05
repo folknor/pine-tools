@@ -444,7 +444,6 @@ These are real syntax errors in the user's code that we don't surface.
 | count | files | category |
 |---|---|---|
 | 6 | 5 | `Syntax error at input {value}` (end-of-line continuation, new line, `:=`, `[`) |
-| 3 | 3 | `"{typeKeyword}" is not a valid type keyword` (`source`, `plot`) |
 | 2 | 2 | `Incorrect "for" statement. Expecting "to <expression>"` |
 | 2 | 2 | `"{variableName}" is already defined` |
 | 2 | 1 | `All exported functions args should be typified` |
@@ -458,7 +457,10 @@ literal string` category - 5 files - is fixed and gone; see INV025.
 Post-INV029: the `no viable alternative at character` category - 6
 files, mid-line NBSP at bracket depth 0 - is fixed and gone; see
 INV029, which also covers TV refusing NBSP-mangled `//@version`
-annotations outright)
+annotations outright. 2026-06-05 post-INV033: the
+`"{typeKeyword}" is not a valid type keyword` category - 3 in 3
+files, `source`/`plot` - is fixed and gone; CE10149 now validates
+declaration annotations against built-ins + earlier UDT/enum names)
 
 ---
 

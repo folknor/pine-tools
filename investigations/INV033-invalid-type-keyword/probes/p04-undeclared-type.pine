@@ -1,0 +1,4 @@
+//@version=6
+indicator("p")
+Bar b = 1
+plot(close)

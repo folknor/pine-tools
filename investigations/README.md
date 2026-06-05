@@ -184,3 +184,10 @@ contradiction means re-measure, not "the earlier author was wrong."
   math.round/floor/ceil wrongly polymorphic-numeric (+
   detectReturnTypeParam set-equality coincidence on math.round, now
   requires a functional per-overload mapping).
+- [INV033](INV033-invalid-type-keyword/notes.md) - CE10149 `"X" is not
+  a valid type keyword.`: declarations must name a built-in type, a
+  pine-data object type, or a UDT/enum declared EARLIER in source
+  (use-before-declaration is the same error; undeclared CamelCase
+  types get the same message - 6 probes). Validated at the statement
+  start with a same-physical-line gate so hard-wrap mangle artifacts
+  (`IDENT IDENT =` glued across lines) stay unflagged.

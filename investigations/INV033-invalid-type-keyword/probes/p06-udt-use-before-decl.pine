@@ -1,0 +1,6 @@
+//@version=6
+indicator("p")
+Foo f = Foo.new()
+type Foo
+    int a = 0
+plot(f.a)

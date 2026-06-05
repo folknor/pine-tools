@@ -217,9 +217,12 @@ export class Parser {
 						continue;
 					}
 					{
+						const unitStartToken = this.peek();
 						const userType = this.tryUserTypeAnnotation();
 						if (userType) {
-							statements.push(this.variableDeclaration(null, userType));
+							statements.push(
+								this.variableDeclaration(null, userType, unitStartToken),
+							);
 							continue;
 						}
 					}
@@ -452,18 +455,26 @@ export class Parser {
 		// comma-separated declarations (`BarVol b1 = ..., BarVol b2 = ...`)
 		// like the type-keyword branch below.
 		{
+			const typeStartToken = this.peek();
 			const userType = this.tryUserTypeAnnotation();
 			if (userType) {
-				const firstDecl = this.variableDeclaration(null, userType);
+				const firstDecl = this.variableDeclaration(
+					null,
+					userType,
+					typeStartToken,
+				);
 
 				if (this.check(TokenType.COMMA)) {
 					const statements: AST.Statement[] = [firstDecl];
 					let lastType = userType;
 
 					while (this.match(TokenType.COMMA)) {
+						const unitStartToken = this.peek();
 						const nextType = this.tryUserTypeAnnotation();
 						if (nextType) {
-							statements.push(this.variableDeclaration(null, nextType));
+							statements.push(
+								this.variableDeclaration(null, nextType, unitStartToken),
+							);
 							lastType = nextType;
 						} else if (
 							this.check(TokenType.IDENTIFIER) &&

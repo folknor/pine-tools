@@ -48,6 +48,8 @@ import {
 	positionalParamUnionMembers,
 	resolveCallReturnRaw,
 } from "./builtins";
+import { TYPE_NAMES } from "../../../../pine-data/v6";
+import { TYPE_KEYWORDS } from "../constants/keywords";
 import { type Symbol as SymbolInfo, SymbolTable } from "./symbols";
 import { type PineType, TypeChecker } from "./types";
 
@@ -71,6 +73,10 @@ export class UnifiedPineValidator {
 	// TV's CE10190; without a prior use it is only the CW10011 warning
 	// (probed 2026-06-04, see INV023 / TODO #40).
 	private usedBuiltins: Set<string> = new Set();
+	// UDT / enum names declared so far, in source order. A declaration's
+	// type annotation must name one of these (or a built-in type) - and
+	// use-before-declaration is the same CE10149 (probed). see INV033
+	private declaredTypeNames: Set<string> = new Set();
 
 	constructor() {
 		this.symbolTable = new SymbolTable();
@@ -83,6 +89,7 @@ export class UnifiedPineValidator {
 		this.expressionTypes.clear();
 		this.udfTupleReturnTypes.clear();
 		this.usedBuiltins.clear();
+		this.declaredTypeNames.clear();
 
 		// Single pass: collect declarations and validate together
 		// This ensures function parameters are in scope during validation
@@ -144,6 +151,7 @@ export class UnifiedPineValidator {
 			statement.type === "TypeDeclaration" ||
 			statement.type === "EnumDeclaration"
 		) {
+			this.declaredTypeNames.add(statement.name); // see INV033
 			const symbol: SymbolInfo = {
 				name: statement.name,
 				type: "unknown",
@@ -204,6 +212,52 @@ export class UnifiedPineValidator {
 		);
 	}
 
+	// TV's CE10149: a declaration's type annotation must name a known type -
+	// a built-in type keyword, a built-in object type (linefill, polyline,
+	// chart.point, ... from the pine-data types catalog), or a UDT / enum
+	// declared EARLIER in source (use-before-declaration is the same
+	// CE10149; all probed 2026-06-05). Dotted names other than catalog
+	// entries (lib.Type via an import alias) are accepted unvalidated -
+	// import member sets are unknown. see INV033
+	private checkTypeAnnotationName(
+		statement: Statement & { typeAnnotation?: { name: string } },
+		version: string,
+	): void {
+		if (version !== "6" || !statement.typeAnnotation) return;
+		const raw = statement.typeAnnotation.name;
+		// Strip qualifier prefix, generic suffix, and array suffix:
+		// "series float", "array<MyType>", "Foo[]" all reduce to a base name.
+		const base = raw
+			.replace(/^(series|simple|input|const)\s+/, "")
+			.replace(/<.*$/, "")
+			.replace(/\[\]$/, "")
+			.trim();
+		if (!base) return;
+		if (TYPE_KEYWORDS.has(base)) return;
+		if (TYPE_NAMES.has(base)) return; // incl. dotted chart.point
+		if (base.includes(".")) return; // import-alias types - unvalidated
+		if (this.declaredTypeNames.has(base)) return;
+		const decl = statement as {
+			startLine?: number;
+			startColumn?: number;
+			line: number;
+			column: number;
+		};
+		// Only flag when the annotation and the variable name sit on the
+		// same physical line. Hard-wrapped corpus files glue prose / split
+		// identifiers into IDENT IDENT = shapes across lines, which parse
+		// as user-type declarations; those are wrap artifacts with no TV
+		// verdict, not type-keyword mistakes. see INV033
+		if (decl.startLine !== undefined && decl.startLine !== decl.line) return;
+		this.addError(
+			decl.startLine ?? decl.line,
+			decl.startColumn ?? decl.column,
+			base.length,
+			`"${base}" is not a valid type keyword.`,
+			DiagnosticSeverity.Error,
+		);
+	}
+
 	private validateStatement(statement: Statement, version: string = "6"): void {
 		const _prevBlockDepth = this.blockDepth;
 		switch (statement.type) {
@@ -214,6 +268,7 @@ export class UnifiedPineValidator {
 					statement.column,
 					version,
 				);
+				this.checkTypeAnnotationName(statement, version);
 				// First, register the variable in the symbol table
 				const symbol: SymbolInfo = {
 					name: statement.name,
@@ -679,6 +734,7 @@ export class UnifiedPineValidator {
 			case "EnumDeclaration":
 			case "TypeDeclaration": {
 				// Register enum/type as a symbol so it can be used as a namespace
+				this.declaredTypeNames.add(statement.name); // see INV033
 				const symbol: SymbolInfo = {
 					name: statement.name,
 					type: "unknown", // User-defined type
