@@ -10557,9 +10557,6 @@
       }
     ],
     "returns": "const int",
-    "flags": {
-      "polymorphic": "numeric"
-    },
     "overloads": [
       {
         "parameters": [
@@ -10756,9 +10753,6 @@
       }
     ],
     "returns": "const int",
-    "flags": {
-      "polymorphic": "numeric"
-    },
     "overloads": [
       {
         "parameters": [
@@ -11436,10 +11430,6 @@
       }
     ],
     "returns": "const int",
-    "flags": {
-      "polymorphic": "numeric",
-      "returnTypeParam": "number"
-    },
     "overloads": [
       {
         "parameters": [

@@ -118,7 +118,11 @@ export class UnifiedPineValidator {
 				symbol.type = mapToPineType(statement.typeAnnotation.name);
 			} else if (statement.init) {
 				const initType = this.inferExpressionType(statement.init, version);
-				symbol.type = initType;
+				// A bare-na initializer gives the variable NO type (TV's CE10097
+				// makes the declaration itself the error in v6; in v4/v5 the type
+				// comes from later := assignments). Recording "na" here would
+				// trip every later use/assignment of the variable. see INV032
+				symbol.type = TypeChecker.isNaType(initType) ? "unknown" : initType;
 			}
 
 			this.symbolTable.define(symbol);
@@ -226,7 +230,10 @@ export class UnifiedPineValidator {
 					symbol.type = mapToPineType(statement.typeAnnotation.name);
 				} else if (statement.init) {
 					const initType = this.inferExpressionType(statement.init, version);
-					symbol.type = initType;
+					// Bare-na initializer: no type for the variable - the
+					// declaration itself is the (v6) error. see INV032 and the
+					// identical branch in collectDeclarations.
+					symbol.type = TypeChecker.isNaType(initType) ? "unknown" : initType;
 				}
 
 				this.symbolTable.define(symbol);
@@ -237,22 +244,73 @@ export class UnifiedPineValidator {
 
 					// Check type compatibility
 					const initType = this.inferExpressionType(statement.init, version);
-					const varSymbol = this.symbolTable.lookupLocal(statement.name);
-					if (
-						varSymbol &&
-						varSymbol.type !== "unknown" &&
-						initType !== "unknown"
-					) {
-						// Check type compatibility (isAssignable handles all coercion rules)
-						if (!TypeChecker.isAssignable(initType, varSymbol.type)) {
-							this.addError(
-								statement.line,
-								statement.column,
-								statement.name.length,
-								`Cannot assign ${initType} to ${varSymbol.type}`,
-								DiagnosticSeverity.Error,
-							);
+					// TV anchors declaration diagnostics at the statement start
+					// (type keyword / var keyword), not the variable name. see INV032
+					const startLine = statement.startLine ?? statement.line;
+					const startColumn = statement.startColumn ?? statement.column;
+					const span =
+						statement.line === startLine
+							? statement.column - startColumn + statement.name.length
+							: statement.name.length;
+
+					if (statement.typeAnnotation && initType !== "unknown") {
+						const annotationName = statement.typeAnnotation.name;
+						const declaredBase = TypeChecker.baseTypeName(annotationName);
+						if (
+							version === "6" &&
+							TypeChecker.strictAssignApplies(initType, declaredBase)
+						) {
+							// TV's CE10173: declared base must match the initializer's
+							// base exactly, except int->float widening and na to any
+							// base but bool; qualifiers are free. Probed - see INV032.
+							if (!TypeChecker.strictAssignOk(initType, declaredBase)) {
+								// TV renders a bare declared keyword as "const T"; keep
+								// an explicit annotation qualifier when present.
+								const declRendered = /^(series|simple|input|const)\s/.test(
+									annotationName,
+								)
+									? annotationName
+									: `const ${declaredBase}`;
+								this.addError(
+									startLine,
+									startColumn,
+									span,
+									`Cannot assign a value of the "${TypeChecker.renderQualifiedType(initType)}" type to the "${statement.name}" variable. The variable is declared with the "${declRendered}" type.`,
+									DiagnosticSeverity.Error,
+								);
+							}
+						} else {
+							// Lenient path for everything the strict rule doesn't
+							// cover (UDTs, collections, void, legacy versions).
+							const varSymbol = this.symbolTable.lookupLocal(statement.name);
+							if (
+								varSymbol &&
+								varSymbol.type !== "unknown" &&
+								!TypeChecker.isAssignable(initType, varSymbol.type)
+							) {
+								this.addError(
+									statement.line,
+									statement.column,
+									statement.name.length,
+									`Cannot assign ${initType} to ${varSymbol.type}`,
+									DiagnosticSeverity.Error,
+								);
+							}
 						}
+					} else if (
+						!statement.typeAnnotation &&
+						version === "6" &&
+						TypeChecker.isNaType(initType)
+					) {
+						// TV's CE10097: a bare-na initializer needs a type keyword
+						// (na alone gives the variable no type). Probed - see INV032.
+						this.addError(
+							startLine,
+							startColumn,
+							span,
+							"Value with NA type cannot be assigned to a variable that was defined without type keyword",
+							DiagnosticSeverity.Error,
+						);
 					}
 				}
 				break;
@@ -348,7 +406,7 @@ export class UnifiedPineValidator {
 
 				// THEN validate function body (with all variables in scope)
 				for (const stmt of statement.body) {
-					this.validateStatement(stmt);
+					this.validateStatement(stmt, version);
 				}
 				this.symbolTable.exitScope();
 				this.blockDepth--;
@@ -478,7 +536,30 @@ export class UnifiedPineValidator {
 				const targetType = this.inferExpressionType(statement.target, version);
 				const valueType = this.inferExpressionType(statement.value, version);
 				if (targetType !== "unknown" && valueType !== "unknown") {
-					if (!TypeChecker.isAssignable(valueType, targetType)) {
+					const targetBase = TypeChecker.baseTypeName(targetType as string);
+					if (
+						version === "6" &&
+						statement.operator === ":=" &&
+						statement.target.type === "Identifier" &&
+						TypeChecker.strictAssignApplies(valueType, targetBase)
+					) {
+						// TV's CE10173 on reassignment: same strict base-type rule
+						// as declarations (int->float widening, na to any base but
+						// bool, qualifiers free), rendered with UNQUALIFIED type
+						// names - probed `x = 1` / `x := 2.5` and `b := na`. see INV032
+						if (!TypeChecker.strictAssignOk(valueType, targetBase)) {
+							const valueBase = TypeChecker.isNaType(valueType)
+								? "na"
+								: TypeChecker.baseTypeName(valueType as string);
+							this.addError(
+								statement.line,
+								statement.column,
+								1,
+								`Cannot assign a value of the "${valueBase}" type to the "${(statement.target as Identifier).name}" variable. The variable is declared with the "${targetBase}" type.`,
+								DiagnosticSeverity.Error,
+							);
+						}
+					} else if (!TypeChecker.isAssignable(valueType, targetType)) {
 						this.addError(
 							statement.line,
 							statement.column,
@@ -556,7 +637,7 @@ export class UnifiedPineValidator {
 					this.collectDeclarations(stmt, version);
 				}
 				for (const stmt of statement.body) {
-					this.validateStatement(stmt);
+					this.validateStatement(stmt, version);
 				}
 
 				this.symbolTable.exitScope();
@@ -1691,11 +1772,24 @@ export class UnifiedPineValidator {
 
 		switch (expr.type) {
 			case "Literal":
-				type = TypeChecker.inferLiteralType((expr as Literal).value);
+				type = TypeChecker.inferLiteralType(
+					(expr as Literal).value,
+					(expr as Literal).raw,
+				);
 				break;
 
 			case "Identifier": {
-				const symbol = this.symbolTable.lookup((expr as Identifier).name);
+				const idName = (expr as Identifier).name;
+				// `na` lexes as a keyword, so its symbol-table entry carries no
+				// value type ("unknown" - the RESERVED_KEYWORDS registration
+				// overwrites the pine-data variable's simple<na>). Its expression
+				// type is the na type itself, which the declaration/assignment
+				// checks rely on. see INV032
+				if (idName === "na") {
+					type = "na";
+					break;
+				}
+				const symbol = this.symbolTable.lookup(idName);
 				type = symbol ? symbol.type : "unknown";
 				break;
 			}
@@ -1902,12 +1996,17 @@ export class UnifiedPineValidator {
 					break;
 				}
 
+				// An na branch carries no type information - the other branch is
+				// the ternary's type. When that other branch is unknown, the
+				// result must stay unknown, NOT become na: `cond ? mapVar.get(k)
+				// : na` typed as na tripped CE10097 on perfectly typed
+				// declarations. see INV032
 				if (conseqType === "unknown" && altType !== "unknown") {
-					type = altType;
+					type = TypeChecker.isNaType(altType) ? "unknown" : altType;
 					break;
 				}
 				if (altType === "unknown" && conseqType !== "unknown") {
-					type = conseqType;
+					type = TypeChecker.isNaType(conseqType) ? "unknown" : conseqType;
 					break;
 				}
 

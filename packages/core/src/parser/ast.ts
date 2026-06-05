@@ -76,6 +76,12 @@ export interface VariableDeclaration extends ASTNode {
 	varType: "var" | "varip" | "const" | null;
 	init: Expression | null;
 	typeAnnotation?: TypeAnnotation;
+	// Statement-start anchor (the var/varip/const keyword or the leading
+	// type annotation token). TV anchors declaration-level diagnostics
+	// there, not at the variable name; line/column above stay on the name
+	// for symbol-table/definition purposes. see INV032
+	startLine?: number;
+	startColumn?: number;
 }
 
 export interface TupleDeclaration extends ASTNode {

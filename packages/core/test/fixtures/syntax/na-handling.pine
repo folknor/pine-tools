@@ -1,16 +1,18 @@
 // @test syntax/na-handling
 // @description na value handling and related functions
 // @expects parse: success
-// @expects no-errors
+// @expects errors: 1
+// @expects error: line=6, message="Value with NA type cannot be assigned to a variable that was defined without type keyword"
 
 //@version=6
 indicator("NA Handling Tests")
 
-// na literal (untyped)
+// na literal (untyped) - an error: TV CE10097 requires a type keyword
+// when the initializer is bare na (probed 2026-06-05, see INV032)
 x = na
 
-// NOTE: Typed na assignments like `float y = na` cause validator errors
-// because validator doesn't recognize na as assignable to typed variables
+// Typed na assignments like `float y = na` are fine (na assigns to any
+// type keyword except bool - see validation/na-coercion.pine)
 
 // na comparison
 isNa1 = na(close)

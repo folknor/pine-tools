@@ -89,12 +89,24 @@ IDs so the two stay in sync.
 - **#21 - retire the remaining hardcoded function metadata in
   `generate.ts`.** Still hand-coded because TV doesn't expose them cleanly:
   `getFunctionFlags.topLevelOnly` (15 fns, "global scope only"), the
-  `polymorphic` category map (~25 fns → see #17), and `isParameterOptional`
+  `polymorphic` category map (shrunk by INV032: math.round/floor/ceil were
+  wrongly listed - their 1-arg forms return int regardless of the argument;
+  the per-overload data already encodes this → see #17), and `isParameterOptional`
   + `commonOptionalParams` - prose-matching heuristics for argument
   optionality, the last cousin of the retired `inferVariableType` /
   `inferConstantType` guessers. (The `variadic` map stays: its `minArgs`
   values are authoritative where the scrape over/under-counts - 
   `array.from`/`str.format` valid with 1 arg, `math.sum` not variadic.)
+  Done means three things: (a) no guessing heuristics - any fact that can't
+  be derived from scraped data must be probe-verified with `pine-lint --tv`
+  (dated); (b) retained facts live as an explicit override *data file*
+  under `pine-data/` (fact + probe + date), which `generate.ts` merely
+  applies - not as TypeScript literals only readable in our pipeline
+  source; (c) the values keep flowing into `functions.json`
+  (`flags.*`, param `required`) as they already do, so the generated JSON
+  stays self-contained for external consumers, now with inspectable
+  provenance. The `variadic` exemption keeps its values but moves to the
+  same override file.
 - **#22 - `--only <names>` / `--only-overloaded` scrape flag.** The only
   remaining scrape-load reduction: a flag for a targeted re-scrape of just
   the named entries, instead of hand-deleting their `.cache/function-details/`
@@ -234,6 +246,7 @@ count.
 |---|---|
 | `scripts/collect-pine-fixtures.mjs` | Walks a source tree (default `/home/folk/Programs`), dedupes `.pine` files by sha256, copies unique ones into `fixtures/<hash>.pine`. Run once to (re)build the corpus. |
 | `scripts/compare-tv.mjs` | One file at a time: runs local + `--tv` in parallel, prints the error diff (local-only / tv-only) for that file. Pass `--json` to emit machine-readable output. Repro tool. |
+| `scripts/lint-batch.mjs` | Batch lint: files, directories, or quoted globs; one compact errors/warnings block per file. `--diff` runs the compare-tv position diff per file (TV-capped at concurrency 4), `--tv` shows TV verdicts, plus `--errors-only`/`--filter`/`--quiet`/`--json`. Replaces ad-hoc `for f in ...` shell loops - the probe-directory workhorse. |
 | `scripts/find-real-failures.mjs` | Runs local + `--tv` on every v6 fixture, records per-file false positives (we flag, TV doesn't) and false negatives (TV flags, we don't). Writes `lint-reports/real-failures.json`. Hits TV ~750 times (~2 min at concurrency 4). |
 | `scripts/categorize-failures.mjs` | Reads `real-failures.json`, normalizes error messages into templates (strips line numbers, variable names, etc.), groups every occurrence under one of 48 / 19 categories, writes `lint-reports/failures-by-category.json`. |
 | `scripts/snapshot-local-lint.mjs` | Runs `pine-lint` (local) on every fixture and writes `lint-reports/local-baseline.json` - sorted per-file error lists. The regression contract. Re-run after every intentional change. |
@@ -301,11 +314,25 @@ The reports live in `lint-reports/` which is **gitignored** - so this
 section records the latest measurement (the JSONs also embed
 `generatedAt` + `gitCommit` since #29):
 
-**Measured 2026-06-04 (~20:00 UTC), working tree on `42d522f` +
-INV031** (tuple blank-line RHS, type-keyword names, if-expressions;
-748 v6 fixtures, `6874e636…` + the 3 NBSP-refusal files no-verdict
-this run): **42 confirmable local-only error records / 36 tv-only /
-29 same-pos-different-message**, plus 919 past TV's stop point. The
+**Measured 2026-06-05, working tree on `fc2a6d6` + INV032**
+(declaration/`:=` strict base-type rule CE10173 + CE10097, float-literal
+raw-lexeme typing, na identifier typing, version threading,
+no-annotation = v1, math.round/floor/ceil polymorphic fixes; 748 v6
+fixtures, 4 unparseable): **42 confirmable local-only error records /
+31 tv-only / 30 same-pos-different-message**, plus 924 past TV's stop
+point. The "Cannot assign * to *" (3) and "Value with NA type" (2)
+tv-only categories are cleared, and the local-only type-FP rows
+shrank with them (the 'and'-operand, argument-mismatch, and
+cannot-apply categories are gone - all fed by `0.0`-style literals
+typed int): the type-checker local-only residue is now 3 deliberate
+synthetic TPs + 3 condition-bool + 1 ternary-cond. Corpus baseline
+20120 -> 20069.
+
+Previous measurement 2026-06-04 (~20:00 UTC, `42d522f` + INV031,
+tuple blank-line RHS, type-keyword names, if-expressions;
+`6874e636…` + the 3 NBSP-refusal files no-verdict that run): **42
+confirmable local-only error records / 36 tv-only / 29
+same-pos-different-message**, plus 919 past TV's stop point. The
 undefined-variable categories collapsed from 27+15 to 3+5 - the three
 TV-clean carrier files (`d88ffa83…`, `ca2e4ee7…`, `fffe6a2f…`) lint 0
 errors; the remainder sits in lexical-abort mangled files with no
@@ -445,23 +472,22 @@ bool-operator and ternary FPs.
 
 | count | files | category |
 |---|---|---|
-| 5 | 3 | `Condition must be boolean, got *` |
-| 4 | 2 | `Operator 'and' requires bool operands, but right operand is *` |
-| 4 | 1 | `Type mismatch for argument *: expected *, got *` |
+| 3 | 2 | `Condition must be boolean, got *` |
 | 3 | 1 | `Ternary branches must have compatible types. Got '*' and '*'` (our own synthetic fixture's deliberate true positives - TV flags them too, at the argument position; see INV026) |
-| 2 | 2 | `Ternary condition must be bool, got *` |
-| 2 | 1 | `Type mismatch: cannot apply '*' to * and *` |
-| 1 | 1 | `Operator 'or' requires bool operands, but right operand is *` |
+| 1 | 1 | `Ternary condition must be bool, got *` |
 
-(2026-06-04 post-INV027 confirmable counts: the "Cannot assign"
-category - 13 in 6 files - is resolved via INV027 (placeholder-generic
-returns, security_lower_tf element typing, comma-declaration annotation
-binding, blank-line ternary wraps). Earlier the same day: INV026
-resolved the ternary-branch FP cluster (#18, was 18 in 8 files; hex
-color literals inferred as string, inference-pass cache poisoning, the
-ta.valuewhen frozen-overload fallback); INV024 cleared the
-'and'-left-operand and 'not'-requires-bool categories; at `9d64b4c`
-cannot-apply fell 75 -> 9)
+(2026-06-05 post-INV032: the 'and'/'or'-operand, argument-mismatch,
+and cannot-apply categories are gone and condition-bool halved - all
+were fed by whole-valued float literals (`0.0`, `2e3`) typed int;
+inferLiteralType now consults the raw lexeme. Earlier history:
+2026-06-04 post-INV027 cleared "Cannot assign" - 13 in 6 files -
+via placeholder-generic returns, security_lower_tf element typing,
+comma-declaration annotation binding, blank-line ternary wraps;
+INV026 resolved the ternary-branch FP cluster (#18, was 18 in 8
+files; hex color literals inferred as string, inference-pass cache
+poisoning, the ta.valuewhen frozen-overload fallback); INV024 cleared
+the 'and'-left-operand and 'not'-requires-bool categories; at
+`9d64b4c` cannot-apply fell 75 -> 9)
 
 **Right approach**: pick a specific FP, trace through `inferExpressionType`
 in `checker.ts` to see why we produce e.g. `series<float>` for what
@@ -472,18 +498,18 @@ should be `series<bool>`. Don't relax the bool checks - they're correct.
 | count | files | category |
 |---|---|---|
 | 3 | 1 | `Cannot call "operator ?:" with argument ...` (was 13 in 9 files - never a detection gap, just anchor mismatch; resolved by INV028's operand-anchored errors. The 3 left are `35a58bb9…`'s ternary trio, where TV anchors at one branch by undecoded type-priority rules; we detect all three at the ternary) |
-| 3 | 3 | `Cannot assign * to *` (TV catches assignment type errors we don't) |
 | 2 | 2 | `Could not find {kind} '{fullName}'` |
 | 2 | 1 | `Cannot use a collection in a type template of another collection` |
 | 2 | 1 | `The condition of the "{blockName}" statement must evaluate to a "bool" value` |
 | 2 | 1 | `Undeclared identifier "{identifier}"` |
-| 2 | 2 | `Value with NA type cannot be assigned to a variable that was defined without type keyword` |
 | 1 | 1 | `Cannot call "plot" with argument "title"=... (series string for const string)` |
 | 1 | 1 | `Incorrect field type "{id}" of enum "{enumName}"` |
 
 The operator-argument cluster is resolved (INV028): every site was
-already detected, anchored differently. The remaining rows above are
-genuine gaps.
+already detected, anchored differently. The `Cannot assign * to *` (3)
+and `Value with NA type ...` (2) categories are resolved by INV032's
+strict declaration/reassignment base-type rule (CE10173/CE10097, 21
+probes). The remaining rows above are genuine gaps.
 
 ---
 

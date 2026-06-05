@@ -173,3 +173,14 @@ contradiction means re-measure, not "the earlier author was wrong."
   if-EXPRESSIONS (`int m = if cond` ...) - new IfExpression node
   mirroring SwitchExpression, parsed with the statement machinery.
   All three files now lint 0 errors.
+- [INV032](INV032-declaration-initializer-types/notes.md) - strict
+  declaration/`:=` base-type rule (CE10173: exact base match, int->float
+  widening only, na to any keyword but bool, qualifiers free) and
+  CE10097 bare-na-needs-type-keyword; 21 probes. Exposed and fixed:
+  `0.0` literal typed int (raw lexeme now consulted), na identifier
+  typed unknown (RESERVED_KEYWORDS overwrote simple<na>), ternary
+  unknown-vs-na typed na, version not threaded into function/method
+  bodies, no-annotation files validated as v6 (now v1 per TV),
+  math.round/floor/ceil wrongly polymorphic-numeric (+
+  detectReturnTypeParam set-equality coincidence on math.round, now
+  requires a functional per-overload mapping).

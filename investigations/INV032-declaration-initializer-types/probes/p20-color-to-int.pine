@@ -1,0 +1,4 @@
+//@version=6
+indicator("p")
+int x = color.red
+plot(close)

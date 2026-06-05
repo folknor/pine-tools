@@ -1,0 +1,5 @@
+//@version=6
+indicator("p")
+x = 1
+x := 2.5
+plot(close)

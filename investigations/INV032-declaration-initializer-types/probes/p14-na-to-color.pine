@@ -1,0 +1,4 @@
+//@version=6
+indicator("p")
+color x = na
+plot(close)

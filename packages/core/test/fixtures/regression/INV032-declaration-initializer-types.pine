@@ -1,0 +1,29 @@
+// @test regression/INV032-declaration-initializer-types
+// @description Strict declaration/reassignment base-type rule (CE10173) and bare-na-without-type-keyword (CE10097); accepts qualifier widening, int->float, na to non-bool. All probed 2026-06-05 - see INV032.
+// @expects parse: success
+// @expects errors: 4
+// @expects error: line=6, message=/Cannot assign a value of the .const float. type to the .a. variable/
+// @expects error: line=8, message=/Cannot assign a value of the .float. type to the .x. variable/
+// @expects error: line=10, message=/Cannot assign a value of the .na. type to the .b. variable/
+// @expects error: line=11, message="Value with NA type cannot be assigned to a variable that was defined without type keyword"
+
+//@version=6
+indicator("INV032")
+
+// rejected: float never narrows to int, na never assigns to bool,
+// bare na needs a type keyword
+int a = 3.14
+x = 1
+x := 2.5
+b = false
+b := na
+var y = na
+
+// accepted: qualifiers are free, int widens to float, na to non-bool
+int c = bar_index
+float d = 1
+float e = bar_index
+color f = na
+z = 1
+z := bar_index
+plot(close)

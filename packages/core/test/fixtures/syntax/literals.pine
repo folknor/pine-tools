@@ -1,7 +1,8 @@
 // @test syntax/literals
 // @description Basic literal types: integers, floats, strings, booleans
 // @expects parse: success
-// @expects no-errors
+// @expects errors: 1
+// @expects error: line=24, message="Value with NA type cannot be assigned to a variable that was defined without type keyword"
 
 //@version=6
 indicator("Literal Tests")

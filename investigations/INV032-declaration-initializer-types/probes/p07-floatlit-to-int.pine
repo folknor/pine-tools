@@ -1,0 +1,4 @@
+//@version=6
+indicator("p")
+int x = 3.14
+plot(close)

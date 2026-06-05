@@ -1,0 +1,5 @@
+//@version=6
+indicator("p")
+if na or close > open
+    label.new(bar_index, high)
+plot(close)

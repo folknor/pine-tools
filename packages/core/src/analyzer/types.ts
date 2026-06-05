@@ -154,7 +154,7 @@ export namespace TypeChecker {
 	}
 
 	// Check if type is an na variant (na, const<na>, series<na>)
-	function isNaType(type: PineType): boolean {
+	export function isNaType(type: PineType): boolean {
 		const t = type as string;
 		return (
 			t === "na" ||
@@ -290,11 +290,75 @@ export namespace TypeChecker {
 		return false;
 	}
 
-	// Infer type from literal value
-	export function inferLiteralType(value: unknown): PineType {
+	// --- Strict declaration/assignment compatibility (CE10173/CE10097) ---
+	// TV applies a much stricter rule to `T name = expr` declarations and
+	// `name := expr` reassignments than to function arguments: base types
+	// must match exactly, except int widens to float, and na assigns to any
+	// base except bool. Qualifiers are free in both directions
+	// (`int x = bar_index` is legal - x just becomes series int). Probed
+	// 2026-06-05, 20 probes - see INV032. The lenient isAssignable above
+	// keeps serving arguments/ternaries; UDTs, collections, void, and
+	// unknown stay on it too (strictAssignApplies returns false for them).
+
+	const STRICT_ASSIGN_BASES = new Set([
+		"int",
+		"float",
+		"bool",
+		"string",
+		"color",
+	]);
+
+	// Strip the qualifier from either type format ("series<int>",
+	// "series int", bare "int") and return the base type name.
+	export function baseTypeName(type: string): string {
+		return type
+			.replace(/^(series|simple|const|input)\s+/, "")
+			.replace(/^(series|simple|const|input)<(.+)>$/, "$2");
+	}
+
+	// True when the strict rule covers this pair: declared base is one of
+	// the five primitives and the value side resolves to a primitive or na.
+	export function strictAssignApplies(
+		valueType: PineType,
+		declaredBase: string,
+	): boolean {
+		if (!STRICT_ASSIGN_BASES.has(declaredBase)) return false;
+		if (isNaType(valueType)) return true;
+		return STRICT_ASSIGN_BASES.has(baseTypeName(valueType as string));
+	}
+
+	export function strictAssignOk(
+		valueType: PineType,
+		declaredBase: string,
+	): boolean {
+		if (isNaType(valueType)) return declaredBase !== "bool";
+		const fromBase = baseTypeName(valueType as string);
+		if (fromBase === declaredBase) return true;
+		return fromBase === "int" && declaredBase === "float";
+	}
+
+	// Render a type the way TV's CE10173 declaration message does:
+	// "series<float>" -> "series float"; a bare base (literal/const
+	// expression) -> "const float"; na -> "simple na". see INV032
+	export function renderQualifiedType(type: PineType): string {
+		const t = type as string;
+		if (isNaType(t as PineType)) return "simple na";
+		const m = t.match(/^(series|simple|const|input)<(.+)>$/);
+		if (m) return `${m[1]} ${m[2]}`;
+		if (/^(series|simple|const|input)\s/.test(t)) return t;
+		return `const ${t}`;
+	}
+
+	// Infer type from literal value. `raw` is the source lexeme: a JS
+	// number can't distinguish `0.0`/`2e3` from `0`/`2000`, so whole-valued
+	// float literals need the raw text to type as float. Typing `0.0` as
+	// int was masked for years by the bidirectional int<->float coercion
+	// above; the strict declaration rule exposed it. see INV032
+	export function inferLiteralType(value: unknown, raw?: string): PineType {
 		// Check for na first (it's stored as string "na" in the AST)
 		if (value === "na") return "na";
 		if (typeof value === "number") {
+			if (raw && !/^0[xX]/.test(raw) && /[.eE]/.test(raw)) return "float";
 			return Number.isInteger(value) ? "int" : "float";
 		}
 		if (typeof value === "boolean") return "bool";

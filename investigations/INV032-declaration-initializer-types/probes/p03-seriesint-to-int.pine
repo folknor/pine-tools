@@ -1,0 +1,4 @@
+//@version=6
+indicator("p")
+int x = bar_index
+plot(close)

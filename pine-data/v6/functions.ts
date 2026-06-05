@@ -1,7 +1,7 @@
 /**
  * Pine Script V6 Functions
  * Auto-generated from TradingView documentation
- * Generated: 2026-06-04T09:48:20.775Z
+ * Generated: 2026-06-05T05:40:05.971Z
  * Total: 475 functions
  */
 
@@ -10569,9 +10569,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "const int",
-    "flags": {
-      "polymorphic": "numeric"
-    },
     "overloads": [
       {
         "parameters": [
@@ -10768,9 +10765,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "const int",
-    "flags": {
-      "polymorphic": "numeric"
-    },
     "overloads": [
       {
         "parameters": [
@@ -11448,10 +11442,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "const int",
-    "flags": {
-      "polymorphic": "numeric",
-      "returnTypeParam": "number"
-    },
     "overloads": [
       {
         "parameters": [

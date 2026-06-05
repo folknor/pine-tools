@@ -1,0 +1,4 @@
+//@version=6
+indicator("p")
+var x = na
+plot(close)

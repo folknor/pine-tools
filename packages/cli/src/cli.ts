@@ -281,8 +281,11 @@ async function main() {
 		// Get parser errors (syntax errors during parsing)
 		const parserErrors = parser.getParserErrors();
 
-		// Get detected version for version-aware validation
-		const detectedVersion = parser.getDetectedVersion() || "6"; // Default to v6 if not detected
+		// Get detected version for version-aware validation. No annotation
+		// means Pine v1 (TV's rule; translate_light refuses anything below
+		// v5 - INV029), NOT v6: legacy scripts stay lenient (G004), so the
+		// v6-only checks and the semantic-warning pass must not run. see INV032
+		const detectedVersion = parser.getDetectedVersion() || "1";
 
 		const extractor = new ASTExtractor();
 		const result = extractor.extract(ast);

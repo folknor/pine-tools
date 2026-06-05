@@ -226,7 +226,7 @@ export function detectReturnTypeParam(detail: OverloadCapture): string | null {
 		if (/[<>]/.test(t)) return null;
 	}
 
-	let match: string | null = null;
+	let match: null | string = null;
 	for (const [name, type] of unioned) {
 		if (type === "unknown") continue;
 		const bases = new Set(baseType(type).split("/"));
@@ -236,6 +236,30 @@ export function detectReturnTypeParam(detail: OverloadCapture): string | null {
 		) {
 			if (match) return null; // ambiguous - more than one scalar match
 			match = name;
+		}
+	}
+	if (!match) return null;
+
+	// Set-equality alone can match coincidentally: math.round's returns are
+	// {int, float} only because the PRECISION overloads return float - the
+	// `number` param never drives the return base (round(float) -> int).
+	// Require the per-overload mapping candidate-base -> return-base to be
+	// FUNCTIONAL: the same candidate base set must never produce two
+	// different return bases (round maps "int/float" to both int and float;
+	// ta.valuewhen maps color->color, int->int, int/float->float, bool->bool).
+	// see INV032
+	const overloadArgs = detail.overloadArgs;
+	if (overloadArgs && overloadArgs.length === overloads.length) {
+		const seen = new Map<string, string>();
+		for (let i = 0; i < overloads.length; i++) {
+			const ret = overloads[i].match(/→\s*(.+)$/)?.[1];
+			const arg = overloadArgs[i]?.find((a) => a.name === match);
+			if (!ret || !arg) continue;
+			const key = baseType(arg.type);
+			const retBase = baseType(ret);
+			const prior = seen.get(key);
+			if (prior !== undefined && prior !== retBase) return null;
+			seen.set(key, retBase);
 		}
 	}
 	return match;

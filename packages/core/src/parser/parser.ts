@@ -204,13 +204,16 @@ export class Parser {
 									this.peekNext()?.value === "<"))) ||
 						this.isQualifiedVarTypeKeyword()
 					) {
+						const unitStartToken = this.peek();
 						let unitType = this.advance().value;
 						if (this.isVarTypeKeyword()) {
 							// qualifier consumed above - append the base type
 							unitType += ` ${this.advance().value}`;
 						}
 						unitType += this.parseGenericTypeSuffix();
-						statements.push(this.variableDeclaration(null, unitType));
+						statements.push(
+							this.variableDeclaration(null, unitType, unitStartToken),
+						);
 						continue;
 					}
 					{
@@ -261,6 +264,7 @@ export class Parser {
 		// x = ...`); it folds into the annotation. see INV024.
 		if (this.isVarTypeKeyword() || this.isQualifiedVarTypeKeyword()) {
 			const checkpoint = this.current;
+			const typeStartToken = this.peek();
 			let typeAnnotation = this.advance().value;
 			if (this.isVarTypeKeyword()) {
 				// qualifier consumed above - append the base type
@@ -274,7 +278,11 @@ export class Parser {
 				this.peekNext()?.type === TokenType.ASSIGN
 			) {
 				// This is a type-annotated variable declaration
-				const firstDecl = this.variableDeclaration(null, typeAnnotation);
+				const firstDecl = this.variableDeclaration(
+					null,
+					typeAnnotation,
+					typeStartToken,
+				);
 
 				// Check for comma-separated declarations: int x = 0, int y = 0 OR int x = 0, y = 1
 				if (this.check(TokenType.COMMA)) {
@@ -285,6 +293,7 @@ export class Parser {
 						// 1. type identifier = expression (own annotation)
 						// 2. identifier = expression (untyped)
 						if (this.isVarTypeKeyword() || this.isQualifiedVarTypeKeyword()) {
+							const unitStartToken = this.peek();
 							let nextType = this.advance().value;
 							if (this.isVarTypeKeyword()) {
 								// qualifier consumed above - append the base type
@@ -296,7 +305,11 @@ export class Parser {
 								this.check(TokenType.IDENTIFIER) &&
 								this.peekNext()?.type === TokenType.ASSIGN
 							) {
-								const nextDecl = this.variableDeclaration(null, nextType);
+								const nextDecl = this.variableDeclaration(
+									null,
+									nextType,
+									unitStartToken,
+								);
 								statements.push(nextDecl);
 							} else {
 								break;
@@ -619,7 +632,8 @@ export class Parser {
 	 * import alias), then `name = expr`.
 	 */
 	private varDeclarationAfterKeyword(): AST.VariableDeclaration {
-		const varKeyword = this.previous().value as "var" | "varip" | "const";
+		const keywordToken = this.previous();
+		const varKeyword = keywordToken.value as "var" | "varip" | "const";
 
 		// `var const array<float> xs = ...` - a `const` qualifier may follow
 		// var/varip (TV accepts the combination). The persistence mode stays
@@ -653,7 +667,7 @@ export class Parser {
 			typeAnnotation = this.tryUserTypeAnnotation() ?? undefined;
 		}
 
-		return this.variableDeclaration(varKeyword, typeAnnotation);
+		return this.variableDeclaration(varKeyword, typeAnnotation, keywordToken);
 	}
 
 	/**
@@ -732,6 +746,7 @@ export class Parser {
 	private variableDeclaration(
 		varType: "var" | "varip" | "const" | null,
 		typeName?: string,
+		startToken?: Token,
 	): AST.VariableDeclaration {
 		// A type keyword can BE the variable name when directly followed by
 		// `=` - `var color color = na`, `line line = na` are idiomatic Pine
@@ -756,6 +771,8 @@ export class Parser {
 			typeAnnotation: typeName ? { name: typeName } : undefined,
 			line: token.line,
 			column: token.column,
+			startLine: (startToken ?? token).line,
+			startColumn: (startToken ?? token).column,
 		};
 	}
 

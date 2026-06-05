@@ -351,9 +351,11 @@ function getFunctionFlags(name: string): Record<string, unknown> | undefined {
 		"math.min": "numeric",
 		"math.avg": "numeric",
 		"math.sum": "numeric",
-		"math.round": "numeric",
-		"math.floor": "numeric",
-		"math.ceil": "numeric",
+		// math.round/floor/ceil are NOT input-following: the 1-arg forms
+		// return int regardless of the argument's base type (only the
+		// qualifier follows; see their per-overload returns in pine-data).
+		// Flagging them "numeric" made `int x = math.round(float)` a false
+		// "cannot assign float to int". see INV032
 	};
 	if (polymorphic[name]) {
 		flags.polymorphic = polymorphic[name];

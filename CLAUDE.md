@@ -289,6 +289,7 @@ pnpm run debug:diff -- --count 5 --verbose   # Show generated scripts
 | Creating temp files to test Parser/Validator | `pnpm run debug:internals -- parse 'code'` or `validate 'code'` |
 | Debugging lexer tokens and indentation | `pnpm run debug:tokens 'code'` |
 | Scanning pinescripts for v6 parse errors | `pnpm run debug:corpus --summary` or `--errors` |
+| `for f in ...; do pine-lint $f; done` loops | `node scripts/lint-batch.mjs <files\|dirs\|globs>` (also `--diff` for per-file TV diffs) |
 
 The dev tools handle temp files, JSON parsing, and output formatting automatically.
 

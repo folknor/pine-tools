@@ -1,12 +1,14 @@
 // @test validation/na-coercion
 // @description NA type coercion and function-as-property access
 // @expects parse: success
-// @expects no-errors
+// @expects errors: 1
+// @expects error: line=9, message=/Cannot assign a value of the .simple na. type to the .naBool. variable/
 
 //@version=6
 indicator("NA Coercion and Function-as-Property Tests")
 
-// const<na> assignable to various types
+// na assignable to any type keyword EXCEPT bool (TV CE10173 on the bool
+// line, silent on the rest - probed 2026-06-05, see INV032)
 float naFloat = na
 int naInt = na
 string naString = na
