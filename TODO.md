@@ -510,21 +510,19 @@ should be `series<bool>`. Don't relax the bool checks - they're correct.
 | count | files | category |
 |---|---|---|
 | 3 | 1 | `Cannot call "operator ?:" with argument ...` (was 13 in 9 files - never a detection gap, just anchor mismatch; resolved by INV028's operand-anchored errors. The 3 left are `35a58bb9…`'s ternary trio, where TV anchors at one branch by undecoded type-priority rules; we detect all three at the ternary) |
-| 2 | 1 | `The condition of the "{blockName}" statement must evaluate to a "bool" value` |
 
 The operator-argument cluster is resolved (INV028): every site was
 already detected, anchored differently. The `Cannot assign * to *` (3)
 and `Value with NA type ...` (2) categories are resolved by INV032's
 strict declaration/reassignment base-type rule (CE10173/CE10097, 21
-probes). The `Could not find {kind}` category (2) is resolved by
-INV036's CE10271 undefined-callable check, the
-`Undeclared identifier` category (2) by INV037's v6 if-branch
-scoping, the collection-in-template category (2) by INV038's
-CE10025/CE10022 checks, the enum-field-type category (1) by
-INV039's CE10125 (which also explains the 'pinePos' record as a
-TV-side crash echo), and the plot-title series-string category (1) by
-INV040's series-switch inference + INV014 gate narrowing. The
-remaining rows above are genuine gaps.
+probes). The 2026-06-05 task-queue round (INV033-INV041) then cleared
+every other row this table held: invalid type keyword (INV033),
+for-to (INV034), already-defined (INV035), CE10147 (INV024 addendum),
+Could-not-find-callable (INV036), Undeclared identifier (INV037),
+collection-in-template (INV038), enum field type + the 'pinePos'
+TV-crash echo (INV039), plot-title series string (INV040), and the
+if-condition bool wording/anchor (INV041 - never a detection gap).
+Only the ternary-trio row above remains.
 
 ---
 

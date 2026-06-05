@@ -600,13 +600,18 @@ export class UnifiedPineValidator {
 			case "IfStatement": {
 				this.validateExpression(statement.condition, version);
 				const condType = this.inferExpressionType(statement.condition, version);
-				// Skip check if type is unknown (can't verify, don't complain)
+				// Skip check if type is unknown (can't verify, don't complain).
+				// TV's wording and anchor: 'The condition of the "if" statement
+				// must evaluate to a "bool" value.' at the CONDITION expression
+				// (corpus verdict 8fcd16c1 lines 317:4/328:4; we used to anchor
+				// at the if keyword with our own wording, double-counting the
+				// pair in the diff). see INV041
 				if (condType !== "unknown" && !TypeChecker.isBoolType(condType)) {
 					this.addError(
-						statement.line,
-						statement.column,
+						statement.condition.line || statement.line,
+						statement.condition.column || statement.column,
 						10,
-						`Condition must be boolean, got ${condType}`,
+						'The condition of the "if" statement must evaluate to a "bool" value.',
 						DiagnosticSeverity.Error,
 					);
 				}

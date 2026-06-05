@@ -237,3 +237,8 @@ contradiction means re-measure, not "the earlier author was wrong."
   `plot(title=trend)` matches TV's CE10123 byte-for-byte. Narrows the
   INV014 reliability gate without giving up its FP protection
   (unqualified inferences still pass).
+- [INV041](INV041-if-condition-anchor/notes.md) - the non-bool
+  if-condition error now uses TV's wording and anchors at the
+  CONDITION, not the if keyword. Never a detection gap (the INV028
+  anchor-mismatch pattern); 235 corpus records moved as verified
+  same-line rename pairs.

@@ -1,0 +1,12 @@
+// @test regression/INV041-if-condition-anchor
+// @description The non-bool if-condition error uses TV's wording and anchors at the CONDITION expression, not the if keyword (corpus verdict 8fcd16c1 317:4/328:4). See INV041.
+// @expects parse: success
+// @expects errors: 1
+// @expects error: line=4, column=4, message=/The condition of the .if. statement must evaluate to a .bool. value/
+
+//@version=6
+indicator("INV041")
+float pl2 = ta.pivotlow(low, 5, 5)
+if pl2
+    label.new(bar_index, high)
+plot(close)
