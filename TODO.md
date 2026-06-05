@@ -448,7 +448,12 @@ These are real syntax errors in the user's code that we don't surface.
 | 1 | 1 | `Script doesn't contain any statements` |
 | 1 | 1 | `Syntax error: Missing closing parenthesis` |
 | 1 | 1 | `Exported variable should have const modifier and type` |
-| 1 | 1 | `Cannot read properties of undefined (reading 'pinePos')` (a TV-side crash string, not a real diagnostic) |
+
+(The `Cannot read properties of undefined (reading 'pinePos')` record
+is a TV-side crash string that deterministically accompanies CE10125
+on int-valued enum fields at the same span - reproduced and explained
+in INV039; with CE10125 now matched there, it pairs in the
+same-position channel instead of counting as a gap.)
 
 (2026-06-04 post-INV025: the `Missing enclosing character in the
 literal string` category - 5 files - is fixed and gone; see INV025.
@@ -507,7 +512,6 @@ should be `series<bool>`. Don't relax the bool checks - they're correct.
 | 3 | 1 | `Cannot call "operator ?:" with argument ...` (was 13 in 9 files - never a detection gap, just anchor mismatch; resolved by INV028's operand-anchored errors. The 3 left are `35a58bb9…`'s ternary trio, where TV anchors at one branch by undecoded type-priority rules; we detect all three at the ternary) |
 | 2 | 1 | `The condition of the "{blockName}" statement must evaluate to a "bool" value` |
 | 1 | 1 | `Cannot call "plot" with argument "title"=... (series string for const string)` |
-| 1 | 1 | `Incorrect field type "{id}" of enum "{enumName}"` |
 
 The operator-argument cluster is resolved (INV028): every site was
 already detected, anchored differently. The `Cannot assign * to *` (3)
@@ -516,8 +520,10 @@ strict declaration/reassignment base-type rule (CE10173/CE10097, 21
 probes). The `Could not find {kind}` category (2) is resolved by
 INV036's CE10271 undefined-callable check, the
 `Undeclared identifier` category (2) by INV037's v6 if-branch
-scoping, and the collection-in-template category (2) by INV038's
-CE10025/CE10022 checks. The remaining rows above are genuine gaps.
+scoping, the collection-in-template category (2) by INV038's
+CE10025/CE10022 checks, and the enum-field-type category (1) by
+INV039's CE10125 (which also explains the 'pinePos' record as a
+TV-side crash echo). The remaining rows above are genuine gaps.
 
 ---
 

@@ -1495,6 +1495,37 @@ export class Parser {
 					) {
 						break;
 					}
+					// Enum field values must be STRING literals - TV's CE10125
+					// ('Incorrect field type "LINEAR" of enum "Scale". Unexpected
+					// type: "literal int". Expected type: "literal string"'),
+					// anchored at the field name. Probed: int values error,
+					// string values and bare fields are clean. see INV039
+					if (
+						kind === "enum" &&
+						isLineStart &&
+						currentToken.type === TokenType.IDENTIFIER
+					) {
+						const eq = this.tokens[this.current + 1];
+						const val = this.tokens[this.current + 2];
+						if (eq?.type === TokenType.ASSIGN && eq.value === "=" && val) {
+							let badType: string | null = null;
+							if (val.type === TokenType.NUMBER) {
+								badType =
+									/[.eE]/.test(val.value) && !/^0[xX]/.test(val.value)
+										? "literal float"
+										: "literal int";
+							} else if (val.type === TokenType.BOOL) {
+								badType = "literal bool";
+							}
+							if (badType) {
+								this.parserErrors.push({
+									line: currentToken.line,
+									column: currentToken.column,
+									message: `Incorrect field type "${currentToken.value}" of enum "${nameToken.value}". Unexpected type: "${badType}". Expected type: "literal string"`,
+								});
+							}
+						}
+					}
 					this.advance();
 				}
 			}

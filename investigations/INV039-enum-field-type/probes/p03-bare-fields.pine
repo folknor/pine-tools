@@ -1,0 +1,7 @@
+//@version=6
+indicator("p")
+enum Scale
+    LINEAR
+    LOG
+s = Scale.LINEAR
+plot(s == Scale.LOG ? 1 : 0)

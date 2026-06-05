@@ -1,0 +1,18 @@
+// @test regression/INV039-enum-field-type
+// @description CE10125: enum field values must be string literals - int/float/bool values error per field, anchored at the field name; string values and bare fields are clean. Probed 2026-06-05, see INV039.
+// @expects parse: fail
+// @expects error: line=4, column=5, message=/Incorrect field type .A. of enum .Bad.. Unexpected type: .literal int.. Expected type: .literal string./
+// @expects error: line=5, column=5, message=/Incorrect field type .B. of enum .Bad.. Unexpected type: .literal float.. Expected type: .literal string./
+// @expects error: line=6, column=5, message=/Incorrect field type .C. of enum .Bad.. Unexpected type: .literal bool.. Expected type: .literal string./
+
+//@version=6
+indicator("INV039")
+enum Bad
+    A = 0
+    B = 1.5
+    C = true
+enum Good
+    X = "ex"
+    Y
+g = Good.X
+plot(g == Good.Y ? 1 : 0)

@@ -225,3 +225,9 @@ contradiction means re-measure, not "the earlier author was wrong."
   call and the statement start, matched exactly); the
   `array<array<float>>` ANNOTATION form is the distinct CE10022
   `Arrays of type array are not supported.` (3 probes).
+- [INV039](INV039-enum-field-type/notes.md) - CE10125 `Incorrect field
+  type ... Expected type: "literal string"`: enum field values must be
+  string literals; int/float/bool values error per field at the field
+  name. Bonus: the inventory's mysterious `pinePos` record is a
+  TV-SIDE CRASH STRING (CE10294) deterministically accompanying
+  CE10125 at the same span - TV noise, not a diagnostic (3 probes).

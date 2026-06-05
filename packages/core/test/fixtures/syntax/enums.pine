@@ -12,11 +12,12 @@ enum Direction
     DOWN
     NEUTRAL
 
-// Enum with explicit values
+// Enum with explicit values (must be string literals - int values are
+// TV's CE10125, probed; see INV039)
 enum Scale
-    LINEAR = 0
-    LOG = 1
-    ATR = 2
+    LINEAR = "Linear"
+    LOG = "Log"
+    ATR = "ATR"
 
 // Enum member access
 dir = Direction.UP
