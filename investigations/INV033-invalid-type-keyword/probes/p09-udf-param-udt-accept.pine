@@ -1,0 +1,8 @@
+//@version=6
+indicator("p")
+type Foo
+    float v = 0.0
+g(Foo b) =>
+    b.v
+f = Foo.new(close)
+plot(g(f))

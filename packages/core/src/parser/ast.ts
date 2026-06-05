@@ -108,6 +108,11 @@ export interface FunctionParam {
 export interface TypeAnnotation {
 	name: string; // int, float, bool, string, color, etc.
 	qualifier?: string; // series, simple, input, const
+	// Position of the annotation's first token, where TV anchors CE10149
+	// on UDF parameter annotations (probed `f(source x)` at the keyword).
+	// Only set on the parseFunctionParams path so far. see INV033
+	line?: number;
+	column?: number;
 }
 
 export interface ExpressionStatement extends ASTNode {

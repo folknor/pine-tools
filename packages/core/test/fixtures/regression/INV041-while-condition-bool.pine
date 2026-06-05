@@ -1,0 +1,20 @@
+// @test regression/INV041-while-condition-bool
+// @description Non-bool while conditions are TV's CE10101 with blockName "while", anchored at the condition expression (probed `while close` 4:7 and `while n` int). Bool conditions stay clean. See INV041.
+// @expects parse: success
+// @expects errors: 2
+// @expects error: line=4, column=7, message=/The condition of the .while. statement must evaluate to a .bool. value/
+// @expects error: line=8, column=7, message=/The condition of the .while. statement must evaluate to a .bool. value/
+
+//@version=6
+indicator("INV041 while")
+i = 0
+while close
+    i := i + 1
+    break
+n = 3
+while n
+    i := i + 1
+    break
+while i < 10
+    i := i + 1
+plot(i)

@@ -1,0 +1,28 @@
+// @test regression/INV040-conditional-qualifier-propagation
+// @description Conditional-expression results take the governing condition's qualifier: series conditions make ternary/if-expression/switch results series, INPUT conditions make them input - both reject const-required params (plot title, CE10123, probed p01-p04). Condition-less switch results stay const-usable (probed p05). See INV040.
+// @expects parse: success
+// @expects errors: 4
+// @expects error: line=4, column=19, message="Cannot call"
+// @expects error: line=6, column=19, message="Cannot call"
+// @expects error: line=11, column=19, message="Cannot call"
+// @expects error: line=16, column=19, message="Cannot call"
+
+//@version=6
+indicator("INV040 qualifiers")
+t1 = close > open ? "Up" : "Down"
+plot(close, title=t1)
+t2 = input.bool(true) ? "Up" : "Down"
+plot(close, title=t2)
+t3 = if close > open
+    "Up"
+else
+    "Down"
+plot(close, title=t3)
+b = input.bool(true)
+t4 = switch
+    b => "Up"
+    => "Flat"
+plot(close, title=t4)
+t5 = switch
+    => "Static"
+plot(close, title=t5)

@@ -68,8 +68,27 @@ said "Once stricter checking is implemented, change expects").
 
 ## Residual
 
-- TupleDeclaration names are not entered into the frames (re-declaring
-  a tuple-destructured name later is unprobed - probe before adding).
-- Inline switch-arm / single-line function body declarations flow
-  through parseInlineStatementUnit paths that do not push frames; no
-  corpus evidence of collisions there.
+- ~~TupleDeclaration names are not entered into the frames~~ - probed
+  and implemented, see the addendum below.
+- ~~Inline switch-arm / single-line function body declarations~~ -
+  probed: already matching TV with no code change (addendum).
+
+## Addendum 2026-06-05: tuples and inline bodies
+
+Probes (p07-p10 in `probes/`, `pine-lint --tv` 2026-06-05):
+
+| probe | shape | TV verdict |
+|---|---|---|
+| p07 | `[m, s, h] = ta.macd(...)` then `m = 1.0` | CE10095 `"m" is already defined`, 4:1 (statement start) |
+| p08 | `[a, a, h] = ta.macd(...)` | CE10095 `"a"`, 3:1 - duplicate WITHIN one tuple errors too |
+| p09 | `f(x) => y = 1, y = 2, y + x` | CE10095 `"y"` at 3:16 (the second unit) - and our local check ALREADY matched exactly (no diff) |
+| p10 | global `y = 1` then `f(x) => y = 2, y + x` | clean errors, one shadowing WARNING on both sides - matching |
+
+p07/p08 were the gap: TupleDeclaration names now run
+`checkRedeclaration` per name in source order (which catches the
+within-tuple duplicate for free). p09/p10 confirmed the inline-body
+worry in the original residual was unfounded - single-line arrow
+bodies already flow into the function's decl frame with matching
+anchors, so no change was made there.
+
+Fixture: `packages/core/test/fixtures/regression/INV035-tuple-redeclaration.pine`

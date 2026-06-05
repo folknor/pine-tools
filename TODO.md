@@ -210,19 +210,23 @@ IDs so the two stay in sync.
   Identifier callees only; undefined `lib.fn` / `ns.fn` / UDT-method
   calls still pass silently. Needs import-alias member data we don't
   have, plus UDT method namespaces. (INV036 residual.)
-- **#42 - extend the series-qualifier wrap to ternary/if-expressions,
-  and bool-condition checks to while/for.** INV040 wraps only
-  series-condition SWITCH results; ternaries/if-expressions presumably
-  follow the same rule (more consumers, probe first). INV041 noted TV's
-  `{blockName}` template implies while/for get the same
-  condition-must-be-bool error; our while/for paths don't emit it at
-  all. No corpus evidence for either - probe before building.
-- **#43 - remaining INV033/INV035/INV038 narrow residuals.** UDF
-  parameter type annotations unvalidated (CE10149 scope cut);
-  TupleDeclaration names not entered into CE10095 redecl frames, and
-  inline statement units (arrow bodies/switch arms) don't push frames;
-  matrix/map ANNOTATION nesting forms unprobed (CE10022's wording is
-  array-specific). All cheap once probed.
+- ~~#42~~ **CLOSED 2026-06-05** - both halves probed and implemented
+  (addenda in INV040/INV041). The qualifier rule turned out BROADER
+  than assumed: conditional results take the condition's qualifier
+  including INPUT (input.bool-driven ternary/switch titles are
+  CE10123 "input string" - the original INV040 input-negative
+  assumption was wrong; condition-less switches stay const, probed).
+  Landed `input<T>` internal types for input.*() calls plus the
+  knock-on qualifier-blindness fixes (isAssignable equal-base rule,
+  numeric polymorphic bases, message rendering). while gets CE10101
+  at the condition span; counted `for` has no bool condition to check.
+- ~~#43~~ **CLOSED 2026-06-05** - all three residual groups probed and
+  closed (addenda in INV033/INV035/INV038): CE10149 fires on UDF/method
+  param annotations (anchored at the type token); tuple names enter the
+  CE10095 frames (later redecl AND within-tuple duplicates; inline
+  arrow bodies turned out already-correct, probed clean); annotation
+  nesting splits by outer collection - array CE10022 / matrix CE10023
+  / map CE10025, inner base in the {inner} slot.
 - **#44 - the `13a745…` mangle file dominates local-only (~33
   records).** Its TV stop is LATE, so wrap-shredded definitions and
   arg-spill comma declarations count as confirmable local-only noise.
@@ -336,10 +340,23 @@ The reports live in `lint-reports/` which is **gitignored** - so this
 section records the latest measurement (the JSONs also embed
 `generatedAt` + `gitCommit` since #29):
 
-**Measured 2026-06-05 (PM), working tree on `f7663dd` after the
-task-queue round (INV033-INV041 + INV024 addendum)**: **61 local-only /
-13 tv-only / 33 same-pos-different-message**, plus 943 past TV's stop
-point (3 unparseable). The tv-only side fell 31 -> 13 and now holds
+**Measured 2026-06-05 (later PM), working tree on `51680aa` + the
+#42/#43 residual round (INV033/INV035/INV038/INV040/INV041 addenda)**:
+**61 local-only / 13 tv-only / 33 same-pos-different-message**, plus
+942 past TV's stop point (4 unparseable). Headline identical to the
+previous measurement - this round implemented probe-sourced residuals
+(while-condition CE10101, UDF param CE10149, tuple CE10095, matrix/map
+annotation nesting, conditional-qualifier propagation incl. input) that
+were never inventory rows, and killed 23 qualifier-blocked
+assignability FPs whose records sat past TV's stop or in legacy files.
+Corpus baseline 20111 -> 20088; ~900 same-position wording shifts
+(operand qualifiers now visible / bracket types rendered in TV's space
+form).
+
+Previous measurement 2026-06-05 (PM), working tree on `f7663dd` after
+the task-queue round (INV033-INV041 + INV024 addendum): **61
+local-only / 13 tv-only / 33 same-pos-different-message**, plus 943
+past TV's stop point (3 unparseable). The tv-only side fell 31 -> 13 and now holds
 ONLY: 5 parser `Syntax error at input ...` forms + missing-paren +
 script-without-statements (7 records), the 3 library-only constraint
 records (the standing policy question), and `35a58bb9…`'s ternary trio

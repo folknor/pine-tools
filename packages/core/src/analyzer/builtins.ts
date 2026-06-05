@@ -408,20 +408,25 @@ export function getPolymorphicReturnType(
 
 		case "numeric":
 			// Returns the same numeric type (int stays int, float stays float)
-			// If any arg is float, result is float; otherwise int
+			// If any arg is float, result is float; otherwise int. Compare
+			// BASES so qualifier-wrapped numerics (input<int> from input.*
+			// calls) keep their int-ness instead of hitting the float
+			// fallback. see INV040
 			if (firstArgType === "unknown") return null;
-			// Check if any argument is float
 			for (const argType of argTypes) {
-				if (argType === "float" || argType === "series<float>") {
-					return argType.includes("series") ? "series<float>" : "float";
+				if (baseOfRawType(String(argType)) === "float") {
+					return String(argType).includes("series<")
+						? "series<float>"
+						: "float";
 				}
 			}
-			// Default to same type as first arg for int
-			if (firstArgType === "int" || firstArgType === "series<int>") {
+			if (baseOfRawType(String(firstArgType)) === "int") {
 				return firstArgType;
 			}
 			// For other numeric types, return float as safe default
-			return firstArgType.includes("series") ? "series<float>" : "float";
+			return String(firstArgType).includes("series<")
+				? "series<float>"
+				: "float";
 
 		default:
 			return null;

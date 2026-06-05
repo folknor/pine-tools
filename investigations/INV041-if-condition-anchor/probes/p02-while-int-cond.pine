@@ -1,0 +1,8 @@
+//@version=6
+indicator("p")
+n = 3
+i = 0
+while n
+    i := i + 1
+    break
+plot(i)

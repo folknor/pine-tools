@@ -1,0 +1,14 @@
+// @test regression/INV035-tuple-redeclaration
+// @description Tuple-destructured names enter the CE10095 redeclaration scope: a later `=` declaration of a tuple name errors (probed 4:1), and a duplicate name WITHIN one tuple errors at the statement start (probed 3:1). See INV035.
+// @expects parse: success
+// @expects errors: 2
+// @expects error: line=4, column=1, message=/"m" is already defined/
+// @expects error: line=6, column=1, message=/"a" is already defined/
+
+//@version=6
+indicator("INV035 tuples")
+[m, s, h] = ta.macd(close, 12, 26, 9)
+m = 1.0
+ok = m + s + h
+[a, a, h2] = ta.macd(close, 12, 26, 9)
+plot(ok + a + h2)

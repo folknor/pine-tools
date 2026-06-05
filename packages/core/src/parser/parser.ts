@@ -2172,6 +2172,10 @@ export class Parser {
 			let typeAnnotation: AST.TypeAnnotation | undefined;
 			let paramName: string;
 
+			// The param's first token - if a type annotation results, this is
+			// where it starts (TV anchors CE10149 there). see INV033
+			const paramStartTok = this.peek();
+
 			// Parse type annotation and parameter name
 			// Pine Script supports:
 			// - paramName (simple)
@@ -2266,7 +2270,11 @@ export class Parser {
 			}
 
 			if (typeKeywords.length > 0) {
-				typeAnnotation = { name: typeKeywords.join(" ") };
+				typeAnnotation = {
+					name: typeKeywords.join(" "),
+					line: paramStartTok?.line,
+					column: paramStartTok?.column,
+				};
 				// Next token should be the parameter name (identifier or keyword used as name)
 				// Keywords like 'type', 'color', 'string' etc. can be used as param names
 				if (this.check(TokenType.IDENTIFIER)) {
@@ -2313,7 +2321,11 @@ export class Parser {
 				// Check if next token is an identifier (then first was type,
 				// second is name; keywords are usable as param names)
 				if (this.check(TokenType.IDENTIFIER) || this.check(TokenType.KEYWORD)) {
-					typeAnnotation = { name: typeName };
+					typeAnnotation = {
+						name: typeName,
+						line: paramStartTok?.line,
+						column: paramStartTok?.column,
+					};
 					paramName = this.advance().value;
 				} else {
 					// First identifier is the parameter name

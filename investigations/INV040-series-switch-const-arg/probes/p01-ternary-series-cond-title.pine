@@ -1,0 +1,4 @@
+//@version=6
+indicator("p")
+trend = close > open ? "Up" : "Down"
+plot(close, title=trend)

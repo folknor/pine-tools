@@ -242,39 +242,46 @@ export class UnifiedPineValidator {
 	): void {
 		if (version !== "6" || !statement.typeAnnotation) return;
 		const raw = statement.typeAnnotation.name;
-		// `array<array<float>> a = ...` annotations are TV's CE10022
-		// ("Arrays of type {inner} are not supported."), anchored at the
-		// template span - distinct from the CE10025 constructor-call form.
-		// Probed 2026-06-05. see INV038
+		// Collection-in-template annotations, all anchored at the template
+		// span (probed 2026-06-05, see INV038):
+		// - `array<array<float>>` is CE10022 "Arrays of type {inner} are not
+		//   supported." ({inner} is the nested base - "map" for array<map<...>>),
+		// - `matrix<array<float>>` is CE10023 "Matrix of type {inner} are not
+		//   supported.",
+		// - `map<string, array<float>>` gets CE10025's constructor-call
+		//   wording instead (the nested collection sits in a template SLOT,
+		//   not as the sole element type).
+		// All distinct from the CE10025 constructor-call form on array.new<...>().
 		const nestedAnnotation = raw.match(
-			/^(?:(?:series|simple|input|const)\s+)?array\s*<\s*(array|matrix|map)\b/,
+			/^(?:(?:series|simple|input|const)\s+)?(array|matrix|map)\s*<(.*)$/,
 		);
 		if (nestedAnnotation) {
-			const decl0 = statement as { startLine?: number; startColumn?: number };
-			const stmt = statement as { line: number; column: number };
-			const startColumn = decl0.startColumn ?? stmt.column;
-			const lt = raw.indexOf("<");
-			this.addError(
-				decl0.startLine ?? stmt.line,
-				startColumn + lt,
-				raw.length - lt,
-				`Arrays of type ${nestedAnnotation[1]} are not supported.`,
-				DiagnosticSeverity.Error,
-			);
-			return;
+			const outer = nestedAnnotation[1];
+			const templateRest = nestedAnnotation[2];
+			const innerCollection = templateRest.match(/\b(array|matrix|map)\s*</)?.[1];
+			if (innerCollection) {
+				const decl0 = statement as { startLine?: number; startColumn?: number };
+				const stmt = statement as { line: number; column: number };
+				const startColumn = decl0.startColumn ?? stmt.column;
+				const lt = raw.indexOf("<");
+				const message =
+					outer === "map"
+						? "Cannot use a collection in a type template of another collection. Create a user-defined type with that collection as a field and use it instead."
+						: outer === "matrix"
+							? `Matrix of type ${innerCollection} are not supported.`
+							: `Arrays of type ${innerCollection} are not supported.`;
+				this.addError(
+					decl0.startLine ?? stmt.line,
+					startColumn + lt,
+					raw.length - lt,
+					message,
+					DiagnosticSeverity.Error,
+				);
+				return;
+			}
 		}
-		// Strip qualifier prefix, generic suffix, and array suffix:
-		// "series float", "array<MyType>", "Foo[]" all reduce to a base name.
-		const base = raw
-			.replace(/^(series|simple|input|const)\s+/, "")
-			.replace(/<.*$/, "")
-			.replace(/\[\]$/, "")
-			.trim();
-		if (!base) return;
-		if (TYPE_KEYWORDS.has(base)) return;
-		if (TYPE_NAMES.has(base)) return; // incl. dotted chart.point
-		if (base.includes(".")) return; // import-alias types - unvalidated
-		if (this.declaredTypeNames.has(base)) return;
+		const base = this.invalidAnnotationBase(raw);
+		if (base === null) return;
 		const decl = statement as {
 			startLine?: number;
 			startColumn?: number;
@@ -296,20 +303,88 @@ export class UnifiedPineValidator {
 		);
 	}
 
-	// True when a switch expression's discriminant or any case condition
-	// is series-qualified - making the whole expression's value series.
-	// see INV040 (the plot-title const-string corpus verdict)
-	private isSeriesDriven(switchExpr: SwitchExpression, version: string): boolean {
-		if (switchExpr.discriminant) {
-			const d = this.inferExpressionType(switchExpr.discriminant, version);
-			if ((d as string).startsWith("series")) return true;
+	// Returns the annotation's base name when it does NOT name a known type
+	// (built-in keyword, pine-data object type, or an earlier UDT/enum),
+	// null when the annotation is acceptable. Shared by the declaration and
+	// UDF-parameter CE10149 paths. see INV033
+	private invalidAnnotationBase(raw: string): string | null {
+		// Strip qualifier prefix, generic suffix, and array suffix:
+		// "series float", "array<MyType>", "Foo[]" all reduce to a base name.
+		const base = raw
+			.replace(/^(series|simple|input|const)\s+/, "")
+			.replace(/<.*$/, "")
+			.replace(/\[\]$/, "")
+			.trim();
+		if (!base) return null;
+		if (TYPE_KEYWORDS.has(base)) return null;
+		if (TYPE_NAMES.has(base)) return null; // incl. dotted chart.point
+		if (base.includes(".")) return null; // import-alias types - unvalidated
+		if (this.declaredTypeNames.has(base)) return null;
+		return base;
+	}
+
+	// TV's CE10149 fires on UDF/method parameter annotations too, anchored
+	// at the annotation's first token (probed `f(source x)` at the keyword,
+	// `g(Bar b)` for an undeclared UDT; earlier-declared UDT params accepted).
+	// see INV033
+	private checkParamTypeAnnotations(
+		params: Array<{ typeAnnotation?: { name: string; line?: number; column?: number } }>,
+		version: string,
+	): void {
+		if (version !== "6") return;
+		for (const param of params) {
+			const ann = param.typeAnnotation;
+			if (!ann || ann.line === undefined || ann.column === undefined) continue;
+			const base = this.invalidAnnotationBase(ann.name);
+			if (base === null) continue;
+			this.addError(
+				ann.line,
+				ann.column,
+				base.length,
+				`"${base}" is not a valid type keyword.`,
+				DiagnosticSeverity.Error,
+			);
 		}
-		for (const c of switchExpr.cases) {
-			if (!c.condition) continue;
-			const t = this.inferExpressionType(c.condition, version);
-			if ((t as string).startsWith("series")) return true;
+	}
+
+	// The governing condition expressions of a conditional-expression node
+	// (ternary condition, if-expression condition, switch discriminant +
+	// case conditions), or null for any other node. see INV040
+	private governingConditions(expr: Expression): Expression[] | null {
+		switch (expr.type) {
+			case "TernaryExpression":
+				return [(expr as TernaryExpression).condition];
+			case "IfExpression":
+				return [(expr as IfExpression).condition];
+			case "SwitchExpression": {
+				const sw = expr as SwitchExpression;
+				const conds: Expression[] = [];
+				if (sw.discriminant) conds.push(sw.discriminant);
+				for (const c of sw.cases) if (c.condition) conds.push(c.condition);
+				return conds;
+			}
+			default:
+				return null;
 		}
-		return false;
+	}
+
+	// The qualifier a conditional expression's conditions impose on its
+	// result: a series condition makes the whole value series; otherwise an
+	// input condition makes it input (TV types BOTH the series-comparison
+	// switch AND the input.bool-driven ternary/switch as qualified - the
+	// plot-title CE10123 probes); null when no condition is qualified, so
+	// const-condition results stay const-usable. see INV040
+	private conditionQualifier(
+		conditions: Expression[],
+		version: string,
+	): "series" | "input" | null {
+		let sawInput = false;
+		for (const c of conditions) {
+			const t = this.inferExpressionType(c, version) as string;
+			if (t.startsWith("series")) return "series";
+			if (t.startsWith("input<")) sawInput = true;
+		}
+		return sawInput ? "input" : null;
 	}
 
 	private pushDeclScope(seedNames?: string[]): void {
@@ -471,7 +546,7 @@ export class UnifiedPineValidator {
 									statement.line,
 									statement.column,
 									statement.name.length,
-									`Cannot assign ${initType} to ${varSymbol.type}`,
+									`Cannot assign ${TypeChecker.displayType(initType)} to ${TypeChecker.displayType(varSymbol.type)}`,
 									DiagnosticSeverity.Error,
 								);
 							}
@@ -505,6 +580,11 @@ export class UnifiedPineValidator {
 						tupleDecl.column,
 						version,
 					);
+					// Tuple names enter the redeclaration scope like plain
+					// declarations: a later `m = ...` is CE10095, and so is a
+					// duplicate name WITHIN one tuple (`[a, a] = ...`) - both
+					// anchored at the statement start (probed). see INV035
+					this.checkRedeclaration(name, tupleDecl, version);
 				}
 				const elementTypes = this.inferTupleElementTypes(tupleDecl, version);
 				this.defineTupleVariables(tupleDecl, elementTypes);
@@ -559,6 +639,8 @@ export class UnifiedPineValidator {
 
 				this.symbolTable.enterScope();
 				this.blockDepth++;
+
+				this.checkParamTypeAnnotations(statement.params, version);
 
 				// Add function parameters to scope
 				for (const param of statement.params) {
@@ -728,6 +810,19 @@ export class UnifiedPineValidator {
 			case "WhileStatement":
 				if ("condition" in statement) {
 					this.validateExpression(statement.condition, version);
+					// Same rule and template as the if-condition check: TV's
+					// CE10101 with blockName "while", anchored at the CONDITION
+					// expression (probed `while close` / `while n`). see INV041
+					const whileCondType = this.inferExpressionType(statement.condition, version);
+					if (whileCondType !== "unknown" && !TypeChecker.isBoolType(whileCondType)) {
+						this.addError(
+							statement.condition.line || statement.line,
+							statement.condition.column || statement.column,
+							10,
+							'The condition of the "while" statement must evaluate to a "bool" value.',
+							DiagnosticSeverity.Error,
+						);
+					}
 				}
 				this.symbolTable.enterScope();
 				this.blockDepth++;
@@ -780,7 +875,7 @@ export class UnifiedPineValidator {
 							statement.line,
 							statement.column,
 							1, // length of operator
-							`Cannot assign ${valueType} to ${targetType}`,
+							`Cannot assign ${TypeChecker.displayType(valueType)} to ${TypeChecker.displayType(targetType)}`,
 							DiagnosticSeverity.Error,
 						);
 					}
@@ -831,6 +926,8 @@ export class UnifiedPineValidator {
 
 				this.symbolTable.enterScope();
 				this.blockDepth++;
+
+				this.checkParamTypeAnnotations(statement.params, version);
 
 				// Add method parameters to scope with proper type
 				for (const param of statement.params) {
@@ -1094,7 +1191,7 @@ export class UnifiedPineValidator {
 					expr.left.line || expr.line,
 					expr.left.column || expr.column,
 					1,
-					`Operator '${expr.operator}' requires bool operands, but left operand is ${leftType}`,
+					`Operator '${expr.operator}' requires bool operands, but left operand is ${TypeChecker.displayType(leftType)}`,
 					DiagnosticSeverity.Error,
 				);
 				reported = true;
@@ -1104,7 +1201,7 @@ export class UnifiedPineValidator {
 					expr.right.line || expr.line,
 					expr.right.column || expr.column,
 					1,
-					`Operator '${expr.operator}' requires bool operands, but right operand is ${rightType}`,
+					`Operator '${expr.operator}' requires bool operands, but right operand is ${TypeChecker.displayType(rightType)}`,
 					DiagnosticSeverity.Error,
 				);
 				reported = true;
@@ -1132,7 +1229,7 @@ export class UnifiedPineValidator {
 						operand.line || expr.line,
 						operand.column || expr.column,
 						1,
-						`Type mismatch: cannot apply '${expr.operator}' to ${leftType} and ${rightType}`,
+						`Type mismatch: cannot apply '${expr.operator}' to ${TypeChecker.displayType(leftType)} and ${TypeChecker.displayType(rightType)}`,
 						DiagnosticSeverity.Error,
 					);
 				}
@@ -1159,7 +1256,7 @@ export class UnifiedPineValidator {
 					expr.line,
 					expr.column,
 					3, // length of "not"
-					`Type mismatch: 'not' operator requires bool, got ${argType}`,
+					`Type mismatch: 'not' operator requires bool, got ${TypeChecker.displayType(argType)}`,
 					DiagnosticSeverity.Error,
 				);
 			}
@@ -1176,7 +1273,7 @@ export class UnifiedPineValidator {
 				expr.condition.line || expr.line,
 				expr.condition.column || expr.column,
 				1,
-				`Ternary condition must be bool, got ${condType}`,
+				`Ternary condition must be bool, got ${TypeChecker.displayType(condType)}`,
 				DiagnosticSeverity.Error,
 			);
 		}
@@ -1203,7 +1300,7 @@ export class UnifiedPineValidator {
 				expr.line,
 				expr.column,
 				1,
-				`Ternary branches must have compatible types. Got '${conseqType}' and '${altType}'`,
+				`Ternary branches must have compatible types. Got '${TypeChecker.displayType(conseqType)}' and '${TypeChecker.displayType(altType)}'`,
 				DiagnosticSeverity.Error,
 			);
 		}
@@ -1242,7 +1339,7 @@ export class UnifiedPineValidator {
 	}
 
 	private getBaseType(type: PineType): string {
-		const match = (type as string).match(/^(?:series|simple)<(.+)>$/);
+		const match = (type as string).match(/^(?:series|simple|input|const)<(.+)>$/);
 		return match ? match[1] : (type as string);
 	}
 
@@ -1736,16 +1833,17 @@ export class UnifiedPineValidator {
 					};
 				}
 				// A USER variable is provably non-const only when its inferred
-				// type is series-QUALIFIED (`series<string>` from a switch over
-				// series conditions, etc.) - unqualified inferences stay on the
-				// conservative null path. TV-confirmed on plot(title=trend)
-				// where trend is a series-condition switch result. see INV040
+				// type is series- or input-QUALIFIED (`series<string>` from a
+				// switch over series conditions, `input<string>` from an
+				// input.bool-driven ternary/switch) - unqualified inferences
+				// stay on the conservative null path. TV-confirmed on
+				// plot(title=trend) for both qualifiers. see INV040
 				if (!info) {
 					const sym = this.symbolTable.lookup(idName);
 					const symType = sym?.type as string | undefined;
-					const m = symType?.match(/^series<(.+)>$/);
+					const m = symType?.match(/^(series|input)<(.+)>$/);
 					if (sym?.kind === "variable" && m) {
-						return { typeStr: `series ${m[1]}`, repr: idName };
+						return { typeStr: `${m[1]} ${m[2]}`, repr: idName };
 					}
 				}
 				return null;
@@ -2116,7 +2214,10 @@ export class UnifiedPineValidator {
 						callExpr.arguments[0].value,
 						version,
 					);
-					const bare = elem.replace(/^(const|simple|series|input)\s+/, "");
+					// baseTypeName strips both qualifier forms - the space form
+					// and the bracketed one (input<bool> elements from input.*
+					// calls would otherwise produce array<input<bool>>). see INV040
+					const bare = TypeChecker.baseTypeName(elem);
 					type = `array<${bare}>` as PineType;
 					break;
 				}
@@ -2346,21 +2447,11 @@ export class UnifiedPineValidator {
 			}
 
 			case "SwitchExpression": {
+				// Condition-driven qualification (series/input wrap) is applied
+				// centrally at the tail of this function. see INV040
 				const switchExpr = expr as SwitchExpression;
 				if (switchExpr.cases.length > 0) {
 					type = this.inferExpressionType(switchExpr.cases[0].result, version);
-					// A switch driven by a series discriminant or series case
-					// conditions yields a SERIES result - TV types
-					// `switch / close > open => "Up" / ...` as series string
-					// (the plot-title corpus verdict). Wrap primitive results.
-					// see INV040
-					if (
-						type !== "unknown" &&
-						!type.includes("<") &&
-						this.isSeriesDriven(switchExpr, version)
-					) {
-						type = `series<${type}>` as PineType;
-					}
 				}
 				break;
 			}
@@ -2423,6 +2514,51 @@ export class UnifiedPineValidator {
 
 				type = "unknown";
 				break;
+			}
+		}
+
+		// input.*() results are input-QUALIFIED ("input bool" etc.) but the
+		// polymorphic defval path collapses them to the bare base. Re-wrap
+		// bare primitives from the pine-data raw return so input-ness
+		// propagates into conditional results and the const-arg check
+		// (input.source stays series<float> - already bracketed). see INV040
+		if (
+			expr.type === "CallExpression" &&
+			type !== "unknown" &&
+			!(type as string).includes("<")
+		) {
+			const ce = expr as CallExpression;
+			let inputFnName = "";
+			if (ce.callee.type === "Identifier") {
+				inputFnName = (ce.callee as Identifier).name;
+			} else if (
+				ce.callee.type === "MemberExpression" &&
+				(ce.callee as MemberExpression).object.type === "Identifier"
+			) {
+				const m = ce.callee as MemberExpression;
+				inputFnName = `${(m.object as Identifier).name}.${m.property.name}`;
+			}
+			if (inputFnName === "input" || inputFnName.startsWith("input.")) {
+				const raw = resolveCallReturnRaw(
+					inputFnName,
+					ce.arguments.map((a) => this.inferExpressionType(a.value, version)),
+				);
+				if (raw && /^input\b/.test(raw)) {
+					type = `input<${type}>` as PineType;
+				}
+			}
+		}
+
+		// A conditional expression (ternary / if-expression / switch) driven
+		// by series or input conditions yields a result of that qualifier -
+		// TV's plot-title CE10123 probes type both `close > open ? "U" : "D"`
+		// (series string) and the input.bool-driven forms (input string).
+		// Wrap bare primitive results only. see INV040
+		if (type !== "unknown" && !(type as string).includes("<")) {
+			const conds = this.governingConditions(expr);
+			if (conds && conds.length > 0) {
+				const q = this.conditionQualifier(conds, version);
+				if (q) type = `${q}<${type}>` as PineType;
 			}
 		}
 

@@ -1,0 +1,4 @@
+//@version=6
+indicator("p")
+array<map<string, float>> x = na
+plot(close)

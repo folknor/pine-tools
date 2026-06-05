@@ -1,0 +1,5 @@
+//@version=6
+indicator("p")
+mode = switch
+    => "Static"
+plot(close, title=mode)

@@ -1,0 +1,18 @@
+// @test regression/INV033-udf-param-type-keyword
+// @description CE10149 fires on UDF parameter type annotations too, anchored at the annotation's first token (probed `f(source x)` 3:3 and `g(Bar b)`); params typed with an earlier-declared UDT are accepted. See INV033.
+// @expects parse: success
+// @expects errors: 2
+// @expects error: line=3, column=3, message=/"source" is not a valid type keyword/
+// @expects error: line=5, column=3, message=/"Bar" is not a valid type keyword/
+
+//@version=6
+indicator("INV033 params")
+f(source x) =>
+    x
+g(Bar b) =>
+    1
+type Foo
+    float v = 0.0
+h(Foo q) =>
+    q.v
+plot(f(close) + g(close) + h(Foo.new(close)))

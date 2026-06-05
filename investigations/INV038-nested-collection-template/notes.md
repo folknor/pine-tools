@@ -39,9 +39,28 @@ Fixture: `packages/core/test/fixtures/regression/INV038-nested-collection-templa
 
 ## Residual
 
-- `matrix<array<float>>` / `map<...>` ANNOTATION forms unprobed (the
-  CE10022 wording is array-specific; matrix/map annotations presumably
-  carry their own messages). The CE10025 constructor-call form covers
-  all three constructors.
+- ~~`matrix<array<float>>` / `map<...>` ANNOTATION forms unprobed~~ -
+  probed and implemented, see the addendum below.
 - UDF parameter annotations with nested collections unvalidated (same
-  scope cut as INV033).
+  scope cut as INV033; the INV033 addendum validates param annotation
+  NAMES, but the collection-nesting check still runs only on
+  declaration annotations).
+
+## Addendum 2026-06-05: matrix/map annotation forms
+
+Probes (p04-p06 in `probes/`, `pine-lint --tv` 2026-06-05):
+
+| probe | shape | TV verdict |
+|---|---|---|
+| p04 | `matrix<array<float>> m = na` | CE10023 `Matrix of type {type} are not supported.` (ctx.type = "array"), anchor 3:7-3:20 (the template span) |
+| p05 | `map<string, array<float>> mp = na` | CE10025 - the CONSTRUCTOR-call wording ("Cannot use a collection in a type template...") - anchor 3:4-3:25 |
+| p06 | `array<map<string, float>> x = na` | CE10022 `Arrays of type map are not supported.`, 3:6 - the {inner} slot generalizes over the nested base |
+
+So annotations split three ways by the OUTER collection: array ->
+CE10022 "Arrays of type {inner}", matrix -> CE10023 "Matrix of type
+{inner}", map -> the generic CE10025 collection-in-template wording.
+The `checkTypeAnnotationName` nesting branch now matches any outer
+collection and any nested collection in its template (the value slot
+of map included), picking the message by outer base.
+
+Fixture: `packages/core/test/fixtures/regression/INV038-collection-annotation-forms.pine`

@@ -1,0 +1,4 @@
+//@version=6
+indicator("p")
+f(x) => y = 1, y = 2, y + x
+plot(f(close))

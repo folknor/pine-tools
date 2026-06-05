@@ -1,0 +1,5 @@
+//@version=6
+indicator("p")
+g(Bar b) =>
+    1
+plot(g(close))

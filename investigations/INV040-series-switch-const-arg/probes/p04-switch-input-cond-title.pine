@@ -1,0 +1,7 @@
+//@version=6
+indicator("p")
+b = input.bool(true)
+trend = switch
+    b => "Up"
+    => "Flat"
+plot(close, title=trend)

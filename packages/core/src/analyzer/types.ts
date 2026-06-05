@@ -172,6 +172,23 @@ export namespace TypeChecker {
 		if (to === "unknown" || from === "unknown") return true;
 		if (isNaType(from)) return true; // na is assignable to any type (const<na>, series<na>, etc.)
 
+		// Qualifiers never block assignability on their own (Pine's `:=`
+		// freely upgrades const/input/simple/series): equal base types are
+		// assignable under any qualifier mix (`false` into an input<bool>
+		// variable, input<plot_style> into plot_style), and int/float keep
+		// their bidirectional coercion across qualifiers. Bracketed
+		// collection types fall through to the structural rules below.
+		// see INV040
+		{
+			const fromBase = baseTypeName(from as string);
+			const toBase = baseTypeName(to as string);
+			if (!fromBase.includes("<") && !toBase.includes("<")) {
+				if (fromBase === toBase && fromBase !== "na") return true;
+				const numeric = (x: string) => x === "int" || x === "float";
+				if (numeric(fromBase) && numeric(toBase)) return true;
+			}
+		}
+
 		// Array type coercion: array<type> or array<unknown> (unresolved element
 		// type) is assignable to any array. This handles cases where type
 		// inference couldn't determine the element type - we can't prove the
@@ -335,6 +352,16 @@ export namespace TypeChecker {
 		const fromBase = baseTypeName(valueType as string);
 		if (fromBase === declaredBase) return true;
 		return fromBase === "int" && declaredBase === "float";
+	}
+
+	// Render an internal type for diagnostic messages: bracket-qualified
+	// forms take TV's space form ("input<int>" -> "input int"), everything
+	// else is unchanged. see INV040
+	export function displayType(type: PineType | string): string {
+		return String(type).replace(
+			/^(series|simple|input|const)<(.+)>$/,
+			"$1 $2",
+		);
 	}
 
 	// Render a type the way TV's CE10173 declaration message does:

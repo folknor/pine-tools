@@ -1,0 +1,14 @@
+// @test regression/INV038-collection-annotation-forms
+// @description Collection-in-template ANNOTATION forms: matrix outer is CE10023 "Matrix of type {inner} are not supported." at the template span (probed 3:7), map outer gets CE10025's constructor wording (probed 3:4), and the array message generalizes over the inner base ("Arrays of type map", probed 3:6). See INV038.
+// @expects parse: success
+// @expects errors: 3
+// @expects error: line=3, column=7, message=/Matrix of type array are not supported/
+// @expects error: line=4, column=4, message=/Cannot use a collection in a type template of another collection/
+// @expects error: line=5, column=6, message=/Arrays of type map are not supported/
+
+//@version=6
+indicator("INV038 annotations")
+matrix<array<float>> m = na
+map<string, array<float>> mp = na
+array<map<string, float>> x = na
+plot(close)

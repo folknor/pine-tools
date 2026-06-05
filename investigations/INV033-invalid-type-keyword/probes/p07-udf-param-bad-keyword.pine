@@ -1,0 +1,5 @@
+//@version=6
+indicator("p")
+f(source x) =>
+    x
+plot(f(close))

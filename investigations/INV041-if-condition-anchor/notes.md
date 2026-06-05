@@ -36,6 +36,24 @@ Fixture: `packages/core/test/fixtures/regression/INV041-if-condition-anchor.pine
   our wording/anchor - TV expresses ternary condition errors as
   operator-call CE10123s with branch-priority anchors (the undecoded
   rules noted in INV028's residual trio).
-- TV's `{blockName}` template suggests while/for get the same wording;
-  our while/for condition paths don't currently emit bool-condition
-  errors at all - separate gap, no corpus evidence.
+- ~~TV's `{blockName}` template suggests while/for get the same
+  wording~~ - probed and implemented for `while`, see the addendum
+  below. Counted `for` headers have no bool condition in the grammar,
+  so there is nothing to extend there.
+
+## Addendum 2026-06-05: while-condition CE10101
+
+Probes (`probes/`, `pine-lint --tv` 2026-06-05):
+
+| probe | shape | TV verdict |
+|---|---|---|
+| p01 | `while close` | CE10101 `The condition of the "while" statement must evaluate to a "bool" value.`, anchored at the condition span (4:7-4:11) |
+| p02 | `n = 3` / `while n` | CE10101 at 5:7 - int conditions too |
+
+Same template as the if-statement form (ctx.blockName = "while"),
+anchored at the CONDITION expression. Implemented in the checker's
+WhileStatement case, mirroring the IfStatement check (same
+legacy-truthiness stance: not v6-gated, matching the if check's
+INV028-era decision).
+
+Fixture: `packages/core/test/fixtures/regression/INV041-while-condition-bool.pine`

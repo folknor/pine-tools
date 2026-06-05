@@ -1,0 +1,5 @@
+//@version=6
+indicator("p")
+b = input.bool(true)
+trend = b ? "Up" : "Down"
+plot(close, title=trend)

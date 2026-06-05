@@ -61,9 +61,29 @@ Fixture: `packages/core/test/fixtures/regression/INV033-invalid-type-keyword.pin
 
 ## Residual
 
-- UDF/method parameter type annotations are not validated (different
-  context; no corpus evidence of TV's behavior there - probe before
-  extending).
+- ~~UDF/method parameter type annotations are not validated~~ -
+  probed and implemented, see the addendum below.
 - Wrapped declarations (`MyType` on one line, name on the next) are
   skipped by the same-line gate; whether TV accepts that wrap shape for
   declarations is unprobed.
+
+## Addendum 2026-06-05: UDF parameter annotations
+
+Probes (p07-p09 in `probes/`, `pine-lint --tv` 2026-06-05):
+
+| probe | shape | TV verdict |
+|---|---|---|
+| p07 | `f(source x) =>` | CE10149 `"source" is not a valid type keyword.`, anchored at the TYPE token (3:3-3:8) |
+| p08 | `g(Bar b) =>` (no such type) | CE10149 `"Bar"`, 3:3 - undeclared UDTs same as pseudo-keywords, matching the declaration rule |
+| p09 | `type Foo` ... `g(Foo b) =>` | clean - earlier-declared UDT params accepted |
+
+Same single rule as declarations, anchored at the annotation's first
+token instead of the statement start. Implemented: the shared
+`invalidAnnotationBase` helper (extracted from
+`checkTypeAnnotationName`) + `checkParamTypeAnnotations`, called from
+both the FunctionDeclaration and MethodDeclaration cases; the parser's
+`parseFunctionParams` threads the annotation's start token position
+through `TypeAnnotation.line/column`. No same-line gate needed here -
+param annotations live inside parens, which the wrap-mangle shapes
+that motivated the declaration gate don't produce (corpus: zero new
+appearances).
