@@ -1,0 +1,5 @@
+//@version=6
+indicator("p")
+_ = '   ----- SETUP -----'
+_ = '   ----- UTILITY -----'
+plot(close)

@@ -77,6 +77,14 @@ export class UnifiedPineValidator {
 	// type annotation must name one of these (or a built-in type) - and
 	// use-before-declaration is the same CE10149 (probed). see INV033
 	private declaredTypeNames: Set<string> = new Set();
+	// Lexical stack of names DECLARED in each scope, for TV's CE10095
+	// ("X" is already defined): re-declaring a name in the SAME scope is
+	// an error - typed or untyped, after var/varip, and a function param
+	// re-declared in its body (all probed). Shadowing a PARENT scope is
+	// only the CW10011/CW10013 warning (INV020), hence a stack and not a
+	// single set. Unlike the symbol table, if-bodies get their own frame
+	// here (TV scopes them) and builtins never enter it. see INV035
+	private declScopes: Array<Set<string>> = [];
 
 	constructor() {
 		this.symbolTable = new SymbolTable();
@@ -90,6 +98,7 @@ export class UnifiedPineValidator {
 		this.udfTupleReturnTypes.clear();
 		this.usedBuiltins.clear();
 		this.declaredTypeNames.clear();
+		this.declScopes = [new Set()];
 
 		// Single pass: collect declarations and validate together
 		// This ensures function parameters are in scope during validation
@@ -258,6 +267,53 @@ export class UnifiedPineValidator {
 		);
 	}
 
+	private pushDeclScope(seedNames?: string[]): void {
+		const frame = new Set<string>();
+		if (seedNames) for (const n of seedNames) frame.add(n);
+		this.declScopes.push(frame);
+	}
+
+	private popDeclScope(): void {
+		this.declScopes.pop();
+	}
+
+	// TV's CE10095: declaring a name that this same scope already declared
+	// (params count as declared by the function scope). v6-gated like the
+	// other declaration checks - legacy versions used `=` for
+	// reassignment. Anchored at the statement start. see INV035
+	private checkRedeclaration(
+		name: string,
+		statement: {
+			startLine?: number;
+			startColumn?: number;
+			line: number;
+			column: number;
+		},
+		version: string,
+	): void {
+		// `_` is a discard placeholder TV allows re-declaring freely
+		// (`_ = '--- SECTION ---'` separators; probed clean). see INV035
+		if (name === "_") return;
+		const frame = this.declScopes[this.declScopes.length - 1];
+		if (!frame) return;
+		if (version === "6" && frame.has(name)) {
+			const startLine = statement.startLine ?? statement.line;
+			const startColumn = statement.startColumn ?? statement.column;
+			const span =
+				statement.line === startLine
+					? statement.column - startColumn + name.length
+					: name.length;
+			this.addError(
+				startLine,
+				startColumn,
+				span,
+				`"${name}" is already defined`,
+				DiagnosticSeverity.Error,
+			);
+		}
+		frame.add(name);
+	}
+
 	private validateStatement(statement: Statement, version: string = "6"): void {
 		const _prevBlockDepth = this.blockDepth;
 		switch (statement.type) {
@@ -269,6 +325,7 @@ export class UnifiedPineValidator {
 					version,
 				);
 				this.checkTypeAnnotationName(statement, version);
+				this.checkRedeclaration(statement.name, statement, version);
 				// First, register the variable in the symbol table
 				const symbol: SymbolInfo = {
 					name: statement.name,
@@ -459,10 +516,14 @@ export class UnifiedPineValidator {
 					this.collectDeclarations(stmt, version);
 				}
 
-				// THEN validate function body (with all variables in scope)
+				// THEN validate function body (with all variables in scope).
+				// Params count as declared by the function scope (re-declaring
+				// one in the body is CE10095, probed). see INV035
+				this.pushDeclScope(statement.params.map((p) => p.name));
 				for (const stmt of statement.body) {
 					this.validateStatement(stmt, version);
 				}
+				this.popDeclScope();
 				this.symbolTable.exitScope();
 				this.blockDepth--;
 				break;
@@ -483,13 +544,18 @@ export class UnifiedPineValidator {
 				}
 
 				// Note: In Pine Script, if statements do NOT create new scopes
+				// for our symbol table - but TV scopes each branch for
+				// redeclaration purposes (CE10095), hence the declScope frames.
+				// see INV035
 				for (const stmt of statement.consequent) {
 					this.collectDeclarations(stmt, version);
 				}
 				this.blockDepth++;
+				this.pushDeclScope();
 				for (const stmt of statement.consequent) {
 					this.validateStatement(stmt, version);
 				}
+				this.popDeclScope();
 				this.blockDepth--;
 
 				if (statement.alternate) {
@@ -497,9 +563,11 @@ export class UnifiedPineValidator {
 					for (const stmt of statement.alternate) {
 						this.collectDeclarations(stmt, version);
 					}
+					this.pushDeclScope();
 					for (const stmt of statement.alternate) {
 						this.validateStatement(stmt, version);
 					}
+					this.popDeclScope();
 					this.blockDepth--;
 				}
 				break;
@@ -557,10 +625,18 @@ export class UnifiedPineValidator {
 				for (const stmt of statement.body) {
 					this.collectDeclarations(stmt, version);
 				}
-				// Then validate
+				// Then validate. Iterators count as declared by the loop scope.
+				// see INV035
+				this.pushDeclScope(
+					[
+						"iterator" in statement ? statement.iterator : undefined,
+						"iterator2" in statement ? statement.iterator2 : undefined,
+					].filter((n): n is string => typeof n === "string"),
+				);
 				for (const stmt of statement.body) {
 					this.validateStatement(stmt, version);
 				}
+				this.popDeclScope();
 
 				this.symbolTable.exitScope();
 				this.blockDepth--;
@@ -572,9 +648,11 @@ export class UnifiedPineValidator {
 				}
 				this.symbolTable.enterScope();
 				this.blockDepth++;
+				this.pushDeclScope();
 				for (const stmt of statement.body) {
 					this.validateStatement(stmt, version);
 				}
+				this.popDeclScope();
 				this.symbolTable.exitScope();
 				this.blockDepth--;
 				break;
@@ -687,13 +765,16 @@ export class UnifiedPineValidator {
 					});
 				}
 
-				// Collect and validate method body
+				// Collect and validate method body. Params count as declared
+				// by the method scope. see INV035
 				for (const stmt of statement.body) {
 					this.collectDeclarations(stmt, version);
 				}
+				this.pushDeclScope(statement.params.map((p) => p.name));
 				for (const stmt of statement.body) {
 					this.validateStatement(stmt, version);
 				}
+				this.popDeclScope();
 
 				this.symbolTable.exitScope();
 				this.blockDepth--;
@@ -809,12 +890,14 @@ export class UnifiedPineValidator {
 					if (switchCase.statements) {
 						this.symbolTable.enterScope();
 						this.blockDepth++;
+						this.pushDeclScope();
 						for (const stmt of switchCase.statements) {
 							this.collectDeclarations(stmt, version);
 						}
 						for (const stmt of switchCase.statements) {
 							this.validateStatement(stmt, version);
 						}
+						this.popDeclScope();
 						this.blockDepth--;
 						this.symbolTable.exitScope();
 					} else {
@@ -834,12 +917,14 @@ export class UnifiedPineValidator {
 					if (!branch) continue;
 					this.symbolTable.enterScope();
 					this.blockDepth++;
+					this.pushDeclScope();
 					for (const stmt of branch) {
 						this.collectDeclarations(stmt, version);
 					}
 					for (const stmt of branch) {
 						this.validateStatement(stmt, version);
 					}
+					this.popDeclScope();
 					this.blockDepth--;
 					this.symbolTable.exitScope();
 				}

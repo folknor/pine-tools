@@ -1,0 +1,5 @@
+//@version=6
+indicator("p")
+x = 10
+x = 20
+plot(x)

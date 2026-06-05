@@ -1,12 +1,11 @@
 // @test validation/redeclaration
 // @description Variable redeclaration behavior
 // @expects parse: success
-// @expects no-errors
+// @expects errors: 1
+// @expects error: line=11, message=/.x. is already defined/
 
-// NOTE: The validator currently does not detect variable redeclarations.
-// In Pine Script, redeclaration with = is actually allowed in some contexts.
-// Once stricter checking is implemented, change expects to:
-// error: message="already declared"
+// Same-scope redeclaration with = is TV's CE10095 (probed 2026-06-05,
+// see INV035). Re-assignment needs :=.
 
 //@version=6
 indicator("Redeclaration Tests")

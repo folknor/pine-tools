@@ -197,3 +197,11 @@ contradiction means re-measure, not "the earlier author was wrong."
   (indent not a multiple of 4 - INV017) glues into the header and
   breaks the statement. Anchored at the `for` keyword; 4-multiple
   bodies and genuinely wrapped headers stay clean (3 probes).
+- [INV035](INV035-already-defined/notes.md) - CE10095 `"X" is already
+  defined`: same-scope redeclaration with `=` (typed, untyped, after
+  var, and params-in-body all error; `_` is exempt; parent-scope
+  shadowing stays the INV020 warning - 6 probes). Implemented as a
+  lexical declScopes stack since the symbol table neither scopes
+  if-bodies nor separates builtins. En route: `name := expr` comma
+  units were parsed as DECLARATIONS - now AssignmentStatement, which
+  also collapsed a 14-record cascade in `dd8f47ce…`.

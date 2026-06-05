@@ -518,6 +518,31 @@ export class Parser {
 					if (!this.check(TokenType.IDENTIFIER)) {
 						break;
 					}
+					// `name := expr` / `name += expr` units are REASSIGNMENTS,
+					// not declarations - `u11 = 0.0, u11 := nz(u11[1])` is an
+					// idiomatic declare-then-seed pair. Emitting a declaration
+					// here made the second unit a CE10095 FP. Only `name =`
+					// declares. see INV035
+					const unitOp = this.peekNext();
+					if (
+						(unitOp?.type === TokenType.ASSIGN && unitOp.value !== "=") ||
+						unitOp?.type === TokenType.COMPOUND_ASSIGN
+					) {
+						const target = this.expression();
+						this.advance(); // the := / compound operator
+						const operator = this.previous().value;
+						this.skipWrapContinuationNewline();
+						const value = this.expression();
+						statements.push({
+							type: "AssignmentStatement",
+							target,
+							operator,
+							value,
+							line: target.line,
+							column: target.column,
+						});
+						continue;
+					}
 					const nextDecl = this.variableDeclaration(null);
 					statements.push(nextDecl);
 				}

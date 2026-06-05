@@ -444,7 +444,6 @@ These are real syntax errors in the user's code that we don't surface.
 | count | files | category |
 |---|---|---|
 | 6 | 5 | `Syntax error at input {value}` (end-of-line continuation, new line, `:=`, `[`) |
-| 2 | 2 | `"{variableName}" is already defined` |
 | 2 | 1 | `All exported functions args should be typified` |
 | 1 | 1 | `Script doesn't contain any statements` |
 | 1 | 1 | `Syntax error: Missing closing parenthesis` |
@@ -462,7 +461,11 @@ files, `source`/`plot` - is fixed and gone; CE10149 now validates
 declaration annotations against built-ins + earlier UDT/enum names.
 Post-INV034: the `Incorrect "for" statement` category - 2 in 2
 files - is fixed and gone; CE10161 fires when a complete counted-for
-header is followed by a wrap-continuation body line)
+header is followed by a wrap-continuation body line. Post-INV035: the
+`"{variableName}" is already defined` category - 2 in 2 files - is
+fixed and gone; CE10095 fires on same-scope redeclaration via a
+lexical declScopes stack, with `:=` comma units now correctly parsed
+as reassignments)
 
 ---
 

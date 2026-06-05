@@ -1,0 +1,33 @@
+// @test regression/INV035-already-defined
+// @description CE10095: re-declaring a name in the SAME scope errors (typed, untyped, after var, param-in-body); parent-scope shadowing stays a warning, `_` is a free placeholder, and `name := expr` comma units are reassignments, not declarations. Probed 2026-06-05, see INV035.
+// @expects parse: success
+// @expects errors: 4
+// @expects error: line=4, message=/.x. is already defined/
+// @expects error: line=6, message=/.y. is already defined/
+// @expects error: line=8, message=/.v. is already defined/
+// @expects error: line=12, message=/.p. is already defined/
+
+//@version=6
+indicator("INV035")
+x = 10
+x = 20
+float y = 1.0
+bool y = false
+var v = 1
+v = 2
+_ = '--- SETUP ---'
+_ = '--- UTILITY ---'
+f(p) =>
+    p = 1
+    p
+g() =>
+    x = 1
+    x
+u11 = 0.0, u11 := nz(u11[1])
+if close > open
+    a = 1
+    b = 2
+else
+    a = 3
+    b = 4
+plot(f(close) + g() + u11)

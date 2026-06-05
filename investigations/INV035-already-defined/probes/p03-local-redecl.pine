@@ -1,0 +1,7 @@
+//@version=6
+indicator("p")
+if close > open
+    a = 1
+    a = 2
+    plot(na)
+plot(close)
