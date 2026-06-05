@@ -261,6 +261,21 @@ export class Parser {
 			return firstDecl;
 		}
 
+		// A bare `series`/`simple` qualifier with no base type before a
+		// declaration (`series x = close`) is TV's CE10147; consume the
+		// qualifier, record the error, and keep the declaration so the
+		// rest of the line parses normally. see INV024 probes 8-9
+		if (
+			this.check([TokenType.KEYWORD, ["series", "simple"]]) &&
+			this.peekNext()?.type === TokenType.IDENTIFIER &&
+			this.tokens[this.current + 2]?.type === TokenType.ASSIGN &&
+			this.tokens[this.current + 2]?.value === "="
+		) {
+			const qualifierToken = this.advance();
+			this.qualifierFormError(qualifierToken);
+			return this.variableDeclaration(null, undefined, qualifierToken);
+		}
+
 		// Type-annotated variable declaration without var: int x = 1, float y = 2.0, array<float> z = array.new<float>()
 		// Also handles comma-separated: int _m2 = 0, int _m3 = 0, int _m4 = 0
 		// An optional `series`/`simple` qualifier may lead (`series bool
@@ -280,6 +295,11 @@ export class Parser {
 				this.check(TokenType.IDENTIFIER) &&
 				this.peekNext()?.type === TokenType.ASSIGN
 			) {
+				// A bare qualifier with no base type (`series x = close`) is
+				// TV's CE10147 - see qualifierFormError / INV024 probes 8-9.
+				if (typeAnnotation === "series" || typeAnnotation === "simple") {
+					this.qualifierFormError(typeStartToken);
+				}
 				// This is a type-annotated variable declaration
 				const firstDecl = this.variableDeclaration(
 					null,
@@ -682,11 +702,24 @@ export class Parser {
 
 		// An optional `series`/`simple` qualifier may follow var/varip
 		// (`var series float c = ...`); it folds into the annotation. TV
-		// rejects the qualifier-after-const combination (CE10147, probed
-		// 2026-06-04) - we parse it leniently. see INV024.
+		// rejects the qualifier-after-const combination (CE10147) and a
+		// qualifier with no type at all (`var series x = ...`) - both
+		// probed 2026-06-04/05. see INV024.
 		let qualifier = "";
+		let qualifierToken: Token | undefined;
 		if (this.isQualifiedVarTypeKeyword()) {
+			qualifierToken = this.peek();
 			qualifier = `${this.advance().value} `;
+		} else if (
+			this.check([TokenType.KEYWORD, ["series", "simple"]]) &&
+			this.peekNext()?.type === TokenType.IDENTIFIER &&
+			this.tokens[this.current + 2]?.type === TokenType.ASSIGN &&
+			this.tokens[this.current + 2]?.value === "="
+		) {
+			// `var series x = ...` - qualifier with no base type (CE10147,
+			// probe 10). Consume it, record the error, keep the declaration.
+			this.qualifierFormError(this.peek());
+			this.advance();
 		}
 
 		// Check if next token is also a type keyword (e.g., var float x = 1.0).
@@ -699,11 +732,30 @@ export class Parser {
 		) {
 			typeAnnotation = qualifier + this.advance().value;
 			typeAnnotation += this.parseGenericTypeSuffix();
+			if (qualifierToken && varKeyword === "const") {
+				this.qualifierFormError(qualifierToken);
+			}
 		} else {
 			typeAnnotation = this.tryUserTypeAnnotation() ?? undefined;
+			if (qualifierToken && typeAnnotation === undefined) {
+				this.qualifierFormError(qualifierToken);
+			}
 		}
 
 		return this.variableDeclaration(varKeyword, typeAnnotation, keywordToken);
+	}
+
+	// TV's CE10147 "Cannot specify a type form X without also specifying
+	// the type." - fired for a bare qualifier with no base type
+	// (`series x = ...`, `var simple y = ...`) AND for a qualifier after
+	// `const` even when a full type follows (`const simple int d = ...`).
+	// Anchored at the qualifier token. Probed - see INV024 probes 7-10.
+	private qualifierFormError(qualifierToken: Token): void {
+		this.parserErrors.push({
+			line: qualifierToken.line,
+			column: qualifierToken.column,
+			message: `Cannot specify a type form "${qualifierToken.value}" without also specifying the type.`,
+		});
 	}
 
 	/**

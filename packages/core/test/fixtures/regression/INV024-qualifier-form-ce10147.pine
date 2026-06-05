@@ -1,0 +1,18 @@
+// @test regression/INV024-qualifier-form-ce10147
+// @description CE10147 "Cannot specify a type form X without also specifying the type.": bare series/simple qualifier with no base type, var + bare qualifier, and qualifier AFTER const (even with a full type). Valid qualifier+type forms stay clean. Probed 2026-06-04/05, see INV024 probes 7-10.
+// @expects parse: fail
+// @expects error: line=3, message=/Cannot specify a type form .series. without also specifying the type/
+// @expects error: line=4, message=/Cannot specify a type form .simple. without also specifying the type/
+// @expects error: line=5, message=/Cannot specify a type form .series. without also specifying the type/
+// @expects error: line=6, column=7, message=/Cannot specify a type form .simple. without also specifying the type/
+
+//@version=6
+indicator("INV024 CE10147")
+series a = close
+simple b = 1
+var series c = close
+const simple int d = 2
+series float ok1 = close
+simple int ok2 = 1
+var series float ok3 = close
+plot(a + b + c + d + ok1 + ok2 + ok3)

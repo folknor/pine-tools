@@ -1,0 +1,4 @@
+//@version=6
+indicator("probe")
+series x = close
+plot(x)

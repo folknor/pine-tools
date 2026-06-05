@@ -1,0 +1,4 @@
+//@version=6
+indicator("probe")
+const simple int d = 2
+plot(d)

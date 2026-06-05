@@ -162,3 +162,27 @@ stops.
   doesn't map (returns `unknown`) - lenient, no FP risk.
 - CE10147 (qualifier without type / after const) is a checker FN we
   could add cheaply now that the parse is structured.
+
+## Addendum 2026-06-05 - CE10147 implemented (task tracker #4)
+
+Probe 3 re-verified and three new probes recorded (all in `probes/`,
+run via `pine-lint --tv` 2026-06-05):
+
+| probe | script (line 3) | TV verdict |
+|---|---|---|
+| p07 | `const simple int d = 2` | CE10147 `Cannot specify a type form "simple" without also specifying the type.`, anchor 3:7-3:12 (the qualifier token) - re-confirms probe 3 |
+| p08 | `series x = close` | CE10147 ("series"), 3:1-3:6 |
+| p09 | `simple y = 1` | CE10147 ("simple"), 3:1-3:5 |
+| p10 | `var series x = close` | CE10147 ("series"), 3:5-3:10 |
+
+So CE10147 fires for (a) a bare qualifier with no base type - at top
+level and after var/varip - and (b) a qualifier after `const` even when
+a full type follows. Implemented in the parser (`qualifierFormError`),
+anchored at the qualifier token, with recovery keeping the declaration
+so nothing cascades. Discovery en route: `series x = close` previously
+parsed as an orphan `series` expression statement + an untyped
+declaration (silently lenient), and `var series x = close` threw
+"Expected variable name" - both now produce exactly TV's error. Zero
+corpus hits (a pure probe-derived check, like INV023's CE10190).
+
+Fixture: `packages/core/test/fixtures/regression/INV024-qualifier-form-ce10147.pine`

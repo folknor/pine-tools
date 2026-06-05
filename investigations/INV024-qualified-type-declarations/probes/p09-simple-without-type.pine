@@ -1,0 +1,4 @@
+//@version=6
+indicator("probe")
+simple y = 1
+plot(y)

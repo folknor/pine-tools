@@ -53,9 +53,9 @@ IDs so the two stay in sync.
   `series`/`simple` qualifier-led declarations split the statement and
   truncated function bodies - see
   [INV024](investigations/INV024-qualified-type-declarations/notes.md)
-  (-324 corpus error records). Follow-up surfaced there: CE10147
-  (qualifier after const / without type, TV-probed) is now a cheap
-  checker FN to add.
+  (-324 corpus error records). The CE10147 follow-up surfaced there
+  (qualifier after const / without type) was implemented 2026-06-05 -
+  see the INV024 addendum (probes 7-10).
 - **#18 - ~~ternary "Got 'color' and 'string'" FP residue~~ resolved**
   via [INV026](investigations/INV026-literal-color-and-param-guess-fps/notes.md)
   (2026-06-04): the residue was never the color *constants* (those were

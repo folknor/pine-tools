@@ -1,0 +1,4 @@
+//@version=6
+indicator("probe")
+var series x = close
+plot(x)
