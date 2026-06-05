@@ -296,6 +296,22 @@ export class UnifiedPineValidator {
 		);
 	}
 
+	// True when a switch expression's discriminant or any case condition
+	// is series-qualified - making the whole expression's value series.
+	// see INV040 (the plot-title const-string corpus verdict)
+	private isSeriesDriven(switchExpr: SwitchExpression, version: string): boolean {
+		if (switchExpr.discriminant) {
+			const d = this.inferExpressionType(switchExpr.discriminant, version);
+			if ((d as string).startsWith("series")) return true;
+		}
+		for (const c of switchExpr.cases) {
+			if (!c.condition) continue;
+			const t = this.inferExpressionType(c.condition, version);
+			if ((t as string).startsWith("series")) return true;
+		}
+		return false;
+	}
+
 	private pushDeclScope(seedNames?: string[]): void {
 		const frame = new Set<string>();
 		if (seedNames) for (const n of seedNames) frame.add(n);
@@ -1706,12 +1722,26 @@ export class UnifiedPineValidator {
 				return null;
 			}
 			case "Identifier": {
-				const info = getBuiltinVarInfo((expr as Identifier).name);
+				const idName = (expr as Identifier).name;
+				const info = getBuiltinVarInfo(idName);
 				if (info && info.qualifier !== "const") {
 					return {
 						typeStr: `${info.qualifier} ${info.base}`,
-						repr: (expr as Identifier).name,
+						repr: idName,
 					};
+				}
+				// A USER variable is provably non-const only when its inferred
+				// type is series-QUALIFIED (`series<string>` from a switch over
+				// series conditions, etc.) - unqualified inferences stay on the
+				// conservative null path. TV-confirmed on plot(title=trend)
+				// where trend is a series-condition switch result. see INV040
+				if (!info) {
+					const sym = this.symbolTable.lookup(idName);
+					const symType = sym?.type as string | undefined;
+					const m = symType?.match(/^series<(.+)>$/);
+					if (sym?.kind === "variable" && m) {
+						return { typeStr: `series ${m[1]}`, repr: idName };
+					}
 				}
 				return null;
 			}
@@ -2314,6 +2344,18 @@ export class UnifiedPineValidator {
 				const switchExpr = expr as SwitchExpression;
 				if (switchExpr.cases.length > 0) {
 					type = this.inferExpressionType(switchExpr.cases[0].result, version);
+					// A switch driven by a series discriminant or series case
+					// conditions yields a SERIES result - TV types
+					// `switch / close > open => "Up" / ...` as series string
+					// (the plot-title corpus verdict). Wrap primitive results.
+					// see INV040
+					if (
+						type !== "unknown" &&
+						!type.includes("<") &&
+						this.isSeriesDriven(switchExpr, version)
+					) {
+						type = `series<${type}>` as PineType;
+					}
 				}
 				break;
 			}

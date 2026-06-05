@@ -1,0 +1,15 @@
+// @test regression/INV040-series-switch-const-arg
+// @description A switch over series conditions yields a SERIES result; passing such a variable to a const-required param (plot title) is TV's CE10123. Condition-less switches stay unflagged. See INV040.
+// @expects parse: success
+// @expects errors: 1
+// @expects error: line=8, message="Cannot call"
+
+//@version=6
+indicator("INV040")
+trend = switch
+    close > open => "Up"
+    => "Flat"
+mode = switch
+    => "Static"
+plot(close, title=trend)
+plot(close, title=mode)

@@ -231,3 +231,9 @@ contradiction means re-measure, not "the earlier author was wrong."
   name. Bonus: the inventory's mysterious `pinePos` record is a
   TV-SIDE CRASH STRING (CE10294) deterministically accompanying
   CE10125 at the same span - TV noise, not a diagnostic (3 probes).
+- [INV040](INV040-series-switch-const-arg/notes.md) - series-condition
+  switch results are SERIES (inference now wraps them) and a
+  series-qualified USER variable is provably non-const, so
+  `plot(title=trend)` matches TV's CE10123 byte-for-byte. Narrows the
+  INV014 reliability gate without giving up its FP protection
+  (unqualified inferences still pass).

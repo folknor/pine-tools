@@ -1,7 +1,8 @@
 // @test syntax/switch
-// @description Switch statements and expressions
+// @description Switch statements and expressions; a series-condition switch result passed to plot's const-string title is TV's CE10123 (corpus-verdict confirmed, see task #9)
 // @expects parse: success
-// @expects no-errors
+// @expects errors: 1
+// @expects error: line=24, message="Cannot call"
 
 //@version=6
 indicator("Switch Tests")
