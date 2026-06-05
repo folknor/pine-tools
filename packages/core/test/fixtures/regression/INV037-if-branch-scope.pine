@@ -1,0 +1,19 @@
+// @test regression/INV037-if-branch-scope
+// @description v6 if branches are real scopes: branch-local declarations are not visible outside (TV "Undeclared identifier", confirmed on the corpus carrier). Pre-declared vars reassigned with := inside branches keep working. See INV037.
+// @expects parse: success
+// @expects errors: 2
+// @expects error: line=10, message=/Undefined variable .branchOnly./
+// @expects error: line=11, message=/Undefined variable .elseOnly./
+
+//@version=6
+indicator("INV037")
+float pre = na
+if close > open
+    branchOnly = close - open
+    pre := branchOnly
+else
+    elseOnly = open - close
+    pre := elseOnly
+bad1 = branchOnly
+bad2 = elseOnly
+plot(pre + bad1 + bad2)

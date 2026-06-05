@@ -213,3 +213,9 @@ contradiction means re-measure, not "the earlier author was wrong."
   variables hide functions in the shared symbol namespace
   (`loss = loss(...)`, `[sto] = sto()`, body-local pre-collected over
   a global UDF are all TV-legal calls).
+- [INV037](INV037-if-branch-scope/notes.md) - v6 if branches are real
+  scopes: branch-local declarations are invisible outside (TV
+  "Undeclared identifier" on `[stopLoss, takeProfit]` after if/else
+  declarations). v6-GATED - an ungated draft hit 230 v4/v5 corpus
+  records on published working scripts, proving the leak was legal
+  pre-v6 (G004).

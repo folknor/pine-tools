@@ -552,32 +552,42 @@ export class UnifiedPineValidator {
 					);
 				}
 
-				// Note: In Pine Script, if statements do NOT create new scopes
-				// for our symbol table - but TV scopes each branch for
-				// redeclaration purposes (CE10095), hence the declScope frames.
-				// see INV035
+				// In v6, each if branch is a real scope: TV scopes branch-local
+				// declarations (CE10095 redeclaration, INV035) AND rejects
+				// references to them from outside ("Undeclared identifier",
+				// TV-confirmed on `[stopLoss, takeProfit]` after if/else
+				// branch declarations) - declarations collect INTO the branch
+				// scope so they no longer leak. Pre-v6 published scripts rely
+				// on the leak (230 corpus records on v4/v5 files appeared
+				// under an ungated draft), so legacy keeps the flat model
+				// (G004). see INV037
+				const scopeBranches = version === "6";
+				if (scopeBranches) this.symbolTable.enterScope();
+				this.blockDepth++;
+				this.pushDeclScope();
 				for (const stmt of statement.consequent) {
 					this.collectDeclarations(stmt, version);
 				}
-				this.blockDepth++;
-				this.pushDeclScope();
 				for (const stmt of statement.consequent) {
 					this.validateStatement(stmt, version);
 				}
 				this.popDeclScope();
 				this.blockDepth--;
+				if (scopeBranches) this.symbolTable.exitScope();
 
 				if (statement.alternate) {
+					if (scopeBranches) this.symbolTable.enterScope();
 					this.blockDepth++;
+					this.pushDeclScope();
 					for (const stmt of statement.alternate) {
 						this.collectDeclarations(stmt, version);
 					}
-					this.pushDeclScope();
 					for (const stmt of statement.alternate) {
 						this.validateStatement(stmt, version);
 					}
 					this.popDeclScope();
 					this.blockDepth--;
+					if (scopeBranches) this.symbolTable.exitScope();
 				}
 				break;
 			}
