@@ -206,6 +206,28 @@ IDs so the two stay in sync.
   story compressed dramatically: "Unexpected token: \n" went 549 -> 78
   (4 files), and the two undefined-variable categories went 1086+1072
   -> 231+444 (concentrated in ~13 files).
+- **#41 - MemberExpression callee validation.** INV036's CE10271 covers
+  Identifier callees only; undefined `lib.fn` / `ns.fn` / UDT-method
+  calls still pass silently. Needs import-alias member data we don't
+  have, plus UDT method namespaces. (INV036 residual.)
+- **#42 - extend the series-qualifier wrap to ternary/if-expressions,
+  and bool-condition checks to while/for.** INV040 wraps only
+  series-condition SWITCH results; ternaries/if-expressions presumably
+  follow the same rule (more consumers, probe first). INV041 noted TV's
+  `{blockName}` template implies while/for get the same
+  condition-must-be-bool error; our while/for paths don't emit it at
+  all. No corpus evidence for either - probe before building.
+- **#43 - remaining INV033/INV035/INV038 narrow residuals.** UDF
+  parameter type annotations unvalidated (CE10149 scope cut);
+  TupleDeclaration names not entered into CE10095 redecl frames, and
+  inline statement units (arrow bodies/switch arms) don't push frames;
+  matrix/map ANNOTATION nesting forms unprobed (CE10022's wording is
+  array-specific). All cheap once probed.
+- **#44 - the `13a745…` mangle file dominates local-only (~33
+  records).** Its TV stop is LATE, so wrap-shredded definitions and
+  arg-spill comma declarations count as confirmable local-only noise.
+  Either tolerate (it is ONE file), or teach the bucketing that a file
+  whose lexer hits wrap-mangle markers gets no-verdict treatment.
 - **Minor data residue (record-only, low value):** `ta.vwap.anchor`'s default
   and the "X by default" phrasing are deliberately unparsed (see
   `parse-default.ts`). Skip unless a consumer needs them. (`since`/`deprecated`,
@@ -314,7 +336,21 @@ The reports live in `lint-reports/` which is **gitignored** - so this
 section records the latest measurement (the JSONs also embed
 `generatedAt` + `gitCommit` since #29):
 
-**Measured 2026-06-05, working tree on `fc2a6d6` + INV032**
+**Measured 2026-06-05 (PM), working tree on `f7663dd` after the
+task-queue round (INV033-INV041 + INV024 addendum)**: **61 local-only /
+13 tv-only / 33 same-pos-different-message**, plus 943 past TV's stop
+point (3 unparseable). The tv-only side fell 31 -> 13 and now holds
+ONLY: 5 parser `Syntax error at input ...` forms + missing-paren +
+script-without-statements (7 records), the 3 library-only constraint
+records (the standing policy question), and `35a58bb9…`'s ternary trio
+(INV028's undecoded branch-priority anchors). The local-only rise
+(42 -> 61) is concentrated in the `13a745…` hard-wrap mangle file
+(~33 records: wrap-shredded definitions and arg-spill comma
+declarations that the new CE10095/CE10271 checks now name) - TV's
+stop on that file is late, so they count as confirmable despite being
+mangle noise. Corpus baseline 20069 -> 20111.
+
+Previous measurement 2026-06-05 (AM), working tree on `fc2a6d6` + INV032
 (declaration/`:=` strict base-type rule CE10173 + CE10097, float-literal
 raw-lexeme typing, na identifier typing, version threading,
 no-annotation = v1, math.round/floor/ceil polymorphic fixes; 748 v6
