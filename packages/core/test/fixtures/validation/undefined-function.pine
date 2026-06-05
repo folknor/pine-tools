@@ -1,11 +1,11 @@
 // @test validation/undefined-function
-// @description Undefined function calls - currently not detected by validator
+// @description Undefined function calls are TV's CE10271 (probed 2026-06-05, see INV036)
 // @expects parse: success
-// @expects no-errors
+// @expects errors: 1
+// @expects error: line=7, message=/Could not find function or function reference .nonExistentFunction./
 
-// NOTE: The validator currently does not detect calls to undefined functions.
-// This test documents the current behavior. Once implemented, change expects to:
-// error: message="Undefined function"
+// An identifier callee must be a built-in or a UDF/method declared
+// earlier in source.
 
 //@version=6
 indicator("Undefined Function Test")

@@ -1,0 +1,4 @@
+//@version=6
+indicator("p")
+x = nonExistentFunction(close, 14)
+plot(x)

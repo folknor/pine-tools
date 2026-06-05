@@ -505,7 +505,6 @@ should be `series<bool>`. Don't relax the bool checks - they're correct.
 | count | files | category |
 |---|---|---|
 | 3 | 1 | `Cannot call "operator ?:" with argument ...` (was 13 in 9 files - never a detection gap, just anchor mismatch; resolved by INV028's operand-anchored errors. The 3 left are `35a58bb9…`'s ternary trio, where TV anchors at one branch by undecoded type-priority rules; we detect all three at the ternary) |
-| 2 | 2 | `Could not find {kind} '{fullName}'` |
 | 2 | 1 | `Cannot use a collection in a type template of another collection` |
 | 2 | 1 | `The condition of the "{blockName}" statement must evaluate to a "bool" value` |
 | 2 | 1 | `Undeclared identifier "{identifier}"` |
@@ -516,7 +515,9 @@ The operator-argument cluster is resolved (INV028): every site was
 already detected, anchored differently. The `Cannot assign * to *` (3)
 and `Value with NA type ...` (2) categories are resolved by INV032's
 strict declaration/reassignment base-type rule (CE10173/CE10097, 21
-probes). The remaining rows above are genuine gaps.
+probes). The `Could not find {kind}` category (2) is resolved by
+INV036's CE10271 undefined-callable check. The remaining rows above
+are genuine gaps.
 
 ---
 

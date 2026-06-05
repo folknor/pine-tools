@@ -205,3 +205,11 @@ contradiction means re-measure, not "the earlier author was wrong."
   if-bodies nor separates builtins. En route: `name := expr` comma
   units were parsed as DECLARATIONS - now AssignmentStatement, which
   also collapsed a 14-record cascade in `dd8f47ce…`.
+- [INV036](INV036-undefined-function-reference/notes.md) - CE10271
+  `Could not find function or function reference 'X'`: an identifier
+  callee must be a built-in or a UDF/method declared earlier in source
+  (call-before-definition and variables-as-callees error too - 3
+  probes). Tracked in a checker-side declaredFunctionNames set because
+  variables hide functions in the shared symbol namespace
+  (`loss = loss(...)`, `[sto] = sto()`, body-local pre-collected over
+  a global UDF are all TV-legal calls).

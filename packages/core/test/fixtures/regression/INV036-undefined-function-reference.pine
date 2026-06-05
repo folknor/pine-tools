@@ -1,0 +1,26 @@
+// @test regression/INV036-undefined-function-reference
+// @description CE10271: an identifier callee must be a built-in or a UDF/method declared earlier in source - undefined names, call-before-definition, and variables-as-callees all error; variables/tuples shadowing a UDF name do NOT break calls to it. Probed 2026-06-05, see INV036.
+// @expects parse: success
+// @expects errors: 3
+// @expects error: line=3, message=/Could not find function or function reference .nonExistentFunction./
+// @expects error: line=4, message=/Could not find function or function reference .early./
+// @expects error: line=8, message=/Could not find function or function reference .v./
+
+//@version=6
+indicator("INV036")
+x = nonExistentFunction(close, 14)
+y = early(1)
+early(n) =>
+    n * 2
+v = 1
+w = v(2)
+loss(a) =>
+    a + 1
+loss = loss(2)
+sto() =>
+    [close, open]
+[sto, sto2] = sto()
+scaled(s) =>
+    float scaled = ta.sma(s, 2)
+    scaled * 2
+plot(x + y + w + loss + sto + sto2 + scaled(close))

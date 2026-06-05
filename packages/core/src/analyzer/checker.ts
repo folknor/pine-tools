@@ -77,6 +77,13 @@ export class UnifiedPineValidator {
 	// type annotation must name one of these (or a built-in type) - and
 	// use-before-declaration is the same CE10149 (probed). see INV033
 	private declaredTypeNames: Set<string> = new Set();
+	// UDF / method names declared so far, in source order. The CE10271
+	// undefined-callable check consults this instead of the symbol table
+	// because variables SHARE the symbol namespace and hide functions:
+	// `loss = loss(...)`, `[sto] = sto()`, and a later body-local
+	// pre-collected over a global UDF (`float ema2 = ...` inside a body
+	// calling global `ema2()`) are all TV-legal calls. see INV036
+	private declaredFunctionNames: Set<string> = new Set();
 	// Lexical stack of names DECLARED in each scope, for TV's CE10095
 	// ("X" is already defined): re-declaring a name in the SAME scope is
 	// an error - typed or untyped, after var/varip, and a function param
@@ -98,6 +105,7 @@ export class UnifiedPineValidator {
 		this.udfTupleReturnTypes.clear();
 		this.usedBuiltins.clear();
 		this.declaredTypeNames.clear();
+		this.declaredFunctionNames.clear();
 		this.declScopes = [new Set()];
 
 		// Single pass: collect declarations and validate together
@@ -479,6 +487,7 @@ export class UnifiedPineValidator {
 					this.udfTupleReturnTypes.set(statement.name, tupleTypes);
 
 				// Register the function in the symbol table at the outer scope
+				this.declaredFunctionNames.add(statement.name); // see INV036
 				this.symbolTable.define({
 					name: statement.name,
 					type: returnType,
@@ -735,6 +744,7 @@ export class UnifiedPineValidator {
 				// lookups (e.g. `n - 1` where `n` is an `int` variable AND a
 				// method exists) resolve to the variable; call-site lookups
 				// fall back to the method namespace. see INV006.
+				this.declaredFunctionNames.add(statement.name); // see INV036
 				this.symbolTable.define({
 					name: statement.name,
 					type: returnType,
@@ -1230,7 +1240,26 @@ export class UnifiedPineValidator {
 		}
 
 		if (!signature) {
-			// Unknown function - could be user-defined
+			// No builtin signature: an Identifier callee must then be a UDF /
+			// method declared EARLIER in source - TV's CE10271 "Could not
+			// find function or function reference 'X'" (probed: undefined
+			// name, call-before-definition, and a plain VARIABLE used as a
+			// callee all error; see INV036). MemberExpression callees
+			// (lib.fn / Type.new / method-style calls) stay unvalidated -
+			// alias and UDT member sets need separate machinery.
+			if (
+				version === "6" &&
+				call.callee.type === "Identifier" &&
+				!this.declaredFunctionNames.has(functionName)
+			) {
+				this.addError(
+					call.line,
+					call.column,
+					functionName.length,
+					`Could not find function or function reference '${functionName}'`,
+					DiagnosticSeverity.Error,
+				);
+			}
 			return;
 		}
 

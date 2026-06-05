@@ -1,0 +1,6 @@
+//@version=6
+indicator("p")
+y = f(1)
+f(x) =>
+    x * 2
+plot(y)
