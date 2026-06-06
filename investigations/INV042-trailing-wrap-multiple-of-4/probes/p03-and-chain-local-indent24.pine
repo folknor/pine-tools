@@ -1,0 +1,10 @@
+//@version=6
+indicator("t")
+f() =>
+    if close > open
+        bool sameDay = year(time) == year(time) and
+                        month(time) == month(time)
+        sameDay
+    else
+        false
+plot(f() ? 1 : 0)

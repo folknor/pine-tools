@@ -250,6 +250,10 @@ export interface TernaryExpression extends ASTNode {
 export interface ArrayExpression extends ASTNode {
 	type: "ArrayExpression";
 	elements: Expression[];
+	// line/column anchor at the CLOSING bracket (historical); start*
+	// carry the opening `[` for opener-anchored checks. see INV046
+	startLine?: number;
+	startColumn?: number;
 }
 
 export interface IndexExpression extends ASTNode {

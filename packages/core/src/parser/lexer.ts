@@ -79,6 +79,18 @@ export class Lexer {
 	// a broken file can't suppress newlines for the rest of the source.
 	// see TODO #34 / plan/31.
 	private bracketDepth: number = 0;
+	// Positions of currently-open ( / [ so an opener still unmatched at
+	// EOF can be reported where TV reports it: the earliest unclosed `(`
+	// is CE10015 "Syntax error: Missing closing parenthesis" anchored at
+	// the opener's line, column 1; an unclosed `[` is CE10156 at the
+	// bracket itself. A closer pops the nearest opener regardless of
+	// which character it is - mismatched pairs only occur in already-
+	// broken files. see INV046
+	private openBrackets: Array<{
+		char: "(" | "[";
+		line: number;
+		column: number;
+	}> = [];
 
 	constructor(source: string) {
 		this.source = source;
@@ -87,6 +99,24 @@ export class Lexer {
 	tokenize(): Token[] {
 		while (this.pos < this.source.length) {
 			this.scanToken();
+		}
+		// An opener still unmatched at EOF: report the EARLIEST one (TV
+		// stops at its first error, so one record per file). see INV046
+		const unclosed = this.openBrackets[0];
+		if (unclosed) {
+			this.lexerErrors.push(
+				unclosed.char === "("
+					? {
+							line: unclosed.line,
+							column: 1,
+							message: "Syntax error: Missing closing parenthesis",
+						}
+					: {
+							line: unclosed.line,
+							column: unclosed.column,
+							message: 'Syntax error at input "["',
+						},
+			);
 		}
 		this.addToken(TokenType.EOF, "", 0);
 		return this.tokens;
@@ -155,18 +185,30 @@ export class Lexer {
 
 			case "(":
 				this.bracketDepth++;
+				this.openBrackets.push({
+					char: "(",
+					line: this.line,
+					column: this.column - 1,
+				});
 				this.addToken(TokenType.LPAREN, "(", 1);
 				break;
 			case ")":
 				this.bracketDepth = Math.max(0, this.bracketDepth - 1);
+				this.openBrackets.pop();
 				this.addToken(TokenType.RPAREN, ")", 1);
 				break;
 			case "[":
 				this.bracketDepth++;
+				this.openBrackets.push({
+					char: "[",
+					line: this.line,
+					column: this.column - 1,
+				});
 				this.addToken(TokenType.LBRACKET, "[", 1);
 				break;
 			case "]":
 				this.bracketDepth = Math.max(0, this.bracketDepth - 1);
+				this.openBrackets.pop();
 				this.addToken(TokenType.RBRACKET, "]", 1);
 				break;
 			case ",":
@@ -364,6 +406,26 @@ export class Lexer {
 		const start = this.pos - 1;
 		const startLine = this.line;
 		const startColumn = this.column - 1;
+		// Pine has NO block comments - TV lexes `/` `*` as two operator
+		// tokens and the parse fails emergently: a line-leading `/*` gets
+		// CE10156 'Syntax error at input "new line"' at column 1, a
+		// mid-line one gets CE10156 'Syntax error at input "*"' at the
+		// `*` (both probed - see INV043). We keep consuming the comment
+		// as trivia so one stray C-style comment doesn't shred the rest
+		// of the file, but report TV's error at TV's anchor.
+		this.lexerErrors.push(
+			this.atLineStart
+				? {
+						line: startLine,
+						column: 1,
+						message: 'Syntax error at input "new line"',
+					}
+				: {
+						line: startLine,
+						column: startColumn + 1,
+						message: 'Syntax error at input "*"',
+					},
+		);
 		this.advance(); // consume *
 
 		while (!this.isAtEnd()) {

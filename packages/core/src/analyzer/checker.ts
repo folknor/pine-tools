@@ -468,6 +468,23 @@ export class UnifiedPineValidator {
 						DiagnosticSeverity.Error,
 					);
 				}
+				// Pine has no array literals: `arr = [1, 2, 3]` is TV's
+				// CE10156 'Syntax error at input "["' at the bracket, even
+				// when closed (probed - see INV046). Tuple expressions are
+				// only valid in return positions; a single-name declaration
+				// init is never one. (TupleDeclaration destructures are a
+				// different statement type and unaffected.)
+				if (version === "6" && statement.init?.type === "ArrayExpression") {
+					const arr = statement.init as ArrayExpression;
+					this.addError(
+						arr.startLine ?? arr.line,
+						arr.startColumn ?? arr.column,
+						1,
+						'Syntax error at input "["',
+						DiagnosticSeverity.Error,
+					);
+				}
+
 				// First, register the variable in the symbol table
 				const symbol: SymbolInfo = {
 					name: statement.name,
@@ -842,6 +859,22 @@ export class UnifiedPineValidator {
 			case "AssignmentStatement": {
 				this.validateExpression(statement.target, version);
 				this.validateExpression(statement.value, version);
+
+				// Pine has no array literals: a `[...]` tuple expression is
+				// only valid in return positions (UDF tails, request.security
+				// args). Assigning one to a single name is TV's CE10156
+				// 'Syntax error at input "["' at the bracket (probed for both
+				// `=` and `:=` - see INV046).
+				if (version === "6" && statement.value.type === "ArrayExpression") {
+					const arr = statement.value as ArrayExpression;
+					this.addError(
+						arr.startLine ?? arr.line,
+						arr.startColumn ?? arr.column,
+						1,
+						'Syntax error at input "["',
+						DiagnosticSeverity.Error,
+					);
+				}
 
 				// Check type compatibility (isAssignable handles all coercion rules)
 				const targetType = this.inferExpressionType(statement.target, version);

@@ -45,6 +45,40 @@ export class ExpressionParser {
 		return true;
 	}
 
+	// Consume the newline(s) after a TRAILING operator (`x = cond ?`,
+	// `a and`) so the right operand on the next line joins the
+	// expression - but report TV's wrap-indent violation when the
+	// continuation line's indent is a multiple of 4 (Pine's
+	// line-wrapping rule - INV017): TV rejects such wraps with CE10156
+	// 'Syntax error at input "end of line without line continuation"'
+	// anchored at the wrapping line's end (probed at top level and
+	// inside a nested local scope - see INV042). We emit TV's error but
+	// still join, so the statement parses whole and downstream
+	// diagnostics survive. Inside ( ) / [ ] continuation is free-form -
+	// no NEWLINE tokens are emitted there, and the depth guard keeps
+	// any parser-tracked residue out.
+	private skipPostOperatorNewlines(): void {
+		if (!this.p.check(TokenType.NEWLINE)) return;
+		const eol = this.p.peek();
+		while (this.p.check(TokenType.NEWLINE)) {
+			this.p.advance();
+		}
+		const next = this.p.peek();
+		if (
+			next.type !== TokenType.EOF &&
+			(next.indent ?? 0) % 4 === 0 &&
+			this.p.parenDepth === 0 &&
+			this.p.bracketDepth === 0
+		) {
+			this.p.parserErrors.push({
+				line: eol.line,
+				column: eol.column,
+				message:
+					'Syntax error at input "end of line without line continuation"',
+			});
+		}
+	}
+
 	expression(): AST.Expression {
 		return this.ternary();
 	}
@@ -57,20 +91,18 @@ export class ExpressionParser {
 		this.skipWrapNewlines((t) => t.type === TokenType.TERNARY);
 
 		if (this.p.match(TokenType.TERNARY)) {
-			// Skip newlines after ? for multi-line ternary
-			while (this.p.check(TokenType.NEWLINE)) {
-				this.p.advance();
-			}
+			// Skip newlines after ? for multi-line ternary (flags
+			// multiple-of-4 continuation indents - see INV042)
+			this.skipPostOperatorNewlines();
 			const consequent = this.expression();
 			// Skip newlines before : for multi-line ternary (when consequent ends on previous line)
 			while (this.p.check(TokenType.NEWLINE)) {
 				this.p.advance();
 			}
 			this.p.consume(TokenType.COLON, 'Expected ":" in ternary expression');
-			// Skip newlines after : for multi-line ternary
-			while (this.p.check(TokenType.NEWLINE)) {
-				this.p.advance();
-			}
+			// Skip newlines after : for multi-line ternary (flags
+			// multiple-of-4 continuation indents - see INV042)
+			this.skipPostOperatorNewlines();
 			const alternate = this.expression();
 
 			return {
@@ -103,10 +135,9 @@ export class ExpressionParser {
 
 			if (this.p.match([TokenType.KEYWORD, ["or"]])) {
 				const operator = this.p.previous().value;
-				// Skip newlines after operator (line continuation)
-				while (this.p.check(TokenType.NEWLINE)) {
-					this.p.advance();
-				}
+				// Skip newlines after operator (line continuation; flags
+				// multiple-of-4 continuation indents - see INV042)
+				this.skipPostOperatorNewlines();
 				const right = this.logicalAnd();
 				expr = {
 					type: "BinaryExpression",
@@ -141,10 +172,9 @@ export class ExpressionParser {
 
 			if (this.p.match([TokenType.KEYWORD, ["and"]])) {
 				const operator = this.p.previous().value;
-				// Skip newlines after operator (line continuation)
-				while (this.p.check(TokenType.NEWLINE)) {
-					this.p.advance();
-				}
+				// Skip newlines after operator (line continuation; flags
+				// multiple-of-4 continuation indents - see INV042)
+				this.skipPostOperatorNewlines();
 				const right = this.comparison();
 				expr = {
 					type: "BinaryExpression",
@@ -177,10 +207,9 @@ export class ExpressionParser {
 
 			if (this.p.match(TokenType.COMPARE)) {
 				const operator = this.p.previous().value;
-				// Skip newlines after operator (line continuation)
-				while (this.p.check(TokenType.NEWLINE)) {
-					this.p.advance();
-				}
+				// Skip newlines after operator (line continuation; flags
+				// multiple-of-4 continuation indents - see INV042)
+				this.skipPostOperatorNewlines();
 				const right = this.addition();
 				expr = {
 					type: "BinaryExpression",
@@ -215,10 +244,9 @@ export class ExpressionParser {
 
 			if (this.p.match(TokenType.PLUS, TokenType.MINUS)) {
 				const operator = this.p.previous().value;
-				// Skip newlines after operator (line continuation)
-				while (this.p.check(TokenType.NEWLINE)) {
-					this.p.advance();
-				}
+				// Skip newlines after operator (line continuation; flags
+				// multiple-of-4 continuation indents - see INV042)
+				this.skipPostOperatorNewlines();
 				const right = this.multiplication();
 				expr = {
 					type: "BinaryExpression",
@@ -263,10 +291,9 @@ export class ExpressionParser {
 				this.p.match(TokenType.MULTIPLY, TokenType.DIVIDE, TokenType.MODULO)
 			) {
 				const operator = this.p.previous().value;
-				// Skip newlines after operator (line continuation)
-				while (this.p.check(TokenType.NEWLINE)) {
-					this.p.advance();
-				}
+				// Skip newlines after operator (line continuation; flags
+				// multiple-of-4 continuation indents - see INV042)
+				this.skipPostOperatorNewlines();
 				const right = this.unary();
 				expr = {
 					type: "BinaryExpression",
@@ -723,6 +750,7 @@ export class ExpressionParser {
 
 		// Array literal
 		if (this.p.match(TokenType.LBRACKET)) {
+			const openBracket = this.p.previous();
 			this.p.bracketDepth++; // Track bracket depth for multiline arrays
 			const elements: AST.Expression[] = [];
 			// Skip newlines after opening bracket
@@ -751,8 +779,13 @@ export class ExpressionParser {
 			return {
 				type: "ArrayExpression",
 				elements,
+				// line/column stay on the CLOSING bracket (historical anchor
+				// for downstream consumers); start* carry the `[` so checks
+				// that anchor at the opener (INV046) can. see ast.ts
 				line: closeBracket.line,
 				column: closeBracket.column,
+				startLine: openBracket.line,
+				startColumn: openBracket.column,
 			};
 		}
 

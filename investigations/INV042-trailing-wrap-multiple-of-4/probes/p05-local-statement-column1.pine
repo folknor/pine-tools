@@ -1,0 +1,7 @@
+//@version=6
+indicator("t")
+f() =>
+    x = close > open ?
+close : open
+    x
+plot(f())

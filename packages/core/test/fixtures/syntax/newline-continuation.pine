@@ -52,19 +52,21 @@ elem = arr[0]
 // Method chain with array access on same line
 data = getData()[0]
 
-// Operators after newline should continue expression
+// Operators after newline should continue expression (continuation
+// lines use indent 2 - a multiple-of-4 indent is a wrap-rule error,
+// see INV042)
 longValue = a +
-    b +
-    c
+  b +
+  c
 
 // Comparison after newline
 isEqual = x ==
-    y
+  y
 
 // Logical operator after newline
 combined = a and
-    b or
-    c
+  b or
+  c
 
 // Dot access after newline. Wrapped lines must NOT be indented by a
 // multiple of 4 - Pine's line-wrapping rule (po: language/script-structure

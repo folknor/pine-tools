@@ -1,0 +1,8 @@
+//@version=6
+indicator("t")
+/*
+multi
+line
+*/
+y = 2
+plot(y)

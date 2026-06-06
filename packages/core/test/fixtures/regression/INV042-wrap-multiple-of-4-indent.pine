@@ -1,0 +1,26 @@
+// @test regression/INV042-wrap-multiple-of-4-indent
+// @description A trailing operator (`?`, `:`, `and`, ...) only wraps onto the next line when the continuation indent is NOT a multiple of 4 (INV017's rule). TV rejects multiple-of-4 continuations (including column 1) with CE10156 anchored at the wrapping line's end; non-multiple-of-4 wraps stay clean. Probed at top level, in a nested local scope, and at column 1. See INV042.
+// @expects parse: fail
+// @expects error: line=3, column=20, message=/end of line without line continuation/
+// @expects error: line=4, column=18, message=/end of line without line continuation/
+// @expects error: line=10, column=48, message=/end of line without line continuation/
+// @expects error: line=13, column=19, message=/end of line without line continuation/
+
+//@version=6
+indicator("INV042 wrap indent")
+c1 = close > open ?
+    color.green :
+    color.red
+c2 = close > open ?
+     color.green :
+     color.red
+f() =>
+    bool sameDay = year(time) == year(time) and
+                    month(time) == month(time)
+    sameDay
+d = close > open ?
+color.green : color.red
+plot(close, color=c1)
+plot(close, color=c2)
+plot(close, color=d)
+plot(f() ? 1 : 0)

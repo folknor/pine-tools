@@ -1,0 +1,5 @@
+//@version=6
+indicator("t")
+/* block comment */
+y = 2
+plot(y)

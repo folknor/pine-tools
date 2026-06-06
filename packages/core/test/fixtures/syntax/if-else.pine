@@ -29,10 +29,11 @@ else
 // Ternary expression (single line)
 color1 = close > open ? color.green : color.red
 
-// Ternary expression (multiline - continuation on same line as ?)
+// Ternary expression (multiline - continuation lines must NOT be
+// indented by a multiple of 4, Pine's wrap-indent rule; see INV042)
 color2 = close > open ?
-    color.green :
-    color.red
+     color.green :
+     color.red
 
 // Nested ternary
 color3 = close > open ? color.green : color.red

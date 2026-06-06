@@ -1,0 +1,9 @@
+//@version=6
+indicator("t")
+f() =>
+    [1, 2]
+var int a = 0
+var int b = 0
+if close > open
+    [a, b] := f()
+plot(a)

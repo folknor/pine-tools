@@ -242,3 +242,29 @@ contradiction means re-measure, not "the earlier author was wrong."
   CONDITION, not the if keyword. Never a detection gap (the INV028
   anchor-mismatch pattern); 235 corpus records moved as verified
   same-line rename pairs.
+- [INV042](INV042-trailing-wrap-multiple-of-4/notes.md) - a TRAILING
+  operator (`?`, `:`, `and`, ...) only wraps when the continuation
+  indent is NOT a multiple of 4 (column 1 included); multiple-of-4
+  continuations are TV's CE10156 at the wrapping line's end (6 probes).
+  We still join for recovery. Leading-operator wraps at indent 4 are a
+  probed residual (CE10013) - TODO #45.
+- [INV043](INV043-block-comments/notes.md) - Pine has NO block
+  comments; our lexer scanned `/* ... */` as a COMMENT token. TV lexes
+  `/` `*` as operators and fails emergently: line-leading gets CE10156
+  "new line" at column 1, mid-line gets CE10156 "*" at the `*`
+  (3 probes). Still consumed as trivia for recovery.
+- [INV044](INV044-tuple-reassignment/notes.md) - `[a, b] := f()` is
+  invalid (tuples only DECLARE); both `=` and `:=` lex as ASSIGN so the
+  tuple parser accepted either. TV's CE10156 at the `:=`, now matched;
+  the statement still yields a TupleDeclaration for recovery.
+- [INV045](INV045-empty-script/notes.md) - a source with no statements
+  (comments-only or empty) is TV's CE10250, sent WITHOUT a position;
+  we emit at 1:1 and the diff scripts normalize position-less TV
+  diagnostics to 1:1 to match.
+- [INV046](INV046-unclosed-groups-array-literals/notes.md) - two
+  findings: unclosed `(` was an anchor mismatch (TV: CE10015 at the
+  opener's line, column 1 - now lexer-reported from an opener stack at
+  EOF), and `[...]` on a single-name RHS is invalid EVEN WHEN CLOSED
+  (no array literals in Pine; CE10156 at the `[`, declaration and `:=`
+  both probed). Valid tuple positions (UDF tails, request.security
+  args, destructures) stay clean.

@@ -1,5 +1,5 @@
 // @test syntax/multiline
-// @description Multiline strings, arrays, and operator continuations
+// @description Multiline strings, multiline call args, and operator continuations. Continuation lines must NOT be indented by a multiple of 4 (Pine's wrap-indent rule - TV rejects 4-space continuations with CE10156 trailing / CE10013 leading, both probed; see INV042), so every wrap here uses 5 or 9 spaces. Array literals are not valid Pine (see INV046) - the multiline collection example uses array.from.
 // @expects parse: success
 // @expects no-errors
 
@@ -13,60 +13,59 @@ string multilineStr = "This is line one
   and this is line two
   and line three"
 
-// Multiline array literal
-var arr = [
+// Multiline call arguments (inside parens continuation is free-form)
+var arr = array.from(
     1.0,
     2.0,
     3.0,
-    4.0
-]
+    4.0)
 
 // Operator continuation - comparison
 bool comp = close >
-    open
+     open
 
 // Operator continuation - logical
 bool logic = close > open and
-    high > low
+     high > low
 
 bool logic2 = close > open or
-    volume > 0
+     volume > 0
 
 // Operator continuation - arithmetic
 float sum = close +
-    open +
-    high
+     open +
+     high
 
 float product = close *
-    2.0
+     2.0
 
 // Nested multiline
 float complex = (close + open) *
-    (high - low) /
-    2.0
+     (high - low) /
+     2.0
 
 // Mixed multiline with ternary
 float ternary = close > open ?
-    high :
-    low
+     high :
+     low
 
 // Ternary with ? at line start (common in nested ternaries)
 float ternary2 = close > open
-    ? high
-    : low
+     ? high
+     : low
 
 // Nested ternary with operators at line start
 float nested_tern = close > open
-    ? high > low
-        ? high
-        : (high + low) / 2
-    : low
+     ? high > low
+         ? high
+         : (high + low) / 2
+     : low
 
 // Chained ternary with ? at line start
 float chained = close > 100
-    ? 1.0
-    : close > 50
-        ? 0.5
-        : 0.0
+     ? 1.0
+     : close > 50
+         ? 0.5
+         : 0.0
 
 plot(sum)

@@ -1,0 +1,7 @@
+// @test regression/INV045-empty-script
+// @description A source with no statements at all (comments/annotations only, or fully empty) is TV's CE10250 "Script doesn't contain any statements" (probed; TV sends it without a position - we and the diff scripts anchor at 1:1). Suppressed when other errors exist. See INV045.
+// @expects parse: fail
+// @expects error: line=1, column=1, message="Script doesn't contain any statements"
+
+//@version=6
+// This file deliberately holds no statements - only comments.

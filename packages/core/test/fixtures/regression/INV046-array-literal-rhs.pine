@@ -1,0 +1,19 @@
+// @test regression/INV046-array-literal-rhs
+// @description Pine has no array literals: a `[...]` tuple expression is only valid in return positions (UDF tails, request.security args, tuple destructure RHS). Assigning one to a single name - declaration or `:=` - is TV's CE10156 'Syntax error at input "["' at the bracket, even when closed (both probed). The valid tuple positions must stay clean. See INV046.
+// @expects parse: success
+// @expects errors: 2
+// @expects error: line=9, column=7, message=/Syntax error at input .\[./
+// @expects error: line=11, column=6, message=/Syntax error at input .\[./
+
+//@version=6
+indicator("INV046 array literal RHS")
+f() => [open, close]
+g() =>
+    a = open
+    [a, close]
+[x1, y1] = f()
+[x2, y2] = g()
+arr = [1, 2, 3]
+var z = 0.0
+z := [1, 2]
+plot(x1 + y1 + x2 + y2)

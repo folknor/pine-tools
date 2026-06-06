@@ -84,6 +84,24 @@ export class Parser {
 			}
 		}
 
+		// A source with no statements at all (empty, or comments/
+		// annotations only) is TV's CE10250 "Script doesn't contain any
+		// statements" - probed; TV sends it without a position, which
+		// the diff scripts normalize to 1:1 (see INV045). Suppressed
+		// when other errors exist: a file whose only statement failed to
+		// parse is broken, not empty, and TV reports the syntax error.
+		if (
+			body.length === 0 &&
+			this.parserErrors.length === 0 &&
+			this.lexerErrors.length === 0
+		) {
+			this.parserErrors.push({
+				line: 1,
+				column: 1,
+				message: "Script doesn't contain any statements",
+			});
+		}
+
 		return {
 			type: "Program",
 			body,
@@ -662,7 +680,10 @@ export class Parser {
 		}
 
 		this.consume(TokenType.RBRACKET, 'Expected "]"');
-		this.consume(TokenType.ASSIGN, 'Expected "=" after tuple');
+		const assignToken = this.consume(
+			TokenType.ASSIGN,
+			'Expected "=" after tuple',
+		);
 		// The RHS may start on a wrapped (possibly blank-line-separated)
 		// continuation line, same as variableDeclaration's init. Without
 		// this, `[a, b] = ` + blank + wrapped RHS backtracked into an
@@ -671,6 +692,20 @@ export class Parser {
 		this.skipWrapContinuationNewline();
 
 		const init = this.expression();
+
+		// Tuples only DECLARE - `[a, b] := f()` is invalid Pine, TV's
+		// CE10156 anchored at the `:=` (probed - see INV044). Both `=`
+		// and `:=` lex as ASSIGN, so the consume above accepts either;
+		// flag the reassignment form. Reported only after the whole
+		// tuple statement parsed, so a backtracking caller that discards
+		// this parse can't leave a spurious error behind.
+		if (assignToken.value === ":=") {
+			this.parserErrors.push({
+				line: assignToken.line,
+				column: assignToken.column,
+				message: 'Syntax error at input ":="',
+			});
+		}
 
 		return {
 			type: "TupleDeclaration",

@@ -1,0 +1,15 @@
+// @test regression/INV044-tuple-reassignment
+// @description Tuples only DECLARE: `[a, b] = f()` is valid, `[a, b] := f()` is TV's CE10156 'Syntax error at input ":="' anchored at the `:=` (probed). Both `=` and `:=` lex as ASSIGN, so the parser must flag the reassignment form explicitly. See INV044.
+// @expects parse: fail
+// @expects error: line=9, column=12, message=/Syntax error at input ..=./
+
+//@version=6
+indicator("INV044 tuple reassignment")
+f() =>
+    [1, 2]
+var int a = 0
+var int b = 0
+[c, d] = f()
+if close > open
+    [a, b] := f()
+plot(a + b + c + d)

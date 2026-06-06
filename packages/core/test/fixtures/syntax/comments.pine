@@ -1,7 +1,9 @@
 // @test syntax/comments
-// @description Comment syntax - single line and block comments
-// @expects parse: success
-// @expects no-errors
+// @description Comment syntax. Single-line // comments are the only comment form Pine has - /* */ block comments are NOT valid (TV lexes `/` `*` as operators and errors CE10156; probed - see INV043). The block comments below are consumed as trivia for recovery but each line-leading one reports TV's 'Syntax error at input "new line"' at column 1.
+// @expects parse: fail
+// @expects error: line=7, column=1, message=/Syntax error at input .new line./
+// @expects error: line=10, column=1, message=/Syntax error at input .new line./
+// @expects error: line=16, column=1, message=/Syntax error at input .new line./
 
 //@version=6
 indicator("Comment Tests")

@@ -1,0 +1,6 @@
+//@version=6
+indicator("t")
+float ternary2 = close > open
+    ? high
+    : low
+plot(ternary2)

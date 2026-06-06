@@ -184,8 +184,11 @@ function pickDiagnostics(raw) {
 	try {
 		const j = JSON.parse(raw);
 		const mapDiag = (e) => ({
-			line: e.start?.line ?? 0,
-			col: e.start?.column ?? 0,
+			// TV sends a few diagnostics with no span at all (CE10250
+			// "Script doesn't contain any statements") - anchor those at
+			// the file start, matching our local emission. see INV045
+			line: e.start?.line ?? 1,
+			col: e.start?.column ?? 1,
 			message: fillTemplate(e.message ?? "", e.ctx),
 		});
 		const sortPos = (a, b) =>

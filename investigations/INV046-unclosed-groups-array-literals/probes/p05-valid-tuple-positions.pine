@@ -1,0 +1,4 @@
+//@version=6
+indicator("t")
+[a, b] = request.security(syminfo.tickerid, "D", [open, close])
+plot(a + b)

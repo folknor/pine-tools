@@ -1,0 +1,10 @@
+// @test regression/INV046-unclosed-bracket
+// @description A `[` still open at EOF gets TV's CE10156 'Syntax error at input "["' anchored at the bracket itself (probed: `arr = [1, 2, 3` unclosed errors at the `[`, 8:7). The lexer reports the earliest unclosed opener; the parser's 'Expected "]"' cascade lands later, past TV's stop. See INV046.
+// @expects parse: fail
+// @expects error: line=3, column=7, message=/Syntax error at input .\[./
+
+//@version=6
+indicator("INV046 unclosed bracket")
+arr = [1, 2, 3
+
+plot(close)

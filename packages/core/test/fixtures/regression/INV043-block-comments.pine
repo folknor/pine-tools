@@ -1,0 +1,17 @@
+// @test regression/INV043-block-comments
+// @description Pine has no block comments. TV lexes `/` `*` as operators and fails emergently: a line-leading `/*` is CE10156 'Syntax error at input "new line"' at column 1, a mid-line one is CE10156 'Syntax error at input "*"' at the `*` (both probed). We consume the comment as trivia for recovery but report TV's error at TV's anchor. See INV043.
+// @expects parse: fail
+// @expects error: line=3, column=1, message=/Syntax error at input .new line./
+// @expects error: line=5, column=9, message=/Syntax error at input .\*./
+// @expects error: line=6, column=1, message=/Syntax error at input .new line./
+
+//@version=6
+indicator("INV043 block comments")
+/* leading block comment */
+y = 2
+y2 = 3 /* mid-line */
+/*
+multi
+line
+*/
+plot(y + y2)

@@ -1,0 +1,6 @@
+//@version=6
+indicator("t")
+c = close > open ?
+    color.green :
+    color.red
+plot(close, color=c)

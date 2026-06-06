@@ -227,11 +227,32 @@ IDs so the two stay in sync.
   arrow bodies turned out already-correct, probed clean); annotation
   nesting splits by outer collection - array CE10022 / matrix CE10023
   / map CE10025, inner base in the {inner} slot.
-- **#44 - the `13a745…` mangle file dominates local-only (~33
+- **#44 - the `13a745…` mangle file dominates local-only (~43
   records).** Its TV stop is LATE, so wrap-shredded definitions and
   arg-spill comma declarations count as confirmable local-only noise.
   Either tolerate (it is ONE file), or teach the bucketing that a file
   whose lexer hits wrap-mangle markers gets no-verdict treatment.
+  2026-06-07 evidence for the bucketing fix: its single TV error
+  (`Missing enclosing character in the literal string`, line 372) is a
+  LEXER-stage abort - TV's parse stage never ran, so "before TV's stop"
+  on this file means nothing. Same shape on `8439b236…` and the v5
+  monster `6080cf…`. A principled rule: when TV's verdict consists
+  solely of string-lexing errors, treat the whole file as no-verdict
+  (like INV029's NBSP refusals), not position-bucketed. That would
+  move all 12 of INV042's mangle-file wrap records (plus the
+  already-defined/Unexpected-token rows it carries) out of the
+  confirmable count.
+- **#45 - leading-operator wraps at multiple-of-4 indent (probed
+  residual of INV042).** `float x = cond` / `    ? high` / `    : low`
+  is TV's CE10013 `Mismatched input "?" expecting set "end of line
+  without line continuation"` anchored at the operator (probe p06 in
+  INV042, 2026-06-07) - a different code/wording/anchor from the
+  trailing case. Our `skipWrapNewlines` single-NEWLINE path keeps its
+  historical leniency and joins these silently. No inventory rows hit
+  this shape, so it waits; implementing means emitting CE10013-style
+  errors from the leading-wrap joins (ternary `?`/`:`, the binary
+  operator loops, and parseSameLineBinary's leading path) while still
+  joining for recovery, mirroring INV042.
 - **Minor data residue (record-only, low value):** `ta.vwap.anchor`'s default
   and the "X by default" phrasing are deliberately unparsed (see
   `parse-default.ts`). Skip unless a consumer needs them. (`since`/`deprecated`,
@@ -340,8 +361,27 @@ The reports live in `lint-reports/` which is **gitignored** - so this
 section records the latest measurement (the JSONs also embed
 `generatedAt` + `gitCommit` since #29):
 
-**Measured 2026-06-05 (later PM), working tree on `51680aa` + the
-#42/#43 residual round (INV033/INV035/INV038/INV040/INV041 addenda)**:
+**Measured 2026-06-07, working tree on `2bb7466` + the parser-FN round
+(INV042-INV046)**: **73 local-only / 6 tv-only / 35
+same-pos-different-message**, plus 981 past TV's stop point (4
+unparseable, transient). The tv-only side fell 13 -> 6 and now holds
+ONLY the 3 library-only constraint records (the standing policy
+question) and `35a58bb9…`'s ternary trio (INV028's undecoded
+branch-priority anchors) - every parser FN row is cleared:
+trailing-operator wraps at multiple-of-4 indents incl. column 1
+(INV042), `/* block comments */` (INV043), tuple `:=` reassignment
+(INV044), statement-less scripts incl. TV's position-less CE10250
+(INV045), and unclosed `(`/`[` + the closed-array-literal-RHS discovery
+(INV046 - `arr = [1, 2, 3]` is invalid even closed; Pine has no array
+literals). The local-only rise (61 -> 73) is exactly the +12 new wrap
+records, ALL in the two string-lexer-abort mangle files (`13a745…` 10,
+`8439b236…` 2) where TV's parse stage never ran - see the strengthened
+#44. Corpus baseline 20088 -> 20328 (+240, all triaged: zero on
+TV-clean files; each record matches TV, lies past TV's stop, or sits in
+lexer-abort no-man's-land).
+
+Previous measurement 2026-06-05 (later PM), working tree on `51680aa` + the
+#42/#43 residual round (INV033/INV035/INV038/INV040/INV041 addenda):
 **61 local-only / 13 tv-only / 33 same-pos-different-message**, plus
 942 past TV's stop point (4 unparseable). Headline identical to the
 previous measurement - this round implemented probe-sourced residuals
@@ -496,11 +536,16 @@ These are real syntax errors in the user's code that we don't surface.
 
 | count | files | category |
 |---|---|---|
-| 6 | 5 | `Syntax error at input {value}` (end-of-line continuation, new line, `:=`, `[`) |
 | 2 | 1 | `All exported functions args should be typified` |
-| 1 | 1 | `Script doesn't contain any statements` |
-| 1 | 1 | `Syntax error: Missing closing parenthesis` |
 | 1 | 1 | `Exported variable should have const modifier and type` |
+
+(2026-06-07: the whole `Syntax error at input {value}` family - 6 in 5
+files - plus `Script doesn't contain any statements` and
+`Syntax error: Missing closing parenthesis` are fixed and gone, each
+probed: INV042 trailing wraps at multiple-of-4 indents, INV043 block
+comments, INV044 tuple `:=`, INV045 empty scripts, INV046 unclosed
+groups + array-literal RHS. Only the library-only constraint rows
+remain - the standing policy question below.)
 
 (The `Cannot read properties of undefined (reading 'pinePos')` record
 is a TV-side crash string that deterministically accompanies CE10125
