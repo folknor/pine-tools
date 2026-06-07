@@ -255,3 +255,38 @@ OPENING QUOTE rather than CE10017's line:1 - observed on `1dd5f97f…`
 17:10, `dfceb4d4…`/`e76b4f49…` 22:74. We emit CE10017 at line:1 there,
 so these count as one tv-only FN + anchor mismatch per file. Worth a
 probe round to learn which wording TV picks when. -> TODO #47.
+(Resolved - see the next addendum; the anchor turned out to be the
+broken line's EOL, not the opening quote.)
+
+## Addendum 2026-06-07 (late) - #47: TV's two broken-string wordings decoded
+
+Seven probes (p10-p16, `pine-lint --tv` 2026-06-07) pin the rule. The
+quote type (`"` vs `'`) is IRRELEVANT - the discriminators are the
+compiler version and whether any closing quote exists later in the
+source:
+
+| probe | shape | TV verdict |
+|---|---|---|
+| p10 | v6, `"abc` broken, closing `"` on the next line | CE10017 at brokenLine:1 |
+| p11 | v6, `"abc` broken, NO `"` anywhere after | CE10004 `mismatched character "\n" expecting "` at the EOL (3:9) |
+| p12 | v6, `'abc` broken, closing `'` on the next line | CE10017 at brokenLine:1 |
+| p13 | v6, `'abc` broken, NO `'` after | CE10004 mismatched at the EOL |
+| p14 | v6, the exact `dfceb4d4…` line in isolation | CE10017 at brokenLine:1 |
+| p15 | the SAME shape as `//@version=5` | `mismatched character '\n' expecting '''` at the EOL (3:74) - NO error code; the pre-v6 compiler always uses this wording, later quote or not |
+| p16 | v6, closing `"` two lines later | CE10017 (the later-quote scan is not next-line-only) |
+
+So the carrier mystery (`dfceb4d4…` got mismatched despite a closing
+quote on the next line) was simply that all three carriers are
+`//@version=5` - TV routes them to the old compiler. The "anchored at
+the opening quote" guess in the previous addendum was wrong: 17:10 /
+22:74 are the broken lines' EOL columns (length + 1).
+
+Implementation (lexer.ts, the CE10017 branch of `scanString`): v6 with
+a later same-quote character in the source keeps CE10017 at
+brokenLine:1; otherwise (v6 truly-unterminated, or any pre-v6 source)
+the record is `mismatched character '\n' expecting '<quote>'` at the
+EOL. Corpus: a clean 1187<->1187 wording swap across 42 pre-v6 /
+no-later-quote files (total 17020 unchanged); the v6 mangle carriers
+keep their CE10017s and `b65bc03d…` still matches TV's only error.
+The v6 inventory is untouched (49/6/33) - the payoff is wording+anchor
+fidelity on pre-v6 fixtures and on v6 files whose last string breaks.

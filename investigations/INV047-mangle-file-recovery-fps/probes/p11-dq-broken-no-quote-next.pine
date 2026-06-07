@@ -1,0 +1,4 @@
+//@version=6
+indicator("p11")
+x = "abc
+plot(close)

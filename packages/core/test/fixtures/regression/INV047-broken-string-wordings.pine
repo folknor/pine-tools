@@ -1,0 +1,15 @@
+//@version=6
+// #47 / INV047 p10-p16: TV has two broken-string wordings. A broken
+// literal with ANY closing quote later in the source is CE10017 at the
+// broken line's column 1; with no later quote it is CE10004
+// "mismatched character" at the broken line's EOL. Pre-v6 sources
+// always get the mismatched wording (not exercised here - the corpus
+// baseline covers the v4/v5 fixtures).
+// @expects parse: fail
+// @expects error: line=10, message=/Missing enclosing character in the literal string/
+// @expects error: line=11, message=/mismatched character '\\n' expecting '"'/
+indicator("INV047b")
+x = "abc
+def" + "1"
+z = "tail
+plot(1)

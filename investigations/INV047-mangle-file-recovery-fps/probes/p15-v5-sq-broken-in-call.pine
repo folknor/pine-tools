@@ -1,0 +1,5 @@
+//@version=5
+indicator("p15")
+delayOffset = input.int(defval=0, title='Delay Open/Close MA (Forces Non-
+Repainting)', minval=0, step=1)
+plot(delayOffset)

@@ -1,0 +1,5 @@
+//@version=6
+indicator("p16")
+x = "abc
+plot(close)
+y = "hello"

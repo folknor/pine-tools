@@ -481,12 +481,30 @@ export class Lexer {
 					after !== "\n" &&
 					after !== "\r"
 				) {
-					this.lexerErrors.push({
-						line: startLine,
-						column: 1,
-						message:
-							"Missing enclosing character in the literal string. Enclose literal strings using a set of quotation marks (\") or apostrophes (') on the same code line.",
-					});
+					// TV has TWO broken-string wordings (probed 2026-06-07,
+					// INV047 p10-p16): the v6 compiler emits CE10017 anchored
+					// at the broken line's column 1 when a closing quote
+					// exists ANYWHERE later in the source, and CE10004
+					// `mismatched character '\n' expecting <quote>` anchored
+					// at the EOL when the broken string is the source's last
+					// quote. The pre-v6 compiler ALWAYS uses the mismatched
+					// wording at the EOL (p15 - same shape, later quote
+					// present, still mismatched). see TODO #47
+					const hasLaterQuote = this.source.indexOf(quote, this.pos) !== -1;
+					if (this.detectedVersion === "6" && hasLaterQuote) {
+						this.lexerErrors.push({
+							line: startLine,
+							column: 1,
+							message:
+								"Missing enclosing character in the literal string. Enclose literal strings using a set of quotation marks (\") or apostrophes (') on the same code line.",
+						});
+					} else {
+						this.lexerErrors.push({
+							line: this.line,
+							column: this.column,
+							message: `mismatched character '\\n' expecting '${quote}'`,
+						});
+					}
 					const broken = this.source.substring(start, this.pos);
 					this.addToken(TokenType.STRING, broken, broken.length, {
 						line: startLine,

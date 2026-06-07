@@ -296,15 +296,16 @@ IDs so the two stay in sync.
   errors from the leading-wrap joins (ternary `?`/`:`, the binary
   operator loops, and parseSameLineBinary's leading path) while still
   joining for recovery, mirroring INV042.
-- **#47 - TV's second broken-string wording.** TV emits
-  `mismatched character '\n' expecting '''` (or `'"'`) anchored at the
-  OPENING QUOTE for some broken string literals, where elsewhere it
-  emits CE10017 ("Missing enclosing character...") anchored at the
-  line's column 1 (INV025). Observed 2026-06-07 on `1dd5f97f…` (17:10),
-  `dfceb4d4…`/`e76b4f49…` (22:74) - we emit CE10017 at line:1 there, so
-  each counts as one tv-only FN + an anchor mismatch. Needs a probe
-  round to learn which wording TV picks when (single- vs double-quote?
-  content shape?), then match it. See the third INV047 addendum.
+- ~~#47~~ **CLOSED 2026-06-07** - TV's second broken-string wording
+  decoded and matched (fourth INV047 addendum, probes p10-p16). Quote
+  type is irrelevant; the rule is: v6 emits CE10017 at brokenLine:1
+  when ANY closing quote exists later in the source, and CE10004
+  `mismatched character '\n' expecting <quote>` at the broken line's
+  EOL when the source holds no later quote; the pre-v6 compiler ALWAYS
+  uses the mismatched wording at the EOL (the three carrier files were
+  simply `//@version=5` - and the "opening quote" anchor guess was
+  wrong, 17:10/22:74 are EOL columns). Implemented in scanString;
+  corpus was a clean 1187<->1187 wording swap, v6 inventory untouched.
 - **Minor data residue (record-only, low value):** `ta.vwap.anchor`'s default
   and the "X by default" phrasing are deliberately unparsed (see
   `parse-default.ts`). Skip unless a consumer needs them. (`since`/`deprecated`,

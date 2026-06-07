@@ -1,0 +1,5 @@
+//@version=6
+indicator("p10")
+x = "abc
+def" + ""
+plot(1, title=x)
