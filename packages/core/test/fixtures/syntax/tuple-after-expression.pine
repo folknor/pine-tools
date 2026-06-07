@@ -2,6 +2,7 @@
 // @expects parse: success
 
 // Test that [ at start of new line after expression is treated as tuple, not subscript
+// Inits are calls - a bare tuple literal init is invalid Pine (INV049)
 
 // After switch expression
 x = switch y
@@ -11,13 +12,13 @@ x = switch y
 // After for loop
 for i = 0 to 10
     x = i
-[f, g] = [1, 2]
+[f, g] = makeTuple()
 
 // After if statement
 if condition
     result = 1
-[h, j] = [3, 4]
+[h, j] = makeTuple()
 
 // After variable declaration
 value = 42
-[m, n] = [value, value * 2]
+[m, n] = makeTuple2(value, value * 2)

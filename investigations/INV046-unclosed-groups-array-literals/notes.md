@@ -65,8 +65,14 @@ Fixtures:
 
 ## Residual
 
-- Tuple-destructure RHS literals (`[a, b] = [2, 3]`) are deliberately
+- ~~Tuple-destructure RHS literals (`[a, b] = [2, 3]`) are deliberately
   NOT flagged - unprobed, and `syntax/newline-continuation.pine` uses
-  the form as a parser-behavior case. Probe before deciding.
+  the form as a parser-behavior case. Probe before deciding.~~
+  **Resolved by INV049 (2026-06-07):** probed - TV rejects the form
+  with CE10156 at the RHS `[`; now flagged from the parser, and the
+  syntax fixtures that used it as shorthand were rewritten to call
+  inits. Note this narrows finding 2's "tuple-destructure RHS" valid
+  position: only CALL providers (request.security, UDFs) are valid
+  there, not literals.
 - Bare `[1, 2]` as an expression statement or operand is also
   unflagged (no inventory rows; rare).

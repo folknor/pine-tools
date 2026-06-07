@@ -77,29 +77,42 @@ IDs so the two stay in sync.
   body" and a sync that skips to the end of *that* context, not the
   next column-1. Bigger refactor; defer until someone has appetite
   for the stack-threading work.
-- **#21 - retire the remaining hardcoded function metadata in
-  `generate.ts`.** Still hand-coded because TV doesn't expose them cleanly:
-  `getFunctionFlags.topLevelOnly` (15 fns, "global scope only"), the
-  `polymorphic` category map (shrunk by INV032: math.round/floor/ceil were
-  wrongly listed - their 1-arg forms return int regardless of the argument;
-  the per-overload data already encodes this → see #17), and `isParameterOptional`
-  + `commonOptionalParams` - prose-matching heuristics for argument
-  optionality, the last cousin of the retired `inferVariableType` /
-  `inferConstantType` guessers. (The `variadic` map stays: its `minArgs`
-  values are authoritative where the scrape over/under-counts - 
-  `array.from`/`str.format` valid with 1 arg, `math.sum` not variadic.)
-  Done means three things: (a) no guessing heuristics - any fact that can't
-  be derived from scraped data must be probe-verified with `pine-lint --tv`
-  (dated); (b) retained facts live as an explicit override *data file*
-  under `pine-data/` (fact + probe + date), which `generate.ts` merely
-  applies - not as TypeScript literals only readable in our pipeline
-  source; (c) the values keep flowing into `functions.json`
-  (`flags.*`, param `required`) as they already do, so the generated JSON
-  stays self-contained for external consumers, now with inspectable
-  provenance. The `variadic` exemption keeps its values but moves to the
-  same override file - as does INV048's `UNDOCUMENTED_VARIABLES`
-  (probe-backed variables the reference doesn't document; already
-  carries fact + probe + date inline).
+- **#21 - verify and shore up the generate-time fact layer in
+  `generate.ts`.** Not a refactor for its own sake: the hand-coded maps
+  all sit *upstream* of the generated JSON, so the "self-contained
+  `functions.json`" goal is already satisfied today. The item is about
+  two risks in the inputs. **No evidence anything is wrong right now** -
+  no corpus FP/FN traces to these maps - so this is insurance, not a
+  bug hunt. (1) *Unverified guessing:* `isParameterOptional` +
+  `commonOptionalParams` derive param `required` by prose-matching
+  ("default value is", "if omitted") plus a ~40-name "usually optional"
+  list - the last cousin of the retired `inferVariableType` /
+  `inferConstantType` guessers, and never probe-checked against TV.
+  (2) *Silent drift:* facts stored as bare TS literals carry no
+  re-verification recipe, which is exactly how G002's bad widenings
+  survived - whether TV changes or our own measurement was wrong, a
+  stale fact has nothing attached to re-check it against. Current
+  inventory of hand-coded facts: `getFunctionFlags.topLevelOnly`
+  (14 fns), the `polymorphic` category map (shrunk by INV032:
+  math.round/floor/ceil were wrongly listed - their 1-arg forms return
+  int regardless of the argument; the per-overload data already encodes
+  this → see #17), `variadic`/`minArgs` (authoritative where the scrape
+  over/under-counts - `array.from`/`str.format` valid with 1 arg,
+  `math.sum` not variadic), `historyDependent` (ta.* + fixnan +
+  math.sum, probed 2026-06-04, INV018), `RETURN_TYPE_PARAM_OVERRIDES`
+  (`input` → `defval`, see #17), INV048's `UNDOCUMENTED_VARIABLES`
+  (already carries fact + probe + date inline - the model), and the
+  optionality heuristics above. Concrete first step for (1): an offline
+  script diffing `isParameterOptional`'s verdicts against scraped
+  evidence (`default` present, "optional" prose) - params the heuristic
+  calls optional with no supporting evidence are the suspicious set to
+  probe, likely far smaller than the full surface. Done means: every
+  retained fact is probe-verified with `pine-lint --tv` (dated) or
+  derived from scraped data, each carries its probe so it can be
+  re-checked when contradicted, and the values keep flowing into
+  `functions.json` (`flags.*`, param `required`) as they already do.
+  Whether the facts then live as a data file under `pine-data/` or stay
+  as annotated TS maps is taste, not the payload.
 - **#22 - `--only <names>` / `--only-overloaded` scrape flag.** The only
   remaining scrape-load reduction: a flag for a targeted re-scrape of just
   the named entries, instead of hand-deleting their `.cache/function-details/`
@@ -120,7 +133,11 @@ IDs so the two stay in sync.
 - **#41 - MemberExpression callee validation.** INV036's CE10271 covers
   Identifier callees only; undefined `lib.fn` / `ns.fn` / UDT-method
   calls still pass silently. Needs import-alias member data we don't
-  have, plus UDT method namespaces. (INV036 residual.)
+  have, plus UDT method namespaces. (INV036 residual.) Also blocks the
+  last bool-condition FP (`b369d637…` - tuple destructure from an
+  imported lib call gets `series<float>` elements; the interim option
+  of typing such elements `unknown` instead of guessing is noted in
+  INV049's residual).
 - **#45 - leading-operator wraps at multiple-of-4 indent (probed
   residual of INV042).** `float x = cond` / `    ? high` / `    : low`
   is TV's CE10013 `Mismatched input "?" expecting set "end of line
@@ -300,13 +317,15 @@ Per task #9 the root cause is more likely our type inference producing
 non-bool types where TV correctly produces bool. Much reduced this round:
 the `input`/`const` qualifier coercion and display-flag fixes cleared the
 `Type mismatch for parameter` category entirely (was 127) and most of the
-bool-operator and ternary FPs.
+bool-operator and ternary FPs. INV049 (2026-06-07) cleared the last
+unexplained record - tuple destructures with if/switch-expression inits
+defaulted every element to `series<float>`; element types now flow from
+the branch tails.
 
 | count | files | category |
 |---|---|---|
-| 3 | 2 | `Condition must be boolean, got *` |
 | 3 | 1 | `Ternary branches must have compatible types. Got '*' and '*'` (our own synthetic fixture's deliberate true positives - TV flags them too, at the argument position; see INV026) |
-| 1 | 1 | `Ternary condition must be bool, got *` |
+| 1 | 1 | `The condition of the "if" statement must evaluate to a "bool" value.` (`b369d637…` - destructure from an imported library call; blocked on #41's member data, see INV049 residual) |
 
 **Right approach**: pick a specific FP, trace through `inferExpressionType`
 in `checker.ts` to see why we produce e.g. `series<float>` for what

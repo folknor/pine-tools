@@ -1,0 +1,7 @@
+//@version=6
+indicator("t")
+[a, b] = switch
+    timeframe.isintraday => [close, true]
+    => [na, false]
+x = b ? color.teal : color.red
+plot(close, color = x)

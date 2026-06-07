@@ -284,3 +284,10 @@ contradiction means re-measure, not "the earlier author was wrong."
   accepted - 13 probes) and one data-gap FP (`syminfo.cftc_code` is
   linter-accepted but reference-undocumented; baked in via the new
   UNDOCUMENTED_VARIABLES pipeline override, probe + date recorded).
+- [INV049](INV049-tuple-destructure-init-types/notes.md) - tuple
+  destructure inits: if/switch EXPRESSION inits now type their elements
+  by descending branch tails (was: every element defaulted to
+  series<float>, drawing bool-condition FPs - the inventory's last
+  unexplained type-checker records), and a BARE tuple literal init is
+  flagged with TV's CE10156 at the RHS `[` (probed; resolves INV046's
+  deferred residual - only call providers are valid there). 3 probes.

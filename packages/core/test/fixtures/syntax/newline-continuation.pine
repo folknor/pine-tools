@@ -3,45 +3,46 @@
 
 // Tests for newline continuation behavior
 // LBRACKET after newline should NOT be treated as array subscript
+// Inits are calls - a bare tuple literal init is invalid Pine (INV049)
 
 // Tuple after simple expression
 x = 1
-[a, b] = [2, 3]
+[a, b] = makeTuple()
 
 // Tuple after function call
 result = func()
-[c, d] = [4, 5]
+[c, d] = makeTuple()
 
 // Tuple after method call
 value = obj.method()
-[e, f] = [6, 7]
+[e, f] = makeTuple()
 
 // Tuple after switch (column 0)
 switch x
     1 => y
-[g, h] = [8, 9]
+[g, h] = makeTuple()
 
 // Tuple after for loop
 for i = 0 to 5
     z = i
-[j, k] = [10, 11]
+[j, k] = makeTuple()
 
 // Tuple after while loop
 while cond
     w = 1
-[m, n] = [12, 13]
+[m, n] = makeTuple()
 
 // Tuple after if statement
 if test
     q = 1
-[p, r] = [14, 15]
+[p, r] = makeTuple()
 
 // Deeply nested tuple after switch-for
 switch mode
     A =>
         for i = 0 to 3
             s = i
-        [t, u] = [16, 17]
+        [t, u] = makeTuple()
     B =>
         v = 0
 

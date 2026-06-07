@@ -1,0 +1,5 @@
+//@version=6
+indicator("t")
+[a, b] = [close, true]
+x = b ? color.teal : color.red
+plot(close, color = x)

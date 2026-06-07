@@ -66,7 +66,8 @@ if useSwitch
         B => [3, 4]
         => [5, 6]
 else
-    [s1, s2] = [0, 0]
+    // call init - a bare tuple literal init is invalid Pine (INV049)
+    [s1, s2] = makeTuple()
 
 // Chained switches with tuple intermediates
 [t1, t2] = switch first

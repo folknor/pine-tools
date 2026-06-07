@@ -2154,45 +2154,147 @@ export class UnifiedPineValidator {
 		tupleDecl: TupleDeclaration,
 		version: string = "6",
 	): PineType[] {
-		const elementTypes: PineType[] = [];
+		return this.tupleInitElementTypes(tupleDecl.init, version);
+	}
 
-		if (tupleDecl.init.type === "CallExpression") {
-			const call = tupleDecl.init as CallExpression;
-			let funcName = "";
-			if (call.callee.type === "Identifier") {
-				funcName = call.callee.name;
-			} else if (call.callee.type === "MemberExpression") {
-				const member = call.callee;
-				if (member.object.type === "Identifier") {
-					funcName = `${member.object.name}.${member.property.name}`;
-				}
+	// Per-element types for a tuple-producing init expression. Beyond the
+	// CallExpression shapes (request.security's tuple expression arg, UDF
+	// tuple returns - see INV010), the init can be an if/switch EXPRESSION
+	// whose branch tails are themselves tuple-producing; without descending
+	// into them every element defaulted to series<float> and a destructured
+	// bool drew "condition must be bool" FPs downstream. see INV049.
+	// (A BARE tuple literal init is itself invalid Pine - the parser emits
+	// TV's `Syntax error at input "["` - but we still type its elements
+	// for recovery.)
+	private tupleInitElementTypes(
+		expr: Expression,
+		version: string,
+	): PineType[] {
+		switch (expr.type) {
+			case "ArrayExpression": {
+				return (expr as ArrayExpression).elements.map((elem) =>
+					this.inferExpressionType(elem, version),
+				);
 			}
 
-			// For request.security, look for the expression/array argument
-			if (funcName === "request.security" && call.arguments.length >= 3) {
-				const exprArg = call.arguments[2].value;
-				if (exprArg.type === "ArrayExpression") {
-					// Extract types from array elements
-					for (const elem of (exprArg as ArrayExpression).elements) {
-						elementTypes.push(this.inferExpressionType(elem, version));
+			case "CallExpression": {
+				const elementTypes: PineType[] = [];
+				const call = expr as CallExpression;
+				let funcName = "";
+				if (call.callee.type === "Identifier") {
+					funcName = call.callee.name;
+				} else if (call.callee.type === "MemberExpression") {
+					const member = call.callee;
+					if (member.object.type === "Identifier") {
+						funcName = `${member.object.name}.${member.property.name}`;
 					}
 				}
+
+				// For request.security, look for the expression/array argument
+				if (funcName === "request.security" && call.arguments.length >= 3) {
+					const exprArg = call.arguments[2].value;
+					if (exprArg.type === "ArrayExpression") {
+						// Extract types from array elements
+						for (const elem of (exprArg as ArrayExpression).elements) {
+							elementTypes.push(this.inferExpressionType(elem, version));
+						}
+					}
+				}
+
+				// User-defined function whose body's last expression is a
+				// tuple - recover the per-element types we captured when the
+				// function was validated. Without this every element defaults
+				// to `series<float>` and a destructured bool / int / color
+				// element gets wrongly typed downstream. see INV010.
+				if (elementTypes.length === 0 && funcName) {
+					const udfTuple = this.udfTupleReturnTypes.get(funcName);
+					if (udfTuple) {
+						for (const t of udfTuple) elementTypes.push(t);
+					}
+				}
+				return elementTypes;
 			}
 
-			// User-defined function whose body's last expression is a
-			// tuple - recover the per-element types we captured when the
-			// function was validated. Without this every element defaults
-			// to `series<float>` and a destructured bool / int / color
-			// element gets wrongly typed downstream. see INV010.
-			if (elementTypes.length === 0 && funcName) {
-				const udfTuple = this.udfTupleReturnTypes.get(funcName);
-				if (udfTuple) {
-					for (const t of udfTuple) elementTypes.push(t);
-				}
+			case "IfExpression": {
+				const ifExpr = expr as IfExpression;
+				return this.mergeTupleBranchTypes([
+					this.branchTailTupleTypes(ifExpr.consequent, version),
+					this.branchTailTupleTypes(ifExpr.alternate, version),
+				]);
+			}
+
+			case "SwitchExpression": {
+				const switchExpr = expr as SwitchExpression;
+				return this.mergeTupleBranchTypes(
+					switchExpr.cases.map((c) =>
+						// When `statements` is present, `result` is the last
+						// statement's expression - visit statements INSTEAD of
+						// result (see SwitchCase in ast.ts / TODO #33).
+						c.statements
+							? this.branchTailTupleTypes(c.statements, version)
+							: this.tupleInitElementTypes(c.result, version),
+					),
+				);
 			}
 		}
 
-		return elementTypes;
+		return [];
+	}
+
+	// Tuple element types a statement block evaluates to: the tail
+	// statement's value expression, descending nested if tails (the same
+	// descent tailTupleExpr does for UDF bodies, but yielding types so
+	// branches can merge).
+	private branchTailTupleTypes(
+		stmts: Statement[] | undefined,
+		version: string,
+	): PineType[] {
+		if (!stmts || stmts.length === 0) return [];
+		const last = stmts[stmts.length - 1];
+		if (last.type === "ExpressionStatement") {
+			return this.tupleInitElementTypes(
+				(last as ExpressionStatement).expression,
+				version,
+			);
+		}
+		if (last.type === "ReturnStatement") {
+			const value = (last as ReturnStatement).value;
+			return value ? this.tupleInitElementTypes(value, version) : [];
+		}
+		if (last.type === "IfStatement") {
+			const ifStmt = last as IfStatement;
+			return this.mergeTupleBranchTypes([
+				this.branchTailTupleTypes(ifStmt.consequent, version),
+				this.branchTailTupleTypes(ifStmt.alternate, version),
+			]);
+		}
+		return [];
+	}
+
+	// Merge per-branch tuple element types. For each element prefer the
+	// first branch with a real type: a default branch is typically
+	// `[na, na, false]`, so an `na` element defers to a sibling branch
+	// that knows better (the same reasoning behind tailTupleExpr's
+	// consequent preference - see INV030).
+	private mergeTupleBranchTypes(branches: PineType[][]): PineType[] {
+		const candidates = branches.filter((types) => types.length > 0);
+		if (candidates.length === 0) return [];
+		const length = Math.max(...candidates.map((types) => types.length));
+		const merged: PineType[] = [];
+		for (let i = 0; i < length; i++) {
+			let pick: PineType | undefined;
+			for (const types of candidates) {
+				const t = types[i];
+				if (!t) continue;
+				if (t !== "na") {
+					pick = t;
+					break;
+				}
+				if (!pick) pick = t;
+			}
+			merged.push(pick ?? "series<float>");
+		}
+		return merged;
 	}
 
 	/**

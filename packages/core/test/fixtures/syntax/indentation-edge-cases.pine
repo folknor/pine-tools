@@ -3,12 +3,13 @@
 
 // Edge cases for indentation handling with tuples and UDTs
 
-// Tuple at exactly column 0
+// Tuple at exactly column 0. Inits are CALLS - a bare tuple literal
+// init is invalid Pine (TV: Syntax error at input "[", see INV049)
 x = 1
-[a, b] = [2, 3]
+[a, b] = makeTuple()
 
 // Tuple at column 1 (still should be tuple, not subscript)
- [c, d] = [4, 5]
+ [c, d] = makeTuple()
 
 // UDT followed immediately by tuple on next line
 MyType obj = create()
@@ -18,7 +19,7 @@ MyType obj = create()
 for i = 0 to 5
     first = i
     second = i * 2
-    [g, h] = [first, second]
+    [g, h] = makeTuple2(first, second)
     third = g + h
 
 // Tuple after comment line
@@ -46,7 +47,7 @@ arr = [
     2,
     3
 ]
-[r, s] = [arr[0], arr[1]]
+[r, s] = makeTuple2(arr[0], arr[1])
 
 // UDT in various indentation contexts
 Config cfg = load()
@@ -80,7 +81,7 @@ if a
     if b
         if c
             if d
-                [deep1, deep2] = [1, 2]
+                [deep1, deep2] = makeTuple()
 
 // Deeply indented UDT
 if a

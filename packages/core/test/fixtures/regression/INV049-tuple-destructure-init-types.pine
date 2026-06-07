@@ -1,0 +1,23 @@
+// @test regression/INV049-tuple-destructure-init-types
+// @description Tuple destructure element types must flow from if/switch EXPRESSION inits by descending the branch tails (request.security tuple args, tuple literals), merging per element with non-na preference - previously every element defaulted to series<float> and a destructured bool drew "condition must be bool" FPs (TV is clean on both shapes, probes p01/p03). A BARE tuple literal init is itself invalid Pine - TV's CE10156 'Syntax error at input "["' at the RHS bracket (probe p02; resolves INV046's deferred residual). See INV049.
+// @expects parse: fail
+// @expects errors: 1
+// @expects error: line=15, column=12, message=/Syntax error at input .\[./
+
+//@version=6
+indicator("INV049 tuple destructure init types")
+// if-expression init: b1 must type series<bool> via the branch tails
+[o1, b1] = if timeframe.isintraday
+    request.security(syminfo.tickerid, timeframe.period, [close, close > close[1]])
+else
+    [na, false]
+c1 = b1 ? color.teal : color.red
+// switch-expression init: b2 must type series<bool> via the arm tails
+[o2, b2] = switch
+    timeframe.isintraday => [close, true]
+    => [na, false]
+c2 = b2 ? color.teal : color.red
+// bare tuple literal init: invalid Pine, CE10156 at the RHS bracket
+[x1, y1] = [close, true]
+plot(o1 + o2, color = c1)
+plot(x1 + (y1 ? 1 : 0), color = c2)

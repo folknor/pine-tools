@@ -6,7 +6,8 @@ switch x
     a =>
         for i = 0 to 10
             y = 1
-        [result1, result2] = [1, 2]
+        // call init - a bare tuple literal init is invalid Pine (INV049)
+        [result1, result2] = makeTuple()
     b =>
         z = 2
 

@@ -813,6 +813,22 @@ export class Parser {
 			});
 		}
 
+		// A BARE tuple literal as the init is invalid Pine - tuples are
+		// only produced by function calls and if/switch expression tails.
+		// TV: `Syntax error at input "["` anchored at the RHS opener
+		// (probed - see INV049 p02). Reported here, after the full parse,
+		// for the same backtracking-safety reason as the `:=` case above;
+		// the declaration is still returned so the checker can type the
+		// elements for recovery.
+		if (init.type === "ArrayExpression") {
+			const arr = init as AST.ArrayExpression;
+			this.parserErrors.push({
+				line: arr.startLine ?? arr.line,
+				column: arr.startColumn ?? arr.column,
+				message: 'Syntax error at input "["',
+			});
+		}
+
 		return {
 			type: "TupleDeclaration",
 			names,
