@@ -1620,8 +1620,10 @@ export class UnifiedPineValidator {
 			}
 
 			// Parameter not provided - skip for overloaded functions
-			// (alternative overloads may not require this parameter)
-			if (!param.optional && !functionHasOverloads) {
+			// (alternative overloads may not require this parameter) and for
+			// calls whose argument list was truncated by in-call error
+			// recovery (INV047 / #46(b) - the args are incomplete, not absent)
+			if (!param.optional && !functionHasOverloads && !call.recovered) {
 				this.addError(
 					call.line,
 					call.column,

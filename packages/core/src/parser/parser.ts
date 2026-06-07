@@ -56,7 +56,18 @@ export class Parser {
 	}
 
 	getParserErrors(): ParserError[] {
-		return this.parserErrors;
+		// Dedupe exact (line, column, message) repeats: speculative parse
+		// paths (assignment detection, function-def lookahead) backtrack and
+		// re-parse the same expression, and recovery paths that push errors
+		// directly (in-call recovery - INV047/#46(b)) record once per pass.
+		// An identical triplet carries no extra information.
+		const seen = new Set<string>();
+		return this.parserErrors.filter((e) => {
+			const key = `${e.line}:${e.column}:${e.message}`;
+			if (seen.has(key)) return false;
+			seen.add(key);
+			return true;
+		});
 	}
 
 	getDetectedVersion(): string | null {
@@ -2220,6 +2231,18 @@ export class Parser {
 
 			// Collect type keywords (qualifiers and base types)
 			const typeKeywords: string[] = [];
+			// `const` qualifier on a UDF param (`f(const int x)`) is valid
+			// Pine - TV lints it clean. `const` stays out of TYPE_KEYWORDS
+			// (a bare `const` is not a type name), so consume the qualifier
+			// here; the base type follows through the normal loop and the
+			// checker strips the prefix (invalidAnnotationBase).
+			if (
+				this.check([TokenType.KEYWORD, ["const"]]) &&
+				(this.peekNext()?.type === TokenType.KEYWORD ||
+					this.peekNext()?.type === TokenType.IDENTIFIER)
+			) {
+				typeKeywords.push(this.advance().value);
+			}
 			while (this.isTypeKeyword()) {
 				// Check what follows: if it's an identifier, < (generic), [ (array
 				// suffix), or any keyword, this is part of the type. If it's = / , /

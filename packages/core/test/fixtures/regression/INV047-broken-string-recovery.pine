@@ -3,15 +3,16 @@
 // poison the lexer's bracket depth (NEWLINE suppression for the rest of
 // the file) or the parser's parenDepth (synchronize resets it). The
 // declarations AFTER the broken statement must still parse and resolve -
-// no phantom "undefined variable" cascades. Only the four records on the
-// genuinely-broken opt-statement lines should appear; the absence of the
-// phantom cascades is locked by the corpus baseline (the carrier mangle
-// fixtures are snapshotted by snapshot-local-lint).
+// no phantom "undefined variable" cascades. Only the records on the
+// genuinely-broken opt-statement lines should appear - the in-call
+// recovery (#46(b)) consumes the `group="X")` tail as the call's own
+// torn continuation (its bracket balance goes negative), so it adds no
+// shrapnel. The absence of the phantom cascades is locked by the corpus
+// baseline (the carrier mangle fixtures are snapshotted).
 // @expects parse: fail
-// @expects error: line=11, message=/Missing enclosing character in the literal string/
-// @expects error: line=12, message=/Missing enclosing character in the literal string/
-// @expects error: line=12, message=/Expected "\]"/
-// @expects error: line=13, message=/Unexpected token: \)/
+// @expects error: line=13, message=/Missing enclosing character in the literal string/
+// @expects error: line=14, message=/Missing enclosing character in the literal string/
+// @expects error: line=14, message=/Expected "\]"/
 indicator("INV047")
 opt = input.string("A", "Location", ["Top right", "Top
 left", "Middle right"],

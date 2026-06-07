@@ -214,6 +214,10 @@ export interface CallExpression extends ASTNode {
 	callee: Expression;
 	arguments: CallArgument[];
 	typeArguments?: string[]; // Generic type arguments, e.g., array.new<float>() stores ["float"]
+	// True when in-call error recovery dropped/truncated arguments (INV047 /
+	// #46(b)). The argument list is incomplete, so arg-count checks (missing
+	// required parameter) must not run against it.
+	recovered?: boolean;
 }
 
 export interface CallArgument {

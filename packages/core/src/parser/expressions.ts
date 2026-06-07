@@ -546,17 +546,88 @@ export class ExpressionParser {
 		return expr;
 	}
 
+	// A NEWLINE token inside a call only exists when the lexer hit a
+	// broken string literal and reset its depth bookkeeping (INV047) -
+	// at bracket depth > 0 it suppresses them. Decide structurally
+	// whether the line after it is the call's own torn continuation or
+	// the next statement: a line whose bracket balance goes NEGATIVE
+	// closes a group it didn't open (e.g. `group="X")`), so it belongs
+	// to this call; a balanced line (`sensitivity = input.float(...)`) is
+	// a complete statement and must NOT be swallowed as arguments.
+	private nextLineClosesCall(): boolean {
+		let i = this.p.current;
+		while (this.p.tokens[i]?.type === TokenType.NEWLINE) i++;
+		let balance = 0;
+		while (i < this.p.tokens.length) {
+			const t = this.p.tokens[i].type;
+			if (t === TokenType.NEWLINE || t === TokenType.EOF) return false;
+			if (t === TokenType.LPAREN || t === TokenType.LBRACKET) {
+				balance++;
+			} else if (t === TokenType.RPAREN || t === TokenType.RBRACKET) {
+				balance--;
+				if (balance < 0) return true;
+			}
+			i++;
+		}
+		return false;
+	}
+
+	// In-call error recovery (see INV047 / TODO #46(b)): a malformed
+	// argument used to THROW out of the whole statement, so the parser
+	// bailed at the newline and re-parsed the call's continuation lines
+	// as comma declarations - "already defined" / stray-token shrapnel
+	// on every wrapped mangled call. TV instead anchors ONE error at the
+	// mangle and keeps parsing (probed: CE10156 at `index` for
+	// `label.new(bar index, ...` - INV047 p04). Skip to the next `,` or
+	// `)` at this call's depth so the argument loop can continue; stop at
+	// a NEWLINE (only present when the lexer already declared a statement
+	// boundary - broken-string recovery) and let the loop's boundary
+	// decision take over.
+	private skipToCallArgumentBoundary(): void {
+		let depth = 0;
+		while (!this.p.isAtEnd()) {
+			const t = this.p.peek().type;
+			if (t === TokenType.LPAREN || t === TokenType.LBRACKET) {
+				depth++;
+			} else if (t === TokenType.RPAREN || t === TokenType.RBRACKET) {
+				if (depth === 0 && t === TokenType.RPAREN) return;
+				if (depth > 0) depth--;
+			} else if (t === TokenType.COMMA && depth === 0) {
+				return;
+			} else if (t === TokenType.NEWLINE) {
+				return;
+			}
+			this.p.advance();
+		}
+	}
+
 	finishCall(
 		callee: AST.Expression,
 		typeArguments?: string[],
 	): AST.CallExpression {
 		const args: AST.CallArgument[] = [];
+		let recovered = false;
+		let tornAtBoundary = false;
 
 		if (!this.p.check(TokenType.RPAREN)) {
-			do {
-				// Skip newlines between arguments
+			argLoop: while (true) {
+				// NEWLINE here = broken-string lexer reset (see
+				// nextLineClosesCall). Consume it only when the following
+				// line structurally belongs to this call; otherwise the call
+				// is torn at a statement boundary - close it here so the next
+				// statement (often a declaration) is NOT swallowed as
+				// arguments. see INV047 / TODO #46(b)
 				while (this.p.check(TokenType.NEWLINE)) {
-					this.p.advance();
+					if (!this.nextLineClosesCall()) {
+						tornAtBoundary = true;
+						break argLoop;
+					}
+					while (this.p.check(TokenType.NEWLINE)) {
+						this.p.advance();
+					}
+				}
+				if (this.p.check(TokenType.RPAREN) || this.p.isAtEnd()) {
+					break;
 				}
 
 				// Check for named argument: name = value
@@ -570,66 +641,117 @@ export class ExpressionParser {
 						nextTok = afterNewline;
 					}
 				}
+				// Snapshot the depth counters: an argument parse that throws
+				// mid-group (e.g. inside an `[...]` options array torn open by
+				// a broken string) leaves them where the throw happened, and
+				// the in-call recovery below swallows the throw - so the
+				// statement-level synchronize() reset never runs. A stuck
+				// depth silently disables every depth-gated rule for the rest
+				// of the file (the INV042 wrap check, NBSP handling). see
+				// INV047 / #46(b)
+				const savedParenDepth = this.p.parenDepth;
+				const savedBracketDepth = this.p.bracketDepth;
+				try {
+					if (
+						(this.p.check(TokenType.IDENTIFIER) ||
+							this.p.check(TokenType.KEYWORD)) &&
+						nextTok?.type === TokenType.ASSIGN
+					) {
+						const name = this.p.advance().value;
+						// Skip newlines before = (allows: arg\n= value)
+						while (this.p.check(TokenType.NEWLINE)) {
+							this.p.advance();
+						}
+						this.p.advance(); // consume =
+						// Skip newlines after = (allows: arg =\n value)
+						while (this.p.check(TokenType.NEWLINE)) {
+							this.p.advance();
+						}
+						const value = this.expression();
+						args.push({ name, value });
+					} else {
+						// Positional argument
+						const value = this.expression();
+						args.push({ value });
+					}
+				} catch (e) {
+					// An argument whose parse throws (e.g. a stray token where
+					// a value should start) recovers in-call like the
+					// malformed-tail case below. see INV047 / TODO #46(b)
+					const at = this.p.peek();
+					this.p.parserErrors.push({
+						line: at.line,
+						column: at.column,
+						message: e instanceof Error ? e.message : String(e),
+					});
+					recovered = true;
+					this.p.parenDepth = savedParenDepth;
+					this.p.bracketDepth = savedBracketDepth;
+					this.skipToCallArgumentBoundary();
+				}
+
+				if (this.p.match(TokenType.COMMA)) {
+					continue;
+				}
+				if (this.p.check(TokenType.NEWLINE)) {
+					continue; // top of loop decides continuation vs boundary
+				}
+				if (this.p.check(TokenType.RPAREN) || this.p.isAtEnd()) {
+					break;
+				}
+
+				// A token that is neither `,` nor `)` here means the argument
+				// is malformed. Record ONE anchored error (with the helpful
+				// wording for the common mistakes) and recover INSIDE the
+				// call - skip to the next argument boundary and keep going -
+				// instead of throwing the whole statement away. see
+				// INV047 / TODO #46(b); TV anchors one CE10156 at the mangle.
+				const current = this.p.peek();
+				const next = this.p.peekNext();
+				const prev = this.p.previous();
+				let message: string;
 				if (
-					(this.p.check(TokenType.IDENTIFIER) ||
-						this.p.check(TokenType.KEYWORD)) &&
-					nextTok?.type === TokenType.ASSIGN
+					(current.type === TokenType.IDENTIFIER ||
+						current.type === TokenType.KEYWORD) &&
+					next?.type === TokenType.ASSIGN
 				) {
-					const name = this.p.advance().value;
-					// Skip newlines before = (allows: arg\n= value)
-					while (this.p.check(TokenType.NEWLINE)) {
-						this.p.advance();
-					}
-					this.p.advance(); // consume =
-					// Skip newlines after = (allows: arg =\n value)
-					while (this.p.check(TokenType.NEWLINE)) {
-						this.p.advance();
-					}
-					const value = this.expression();
-					args.push({ name, value });
+					// Looks like another argument (missing comma)
+					message = `Missing comma before '${current.value}' argument at line ${current.line}`;
+				} else if (
+					prev?.type === TokenType.IDENTIFIER &&
+					current.type === TokenType.IDENTIFIER
+				) {
+					// Two identifiers in a row (e.g. "bar index" for "bar_index")
+					message = `Unexpected identifier '${current.value}' - did you mean '${prev.value}_${current.value}'? At line ${current.line}`;
 				} else {
-					// Positional argument
-					const value = this.expression();
-					args.push({ value });
+					message = `Unexpected token: ${current.value}`;
 				}
-
-				// Skip newlines after argument
-				while (this.p.check(TokenType.NEWLINE)) {
-					this.p.advance();
-				}
-			} while (this.p.match(TokenType.COMMA));
-		}
-
-		// Provide helpful error message for common mistakes
-		if (!this.p.check(TokenType.RPAREN)) {
-			// Check if this looks like another argument (missing comma)
-			const current = this.p.peek();
-			const next = this.p.peekNext();
-			if (
-				(current?.type === TokenType.IDENTIFIER ||
-					current?.type === TokenType.KEYWORD) &&
-				next?.type === TokenType.ASSIGN
-			) {
-				throw new Error(
-					`Missing comma before '${current.value}' argument at line ${current.line}`,
-				);
-			}
-			// Check for two identifiers in a row (e.g., "bar index" instead of "bar_index")
-			// After parsing "bar" as expression, we're at "index" - check if previous was also identifier
-			const prev = this.p.previous();
-			if (
-				prev?.type === TokenType.IDENTIFIER &&
-				current?.type === TokenType.IDENTIFIER
-			) {
-				throw new Error(
-					`Unexpected identifier '${current.value}' - did you mean '${prev.value}_${current.value}'? At line ${current.line}`,
-				);
+				this.p.parserErrors.push({
+					line: current.line,
+					column: current.column,
+					message,
+				});
+				recovered = true;
+				this.skipToCallArgumentBoundary();
+				// Consume the boundary comma so the next iteration starts AT
+				// the next argument (re-entering on the comma would throw a
+				// second "Unexpected token: ," record).
+				this.p.match(TokenType.COMMA);
 			}
 		}
-		const rparen = this.p.consume(
-			TokenType.RPAREN,
-			'Expected ")" after arguments',
-		);
+		// A call torn open by mangled source (in-call recovery fired, or the
+		// lexer declared a statement boundary mid-call) closes HERE without
+		// a second "Expected )" record: the anchored in-call/lexer error
+		// already names the problem, and the partial CallExpression keeps
+		// the statement intact. see INV047 / #46(b)
+		let rparen: Token;
+		if (this.p.check(TokenType.RPAREN)) {
+			rparen = this.p.advance();
+		} else if (recovered || tornAtBoundary) {
+			rparen = this.p.previous();
+		} else {
+			rparen = this.p.consume(TokenType.RPAREN, 'Expected ")" after arguments');
+		}
 		this.p.parenDepth--; // Decrement depth when closing parenthesis
 
 		const callExpr: AST.CallExpression = {
@@ -641,6 +763,10 @@ export class ExpressionParser {
 			endLine: rparen.line,
 			endColumn: rparen.column,
 		};
+		if (recovered || tornAtBoundary) {
+			// Incomplete argument list - exempt from arg-count checks.
+			callExpr.recovered = true;
+		}
 
 		if (typeArguments && typeArguments.length > 0) {
 			callExpr.typeArguments = typeArguments;

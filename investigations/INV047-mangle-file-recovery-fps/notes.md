@@ -128,3 +128,58 @@ holds the carrier check.
 Still open (TODO #46): the in-call post-error shredding ("already
 defined" / stray-token shrapnel, ~30 records), the `box_type`/`src`
 param-scope spill, and the switch-arm `=>` cascade.
+
+## Addendum 2026-06-07 (later) - #46(b) in-call recovery implemented
+
+`finishCall` (expressions.ts) no longer throws the whole statement away
+on a malformed argument. The pieces:
+
+- **Record + skip to boundary.** Both a thrown argument parse and a
+  malformed tail (token that is neither `,` nor `)`) push ONE anchored
+  error - keeping the helpful missing-comma / `bar index` did-you-mean
+  wordings - then `skipToCallArgumentBoundary()` advances to the next
+  `,`/`)` at the call's own depth (consuming the boundary comma) and
+  the argument loop continues. TV's probed behavior (one CE10156 at
+  the mangle, parse continues - p04).
+- **Statement-boundary decision at NEWLINEs.** A NEWLINE inside a call
+  only exists after a broken-string lexer reset. `nextLineClosesCall()`
+  decides structurally: a following line whose bracket balance goes
+  NEGATIVE (`group="X")`) closes a group it didn't open, so it is the
+  call's own torn continuation - consume and keep parsing arguments; a
+  balanced line (`sensitivity = input.float(...)`) is the next
+  statement - close the call there. The first cut swallowed following
+  declarations greedily (the `30d716f2` v5 file lost `sensitivity`);
+  the balance rule fixed it.
+- **Partial close without a second error.** A call closed by recovery
+  or at a torn boundary does not also emit "Expected )" - the anchored
+  record (or the lexer's CE10017) already names the problem. The
+  CallExpression is marked `recovered: true` and the checker exempts
+  it from missing-required-parameter checks (an args list truncated by
+  recovery is incomplete, not absent - `barcolor(switch?...)` on a v2
+  file manufactured that FP).
+- **Depth snapshot/restore.** An argument parse that throws mid-group
+  left parser parenDepth/bracketDepth where the throw happened, and
+  since in-call recovery swallows the throw, the statement-level
+  synchronize() reset never ran - silently disabling every depth-gated
+  rule (the INV042 wrap check went quiet for the rest of `30d716f2`).
+  The catch restores the counters snapshotted before the argument.
+- **parserErrors dedupe.** Speculative statement paths (assignment
+  detection) backtrack and re-parse expressions, so direct
+  parserErrors.push sites record once per pass; getParserErrors() now
+  drops exact (line, column, message) repeats. Also retires the
+  INV042 same-position doubling wart.
+- **Drive-by: `const` UDF param qualifiers.** `add(const int x, ...)`
+  is valid Pine (TV lints the `3d985aaf` fixture clean);
+  parseFunctionParams consumes the qualifier (`const` stays out of
+  TYPE_KEYWORDS - bare `const` is not a type), so the def parses as a
+  FunctionDeclaration instead of shredding into a call. The fixture
+  now lints 0 errors, matching TV.
+
+Corpus effect: baseline 18292 -> 17325 (-958/+114 vs the morning
+post-depth-fix baseline, the appearances all honest records on mangle
+files now parsed deeper). Inventory: confirmable local-only 60 -> 44 -
+the "already defined" x15, stray `.` x6, stray `)`/`:=` records are
+gone; what remains of the in-call story is the TP pairs (`bar`
+undefined + `index` did-you-mean per mangled call, 8+8) and the
+probe-backed wrap records. tv-only unchanged at 6; all five TV-recheck
+carriers diff tv-only 0.

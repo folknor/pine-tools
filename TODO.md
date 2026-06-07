@@ -256,11 +256,21 @@ IDs so the two stay in sync.
   -3233/+1197 records, all triaged; the +1197 are honest INV042-shape
   wrap errors and noise on genuinely-broken lines the suppression
   used to hide.
-  (b) **in-call error recovery** (~30 records) - an error inside an
-  open-paren call (e.g. `bar index`) makes us bail at the newline and
-  re-parse continuation lines as comma declarations ("already
-  defined" / stray `.` `)` `:` shrapnel); TV joins the wrap and
-  anchors one error at `index` (INV047 p04).
+  (b) ~~in-call error recovery (~30 records)~~ **FIXED 2026-06-07**
+  (see the second INV047 addendum) - finishCall records ONE anchored
+  error per malformed argument and recovers to the next argument
+  boundary; NEWLINEs inside a call (only possible after a
+  broken-string lexer reset) split structurally - a following line
+  whose bracket balance goes negative is the call's torn continuation,
+  a balanced line is the next statement. Includes the depth
+  snapshot/restore in the recovery catch (a swallowed throw used to
+  leave parenDepth/bracketDepth stuck, silently disabling the INV042
+  wrap check downstream), a (line,column,message) dedupe in
+  getParserErrors, the `recovered` call flag exempting truncated arg
+  lists from missing-required-parameter checks, and `const` UDF param
+  qualifier support (TV-clean fixture `3d985aaf…` now lints 0).
+  Inventory 60 -> 44 confirmable local-only; baseline
+  18292 -> 17325.
   (c) **body-spill scope loss** (8+ records) - statements after an
   error inside a UDF body spill out of the param scope, so params
   (`box_type`, `box_array`, `src`) read as undefined while the
@@ -390,9 +400,22 @@ The reports live in `lint-reports/` which is **gitignored** - so this
 section records the latest measurement (the JSONs also embed
 `generatedAt` + `gitCommit` since #29):
 
-**Measured 2026-06-07 (PM), working tree on `5029839` + INV047 (broken-
-string depth poisoning: lexer bracketDepth reset + synchronize
-parenDepth reset)**: **60 local-only / 6 tv-only / 33
+**Measured 2026-06-07 (later PM), working tree on `dd2ac7d` + the
+#46(b) in-call recovery round (second INV047 addendum)**: **44
+local-only / 6 tv-only / 33 same-pos-different-message**, plus 800
+past TV's stop point (4 unparseable, transient). Local-only 60 -> 44:
+the in-call shrapnel ("already defined" x15, stray `.` x6, `)`/`:=`)
+is gone; the `bar index` mangle sites now read as TP pairs (`bar`
+undefined + `index` did-you-mean, 8+8 records in `13a745…`) next to
+the 14 probe-backed wrap records and the small known residue. The
+TV-clean `3d985aaf…` const-params fixture lints 0 (was 2 FPs).
+Corpus baseline 18292 -> 17325. tv-only unchanged (3 library-only
+constraints + `35a58bb9…`'s ternary trio); all five TV-recheck
+carriers diff tv-only 0.
+
+Previous measurement 2026-06-07 (PM), working tree on `5029839` +
+INV047 (broken-string depth poisoning: lexer bracketDepth reset +
+synchronize parenDepth reset): **60 local-only / 6 tv-only / 33
 same-pos-different-message**, plus 875 past TV's stop point (4
 unparseable, transient). Local-only 73 -> 60 and past-stop 981 -> 875
 despite the corpus baseline DROPPING 20328 -> 18292 (-3233 phantom
@@ -565,20 +588,19 @@ the previous counts lived. Confirmable counts:
 | count | files | category |
 |---|---|---|
 | 14 | 2 | `Syntax error at input "end of line without line continuation"` *(probe-backed TPs - INV042's wrap rule, surfaced pre-stop in the two mangle carriers)* |
-| 6 | 1 | `Unexpected identifier '*' - did you mean '*'?` *(TP - `bar index` mangle, probed INV047 p04)* |
-| 6 | 1 | `Unexpected token: .` *(#46(b) in-call shrapnel)* |
-| 5+5+5 | 1 | `"textcolor"/"style"/"size" is already defined` *(#46(b) in-call shrapnel, one file)* |
+| 8+8 | 1 | `bar` undefined + `index` did-you-mean *(TP pairs - `bar index` mangle sites, probed INV047 p04; TV anchors one CE10156 at `index`)* |
 | 3 | 3 | `Undefined variable '*'. Did you mean '*'?` |
 | 3 | 3 | `Undefined variable '*'` |
-| 2-1 | - | long tail: `:=` `)` `:` `==`, `Expected method name after 'method'` |
+| 2-1 | - | long tail: `:` `==`, `Expected method name after 'method'` |
 
 (2026-06-04 post-INV031: the undefined-variable categories fell
 27+15 -> 3+5; the giant clusters' history is in the Symbols section.
 2026-06-07 post-INV047: `Unexpected token: \n` cleared from the
 confirmable set, and the phantom undefined-variable cascades on the
 string-abort mangle files are gone - the broken-string depth poisoning
-is fixed; what remains in this table is the #46(b) shrapnel plus
-probe-backed TPs)
+is fixed. Post-#46(b) the same day: the in-call shrapnel ("already
+defined" x15, stray `.` x6, `)`/`:=`) is gone too - what remains is
+probe-backed TPs plus a tiny residue)
 
 ## Parser - syntax we silently accept (false negatives)
 
