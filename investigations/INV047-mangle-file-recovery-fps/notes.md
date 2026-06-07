@@ -183,3 +183,75 @@ gone; what remains of the in-call story is the TP pairs (`bar`
 undefined + `index` did-you-mean per mangled call, 8+8) and the
 probe-backed wrap records. tv-only unchanged at 6; all five TV-recheck
 carriers diff tv-only 0.
+
+## Addendum 2026-06-07 (evening) - #46(c)+(d): body scope, comma wraps, switch arms
+
+The third round chased the body-spill and switch-arm shapes; the chase
+kept surfacing VALID Pine our parser mishandled - five new probes
+(p05-p09, all `pine-lint --tv` 2026-06-07):
+
+| probe | shape | TV verdict |
+|---|---|---|
+| p05 | `x =` / `close` (column-1 RHS) | CE10156 at the EOL |
+| p06 | switch arm: trailing-`?` ternary, branches on next lines (indent %4 != 0) | CLEAN - SW typed const string |
+| p07 | switch arm: condition at EOL, `=>` LEADING the next line (indent %4 != 0) | parses (only an unrelated CE10123 on plot's title) |
+| p08 | `x =` / `    10 + 20` (indent-4 plain-expression RHS) | CE10156 at the EOL - only block forms (`if`/`switch`) are valid indented RHS |
+| p09 | `c = a and not` / `b` (trailing `not`, column-1 continuation) | CE10156 at the EOL |
+
+Parser fixes (each verified against its carrier, tests green):
+
+- **Body/block loops** (functionDeclaration, parseIndentedBlock,
+  switch case bodies, the switch arm loop): indent boundaries apply
+  only to LINE-START tokens - a mid-line leftover (no indent) read as
+  indent 0 via `indent || 0` and ENDED the body, spilling the param
+  scope (box_type/box_array/src). A throwing statement now records and
+  resumes at the next body line (with the synchronize-style depth
+  reset) instead of breaking/propagating.
+- **Unary wrap gates**: a trailing unary operator no longer joins a
+  continuation line that looks like a STATEMENT START (IDENT `=`/`:=`)
+  - the `-----` comment-tail chain consumed `src = close` whole - and
+  a multiple-of-4 continuation gets TV's CE10156 recorded while still
+  joining (p09; refusing outright evaporated the declaration and
+  turned every use into an undefined record - the longTp*Breakout
+  cluster).
+- **skipWrapContinuationNewline**: a multiple-of-4 RHS continuation
+  that does NOT start a block statement (`if`/`switch`/`for`/`while`
+  indented) is CE10156 recorded-and-joined (p05/p08); block RHS forms
+  stay untouched. Restores the a0c3871d… tuple names (16-name
+  destructures with wrapped RHS) with an honest record.
+- **Comma unit lists** (untyped/typed/var-led declaration sequences,
+  assignment sequences, expression sequences, inline switch arm
+  bodies): a trailing comma may WRAP the list onto following lines
+  (blank lines allowed, indent %4 != 0) - commaUnitsContinue() decides
+  continuation vs tolerated-trailing-comma. Units can also be
+  `var`/`varip`/`const`-led declarations, tuple destructures
+  (`ph_ = ta.pivothigh(...), [tH, ph] = request.security(...)`), or
+  plain expressions/assignments. All probed by TV-clean carriers
+  (b16b3948…, a6d1bf91…, fed84547…).
+- **Tuple destructure leading-`=` wrap**: `[m, m1, ...]` with `   =
+  request.security_lower_tf(...)` on the next line joins (f7bc17b0…
+  is TV-clean; the destructure previously never parsed and every use
+  read undefined).
+- **Switch arms**: leading-`=>` wraps join (p07); a failed arm records
+  one `Expected "=>" in switch case` and resumes at the next line
+  instead of abandoning the switch (every later arm's `=>` was an
+  orphan token); arm-internal ternaries wrap across lines (p06) via
+  parseSingleLineExpression re-anchoring.
+- **`switch`/`type` as legacy variable names**: assignment-shaped
+  `switch` (`switch = 0`, `switch := 1`, `switch[1]`) and
+  non-declaration `type` (`type == 'EMA' ? ...`) no longer enter the
+  switch/type-declaration machinery (pre-v6 scripts; the be2021f0…
+  noise and the 68 corpus-wide "Expected type name" records).
+
+Five TV-clean fixtures went to 0 errors (b16b3948… was 29 records,
+f7bc17b0… 72, 1f6fb53c… 11, 73b16637… 16, a6d1bf91… 8, fed84547… 2).
+Corpus baseline 17325 -> 17020; inventory confirmable local-only
+44 -> 49 (+6 probe-backed p09-shape CE10156 TPs in `13a745…`'s
+pre-TV-stop region, minus residue), tv-only steady at 6.
+
+**Lateral finding (open):** TV has a SECOND broken-string wording -
+`mismatched character '\n' expecting '''` (or `'"'`), anchored at the
+OPENING QUOTE rather than CE10017's line:1 - observed on `1dd5f97f…`
+17:10, `dfceb4d4…`/`e76b4f49…` 22:74. We emit CE10017 at line:1 there,
+so these count as one tv-only FN + anchor mismatch per file. Worth a
+probe round to learn which wording TV picks when. -> TODO #47.

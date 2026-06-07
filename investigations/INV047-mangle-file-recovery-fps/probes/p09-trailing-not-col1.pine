@@ -1,0 +1,7 @@
+//@version=6
+indicator("p09")
+a = input.bool(true)
+b = input.bool(false)
+c = a and not
+b
+plot(c ? 1 : 0)

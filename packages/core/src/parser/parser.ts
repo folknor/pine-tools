@@ -179,7 +179,17 @@ export class Parser {
 		// switch
 		//     condition => expr
 		//     => defaultExpr
-		if (this.match([TokenType.KEYWORD, ["switch"]])) {
+		// NOT when `switch` is assignment-shaped: pre-v6 scripts use it as a
+		// plain variable name (`switch = 0`, `switch := 1`, `switch[1]`), and
+		// entering the arm machinery there manufactured "Expected =>" noise
+		// over the following lines. see #46(d)
+		if (
+			this.check([TokenType.KEYWORD, ["switch"]]) &&
+			this.peekNext()?.type !== TokenType.ASSIGN &&
+			this.peekNext()?.type !== TokenType.COMPOUND_ASSIGN &&
+			this.peekNext()?.type !== TokenType.LBRACKET
+		) {
+			this.advance();
 			// Parse switch as an expression statement (it returns a value)
 			const switchExpr = this.switchExpression();
 			return {
@@ -190,8 +200,17 @@ export class Parser {
 			};
 		}
 
-		// Type or Enum declaration (Pine Script v6)
-		if (this.match([TokenType.KEYWORD, ["type", "enum"]])) {
+		// Type or Enum declaration (Pine Script v6). Only when an IDENTIFIER
+		// follows: `type` is also a common variable/param NAME, and a line
+		// like `type == 'EMA' ? v2 : ...` (a UDF's return ternary) is an
+		// expression statement, not a declaration - it threw "Expected type
+		// name" once per chained line on the TV-clean 1f6fb53c… fixture.
+		// see INV047 / #46(c)
+		if (
+			this.check([TokenType.KEYWORD, ["type", "enum"]]) &&
+			this.peekNext()?.type === TokenType.IDENTIFIER
+		) {
+			this.advance();
 			return this.typeOrEnumDeclaration(this.previous().value);
 		}
 
@@ -212,10 +231,10 @@ export class Parser {
 			if (this.check(TokenType.COMMA)) {
 				const statements: AST.Statement[] = [firstDecl];
 				while (this.match(TokenType.COMMA)) {
-					// Tolerate a trailing comma at end of line
-					// (`var a = line(na), var b = line(na),`) - real
-					// published scripts carry them.
-					if (this.check(TokenType.NEWLINE) || this.isAtEnd()) {
+					// Trailing comma: either tolerated end-of-list
+					// (`var a = line(na),`) or a wrap continuing the units on
+					// the next line - commaUnitsContinue decides. see #46(c)
+					if (!this.commaUnitsContinue()) {
 						break;
 					}
 					if (this.match([TokenType.KEYWORD, ["var", "varip", "const"]])) {
@@ -253,6 +272,17 @@ export class Parser {
 								this.variableDeclaration(null, userType, unitStartToken),
 							);
 							continue;
+						}
+					}
+					// A `[`-led unit is a tuple destructure - see the untyped
+					// comma loop / #46(c)
+					if (this.check(TokenType.LBRACKET)) {
+						const unitCheckpoint = this.current;
+						try {
+							statements.push(this.tupleDestructuring());
+							continue;
+						} catch (_e) {
+							this.current = unitCheckpoint;
 						}
 					}
 					const expr = this.expression();
@@ -341,6 +371,11 @@ export class Parser {
 					const statements: AST.Statement[] = [firstDecl];
 
 					while (this.match(TokenType.COMMA)) {
+						// Trailing comma may wrap the unit list onto the next
+						// line - see commaUnitsContinue / #46(c)
+						if (!this.commaUnitsContinue()) {
+							break;
+						}
 						// Each subsequent part can be:
 						// 1. type identifier = expression (own annotation)
 						// 2. identifier = expression (untyped)
@@ -563,9 +598,33 @@ export class Parser {
 				const statements: AST.Statement[] = [firstDecl];
 
 				while (this.match(TokenType.COMMA)) {
-					// Each subsequent part should be: identifier = expression
-					if (!this.check(TokenType.IDENTIFIER)) {
+					// Trailing comma may wrap the unit list onto the next
+					// line - see commaUnitsContinue / #46(c)
+					if (!this.commaUnitsContinue()) {
 						break;
+					}
+					// `var`/`varip`/`const`-led units are valid comma
+					// declarations too (`TFhrdata = rollingTF.new(), var
+					// volRolling = array.new<float>()` - the b16b3948…
+					// fixture is TV-clean). Breaking here left the unit as a
+					// mid-line leftover that ended the enclosing body and
+					// spilled its scope. see INV047 / #46(c)
+					if (this.match([TokenType.KEYWORD, ["var", "varip", "const"]])) {
+						statements.push(this.varDeclarationAfterKeyword());
+						continue;
+					}
+					// A `[`-led unit is a tuple destructure
+					// (`ph_ = ta.pivothigh(...), [tH, ph] = request.security(...)`
+					// - a6d1bf91… is TV-silent there); parsing it as an array
+					// expression left the tuple names undeclared. see #46(c)
+					if (this.check(TokenType.LBRACKET)) {
+						const unitCheckpoint = this.current;
+						try {
+							statements.push(this.tupleDestructuring());
+							continue;
+						} catch (_e) {
+							this.current = unitCheckpoint;
+						}
 					}
 					// `name := expr` / `name += expr` units are REASSIGNMENTS,
 					// not declarations - `u11 = 0.0, u11 := nz(u11[1])` is an
@@ -574,10 +633,24 @@ export class Parser {
 					// declares. see INV035
 					const unitOp = this.peekNext();
 					if (
-						(unitOp?.type === TokenType.ASSIGN && unitOp.value !== "=") ||
-						unitOp?.type === TokenType.COMPOUND_ASSIGN
+						this.check(TokenType.IDENTIFIER) &&
+						unitOp?.type === TokenType.ASSIGN &&
+						unitOp.value === "="
 					) {
-						const target = this.expression();
+						const nextDecl = this.variableDeclaration(null);
+						statements.push(nextDecl);
+						continue;
+					}
+					// Anything else is an expression or assignment unit
+					// (`x2 = id.get_x2(), id.set_xy2(x1, y1)`,
+					// `a = 1, b.c := 2` - the var-led sequence above already
+					// supported these; the b16b3948… fixture is TV-clean).
+					// see #46(c)
+					const target = this.expression();
+					if (
+						this.check(TokenType.ASSIGN) ||
+						this.check(TokenType.COMPOUND_ASSIGN)
+					) {
 						this.advance(); // the := / compound operator
 						const operator = this.previous().value;
 						this.skipWrapContinuationNewline();
@@ -590,10 +663,14 @@ export class Parser {
 							line: target.line,
 							column: target.column,
 						});
-						continue;
+					} else {
+						statements.push({
+							type: "ExpressionStatement",
+							expression: target,
+							line: target.line,
+							column: target.column,
+						});
 					}
-					const nextDecl = this.variableDeclaration(null);
-					statements.push(nextDecl);
 				}
 
 				return {
@@ -633,6 +710,11 @@ export class Parser {
 					const statements: AST.Statement[] = [firstAssignment];
 
 					while (this.match(TokenType.COMMA)) {
+						// Trailing comma may wrap the unit list onto the next
+						// line - see commaUnitsContinue / #46(c)
+						if (!this.commaUnitsContinue()) {
+							break;
+						}
 						const nextTarget = this.expression();
 						if (
 							!this.match(TokenType.ASSIGN) &&
@@ -691,6 +773,19 @@ export class Parser {
 		}
 
 		this.consume(TokenType.RBRACKET, 'Expected "]"');
+		// The `=` may LEAD the next line when its indent is a valid wrap
+		// continuation (not a multiple of 4 - INV017): `[m, m1, ...]` then
+		// `   = request.security_lower_tf(...)`. The f7bc17b0… fixture is
+		// TV-clean on this shape. see #46(c)
+		if (this.check(TokenType.NEWLINE)) {
+			const next = this.peekNext();
+			if (
+				next?.type === TokenType.ASSIGN &&
+				(next.indent ?? 0) % 4 !== 0
+			) {
+				this.advance();
+			}
+		}
 		const assignToken = this.consume(
 			TokenType.ASSIGN,
 			'Expected "=" after tuple',
@@ -862,8 +957,35 @@ export class Parser {
 	 * parse as one declaration. A multiple-of-4 next line is a block
 	 * statement and is left alone.
 	 */
+	// After a consumed comma in a comma-separated unit list (declarations,
+	// var sequences, assignments, inline arm bodies), decide whether the
+	// list CONTINUES on a following line: a trailing comma wraps the list
+	// when the next line's indent is a valid continuation (not a multiple
+	// of 4 - INV017; blank lines allowed). Consumes the newlines and
+	// returns true; returns false when the comma was merely trailing
+	// (`'25' => 1 ,`) and the list ends. TV accepts multi-line comma
+	// sequences (`y2 = id.get_y2(), y1 = id.get_y1(),` wrapping onto
+	// further units - the b16b3948… fixture lints 0 on TV). see #46(c)/(d)
+	private commaUnitsContinue(): boolean {
+		if (this.isAtEnd()) return false;
+		if (!this.check(TokenType.NEWLINE)) return true; // same line
+		let i = this.current;
+		while (this.tokens[i]?.type === TokenType.NEWLINE) i++;
+		const next = this.tokens[i];
+		if (
+			next &&
+			next.type !== TokenType.EOF &&
+			(next.indent ?? 0) % 4 !== 0
+		) {
+			this.current = i;
+			return true;
+		}
+		return false;
+	}
+
 	private skipWrapContinuationNewline(): void {
 		while (this.check(TokenType.NEWLINE)) {
+			const eol = this.peek();
 			const next = this.peekNext();
 			if (next?.type === TokenType.NEWLINE) {
 				// blank line inside the wrap - keep looking
@@ -872,6 +994,29 @@ export class Parser {
 			}
 			if (next && (next.indent ?? 0) % 4 !== 0) {
 				this.advance();
+			} else if (next && next.type !== TokenType.EOF) {
+				// A multiple-of-4 continuation is only valid as a
+				// block-statement RHS (`float step =` newline `    switch`,
+				// `x =` newline `    if cond` ...). Anything else - a plain
+				// expression at indent 4 or a column-1 line - is TV's CE10156
+				// at the EOL (probed `x =` / `close` p05 and `x =` /
+				// `    10 + 20` p08, both CE10156). Record the error but
+				// STILL JOIN, so the declaration's names exist and the rest
+				// of the file doesn't drown in phantom undefined-variable
+				// records (the a0c3871d… tuple destructures). see #46(c)
+				const isIndentedBlockRHS =
+					(next.indent ?? 0) > 0 &&
+					next.type === TokenType.KEYWORD &&
+					["if", "switch", "for", "while"].includes(next.value);
+				if (!isIndentedBlockRHS) {
+					this.parserErrors.push({
+						line: eol.line,
+						column: eol.column,
+						message:
+							'Syntax error at input "end of line without line continuation"',
+					});
+					this.advance();
+				}
 			}
 			break;
 		}
@@ -927,6 +1072,12 @@ export class Parser {
 			];
 
 			while (this.match(TokenType.COMMA)) {
+				// Trailing comma may wrap the unit list onto the next line
+				// (`array.set(indices, 0, i1),` per line - the fed84547…
+				// fixture is TV-silent there) - see commaUnitsContinue / #46(c)
+				if (!this.commaUnitsContinue()) {
+					break;
+				}
 				// Check if next part is an assignment (identifier followed by := or = or +=)
 				const nextExpr = this.expression();
 				if (
@@ -1008,31 +1159,55 @@ export class Parser {
 				break;
 			}
 
-			const currentIndent = currentToken.indent || 0;
+			// Indent boundaries apply only to LINE-START tokens; a mid-line
+			// leftover (no indent) stays in the block and parses as the next
+			// statement - `indent || 0` used to read it as indent 0 and end
+			// the block. see INV047 / TODO #46(c)
+			if (currentToken.indent !== undefined) {
+				const currentIndent = currentToken.indent;
 
-			// Set expected body indentation from first statement
-			if (bodyIndent === null && currentToken.line > startLine) {
-				if (currentIndent <= baseIndent) {
-					// No properly-indented body - the block is empty. see INV008.
+				// Set expected body indentation from first statement
+				if (bodyIndent === null && currentToken.line > startLine) {
+					if (currentIndent <= baseIndent) {
+						// No properly-indented body - the block is empty. see INV008.
+						break;
+					}
+					bodyIndent = currentIndent;
+				}
+
+				// Stop if we've returned to base indentation level or less
+				if (
+					bodyIndent !== null &&
+					currentToken.line > startLine &&
+					currentIndent < bodyIndent
+				) {
 					break;
 				}
-				bodyIndent = currentIndent;
 			}
 
-			// Stop if we've returned to base indentation level or less
-			if (
-				bodyIndent !== null &&
-				currentToken.line > startLine &&
-				currentIndent < bodyIndent
-			) {
-				break;
-			}
-
-			const stmt = this.statement();
-			if (stmt) {
-				body.push(stmt);
-			} else {
-				break;
+			try {
+				const stmt = this.statement();
+				if (stmt) {
+					body.push(stmt);
+				} else {
+					break;
+				}
+			} catch (e) {
+				// Record and resume at the next block line - propagating the
+				// throw killed every enclosing block and spilled the rest of
+				// the outer body. Depth counters reset like synchronize().
+				// see INV047 / TODO #46(c)
+				const at = this.peek();
+				this.parserErrors.push({
+					line: at.line,
+					column: at.column,
+					message: e instanceof Error ? e.message : String(e),
+				});
+				this.parenDepth = 0;
+				this.bracketDepth = 0;
+				while (!this.isAtEnd() && !this.check(TokenType.NEWLINE)) {
+					this.advance();
+				}
 			}
 		}
 
@@ -1314,7 +1489,6 @@ export class Parser {
 
 			while (!this.isAtEnd()) {
 				const currentToken = this.peek();
-				const currentIndent = currentToken.indent || 0;
 
 				// Skip NEWLINE tokens when determining function body boundaries
 				if (currentToken.type === TokenType.NEWLINE) {
@@ -1322,25 +1496,36 @@ export class Parser {
 					continue;
 				}
 
-				// Set expected body indentation from first statement. The body
-				// must be indented STRICTLY MORE than the declaration itself -
-				// otherwise a bodyless declaration swallows following
-				// same-column statements to end-of-file. see INV008 / plan/31.
-				if (functionBodyIndent === null && currentToken.line > line) {
-					if (currentIndent <= baseIndent) {
+				// The indent boundary checks apply only to LINE-START tokens
+				// (only those carry an indent). A MID-LINE leftover token -
+				// e.g. the `index` after `box_right = bar` parses on a mangled
+				// line - used to read as indent 0 via `indent || 0` and END
+				// the body, spilling every later body statement to top level
+				// where the params were unresolvable. It stays in the body and
+				// parses as the next statement. see INV047 / TODO #46(c)
+				if (currentToken.indent !== undefined) {
+					const currentIndent = currentToken.indent;
+
+					// Set expected body indentation from first statement. The body
+					// must be indented STRICTLY MORE than the declaration itself -
+					// otherwise a bodyless declaration swallows following
+					// same-column statements to end-of-file. see INV008 / plan/31.
+					if (functionBodyIndent === null && currentToken.line > line) {
+						if (currentIndent <= baseIndent) {
+							break;
+						}
+						functionBodyIndent = currentIndent;
+					}
+
+					// Stop if we've returned to base indentation level or less
+					// AND we're past the function declaration line
+					if (
+						currentToken.line > line &&
+						functionBodyIndent !== null &&
+						currentIndent < functionBodyIndent
+					) {
 						break;
 					}
-					functionBodyIndent = currentIndent;
-				}
-
-				// Stop if we've returned to base indentation level or less
-				// AND we're past the function declaration line
-				if (
-					currentToken.line > line &&
-					functionBodyIndent !== null &&
-					currentIndent < functionBodyIndent
-				) {
-					break;
 				}
 
 				// Parse statement at this indentation level
@@ -1351,9 +1536,23 @@ export class Parser {
 					} else {
 						break;
 					}
-				} catch (_e) {
-					// Error parsing statement - try to recover
-					break;
+				} catch (e) {
+					// Record the error and resume at the NEXT body line instead
+					// of ending the body - breaking here spilled the remaining
+					// body statements out of the param scope. The depth
+					// counters get the same reset as synchronize() (a throw
+					// mid-group leaves them stuck). see INV047 / TODO #46(c)
+					const at = this.peek();
+					this.parserErrors.push({
+						line: at.line,
+						column: at.column,
+						message: e instanceof Error ? e.message : String(e),
+					});
+					this.parenDepth = 0;
+					this.bracketDepth = 0;
+					while (!this.isAtEnd() && !this.check(TokenType.NEWLINE)) {
+						this.advance();
+					}
 				}
 			}
 		}
@@ -1714,20 +1913,25 @@ export class Parser {
 			if (this.isAtEnd()) break;
 
 			const currentToken = this.peek();
-			const currentIndent = currentToken.indent || 0;
 
-			// Set expected switch body indentation from first case
-			if (switchIndent === null && currentToken.line > startToken.line) {
-				switchIndent = currentIndent;
-			}
+			// Indent boundaries apply only to LINE-START tokens (mid-line
+			// leftovers carry no indent - see parseIndentedBlock / #46(c))
+			if (currentToken.indent !== undefined) {
+				const currentIndent = currentToken.indent;
 
-			// Stop if we've returned to base indentation level or less
-			if (
-				switchIndent !== null &&
-				currentToken.line > startToken.line &&
-				currentIndent < switchIndent
-			) {
-				break;
+				// Set expected switch body indentation from first case
+				if (switchIndent === null && currentToken.line > startToken.line) {
+					switchIndent = currentIndent;
+				}
+
+				// Stop if we've returned to base indentation level or less
+				if (
+					switchIndent !== null &&
+					currentToken.line > startToken.line &&
+					currentIndent < switchIndent
+				) {
+					break;
+				}
 			}
 
 			// Check for default case (just =>)
@@ -1737,15 +1941,55 @@ export class Parser {
 			}
 
 			// Parse condition => result
-			const condition = this.expression();
-			if (this.match(TokenType.ARROW)) {
-				cases.push({
-					condition,
-					...this.parseSwitchCaseBody(switchIndent || 0),
+			try {
+				const condition = this.expression();
+				// The => may LEAD the next line when its indent is a valid
+				// wrap continuation (not a multiple of 4) - TV accepts the
+				// condition-then-wrapped-arrow arm (probed INV047 p07, the
+				// switch typed simple string). see TODO #46(d)
+				if (this.check(TokenType.NEWLINE)) {
+					const next = this.peekNext();
+					if (
+						next?.type === TokenType.ARROW &&
+						(next.indent ?? 0) % 4 !== 0
+					) {
+						this.advance();
+					}
+				}
+				if (this.match(TokenType.ARROW)) {
+					cases.push({
+						condition,
+						...this.parseSwitchCaseBody(switchIndent || 0),
+					});
+				} else {
+					// Condition without a `=>` is not a valid arm. Record ONE
+					// error and resume at the next line - abandoning the
+					// whole switch made every later arm's `=>` an orphan
+					// "Unexpected token: =>". see TODO #46(d)
+					const at = this.peek();
+					this.parserErrors.push({
+						line: at.line,
+						column: at.column,
+						message: `Expected "=>" in switch case at line ${at.line}`,
+					});
+					while (!this.isAtEnd() && !this.check(TokenType.NEWLINE)) {
+						this.advance();
+					}
+				}
+			} catch (e) {
+				// A throwing arm recovers the same way - record, reset the
+				// depth counters (like synchronize), resume at the next line.
+				const at = this.peek();
+				this.parserErrors.push({
+					line: at.line,
+					column: at.column,
+					message: e instanceof Error ? e.message : String(e),
 				});
-			} else {
-				// Not a valid case, stop parsing
-				break;
+				this.parenDepth = 0;
+				this.bracketDepth = 0;
+				while (!this.isAtEnd() && !this.check(TokenType.NEWLINE)) {
+					this.advance();
+				}
 			}
 		}
 
@@ -1853,16 +2097,34 @@ export class Parser {
 		// First parse using the discriminant parser (which handles binary ops on same line)
 		let expr = this.parseSwitchDiscriminant(line);
 
-		// Also handle ternary operator on the same line
+		// Also handle ternary operator on the same line. The branches may
+		// wrap onto continuation lines when their indent satisfies Pine's
+		// wrap rule (not a multiple of 4 - INV017); TV accepts a trailing-`?`
+		// arm whose branches sit on the next lines (probed INV047 p06, SW
+		// typed const string). Each join re-anchors the restricted parser to
+		// the continuation line.
 		if (
 			!this.check(TokenType.NEWLINE) &&
 			!this.isAtEnd() &&
 			this.peek().line === line &&
 			this.match(TokenType.TERNARY)
 		) {
-			const consequent = this.parseSingleLineExpression(line);
+			const consequentLine = this.skipArmWrapNewline(line);
+			const consequent = this.parseSingleLineExpression(consequentLine);
+			// A leading `:` on a valid continuation line joins too
+			if (this.check(TokenType.NEWLINE)) {
+				const next = this.peekNext();
+				if (
+					next &&
+					next.type === TokenType.COLON &&
+					(next.indent ?? 0) % 4 !== 0
+				) {
+					this.advance();
+				}
+			}
 			this.consume(TokenType.COLON, 'Expected ":" in ternary expression');
-			const alternate = this.parseSingleLineExpression(line);
+			const alternateLine = this.skipArmWrapNewline(consequentLine);
+			const alternate = this.parseSingleLineExpression(alternateLine);
 			expr = {
 				type: "TernaryExpression",
 				condition: expr,
@@ -1874,6 +2136,26 @@ export class Parser {
 		}
 
 		return expr;
+	}
+
+	// Consume a newline after a trailing operator inside a switch-arm
+	// expression when the next line is a valid wrap continuation (indent
+	// not a multiple of 4 - INV017). Returns the line the expression
+	// continues on, so the restricted same-line parser re-anchors there.
+	// see INV047 p06 / TODO #46(c)
+	private skipArmWrapNewline(line: number): number {
+		if (this.check(TokenType.NEWLINE)) {
+			const next = this.peekNext();
+			if (
+				next &&
+				next.type !== TokenType.EOF &&
+				(next.indent ?? 0) % 4 !== 0
+			) {
+				this.advance();
+				return next.line;
+			}
+		}
+		return line;
 	}
 
 	/**
@@ -1945,20 +2227,39 @@ export class Parser {
 			if (this.isAtEnd()) break;
 
 			const currentToken = this.peek();
-			const currentIndent = currentToken.indent || 0;
 
-			// Stop if indentation has decreased to or below case level
-			// (back at case level means we're at the next case)
-			if (currentIndent <= caseIndent) {
-				break;
+			// Indent boundary applies only to LINE-START tokens (mid-line
+			// leftovers carry no indent - see parseIndentedBlock / #46(c))
+			if (currentToken.indent !== undefined) {
+				// Stop if indentation has decreased to or below case level
+				// (back at case level means we're at the next case)
+				if (currentToken.indent <= caseIndent) {
+					break;
+				}
 			}
 
 			// Parse the next statement
-			const stmt = this.statement();
-			if (stmt) {
-				bodyStatements.push(stmt);
-			} else {
-				break;
+			try {
+				const stmt = this.statement();
+				if (stmt) {
+					bodyStatements.push(stmt);
+				} else {
+					break;
+				}
+			} catch (e) {
+				// Record and resume at the next body line (see
+				// parseIndentedBlock / #46(c)-(d))
+				const at = this.peek();
+				this.parserErrors.push({
+					line: at.line,
+					column: at.column,
+					message: e instanceof Error ? e.message : String(e),
+				});
+				this.parenDepth = 0;
+				this.bracketDepth = 0;
+				while (!this.isAtEnd() && !this.check(TokenType.NEWLINE)) {
+					this.advance();
+				}
 			}
 		}
 
@@ -1991,20 +2292,39 @@ export class Parser {
 		statements?: AST.Statement[];
 	} {
 		const statements: AST.Statement[] = [];
+		let anchorLine = arrowToken.line;
 
 		for (;;) {
 			statements.push(
 				this.parseInlineStatementUnit(() =>
-					this.parseSingleLineExpression(arrowToken.line),
+					this.parseSingleLineExpression(anchorLine),
 				),
 			);
 			if (!this.match(TokenType.COMMA)) {
 				break;
 			}
-			// Tolerate a trailing comma at end of line (`'25' => 1 ,`) -
-			// real published scripts carry them.
 			if (this.check(TokenType.NEWLINE) || this.isAtEnd()) {
-				break;
+				// A trailing comma may CONTINUE the unit list on a following
+				// line (blank lines between allowed) when that line is a
+				// valid wrap continuation (indent not a multiple of 4 -
+				// INV017). TV accepts multi-line comma-separated arm bodies
+				// (`true => f(...),` / blank / `   g(...)` - the b16b3948…
+				// fixture lints 0 on TV). A multiple-of-4 line is the next
+				// arm / statement - the comma is just trailing
+				// (`'25' => 1 ,`), tolerate and stop. see TODO #46(d)
+				let i = this.current;
+				while (this.tokens[i]?.type === TokenType.NEWLINE) i++;
+				const next = this.tokens[i];
+				if (
+					next &&
+					next.type !== TokenType.EOF &&
+					(next.indent ?? 0) % 4 !== 0
+				) {
+					this.current = i;
+					anchorLine = next.line;
+				} else {
+					break;
+				}
 			}
 		}
 

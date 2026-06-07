@@ -1,0 +1,9 @@
+//@version=6
+indicator("p06")
+data = "Volume"
+SW = switch data
+    "Volume"     => "a"
+    "Vol. Delta" => math.sign(1) == 1                     ?
+               "+" + "x"   :
+                     "y"
+plot(1, title=SW)

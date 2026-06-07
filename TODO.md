@@ -271,13 +271,20 @@ IDs so the two stay in sync.
   qualifier support (TV-clean fixture `3d985aaf…` now lints 0).
   Inventory 60 -> 44 confirmable local-only; baseline
   18292 -> 17325.
-  (c) **body-spill scope loss** (8+ records) - statements after an
-  error inside a UDF body spill out of the param scope, so params
-  (`box_type`, `box_array`, `src`) read as undefined while the
-  spilled `var` declarations still resolve.
-  (d) **switch-arm resume** (7 records) - one broken arm cascades
-  "Unexpected token: =>" over every later arm; resume at the next
-  arm instead.
+  (c) ~~body-spill scope loss~~ **FIXED 2026-06-07** (third INV047
+  addendum, probes p05/p08/p09) - the spill had three legs: mid-line
+  leftover tokens read as indent 0 ended bodies (`indent || 0`),
+  thrown body statements broke/propagated instead of
+  record-and-resume, and several VALID wrap forms never parsed
+  (trailing-`=` and leading-`=` tuple RHS wraps, comma unit lists
+  wrapping across lines, `var`/tuple/expression comma units). Five
+  TV-clean fixtures went from 2-72 FPs to 0.
+  (d) ~~switch-arm resume~~ **FIXED 2026-06-07** (same addendum,
+  probes p06/p07) - leading-`=>` arm wraps and arm-internal ternary
+  wraps now join; a failed arm records one error and resumes at the
+  next line; assignment-shaped `switch` and non-declaration `type`
+  (pre-v6 variable names) no longer enter the switch/type-declaration
+  machinery.
 - **#45 - leading-operator wraps at multiple-of-4 indent (probed
   residual of INV042).** `float x = cond` / `    ? high` / `    : low`
   is TV's CE10013 `Mismatched input "?" expecting set "end of line
@@ -289,6 +296,15 @@ IDs so the two stay in sync.
   errors from the leading-wrap joins (ternary `?`/`:`, the binary
   operator loops, and parseSameLineBinary's leading path) while still
   joining for recovery, mirroring INV042.
+- **#47 - TV's second broken-string wording.** TV emits
+  `mismatched character '\n' expecting '''` (or `'"'`) anchored at the
+  OPENING QUOTE for some broken string literals, where elsewhere it
+  emits CE10017 ("Missing enclosing character...") anchored at the
+  line's column 1 (INV025). Observed 2026-06-07 on `1dd5f97f…` (17:10),
+  `dfceb4d4…`/`e76b4f49…` (22:74) - we emit CE10017 at line:1 there, so
+  each counts as one tv-only FN + an anchor mismatch. Needs a probe
+  round to learn which wording TV picks when (single- vs double-quote?
+  content shape?), then match it. See the third INV047 addendum.
 - **Minor data residue (record-only, low value):** `ta.vwap.anchor`'s default
   and the "X by default" phrasing are deliberately unparsed (see
   `parse-default.ts`). Skip unless a consumer needs them. (`since`/`deprecated`,
@@ -400,8 +416,22 @@ The reports live in `lint-reports/` which is **gitignored** - so this
 section records the latest measurement (the JSONs also embed
 `generatedAt` + `gitCommit` since #29):
 
-**Measured 2026-06-07 (later PM), working tree on `dd2ac7d` + the
-#46(b) in-call recovery round (second INV047 addendum)**: **44
+**Measured 2026-06-07 (evening), working tree on `55f0c4f` + the
+#46(c)/(d) round (third INV047 addendum)**: **49 local-only / 6
+tv-only / 33 same-pos-different-message**, plus 710 past TV's stop
+point (4 unparseable, transient). Corpus baseline 17325 -> 17020.
+Five TV-clean fixtures that carried 2-72 FPs each (b16b3948…,
+f7bc17b0…, 1f6fb53c…, 73b16637…, a6d1bf91…) now lint 0 - the round's
+chases kept surfacing VALID Pine wrap/comma/switch-arm forms we
+mishandled (probes p05-p09). The 44 -> 49 rise is +6 probe-backed
+CE10156 wrap TPs (p09's trailing-`not` shape) surfacing pre-stop in
+`13a745…` while its phantom undefineds died; the confirmable set is
+now 20 wrap TPs + the 8+8 `bar index` pairs + small known residue.
+tv-only unchanged. New follow-up: #47 (TV's second broken-string
+wording).
+
+Previous measurement 2026-06-07 (later PM), working tree on `dd2ac7d`
++ the #46(b) in-call recovery round (second INV047 addendum): **44
 local-only / 6 tv-only / 33 same-pos-different-message**, plus 800
 past TV's stop point (4 unparseable, transient). Local-only 60 -> 44:
 the in-call shrapnel ("already defined" x15, stray `.` x6, `)`/`:=`)

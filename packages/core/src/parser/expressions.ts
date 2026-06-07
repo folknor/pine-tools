@@ -313,8 +313,21 @@ export class ExpressionParser {
 
 	unary(): AST.Expression {
 		// Skip newlines that are clearly line continuations in expressions
-		// This handles cases where binary operators span multiple lines
+		// This handles cases where binary operators span multiple lines.
+		// Two gates (INV047 / #46(c)):
+		// - a continuation line that itself looks like a STATEMENT START
+		//   (IDENT followed by = / :=) is NOT an operand - refuse, so a
+		//   trailing unary `-` (a hard-wrapped comment tail of `-----`)
+		//   cannot consume the next statement's declaration whole
+		//   (`src = close` became part of the minus chain);
+		// - a multiple-of-4 indent violates Pine's wrap rule (INV017):
+		//   TV rejects `c = a and not` / `b` with CE10156 at the EOL
+		//   (probed INV047 p09) - record TV's error but STILL JOIN so the
+		//   declaration's name exists (the INV042 record-and-join pattern;
+		//   refusing outright turned every use into an undefined-variable
+		//   record).
 		if (this.p.check(TokenType.NEWLINE)) {
+			const eol = this.p.peek();
 			const nextToken = this.p.peekNext();
 			// If next token suggests continuation (identifier, number, paren, unary op), skip newline
 			if (
@@ -325,7 +338,26 @@ export class ExpressionParser {
 					nextToken.type === TokenType.MINUS ||
 					(nextToken.type === TokenType.KEYWORD && nextToken.value === "not"))
 			) {
-				this.p.advance(); // skip newline
+				const after = this.p.tokens[this.p.current + 2];
+				const looksLikeStatementStart =
+					nextToken.type === TokenType.IDENTIFIER &&
+					(after?.type === TokenType.ASSIGN ||
+						after?.type === TokenType.COMPOUND_ASSIGN);
+				if (!looksLikeStatementStart) {
+					if (
+						(nextToken.indent ?? 0) % 4 === 0 &&
+						this.p.parenDepth === 0 &&
+						this.p.bracketDepth === 0
+					) {
+						this.p.parserErrors.push({
+							line: eol.line,
+							column: eol.column,
+							message:
+								'Syntax error at input "end of line without line continuation"',
+						});
+					}
+					this.p.advance(); // skip newline
+				}
 			}
 		}
 
@@ -833,8 +865,21 @@ export class ExpressionParser {
 			};
 		}
 
-		// Switch expression (can appear as value in variable declaration)
-		if (this.p.match([TokenType.KEYWORD, ["switch"]])) {
+		// Switch expression (can appear as value in variable declaration).
+		// NOT when `switch` is used as a plain pre-v6 variable in expression
+		// position (`switch[1] == 0`, `switch == 1`) - those fall through to
+		// the keyword-as-Identifier branch below; entering the arm machinery
+		// manufactured "Expected =>" noise over the following lines. A real
+		// switch expression is followed by its discriminant or a newline,
+		// never by `[`, a comparison, or an arithmetic operator. see #46(d)
+		if (
+			this.p.check([TokenType.KEYWORD, ["switch"]]) &&
+			this.p.peekNext()?.type !== TokenType.LBRACKET &&
+			this.p.peekNext()?.type !== TokenType.COMPARE &&
+			this.p.peekNext()?.type !== TokenType.ASSIGN &&
+			this.p.peekNext()?.type !== TokenType.COMPOUND_ASSIGN
+		) {
+			this.p.advance();
 			return this.p.switchExpression();
 		}
 

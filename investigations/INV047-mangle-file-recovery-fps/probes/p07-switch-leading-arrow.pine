@@ -1,0 +1,8 @@
+//@version=6
+indicator("p07")
+s = switch
+    timeframe.isminutes and timeframe.multiplier % 60 != 0
+                         => "Min"
+    timeframe.isdaily    => "D"
+    => "X"
+plot(1, title=s)

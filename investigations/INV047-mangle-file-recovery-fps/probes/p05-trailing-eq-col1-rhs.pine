@@ -1,0 +1,5 @@
+//@version=6
+indicator("p05")
+x =
+close
+plot(x)
