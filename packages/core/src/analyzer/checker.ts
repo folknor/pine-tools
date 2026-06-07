@@ -77,6 +77,11 @@ export class UnifiedPineValidator {
 	// type annotation must name one of these (or a built-in type) - and
 	// use-before-declaration is the same CE10149 (probed). see INV033
 	private declaredTypeNames: Set<string> = new Set();
+	// Enum names specifically (subset of declaredTypeNames). A bare enum
+	// name in value position is TV's CE10074 ("Cannot use the "E" as a
+	// value...") while a bare UDT name is accepted - so the value-position
+	// check needs to tell the two apart. see INV048
+	private declaredEnumNames: Set<string> = new Set();
 	// UDF / method names declared so far, in source order. The CE10271
 	// undefined-callable check consults this instead of the symbol table
 	// because variables SHARE the symbol namespace and hide functions:
@@ -105,6 +110,7 @@ export class UnifiedPineValidator {
 		this.udfTupleReturnTypes.clear();
 		this.usedBuiltins.clear();
 		this.declaredTypeNames.clear();
+		this.declaredEnumNames.clear();
 		this.declaredFunctionNames.clear();
 		this.declScopes = [new Set()];
 
@@ -169,6 +175,9 @@ export class UnifiedPineValidator {
 			statement.type === "EnumDeclaration"
 		) {
 			this.declaredTypeNames.add(statement.name); // see INV033
+			if (statement.type === "EnumDeclaration") {
+				this.declaredEnumNames.add(statement.name); // see INV048
+			}
 			const symbol: SymbolInfo = {
 				name: statement.name,
 				type: "unknown",
@@ -857,7 +866,44 @@ export class UnifiedPineValidator {
 				break;
 
 			case "AssignmentStatement": {
-				this.validateExpression(statement.target, version);
+				// `matrix = 0.0` - a type-keyword/namespace name used as a user
+				// variable parses as AssignmentStatement (the declaration path
+				// rejects keyword names), so the name would otherwise keep
+				// resolving to the line-0 builtin and later reads would trip
+				// the CE10272 type-as-value check. TV accepts these names as
+				// variables (INV031) - register a user symbol. see INV048
+				if (
+					statement.operator === "=" &&
+					statement.target.type === "Identifier"
+				) {
+					const targetName = (statement.target as Identifier).name;
+					const existing = this.symbolTable.lookup(targetName);
+					if (existing && existing.line === 0) {
+						// Same na-initializer guard as collectDeclarations: a
+						// bare-na RHS gives the variable NO type. see INV032
+						const initType = this.inferExpressionType(
+							statement.value,
+							version,
+						);
+						this.symbolTable.define({
+							name: targetName,
+							type: TypeChecker.isNaType(initType) ? "unknown" : initType,
+							line: statement.line,
+							column: statement.column,
+							used: true, // parity: builtin-seeded names never warn unused
+							kind: "variable",
+							declaredWith: null,
+						});
+					}
+				}
+				// The target is a write position, not a value use - route an
+				// Identifier target straight to validateIdentifier (same shape
+				// as member objects). see INV048
+				if (statement.target.type === "Identifier") {
+					this.validateIdentifier(statement.target);
+				} else {
+					this.validateExpression(statement.target, version);
+				}
 				this.validateExpression(statement.value, version);
 
 				// Pine has no array literals: a `[...]` tuple expression is
@@ -1030,6 +1076,9 @@ export class UnifiedPineValidator {
 			case "TypeDeclaration": {
 				// Register enum/type as a symbol so it can be used as a namespace
 				this.declaredTypeNames.add(statement.name); // see INV033
+				if (statement.type === "EnumDeclaration") {
+					this.declaredEnumNames.add(statement.name); // see INV048
+				}
 				const symbol: SymbolInfo = {
 					name: statement.name,
 					type: "unknown", // User-defined type
@@ -1049,15 +1098,45 @@ export class UnifiedPineValidator {
 		switch (expr.type) {
 			case "Identifier":
 				this.validateIdentifier(expr);
+				this.checkNonValueReference(expr, version);
 				break;
 
 			case "CallExpression":
 				this.validateCallExpression(expr, version);
 				break;
 
-			case "MemberExpression":
-				this.validateExpression(expr.object, version);
+			case "MemberExpression": {
+				// The object is a namespace/receiver position, not a value use -
+				// route an Identifier object straight to validateIdentifier so
+				// checkNonValueReference doesn't fire on `chart.bg_color`,
+				// `ta.sma`, etc. see INV048
+				const memberObj = expr.object;
+				if (memberObj.type === "Identifier") {
+					this.validateIdentifier(memberObj);
+				} else {
+					this.validateExpression(memberObj, version);
+				}
+				// A built-in TYPE reached as a namespace member (`chart.point`)
+				// used in value position is TV's CE10272 - probed 2026-06-07,
+				// `x = chart.point` errors at the member span. see INV048
+				if (
+					version === "6" &&
+					memberObj.type === "Identifier" &&
+					expr.property?.type === "Identifier"
+				) {
+					const fullName = `${memberObj.name}.${expr.property.name}`;
+					if (TYPE_NAMES.has(fullName)) {
+						this.addError(
+							expr.line || 0,
+							expr.column || 0,
+							fullName.length,
+							`Undeclared identifier "${fullName}"`,
+							DiagnosticSeverity.Error,
+						);
+					}
+				}
 				break;
+			}
 
 			case "BinaryExpression":
 				this.validateExpression(expr.left, version);
@@ -1180,6 +1259,54 @@ export class UnifiedPineValidator {
 		// so post-shadow references don't count). see INV023 / TODO #40.
 		if (symbol.line === 0 && getBuiltinVarInfo(identifier.name)) {
 			this.usedBuiltins.add(identifier.name);
+		}
+	}
+
+	// TV's CE10272 / CE10074: a name that only exists as a built-in TYPE or
+	// NAMESPACE referenced bare in value position is an undeclared identifier
+	// (`x = line`, `x = ta`, `x = int`, `x = strategy`, `x = series` - all
+	// probed CE10272 2026-06-07), and a bare user ENUM name is CE10074
+	// ("Cannot use ... as a value", zero-width anchor) while a bare user
+	// TYPE (UDT) name is accepted (probed clean). Only the bare-Identifier
+	// dispatch in validateExpression routes here - member objects and
+	// callees don't, so `ta.sma(...)` / `chart.bg_color` stay silent.
+	// see INV048
+	private checkNonValueReference(identifier: Identifier, version: string): void {
+		if (version !== "6") return;
+		const name = identifier.name;
+		const symbol = this.symbolTable.lookup(name);
+		// Unresolved names already got "Undefined variable" in
+		// validateIdentifier; don't stack a second error.
+		if (!symbol) return;
+		if (symbol.line !== 0) {
+			// User-declared symbol (or UDT/enum/import alias).
+			if (this.declaredEnumNames.has(name)) {
+				this.addError(
+					identifier.line,
+					identifier.column,
+					0,
+					`Cannot use the "${name}" as a value. Use one of the enum's fields instead.`,
+					DiagnosticSeverity.Error,
+				);
+			}
+			return;
+		}
+		// A name that is ALSO a bare built-in variable is a real value -
+		// `dayofweek` is both a series int variable and the constants
+		// namespace (dayofweek.monday). The only such collision in v6.
+		if (getBuiltinVarInfo(name)) return;
+		if (
+			TYPE_KEYWORDS.has(name) ||
+			TYPE_NAMES.has(name) ||
+			KNOWN_NAMESPACES.includes(name)
+		) {
+			this.addError(
+				identifier.line,
+				identifier.column,
+				name.length,
+				`Undeclared identifier "${name}"`,
+				DiagnosticSeverity.Error,
+			);
 		}
 	}
 
@@ -2530,6 +2657,15 @@ export class UnifiedPineValidator {
 						type = funcSig.returns
 							? mapReturnTypeToPineType(funcSig.returns)
 							: "unknown";
+						break;
+					}
+
+					// A built-in TYPE reached as a member (`chart.point`) is a
+					// real property of the namespace - just not a value. The
+					// value-position CE10272 is emitted by validateExpression;
+					// don't stack the misleading unknown-property wording on
+					// top. see INV048
+					if (TYPE_NAMES.has(propertyName)) {
 						break;
 					}
 

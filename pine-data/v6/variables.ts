@@ -1,8 +1,8 @@
 /**
  * Pine Script V6 Built-in Variables
  * Auto-generated from TradingView documentation
- * Generated: 2026-06-05T05:40:05.975Z
- * Total: 161 variables
+ * Generated: 2026-06-07T09:57:31.520Z
+ * Total: 162 variables
  */
 
 import type { PineVariable } from "../schema/types";
@@ -1226,6 +1226,13 @@ export const VARIABLES: PineVariable[] = [
       "syminfo.currency",
       "syminfo.ticker"
     ]
+  },
+  {
+    "name": "syminfo.cftc_code",
+    "namespace": "syminfo",
+    "type": "simple<string>",
+    "qualifier": "simple",
+    "description": "The CFTC code of the symbol's underlying futures market, as a string. Undocumented in the v6 reference; accepted and typed by TV's linter (pine-lint --tv probe, 2026-06-07)."
   },
   {
     "name": "syminfo.country",

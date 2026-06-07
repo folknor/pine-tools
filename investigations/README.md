@@ -277,3 +277,10 @@ contradiction means re-measure, not "the earlier author was wrong."
   cascade) - queued as TODO #46. Bonus fact (4 probes): continuation
   inside an open call paren is INDENT-FREE in TV; the wrap-indent rule
   is depth-0 only.
+- [INV048](INV048-type-namespace-as-value/notes.md) - TODO #3 inverted:
+  the `chart.point` FP was already gone; the real gaps were FNs (bare
+  built-in type/namespace names in value position are TV's CE10272
+  `Undeclared identifier`, bare enum names CE10074, bare UDT names
+  accepted - 13 probes) and one data-gap FP (`syminfo.cftc_code` is
+  linter-accepted but reference-undocumented; baked in via the new
+  UNDOCUMENTED_VARIABLES pipeline override, probe + date recorded).

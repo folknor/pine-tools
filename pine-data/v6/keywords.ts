@@ -1,7 +1,7 @@
 /**
  * Pine Script V6 Keywords
  * Auto-generated from TradingView documentation
- * Generated: 2026-06-05T05:40:05.983Z
+ * Generated: 2026-06-07T09:57:31.522Z
  * Total: 28 keywords
  */
 

@@ -249,6 +249,26 @@ const VARIABLE_TYPE_OVERRIDES: Record<
 	{ type: string; qualifier: string }
 > = {};
 
+// Variables TV's LINTER accepts that the REFERENCE does not document at all
+// (absent from the crawl TOC, so neither crawl nor scrape can ever capture
+// them). This is the shape G002 warned about, so every entry MUST carry a
+// dated, re-runnable isolated `pine-lint --tv` probe - no entry on memory or
+// corpus evidence alone. see INV048
+const UNDOCUMENTED_VARIABLES: Record<
+	string,
+	{ type: string; qualifier: string; description: string }
+> = {
+	// Probe (2026-06-07): //@version=6 / indicator("t") /
+	// x = syminfo.cftc_code / plot(close) -> TV accepts and types x
+	// "simple string". Reference TOC re-crawled the same day: absent.
+	"syminfo.cftc_code": {
+		type: "simple<string>",
+		qualifier: "simple",
+		description:
+			"The CFTC code of the symbol's underlying futures market, as a string. Undocumented in the v6 reference; accepted and typed by TV's linter (pine-lint --tv probe, 2026-06-07).",
+	},
+};
+
 // Strip TV's leading qualifier ("const color" -> "color", "const
 // plot_simple_display" -> "plot_simple_display") to the bare base type used by
 // the constants table. Replaces the old inferConstantType namespace-guess.
@@ -717,10 +737,26 @@ function generateVariables(
 		}
 	}
 
+	// Linter-accepted variables the reference doesn't document (each
+	// probe-verified - see UNDOCUMENTED_VARIABLES). The crawl can never
+	// surface these, so they're appended to the name list here.
+	names.push(...Object.keys(UNDOCUMENTED_VARIABLES));
+
 	const scraped = details.variables || {};
 	const missingType: string[] = [];
 
 	for (const name of [...new Set(names)].sort()) {
+		const undocumented = UNDOCUMENTED_VARIABLES[name];
+		if (undocumented) {
+			variables.push({
+				name,
+				namespace: name.includes(".") ? name.split(".")[0] : undefined,
+				type: undocumented.type,
+				qualifier: undocumented.qualifier,
+				description: undocumented.description,
+			});
+			continue;
+		}
 		const sv = scraped[name];
 		let typeInfo: { type: string; qualifier: string };
 		if (sv?.type) {

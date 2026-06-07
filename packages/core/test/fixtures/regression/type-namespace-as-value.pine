@@ -1,0 +1,43 @@
+// @test regression/type-namespace-as-value
+// @description Built-in type/namespace names and enum names referenced bare in value position are TV's CE10272/CE10074; UDT names, builtin variables (dayofweek), keyword-named user variables, and all annotation/member/callee positions stay clean. Probed 2026-06-07, see INV048.
+// @expects parse: success
+// @expects error: line=4, message=/Undeclared identifier .chart\.point./
+// @expects error: line=5, message=/Undeclared identifier .line./
+// @expects error: line=6, message=/Undeclared identifier .ta./
+// @expects error: line=7, message=/Undeclared identifier .int./
+// @expects error: line=8, message=/Undeclared identifier .strategy./
+// @expects error: line=9, message=/Undeclared identifier .series./
+// @expects error: line=13, message=/Cannot use the .Direction. as a value/
+// @expects errors: 7
+
+//@version=6
+indicator("type-namespace-as-value")
+
+x1 = chart.point
+x2 = line
+x3 = ta
+x4 = int
+x5 = strategy
+x6 = series
+enum Direction
+    up = "Up"
+    down = "Down"
+x7 = Direction
+
+// All of the following are VALID and must stay clean:
+type Holder
+    chart.point corner
+x8 = Holder.new(chart.point.now())
+var chart.point p1 = na
+chart.point p2 = chart.point.from_index(bar_index, close)
+arr = array.new<chart.point>()
+m = map.new<int, chart.point>()
+f(chart.point pt) =>
+    pt.price
+y1 = chart.bg_color
+y2 = ta.sma(close, 10)
+y3 = dayofweek
+matrix = 0.0
+matrix += y3
+d = Direction.up
+plot(y2)
