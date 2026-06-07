@@ -81,34 +81,29 @@ IDs so the two stay in sync.
   `generate.ts`.** Not a refactor for its own sake: the hand-coded maps
   all sit *upstream* of the generated JSON, so the "self-contained
   `functions.json`" goal is already satisfied today. The item is about
-  two risks in the inputs. **No evidence anything is wrong right now** -
-  no corpus FP/FN traces to these maps - so this is insurance, not a
-  bug hunt. (1) *Unverified guessing:* `isParameterOptional` +
-  `commonOptionalParams` derive param `required` by prose-matching
-  ("default value is", "if omitted") plus a ~40-name "usually optional"
-  list - the last cousin of the retired `inferVariableType` /
-  `inferConstantType` guessers, and never probe-checked against TV.
-  (2) *Silent drift:* facts stored as bare TS literals carry no
-  re-verification recipe, which is exactly how G002's bad widenings
-  survived - whether TV changes or our own measurement was wrong, a
-  stale fact has nothing attached to re-check it against. Current
-  inventory of hand-coded facts: `getFunctionFlags.topLevelOnly`
-  (14 fns), the `polymorphic` category map (shrunk by INV032:
-  math.round/floor/ceil were wrongly listed - their 1-arg forms return
-  int regardless of the argument; the per-overload data already encodes
-  this → see #17), `variadic`/`minArgs` (authoritative where the scrape
-  over/under-counts - `array.from`/`str.format` valid with 1 arg,
-  `math.sum` not variadic), `historyDependent` (ta.* + fixnan +
-  math.sum, probed 2026-06-04, INV018), `RETURN_TYPE_PARAM_OVERRIDES`
-  (`input` → `defval`, see #17), INV048's `UNDOCUMENTED_VARIABLES`
-  (already carries fact + probe + date inline - the model), and the
-  optionality heuristics above. Concrete first step for (1): an offline
-  script diffing `isParameterOptional`'s verdicts against scraped
-  evidence (`default` present, "optional" prose) - params the heuristic
-  calls optional with no supporting evidence are the suspicious set to
-  probe, likely far smaller than the full surface. Done means: every
-  retained fact is probe-verified with `pine-lint --tv` (dated) or
-  derived from scraped data, each carries its probe so it can be
+  two risks in the inputs: (1) *unverified guessing* and (2) *silent
+  drift* - facts stored as bare TS literals carry no re-verification
+  recipe, which is exactly how G002's bad widenings survived.
+  **2026-06-08: risk (1) was real and large.** The first-step audit
+  (`scripts/audit-param-optionality.mjs`) found the optionality
+  heuristics were near-dead code masking a scrape polarity bug - only
+  28/1292 params shipped required, disabling missing-arg detection
+  entirely. Fixed via INV050: a 475-function `--tv` probe sweep
+  (`scripts/probe-required-params.mjs` ->
+  `pine-data/raw/v6/required-params-probe.json`, fact + probe + date -
+  the override-data-file shape this entry asks for) is now the single
+  requiredness source; `commonOptionalParams` retired;
+  `isParameterOptional` reduced to an evidence-based fallback for
+  unprobed functions. **Remaining** for risk (2): move the other
+  hand-coded facts to the same probe-backed data-file shape -
+  `getFunctionFlags.topLevelOnly` (14 fns), the `polymorphic` category
+  map (shrunk by INV032 - see #17), `variadic`/`minArgs` (authoritative
+  where the scrape over/under-counts), `historyDependent` (probed
+  2026-06-04, INV018), `RETURN_TYPE_PARAM_OVERRIDES` (`input` →
+  `defval`, see #17), INV048's `UNDOCUMENTED_VARIABLES`, and INV050's
+  `HIDDEN_OVERLOADS` (ta.highest et al one-arg forms). Done means:
+  every retained fact is probe-verified with `pine-lint --tv` (dated)
+  or derived from scraped data, each carries its probe so it can be
   re-checked when contradicted, and the values keep flowing into
   `functions.json` (`flags.*`, param `required`) as they already do.
   Whether the facts then live as a data file under `pine-data/` or stay
@@ -138,6 +133,26 @@ IDs so the two stay in sync.
   imported lib call gets `series<float>` elements; the interim option
   of typing such elements `unknown` instead of guessing is noted in
   INV049's residual).
+- **#48 - mutation-testing pass (negative corpus).** INV050 exposed a
+  structural blind spot: every verification layer samples valid code.
+  The corpus is published working scripts, so a false-negative class
+  that only manifests on BROKEN code (missing required arg, dead
+  `required` flags) is invisible to `find-real-failures` no matter how
+  often it runs - the missing-arg check was silently disabled for the
+  project's whole life and nothing noticed. General principle: any
+  check whose precondition comes from generated data can be silently
+  disabled by a data bug, and the valid-code corpus will never tell
+  us. The fix is systematic mutation testing: take TV-clean fixtures,
+  apply mechanical breakages (drop an argument, typo a param name,
+  wrong-type a literal arg, delete a declaration, unbalance a
+  bracket), run both linters on each mutant, and flag every mutant TV
+  rejects that we accept. Needs TV budget (one `--tv` call per
+  mutant), so design the mutant set deliberately - a few mutation
+  operators over a small fixture sample per run, rotating, not a
+  combinatorial sweep. Also worth a one-shot "is every checker error
+  message reachable?" audit: grep the addError call sites and verify
+  each fires on at least one fixture/mutant (the INV050 check was
+  live-in-appearance, dead-in-practice).
 - **#45 - leading-operator wraps at multiple-of-4 indent (probed
   residual of INV042).** `float x = cond` / `    ? high` / `    : low`
   is TV's CE10013 `Mismatched input "?" expecting set "end of line

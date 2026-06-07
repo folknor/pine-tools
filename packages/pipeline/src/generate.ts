@@ -32,6 +32,10 @@ const OUTPUT_DIR = path.join(PROJECT_ROOT, `pine-data/${VERSION}`);
 // Input files
 const DETAILS_FILE = path.join(RAW_DIR, "complete-v6-details.json");
 const CONSTRUCTS_FILE = path.join(RAW_DIR, "v6-language-constructs.json");
+const REQUIRED_PARAMS_PROBE_FILE = path.join(
+	RAW_DIR,
+	"required-params-probe.json",
+);
 
 // =============================================================================
 // TYPE DEFINITIONS
@@ -406,10 +410,54 @@ function getFunctionFlags(name: string): Record<string, unknown> | undefined {
 // GENERATORS
 // =============================================================================
 
-function isParameterOptional(param: Parameter): boolean {
-	if (param.optional === true) return true;
+// TV-probed required params (INV050): a zero-arg call makes TV enumerate
+// every missing required param as CE10165, so the probe file holds the
+// ground-truth required set per function (regenerate with
+// scripts/probe-required-params.mjs - fact + probe + date, the TODO #21
+// shape). The reference prose under-documents optionality (plot.title et al
+// carry no marker) and the scrape's own optional/required flags were
+// polarity-broken (optional unless the prose literally says "required
+// argument" - 847/1292 params optional with no evidence, ta.sma's
+// source/length included), so the probe is the single source for builtin
+// param requiredness. `variadic` status entries are excluded - their arity
+// stays governed by the authoritative `variadic` minArgs map.
+const REQUIRED_PARAMS_PROBE: {
+	results: Record<
+		string,
+		{ status: string; required?: string[]; requiredAssumed?: string[] }
+	>;
+} = fs.existsSync(REQUIRED_PARAMS_PROBE_FILE)
+	? JSON.parse(fs.readFileSync(REQUIRED_PARAMS_PROBE_FILE, "utf-8"))
+	: { results: {} };
 
+function probedRequiredSet(fnName: string): Set<string> | undefined {
+	const r = REQUIRED_PARAMS_PROBE.results[fnName];
+	if (!r) return undefined;
+	if (r.status === "variadic") return undefined;
+	if (!["ok", "id-supplied"].includes(r.status)) return undefined;
+	return new Set([...(r.required ?? []), ...(r.requiredAssumed ?? [])]);
+}
+
+// Requiredness for one merged param: the probe verdict when the function was
+// probed; otherwise the evidence-based prose fallback below. see INV050
+function isParamRequired(fnName: string, param: Parameter): boolean {
+	const probed = probedRequiredSet(fnName);
+	if (probed) return probed.has(param.name);
+	return !isParameterOptional(param);
+}
+
+// Evidence-based FALLBACK for functions absent from the probe file (new
+// catalog entries between probe sweeps, and the variadic five): a param is
+// REQUIRED unless the reference positively documents otherwise. The scrape's
+// own optional/required flags are deliberately IGNORED - scrape.ts marks a
+// param optional whenever the prose does not literally say "required
+// argument" (default-optional), which tainted 2/3 of the catalog. The old
+// commonOptionalParams name-list heuristic is retired with it. see INV050
+function isParameterOptional(param: Parameter): boolean {
 	const desc = (param.description || "").toLowerCase();
+	if (desc.includes("required argument") || desc.includes("is required")) {
+		return false;
+	}
 	if (desc.includes("optional")) return true;
 	if (desc.includes("if not specified")) return true;
 	if (desc.includes("default value is")) return true;
@@ -418,65 +466,7 @@ function isParameterOptional(param: Parameter): boolean {
 	if (desc.includes("defaults to")) return true;
 	if (desc.includes("if omitted")) return true;
 	if (desc.includes("not required")) return true;
-
 	if (param.default !== undefined) return true;
-
-	const commonOptionalParams = [
-		"text",
-		"textcolor",
-		"color",
-		"bgcolor",
-		"bordercolor",
-		"offset",
-		"show_last",
-		"editable",
-		"display",
-		"format",
-		"precision",
-		"size",
-		"location",
-		"style",
-		"force_overlay",
-		"tooltip",
-		"inline",
-		"group",
-		"confirm",
-		"options",
-		"minval",
-		"maxval",
-		"step",
-		"xloc",
-		"yloc",
-		"overlay",
-		"format",
-		"scale",
-		"max_bars_back",
-		"max_lines_count",
-		"max_labels_count",
-		"max_boxes_count",
-		"max_polylines_count",
-		"timeframe",
-		"timeframe_gaps",
-		"explicit_plot_zorder",
-		"precision",
-		"shorttitle",
-		"trackprice",
-		"histbase",
-		"join",
-		"linewidth",
-		"linestyle",
-		"transp",
-		"show_last",
-	];
-	if (commonOptionalParams.includes(param.name)) {
-		if (desc.includes("required argument") || desc.includes("is required")) {
-			return false;
-		}
-		return true;
-	}
-
-	if (param.required === false) return true;
-
 	return false;
 }
 
@@ -510,10 +500,53 @@ function parseParamNamesFromSignature(sig: string): string[] {
 // description (recovering those from the DOM mirror is a follow-up; see TODO
 // #25). Per-overload types are kept RAW (no FUNCTION_PARAM_TYPE_OVERRIDES) so
 // each overload faithfully reflects what TV's reference documents for it.
+// Functions whose reference page documents ONE signature but whose Remarks
+// prose describes additional accepted arg forms ("One arg version: length is
+// the number of bars back. Algorithm uses high as a source series.") - the
+// scrape cannot capture those as overloads, so without this the missing-arg
+// check (INV050) flags the short forms. Synthesized into overloads[] from
+// the merged params so hasOverloadSignatures gates them out of enforcement
+// and consumers see the real forms. Probe (2026-06-08, INV050 p06):
+// plot(ta.highest(20)) / ta.lowest(20) / ta.highestbars(20) /
+// ta.lowestbars(20) all TV-clean while the catalog documents
+// (source, length); the remarks-pattern scan found exactly these four.
+// The #21 override-data-file refactor should absorb this map. see INV050
+const HIDDEN_OVERLOADS: Record<string, string[][]> = {
+	"ta.highest": [["length"], ["source", "length"]],
+	"ta.lowest": [["length"], ["source", "length"]],
+	"ta.highestbars": [["length"], ["source", "length"]],
+	"ta.lowestbars": [["length"], ["source", "length"]],
+};
+
 function buildOverloads(
 	detail: FunctionDetail,
+	fnName: string,
 ): GeneratedFunction["overloads"] {
 	const sigs = detail.overloads;
+	const hidden = HIDDEN_OVERLOADS[fnName];
+	if (hidden && (!sigs || sigs.length < 2)) {
+		const merged = new Map((detail.parameters || []).map((p) => [p.name, p]));
+		return hidden.map((names) => ({
+			parameters: names.map((n) => {
+				const m = merged.get(n);
+				const desc = m?.description || "";
+				const allowed = parseAllowedValues(desc);
+				const range = allowed ? undefined : parseNumericRange(desc);
+				return {
+					name: n,
+					type: m?.type ?? "unknown",
+					description: desc,
+					// Every param listed in a hidden form is required in it.
+					required: true,
+					default: parseDefault(desc),
+					allowedValues: allowed,
+					min: range?.min,
+					max: range?.max,
+				};
+			}),
+			returns: detail.returns,
+		}));
+	}
 	if (!sigs || sigs.length < 2) return undefined;
 
 	const merged = new Map((detail.parameters || []).map((p) => [p.name, p]));
@@ -540,7 +573,13 @@ function buildOverloads(
 					name,
 					type,
 					description: desc,
-					required: m ? !isParameterOptional(m) : true,
+					// NOTE: the INV050 probe enumerates TV's preferred overload
+					// only, so per-overload requiredness is approximate for the
+					// other forms - same convention as the merged view. The
+					// checker skips missing-arg enforcement on overloaded fns.
+					required: m
+						? isParamRequired(fnName, m)
+						: probedRequiredSet(fnName)?.has(name) ?? true,
 					default: parseDefault(desc),
 					allowedValues: allowed,
 					min: range?.min,
@@ -586,8 +625,8 @@ function generateFunctions(
 		// from the "..." overload so the checker doesn't cap their arity.
 		if (detail.variadic && !flags.variadic) {
 			flags.variadic = true;
-			const requiredCount = (detail.parameters || []).filter(
-				(p) => !isParameterOptional(p),
+			const requiredCount = (detail.parameters || []).filter((p) =>
+				isParamRequired(name, p),
 			).length;
 			flags.minArgs = Math.max(1, requiredCount);
 		}
@@ -623,7 +662,7 @@ function generateFunctions(
 					p.type ??
 					"unknown",
 				description,
-				required: !isParameterOptional(p),
+				required: isParamRequired(name, p),
 				// Parsed from the description prose (best-effort). see TODO #25
 				default: p.default ?? parseDefault(description),
 				allowedValues: allowed,
@@ -654,7 +693,7 @@ function generateFunctions(
 			parameters,
 			returns: detail.returns || "void",
 			flags: Object.keys(flags).length > 0 ? flags : undefined,
-			overloads: buildOverloads(detail),
+			overloads: buildOverloads(detail, name),
 			deprecated,
 			examples: detail.examples,
 			...pickProse(detail),

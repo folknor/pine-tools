@@ -296,6 +296,16 @@ export function hasOverloads(functionName: string): boolean {
 	return func.parameters.some((p) => p.type === "unknown");
 }
 
+// Whether the function ships per-overload signatures (the overloads[] field -
+// distinct from hasOverloads' unknown-typed-param heuristic). Used to gate
+// checks that are only sound against a single signature, e.g. missing-arg
+// enforcement: the INV050 probe enumerates TV's preferred overload only
+// (label.new -> point), and a call may satisfy a different overload (x/y).
+export function hasOverloadSignatures(functionName: string): boolean {
+	const func = FUNCTIONS_BY_NAME.get(functionName);
+	return (func?.overloads?.length ?? 0) > 1;
+}
+
 // Argument info for polymorphic return type inference
 export interface ArgumentInfo {
 	name?: string; // Named argument name (undefined for positional)

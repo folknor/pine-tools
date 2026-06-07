@@ -1,0 +1,17 @@
+// @test regression/INV050-required-params
+// @description Missing required builtin arguments are TV's CE10165, one error per missing param anchored at the callee ('No value assigned to the "source" parameter in ta.sma()'). Requiredness ships from the INV050 probe sweep (zero-arg call -> TV enumerates the missing set); the reference prose under-documents optionality so probe data is the only reliable source. Dual variable/function names still require their args when CALLED (ta.tr()), while the bare VARIABLE forms stay valid. ta.highest/ta.lowest one-arg forms are hidden overloads documented only in remarks prose (probe p06) - synthesized into overloads[] and exempt from enforcement. See INV050.
+// @expects parse: success
+// @expects errors: 3
+// @expects error: line=3, column=5, message=/No value assigned to the .source. parameter in ta\.sma/
+// @expects error: line=3, column=5, message=/No value assigned to the .length. parameter in ta\.sma/
+// @expects error: line=4, column=5, message=/No value assigned to the .handle_na. parameter in ta\.tr/
+
+//@version=6
+indicator("INV050 required params")
+x = ta.sma()
+y = ta.tr()
+// hidden one-arg overloads stay clean (INV050 p06)
+plot(ta.highest(20) + ta.lowest(20))
+// bare dual-name VARIABLE forms are not calls - no enforcement
+plot(ta.tr + hour)
+plot(x + y)

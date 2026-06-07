@@ -35,6 +35,7 @@ import {
 	getPolymorphicType,
 	hasReturnTypeParam,
 	hasOverloads,
+	hasOverloadSignatures,
 	isBuiltinConstant,
 	isTopLevelOnly,
 	isVariadicFunction,
@@ -1652,9 +1653,6 @@ export class UnifiedPineValidator {
 		}
 
 		// Check argument count
-		const _requiredCount = signature.parameters.filter(
-			(p) => !p.optional,
-		).length;
 		const totalCount = signature.parameters.length;
 
 		// Check if function is variadic
@@ -1746,16 +1744,31 @@ export class UnifiedPineValidator {
 				continue;
 			}
 
-			// Parameter not provided - skip for overloaded functions
-			// (alternative overloads may not require this parameter) and for
-			// calls whose argument list was truncated by in-call error
-			// recovery (INV047 / #46(b) - the args are incomplete, not absent)
-			if (!param.optional && !functionHasOverloads && !call.recovered) {
+			// Parameter not provided - TV's CE10165, one error per missing
+			// param, anchored at the callee (probed: ta.sma() enumerates both
+			// source and length; dual variable/function names like ta.tr()
+			// still require their args - the bare VARIABLE form is a separate
+			// symbol). Requiredness comes from the INV050 probe sweep: the
+			// reference prose under-documents optionality, so probe data is
+			// the only reliable source. Skipped for overloaded functions
+			// (both the unknown-typed-param heuristic and the overloads[]
+			// field - the probe covers TV's preferred overload only, and a
+			// call may satisfy another: label.new x/y vs point), for calls
+			// truncated by in-call error recovery (INV047 / #46(b) - the
+			// args are incomplete, not absent), and on non-v6 scripts (G004
+			// - pine-data ships v6 signatures only). see INV050
+			if (
+				!param.optional &&
+				checkArgTypes &&
+				!functionHasOverloads &&
+				!hasOverloadSignatures(functionName) &&
+				!call.recovered
+			) {
 				this.addError(
 					call.line,
 					call.column,
 					functionName.length,
-					`Missing required parameter '${param.name}' for function '${functionName}'`,
+					`No value assigned to the "${param.name}" parameter in ${functionName}()`,
 					DiagnosticSeverity.Error,
 				);
 			}

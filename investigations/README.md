@@ -291,3 +291,14 @@ contradiction means re-measure, not "the earlier author was wrong."
   unexplained type-checker records), and a BARE tuple literal init is
   flagged with TV's CE10156 at the RHS `[` (probed; resolves INV046's
   deferred residual - only call providers are valid there). 3 probes.
+- [INV050](INV050-param-optionality-polarity/notes.md) - param
+  optionality polarity: scrape.ts marked params optional unless the
+  prose said "required argument", so only 28/1292 builtin params
+  shipped required and missing-arg detection never fired (`ta.sma()`
+  passed). Fixed empirically: a zero-arg call makes TV enumerate every
+  required param as CE10165, so a 475-function probe sweep
+  (`scripts/probe-required-params.mjs` ->
+  `pine-data/raw/v6/required-params-probe.json`, 718 required params)
+  is now the single source; the checker emits TV's exact wording.
+  Hidden one-arg overloads (ta.highest et al, remarks-only) probed and
+  synthesized into overloads[]. 6 probes + sweep.

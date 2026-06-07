@@ -1,0 +1,6 @@
+//@version=6
+indicator("probe")
+plot(ta.highest(20))
+plot(ta.lowest(20))
+plot(ta.highestbars(20))
+plot(ta.lowestbars(20))
