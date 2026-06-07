@@ -227,21 +227,47 @@ IDs so the two stay in sync.
   arrow bodies turned out already-correct, probed clean); annotation
   nesting splits by outer collection - array CE10022 / matrix CE10023
   / map CE10025, inner base in the {inner} slot.
-- **#44 - the `13a745…` mangle file dominates local-only (~43
-  records).** Its TV stop is LATE, so wrap-shredded definitions and
-  arg-spill comma declarations count as confirmable local-only noise.
-  Either tolerate (it is ONE file), or teach the bucketing that a file
-  whose lexer hits wrap-mangle markers gets no-verdict treatment.
-  2026-06-07 evidence for the bucketing fix: its single TV error
-  (`Missing enclosing character in the literal string`, line 372) is a
-  LEXER-stage abort - TV's parse stage never ran, so "before TV's stop"
-  on this file means nothing. Same shape on `8439b236…` and the v5
-  monster `6080cf…`. A principled rule: when TV's verdict consists
-  solely of string-lexing errors, treat the whole file as no-verdict
-  (like INV029's NBSP refusals), not position-bucketed. That would
-  move all 12 of INV042's mangle-file wrap records (plus the
-  already-defined/Unexpected-token rows it carries) out of the
-  confirmable count.
+- ~~#44~~ **CLOSED 2026-06-07 - resolved AGAINST the bucketing
+  proposal.** Blanket no-verdict for string-lexer-abort files was a
+  cop-out: "TV didn't grade this homework" doesn't make the homework
+  ungradeable. Per-record triage of `13a745…` (158 records) and
+  `8439b236…` (170) instead - see
+  [INV047](investigations/INV047-mangle-file-recovery-fps/notes.md).
+  Outcome: the records split cleanly into (a) probe-backed TRUE
+  positives we keep counting (unterminated strings - TV confirms the
+  class at each file's first one; INV042 wraps; `bar index` mangles -
+  probed 2026-06-07, TV CE10156 at our exact anchor) and (b) four
+  reproducible parser-RECOVERY bugs that flag correct code - now #46.
+  Bonus probe-backed language fact: continuation inside an open call
+  paren is INDENT-FREE in TV (column-1 and indent-4 both accepted;
+  control probe proved TV parsed the join) - our silent in-paren join
+  is correct; only our post-error in-call recovery shreds.
+- **#46 - parser recovery quality on error-bearing files (INV047
+  residual).** The LSP case: after one real error, the user should
+  still get correct symbols for the rest of the file, not ~40 phantom
+  "undefined variable" diagnostics. Shapes from the INV047 triage:
+  (a) ~~declaration-swallow (~66 records)~~ **FIXED 2026-06-07** (see
+  the INV047 addendum) - NOT the suspected #20 sync over-skip but two
+  pieces of state poisoned by a broken string literal hundreds of
+  lines earlier: the lexer's bracketDepth (closers swallowed by
+  shifted string lexing → NEWLINE suppression for the rest of the
+  file) and the parser's parenDepth (never reset by synchronize →
+  later `name = expr` parsed as assignment-to-undeclared). Corpus
+  -3233/+1197 records, all triaged; the +1197 are honest INV042-shape
+  wrap errors and noise on genuinely-broken lines the suppression
+  used to hide.
+  (b) **in-call error recovery** (~30 records) - an error inside an
+  open-paren call (e.g. `bar index`) makes us bail at the newline and
+  re-parse continuation lines as comma declarations ("already
+  defined" / stray `.` `)` `:` shrapnel); TV joins the wrap and
+  anchors one error at `index` (INV047 p04).
+  (c) **body-spill scope loss** (8+ records) - statements after an
+  error inside a UDF body spill out of the param scope, so params
+  (`box_type`, `box_array`, `src`) read as undefined while the
+  spilled `var` declarations still resolve.
+  (d) **switch-arm resume** (7 records) - one broken arm cascades
+  "Unexpected token: =>" over every later arm; resume at the next
+  arm instead.
 - **#45 - leading-operator wraps at multiple-of-4 indent (probed
   residual of INV042).** `float x = cond` / `    ? high` / `    : low`
   is TV's CE10013 `Mismatched input "?" expecting set "end of line
@@ -298,6 +324,9 @@ count.
 | `scripts/categorize-failures.mjs` | Reads `real-failures.json`, normalizes error messages into templates (strips line numbers, variable names, etc.), groups every occurrence under one of 48 / 19 categories, writes `lint-reports/failures-by-category.json`. |
 | `scripts/snapshot-local-lint.mjs` | Runs `pine-lint` (local) on every fixture and writes `lint-reports/local-baseline.json` - sorted per-file error lists. The regression contract. Re-run after every intentional change. |
 | `scripts/regression-check.mjs` | Reruns local lint over the corpus and diffs against the baseline. **No network.** Annotates disappeared errors against `real-failures.json` to distinguish "fixed a known FP" from "stopped catching a real error". Exits non-zero on any new error appearance. |
+| `scripts/summarize-regression.mjs` | Groups `regression-report.json`'s appeared/disappeared records into message templates so a 1000-record diff reads as a dozen categories; `--files <substring>` lists per-file counts for matching categories. Run right after `regression-check.mjs`. |
+| `scripts/slice-lines.mjs` | Extracts 1-based line ranges (`"1-2,1041-1051"`) from a file into a new file - the bisection helper for narrowing parser-state repros out of large fixtures (see INV047). |
+| `scripts/check-changed-files-broken-string.mjs` | INV047 safety check: verifies every regression-changed fixture carries a broken-string record (i.e. is a file TV rejects at the lexer stage), flagging any possibly-TV-clean file whose behavior changed. |
 | `scripts/audit-fixtures.mjs` | Scans every `.pine` fixture under `packages/core/test/fixtures/` without running vitest. Flags fixtures with malformed `@expects` directives and fixtures whose only assertion is a total `errors: N` count (no per-error coverage), printing suggested `// @expects error: line=N, message="..."` directives ready to paste. Exits non-zero on malformed directives. Wrapper: `pnpm run audit:fixtures` (also rebuilds the compiled helpers it imports). |
 
 Repro for any fixture:
@@ -361,8 +390,24 @@ The reports live in `lint-reports/` which is **gitignored** - so this
 section records the latest measurement (the JSONs also embed
 `generatedAt` + `gitCommit` since #29):
 
-**Measured 2026-06-07, working tree on `2bb7466` + the parser-FN round
-(INV042-INV046)**: **73 local-only / 6 tv-only / 35
+**Measured 2026-06-07 (PM), working tree on `5029839` + INV047 (broken-
+string depth poisoning: lexer bracketDepth reset + synchronize
+parenDepth reset)**: **60 local-only / 6 tv-only / 33
+same-pos-different-message**, plus 875 past TV's stop point (4
+unparseable, transient). Local-only 73 -> 60 and past-stop 981 -> 875
+despite the corpus baseline DROPPING 20328 -> 18292 (-3233 phantom
+cascade records, +1197 honest surfaced records - see the INV047
+addendum): the declaration-evaporation FPs are gone, and the two
+missing-paren-vs-string samePos pairs became exact matches. What
+remains confirmable is INV047's triaged set: 14 probe-backed wrap TPs,
+the #46(b) in-call shrapnel (already-defined x15, stray-dot x6,
+bar-index x6 - all in `13a745…`'s pre-stop region), and the known
+small residue (3 synthetic ternary TPs, condition-bool, `at`/`https`
+mangled-URL tokens). tv-only unchanged: the 3 library-only constraint
+records and `35a58bb9…`'s ternary trio.
+
+Previous measurement 2026-06-07 (AM), working tree on `2bb7466` + the
+parser-FN round (INV042-INV046): **73 local-only / 6 tv-only / 35
 same-pos-different-message**, plus 981 past TV's stop point (4
 unparseable, transient). The tv-only side fell 13 -> 6 and now holds
 ONLY the 3 library-only constraint records (the standing policy
@@ -519,16 +564,21 @@ the previous counts lived. Confirmable counts:
 
 | count | files | category |
 |---|---|---|
-| 6 | 1 | `Unexpected identifier '*' - did you mean '*'?` |
-| 6 | 1 | `Unexpected token: .` |
-| 5 | 1 | `Unexpected token: \n` |
-| 5 | 3 | `Undefined variable '*'. Did you mean '*'?` *(lexical-abort files, see Symbols below)* |
-| 3 | 3 | `Unexpected token: :` |
+| 14 | 2 | `Syntax error at input "end of line without line continuation"` *(probe-backed TPs - INV042's wrap rule, surfaced pre-stop in the two mangle carriers)* |
+| 6 | 1 | `Unexpected identifier '*' - did you mean '*'?` *(TP - `bar index` mangle, probed INV047 p04)* |
+| 6 | 1 | `Unexpected token: .` *(#46(b) in-call shrapnel)* |
+| 5+5+5 | 1 | `"textcolor"/"style"/"size" is already defined` *(#46(b) in-call shrapnel, one file)* |
+| 3 | 3 | `Undefined variable '*'. Did you mean '*'?` |
 | 3 | 3 | `Undefined variable '*'` |
-| 2-1 | - | long tail: `:=` `)` `=>` `==`, `Expected method name after 'method'` |
+| 2-1 | - | long tail: `:=` `)` `:` `==`, `Expected method name after 'method'` |
 
 (2026-06-04 post-INV031: the undefined-variable categories fell
-27+15 -> 3+5; the giant clusters' history is in the Symbols section)
+27+15 -> 3+5; the giant clusters' history is in the Symbols section.
+2026-06-07 post-INV047: `Unexpected token: \n` cleared from the
+confirmable set, and the phantom undefined-variable cascades on the
+string-abort mangle files are gone - the broken-string depth poisoning
+is fixed; what remains in this table is the #46(b) shrapnel plus
+probe-backed TPs)
 
 ## Parser - syntax we silently accept (false negatives)
 
@@ -637,8 +687,13 @@ moved its cascade (and `8439b236…`'s `src` cluster) out of the signal.
 The last fixable stragglers (34 records in 3 TV-clean files) fell to
 INV031: tuple-destructure RHS on a blank-line wrap, type keywords as
 variable names (`var color color = na`), and if-EXPRESSIONS
-(`int m = if cond` ...). What remains (3 + 5 hits) sits in
-lexical-abort mangled files with no real TV verdict.
+(`int m = if cond` ...). The lexer-abort phantom clusters (filt/src/
+metric/lineTpSl - thousands of corpus records, 26+ confirmable) fell
+to INV047 (2026-06-07): a broken string literal poisoned the lexer's
+bracketDepth (NEWLINE suppression for the rest of the file) and the
+parser's parenDepth (synchronize never reset it) - declarations after
+the break were never parsed as declarations. What remains (3 + 3 hits)
+is residual noise on still-mangled lines.
 
 Per-file root causes are almost always one of:
 

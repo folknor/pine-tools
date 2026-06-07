@@ -2519,6 +2519,15 @@ export class Parser {
 	// `while`, `var`, `varip`, `const`) - kept for cases where the bad
 	// token *is* at column 1 and we want to resume immediately. see INV012.
 	private synchronize(): void {
+		// A statement that throws mid-group (e.g. a call argument list torn
+		// open by a broken string literal) leaves the depth counters where
+		// the throw happened. Sync lands at a top-level statement boundary,
+		// where depth is 0 by construction - leaving it positive disabled
+		// the between-statements NEWLINE skip for the REST of the file and
+		// quietly re-routed later `name = expr` declarations through the
+		// assignment path (undeclared-variable cascades). see INV047
+		this.parenDepth = 0;
+		this.bracketDepth = 0;
 		this.advance();
 
 		while (!this.isAtEnd()) {

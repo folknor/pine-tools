@@ -492,6 +492,18 @@ export class Lexer {
 						line: startLine,
 						column: startColumn,
 					});
+					// The statement holding the broken literal is unsalvageable,
+					// and the closers for any openers counted on it are usually
+					// swallowed by the shifted string lexing that follows (e.g.
+					// `"],` lexes as one STRING token). Leaving bracketDepth > 0
+					// here suppressed NEWLINE emission for the REST of the file,
+					// silently merging every later statement - declarations
+					// evaporated and hundreds of phantom "undefined variable"
+					// records followed. Treat the break as a hard statement
+					// boundary instead: reset the depth bookkeeping so the next
+					// line lexes fresh. see INV047
+					this.bracketDepth = 0;
+					this.openBrackets.length = 0;
 					return; // the line break is re-scanned as a normal NEWLINE
 				}
 				this.line++;

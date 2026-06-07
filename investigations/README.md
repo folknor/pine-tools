@@ -268,3 +268,12 @@ contradiction means re-measure, not "the earlier author was wrong."
   (no array literals in Pine; CE10156 at the `[`, declaration and `:=`
   both probed). Valid tuple positions (UDF tails, request.security
   args, destructures) stay clean.
+- [INV047](INV047-mangle-file-recovery-fps/notes.md) - per-record
+  triage of the string-lexer-abort mangle files (TODO #44, rejected the
+  blanket no-verdict bucketing): the 300+ local records split into
+  probe-backed TPs (strings, INV042 wraps, `bar index` - TV CE10156 at
+  our anchor) and four reproducible RECOVERY bugs flagging correct code
+  (declaration swallow, in-call shredding, body scope spill, switch-arm
+  cascade) - queued as TODO #46. Bonus fact (4 probes): continuation
+  inside an open call paren is INDENT-FREE in TV; the wrap-indent rule
+  is depth-0 only.

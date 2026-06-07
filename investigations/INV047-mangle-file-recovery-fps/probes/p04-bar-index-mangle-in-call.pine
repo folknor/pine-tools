@@ -1,0 +1,5 @@
+//@version=6
+indicator("p04")
+if close > open
+    label.new(bar index, high, text="x",
+textcolor=color.white, style=label.style_label_down, size=size.small)

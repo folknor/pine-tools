@@ -1,0 +1,25 @@
+//@version=6
+// INV047: a string literal broken at EOL inside an open call must not
+// poison the lexer's bracket depth (NEWLINE suppression for the rest of
+// the file) or the parser's parenDepth (synchronize resets it). The
+// declarations AFTER the broken statement must still parse and resolve -
+// no phantom "undefined variable" cascades. Only the four records on the
+// genuinely-broken opt-statement lines should appear; the absence of the
+// phantom cascades is locked by the corpus baseline (the carrier mangle
+// fixtures are snapshotted by snapshot-local-lint).
+// @expects parse: fail
+// @expects error: line=11, message=/Missing enclosing character in the literal string/
+// @expects error: line=12, message=/Missing enclosing character in the literal string/
+// @expects error: line=12, message=/Expected "\]"/
+// @expects error: line=13, message=/Unexpected token: \)/
+indicator("INV047")
+opt = input.string("A", "Location", ["Top right", "Top
+left", "Middle right"],
+group="X")
+f(x, r) =>
+    y = x + r
+    y
+filt = f(close, 2.0)
+upward = 0.0
+upward := filt > filt[1] ? nz(upward[1]) + 1 : 0.0
+plot(upward)
