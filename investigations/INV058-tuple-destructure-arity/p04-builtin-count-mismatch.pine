@@ -1,0 +1,4 @@
+//@version=6
+indicator("INV058 p04")
+[a, b] = ta.macd(close, 12, 26, 9)
+plot(a + b)

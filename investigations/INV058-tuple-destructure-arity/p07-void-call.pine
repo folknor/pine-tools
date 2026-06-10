@@ -1,0 +1,4 @@
+//@version=6
+indicator("INV058 p07")
+[a, b] = alert("x")
+plot(a + b)

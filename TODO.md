@@ -231,47 +231,19 @@ IDs so the two stay in sync.
   tuple destructure (`[a, b] = voidCall()`) - is reclassified to #51 below
   because it is not void-specific. See
   [INV055](investigations/INV055-void-assignment/notes.md).
-- **#51 - tuple destructure requires a tuple-returning RHS. BLOCKED on
-  reliable tuple-return modeling (attempted 2026-06-10, reverted).** TV has
-  two errors here: a SHAPE error (`[a, b] = close` / `= array.size(x)` /
-  `= voidCall()` -> "the right side must be a function call or structure
-  returning a tuple with the same number of elements") and a COUNT error
-  (`[a, b, c] = f()` on a 2-tuple -> "Syntax error: The quantities of tuple
-  elements ... right side has 2 but the left side has 3"). TV also emits an
-  internal `variableType.itemType is not a function` crash artifact alongside
-  the shape error (G001, do not replicate).
-
-  A first implementation (classify RHS arity: tuple-N / scalar-0 / unknown)
-  produced **51 false positives across 17 corpus files** - every one a valid
-  script TV accepts. The check can't ship until three upstream gaps are
-  fixed, each TV-confirmed clean 2026-06-10:
-  1. ~~**UDF tuple-return capture is incomplete.**~~ **FIXED 2026-06-10
-     ([INV057](investigations/INV057-udf-tuple-capture-shapes/notes.md)).**
-     The real gaps were a trailing switch-with-tuple-arms body (hslToRGB),
-     same-name overloads with different tuple arities colliding in the
-     name-keyed map (valueAtTime), and receiver method calls
-     (`data.valueAtTime(ts)`) missing the bare-name registration. Capture
-     now descends all tuple-producing tails, stores shapes per arity, and
-     the destructure site picks by LHS element count. Cleared 5 bool-type
-     FPs on 2 TV-clean fixtures.
-  2. ~~**`request.security` / `request.security_lower_tf` expression
-     passthrough.**~~ **FIXED 2026-06-10 (INV057 addendum).** The expression
-     arg (named or positional) now recurses through the same
-     tuple-shape inference as a destructure init, so tuple literals,
-     tuple-returning UDF/builtin calls, and if/switch expressions all pass
-     through; `_lower_tf` elements wrap as `array<base>`. Cleared 4
-     bool-operand FPs on 2 TV-clean fixtures.
-  3. ~~**Overloaded tuple builtins.**~~ **FIXED 2026-06-10 (INV057
-     addendum).** `builtinTupleReturns` parses bracketed `returns` from
-     every catalog overload (ta.vwap's tuple form is overload #1; the
-     merged `returns` is frozen to overload #0), and the destructure site
-     consumes it arity-matched.
-
-  All three blockers are now fixed - #51 itself (the SHAPE and COUNT
-  errors) is unblocked. The only FP-free slice WITHOUT the blockers was a
-  non-call scalar RHS (`[a,b] = close`), zero corpus occurrences; with the
-  blockers fixed, re-attempt the full check and re-validate against the 17
-  files that carried the original 51 FPs.
+- ~~#51~~ **CLOSED 2026-06-10
+  ([INV058](investigations/INV058-tuple-destructure-arity/notes.md)).**
+  TV's tuple-destructure SHAPE and COUNT errors are implemented, matching
+  all 10 probes (wording, count direction, statement-start anchor) with
+  ZERO corpus changes - where the pre-blocker draft FP'd 51 times across
+  17 files. Shipped the same day as its three blockers: INV057 (UDF
+  tuple-capture shapes: switch-arm tails, per-arity overload shapes,
+  receiver method calls) and the INV057 addendum (`builtinTupleReturns`
+  from catalog overload `returns`; request.security/_lower_tf expression
+  passthrough). Those blocker fixes also cleared 9 latent bool-type FPs
+  on 4 TV-clean fixtures. Residuals (in INV058 notes): tuple
+  REASSIGNMENT (`[a,b] := f()`) arity is unprobed/unchecked (INV044
+  territory), and the variable-list display quirk joins #18.
 - ~~#50~~ **CLOSED 2026-06-10 (INV056).** The `matrix.sum` lead generalized:
   the missing-required-arg check skipped ALL overloaded functions (112 of 122
   had an unenforced universally-required arg). Fixed with an arity floor. See

@@ -365,4 +365,19 @@ contradiction means re-measure, not "the earlier author was wrong."
   last-wins), and method calls via a receiver (`data.valueAtTime(ts)`
   looked up the dotted name, not the bare method name). Capture now reuses
   the destructure site's tail descent, stores shapes per arity, and picks
-  by LHS element count. TODO #51 blocker 1. 2 probes.
+  by LHS element count. TODO #51 blocker 1. 2 probes. The addendum (same
+  date) covers blockers 2-3: `builtinTupleReturns` reads bracketed tuple
+  `returns` from every catalog overload (ta.vwap's lives only in overload
+  #1), and request.security/_lower_tf recurse their expression arg through
+  the same tuple-shape inference (+4 FPs cleared on 2 TV-clean files).
+- [INV058](INV058-tuple-destructure-arity/notes.md) - TODO #51 shipped:
+  TV's tuple-destructure SHAPE error (`[a,b] = close` - "Cannot assign a
+  variable to a tuple...") and COUNT error (`[a,b,c] = f()` on a 2-tuple -
+  "The quantities of tuple elements ... do not match"), both anchored at
+  the statement start. Three-valued classifier (tuple/scalar/unknown)
+  where unknown stays silent - the pre-blocker draft FP'd 51 times by
+  treating unclassifiable as scalar; this one ships with zero corpus
+  changes. Key probe: TV resolves ta.vwap's mixed scalar/tuple overloads
+  by whether a tuple-only param (stdev_mult) is provided. TV's
+  `variableType.itemType is not a function` artifact (G001) deliberately
+  not replicated. 10 probes.

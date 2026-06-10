@@ -1,0 +1,4 @@
+//@version=6
+indicator("INV058 p06")
+[a, b, c, d] = request.security(syminfo.tickerid, "1D", ta.dmi(17, 14))
+plot(a + b + c + d)

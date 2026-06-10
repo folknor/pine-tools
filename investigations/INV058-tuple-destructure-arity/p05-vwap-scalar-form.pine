@@ -1,0 +1,4 @@
+//@version=6
+indicator("INV058 p05")
+[a, b] = ta.vwap(close)
+plot(a + b)

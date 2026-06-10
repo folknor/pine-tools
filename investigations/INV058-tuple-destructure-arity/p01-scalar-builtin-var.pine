@@ -1,0 +1,4 @@
+//@version=6
+indicator("INV058 p01")
+[a, b] = close
+plot(a + b)

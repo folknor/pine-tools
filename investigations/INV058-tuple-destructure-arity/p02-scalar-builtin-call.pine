@@ -1,0 +1,5 @@
+//@version=6
+indicator("INV058 p02")
+arr = array.new<float>(1, 0.0)
+[a, b] = array.size(arr)
+plot(a + b)

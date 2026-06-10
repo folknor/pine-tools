@@ -1,0 +1,34 @@
+// @test regression/INV058-tuple-destructure-arity
+// @description TV's two tuple-destructure errors (TODO #51, probes p01-p10): the SHAPE error when the RHS cannot produce a tuple (scalar variable/call, void call, scalar through request.security, if-structure with scalar tails, ta.vwap's scalar form - TV resolves mixed scalar/tuple overloads by whether a tuple-only param is provided), and the COUNT error when the RHS tuple arity differs from the LHS name count (UDF capture, builtin catalog tuples, request.security passthrough, if-structure tuple tails). Both anchored at the statement start. TV also emits an internal "variableType.itemType is not a function" artifact alongside the SHAPE error - deliberately not replicated (G001). See INV058.
+// @expects parse: success
+// @expects errors: 9
+// @expects error: line=4, message=/right side has 2 but the left side has 3/
+// @expects error: line=5, message=/Cannot assign a variable to a tuple/
+// @expects error: line=7, message=/Cannot assign a variable to a tuple/
+// @expects error: line=8, message=/right side has 3 but the left side has 2/
+// @expects error: line=9, message=/Cannot assign a variable to a tuple/
+// @expects error: line=10, message=/right side has 3 but the left side has 4/
+// @expects error: line=11, message=/Cannot assign a variable to a tuple/
+// @expects error: line=12, message=/Cannot assign a variable to a tuple/
+// @expects error: line=16, message=/right side has 2 but the left side has 3/
+
+//@version=6
+indicator("INV058 tuple destructure arity")
+f() => [1, 2]
+[a1, b1, c1] = f()
+[a2, b2] = close
+arr = array.new<float>(1, 0.0)
+[a3, b3] = array.size(arr)
+[a4, b4] = ta.macd(close, 12, 26, 9)
+[a5, b5] = ta.vwap(close)
+[a6, b6, c6, d6] = request.security(syminfo.tickerid, "1D", ta.dmi(17, 14))
+[a7, b7] = alert("x")
+[a8, b8] = if close > open
+    close
+else
+    open
+[a9, b9, c9] = if close > open
+    [1, 2]
+else
+    [3, 4]
+plot(a1)

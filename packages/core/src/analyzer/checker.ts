@@ -31,6 +31,7 @@ import {
 	getBuiltinVarInfo,
 	getConstParamDocType,
 	getMinArgsForVariadic,
+	builtinCallTupleness,
 	builtinTupleReturns,
 	getPolymorphicReturnType,
 	getPolymorphicType,
@@ -724,6 +725,39 @@ export class UnifiedPineValidator {
 				}
 				const elementTypes = this.inferTupleElementTypes(tupleDecl, version);
 				this.defineTupleVariables(tupleDecl, elementTypes);
+
+				// TV's two tuple-destructure errors, both anchored at the
+				// statement start (probes p01-p10): SHAPE when the RHS cannot
+				// produce a tuple, COUNT when it produces the wrong arity.
+				// TV also emits an internal "variableType.itemType is not a
+				// function" artifact alongside the SHAPE error - do not
+				// replicate (G001). A bare tuple-literal RHS is already the
+				// parser's CE10156 (INV049), so skip it here. v6 only: the
+				// builtin returns data backing the classifier is v6 (G004).
+				// see INV058 / TODO #51.
+				if (version === "6" && tupleDecl.init.type !== "ArrayExpression") {
+					const arity = this.tupleInitArity(tupleDecl.init, version);
+					if (arity.kind === "scalar") {
+						this.addError(
+							tupleDecl.line,
+							tupleDecl.column,
+							1,
+							'Cannot assign a variable to a tuple. The right side must be a function call or structure ("if", "switch", "for", "while") returning a tuple with the same number of elements.',
+							DiagnosticSeverity.Error,
+						);
+					} else if (
+						arity.kind === "tuple" &&
+						!arity.arities.includes(tupleDecl.names.length)
+					) {
+						this.addError(
+							tupleDecl.line,
+							tupleDecl.column,
+							1,
+							`Syntax error: The quantities of tuple elements on each side of the assignment operator do not match. The right side has ${arity.arities[0]} but the left side has ${tupleDecl.names.length}.`,
+							DiagnosticSeverity.Error,
+						);
+					}
+				}
 
 				// Validate the init expression
 				this.validateExpression(tupleDecl.init, version);
@@ -2540,6 +2574,172 @@ export class UnifiedPineValidator {
 		if (member.object.type !== "Identifier") return undefined;
 		if (KNOWN_NAMESPACES.includes(member.object.name)) return undefined;
 		return this.udfTupleReturnTypes.get(member.property.name);
+	}
+
+	// Classify how many tuple elements an init expression can produce, for
+	// TV's two tuple-destructure errors (probes p01-p10, INV058): the SHAPE
+	// error (RHS cannot produce a tuple at all) and the COUNT error (tuple
+	// of the wrong arity). "unknown" disables both - anything we cannot
+	// positively classify must stay silent; the first draft of this check
+	// treated unclassifiable as scalar and shipped 51 FPs (TODO #51).
+	private tupleInitArity(
+		expr: Expression,
+		version: string,
+	): { kind: "tuple"; arities: number[] } | { kind: "scalar" } | { kind: "unknown" } {
+		switch (expr.type) {
+			case "ArrayExpression":
+				return {
+					kind: "tuple",
+					arities: [(expr as ArrayExpression).elements.length],
+				};
+
+			// None of these can produce a tuple in Pine - tuples only come
+			// from calls and block structures (TV's SHAPE wording). A bare
+			// identifier is scalar regardless of its type.
+			case "Literal":
+			case "Identifier":
+			case "BinaryExpression":
+			case "UnaryExpression":
+			case "TernaryExpression":
+			case "MemberExpression":
+			case "IndexExpression":
+				return { kind: "scalar" };
+
+			case "CallExpression": {
+				const call = expr as CallExpression;
+				// In-call recovery dropped arguments (INV047) - and the named
+				// args below would be incomplete.
+				if (call.recovered) return { kind: "unknown" };
+				const funcName = memberChainName(call.callee);
+				if (!funcName) return { kind: "unknown" };
+
+				// request.* passes its expression arg's shape through, scalar
+				// included (probe p08: scalar expr destructured is the SHAPE
+				// error).
+				if (
+					funcName === "request.security" ||
+					funcName === "request.security_lower_tf"
+				) {
+					const named = call.arguments.find((a) => a.name === "expression");
+					const exprArg =
+						named?.value ??
+						(call.arguments.length >= 3
+							? call.arguments[2].value
+							: undefined);
+					return exprArg
+						? this.tupleInitArity(exprArg, version)
+						: { kind: "unknown" };
+				}
+
+				// UDF / user-method tuple shapes captured by INV057.
+				const udfShapes =
+					this.udfTupleReturnTypes.get(funcName) ??
+					this.receiverMethodTupleShapes(call);
+				if (udfShapes)
+					return {
+						kind: "tuple",
+						arities: udfShapes.map((s) => s.length),
+					};
+
+				// A declared UDF with no captured tuple shape: scalar only when
+				// its inferred return type is concrete (capture and return
+				// inference share the same tail descent, so a tuple our capture
+				// missed would have left the return type unknown too).
+				if (this.declaredFunctionNames.has(funcName)) {
+					const sym = this.symbolTable.lookup(funcName);
+					if (
+						sym &&
+						(sym.kind === "function" || sym.kind === "method") &&
+						sym.type !== "unknown"
+					) {
+						return { kind: "scalar" };
+					}
+					return { kind: "unknown" };
+				}
+
+				// Builtin: catalog overload returns, args-aware for the mixed
+				// scalar/tuple case (ta.vwap). Void returns are scalar for the
+				// SHAPE question (probe p07).
+				return builtinCallTupleness(
+					funcName,
+					call.arguments.filter((a) => !a.name).length,
+					call.arguments.flatMap((a) => (a.name ? [a.name] : [])),
+				);
+			}
+
+			case "IfExpression": {
+				const ifExpr = expr as IfExpression;
+				return this.mergeBranchArities([
+					this.branchTailArity(ifExpr.consequent, version),
+					this.branchTailArity(ifExpr.alternate, version),
+				]);
+			}
+
+			case "SwitchExpression": {
+				const switchExpr = expr as SwitchExpression;
+				return this.mergeBranchArities(
+					switchExpr.cases.map((c) =>
+						c.statements
+							? this.branchTailArity(c.statements, version)
+							: this.tupleInitArity(c.result, version),
+					),
+				);
+			}
+		}
+		return { kind: "unknown" };
+	}
+
+	private branchTailArity(
+		stmts: Statement[] | undefined,
+		version: string,
+	): { kind: "tuple"; arities: number[] } | { kind: "scalar" } | { kind: "unknown" } {
+		if (!stmts || stmts.length === 0) return { kind: "unknown" };
+		const last = stmts[stmts.length - 1];
+		if (last.type === "ExpressionStatement") {
+			return this.tupleInitArity(
+				(last as ExpressionStatement).expression,
+				version,
+			);
+		}
+		if (last.type === "ReturnStatement") {
+			const value = (last as ReturnStatement).value;
+			return value
+				? this.tupleInitArity(value, version)
+				: { kind: "unknown" };
+		}
+		if (last.type === "IfStatement") {
+			const ifStmt = last as IfStatement;
+			return this.mergeBranchArities([
+				this.branchTailArity(ifStmt.consequent, version),
+				this.branchTailArity(ifStmt.alternate, version),
+			]);
+		}
+		return { kind: "unknown" };
+	}
+
+	// All branches scalar -> scalar (probe p09: an if with scalar tails
+	// destructured is the SHAPE error). All tuple -> union of arities.
+	// Anything mixed or unknown -> unknown (TV's behavior for a structure
+	// mixing scalar and tuple tails is unprobed - stay silent).
+	private mergeBranchArities(
+		branches: Array<
+			{ kind: "tuple"; arities: number[] } | { kind: "scalar" } | { kind: "unknown" }
+		>,
+	): { kind: "tuple"; arities: number[] } | { kind: "scalar" } | { kind: "unknown" } {
+		if (branches.length === 0) return { kind: "unknown" };
+		if (branches.some((b) => b.kind === "unknown")) return { kind: "unknown" };
+		if (branches.every((b) => b.kind === "scalar")) return { kind: "scalar" };
+		if (branches.every((b) => b.kind === "tuple")) {
+			const arities = [
+				...new Set(
+					branches.flatMap((b) =>
+						b.kind === "tuple" ? b.arities : [],
+					),
+				),
+			];
+			return { kind: "tuple", arities };
+		}
+		return { kind: "unknown" };
 	}
 
 	// Tuple element types a statement block evaluates to: the tail

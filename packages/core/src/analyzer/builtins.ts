@@ -575,6 +575,49 @@ export function builtinTupleReturns(functionName: string): string[][] {
 	return shapes;
 }
 
+// Classify a builtin call's tuple-ness for the tuple-destructure errors
+// (INV058): can THIS call (positional count + named args) return a tuple,
+// and of what arity? When a function mixes scalar and tuple overloads
+// (only ta.vwap in the v6 catalog), TV discriminates by whether the call
+// provides an argument for a param that exists only in the tuple
+// overload(s) - ta.vwap's stdev_mult: "If specified ... return a
+// [vwap, upper_band, lower_band] tuple", "The default is na, in which
+// case the function returns a single value" (probes p04/p05). Name/index
+// resolution only - no type matching; this answers tuple-or-not, nothing
+// else.
+export function builtinCallTupleness(
+	functionName: string,
+	positionalCount: number,
+	namedArgs: string[],
+): { kind: "tuple"; arities: number[] } | { kind: "scalar" } | { kind: "unknown" } {
+	const func = FUNCTIONS_BY_NAME.get(functionName);
+	if (!func) return { kind: "unknown" };
+	const views = overloadViews(func);
+	const isTuple = (r?: string) => (r || "").trim().startsWith("[");
+	const tupleViews = views.filter((ov) => isTuple(ov.returns));
+	if (tupleViews.length === 0) return { kind: "scalar" };
+	const arities = [
+		...new Set(tupleViews.map((ov) => ov.returns.split(",").length)),
+	];
+	if (tupleViews.length === views.length) return { kind: "tuple", arities };
+	const scalarViews = views.filter((ov) => !isTuple(ov.returns));
+	const scalarParams = new Set(
+		scalarViews.flatMap((ov) => ov.parameters.map((p) => p.name)),
+	);
+	const maxScalarArity = Math.max(
+		...scalarViews.map((ov) => ov.parameters.length),
+	);
+	const namedTupleOnly = namedArgs.some(
+		(n) =>
+			!scalarParams.has(n) &&
+			tupleViews.some((ov) => ov.parameters.some((p) => p.name === n)),
+	);
+	const positionalTupleOnly = positionalCount > maxScalarArity;
+	return namedTupleOnly || positionalTupleOnly
+		? { kind: "tuple", arities }
+		: { kind: "scalar" };
+}
+
 // A param requires const iff it appears in >=1 overload and EVERY overload that
 // contains it types it const-required. If any overload accepts it non-const
 // (e.g. timestamp's series-string dateString overload), TV can resolve to that

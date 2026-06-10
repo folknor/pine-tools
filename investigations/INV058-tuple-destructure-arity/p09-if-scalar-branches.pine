@@ -1,0 +1,7 @@
+//@version=6
+indicator("INV058 p09")
+[a, b] = if close > open
+    close
+else
+    open
+plot(a + b)

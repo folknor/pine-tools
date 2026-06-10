@@ -1,0 +1,5 @@
+//@version=6
+indicator("INV058 p03")
+f() => [1, 2]
+[a, b, c] = f()
+plot(a + b + c)
