@@ -1,7 +1,7 @@
 /**
  * Pine Script V6 Functions
  * Auto-generated from TradingView documentation
- * Generated: 2026-06-07T13:52:09.216Z
+ * Generated: 2026-06-10T13:04:50.043Z
  * Total: 475 functions
  */
 
@@ -18723,6 +18723,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
+    "flags": {
+      "topLevelOnly": true
+    },
     "examples": [
       "//@version=6\nstrategy(\"strategy.risk.allow_entry_in\")\n\nstrategy.risk.allow_entry_in(strategy.direction.long)\nif open > close\n    strategy.entry(\"Long\", strategy.long)\n// Instead of opening a short position with 10 contracts, this command will close long entries.\nif open < close\n    strategy.entry(\"Short\", strategy.short, qty = 10)"
     ]
@@ -18747,6 +18750,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
+    "flags": {
+      "topLevelOnly": true
+    },
     "examples": [
       "//@version=6\nstrategy(\"risk.max_cons_loss_days Demo 1\")\nstrategy.risk.max_cons_loss_days(3) // No orders will be placed after 3 days, if each day is with loss.\nplot(strategy.position_size)"
     ]
@@ -18779,6 +18785,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
+    "flags": {
+      "topLevelOnly": true
+    },
     "examples": [
       "//@version=6\nstrategy(\"risk.max_drawdown Demo 1\")\nstrategy.risk.max_drawdown(50, strategy.percent_of_equity) // set maximum drawdown to 50% of maximum equity\nplot(strategy.position_size)",
       "//@version=6\nstrategy(\"risk.max_drawdown Demo 2\", currency = \"EUR\")\nstrategy.risk.max_drawdown(2000, strategy.cash) // set maximum drawdown to 2000 EUR from maximum equity\nplot(strategy.position_size)"
@@ -18804,6 +18813,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
+    "flags": {
+      "topLevelOnly": true
+    },
     "examples": [
       "//@version=6\nstrategy(\"risk.max_intraday_filled_orders Demo\")\nstrategy.risk.max_intraday_filled_orders(10) // After 10 orders are filled, no more strategy orders will be placed (except for a market order to exit current open market position, if there is any).\nif open > close\n    strategy.entry(\"buy\", strategy.long)\nif open < close\n    strategy.entry(\"sell\", strategy.short)"
     ]
@@ -18836,6 +18848,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
+    "flags": {
+      "topLevelOnly": true
+    },
     "examples": [
       "// Sets the maximum intraday loss using the strategy's equity value.\n//@version=6\nstrategy(\"strategy.risk.max_intraday_loss Example 1\", overlay = false, default_qty_type = strategy.percent_of_equity, default_qty_value = 100)\n\n// Input for maximum intraday loss %.\nlossPct = input.float(10)\n\n// Set maximum intraday loss to our lossPct input\nstrategy.risk.max_intraday_loss(lossPct, strategy.percent_of_equity)\n\n// Enter Short at bar_index zero.\nif bar_index == 0\n    strategy.entry(\"Short\", strategy.short)\n\n// Store equity value from the beginning of the day\neqFromDayStart = ta.valuewhen(ta.change(dayofweek) > 0, strategy.equity, 0)\n\n// Calculate change of the current equity from the beginning of the current day.\neqChgPct = 100 * ((strategy.equity - eqFromDayStart) / strategy.equity)\n\n// Plot it\nplot(eqChgPct)\nhline(-lossPct)",
       "// Sets the maximum intraday loss using the strategy's cash value.\n//@version=6\nstrategy(\"strategy.risk.max_intraday_loss Example 2\", overlay = false)\n\n// Input for maximum intraday loss in absolute cash value of the symbol.\nabsCashLoss = input.float(5)\n\n// Set maximum intraday loss to `absCashLoss` in account currency.\nstrategy.risk.max_intraday_loss(absCashLoss, strategy.cash)\n\n// Enter Short at bar_index zero.\nif bar_index == 0\n    strategy.entry(\"Short\", strategy.short)\n\n// Store the open price value from the beginning of the day.\nbeginPrice = ta.valuewhen(ta.change(dayofweek) > 0, open, 0)\n\n// Calculate the absolute price change for the current period.\npriceChg = (close - beginPrice)\n\nhline(absCashLoss)\nplot(priceChg)"
@@ -18860,6 +18875,9 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
+    "flags": {
+      "topLevelOnly": true
+    },
     "examples": [
       "//@version=6\nstrategy(\"risk.max_position_size Demo\", default_qty_value = 100)\nstrategy.risk.max_position_size(10)\nif open > close\n    strategy.entry(\"buy\", strategy.long)\nplot(strategy.position_size) // max plot value will be 10"
     ]

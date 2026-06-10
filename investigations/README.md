@@ -331,3 +331,11 @@ contradiction means re-measure, not "the earlier author was wrong."
   builtin namespace (`import .../ta/N` -> namespace `ta`). Conservatively
   skips any known member (so `color.red()` is a missed FN, never an FP).
   4 probes.
+- [INV054](INV054-two-level-namespace-resolution/notes.md) - two-level
+  builtin namespace calls (`strategy.risk.*`, `strategy.opentrades.*`,
+  `chart.point.*`) bypassed ALL validation: the callee-name resolver only
+  flattened single-level `ns.member` chains, so two-level names resolved to
+  `""` and bailed. Added `memberChainName` (full recursive flatten) + the six
+  `strategy.risk.*` to the `topLevelOnly` list, so they now get CE10188
+  "Cannot use ... in local scope" (TV stricter than its own Manual prose).
+  6 probes.

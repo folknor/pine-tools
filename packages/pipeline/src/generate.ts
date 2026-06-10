@@ -329,6 +329,17 @@ function getFunctionFlags(name: string): Record<string, unknown> | undefined {
 		"fill",
 		"hline",
 		"alertcondition",
+		// strategy.risk.* rules affect the whole strategy and may only be
+		// declared in global scope. TV emits CE10188 in any local scope
+		// (if/for/while body or UDF body). The manual's UDF-scope section
+		// documents only the plot/declaration set above, NOT these, but
+		// `--tv` confirms all six are restricted. see INV054
+		"strategy.risk.allow_entry_in",
+		"strategy.risk.max_cons_loss_days",
+		"strategy.risk.max_drawdown",
+		"strategy.risk.max_intraday_filled_orders",
+		"strategy.risk.max_intraday_loss",
+		"strategy.risk.max_position_size",
 	];
 	if (topLevelOnly.includes(name)) {
 		flags.topLevelOnly = true;

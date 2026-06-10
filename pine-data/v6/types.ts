@@ -1,7 +1,7 @@
 /**
  * Pine Script V6 Built-in Types
  * Auto-generated from TradingView documentation
- * Generated: 2026-06-07T13:52:09.223Z
+ * Generated: 2026-06-10T13:04:50.051Z
  * Total: 20 types
  */
 

@@ -156,6 +156,60 @@ IDs so the two stay in sync.
   message reachable?" audit: grep the addError call sites and verify
   each fires on at least one fixture/mutant (the INV050 check was
   live-in-appearance, dead-in-practice).
+
+  **Proposed design (2026-06-10, not yet built).** Most of the harness
+  already exists - `compare-tv.mjs` / `lint-batch.mjs` /
+  `find-real-failures.mjs` already run local + `--tv` and classify the
+  diff at concurrency 4. Mutation testing reuses that and only adds a
+  mutator + a thin orchestrator/triage. Three pieces:
+
+  1. **Mutator** (`scripts/mutate.mjs`) - takes a clean `.pine`, returns
+     `{mutant, operator, site, expectedClass}` records. There is **no
+     AST printer** in the codebase, so mutate at the *text* level but
+     *locate* sites with the lexer (token line/col, as `debug:tokens`
+     emits): tokenize, pick a token matching the operator's target,
+     splice the source string. Preserves all formatting/comments, needs
+     no printer. ONE mutation per mutant (single-site) so each survivor
+     points at exactly one gap.
+  2. **Orchestrator** (`scripts/mutation-run.mjs`) - picks fixtures,
+     calls the mutator, runs each mutant through `compare-tv.mjs --json`
+     (don't reimplement the TV call), classifies. Knobs
+     `--fixtures N --operators a,b,c --sites-per S` + a rotation seed so
+     a run is bounded and deliberate (e.g. 20 fixtures x 6 operators x 1
+     site ~= 120 `--tv` calls). Output to `mutation-reports/`
+     (gitignored like `lint-reports/`); mutants live in the repo, never
+     `/tmp`.
+  3. **Triage** - group survivors by `(operator, TV error code)` the way
+     `categorize-failures.mjs` groups, so N mutants collapse to a few
+     candidate-FN categories, each worth an INV.
+
+  **Signal that matters:** only `TV-rejects AND we-accept` (the
+  `tv-only` quadrant). To keep it clean and dodge the G001 post-stop
+  problem, **start from both-clean fixtures** (local AND TV both 0
+  errors), mutate once, and check whether TV now errors and we do not -
+  starting from zero on both sides isolates the mutation's effect, no
+  pre-existing cascade to subtract. A mutant TV *also* accepts means the
+  breakage was not actually invalid - discard.
+
+  **Operators are designed around TV's error taxonomy (CE codes), not
+  just our existing checks** - that is how you find gaps we have NO
+  check for. Map each operator to the code it should provoke: drop a
+  required arg -> CE10165 (INV050); typo a builtin fn/member name ->
+  CE10271 (INV036/INV053); wrong-type a literal arg -> CE10123;
+  typo a param name -> CE10123-ish; delete a declaration -> undefined
+  var; unbalance a bracket -> parse error; bad qualifier/type form ->
+  CE10147 (INV024). A survivor is either a dead check (should fire,
+  doesn't - the INV050 failure mode) or a true no-check gap.
+
+  **Sequencing - do the free half first.** The reachability audit needs
+  ZERO TV budget: statically enumerate every `addError`/`addWarning`
+  site, lint the whole corpus once locally, and list checks that never
+  fired. Pure local, cheapest high-value slice, and it seeds the
+  operator list (each reachable check suggests a mutation that should
+  trigger it). Build order: (a) `scripts/audit-error-reachability.mjs`
+  (no TV), then (b) `scripts/mutate.mjs` with 3-4 operators
+  (drop-required-arg, typo-member, wrong-type-literal, delete-decl),
+  then (c) `scripts/mutation-run.mjs`.
 - **#45 - leading-operator wraps at multiple-of-4 indent (probed
   residual of INV042).** `float x = cond` / `    ? high` / `    : low`
   is TV's CE10013 `Mismatched input "?" expecting set "end of line
@@ -390,6 +444,14 @@ file's line-475 syntax error; probed directly, TV rejects plot-in-if
 with CE10188 "Cannot use 'plot' in local scope" (pine-lint --tv,
 2026-06-04, minimal probe `if close > open` / `    plot(close)`).
 Nothing left to relax here.
+
+INV054 (2026-06-10) extended this check the other direction (a false
+negative): the six `strategy.risk.*` rules are also CE10188-in-local-scope
+but were unflagged because the callee-name resolver only handled
+single-level `ns.member` chains, so every two-level builtin name resolved
+to "" and skipped all validation. Fixed `memberChainName` + added the rules
+to `topLevelOnly`. See
+[INV054](investigations/INV054-two-level-namespace-resolution/notes.md).
 
 ---
 

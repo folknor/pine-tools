@@ -1,0 +1,9 @@
+// @test regression/INV054-two-level-namespace-local-scope
+// @description strategy.risk.* may only be declared in global scope; TV emits CE10188 "Cannot use ... in local scope" (probed all six 2026-06-10). We previously accepted them anywhere because the callee name-resolver only handled single-level `ns.member` member chains, so two-level builtin names (strategy.risk.*, strategy.opentrades.*, chart.point.*) resolved to "" and skipped ALL validation. See investigations/INV054-two-level-namespace-resolution/notes.md.
+// @expects parse: success
+// @expects error: line=4, column=5, message="Function 'strategy.risk.max_drawdown' cannot be called from a local scope. It must be called from the global scope."
+//@version=6
+strategy("t")
+if close > open
+    strategy.risk.max_drawdown(90, strategy.percent_of_equity)
+plot(close)

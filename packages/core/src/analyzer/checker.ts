@@ -58,6 +58,21 @@ import { type PineType, TypeChecker } from "./types";
 // Re-export for backward compatibility
 export { DiagnosticSeverity, type ValidationError } from "../common/errors";
 
+// Flatten a member-call callee into its dotted name (`strategy.risk.max_drawdown`).
+// Walks `.object` recursively so two-level builtin namespaces resolve, not just
+// `ns.member`. Returns "" if any link in the chain isn't a plain identifier
+// property access (e.g. `foo().bar`, `arr[0].baz`). see INV054
+function memberChainName(expr: Expression): string {
+	if (expr.type === "Identifier") return (expr as Identifier).name;
+	if (expr.type === "MemberExpression") {
+		const m = expr as MemberExpression;
+		const base = memberChainName(m.object);
+		if (!base) return "";
+		return `${base}.${m.property.name}`;
+	}
+	return "";
+}
+
 export class UnifiedPineValidator {
 	private errors: ValidationError[] = [];
 	private symbolTable: SymbolTable;
@@ -1610,10 +1625,12 @@ export class UnifiedPineValidator {
 		if (call.callee.type === "Identifier") {
 			functionName = call.callee.name;
 		} else if (call.callee.type === "MemberExpression") {
-			const member = call.callee;
-			if (member.object.type === "Identifier") {
-				functionName = `${member.object.name}.${member.property.name}`;
-			}
+			// Flatten the whole chain, not just `ns.member`. Two-level builtin
+			// namespaces (strategy.risk.*, strategy.opentrades.*,
+			// strategy.closedtrades.*, chart.point.*) otherwise leave
+			// functionName empty and skip ALL validation - including the
+			// topLevelOnly local-scope check. see INV054
+			functionName = memberChainName(call.callee);
 		}
 
 		// NOTE: Complex callee expressions (e.g., chained calls like `foo().bar()`,
