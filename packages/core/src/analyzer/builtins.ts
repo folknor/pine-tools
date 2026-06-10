@@ -551,6 +551,30 @@ function overloadViews(func: PineFunction): OverloadView[] {
 	return [{ parameters: func.parameters, returns: func.returns }];
 }
 
+// Tuple-return shapes for a builtin call: every overload whose `returns` is a
+// bracketed tuple ("[series float, series float]"), parsed into element type
+// strings. The merged top-level `returns` is frozen to overload #0, so
+// ta.vwap's tuple form lives only in its second overload - consulting the
+// merged view alone reads it as scalar. All current catalog tuples are flat
+// comma-separated scalars (ta.bb/dmi/kc/macd/supertrend/vwap), so a plain
+// comma split is sound. see TODO #51.
+export function builtinTupleReturns(functionName: string): string[][] {
+	const func = FUNCTIONS_BY_NAME.get(functionName);
+	if (!func) return [];
+	const shapes: string[][] = [];
+	for (const ov of overloadViews(func)) {
+		const r = (ov.returns || "").trim();
+		if (!r.startsWith("[") || !r.endsWith("]")) continue;
+		const elems = r
+			.slice(1, -1)
+			.split(",")
+			.map((s) => s.trim())
+			.filter(Boolean);
+		if (elems.length > 1) shapes.push(elems);
+	}
+	return shapes;
+}
+
 // A param requires const iff it appears in >=1 overload and EVERY overload that
 // contains it types it const-required. If any overload accepts it non-const
 // (e.g. timestamp's series-string dateString overload), TV can resolve to that

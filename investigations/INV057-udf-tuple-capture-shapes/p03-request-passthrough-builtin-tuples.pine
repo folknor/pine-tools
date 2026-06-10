@@ -1,0 +1,12 @@
+//@version=6
+indicator("INV057 p03")
+[vw, up, lo] = ta.vwap(close, timeframe.change("1D"), 2.0)
+plot(vw + up + lo)
+f() => [true, "x"]
+[b1, s1] = request.security(syminfo.tickerid, "1D", f())
+if b1
+    label.new(bar_index, high, text = s1)
+[d1, a1, x1] = request.security(syminfo.tickerid, "1D", ta.dmi(17, 14))
+plot(d1 + a1 + x1)
+[ca, oa] = request.security_lower_tf(syminfo.tickerid, "1", [close, open])
+plot(array.size(ca) + array.size(oa))

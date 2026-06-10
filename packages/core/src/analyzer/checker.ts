@@ -31,6 +31,7 @@ import {
 	getBuiltinVarInfo,
 	getConstParamDocType,
 	getMinArgsForVariadic,
+	builtinTupleReturns,
 	getPolymorphicReturnType,
 	getPolymorphicType,
 	getMinimalRequiredParams,
@@ -2425,13 +2426,40 @@ export class UnifiedPineValidator {
 					}
 				}
 
-				// For request.security, look for the expression/array argument
-				if (funcName === "request.security" && call.arguments.length >= 3) {
-					const exprArg = call.arguments[2].value;
-					if (exprArg.type === "ArrayExpression") {
-						// Extract types from array elements
-						for (const elem of (exprArg as ArrayExpression).elements) {
-							elementTypes.push(this.inferExpressionType(elem, version));
+				// request.security / request.security_lower_tf pass the tuple
+				// shape of their expression arg through: a tuple literal, a
+				// tuple-returning call (UDF or builtin), or an if/switch
+				// expression all yield a tuple of that arity - recurse on the
+				// arg as if it were the init itself. For _lower_tf each
+				// element is an ARRAY of the expression's element type (one
+				// value per intrabar). see TODO #51.
+				if (
+					funcName === "request.security" ||
+					funcName === "request.security_lower_tf"
+				) {
+					const named = call.arguments.find((a) => a.name === "expression");
+					const exprArg =
+						named?.value ??
+						(call.arguments.length >= 3
+							? call.arguments[2].value
+							: undefined);
+					if (exprArg) {
+						const inner = this.tupleInitElementTypes(
+							exprArg,
+							version,
+							expectedCount,
+						);
+						for (const t of inner) {
+							if (funcName === "request.security_lower_tf") {
+								const base = TypeChecker.baseTypeName(t as string);
+								elementTypes.push(
+									t === "unknown"
+										? "unknown"
+										: (`array<${base}>` as PineType),
+								);
+							} else {
+								elementTypes.push(t);
+							}
 						}
 					}
 				}
@@ -2453,6 +2481,22 @@ export class UnifiedPineValidator {
 								? undefined
 								: shapes.find((s) => s.length === expectedCount);
 						for (const t of byArity ?? shapes[0]) elementTypes.push(t);
+					}
+				}
+
+				// Builtin whose tuple shape lives in the catalog's overload
+				// returns (ta.macd/bb/kc/dmi/supertrend, and ta.vwap whose
+				// merged `returns` is frozen to its scalar overload). see
+				// TODO #51 blocker 3.
+				if (elementTypes.length === 0 && funcName) {
+					const shapes = builtinTupleReturns(funcName);
+					if (shapes.length > 0) {
+						const byArity =
+							expectedCount === undefined
+								? undefined
+								: shapes.find((s) => s.length === expectedCount);
+						for (const t of byArity ?? shapes[0])
+							elementTypes.push(mapToPineType(t));
 					}
 				}
 				return elementTypes;

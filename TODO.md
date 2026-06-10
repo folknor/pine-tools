@@ -254,22 +254,24 @@ IDs so the two stay in sync.
      now descends all tuple-producing tails, stores shapes per arity, and
      the destructure site picks by LHS element count. Cleared 5 bool-type
      FPs on 2 TV-clean fixtures.
-  2. **`request.security` / `request.security_lower_tf` expression
-     passthrough.** When the expression arg is a tuple-returning CALL
-     (`request.security(sym, "", ta.dmi(...))`) or an array, the result is a
-     tuple of that arity. Only the literal-array arg of `request.security` is
-     modelled; the call-arg case and `request.security_lower_tf` are not.
-  3. **Overloaded tuple builtins.** `ta.vwap`'s merged `returns` is frozen to
-     its scalar overload, so `[vw, up, lo] = ta.vwap(src, anchor, mult)` reads
-     as scalar. (Only ta.macd/bb/kc/dmi/supertrend carry a bracketed tuple
-     `returns`.) Wider shape per INV057's residual: element types for builtin
-     tuple returns aren't modelled at the destructure site at all - every
-     element defaults to `series<float>`, which happens to be right for the
-     ta.* tuples but is still a guess.
+  2. ~~**`request.security` / `request.security_lower_tf` expression
+     passthrough.**~~ **FIXED 2026-06-10 (INV057 addendum).** The expression
+     arg (named or positional) now recurses through the same
+     tuple-shape inference as a destructure init, so tuple literals,
+     tuple-returning UDF/builtin calls, and if/switch expressions all pass
+     through; `_lower_tf` elements wrap as `array<base>`. Cleared 4
+     bool-operand FPs on 2 TV-clean fixtures.
+  3. ~~**Overloaded tuple builtins.**~~ **FIXED 2026-06-10 (INV057
+     addendum).** `builtinTupleReturns` parses bracketed `returns` from
+     every catalog overload (ta.vwap's tuple form is overload #1; the
+     merged `returns` is frozen to overload #0), and the destructure site
+     consumes it arity-matched.
 
-  The only FP-free slice is a non-call scalar RHS (`[a,b] = close`), which has
-  zero corpus occurrences and is an implausible mistake - not worth a rule on
-  its own. Do #51 only after (2)-(3).
+  All three blockers are now fixed - #51 itself (the SHAPE and COUNT
+  errors) is unblocked. The only FP-free slice WITHOUT the blockers was a
+  non-call scalar RHS (`[a,b] = close`), zero corpus occurrences; with the
+  blockers fixed, re-attempt the full check and re-validate against the 17
+  files that carried the original 51 FPs.
 - ~~#50~~ **CLOSED 2026-06-10 (INV056).** The `matrix.sum` lead generalized:
   the missing-required-arg check skipped ALL overloaded functions (112 of 122
   had an unenforced universally-required arg). Fixed with an arity floor. See

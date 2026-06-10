@@ -109,6 +109,44 @@ genuinely-unused second-overload param - and itself the proof this
 - Regression fixture:
   `packages/core/test/fixtures/regression/INV057-udf-tuple-capture-shapes.pine`.
 
+## Addendum 2026-06-10: TODO #51 blockers 2 + 3 (same family)
+
+Same session, same mistyped-destructure family:
+
+- **Builtin tuple returns** (blocker 3): `tupleInitElementTypes` never
+  consulted the catalog, so every builtin tuple destructure's elements
+  defaulted. New `builtinTupleReturns` in `builtins.ts` parses bracketed
+  `returns` from EVERY overload (the merged top-level `returns` is
+  frozen to overload #0, which is exactly how `ta.vwap`'s tuple form -
+  overload #1 - was invisible). Catalog survey: 6 functions carry
+  bracketed tuples (`ta.bb/dmi/kc/macd/supertrend` ov0, `ta.vwap` ov1),
+  all flat `series float` lists, so a comma split is sound.
+- **`request.security` passthrough** (blocker 2): only a literal-array
+  expression arg was modelled. Now the expression arg (named or
+  positional #2) recurses through `tupleInitElementTypes` itself, so a
+  tuple literal, a tuple-returning UDF call, a builtin tuple call, or an
+  if/switch expression all pass their shape through.
+  `request.security_lower_tf` is included; its elements wrap as
+  `array<base>` (one value per intrabar).
+
+**Probe p03-request-passthrough-builtin-tuples.pine** (in this dir):
+`[vw,up,lo] = ta.vwap(close, anchor, 2.0)`, a bool/string UDF tuple
+through `request.security`, `ta.dmi` through `request.security`, and a
+tuple literal through `request.security_lower_tf` consumed via
+`array.size`.
+
+TV verdict 2026-06-10: **0 errors, 0 warnings.** Local before the fix
+(stale-bundle run, same date): 1 error - `7:4 The condition of the "if"
+statement must evaluate to a "bool" value.` on the bool element through
+`request.security` - the FP class this clears. Local after: 0.
+
+Corpus: 0 new errors; 4 disappeared `Operator 'and' requires bool
+operands` FPs in 2 TV-clean files (`0c844884…`, `b1929e7d…` - both
+destructure a UDF 6-tuple through `request.security` and now lint 0,
+TV-equal, verified 2026-06-10); 2 same-position rewordings in
+`c79500d4…` (`series float` -> `float`, the captured element type now
+flowing).
+
 ## Residual / lateral findings
 
 - A user-defined **method's receiver is never marked used** by the
@@ -117,7 +155,14 @@ genuinely-unused second-overload param - and itself the proof this
   channel is NOT affected (compare-tv shows no such warning), so this is
   the validator-only unused-tracking bug class already noted in
   CLAUDE.md Known Limitations. Recorded here, not fixed.
-- `f() => ta.macd(...)` (UDF whose tail is a call to a tuple-returning
-  *builtin*) is still uncaptured - element types for builtin tuple
-  returns aren't modelled at all (every element defaults). That is TODO
-  #51 blocker 3's wider shape (`ta.vwap`), next up.
+- **v5 float-as-bool is a TV warning, not an error** (lateral, from
+  `c79500d4…`, a `//@version=5` fixture): TV emits
+  `The 'expr0' parameter of the 'operator ?:' function accepts a 'bool'
+  argument…` / same for `operator and` as WARNINGS at exactly the
+  positions where we emit `Ternary condition must be bool, got float` /
+  `Operator 'and' requires bool operands` ERRORS (37:19, 39:17, 41:19,
+  43:17, 75:33, 77:33; `pine-lint --tv` 2026-06-10). v5 auto-coerces
+  float->bool; v6 rejects (don't relax the v6 checks). Suggests gating
+  the bool-operand/ternary/if-condition ERRORS to v6, mirroring G004's
+  arg-type gate. Pre-existing FP class, NOT addressed here - 6 records
+  on this file alone.

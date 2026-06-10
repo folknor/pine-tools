@@ -1,0 +1,17 @@
+// @test regression/INV057-request-passthrough-builtin-tuples
+// @description Tuple destructure element types must flow from (1) builtin tuple returns recorded only in catalog overload `returns` (ta.vwap's tuple form is overload #1; the merged `returns` is frozen to the scalar overload #0), and (2) request.security / request.security_lower_tf passing their expression arg's tuple shape through - a tuple-returning UDF call (bool/string visible), a builtin tuple call (ta.dmi), or a tuple literal (_lower_tf elements become arrays, consumed via array.size). Previously only request.security's literal-array arg was modelled and every other element defaulted to series<float>, drawing bool-type FPs (cleared 4 on 2 TV-clean corpus files). TV-clean (probe p03, 2026-06-10). See INV057 addendum.
+// @expects parse: success
+// @expects no-errors
+
+//@version=6
+indicator("INV057 request passthrough and builtin tuples")
+[vw, up, lo] = ta.vwap(close, timeframe.change("1D"), 2.0)
+plot(vw + up + lo)
+f() => [true, "x"]
+[b1, s1] = request.security(syminfo.tickerid, "1D", f())
+if b1
+    label.new(bar_index, high, text = s1)
+[d1, a1, x1] = request.security(syminfo.tickerid, "1D", ta.dmi(17, 14))
+plot(d1 + a1 + x1)
+[ca, oa] = request.security_lower_tf(syminfo.tickerid, "1", [close, open])
+plot(array.size(ca) + array.size(oa))
