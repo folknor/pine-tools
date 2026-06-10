@@ -1,0 +1,35 @@
+// @test regression/coverage-map-array
+// @description #52 coverage build-out: every map.* and array.* catalog entry that appeared in zero fixtures (fixture-coverage census 2026-06-10) - map clear/contains/copy/get/keys/put_all/remove/size, array abs/binary_search/covariance/every/new_table/percentile_*/range/some. Valid usage per the catalog signatures; local and TV must both accept.
+// @expects parse: success
+// @expects no-errors
+
+//@version=6
+indicator("coverage map array")
+m = map.new<string, float>()
+m2 = map.new<string, float>()
+map.put(m, "a", 1.0)
+map.put_all(m, m2)
+g = map.get(m, "a")
+hasA = map.contains(m, "a")
+ks = map.keys(m)
+n = map.size(m)
+rem = map.remove(m, "a")
+mc = map.copy(m)
+map.clear(m)
+plot(g + n + rem + array.size(ks) + map.size(mc) + (hasA ? 1 : 0))
+
+af = array.from(3.0, 1.0, 2.0)
+af2 = array.from(1.0, 2.0, 3.0)
+ab = array.from(true, false)
+aabs = array.abs(af)
+srt = array.copy(af)
+array.sort(srt)
+bs = array.binary_search(srt, 2.0)
+cov = array.covariance(af, af2)
+ev = array.every(ab)
+sm = array.some(ab)
+tbls = array.new_table(0)
+pli = array.percentile_linear_interpolation(af, 50)
+pnr = array.percentile_nearest_rank(af, 50)
+rng = array.range(af)
+plot(array.size(aabs) + bs + cov + pli + pnr + rng + array.size(tbls) + (ev ? 1 : 0) + (sm ? 1 : 0))

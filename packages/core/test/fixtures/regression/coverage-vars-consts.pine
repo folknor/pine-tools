@@ -1,0 +1,31 @@
+// @test regression/coverage-vars-consts
+// @description #52 coverage build-out: uncovered catalog VARIABLES (chart.is_* family, dividends.future_*, earnings.future_*, the syminfo fundamentals/recommendations block, linefill.all, table.all) and CONSTANTS (adjustment.*, backadjustment.*, settlement_as_close.* via ticker.modify; dividends.net / earnings.estimate / earnings.standardized / splits.numerator as request field args; alert.freq_all; display.pine_screener; math.rphi; plot.linestyle_solid; plot.style_areabr).
+// @expects parse: success
+// @expects no-errors
+
+//@version=6
+indicator("coverage vars consts")
+chartKinds = (chart.is_heikinashi ? 1 : 0) + (chart.is_kagi ? 1 : 0) + (chart.is_linebreak ? 1 : 0) + (chart.is_pnf ? 1 : 0) + (chart.is_range ? 1 : 0) + (chart.is_renko ? 1 : 0)
+divFut = dividends.future_amount
+divDates = dividends.future_ex_date + dividends.future_pay_date
+epsFut = earnings.future_eps + earnings.future_revenue
+earnTimes = earnings.future_period_end_time + earnings.future_time
+info = syminfo.employees + syminfo.expiration_date + syminfo.minmove + syminfo.pricescale + syminfo.shareholders
+recs = syminfo.recommendations_buy + syminfo.recommendations_buy_strong + syminfo.recommendations_hold + syminfo.recommendations_sell + syminfo.recommendations_sell_strong + syminfo.recommendations_total + syminfo.recommendations_date
+tgt = syminfo.target_price_median
+names = syminfo.current_contract + syminfo.isin + syminfo.main_tickerid
+drawn = array.size(linefill.all) + array.size(table.all)
+phi = math.rphi
+adjTicker = ticker.modify(syminfo.tickerid, session.regular, adjustment.splits, backadjustment.on, settlement_as_close.off)
+adjTicker2 = ticker.modify(syminfo.tickerid, session.regular, adjustment.dividends, backadjustment.inherit, settlement_as_close.inherit)
+adjTicker3 = ticker.modify(syminfo.tickerid, session.regular, adjustment.none, backadjustment.off, settlement_as_close.on)
+div = request.dividends(adjTicker, dividends.net)
+ern = request.earnings(adjTicker2, earnings.estimate)
+ern2 = request.earnings(adjTicker3, earnings.standardized)
+spl = request.splits(syminfo.tickerid, splits.numerator)
+if barstate.islast
+    alert("coverage", alert.freq_all)
+    label.new(bar_index, high, text = names)
+plot(chartKinds + divFut + divDates + epsFut + earnTimes + info + recs + tgt + drawn + phi + div + ern + ern2 + spl, display = display.pine_screener)
+plot(close, style = plot.style_areabr)
+plot(close, linestyle = plot.linestyle_solid)

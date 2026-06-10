@@ -392,3 +392,12 @@ contradiction means re-measure, not "the earlier author was wrong."
   fix: import-alias destructure elements now type `unknown` instead of
   guessing series<float> (-166 FP/cascade records across 12 files, incl.
   the LAST over-strict bool entry b369d637). 6 probes.
+- [INV060](INV060-v5-numeric-bool-contexts/notes.md) - v4/v5 numeric
+  values in bool contexts (if/while/ternary conditions, and/or/not
+  operands) are a TV WARNING + auto-coercion, not an error; v6 rejects.
+  One probe hits all five contexts (0 errors, 5 warnings on TV). Fixed
+  with `boolContextOk` - legacy versions accept numerics in bool
+  contexts, string/color stay flagged everywhere, v6 unchanged. The
+  single largest FP class in the corpus: -1605 records across 226
+  legacy files (baseline 16845 -> 15236). Surfaced via INV057's lateral
+  finding + the #52 coverage build-out. 1 probe.

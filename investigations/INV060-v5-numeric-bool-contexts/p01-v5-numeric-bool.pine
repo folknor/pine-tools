@@ -1,0 +1,12 @@
+//@version=5
+indicator("INV060 p01")
+flt = close - open
+x = flt ? 1 : 2
+if flt
+    x := 3
+y = flt and close > open ? 1 : 0
+z = not flt ? 1 : 0
+i = 5
+while i
+    i := i - 1
+plot(x + y + z + i)

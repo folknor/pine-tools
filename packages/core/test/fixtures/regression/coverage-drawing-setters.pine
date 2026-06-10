@@ -1,0 +1,34 @@
+// @test regression/coverage-drawing-setters
+// @description #52 coverage build-out: uncovered drawing setters - box.set_top_left_point/set_bottom_right_point/set_text_font_family/set_text_formatting/set_text_wrap/set_xloc, label.set_point/set_text_font_family/set_text_formatting, table.set_position/set_bgcolor and the table.cell_set_* family - plus the uncovered text.format_none / text.wrap_none constants.
+// @expects parse: success
+// @expects no-errors
+
+//@version=6
+indicator("coverage drawing setters")
+if barstate.islast
+    tl = chart.point.from_index(bar_index - 10, high)
+    br = chart.point.from_index(bar_index, low)
+    b = box.new(tl, br)
+    box.set_top_left_point(b, tl)
+    box.set_bottom_right_point(b, br)
+    box.set_text_font_family(b, font.family_monospace)
+    box.set_text_formatting(b, text.format_none)
+    box.set_text_wrap(b, text.wrap_none)
+    box.set_xloc(b, bar_index - 10, bar_index, xloc.bar_index)
+    lb = label.new(bar_index, high)
+    label.set_point(lb, tl)
+    label.set_text_font_family(lb, font.family_default)
+    label.set_text_formatting(lb, text.format_italic)
+    t = table.new(position.top_right, 1, 1)
+    table.set_position(t, position.bottom_left)
+    table.set_bgcolor(t, color.new(color.gray, 80))
+    table.cell(t, 0, 0, "x")
+    table.cell_set_text(t, 0, 0, "y")
+    table.cell_set_height(t, 0, 0, 10)
+    table.cell_set_width(t, 0, 0, 10)
+    table.cell_set_text_font_family(t, 0, 0, font.family_monospace)
+    table.cell_set_text_formatting(t, 0, 0, text.format_bold)
+    table.cell_set_text_size(t, 0, 0, size.small)
+    table.cell_set_text_valign(t, 0, 0, text.align_top)
+    table.cell_set_tooltip(t, 0, 0, "tip")
+plot(close)

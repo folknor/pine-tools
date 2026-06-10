@@ -231,15 +231,24 @@ IDs so the two stay in sync.
   `scripts/fixture-coverage.mjs` (built 2026-06-10) parses every corpus +
   test fixture and cross-references the JSON catalog to list entries
   referenced in zero fixtures and behavioral flags whose rule is never
-  exercised. Its first run caught the INV054 class directly: only 2 of 20
-  `topLevelOnly` functions were tested in a local scope (now 20/20 after
-  two fixtures), and building coverage for the uncovered `matrix.*` block
-  exposed INV055's CE10098 void-assignment FN. The pending work: the
-  **uncovered-function list (~107 fns, shrinks as coverage is built) is a
-  target list** - build a fixture exercising each and diff against `--tv`;
-  agreement confirms coverage, disagreement is an INV. This is plain
-  fixture-building, distinct from #48's mutation testing (you can't mutate
-  a construct that appears in zero files).
+  exercised. Its first run caught the INV054 class directly (topLevelOnly
+  2/20 -> 20/20 tested) and exposed INV055's void-assignment FN.
+  **2026-06-10 (same day, second round): the hard-uncovered list is
+  CLEARED** - seven `coverage-*.pine` block fixtures (map/array, the 28
+  uncovered matrix.*, ticker/misc, strategy trade-stats, drawing setters,
+  footprint/volume_row, vars/consts) took catalog coverage to **0
+  functions / 0 variables / 0 constants referenced in no fixture**, all
+  seven TV-diffed with zero disagreement. Building them caught two real
+  inference bugs (INV059: two-level-namespace call returns never resolved
+  in `inferExpressionType`; `getBinaryOpType(unknown, unknown)` guessed
+  `int`) and surfaced the v4/v5 numeric-bool coercion class
+  ([INV060](investigations/INV060-v5-numeric-bool-contexts/notes.md),
+  -1605 corpus FP records). **Remaining (softer) targets:** the ~250
+  functions that appear in the corpus but in no test fixture, and the
+  structural shapes the census lists as corpus-only (forIn tuples,
+  if-expressions, deep member chains) - same method, lower urgency. This
+  is plain fixture-building, distinct from #48's mutation testing (you
+  can't mutate a construct that appears in zero files).
 - ~~#49~~ **Reassignment case CLOSED 2026-06-10 (INV055).**
   `x := voidCall()` now emits TV's type-mismatch naming the target's type,
   via an explicit void-call branch (shared `isVoidCall` helper) rather than a
@@ -405,6 +414,20 @@ The reports live in `lint-reports/` which is **gitignored** - so this
 section records the latest measurement (the JSONs also embed
 `generatedAt` + `gitCommit` since #29):
 
+**Measured 2026-06-10 (evening), after the INV057-INV060 round
+(#51 shipped, audit-error-reachability built, #52 hard-uncovered list
+cleared)**: **46 local-only / 3 tv-only / 32 same-pos-different-message**,
+plus 715 past TV's stop point (4 unparseable, transient). Corpus
+baseline 17325 -> 17020 -> **15236** - the round removed ~1790 error
+records, dominated by INV060's v4/v5 numeric-bool class (-1605 across
+226 files) and INV059's import-alias destructure unknowns (-166). The
+46 local-only: 20 probe-backed CE10156 wrap TPs + the 8+8 `bar index`
+mangle pairs + 10 small known residue (undefined-variable stragglers,
+`Unexpected token: :`) + INV026's synthetic ternary trio. The 3 tv-only
+are that same INV026 fixture seen from TV's side (CE10123 at the
+argument where we flag the ternary) - zero unexplained tv-only
+remain.
+
 **Measured 2026-06-07 (evening), working tree on `55f0c4f` + the
 #46(c)/(d) round (third INV047 addendum)**: **49 local-only / 6
 tv-only / 33 same-pos-different-message**, plus 710 past TV's stop
@@ -464,7 +487,11 @@ the `input`/`const` qualifier coercion and display-flag fixes cleared the
 bool-operator and ternary FPs. INV049 (2026-06-07) cleared the last
 unexplained record - tuple destructures with if/switch-expression inits
 defaulted every element to `series<float>`; element types now flow from
-the branch tails.
+the branch tails. INV060 (2026-06-10) then cleared the single largest
+class corpus-wide: v4/v5 numeric values in bool contexts are a TV
+WARNING + coercion, not an error - the bool-context checks now accept
+numerics on legacy versions only (-1605 records / 226 files; the v6
+checks are unchanged and correct).
 
 | count | files | category |
 |---|---|---|

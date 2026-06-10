@@ -867,7 +867,7 @@ export class UnifiedPineValidator {
 				// (corpus verdict 8fcd16c1 lines 317:4/328:4; we used to anchor
 				// at the if keyword with our own wording, double-counting the
 				// pair in the diff). see INV041
-				if (condType !== "unknown" && !TypeChecker.isBoolType(condType)) {
+				if (!this.boolContextOk(condType, version)) {
 					this.addError(
 						statement.condition.line || statement.line,
 						statement.condition.column || statement.column,
@@ -993,7 +993,7 @@ export class UnifiedPineValidator {
 					// CE10101 with blockName "while", anchored at the CONDITION
 					// expression (probed `while close` / `while n`). see INV041
 					const whileCondType = this.inferExpressionType(statement.condition, version);
-					if (whileCondType !== "unknown" && !TypeChecker.isBoolType(whileCondType)) {
+					if (!this.boolContextOk(whileCondType, version)) {
 						this.addError(
 							statement.condition.line || statement.line,
 							statement.condition.column || statement.column,
@@ -1532,8 +1532,7 @@ export class UnifiedPineValidator {
 		// `if ph or pl` with two float operands gets two errors). Matching the
 		// anchors keeps the position-keyed TV diff clean. see INV028
 		if (expr.operator === "and" || expr.operator === "or") {
-			let reported = false;
-			if (leftType !== "unknown" && !TypeChecker.isBoolType(leftType)) {
+			if (!this.boolContextOk(leftType, version)) {
 				this.addError(
 					expr.left.line || expr.line,
 					expr.left.column || expr.column,
@@ -1541,9 +1540,8 @@ export class UnifiedPineValidator {
 					`Operator '${expr.operator}' requires bool operands, but left operand is ${TypeChecker.displayType(leftType)}`,
 					DiagnosticSeverity.Error,
 				);
-				reported = true;
 			}
-			if (rightType !== "unknown" && !TypeChecker.isBoolType(rightType)) {
+			if (!this.boolContextOk(rightType, version)) {
 				this.addError(
 					expr.right.line || expr.line,
 					expr.right.column || expr.column,
@@ -1551,11 +1549,13 @@ export class UnifiedPineValidator {
 					`Operator '${expr.operator}' requires bool operands, but right operand is ${TypeChecker.displayType(rightType)}`,
 					DiagnosticSeverity.Error,
 				);
-				reported = true;
 			}
-			if (reported) {
-				return; // Don't double-report via the compatibility fallback
-			}
+			// The per-operand check IS the complete check for logical
+			// operators - operands that pass it (bool, unknown, or
+			// legacy-numeric per boolContextOk) are individually acceptable,
+			// so the mixed-type compatibility fallback below must not run
+			// (it would flag v5's `bool and int` coercion mix). see INV059
+			return;
 		}
 
 		if (
@@ -1605,7 +1605,7 @@ export class UnifiedPineValidator {
 	): void {
 		if (expr.operator === "not") {
 			const argType = this.inferExpressionType(expr.argument, version);
-			if (!TypeChecker.isBoolType(argType) && argType !== "unknown") {
+			if (!this.boolContextOk(argType, version)) {
 				this.addError(
 					expr.line,
 					expr.column,
@@ -1622,7 +1622,7 @@ export class UnifiedPineValidator {
 		version: string = "6",
 	): void {
 		const condType = this.inferExpressionType(expr.condition, version);
-		if (!TypeChecker.isBoolType(condType) && condType !== "unknown") {
+		if (!this.boolContextOk(condType, version)) {
 			this.addError(
 				expr.condition.line || expr.line,
 				expr.condition.column || expr.column,
@@ -1856,6 +1856,17 @@ export class UnifiedPineValidator {
 		for (const arg of call.arguments) {
 			this.validateExpression(arg.value, version);
 		}
+	}
+
+	// A value is acceptable in a bool context (if/while/ternary condition,
+	// and/or/not operand) when it IS bool, when we can't tell, or - on
+	// legacy v4/v5 sources only - when it is numeric: those versions
+	// auto-coerce numbers in bool contexts (TV compiles them with an
+	// "accepts a 'bool' argument" WARNING; v6 rejects them - INV057
+	// lateral finding + INV059). String/color stay flagged everywhere.
+	private boolContextOk(t: PineType, version: string): boolean {
+		if (t === "unknown" || TypeChecker.isBoolType(t)) return true;
+		return version !== "6" && TypeChecker.isNumericType(t);
 	}
 
 	// A call to a builtin whose resolved return is exactly `void`. Used by
@@ -2938,15 +2949,14 @@ export class UnifiedPineValidator {
 
 			case "CallExpression": {
 				const callExpr = expr as CallExpression;
-				let funcName = "";
-				if (callExpr.callee.type === "Identifier") {
-					funcName = callExpr.callee.name;
-				} else if (callExpr.callee.type === "MemberExpression") {
-					const member = callExpr.callee;
-					if (member.object.type === "Identifier") {
-						funcName = `${member.object.name}.${member.property.name}`;
-					}
-				}
+				// Flatten the WHOLE callee chain - two-level builtin namespaces
+				// (strategy.closedtrades.entry_comment) otherwise leave funcName
+				// empty and the call's catalog return type unresolved (the same
+				// INV054 bug shape, here in the inference path). see INV059.
+				const funcName =
+					callExpr.callee.type === "Identifier"
+						? callExpr.callee.name
+						: memberChainName(callExpr.callee);
 
 				// Handle generic type arguments: array.new<float>() -> array<float>
 				if (callExpr.typeArguments && callExpr.typeArguments.length > 0) {

@@ -1,0 +1,35 @@
+// @test regression/coverage-strategy-uncovered
+// @description #52 coverage build-out: uncovered strategy catalog entries - the closedtrades/opentrades per-trade functions (commission, entry/exit comments, max_drawdown/_percent, max_runup/_percent, profit_percent, size), convert_to_account/symbol, the aggregate performance variables (avg_*, gross*_percent, max_contracts_*, max_runup, margin_liquidation_price, position_entry_name, closedtrades.first_index, opentrades.capital_held), and strategy.oca.none.
+// @expects parse: success
+// @expects no-errors
+
+//@version=6
+strategy("coverage strategy uncovered")
+if strategy.opentrades == 0
+    strategy.entry("L", strategy.long, oca_name = "grp", oca_type = strategy.oca.none)
+if strategy.closedtrades > 0
+    com = strategy.closedtrades.commission(0)
+    ec = strategy.closedtrades.entry_comment(0)
+    xc = strategy.closedtrades.exit_comment(0)
+    dd = strategy.closedtrades.max_drawdown(0)
+    ddp = strategy.closedtrades.max_drawdown_percent(0)
+    ru = strategy.closedtrades.max_runup(0)
+    rup = strategy.closedtrades.max_runup_percent(0)
+    pp = strategy.closedtrades.profit_percent(0)
+    sz = strategy.closedtrades.size(0)
+    fi = strategy.closedtrades.first_index
+    label.new(bar_index, high, text = ec + xc + str.tostring(com + dd + ddp + ru + rup + pp + sz + fi))
+if strategy.opentrades > 0
+    oec = strategy.opentrades.entry_comment(0)
+    odd = strategy.opentrades.max_drawdown_percent(0)
+    oru = strategy.opentrades.max_runup_percent(0)
+    och = strategy.opentrades.capital_held
+    label.new(bar_index, low, text = oec + str.tostring(odd + oru + och))
+acct = strategy.convert_to_account(100.0)
+symv = strategy.convert_to_symbol(100.0)
+avgs = strategy.avg_losing_trade + strategy.avg_losing_trade_percent + strategy.avg_trade + strategy.avg_trade_percent + strategy.avg_winning_trade + strategy.avg_winning_trade_percent
+gross = strategy.grossloss_percent + strategy.grossprofit_percent
+extremes = strategy.max_contracts_held_long + strategy.max_contracts_held_short + strategy.max_runup + strategy.margin_liquidation_price
+if barstate.islast
+    label.new(bar_index, close, text = strategy.position_entry_name)
+plot(acct + symv + avgs + gross + extremes)

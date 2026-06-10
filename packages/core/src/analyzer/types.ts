@@ -436,6 +436,11 @@ export namespace TypeChecker {
 	): PineType {
 		left = canonicalizeQualifier(left);
 		right = canonicalizeQualifier(right);
+		// An unknown operand gives an unknown result. The arithmetic branch
+		// below used to guess `int` for unknown+unknown, which surfaced as
+		// type-mismatch FPs once the numeric->string coercion stopped
+		// masking the guess. see INV059
+		if (left === "unknown" || right === "unknown") return "unknown";
 		// String concatenation with +
 		if (operator === "+" && (isStringType(left) || isStringType(right))) {
 			// String concatenation returns string (or series<string> if either is series)
