@@ -1,0 +1,10 @@
+// @test regression/INV053-undefined-builtin-member
+// @description Calling an undefined member of a KNOWN builtin namespace is TV's CE10271 "Could not find function or function reference" (probed ta.bogus / math.notreal, 2026-06-10). Same family as INV036's Identifier-callee check, extended to MemberExpression callees on builtin namespaces. See investigations/INV053-builtin-namespace-member-calls/notes.md.
+// @expects parse: success
+// @expects error: line=3, column=5, message="Could not find function or function reference 'ta.bogus'"
+// @expects error: line=4, column=5, message="Could not find function or function reference 'math.notreal'"
+//@version=6
+indicator("x")
+z = ta.bogus(close, 5)
+w = math.notreal(1.0)
+plot(z + w)

@@ -1,0 +1,6 @@
+//@version=6
+indicator("x")
+a = ta.tr(true)
+b = color.red(1)
+plot(a)
+plot(close, color = b)

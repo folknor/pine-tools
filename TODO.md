@@ -126,13 +126,16 @@ IDs so the two stay in sync.
   Requires widening the internal `Diagnostic.message` type or adding a
   parallel rich field, plus a capability check before sending markup.
 - **#41 - MemberExpression callee validation.** INV036's CE10271 covers
-  Identifier callees only; undefined `lib.fn` / `ns.fn` / UDT-method
-  calls still pass silently. Needs import-alias member data we don't
-  have, plus UDT method namespaces. (INV036 residual.) Also blocks the
-  last bool-condition FP (`b369d637…` - tuple destructure from an
-  imported lib call gets `series<float>` elements; the interim option
-  of typing such elements `unknown` instead of guessing is noted in
-  INV049's residual).
+  Identifier callees; the **builtin-namespace slice landed 2026-06-10**
+  ([INV053](investigations/INV053-builtin-namespace-member-calls/notes.md))
+  - undefined members of a known builtin namespace (`ta.bogus`,
+  `math.notreal`) are now CE10271. **Still open:** members of import
+  *aliases* (`myLib.fn()`) and UDT method calls - both need data we
+  don't have (the imported library's export set; UDT method
+  namespaces). Also blocks the last bool-condition FP (`b369d637…` -
+  tuple destructure from an imported lib call gets `series<float>`
+  elements; the interim option of typing such elements `unknown`
+  instead of guessing is noted in INV049's residual).
 - **#48 - mutation-testing pass (negative corpus).** INV050 exposed a
   structural blind spot: every verification layer samples valid code.
   The corpus is published working scripts, so a false-negative class

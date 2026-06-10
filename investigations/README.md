@@ -321,3 +321,13 @@ contradiction means re-measure, not "the earlier author was wrong."
   `export const ... ` / bare `export var = ...` now parse (was a phantom
   "Expected function name after 'export'" + undefined-variable cascade).
   9 probes.
+- [INV053](INV053-builtin-namespace-member-calls/notes.md) - extends
+  INV036's CE10271 to MemberExpression callees: an undefined member of a
+  KNOWN builtin namespace (`ta.bogus`, `math.notreal`) is "Could not find
+  function or function reference". The data-backed slice of #41 - skips
+  import-alias/UDT members (unresolvable) and, via two gates found in the
+  corpus run, generic constructors (`array.new<type>` keyed with the
+  template) and unaliased library imports whose name collides with a
+  builtin namespace (`import .../ta/N` -> namespace `ta`). Conservatively
+  skips any known member (so `color.red()` is a missed FN, never an FP).
+  4 probes.

@@ -37,6 +37,7 @@ import {
 	hasOverloads,
 	hasOverloadSignatures,
 	isBuiltinConstant,
+	GENERIC_FUNCTION_BASES,
 	isTopLevelOnly,
 	isVariadicFunction,
 	KNOWN_NAMESPACES,
@@ -90,6 +91,12 @@ export class UnifiedPineValidator {
 	// pre-collected over a global UDF (`float ema2 = ...` inside a body
 	// calling global `ema2()`) are all TV-legal calls. see INV036
 	private declaredFunctionNames: Set<string> = new Set();
+	// Namespaces bound by an `import` - the alias if present, else the
+	// library name (the path's middle segment: `import User/ta/8` binds the
+	// namespace `ta`). Members of these are library calls we cannot resolve,
+	// so the builtin-namespace member-call check skips them even when the
+	// name collides with a built-in namespace. see INV053
+	private importedNamespaces: Set<string> = new Set();
 	// Lexical stack of names DECLARED in each scope, for TV's CE10095
 	// ("X" is already defined): re-declaring a name in the SAME scope is
 	// an error - typed or untyped, after var/varip, and a function param
@@ -113,7 +120,18 @@ export class UnifiedPineValidator {
 		this.declaredTypeNames.clear();
 		this.declaredEnumNames.clear();
 		this.declaredFunctionNames.clear();
+		this.importedNamespaces.clear();
 		this.declScopes = [new Set()];
+
+		// Pre-scan imports so a member call on an imported namespace is
+		// recognised regardless of source order (the main pass below is
+		// single-pass top-to-bottom). see INV053
+		for (const statement of ast.body) {
+			if (statement.type === "ImportStatement") {
+				const ns = statement.alias ?? statement.libraryPath.split("/")[1];
+				if (ns) this.importedNamespaces.add(ns);
+			}
+		}
 
 		// Single pass: collect declarations and validate together
 		// This ensures function parameters are in scope during validation
@@ -1655,9 +1673,7 @@ export class UnifiedPineValidator {
 			// method declared EARLIER in source - TV's CE10271 "Could not
 			// find function or function reference 'X'" (probed: undefined
 			// name, call-before-definition, and a plain VARIABLE used as a
-			// callee all error; see INV036). MemberExpression callees
-			// (lib.fn / Type.new / method-style calls) stay unvalidated -
-			// alias and UDT member sets need separate machinery.
+			// callee all error; see INV036).
 			if (
 				version === "6" &&
 				call.callee.type === "Identifier" &&
@@ -1670,6 +1686,43 @@ export class UnifiedPineValidator {
 					`Could not find function or function reference '${functionName}'`,
 					DiagnosticSeverity.Error,
 				);
+			} else if (
+				version === "6" &&
+				call.callee.type === "MemberExpression" &&
+				call.callee.object.type === "Identifier"
+			) {
+				// `ns.member(...)` where `ns` is a built-in namespace and
+				// `member` is unknown there - same CE10271 (probed `ta.bogus`,
+				// `math.notreal`; see INV053). Bounded to the data-backed
+				// subset of #41: only built-in namespaces (we have the full
+				// member catalog), and only when `ns` is NOT user-shadowed (an
+				// `import ... as ns` alias / user var has a non-builtin symbol,
+				// line !== 0 - its members we cannot resolve). A member that
+				// IS a known builtin (function via the signature lookup above,
+				// or a const/variable in NAMESPACE_PROPERTIES) is left alone:
+				// calling a built-in variable like `ta.tr(...)` is TV-silent,
+				// and calling a const like `color.red(...)` IS a TV error but
+				// the const-vs-variable split is murky, so we conservatively
+				// skip all known members - we never want a false positive on a
+				// real member.
+				const nsName = call.callee.object.name;
+				const objSym = this.symbolTable.lookup(nsName);
+				const userShadowed = !!objSym && objSym.line !== 0;
+				if (
+					!userShadowed &&
+					!this.importedNamespaces.has(nsName) &&
+					KNOWN_NAMESPACES.includes(nsName) &&
+					!(functionName in NAMESPACE_PROPERTIES) &&
+					!GENERIC_FUNCTION_BASES.has(functionName)
+				) {
+					this.addError(
+						call.line,
+						call.column,
+						functionName.length,
+						`Could not find function or function reference '${functionName}'`,
+						DiagnosticSeverity.Error,
+					);
+				}
 			}
 			return;
 		}

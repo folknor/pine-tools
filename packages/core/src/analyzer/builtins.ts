@@ -75,6 +75,21 @@ function buildKnownNamespaces(): string[] {
 // Known namespaces for property validation (derived from pine-data)
 export const KNOWN_NAMESPACES = buildKnownNamespaces();
 
+// Base names of generic builtin functions - the catalog keys carry the
+// template suffix (`array.new<type>`, `map.new<type,type>`), but a call's
+// callee is the bare `array.new` / `map.new`, so a plain
+// functionSignatures.get(callee) misses. This set lets the checker
+// recognise `array.new<float>()` etc. as real builtins. see INV053
+function buildGenericFunctionBases(): Set<string> {
+	const bases = new Set<string>();
+	for (const name of FUNCTIONS_BY_NAME.keys()) {
+		const lt = name.indexOf("<");
+		if (lt > 0) bases.add(name.slice(0, lt));
+	}
+	return bases;
+}
+export const GENERIC_FUNCTION_BASES = buildGenericFunctionBases();
+
 // Function signature interface
 export interface FunctionSignature {
 	name: string;

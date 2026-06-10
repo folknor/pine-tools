@@ -1,0 +1,14 @@
+//@version=6
+indicator("x")
+
+type point
+    float v
+
+method dist(point this) =>
+    this.v * 2
+
+p = point.new(1.0)
+d = p.dist()
+
+x = math.max(1.0, 2.0)
+plot(d + x)

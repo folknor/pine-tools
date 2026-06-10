@@ -1,0 +1,5 @@
+//@version=6
+indicator("x")
+z = ta.bogus(close, 5)
+w = math.notreal(1.0)
+plot(z + w)
