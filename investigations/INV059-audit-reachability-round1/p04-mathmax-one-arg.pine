@@ -1,0 +1,4 @@
+//@version=6
+indicator("INV059 p04")
+x = math.max(1)
+plot(x)

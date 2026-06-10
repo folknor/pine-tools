@@ -132,10 +132,12 @@ IDs so the two stay in sync.
   `math.notreal`) are now CE10271. **Still open:** members of import
   *aliases* (`myLib.fn()`) and UDT method calls - both need data we
   don't have (the imported library's export set; UDT method
-  namespaces). Also blocks the last bool-condition FP (`b369d637…` -
-  tuple destructure from an imported lib call gets `series<float>`
-  elements; the interim option of typing such elements `unknown`
-  instead of guessing is noted in INV049's residual).
+  namespaces). The interim option from INV049's residual **landed
+  2026-06-10 (INV059)**: tuple-destructure elements from unclassifiable
+  calls (import aliases included) now type `unknown` instead of guessing
+  `series<float>`, which cleared the last bool-condition FP (`b369d637…`,
+  now local 0 / TV 0) and -166 corpus FP/cascade records. Real
+  member-call validation still needs the export-set data.
 - **#48 - mutation-testing pass (negative corpus).** INV050 exposed a
   structural blind spot: every verification layer samples valid code.
   The corpus is published working scripts, so a false-negative class
@@ -211,6 +213,20 @@ IDs so the two stay in sync.
   (drop-required-arg, typo-member, wrong-type-literal, delete-decl),
   then (c) `scripts/mutation-run.mjs`.
 
+  **(a) built 2026-06-10: `scripts/audit-error-reachability.mjs`.** It
+  enumerates `this.addError(`/`this.addWarning(` sites in the compiled
+  checker + SemanticAnalyzer, wraps both at runtime to capture call-site
+  stack frames, and fires corpus + test fixtures + investigation probes
+  through them in-process. Its FIRST run flagged 4 never-firing sites -
+  all real, all fixed same-day, see
+  [INV059](investigations/INV059-audit-reachability-round1/notes.md)
+  (phantom cross-type coercions starving the named-arg check, a
+  double-report, two wording/severity drifts). It also reports
+  probe-only sites (no regression fixture pins them) and
+  corpus-but-never-in-tests sites (5 as of the post-INV059 run - fixture
+  build-out targets). Remaining for #48: (b) the mutator and (c) the
+  orchestrator.
+
 - **#52 - fixture-coverage build-out (the census target list).**
   `scripts/fixture-coverage.mjs` (built 2026-06-10) parses every corpus +
   test fixture and cross-references the JSON catalog to list entries
@@ -248,6 +264,23 @@ IDs so the two stay in sync.
   the missing-required-arg check skipped ALL overloaded functions (112 of 122
   had an unenforced universally-required arg). Fixed with an arity floor. See
   [INV056](investigations/INV056-overload-missing-arg/notes.md).
+- **#53 - align arg-diagnostic wording/anchors with TV's templates
+  (INV059 residual).** Three pieces, all probed 2026-06-10: (1) TV's
+  arg-type error is the CE10123 template (`Cannot call "plot" with
+  argument "color"="red". An argument of "literal string" type was used
+  but a "series color"  is expected.`) anchored at the argument VALUE;
+  ours is `Type mismatch for parameter ...` anchored at the call. (2)
+  TV's unknown-parameter error is `The "plotshape" function does not
+  have an argument with the name "shape"` anchored at the argument NAME;
+  ours is `Invalid parameter 'shape'. Valid parameters: ...` at the call
+  - and it fires 5738 times across the corpus, so the rewording is a
+  large (mechanical) baseline churn. Exact anchors need the parser to
+  record argument-name positions (`CallArgument` carries no name
+  line/col today). (3) The too-MANY-args wording (`Too many arguments
+  for ...`, 33 corpus records) is unprobed - TV's too-few wording is the
+  terse `Wrong number of args: N` (adopted in INV059), the too-many
+  counterpart likely matches. Also: the audit's corpus-but-never-in-tests
+  list (5 sites post-INV059) is fixture build-out, same vein as #52.
 - **#45 - leading-operator wraps at multiple-of-4 indent (probed
   residual of INV042).** `float x = cond` / `    ? high` / `    : low`
   is TV's CE10013 `Mismatched input "?" expecting set "end of line
@@ -309,6 +342,7 @@ count.
 | `scripts/check-changed-files-broken-string.mjs` | INV047 safety check: verifies every regression-changed fixture carries a broken-string record (i.e. is a file TV rejects at the lexer stage), flagging any possibly-TV-clean file whose behavior changed. |
 | `scripts/audit-fixtures.mjs` | Scans every `.pine` fixture under `packages/core/test/fixtures/` without running vitest. Flags fixtures with malformed `@expects` directives and fixtures whose only assertion is a total `errors: N` count (no per-error coverage), printing suggested `// @expects error: line=N, message="..."` directives ready to paste. Exits non-zero on malformed directives. Wrapper: `pnpm run audit:fixtures` (also rebuilds the compiled helpers it imports). |
 | `scripts/fixture-coverage.mjs` | Coverage census behind #52. Parses every corpus + test fixture with our own parser and cross-references the JSON catalog to surface BLIND SPOTS: catalog entries referenced in zero fixtures, behavioral flags whose rule is never exercised (esp. `topLevelOnly` functions never called in a violating local scope - the INV054 class), and a structural-shape census (member-chain depth, switch/forIn/tuple/enum) per set. Deterministic, offline, ~2s. `--json` for machine output. It finds gaps, it does not judge correctness - the uncovered-function list is #52's fixture-building target list. |
+| `scripts/audit-error-reachability.mjs` | The check-site half of #48's free slice. Enumerates every `addError`/`addWarning` call site in the compiled checker + SemanticAnalyzer, wraps both at runtime to capture call-site stack frames, and validates corpus + test fixtures + investigation probes in-process. Reports DEAD sites (never fire anywhere - the INV050 class), probe-only sites (nothing pins them), and corpus-but-never-in-tests sites (untested real-world behavior). Offline, ~30s. `--json` for machine output. First run yielded INV059 (4 findings). |
 
 Repro for any fixture:
 
@@ -435,7 +469,10 @@ the branch tails.
 | count | files | category |
 |---|---|---|
 | 3 | 1 | `Ternary branches must have compatible types. Got '*' and '*'` (our own synthetic fixture's deliberate true positives - TV flags them too, at the argument position; see INV026) |
-| 1 | 1 | `The condition of the "if" statement must evaluate to a "bool" value.` (`b369d637…` - destructure from an imported library call; blocked on #41's member data, see INV049 residual) |
+
+The `b369d637…` if-condition row (destructure from an imported library
+call) cleared 2026-06-10: INV059's unknown-typing of unclassifiable
+destructure elements removed it (local 0 / TV 0, verified).
 
 **Right approach**: pick a specific FP, trace through `inferExpressionType`
 in `checker.ts` to see why we produce e.g. `series<float>` for what

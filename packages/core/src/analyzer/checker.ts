@@ -677,7 +677,11 @@ export class UnifiedPineValidator {
 							if (
 								varSymbol &&
 								varSymbol.type !== "unknown" &&
-								!TypeChecker.isAssignable(initType, varSymbol.type)
+								!TypeChecker.isAssignable(
+									initType,
+									varSymbol.type,
+									version !== "6",
+								)
 							) {
 								this.addError(
 									statement.line,
@@ -1125,7 +1129,9 @@ export class UnifiedPineValidator {
 								DiagnosticSeverity.Error,
 							);
 						}
-					} else if (!TypeChecker.isAssignable(valueType, targetType)) {
+					} else if (
+						!TypeChecker.isAssignable(valueType, targetType, version !== "6")
+					) {
 						this.addError(
 							statement.line,
 							statement.column,
@@ -1552,7 +1558,14 @@ export class UnifiedPineValidator {
 			}
 		}
 
-		if (!TypeChecker.areTypesCompatible(leftType, rightType, expr.operator)) {
+		if (
+			!TypeChecker.areTypesCompatible(
+				leftType,
+				rightType,
+				expr.operator,
+				version !== "6",
+			)
+		) {
 			// Anchor at the operand that breaks the operator's operand class
 			// when that is decidable (arithmetic/comparison want numeric
 			// operands - `2 * color.blue` errors at the color, `color.red >
@@ -1898,7 +1911,8 @@ export class UnifiedPineValidator {
 			);
 		}
 
-		// For variadic functions, require at least minimum number of arguments
+		// For variadic functions, require at least minimum number of arguments.
+		// TV's wording (probed math.max(1), INV059 p04): terse arg count.
 		if (isVariadic) {
 			const minArgs = getMinArgsForVariadic(functionName);
 			if (positionalArgs.length < minArgs) {
@@ -1906,7 +1920,7 @@ export class UnifiedPineValidator {
 					call.line,
 					call.column,
 					functionName.length,
-					`'${functionName}' requires at least ${minArgs} argument${minArgs > 1 ? "s" : ""}, got ${positionalArgs.length}`,
+					`Wrong number of args: ${positionalArgs.length}`,
 					DiagnosticSeverity.Error,
 				);
 			}
@@ -2301,33 +2315,24 @@ export class UnifiedPineValidator {
 		functionName: string,
 		args: CallArgument[],
 	): void {
-		// plotshape: common mistake - using "shape" instead of "style"
-		if (functionName === "plotshape" || functionName.endsWith(".plotshape")) {
-			for (const arg of args) {
-				if (arg.name === "shape") {
-					this.addError(
-						call.line,
-						call.column,
-						5,
-						'Invalid parameter "shape". Did you mean "style"?',
-						DiagnosticSeverity.Error,
-					);
-				}
-			}
-		}
+		// (The former plotshape shape->style suggestion was a pure duplicate:
+		// the generic invalid-parameter check already fires on `shape=` and TV
+		// emits exactly one error there. Removed - see INV059 p05.)
 
-		// indicator/strategy: timeframe_gaps requires timeframe
+		// indicator/strategy: timeframe_gaps requires timeframe. A TV ERROR,
+		// not a warning, anchored at the argument with TV's wording naming
+		// the call (probed - INV059 p06).
 		if (functionName === "indicator" || functionName === "strategy") {
-			const hasTimeframeGaps = args.some((a) => a.name === "timeframe_gaps");
+			const gapsArg = args.find((a) => a.name === "timeframe_gaps");
 			const hasTimeframe = args.some((a) => a.name === "timeframe");
 
-			if (hasTimeframeGaps && !hasTimeframe) {
+			if (gapsArg && !hasTimeframe) {
 				this.addError(
-					call.line,
-					call.column,
+					gapsArg.value.line,
+					gapsArg.value.column,
 					functionName.length,
-					'"timeframe_gaps" has no effect without a "timeframe" argument',
-					DiagnosticSeverity.Warning,
+					`"timeframe_gaps" has no effect because the "${functionName}()" call has no "timeframe" argument`,
+					DiagnosticSeverity.Error,
 				);
 			}
 		}
@@ -2876,8 +2881,12 @@ export class UnifiedPineValidator {
 	): void {
 		for (let i = 0; i < tupleDecl.names.length; i++) {
 			const name = tupleDecl.names[i];
-			// Use inferred type from init expression, or default to series<float>
-			const varType = elementTypes[i] || "series<float>";
+			// Use the inferred element type. When inference produced nothing
+			// (an import-alias call - #41's data gap - or any shape we can't
+			// classify), the element is UNKNOWN, not series<float>: guessing
+			// float made every destructured color/bool from a library call a
+			// type-mismatch FP downstream (INV049 residual, INV059).
+			const varType = elementTypes[i] || "unknown";
 
 			this.symbolTable.define({
 				name,
@@ -3151,9 +3160,13 @@ export class UnifiedPineValidator {
 					type = altType;
 				} else if (altType === "na") {
 					type = conseqType;
-				} else if (TypeChecker.isAssignable(conseqType, altType)) {
+				} else if (
+					TypeChecker.isAssignable(conseqType, altType, version !== "6")
+				) {
 					type = conseqType;
-				} else if (TypeChecker.isAssignable(altType, conseqType)) {
+				} else if (
+					TypeChecker.isAssignable(altType, conseqType, version !== "6")
+				) {
 					type = altType;
 				} else if (
 					TypeChecker.isNumericType(conseqType) &&

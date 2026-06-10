@@ -1,0 +1,19 @@
+// @test regression/INV059-v6-arg-type-coercions
+// @description The audit-error-reachability findings (INV059, all TV-probed 2026-06-10): (1) v6 rejects the cross-type coercions (string->color, numeric->color, numeric->string) that once silently passed isAssignable - TV CE10123s plot color="red"/color=42/title=42; (2) variadic too-few-args uses TV's terse wording (math.max(1) -> 'Wrong number of args: 1'); (3) plotshape shape= draws exactly ONE error (the former did-you-mean special case double-reported); (4) timeframe_gaps without timeframe is a TV ERROR at the argument, naming the call. The total error count enforces no duplicates.
+// @expects parse: success
+// @expects errors: 6
+// @expects error: line=2, message=/"timeframe_gaps" has no effect because the "indicator\(\)" call has no "timeframe" argument/
+// @expects error: line=3, message=/Type mismatch for parameter 'color'.*got string/
+// @expects error: line=4, message=/Type mismatch for parameter 'color'.*got int/
+// @expects error: line=5, message=/Type mismatch for parameter 'title'.*got int/
+// @expects error: line=6, message=/Wrong number of args: 1/
+// @expects error: line=8, message=/Invalid parameter 'shape'/
+
+//@version=6
+indicator("INV059 v6", timeframe_gaps = true)
+plot(close, color = "red")
+plot(close, color = 42)
+plot(close, title = 42)
+x = math.max(1)
+plot(x)
+plotshape(close > open, shape = shape.triangleup)

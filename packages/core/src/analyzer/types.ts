@@ -164,8 +164,15 @@ export namespace TypeChecker {
 		);
 	}
 
-	// Check if type1 is assignable to type2
-	export function isAssignable(from: PineType, to: PineType): boolean {
+	// Check if type1 is assignable to type2. `legacy` (v4/v5 source)
+	// additionally allows the cross-type coercions those versions really
+	// had - string/int colors, implicit tostring - which v6 rejects with
+	// CE10123 (probed 2026-06-10, INV059; legacy leniency per G004).
+	export function isAssignable(
+		from: PineType,
+		to: PineType,
+		legacy = false,
+	): boolean {
 		from = canonicalizeQualifier(from);
 		to = canonicalizeQualifier(to);
 		if (from === to) return true;
@@ -268,41 +275,61 @@ export namespace TypeChecker {
 		if (from === "series<float>" && to === "int") return true;
 		if (from === "series<int>" && to === "float") return true;
 
-		// String -> color coercion (Pine Script allows color names and hex as strings)
-		// e.g., "red", "blue", "#FF0000", "#00FF00FF"
-		if (from === "string" && (to === "color" || to === "series<color>"))
-			return true;
-		if (from === "series<string>" && to === "series<color>") return true;
+		// Cross-type coercions exist ONLY for legacy (v4/v5) sources: string
+		// colors ("red"), ARGB-int colors, color<->numeric, and implicit
+		// tostring were real in those versions (63 corpus records across 6
+		// v4/v5 files rely on them). v6 rejects every one with CE10123
+		// ('plot(close, color = "red")' / 'color = 42' / 'title = 42' -
+		// probed 2026-06-10), and under v6 they starved the named-arg
+		// type-mismatch check of nearly every real violation. see INV059
+		if (legacy) {
+			// String -> color ("red", "blue")
+			if (from === "string" && (to === "color" || to === "series<color>"))
+				return true;
+			if (from === "series<string>" && to === "series<color>") return true;
 
-		// Numeric -> color coercion (colors can be specified as ARGB integers)
-		if (from === "int" && (to === "color" || to === "series<color>"))
-			return true;
-		if (from === "float" && (to === "color" || to === "series<color>"))
-			return true;
-		if (from === "series<int>" && (to === "series<color>" || to === "color"))
-			return true;
-		if (from === "series<float>" && (to === "series<color>" || to === "color"))
-			return true;
-		if (from === "simple<int>" && (to === "color" || to === "series<color>"))
-			return true;
-		if (from === "simple<float>" && (to === "color" || to === "series<color>"))
-			return true;
+			// Numeric -> color (ARGB integers)
+			if (from === "int" && (to === "color" || to === "series<color>"))
+				return true;
+			if (from === "float" && (to === "color" || to === "series<color>"))
+				return true;
+			if (
+				from === "series<int>" &&
+				(to === "series<color>" || to === "color")
+			)
+				return true;
+			if (
+				from === "series<float>" &&
+				(to === "series<color>" || to === "color")
+			)
+				return true;
+			if (
+				from === "simple<int>" &&
+				(to === "color" || to === "series<color>")
+			)
+				return true;
+			if (
+				from === "simple<float>" &&
+				(to === "color" || to === "series<color>")
+			)
+				return true;
 
-		// Color -> numeric coercion (color can be converted to its integer representation)
-		if (from === "color" && (to === "int" || to === "float")) return true;
-		if (
-			from === "series<color>" &&
-			(to === "series<int>" || to === "series<float>")
-		)
-			return true;
+			// Color -> numeric (integer representation)
+			if (from === "color" && (to === "int" || to === "float")) return true;
+			if (
+				from === "series<color>" &&
+				(to === "series<int>" || to === "series<float>")
+			)
+				return true;
 
-		// Numeric -> string coercion (str.tostring is often implicit)
-		if (from === "int" && (to === "string" || to === "series<string>"))
-			return true;
-		if (from === "float" && (to === "string" || to === "series<string>"))
-			return true;
-		if (from === "series<int>" && to === "series<string>") return true;
-		if (from === "series<float>" && to === "series<string>") return true;
+			// Numeric -> string (implicit tostring)
+			if (from === "int" && (to === "string" || to === "series<string>"))
+				return true;
+			if (from === "float" && (to === "string" || to === "series<string>"))
+				return true;
+			if (from === "series<int>" && to === "series<string>") return true;
+			if (from === "series<float>" && to === "series<string>") return true;
+		}
 
 		return false;
 	}
@@ -469,11 +496,13 @@ export namespace TypeChecker {
 		return "unknown";
 	}
 
-	// Check if types are compatible for operation
+	// Check if types are compatible for operation. `legacy` threads the
+	// v4/v5 cross-type coercions into the assignability fallbacks (INV059).
 	export function areTypesCompatible(
 		left: PineType,
 		right: PineType,
 		operator: string,
+		legacy = false,
 	): boolean {
 		left = canonicalizeQualifier(left);
 		right = canonicalizeQualifier(right);
@@ -529,7 +558,10 @@ export namespace TypeChecker {
 			if (areCompatibleForComparison(right, left)) return true;
 
 			// Allow assignability in either direction
-			return isAssignable(left, right) || isAssignable(right, left);
+			return (
+				isAssignable(left, right, legacy) ||
+				isAssignable(right, left, legacy)
+			);
 		}
 
 		// Logical operators require bool types only

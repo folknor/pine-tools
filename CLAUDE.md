@@ -495,9 +495,11 @@ TODO #17 / git log.)
 - `simple<T>` ↔ `series<T>` coercion
 - `series<T>` → `T` coercion (series values in simple contexts)
 - `int` ↔ `float` bidirectional coercion
-- `series<float>` → `color` coercion
-- Numeric → `string` coercion
 - Color type arithmetic
+- **Legacy-only** (v4/v5, behind `isAssignable`'s `legacy` param): string →
+  `color` ("red"), numeric ↔ `color` (ARGB ints), numeric → `string`
+  (implicit tostring). v6 rejects all of these with CE10123 - probed
+  2026-06-10, see INV059. Do not re-add them to the v6 path.
 
 ---
 

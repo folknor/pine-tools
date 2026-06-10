@@ -1,0 +1,10 @@
+// @test regression/INV059-legacy-color-coercions
+// @description Legacy (v4/v5) sources keep the cross-type coercions v6 dropped (INV059): string colors and color/string comparisons were real in those versions, and 63 corpus records across 6 v4/v5 files rely on them (G004 leniency). This v5 fixture must stay clean while the same shapes error under v6.
+// @expects parse: success
+// @expects no-errors
+
+//@version=5
+indicator("INV059 legacy")
+col = close > open ? color.green : color.red
+isGreen = col == "green" ? 1 : 0
+plot(isGreen)

@@ -381,3 +381,14 @@ contradiction means re-measure, not "the earlier author was wrong."
   by whether a tuple-only param (stdev_mult) is provided. TV's
   `variableType.itemType is not a function` artifact (G001) deliberately
   not replicated. 10 probes.
+- [INV059](INV059-audit-reachability-round1/notes.md) - first run of the
+  error-reachability audit (#48's check-site half) flagged 4 never-firing
+  validator sites; all four probed and fixed same-day: the named-arg
+  type-mismatch check was starved by phantom cross-type coercions
+  (string->color, numeric->color/string - real in v4/v5, CE10123 in v6;
+  now legacy-gated behind isAssignable's `legacy` param), the plotshape
+  shape= special case double-reported (removed), variadic too-few-args
+  and timeframe_gaps adopted TV's wording/severity/anchor. Corpus fallout
+  fix: import-alias destructure elements now type `unknown` instead of
+  guessing series<float> (-166 FP/cascade records across 12 files, incl.
+  the LAST over-strict bool entry b369d637). 6 probes.

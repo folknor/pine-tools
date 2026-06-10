@@ -1,0 +1,3 @@
+//@version=6
+indicator("INV059 p02")
+plot(close, color = 42)
