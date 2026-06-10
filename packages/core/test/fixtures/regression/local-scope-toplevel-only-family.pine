@@ -1,0 +1,35 @@
+// @test regression/local-scope-toplevel-only-family
+// @description Guards the topLevelOnly local-scope check across the full plot/declaration family. TV rejects each of these in any local scope with CE10188 (the plot case was probed 2026-06-04, see TODO "Checker - local-scope restrictions"). The fixture-coverage census showed 13 of the 20 topLevelOnly functions were exercised in NO local-scope fixture, so a regression in the check would have gone unnoticed for all but plot + strategy.risk.*. This covers the remaining family in one place. (strategy.risk.* live in INV054-two-level-namespace-local-scope.)
+// @expects parse: success
+// @expects error: line=6, column=5, message="Function 'plotshape' cannot be called from a local scope. It must be called from the global scope."
+// @expects error: line=7, column=5, message="Function 'plotchar' cannot be called from a local scope. It must be called from the global scope."
+// @expects error: line=8, column=5, message="Function 'plotbar' cannot be called from a local scope. It must be called from the global scope."
+// @expects error: line=9, column=5, message="Function 'plotcandle' cannot be called from a local scope. It must be called from the global scope."
+// @expects error: line=10, column=5, message="Function 'plotarrow' cannot be called from a local scope. It must be called from the global scope."
+// @expects error: line=11, column=5, message="Function 'barcolor' cannot be called from a local scope. It must be called from the global scope."
+// @expects error: line=12, column=5, message="Function 'bgcolor' cannot be called from a local scope. It must be called from the global scope."
+// @expects error: line=13, column=5, message="Function 'hline' cannot be called from a local scope. It must be called from the global scope."
+// @expects error: line=14, column=5, message="Function 'alertcondition' cannot be called from a local scope. It must be called from the global scope."
+// @expects error: line=15, column=5, message="Function 'fill' cannot be called from a local scope. It must be called from the global scope."
+// @expects error: line=16, column=5, message="Function 'indicator' cannot be called from a local scope. It must be called from the global scope."
+// @expects error: line=17, column=5, message="Function 'strategy' cannot be called from a local scope. It must be called from the global scope."
+// @expects error: line=18, column=5, message="Function 'library' cannot be called from a local scope. It must be called from the global scope."
+//@version=6
+strategy("t")
+p1 = plot(close)
+p2 = plot(open)
+if close > open
+    plotshape(close)
+    plotchar(close)
+    plotbar(open, high, low, close)
+    plotcandle(open, high, low, close)
+    plotarrow(close)
+    barcolor(color.red)
+    bgcolor(color.red)
+    hline(1.0)
+    alertcondition(close > open)
+    fill(p1, p2)
+    indicator("x")
+    strategy("y")
+    library("z")
+plot(close)

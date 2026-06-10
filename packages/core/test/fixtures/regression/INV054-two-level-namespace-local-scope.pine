@@ -1,9 +1,19 @@
 // @test regression/INV054-two-level-namespace-local-scope
-// @description strategy.risk.* may only be declared in global scope; TV emits CE10188 "Cannot use ... in local scope" (probed all six 2026-06-10). We previously accepted them anywhere because the callee name-resolver only handled single-level `ns.member` member chains, so two-level builtin names (strategy.risk.*, strategy.opentrades.*, chart.point.*) resolved to "" and skipped ALL validation. See investigations/INV054-two-level-namespace-resolution/notes.md.
+// @description All six strategy.risk.* rules may only be declared in global scope; TV emits CE10188 "Cannot use ... in local scope" (probed all six 2026-06-10). We previously accepted them anywhere because the callee name-resolver only handled single-level `ns.member` member chains, so two-level builtin names (strategy.risk.*, strategy.opentrades.*, chart.point.*) resolved to "" and skipped ALL validation. The fixture-coverage census showed only 1 of these 6 was tested in a local scope, so all six are exercised here. See investigations/INV054-two-level-namespace-resolution/notes.md.
 // @expects parse: success
-// @expects error: line=4, column=5, message="Function 'strategy.risk.max_drawdown' cannot be called from a local scope. It must be called from the global scope."
+// @expects error: line=4, column=5, message="Function 'strategy.risk.allow_entry_in' cannot be called from a local scope. It must be called from the global scope."
+// @expects error: line=5, column=5, message="Function 'strategy.risk.max_cons_loss_days' cannot be called from a local scope. It must be called from the global scope."
+// @expects error: line=6, column=5, message="Function 'strategy.risk.max_drawdown' cannot be called from a local scope. It must be called from the global scope."
+// @expects error: line=7, column=5, message="Function 'strategy.risk.max_intraday_filled_orders' cannot be called from a local scope. It must be called from the global scope."
+// @expects error: line=8, column=5, message="Function 'strategy.risk.max_intraday_loss' cannot be called from a local scope. It must be called from the global scope."
+// @expects error: line=9, column=5, message="Function 'strategy.risk.max_position_size' cannot be called from a local scope. It must be called from the global scope."
 //@version=6
 strategy("t")
 if close > open
+    strategy.risk.allow_entry_in(strategy.direction.long)
+    strategy.risk.max_cons_loss_days(5)
     strategy.risk.max_drawdown(90, strategy.percent_of_equity)
+    strategy.risk.max_intraday_filled_orders(10)
+    strategy.risk.max_intraday_loss(5, strategy.percent_of_equity)
+    strategy.risk.max_position_size(100)
 plot(close)

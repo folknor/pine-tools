@@ -210,6 +210,18 @@ IDs so the two stay in sync.
   (no TV), then (b) `scripts/mutate.mjs` with 3-4 operators
   (drop-required-arg, typo-member, wrong-type-literal, delete-decl),
   then (c) `scripts/mutation-run.mjs`.
+
+  **Built 2026-06-10: `scripts/fixture-coverage.mjs`** - the catalog/shape
+  half of the free slice (complements the still-pending
+  `audit-error-reachability.mjs`, which is the check-site half). It parses
+  every fixture and lists catalog entries referenced nowhere + flags whose
+  rule is never exercised. Its first run caught the INV054 class directly:
+  only 2 of 20 `topLevelOnly` functions were tested in a local scope (now
+  20/20 after two fixtures). Its **uncovered-function list (111 fns) is the
+  negative-corpus target list for the mutator** - mutate a clean call to one
+  of those and check whether TV rejects and we do not. So #48's remaining
+  work is: (a) `audit-error-reachability.mjs`, then the mutator/orchestrator
+  seeded from both audits.
 - **#45 - leading-operator wraps at multiple-of-4 indent (probed
   residual of INV042).** `float x = cond` / `    ? high` / `    : low`
   is TV's CE10013 `Mismatched input "?" expecting set "end of line
@@ -270,6 +282,7 @@ count.
 | `scripts/slice-lines.mjs` | Extracts 1-based line ranges (`"1-2,1041-1051"`) from a file into a new file - the bisection helper for narrowing parser-state repros out of large fixtures (see INV047). |
 | `scripts/check-changed-files-broken-string.mjs` | INV047 safety check: verifies every regression-changed fixture carries a broken-string record (i.e. is a file TV rejects at the lexer stage), flagging any possibly-TV-clean file whose behavior changed. |
 | `scripts/audit-fixtures.mjs` | Scans every `.pine` fixture under `packages/core/test/fixtures/` without running vitest. Flags fixtures with malformed `@expects` directives and fixtures whose only assertion is a total `errors: N` count (no per-error coverage), printing suggested `// @expects error: line=N, message="..."` directives ready to paste. Exits non-zero on malformed directives. Wrapper: `pnpm run audit:fixtures` (also rebuilds the compiled helpers it imports). |
+| `scripts/fixture-coverage.mjs` | The no-TV slice of the #48 gap-finder. Parses every corpus + test fixture with our own parser and cross-references the JSON catalog to surface BLIND SPOTS: catalog entries referenced in zero fixtures, behavioral flags whose rule is never exercised (esp. `topLevelOnly` functions never called in a violating local scope - the INV054 class), and a structural-shape census (member-chain depth, switch/forIn/tuple/enum) per set. Deterministic, offline, ~2s. `--json` for machine output. It finds gaps, it does not judge correctness - the uncovered-function list is the negative-corpus target list for the #48 mutation half. |
 
 Repro for any fixture:
 
