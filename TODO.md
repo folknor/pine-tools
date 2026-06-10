@@ -211,21 +211,19 @@ IDs so the two stay in sync.
   (drop-required-arg, typo-member, wrong-type-literal, delete-decl),
   then (c) `scripts/mutation-run.mjs`.
 
-  **Built 2026-06-10: `scripts/fixture-coverage.mjs`** - the catalog/shape
-  half of the free slice (complements the still-pending
-  `audit-error-reachability.mjs`, which is the check-site half). It parses
-  every fixture and lists catalog entries referenced nowhere + flags whose
-  rule is never exercised. Its first run caught the INV054 class directly:
-  only 2 of 20 `topLevelOnly` functions were tested in a local scope (now
-  20/20 after two fixtures). Its **uncovered-function list (~107 fns, shrinks
-  as coverage is built) is a target list** - build a fixture exercising each
-  and diff against `--tv`; agreement confirms coverage, disagreement is an
-  INV. This is plain fixture-building, NOT mutation (you can't mutate a
-  construct that appears in zero files); mutation operates on constructs that
-  DO appear. INV055 came straight out of this: building coverage for the
-  uncovered `matrix.*` block exposed the CE10098 void-assignment FN. So #48's
-  remaining work is: (a) `audit-error-reachability.mjs`, then the
-  mutator/orchestrator seeded from both audits.
+- **#52 - fixture-coverage build-out (the census target list).**
+  `scripts/fixture-coverage.mjs` (built 2026-06-10) parses every corpus +
+  test fixture and cross-references the JSON catalog to list entries
+  referenced in zero fixtures and behavioral flags whose rule is never
+  exercised. Its first run caught the INV054 class directly: only 2 of 20
+  `topLevelOnly` functions were tested in a local scope (now 20/20 after
+  two fixtures), and building coverage for the uncovered `matrix.*` block
+  exposed INV055's CE10098 void-assignment FN. The pending work: the
+  **uncovered-function list (~107 fns, shrinks as coverage is built) is a
+  target list** - build a fixture exercising each and diff against `--tv`;
+  agreement confirms coverage, disagreement is an INV. This is plain
+  fixture-building, distinct from #48's mutation testing (you can't mutate
+  a construct that appears in zero files).
 - ~~#49~~ **Reassignment case CLOSED 2026-06-10 (INV055).**
   `x := voidCall()` now emits TV's type-mismatch naming the target's type,
   via an explicit void-call branch (shared `isVoidCall` helper) rather than a
@@ -233,15 +231,45 @@ IDs so the two stay in sync.
   tuple destructure (`[a, b] = voidCall()`) - is reclassified to #51 below
   because it is not void-specific. See
   [INV055](investigations/INV055-void-assignment/notes.md).
-- **#51 - tuple destructure requires a tuple-returning RHS.**
-  `[a, b] = close` / `[a, b] = array.size(x)` / `[a, b] = voidCall()` are all
-  TV's "the right side must be a function call or structure returning a tuple
-  with the same number of elements" - a general arity/shape check on
-  `TupleDeclaration` RHS, not void-specific (surfaced as an INV055 residual).
-  TV also emits an internal `variableType.itemType is not a function` crash
-  artifact alongside (G001, do not replicate). Needs its own repro + INV;
-  confirm the message and which RHS shapes TV accepts (UDF tuple returns,
-  `if`/`switch`/`for`/`while` tuple tails) before flagging.
+- **#51 - tuple destructure requires a tuple-returning RHS. BLOCKED on
+  reliable tuple-return modeling (attempted 2026-06-10, reverted).** TV has
+  two errors here: a SHAPE error (`[a, b] = close` / `= array.size(x)` /
+  `= voidCall()` -> "the right side must be a function call or structure
+  returning a tuple with the same number of elements") and a COUNT error
+  (`[a, b, c] = f()` on a 2-tuple -> "Syntax error: The quantities of tuple
+  elements ... right side has 2 but the left side has 3"). TV also emits an
+  internal `variableType.itemType is not a function` crash artifact alongside
+  the shape error (G001, do not replicate).
+
+  A first implementation (classify RHS arity: tuple-N / scalar-0 / unknown)
+  produced **51 false positives across 17 corpus files** - every one a valid
+  script TV accepts. The check can't ship until three upstream gaps are
+  fixed, each TV-confirmed clean 2026-06-10:
+  1. ~~**UDF tuple-return capture is incomplete.**~~ **FIXED 2026-06-10
+     ([INV057](investigations/INV057-udf-tuple-capture-shapes/notes.md)).**
+     The real gaps were a trailing switch-with-tuple-arms body (hslToRGB),
+     same-name overloads with different tuple arities colliding in the
+     name-keyed map (valueAtTime), and receiver method calls
+     (`data.valueAtTime(ts)`) missing the bare-name registration. Capture
+     now descends all tuple-producing tails, stores shapes per arity, and
+     the destructure site picks by LHS element count. Cleared 5 bool-type
+     FPs on 2 TV-clean fixtures.
+  2. **`request.security` / `request.security_lower_tf` expression
+     passthrough.** When the expression arg is a tuple-returning CALL
+     (`request.security(sym, "", ta.dmi(...))`) or an array, the result is a
+     tuple of that arity. Only the literal-array arg of `request.security` is
+     modelled; the call-arg case and `request.security_lower_tf` are not.
+  3. **Overloaded tuple builtins.** `ta.vwap`'s merged `returns` is frozen to
+     its scalar overload, so `[vw, up, lo] = ta.vwap(src, anchor, mult)` reads
+     as scalar. (Only ta.macd/bb/kc/dmi/supertrend carry a bracketed tuple
+     `returns`.) Wider shape per INV057's residual: element types for builtin
+     tuple returns aren't modelled at the destructure site at all - every
+     element defaults to `series<float>`, which happens to be right for the
+     ta.* tuples but is still a guess.
+
+  The only FP-free slice is a non-call scalar RHS (`[a,b] = close`), which has
+  zero corpus occurrences and is an implausible mistake - not worth a rule on
+  its own. Do #51 only after (2)-(3).
 - ~~#50~~ **CLOSED 2026-06-10 (INV056).** The `matrix.sum` lead generalized:
   the missing-required-arg check skipped ALL overloaded functions (112 of 122
   had an unenforced universally-required arg). Fixed with an arity floor. See
@@ -306,7 +334,7 @@ count.
 | `scripts/slice-lines.mjs` | Extracts 1-based line ranges (`"1-2,1041-1051"`) from a file into a new file - the bisection helper for narrowing parser-state repros out of large fixtures (see INV047). |
 | `scripts/check-changed-files-broken-string.mjs` | INV047 safety check: verifies every regression-changed fixture carries a broken-string record (i.e. is a file TV rejects at the lexer stage), flagging any possibly-TV-clean file whose behavior changed. |
 | `scripts/audit-fixtures.mjs` | Scans every `.pine` fixture under `packages/core/test/fixtures/` without running vitest. Flags fixtures with malformed `@expects` directives and fixtures whose only assertion is a total `errors: N` count (no per-error coverage), printing suggested `// @expects error: line=N, message="..."` directives ready to paste. Exits non-zero on malformed directives. Wrapper: `pnpm run audit:fixtures` (also rebuilds the compiled helpers it imports). |
-| `scripts/fixture-coverage.mjs` | The no-TV slice of the #48 gap-finder. Parses every corpus + test fixture with our own parser and cross-references the JSON catalog to surface BLIND SPOTS: catalog entries referenced in zero fixtures, behavioral flags whose rule is never exercised (esp. `topLevelOnly` functions never called in a violating local scope - the INV054 class), and a structural-shape census (member-chain depth, switch/forIn/tuple/enum) per set. Deterministic, offline, ~2s. `--json` for machine output. It finds gaps, it does not judge correctness - the uncovered-function list is the negative-corpus target list for the #48 mutation half. |
+| `scripts/fixture-coverage.mjs` | Coverage census behind #52. Parses every corpus + test fixture with our own parser and cross-references the JSON catalog to surface BLIND SPOTS: catalog entries referenced in zero fixtures, behavioral flags whose rule is never exercised (esp. `topLevelOnly` functions never called in a violating local scope - the INV054 class), and a structural-shape census (member-chain depth, switch/forIn/tuple/enum) per set. Deterministic, offline, ~2s. `--json` for machine output. It finds gaps, it does not judge correctness - the uncovered-function list is #52's fixture-building target list. |
 
 Repro for any fixture:
 

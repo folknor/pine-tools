@@ -1,0 +1,10 @@
+//@version=6
+indicator("INV057 p01")
+pick(float h) =>
+    switch
+        h < 1.0 => [true, "low"]
+        => [false, "high"]
+[flag, lbl] = pick(close)
+if flag
+    label.new(bar_index, high, text = lbl)
+plot(flag ? 1 : 0)

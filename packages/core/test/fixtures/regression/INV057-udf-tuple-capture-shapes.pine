@@ -1,0 +1,32 @@
+// @test regression/INV057-udf-tuple-capture-shapes
+// @description UDF tuple-return capture must cover every tuple-producing body tail and overload set. (1) A trailing discriminantless switch whose arms are tuples (the hslToRGB shape) was not captured, so destructured bool/string elements defaulted to series<float> and drew bool-condition FPs downstream. (2) Same-name overloads with different tuple arities (function + method, the valueAtTime shape) collided in the name-keyed capture map (last-wins), and a method called via a receiver (a.vat(0)) missed the capture entirely because the dotted callee name is not the method's bare registered name. All shapes TV-clean (probes p01/p02, 2026-06-10). See INV057.
+// @expects parse: success
+// @expects no-errors
+
+//@version=6
+indicator("INV057 udf tuple capture shapes")
+
+// (1) trailing discriminantless switch with tuple arms:
+// flag/lbl must type bool/string, not default to series<float>
+pick(float h) =>
+    switch
+        h < 1.0 => [true, "low"]
+        => [false, "high"]
+[flag, lbl] = pick(close)
+if flag
+    label.new(bar_index, high, text = lbl)
+
+// (2) same-name overloads with different tuple arities + receiver call:
+// the 2-tuple method and 3-tuple function must not collide (arity-matched
+// lookup), and a.vat(0) must resolve the bare method name
+method vat(array<float> arr, int ts) =>
+    [arr.get(ts), "x"]
+vat(float src, int ts) =>
+    [src + ts, "y", true]
+a = array.new<float>(1, 0.0)
+[v1, s1] = a.vat(0)
+[v2, s2, b2] = vat(close, 1)
+if b2
+    label.new(bar_index, high, text = s1 + s2)
+plot(v1 + v2)
+plot(flag ? 1 : 0)

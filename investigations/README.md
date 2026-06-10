@@ -356,3 +356,13 @@ contradiction means re-measure, not "the earlier author was wrong."
   required count, measured against that overload's own param order, so
   `ta.highest(10)` stays clean while `matrix.sum(m)` flags `id2`. 0 corpus
   regressions across the 112-function broadening.
+- [INV057](INV057-udf-tuple-capture-shapes/notes.md) - UDF tuple-return
+  capture (INV010) missed three shapes, mistyping destructured elements as
+  `series<float>` and drawing bool-type FPs on two TV-clean fixtures: a
+  trailing discriminantless switch with tuple arms (the hslToRGB shape),
+  same-name overloads with different tuple arities (2-tuple method +
+  3-tuple function, the valueAtTime shape - the name-keyed map was
+  last-wins), and method calls via a receiver (`data.valueAtTime(ts)`
+  looked up the dotted name, not the bare method name). Capture now reuses
+  the destructure site's tail descent, stores shapes per arity, and picks
+  by LHS element count. TODO #51 blocker 1. 2 probes.

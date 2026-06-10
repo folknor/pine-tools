@@ -1,0 +1,12 @@
+//@version=6
+indicator("INV057 p02")
+method vat(array<float> arr, int ts) =>
+    [arr.get(0), "x"]
+vat(float src, int ts) =>
+    [src, "y", true]
+a = array.new<float>(1, 0.0)
+[v1, s1] = a.vat(1)
+[v2, s2, b2] = vat(close, 1)
+if b2
+    label.new(bar_index, high, text = s1 + s2)
+plot(v1 + v2)

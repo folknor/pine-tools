@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Fixture-coverage census - the no-TV slice of the gap-finder (#48).
+// Fixture-coverage census (TODO #52).
 //
 // Cross-references the generated JSON catalog (pine-data/v6) against the
 // fixture sets by PARSING each .pine with our own parser and walking the AST.
@@ -7,8 +7,8 @@
 // exercises - which is exactly the class of gap INV054 was (two-level member
 // calls like strategy.risk.max_drawdown resolved nowhere and no fixture
 // covered the shape). It does NOT judge whether the checker is correct about
-// a shape - that needs the --tv mutation half. This half is deterministic and
-// offline.
+// a shape - build a fixture for the gap and diff against --tv for that. The
+// census is deterministic and offline.
 //
 // Two fixture sets are scanned separately:
 //   corpus = fixtures/                          (real-world scripts, no assertions)

@@ -84,7 +84,10 @@ export class UnifiedPineValidator {
 	// (ArrayExpression). Used by inferTupleElementTypes so destructuring
 	// assignments like `[a, b, c] = f()` recover the element types
 	// rather than defaulting everything to `series<float>`. see INV010.
-	private udfTupleReturnTypes: Map<string, PineType[]> = new Map();
+	// Captured tuple-return shapes per UDF name. A name can carry several
+	// arities (e.g. a 2-tuple method and a 3-tuple function overload both
+	// named `valueAtTime`), so each entry is a list of shapes. see INV010.
+	private udfTupleReturnTypes: Map<string, PineType[][]> = new Map();
 	private blockDepth: number = 0;
 	// Built-in variables referenced (as built-ins) so far, in source
 	// order. Declaring a variable with one of these names afterwards is
@@ -755,7 +758,7 @@ export class UnifiedPineValidator {
 					statement.params,
 				);
 				if (tupleTypes)
-					this.udfTupleReturnTypes.set(statement.name, tupleTypes);
+					this.recordUdfTupleReturn(statement.name, tupleTypes);
 
 				// Register the function in the symbol table at the outer scope
 				this.declaredFunctionNames.add(statement.name); // see INV036
@@ -1122,7 +1125,7 @@ export class UnifiedPineValidator {
 					statement.params,
 				);
 				if (tupleTypes)
-					this.udfTupleReturnTypes.set(statement.name, tupleTypes);
+					this.recordUdfTupleReturn(statement.name, tupleTypes);
 
 				// Register the method in the symbol table. Use kind:"method"
 				// rather than "function" so it lives in the method namespace
@@ -2381,7 +2384,11 @@ export class UnifiedPineValidator {
 		tupleDecl: TupleDeclaration,
 		version: string = "6",
 	): PineType[] {
-		return this.tupleInitElementTypes(tupleDecl.init, version);
+		return this.tupleInitElementTypes(
+			tupleDecl.init,
+			version,
+			tupleDecl.names.length,
+		);
 	}
 
 	// Per-element types for a tuple-producing init expression. Beyond the
@@ -2396,6 +2403,7 @@ export class UnifiedPineValidator {
 	private tupleInitElementTypes(
 		expr: Expression,
 		version: string,
+		expectedCount?: number,
 	): PineType[] {
 		switch (expr.type) {
 			case "ArrayExpression": {
@@ -2428,15 +2436,23 @@ export class UnifiedPineValidator {
 					}
 				}
 
-				// User-defined function whose body's last expression is a
-				// tuple - recover the per-element types we captured when the
+				// User-defined function whose body evaluates to a tuple -
+				// recover the per-element types we captured when the
 				// function was validated. Without this every element defaults
 				// to `series<float>` and a destructured bool / int / color
-				// element gets wrongly typed downstream. see INV010.
+				// element gets wrongly typed downstream. see INV010. A name
+				// can carry several shapes (overloads); prefer the one whose
+				// arity matches the destructure.
 				if (elementTypes.length === 0 && funcName) {
-					const udfTuple = this.udfTupleReturnTypes.get(funcName);
-					if (udfTuple) {
-						for (const t of udfTuple) elementTypes.push(t);
+					const shapes =
+						this.udfTupleReturnTypes.get(funcName) ??
+						this.receiverMethodTupleShapes(call);
+					if (shapes) {
+						const byArity =
+							expectedCount === undefined
+								? undefined
+								: shapes.find((s) => s.length === expectedCount);
+						for (const t of byArity ?? shapes[0]) elementTypes.push(t);
 					}
 				}
 				return elementTypes;
@@ -2445,8 +2461,8 @@ export class UnifiedPineValidator {
 			case "IfExpression": {
 				const ifExpr = expr as IfExpression;
 				return this.mergeTupleBranchTypes([
-					this.branchTailTupleTypes(ifExpr.consequent, version),
-					this.branchTailTupleTypes(ifExpr.alternate, version),
+					this.branchTailTupleTypes(ifExpr.consequent, version, expectedCount),
+					this.branchTailTupleTypes(ifExpr.alternate, version, expectedCount),
 				]);
 			}
 
@@ -2458,14 +2474,28 @@ export class UnifiedPineValidator {
 						// statement's expression - visit statements INSTEAD of
 						// result (see SwitchCase in ast.ts / TODO #33).
 						c.statements
-							? this.branchTailTupleTypes(c.statements, version)
-							: this.tupleInitElementTypes(c.result, version),
+							? this.branchTailTupleTypes(c.statements, version, expectedCount)
+							: this.tupleInitElementTypes(c.result, version, expectedCount),
 					),
 				);
 			}
 		}
 
 		return [];
+	}
+
+	// `[v, t] = data.valueAtTime(ts)` - a UDF method called on a receiver
+	// registers under its bare name, so the dotted lookup misses. Fall back
+	// to the property name, but never for a builtin namespace object
+	// (`ta.macd` must not hit a same-named user method).
+	private receiverMethodTupleShapes(
+		call: CallExpression,
+	): PineType[][] | undefined {
+		if (call.callee.type !== "MemberExpression") return undefined;
+		const member = call.callee;
+		if (member.object.type !== "Identifier") return undefined;
+		if (KNOWN_NAMESPACES.includes(member.object.name)) return undefined;
+		return this.udfTupleReturnTypes.get(member.property.name);
 	}
 
 	// Tuple element types a statement block evaluates to: the tail
@@ -2475,6 +2505,7 @@ export class UnifiedPineValidator {
 	private branchTailTupleTypes(
 		stmts: Statement[] | undefined,
 		version: string,
+		expectedCount?: number,
 	): PineType[] {
 		if (!stmts || stmts.length === 0) return [];
 		const last = stmts[stmts.length - 1];
@@ -2482,17 +2513,20 @@ export class UnifiedPineValidator {
 			return this.tupleInitElementTypes(
 				(last as ExpressionStatement).expression,
 				version,
+				expectedCount,
 			);
 		}
 		if (last.type === "ReturnStatement") {
 			const value = (last as ReturnStatement).value;
-			return value ? this.tupleInitElementTypes(value, version) : [];
+			return value
+				? this.tupleInitElementTypes(value, version, expectedCount)
+				: [];
 		}
 		if (last.type === "IfStatement") {
 			const ifStmt = last as IfStatement;
 			return this.mergeTupleBranchTypes([
-				this.branchTailTupleTypes(ifStmt.consequent, version),
-				this.branchTailTupleTypes(ifStmt.alternate, version),
+				this.branchTailTupleTypes(ifStmt.consequent, version, expectedCount),
+				this.branchTailTupleTypes(ifStmt.alternate, version, expectedCount),
 			]);
 		}
 		return [];
@@ -2524,49 +2558,36 @@ export class UnifiedPineValidator {
 		return merged;
 	}
 
-	/**
-	 * If the function body's final expression is a tuple literal
-	 * (ArrayExpression), infer per-element types under the same temp
-	 * scope inferFunctionReturnType uses. Returns undefined when the
-	 * body doesn't return a tuple. see INV010.
-	 */
-	// Find the tuple expression a statement-tail evaluates to. A UDF can
-	// return its tuple not just as a trailing expression / return, but from
-	// the tail of an if/else (`if cond` ... `[true, obj]` / `else` ...
-	// `[false, na]`). Descend branch tails; prefer the consequent (the
-	// alternate is often the `[false, na]` default whose element types are
-	// less informative). see INV030
-	private tailTupleExpr(stmt: Statement): ArrayExpression | undefined {
-		if (stmt.type === "ExpressionStatement") {
-			const expr = (stmt as ExpressionStatement).expression;
-			if (expr.type === "ArrayExpression") return expr as ArrayExpression;
-			return undefined;
+	// Record a captured tuple-return shape under the UDF's name. Same-arity
+	// re-captures replace (idempotent across passes); a different arity is a
+	// genuine overload (function + method overloads share a name) and
+	// accumulates so the destructure site can pick by element count.
+	private recordUdfTupleReturn(name: string, types: PineType[]): void {
+		const existing = this.udfTupleReturnTypes.get(name);
+		if (!existing) {
+			this.udfTupleReturnTypes.set(name, [types]);
+			return;
 		}
-		if (stmt.type === "ReturnStatement") {
-			const value = (stmt as ReturnStatement).value;
-			if (value?.type === "ArrayExpression") return value as ArrayExpression;
-			return undefined;
-		}
-		if (stmt.type === "IfStatement") {
-			const ifStmt = stmt as IfStatement;
-			for (const branch of [ifStmt.consequent, ifStmt.alternate]) {
-				if (branch && branch.length > 0) {
-					const found = this.tailTupleExpr(branch[branch.length - 1]);
-					if (found) return found;
-				}
-			}
-		}
-		return undefined;
+		const sameArity = existing.findIndex((t) => t.length === types.length);
+		if (sameArity >= 0) existing[sameArity] = types;
+		else existing.push(types);
 	}
 
+	/**
+	 * If the function body evaluates to a tuple, infer per-element types
+	 * under the same temp scope inferFunctionReturnType uses. The tail
+	 * descent (branchTailTupleTypes) covers trailing tuple literals,
+	 * `return`s, and if/switch tails whose arms produce tuples (the
+	 * hslToRGB shape - a trailing discriminantless switch with tuple
+	 * arms). Returns undefined when the body doesn't produce a tuple.
+	 * see INV010, INV030.
+	 */
 	private inferUdfTupleReturnTypes(
 		body: Statement[],
 		version: string,
 		params?: FunctionParam[],
 	): PineType[] | undefined {
 		if (body.length === 0) return undefined;
-		const tupleExpr = this.tailTupleExpr(body[body.length - 1]);
-		if (!tupleExpr) return undefined;
 
 		// Mirror inferFunctionReturnType's temp-scope setup so the
 		// element-type inference sees the parameters and any locals - and
@@ -2596,13 +2617,10 @@ export class UnifiedPineValidator {
 			this.collectDeclarations(stmt, version);
 		}
 
-		const types: PineType[] = [];
-		for (const elem of tupleExpr.elements) {
-			types.push(this.inferExpressionType(elem, version));
-		}
+		const types = this.branchTailTupleTypes(body, version);
 		this.symbolTable.exitScope();
 		this.expressionTypes = savedExpressionTypes;
-		return types;
+		return types.length > 0 ? types : undefined;
 	}
 
 	/**
