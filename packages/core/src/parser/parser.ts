@@ -151,7 +151,24 @@ export class Parser {
 		}
 
 		// Method declaration: method methodName(...) => ...
-		if (this.match([TokenType.KEYWORD, ["method"]])) {
+		// `method` is a contextual keyword. Only the `method <name> (` shape
+		// is a declaration; pre-v6/v6 scripts also use `method` as a plain
+		// variable name (`method = input.string(...)`, `method == "ADX" ?
+		// ... : ...`, `method[1]`, `method.foo`), where committing to the
+		// declaration path emitted a phantom "Expected method name after
+		// 'method'" - TV accepts the identifier use. The name token may be an
+		// IDENTIFIER or a reserved word (TV allows `method type(...)`,
+		// `method float(...)`, `method label(...)`); the LPAREN-after-name
+		// check is what separates the two (`method + (x)` stays an
+		// expression). Mirrors the `switch`/`type`/`enum` guards above. see
+		// INV051
+		if (
+			this.check([TokenType.KEYWORD, ["method"]]) &&
+			(this.peekNext()?.type === TokenType.IDENTIFIER ||
+				this.peekNext()?.type === TokenType.KEYWORD) &&
+			this.tokens[this.current + 2]?.type === TokenType.LPAREN
+		) {
+			this.advance();
 			return this.methodDeclaration(false, this.previous().indent ?? 0);
 		}
 
@@ -1807,10 +1824,17 @@ export class Parser {
 		isExport: boolean,
 		baseIndent = 0,
 	): AST.MethodDeclaration {
-		const nameToken = this.consume(
-			TokenType.IDENTIFIER,
-			"Expected method name after 'method'",
-		);
+		// The method name may be a plain IDENTIFIER or a reserved word - TV
+		// accepts `method type(...)`, `method float(...)`, `method label(...)`
+		// (probed INV051). Fall back to consume(IDENTIFIER) only to raise the
+		// standard error when neither follows (e.g. `method => ...`).
+		const nameToken =
+			this.check(TokenType.IDENTIFIER) || this.check(TokenType.KEYWORD)
+				? this.advance()
+				: this.consume(
+						TokenType.IDENTIFIER,
+						"Expected method name after 'method'",
+					);
 		this.consume(TokenType.LPAREN, 'Expected "(" after method name');
 		const params = this.parseFunctionParams();
 		this.consume(TokenType.RPAREN, 'Expected ")" after method parameters');

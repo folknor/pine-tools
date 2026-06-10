@@ -309,7 +309,7 @@ the previous counts lived. Confirmable counts:
 | 8+8 | 1 | `bar` undefined + `index` did-you-mean *(TP pairs - `bar index` mangle sites, probed INV047 p04; TV anchors one CE10156 at `index`)* |
 | 3 | 3 | `Undefined variable '*'. Did you mean '*'?` |
 | 3 | 3 | `Undefined variable '*'` |
-| 2-1 | - | long tail: `:` `==`, `Expected method name after 'method'` |
+| 2-1 | - | long tail: `:` `==` |
 
 ## Parser - syntax we silently accept (false negatives)
 

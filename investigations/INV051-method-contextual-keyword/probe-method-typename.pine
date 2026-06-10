@@ -1,0 +1,8 @@
+//@version=6
+indicator("x")
+method type(string str) =>
+    str
+method float(int id) =>
+    id
+x = "a".type()
+plot(close)

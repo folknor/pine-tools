@@ -302,3 +302,12 @@ contradiction means re-measure, not "the earlier author was wrong."
   is now the single source; the checker emits TV's exact wording.
   Hidden one-arg overloads (ta.highest et al, remarks-only) probed and
   synthesized into overloads[]. 6 probes + sweep.
+- [INV051](INV051-method-contextual-keyword/notes.md) - `method` is a
+  contextual keyword: used as a plain variable name (`method =
+  input.string(...)`, `method == "ADX" ? ...`) it must not enter the
+  method-declaration path - it did, emitting a phantom "Expected method
+  name after 'method'". Also TV accepts reserved-word method *names*
+  (`method type(...)`, `method float(...)`, `method label(...)`). Fixed
+  by gating the declaration on the `method <name> (` shape (name token
+  + LPAREN) and letting `methodDeclaration` accept a KEYWORD name. 3
+  probes.

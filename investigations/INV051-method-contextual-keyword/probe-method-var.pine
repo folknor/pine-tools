@@ -1,0 +1,4 @@
+//@version=6
+indicator("x")
+method = input.string("ADX", options=["ADX","B"])
+plot(close, color = method == "ADX" ? color.red : color.blue)

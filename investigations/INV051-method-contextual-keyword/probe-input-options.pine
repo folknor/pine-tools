@@ -1,0 +1,4 @@
+//@version=6
+indicator("x")
+method = input(defval='BB %B', options=['RSI', 'MACD', 'BB %B'])
+plot(close, color = method == 'RSI' ? color.red : color.blue)

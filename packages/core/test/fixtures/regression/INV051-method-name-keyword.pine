@@ -1,0 +1,13 @@
+// @test regression/INV051-method-name-keyword
+// @description A method name may be a reserved word, not only a plain identifier. TV accepts `method type(...)`, `method float(...)`, `method label(...)`; we previously rejected these with "Expected method name after 'method'". The `method <name> (` shape (name followed by LPAREN) is what marks a declaration. See investigations/INV051-method-contextual-keyword/notes.md.
+// @expects parse: success
+// @expects no-errors
+//@version=6
+indicator("t")
+method type(string str) =>
+    str
+method float(int id) =>
+    id
+a = "EMA".type()
+b = (7).float()
+plot(close)

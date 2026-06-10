@@ -1,0 +1,10 @@
+// @test regression/INV051-method-as-variable
+// @description `method` is a contextual keyword. When used as a plain variable name (assignment, comparison, indexing, member access) it must NOT be parsed as a method declaration. TV accepts all of these; we previously emitted a phantom "Expected method name after 'method'". See investigations/INV051-method-contextual-keyword/notes.md.
+// @expects parse: success
+// @expects no-errors
+//@version=6
+indicator("t")
+method = input.string("ADX", options = ["ADX", "Volatility"])
+other = method == "ADX" ? 1 : 2
+plot(close, color = method == "ADX" ? color.red : color.blue)
+plot(other)
