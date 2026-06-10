@@ -76,6 +76,9 @@ export interface VariableDeclaration extends ASTNode {
 	varType: "var" | "varip" | "const" | null;
 	init: Expression | null;
 	typeAnnotation?: TypeAnnotation;
+	// Set on `export <var>` in a library. TV requires a const modifier AND
+	// a type on exported variables; the checker reads this. see INV052
+	isExport?: boolean;
 	// Statement-start anchor (the var/varip/const keyword or the leading
 	// type annotation token). TV anchors declaration-level diagnostics
 	// there, not at the variable name; line/column above stay on the name
@@ -103,6 +106,10 @@ export interface FunctionParam {
 	name: string;
 	typeAnnotation?: TypeAnnotation;
 	defaultValue?: Expression;
+	// Position of the param's first token. TV anchors "All exported
+	// functions args should be typified" at the untyped param. see INV052
+	line?: number;
+	column?: number;
 }
 
 export interface TypeAnnotation {

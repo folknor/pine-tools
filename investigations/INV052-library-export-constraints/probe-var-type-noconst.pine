@@ -1,0 +1,4 @@
+//@version=6
+library("P")
+export int seed = 7
+f() => seed

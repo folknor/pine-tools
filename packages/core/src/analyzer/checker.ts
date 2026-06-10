@@ -357,6 +357,34 @@ export class UnifiedPineValidator {
 		}
 	}
 
+	// TV requires every parameter of an EXPORTED function or method in a
+	// library to carry an explicit type ("All exported functions args
+	// should be typified"), anchored at each untyped param. Non-exported
+	// UDFs infer param types and are exempt. see INV052
+	private checkExportedParamsTypified(
+		isExport: boolean | undefined,
+		params: Array<{
+			name: string;
+			typeAnnotation?: { name: string };
+			line?: number;
+			column?: number;
+		}>,
+		version: string,
+	): void {
+		if (version !== "6" || !isExport) return;
+		for (const param of params) {
+			if (param.typeAnnotation) continue;
+			if (param.line === undefined || param.column === undefined) continue;
+			this.addError(
+				param.line,
+				param.column,
+				param.name.length,
+				"All exported functions args should be typified",
+				DiagnosticSeverity.Error,
+			);
+		}
+	}
+
 	// The governing condition expressions of a conditional-expression node
 	// (ternary condition, if-expression condition, switch discriminant +
 	// case conditions), or null for any other node. see INV040
@@ -448,6 +476,23 @@ export class UnifiedPineValidator {
 		const _prevBlockDepth = this.blockDepth;
 		switch (statement.type) {
 			case "VariableDeclaration": {
+				// An EXPORTED library variable must carry BOTH a `const`
+				// modifier AND a type; TV flags every other form (type-no-const,
+				// const-no-type, bare) with one message at the `export` keyword.
+				// see INV052
+				if (
+					version === "6" &&
+					statement.isExport &&
+					(statement.varType !== "const" || !statement.typeAnnotation)
+				) {
+					this.addError(
+						statement.startLine ?? statement.line,
+						statement.startColumn ?? statement.column,
+						"export".length,
+						"Exported variable should have const modifier and type",
+						DiagnosticSeverity.Error,
+					);
+				}
 				this.checkBuiltinShadowDeclaration(
 					statement.name,
 					statement.line,
@@ -668,6 +713,11 @@ export class UnifiedPineValidator {
 				this.blockDepth++;
 
 				this.checkParamTypeAnnotations(statement.params, version);
+				this.checkExportedParamsTypified(
+					statement.isExport,
+					statement.params,
+					version,
+				);
 
 				// Add function parameters to scope
 				for (const param of statement.params) {
@@ -1008,6 +1058,11 @@ export class UnifiedPineValidator {
 				this.blockDepth++;
 
 				this.checkParamTypeAnnotations(statement.params, version);
+				this.checkExportedParamsTypified(
+					statement.isExport,
+					statement.params,
+					version,
+				);
 
 				// Add method parameters to scope with proper type
 				for (const param of statement.params) {

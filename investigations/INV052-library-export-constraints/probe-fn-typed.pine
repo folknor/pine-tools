@@ -1,0 +1,3 @@
+//@version=6
+library("P")
+export add(int x, int y) => x + y

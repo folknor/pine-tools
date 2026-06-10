@@ -1,0 +1,8 @@
+// @test regression/INV052-exported-var-needs-const-type
+// @description An exported library variable must carry BOTH a const modifier AND a type. The type-but-no-const form parses (we used to emit a phantom "Expected function name after 'export'" + undefined-variable cascade instead) and TV flags it with one message at the `export` keyword. See investigations/INV052-library-export-constraints/notes.md.
+// @expects parse: success
+// @expects error: line=3, column=1, message="Exported variable should have const modifier and type"
+//@version=6
+library("P")
+export int seed = 7
+f() => seed

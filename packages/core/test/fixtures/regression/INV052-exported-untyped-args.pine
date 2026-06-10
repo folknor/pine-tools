@@ -1,0 +1,10 @@
+// @test regression/INV052-exported-untyped-args
+// @description TV requires every argument of an exported library function/method to be typified. An untyped param gets "All exported functions args should be typified" anchored at the param. See investigations/INV052-library-export-constraints/notes.md.
+// @expects parse: success
+// @expects error: line=3, column=12, message="All exported functions args should be typified"
+// @expects error: line=3, column=15, message="All exported functions args should be typified"
+// @expects error: line=4, column=33, message="All exported functions args should be typified"
+//@version=6
+library("P")
+export add(x, y) => x + y
+export method scale(float this, factor) => this * factor

@@ -315,14 +315,13 @@ the previous counts lived. Confirmable counts:
 
 These are real syntax errors in the user's code that we don't surface.
 
-| count | files | category |
-|---|---|---|
-| 2 | 1 | `All exported functions args should be typified` |
-| 1 | 1 | `Exported variable should have const modifier and type` |
-
-(Both rows are the library-only constraint policy question - see Open
-questions below. Every other category this table once held is fixed;
-the trail is in git history and the investigations index.)
+All categories this table once held are fixed; the trail is in git
+history and the investigations index. The two library-export
+constraints (`All exported functions args should be typified`,
+`Exported variable should have const modifier and type`) were the last
+rows - implemented 2026-06-10, see
+[INV052](investigations/INV052-library-export-constraints/notes.md),
+which also closed the parser gap on `export <type> var = ...`.
 
 ---
 
@@ -397,10 +396,11 @@ Nothing left to relax here.
   TV - retry before reading anything into it. (Root-caused 2026-06-04:
   our own CLI used to truncate >64KB responses, now fixed; what
   remains is genuinely TV-side and transient.)
-- A few categories ("All exported functions args should be typified",
+- ~~A few categories ("All exported functions args should be typified",
   "Exported variable should have const modifier and type") look like
-  library-only constraints. Decide whether we want to implement those at all
-  before counting them as bugs.
+  library-only constraints.~~ **Implemented 2026-06-10 (INV052)** - both
+  are real TV errors, probed and matched exactly; the parser gap under
+  `export <type> var = ...` was closed at the same time.
 - TV emits NO warnings for files with compile errors (stops at the
   first error - G001), so warning local-only counts are structurally
   inflated for error-bearing fixtures. The post-TV-stop bucketing

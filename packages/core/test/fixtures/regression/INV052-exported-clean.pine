@@ -1,0 +1,9 @@
+// @test regression/INV052-exported-clean
+// @description The compliant forms: a fully-typified exported function/method and an exported `const <type>` variable lint clean (no over-flagging). See investigations/INV052-library-export-constraints/notes.md.
+// @expects parse: success
+// @expects no-errors
+//@version=6
+library("P")
+export const int seed = 7
+export add(int x, int y) => x + y + seed
+export method scale(float this, float factor) => this * factor

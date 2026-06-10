@@ -311,3 +311,13 @@ contradiction means re-measure, not "the earlier author was wrong."
   by gating the declaration on the `method <name> (` shape (name token
   + LPAREN) and letting `methodDeclaration` accept a KEYWORD name. 3
   probes.
+- [INV052](INV052-library-export-constraints/notes.md) - two library
+  export constraints TV enforces and we missed: every arg of an exported
+  function/method must be typified ("All exported functions args should
+  be typified", anchored per untyped param), and an exported variable
+  must have BOTH a `const` modifier and a type ("Exported variable
+  should have const modifier and type", at the `export` keyword). Also
+  fixed the parser gap underneath - `export <type> var = ...` /
+  `export const ... ` / bare `export var = ...` now parse (was a phantom
+  "Expected function name after 'export'" + undefined-variable cascade).
+  9 probes.

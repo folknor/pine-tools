@@ -1685,10 +1685,12 @@ export class Parser {
 		| AST.FunctionDeclaration
 		| AST.MethodDeclaration
 		| AST.TypeDeclaration
-		| AST.EnumDeclaration {
+		| AST.EnumDeclaration
+		| AST.VariableDeclaration {
 		// The `export` keyword starts the line, so its indent is the
 		// declaration's base indent (the name token's is undefined).
-		const exportIndent = this.previous().indent ?? 0;
+		const exportToken = this.previous();
+		const exportIndent = exportToken.indent ?? 0;
 
 		if (this.match([TokenType.KEYWORD, ["method"]])) {
 			return this.methodDeclaration(true, exportIndent);
@@ -1702,6 +1704,56 @@ export class Parser {
 		// see INV002.
 		if (this.match([TokenType.KEYWORD, ["enum", "type"]])) {
 			return this.typeOrEnumDeclaration(this.previous().value);
+		}
+
+		// Exported variable declaration (Pine v6 libraries). All four forms
+		// PARSE - `export const int x = 1`, `export int x = 1`,
+		// `export const x = 1`, `export x = 1` - but TV's SemanticAnalyzer
+		// requires both a `const` modifier AND a type (the checker flags the
+		// deficient ones; see INV052). Without this routing they fell into
+		// the function path below and got a phantom "Expected function name
+		// after 'export'" plus an undefined-variable cascade on the name.
+		// A function is the only `export name(...)` form (IDENTIFIER + LPAREN).
+		const asExportVar = (
+			decl: AST.VariableDeclaration,
+		): AST.VariableDeclaration => {
+			decl.isExport = true;
+			// TV anchors the exported-variable diagnostic at `export`, not at
+			// the const/type/name token.
+			decl.startLine = exportToken.line;
+			decl.startColumn = exportToken.column;
+			return decl;
+		};
+		// const-led: `export const [type] name = ...`
+		if (this.match([TokenType.KEYWORD, ["const"]])) {
+			return asExportVar(this.varDeclarationAfterKeyword());
+		}
+		// type-led: `export <type> name = ...` (only when the var shape
+		// `type name =` follows - guards against anything funkier).
+		if (this.isVarTypeKeyword() || this.isQualifiedVarTypeKeyword()) {
+			const checkpoint = this.current;
+			const typeStartToken = this.peek();
+			let typeAnnotation = this.advance().value;
+			if (this.isVarTypeKeyword()) {
+				typeAnnotation += ` ${this.advance().value}`;
+			}
+			typeAnnotation += this.parseGenericTypeSuffix();
+			if (
+				this.check(TokenType.IDENTIFIER) &&
+				this.peekNext()?.type === TokenType.ASSIGN
+			) {
+				return asExportVar(
+					this.variableDeclaration(null, typeAnnotation, typeStartToken),
+				);
+			}
+			this.current = checkpoint;
+		}
+		// bare: `export name = ...` (IDENTIFIER not followed by LPAREN).
+		if (
+			this.check(TokenType.IDENTIFIER) &&
+			this.peekNext()?.type !== TokenType.LPAREN
+		) {
+			return asExportVar(this.variableDeclaration(null, undefined, this.peek()));
 		}
 
 		const nameToken = this.consume(
@@ -2760,6 +2812,8 @@ export class Parser {
 				name: paramName,
 				typeAnnotation,
 				defaultValue,
+				line: paramStartTok?.line,
+				column: paramStartTok?.column,
 			});
 
 			// Skip newlines after parameter (before comma or closing paren)
