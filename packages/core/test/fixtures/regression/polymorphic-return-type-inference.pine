@@ -1,0 +1,17 @@
+// @test regression/polymorphic-return-type-inference
+// @description Locks in the element-polymorphic / returnTypeParam return-type inference for functions the fixture-coverage census flagged as having dedicated checker logic but ZERO fixture coverage (array.mode, array.variance via flags.polymorphic="element"; ta.range via flags.returnTypeParam="source"). Verified correct against TV's documented overloads 2026-06-10 (array<int>->int, array<int/float>->float; ta.range series int->int / int-or-float->float). The bool-typed declaration is just a reveal vehicle - assigning the call result to a bool surfaces the inferred base type in the error, so a regression that collapsed int->float (or to unknown) would change these messages. Not an INV: no TV disagreement, this guards an already-correct path.
+// @expects error: line=5, message=/"const int" type to the "m1"/
+// @expects error: line=6, message=/"const float" type to the "m2"/
+// @expects error: line=7, message=/"const int" type to the "v1"/
+// @expects error: line=8, message=/"const float" type to the "v2"/
+// @expects error: line=9, message=/"series float" type to the "r1"/
+//@version=6
+indicator("t")
+int[] ai = array.from(1, 2)
+float[] af = array.from(1.0, 2.0)
+bool m1 = array.mode(ai)
+bool m2 = array.mode(af)
+bool v1 = array.variance(ai)
+bool v2 = array.variance(af)
+bool r1 = ta.range(close, 5)
+plot(close)
