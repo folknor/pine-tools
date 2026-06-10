@@ -556,6 +556,36 @@ export class UnifiedPineValidator {
 						DiagnosticSeverity.Error,
 					);
 				}
+				// A void-returning builtin call cannot initialize a variable:
+				// TV's CE10098 "Void expression cannot be assigned to a
+				// variable" (probed array.push / matrix.reverse, 2026-06-10).
+				// We previously inferred void calls as "unknown" (assignable
+				// to anything) and missed this for all 127 void builtins; the
+				// census surfaced the matrix.* block that exposed it.
+				// see INV055
+				if (version === "6" && statement.init?.type === "CallExpression") {
+					const init = statement.init as CallExpression;
+					const fnName = memberChainName(init.callee);
+					if (fnName) {
+						const argTypes = init.arguments.map((a) =>
+							this.inferExpressionType(a.value, version),
+						);
+						if (resolveCallReturnRaw(fnName, argTypes) === "void") {
+							const startLine = statement.startLine ?? statement.line;
+							const startColumn = statement.startColumn ?? statement.column;
+							this.addError(
+								startLine,
+								startColumn,
+								init.endLine === startLine && init.endColumn
+									? init.endColumn - startColumn
+									: statement.name.length,
+								"Void expression cannot be assigned to a variable",
+								DiagnosticSeverity.Error,
+							);
+						}
+					}
+				}
+
 				// Pine has no array literals: `arr = [1, 2, 3]` is TV's
 				// CE10156 'Syntax error at input "["' at the bracket, even
 				// when closed (probed - see INV046). Tuple expressions are

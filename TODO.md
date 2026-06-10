@@ -217,11 +217,29 @@ IDs so the two stay in sync.
   every fixture and lists catalog entries referenced nowhere + flags whose
   rule is never exercised. Its first run caught the INV054 class directly:
   only 2 of 20 `topLevelOnly` functions were tested in a local scope (now
-  20/20 after two fixtures). Its **uncovered-function list (111 fns) is the
-  negative-corpus target list for the mutator** - mutate a clean call to one
-  of those and check whether TV rejects and we do not. So #48's remaining
-  work is: (a) `audit-error-reachability.mjs`, then the mutator/orchestrator
-  seeded from both audits.
+  20/20 after two fixtures). Its **uncovered-function list (~107 fns, shrinks
+  as coverage is built) is a target list** - build a fixture exercising each
+  and diff against `--tv`; agreement confirms coverage, disagreement is an
+  INV. This is plain fixture-building, NOT mutation (you can't mutate a
+  construct that appears in zero files); mutation operates on constructs that
+  DO appear. INV055 came straight out of this: building coverage for the
+  uncovered `matrix.*` block exposed the CE10098 void-assignment FN. So #48's
+  remaining work is: (a) `audit-error-reachability.mjs`, then the
+  mutator/orchestrator seeded from both audits.
+- **#49 - void-assignment residuals (from INV055).** Two cases the INV055
+  declaration-case fix leaves open: (1) reassignment to a typed var
+  (`x := voidCall()`) is TV's type-mismatch message, not CE10098 - needs void
+  calls to infer as type `"void"` so the existing assign-type check fires (a
+  broader inference change with cascade risk: void-as-argument, void in
+  sub-expressions); (2) tuple destructure of a void call
+  (`[a, b] = voidCall()`). See
+  [INV055](investigations/INV055-void-assignment/notes.md).
+- **#50 - `matrix.sum` missing required `id2` (FN lead from INV055).** TV
+  flags `matrix.sum(m)` for a missing required `id2` while we are silent;
+  `matrix.sum(id1, id2)` has both required per the reference. A
+  required-params lead surfaced by the same matrix coverage probe - confirm
+  whether it generalizes (other two-required-arg builtins we miss) before
+  fixing.
 - **#45 - leading-operator wraps at multiple-of-4 indent (probed
   residual of INV042).** `float x = cond` / `    ? high` / `    : low`
   is TV's CE10013 `Mismatched input "?" expecting set "end of line

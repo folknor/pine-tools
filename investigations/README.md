@@ -339,3 +339,11 @@ contradiction means re-measure, not "the earlier author was wrong."
   `strategy.risk.*` to the `topLevelOnly` list, so they now get CE10188
   "Cannot use ... in local scope" (TV stricter than its own Manual prose).
   6 probes.
+- [INV055](INV055-void-assignment/notes.md) - assigning a void-returning
+  builtin's result to a variable (`x = array.push(...)`,
+  `rev = matrix.reverse(m)`) is TV's CE10098 "Void expression cannot be
+  assigned to a variable"; we inferred void as `unknown` (assignable to
+  anything) and missed it for all 127 void builtins. Found by building
+  coverage for the fixture-coverage census's uncovered `matrix.*` block.
+  Declaration case fixed; reassignment-to-typed-var and the `matrix.sum`
+  missing-`id2` lead are documented residuals.

@@ -1,0 +1,14 @@
+// @test regression/INV055-void-assignment
+// @description Assigning the result of a void-returning builtin to a variable is TV's CE10098 "Void expression cannot be assigned to a variable" (probed array.push / matrix.reverse, 2026-06-10). We inferred void calls as "unknown" (assignable to anything) and missed it for all 127 void builtins. Found by building coverage for the fixture-coverage census's uncovered matrix.* block. A bare void call as its own statement stays legal, and a non-void initializer is unaffected. See investigations/INV055-void-assignment/notes.md.
+// @expects parse: success
+// @expects error: line=4, column=1, message="Void expression cannot be assigned to a variable"
+// @expects error: line=6, column=1, message="Void expression cannot be assigned to a variable"
+//@version=6
+indicator("t")
+a = array.new<float>(0)
+bad1 = array.push(a, 1.0)
+m = matrix.new<float>(2, 2, 0.0)
+bad2 = matrix.reverse(m)
+array.push(a, 2.0)
+ok = array.size(a)
+plot(close + ok)
