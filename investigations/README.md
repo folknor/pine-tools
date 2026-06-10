@@ -347,3 +347,12 @@ contradiction means re-measure, not "the earlier author was wrong."
   coverage for the fixture-coverage census's uncovered `matrix.*` block.
   Declaration case fixed; reassignment-to-typed-var and the `matrix.sum`
   missing-`id2` lead are documented residuals.
+- [INV056](INV056-overload-missing-arg/notes.md) - the missing-required-arg
+  check (CE10165) skipped ALL overloaded functions (INV050's conservative
+  gate against the `label.new` x/y-vs-point FP), hiding the lead from INV055:
+  112 of 122 overloaded functions have an arg required in every overload we
+  never enforced. Fixed with an arity floor (`getMinimalRequiredParams`):
+  flag only when a call provides fewer args than the minimal-arity overload's
+  required count, measured against that overload's own param order, so
+  `ta.highest(10)` stays clean while `matrix.sum(m)` flags `id2`. 0 corpus
+  regressions across the 112-function broadening.

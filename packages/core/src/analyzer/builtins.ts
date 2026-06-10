@@ -321,6 +321,29 @@ export function hasOverloadSignatures(functionName: string): boolean {
 	return (func?.overloads?.length ?? 0) > 1;
 }
 
+// The required-param NAME list of the overload with the FEWEST required
+// params (ties -> first). This is the arity floor: a call providing fewer
+// args than this list's length can satisfy NO overload, so it is a sound
+// CE10165 even though the blanket missing-arg check skips overloaded
+// functions. Measuring against the minimal overload's OWN param order (not
+// the merged order) is what keeps it correct across overloads of different
+// arity: ta.highest(10) reads as the 1-arg `ta.highest(length)` form and is
+// NOT flagged, while matrix.sum(m) (both overloads need id1+id2) flags the
+// missing id2. label.new stays safe too - its point overload needs only
+// `point`, so the floor is 1 and the x/y form is never under-supplied.
+// see INV056
+export function getMinimalRequiredParams(functionName: string): string[] {
+	const func = FUNCTIONS_BY_NAME.get(functionName);
+	const overloads = func?.overloads;
+	if (!overloads || overloads.length === 0) return [];
+	let best: string[] | null = null;
+	for (const ov of overloads) {
+		const required = ov.parameters.filter((p) => p.required).map((p) => p.name);
+		if (best === null || required.length < best.length) best = required;
+	}
+	return best ?? [];
+}
+
 // Argument info for polymorphic return type inference
 export interface ArgumentInfo {
 	name?: string; // Named argument name (undefined for positional)

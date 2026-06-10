@@ -1,0 +1,17 @@
+// @test regression/INV056-overload-missing-required-arg
+// @description The missing-required-arg check (CE10165) skipped ALL overloaded functions (INV050's conservative gate, to dodge the label.new x/y-vs-point FP). That hid a whole FN class: a call providing fewer args than the MINIMAL-arity overload's required count satisfies no overload. Now enforced via the arity floor (getMinimalRequiredParams). Verified against TV 2026-06-10: matrix.sum(m) -> missing id2, str.contains("ab") -> missing str, color.rgb(1,2) -> missing blue; ta.highest(10) (1-arg overload) and matrix.sum(m,m) stay clean. The errors:3 count guards against the ta.highest / matrix.sum(m,m) FP regressing. See investigations/INV056-overload-missing-arg/notes.md.
+// @expects parse: success
+// @expects errors: 3
+// @expects error: line=4, message=/No value assigned to the "id2" parameter in matrix.sum/
+// @expects error: line=5, message=/No value assigned to the "str" parameter in str.contains/
+// @expects error: line=6, message=/No value assigned to the "blue" parameter in color.rgb/
+//@version=6
+indicator("t")
+m = matrix.new<float>(2, 2, 1.0)
+bad1 = matrix.sum(m)
+bad2 = str.contains("ab")
+bad3 = color.rgb(1, 2)
+ok1 = ta.highest(10)
+ok2 = math.max(1.0, 2.0)
+ok3 = matrix.sum(m, m)
+plot(ok1 + ok2)

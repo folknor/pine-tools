@@ -234,12 +234,10 @@ IDs so the two stay in sync.
   sub-expressions); (2) tuple destructure of a void call
   (`[a, b] = voidCall()`). See
   [INV055](investigations/INV055-void-assignment/notes.md).
-- **#50 - `matrix.sum` missing required `id2` (FN lead from INV055).** TV
-  flags `matrix.sum(m)` for a missing required `id2` while we are silent;
-  `matrix.sum(id1, id2)` has both required per the reference. A
-  required-params lead surfaced by the same matrix coverage probe - confirm
-  whether it generalizes (other two-required-arg builtins we miss) before
-  fixing.
+- ~~#50~~ **CLOSED 2026-06-10 (INV056).** The `matrix.sum` lead generalized:
+  the missing-required-arg check skipped ALL overloaded functions (112 of 122
+  had an unenforced universally-required arg). Fixed with an arity floor. See
+  [INV056](investigations/INV056-overload-missing-arg/notes.md).
 - **#45 - leading-operator wraps at multiple-of-4 indent (probed
   residual of INV042).** `float x = cond` / `    ? high` / `    : low`
   is TV's CE10013 `Mismatched input "?" expecting set "end of line

@@ -33,6 +33,7 @@ import {
 	getMinArgsForVariadic,
 	getPolymorphicReturnType,
 	getPolymorphicType,
+	getMinimalRequiredParams,
 	hasReturnTypeParam,
 	hasOverloads,
 	hasOverloadSignatures,
@@ -1924,6 +1925,28 @@ export class UnifiedPineValidator {
 					call.column,
 					functionName.length,
 					`No value assigned to the "${param.name}" parameter in ${functionName}()`,
+					DiagnosticSeverity.Error,
+				);
+			}
+		}
+
+		// Overloaded functions: the blanket missing-arg check above skips them
+		// (a call may satisfy a DIFFERENT overload than the INV050 probe
+		// enumerated). But a call providing fewer positional args than the
+		// MINIMAL-arity overload's required count satisfies NO overload - a
+		// sound CE10165. Measured against that overload's own param order, so
+		// ta.highest(10) (the 1-arg form) is fine while matrix.sum(m) flags the
+		// missing id2. see INV056
+		if (checkArgTypes && !call.recovered && hasOverloadSignatures(functionName)) {
+			const minReq = getMinimalRequiredParams(functionName);
+			for (let j = positionalArgs.length; j < minReq.length; j++) {
+				const name = minReq[j];
+				if (providedArgs.has(name)) continue;
+				this.addError(
+					call.line,
+					call.column,
+					functionName.length,
+					`No value assigned to the "${name}" parameter in ${functionName}()`,
 					DiagnosticSeverity.Error,
 				);
 			}
