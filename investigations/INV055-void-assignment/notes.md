@@ -1,7 +1,7 @@
 # INV055 - void-returning call cannot initialize a variable (CE10098)
 
 **Date:** 2026-06-10
-**Status:** fixed (declaration case; reassignment-to-typed-var residual below)
+**Status:** fixed (declaration + reassignment; tuple-destructure residual below)
 **Code:** `packages/core/src/analyzer/checker.ts` (VariableDeclaration case)
 
 ## How it was found
@@ -82,17 +82,40 @@ declaration probe (it flags 4:1, we did not), proving the call reached TV.
   positives, and no published script makes this mistake. Like INV053, the
   check earns its keep on invalid/edited code, not on the valid corpus.
 
+## Reassignment (added 2026-06-10, #49)
+
+`x := voidCall()` is TV's type-mismatch, NOT CE10098 - it names the target's
+type:
+
+```
+Cannot assign a value of the "void" type to the "x" variable.
+The variable is declared with the "float" type.
+```
+
+Probed for both an explicitly-typed var (`var float x`) and an inferred one
+(`y = 5`); same message, naming `float` / `int`. The strict-assign
+reassignment check (INV032) gates on `valueType !== "unknown"`, and void
+infers as `unknown`, so it skipped these. Fixed with an explicit void-call
+branch in the `AssignmentStatement` `:=` path that names the target's known
+type (shared `isVoidCall` helper with the declaration check). Only fires when
+the target type is known; if unknown we conservatively skip (can't name it).
+Regression check: 0 changes. Fixture: `regression/INV055-void-reassignment`.
+
+We deliberately did NOT make void calls infer as type `"void"` globally - that
+would let the existing checks fire but carries cascade risk (void-as-argument,
+void in sub-expressions) for uncertain gain. The two explicit checks cover the
+real mistakes.
+
 ## Residuals
 
-1. **Reassignment to a typed variable** (`x := voidCall()`) - TV's
-   type-mismatch message, not CE10098. We still infer the RHS as `unknown`,
-   so this is missed. Fixing it means making void calls infer as type
-   `"void"` so the existing assignment-type check fires; that is a broader
-   type-inference change with cascade potential (void-as-argument, void in
-   sub-expressions) and is deferred.
-2. **Tuple destructure of a void call** (`[a, b] = voidCall()`) - separate
-   statement type (`TupleDeclaration`), not handled here.
-3. **`matrix.sum` missing required `id2`** - the same probe showed TV flags
-   `matrix.sum(m)` for a missing required `id2` (CE10165 family) while we are
-   silent. `matrix.sum(id1, id2)` has both required per the reference. This
-   is a separate required-params lead, not part of this INV.
+1. **Tuple destructure of a void call** (`[a, b] = voidCall()`) - TV gives a
+   generic "the right side must be a function call ... returning a tuple with
+   the same number of elements" error, NOT a void-specific one: it fires for
+   any non-tuple RHS (`[a, b] = close` too). So this is a separate
+   tuple-destructure-arity check (its own future INV), broader than void, and
+   out of scope here. (TV also emits an internal `variableType.itemType is not
+   a function` crash artifact alongside it - G001, not replicated.)
+2. **`matrix.sum` missing required `id2`** - the same matrix probe showed TV
+   flags `matrix.sum(m)` for a missing required `id2` while we were silent.
+   Generalized and fixed as INV056 (the missing-arg check skipped all
+   overloaded functions).

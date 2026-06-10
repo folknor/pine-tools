@@ -564,27 +564,23 @@ export class UnifiedPineValidator {
 				// to anything) and missed this for all 127 void builtins; the
 				// census surfaced the matrix.* block that exposed it.
 				// see INV055
-				if (version === "6" && statement.init?.type === "CallExpression") {
+				if (
+					version === "6" &&
+					statement.init?.type === "CallExpression" &&
+					this.isVoidCall(statement.init as CallExpression, version)
+				) {
 					const init = statement.init as CallExpression;
-					const fnName = memberChainName(init.callee);
-					if (fnName) {
-						const argTypes = init.arguments.map((a) =>
-							this.inferExpressionType(a.value, version),
-						);
-						if (resolveCallReturnRaw(fnName, argTypes) === "void") {
-							const startLine = statement.startLine ?? statement.line;
-							const startColumn = statement.startColumn ?? statement.column;
-							this.addError(
-								startLine,
-								startColumn,
-								init.endLine === startLine && init.endColumn
-									? init.endColumn - startColumn
-									: statement.name.length,
-								"Void expression cannot be assigned to a variable",
-								DiagnosticSeverity.Error,
-							);
-						}
-					}
+					const startLine = statement.startLine ?? statement.line;
+					const startColumn = statement.startColumn ?? statement.column;
+					this.addError(
+						startLine,
+						startColumn,
+						init.endLine === startLine && init.endColumn
+							? init.endColumn - startColumn
+							: statement.name.length,
+						"Void expression cannot be assigned to a variable",
+						DiagnosticSeverity.Error,
+					);
 				}
 
 				// Pine has no array literals: `arr = [1, 2, 3]` is TV's
@@ -1035,6 +1031,33 @@ export class UnifiedPineValidator {
 						'Syntax error at input "["',
 						DiagnosticSeverity.Error,
 					);
+				}
+
+				// Reassigning a void-returning call: TV names the target's type
+				// ('Cannot assign a value of the "void" type ...'). We infer void
+				// as "unknown", so the strict-assign check below skips it; handle
+				// void explicitly. Only when the target's type is known (else we
+				// cannot name it). see INV055
+				if (
+					version === "6" &&
+					statement.operator === ":=" &&
+					statement.target.type === "Identifier" &&
+					statement.value.type === "CallExpression" &&
+					this.isVoidCall(statement.value as CallExpression, version)
+				) {
+					const targetType = this.inferExpressionType(
+						statement.target,
+						version,
+					);
+					if (targetType !== "unknown") {
+						this.addError(
+							statement.line,
+							statement.column,
+							1,
+							`Cannot assign a value of the "void" type to the "${(statement.target as Identifier).name}" variable. The variable is declared with the "${TypeChecker.baseTypeName(targetType as string)}" type.`,
+							DiagnosticSeverity.Error,
+						);
+					}
 				}
 
 				// Check type compatibility (isAssignable handles all coercion rules)
@@ -1782,6 +1805,19 @@ export class UnifiedPineValidator {
 		for (const arg of call.arguments) {
 			this.validateExpression(arg.value, version);
 		}
+	}
+
+	// A call to a builtin whose resolved return is exactly `void`. Used by
+	// the two void-assignment checks (declaration -> CE10098, reassignment ->
+	// type mismatch); we infer void calls as "unknown" elsewhere, so these
+	// must detect void directly. see INV055
+	private isVoidCall(call: CallExpression, version: string): boolean {
+		const fnName = memberChainName(call.callee);
+		if (!fnName) return false;
+		const argTypes = call.arguments.map((a) =>
+			this.inferExpressionType(a.value, version),
+		);
+		return resolveCallReturnRaw(fnName, argTypes) === "void";
 	}
 
 	private validateFunctionArguments(

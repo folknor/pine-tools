@@ -1,0 +1,13 @@
+// @test regression/INV055-void-reassignment
+// @description Reassigning a void-returning call to an existing variable is TV's type-mismatch (probed 2026-06-10: 'Cannot assign a value of the "void" type to the "x" variable. The variable is declared with the "float" type.'), distinct from the declaration case's CE10098. We infer void calls as "unknown" so the strict-assign reassignment check (INV032) skipped them; now handled explicitly, naming the target's known type. A non-void reassignment stays clean. errors:1 guards the valid `y := array.size(a)` from regressing. See investigations/INV055-void-assignment/notes.md.
+// @expects parse: success
+// @expects errors: 1
+// @expects error: line=5, message=/Cannot assign a value of the "void" type to the "x" variable/
+//@version=6
+indicator("t")
+a = array.new<float>(0)
+var float x = na
+x := array.push(a, 1.0)
+y = 5
+y := array.size(a)
+plot(close + y + x)

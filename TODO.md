@@ -226,14 +226,22 @@ IDs so the two stay in sync.
   uncovered `matrix.*` block exposed the CE10098 void-assignment FN. So #48's
   remaining work is: (a) `audit-error-reachability.mjs`, then the
   mutator/orchestrator seeded from both audits.
-- **#49 - void-assignment residuals (from INV055).** Two cases the INV055
-  declaration-case fix leaves open: (1) reassignment to a typed var
-  (`x := voidCall()`) is TV's type-mismatch message, not CE10098 - needs void
-  calls to infer as type `"void"` so the existing assign-type check fires (a
-  broader inference change with cascade risk: void-as-argument, void in
-  sub-expressions); (2) tuple destructure of a void call
-  (`[a, b] = voidCall()`). See
+- ~~#49~~ **Reassignment case CLOSED 2026-06-10 (INV055).**
+  `x := voidCall()` now emits TV's type-mismatch naming the target's type,
+  via an explicit void-call branch (shared `isVoidCall` helper) rather than a
+  risky global void-infers-as-void change. The remaining void residual -
+  tuple destructure (`[a, b] = voidCall()`) - is reclassified to #51 below
+  because it is not void-specific. See
   [INV055](investigations/INV055-void-assignment/notes.md).
+- **#51 - tuple destructure requires a tuple-returning RHS.**
+  `[a, b] = close` / `[a, b] = array.size(x)` / `[a, b] = voidCall()` are all
+  TV's "the right side must be a function call or structure returning a tuple
+  with the same number of elements" - a general arity/shape check on
+  `TupleDeclaration` RHS, not void-specific (surfaced as an INV055 residual).
+  TV also emits an internal `variableType.itemType is not a function` crash
+  artifact alongside (G001, do not replicate). Needs its own repro + INV;
+  confirm the message and which RHS shapes TV accepts (UDF tuple returns,
+  `if`/`switch`/`for`/`while` tuple tails) before flagging.
 - ~~#50~~ **CLOSED 2026-06-10 (INV056).** The `matrix.sum` lead generalized:
   the missing-required-arg check skipped ALL overloaded functions (112 of 122
   had an unenforced universally-required arg). Fixed with an arity floor. See
