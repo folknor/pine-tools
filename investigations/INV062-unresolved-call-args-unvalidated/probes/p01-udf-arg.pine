@@ -1,0 +1,4 @@
+//@version=6
+indicator("p01")
+f(x) => x * 2
+plot(f(missingVar))

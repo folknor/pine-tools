@@ -223,9 +223,25 @@ IDs so the two stay in sync.
   (phantom cross-type coercions starving the named-arg check, a
   double-report, two wording/severity drifts). It also reports
   probe-only sites (no regression fixture pins them) and
-  corpus-but-never-in-tests sites (5 as of the post-INV059 run - fixture
-  build-out targets). Remaining for #48: (b) the mutator and (c) the
-  orchestrator.
+  corpus-but-never-in-tests sites (3 as of the post-INV061 run - fixture
+  build-out targets).
+
+  **(b) and (c) built 2026-06-11: `scripts/mutate.mjs` +
+  `scripts/mutation-run.mjs`** - exactly the design above (text-level
+  splices at lexer-located sites, single-site mutants, both-clean
+  fixtures only, compare-tv reused, seeded rotation). Five operators:
+  drop-required-arg (CE10165), typo-member (CE10271), wrong-type-literal
+  (CE10123), typo-param-name (CE10120), delete-decl (CE10272).
+  `--dry-run` validates an operator on the local side with zero TV
+  calls. **First real run (20 fixtures x 5 operators, 86 mutants, ~86 TV
+  calls): 84 killed, 1 tv-accepts (discarded), 0 expectation
+  divergences, and 1 SURVIVOR - which exposed a structural hole:
+  arguments of unresolvable calls (UDF/import-alias/method) were never
+  validated at all. Fixed same day, see
+  [INV062](investigations/INV062-unresolved-call-args-unvalidated/notes.md)
+  (+605 corpus records, zero TV contradictions).** Remaining: more
+  operators (unbalance-bracket, bad-qualifier-form per the taxonomy
+  map above) and periodic seed-rotated runs as TV budget allows.
 
 - **#52 - fixture-coverage build-out (the census target list).**
   `scripts/fixture-coverage.mjs` (built 2026-06-10) parses every corpus +
@@ -357,6 +373,8 @@ count.
 | `scripts/check-changed-files-broken-string.mjs` | INV047 safety check: verifies every regression-changed fixture carries a broken-string record (i.e. is a file TV rejects at the lexer stage), flagging any possibly-TV-clean file whose behavior changed. |
 | `scripts/audit-fixtures.mjs` | Scans every `.pine` fixture under `packages/core/test/fixtures/` without running vitest. Flags fixtures with malformed `@expects` directives and fixtures whose only assertion is a total `errors: N` count (no per-error coverage), printing suggested `// @expects error: line=N, message="..."` directives ready to paste. Exits non-zero on malformed directives. Wrapper: `pnpm run audit:fixtures` (also rebuilds the compiled helpers it imports). |
 | `scripts/fixture-coverage.mjs` | Coverage census behind #52. Parses every corpus + test fixture with our own parser and cross-references the JSON catalog to surface BLIND SPOTS: catalog entries referenced in zero fixtures, behavioral flags whose rule is never exercised (esp. `topLevelOnly` functions never called in a violating local scope - the INV054 class), and a structural-shape census (member-chain depth, switch/forIn/tuple/enum) per set. Deterministic, offline, ~2s. `--json` for machine output. It finds gaps, it does not judge correctness - the uncovered-function list is #52's fixture-building target list. |
+| `scripts/mutate.mjs` | The (b) piece of #48. Generates single-site mutants from a clean `.pine`: text-level splices at lexer-located sites, one mutation per mutant, operators mapped to the TV error code they should provoke (drop-required-arg/CE10165, typo-member/CE10271, wrong-type-literal/CE10123, typo-param-name/CE10120, delete-decl/CE10272). Module (for the orchestrator) + CLI (`--print <i> --out <path>` for inspection). Offline. |
+| `scripts/mutation-run.mjs` | The (c) piece of #48. Picks BOTH-CLEAN fixtures (local AND TV 0 errors, from `real-failures.json`), generates mutants, judges each via `compare-tv.mjs --json`, classifies tv-accepts / killed / SURVIVOR (TV rejects, we accept - the FN signal), groups survivors by (operator, TV code). Bounded TV budget: fixtures x operators x sites-per calls, seed-rotated. `--dry-run` = local side only, zero TV calls. Reports to `mutation-reports/` (gitignored). First run: 86 mutants, 1 survivor -> INV062. |
 | `scripts/audit-error-reachability.mjs` | The check-site half of #48's free slice. Enumerates every `addError`/`addWarning`/`addTemplateError` call site in the compiled checker + SemanticAnalyzer, wraps them at runtime to capture call-site stack frames, and validates corpus + test fixtures + investigation probes in-process. Reports DEAD sites (never fire anywhere - the INV050 class), probe-only sites (nothing pins them), and corpus-but-never-in-tests sites (untested real-world behavior). Offline, ~30s. `--json` for machine output. First run yielded INV059 (4 findings); the INV061 addTemplateError widening yielded the str.tostring(map) catch. |
 
 Repro for any fixture:
@@ -419,6 +437,16 @@ reads to annotate disappearances.
 The reports live in `lint-reports/` which is **gitignored** - so this
 section records the latest measurement (the JSONs also embed
 `generatedAt` + `gitCommit` since #29):
+
+**Measured 2026-06-11 (midday), after INV062 (#48 mutation harness
+built + its first survivor fixed)**: **46 local-only / 3 tv-only / 32
+same-pos-different-message**, plus 768 past TV's stop point (4
+unparseable, transient). The INV062 fix (argument expressions of
+unresolvable calls now validated) added +605 corpus records (baseline
+15236 -> 15841): 0 on both-clean fixtures, 53 post-stop on mangled v6
+files, 552 on legacy v4/v5 files (bare v4 builtins inside `security()`
+args - existing policy). The confirmable window is byte-identical to
+the morning measurement.
 
 **Measured 2026-06-11 (morning), after INV061 (#53 shipped)**:
 **46 local-only / 3 tv-only / 32 same-pos-different-message**, plus 715

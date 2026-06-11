@@ -1,0 +1,5 @@
+//@version=6
+indicator("p02")
+import TradingView/ZigZag/7 as ZigZagLib
+zz = ZigZagLib.newInstance(missingVar)
+plot(close)

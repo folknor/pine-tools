@@ -51,6 +51,7 @@ GEMINI.md
 pinescripts
 /fixtures/
 lint-reports/
+mutation-reports/
 
 # Generated reference
 PINE_REFERENCE.md

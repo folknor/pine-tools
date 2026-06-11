@@ -1833,6 +1833,17 @@ export class UnifiedPineValidator {
 			functionName = memberChainName(call.callee);
 		}
 
+		// Validate argument EXPRESSIONS for every call, resolvable or not.
+		// This used to run only for catalog functions (after the !signature
+		// early-return below), leaving the arguments of UDF calls, import-alias
+		// member calls, and method calls completely unvalidated - no
+		// undefined-variable check, nothing. Found by the first #48 mutation
+		// run (delete-decl survivor: TV CE10272 on an input variable deleted
+		// out from under a library call). see INV062
+		for (const arg of call.arguments) {
+			this.validateExpression(arg.value, version);
+		}
+
 		// NOTE: Complex callee expressions (e.g., chained calls like `foo().bar()`,
 		// indexed access like `arr[0]()`) are not validated. This is acceptable
 		// because Pine Script rarely uses such patterns, and the type inference
@@ -1943,13 +1954,9 @@ export class UnifiedPineValidator {
 			return;
 		}
 
-		// Validate arguments
+		// Validate arguments against the signature (the argument EXPRESSIONS
+		// were already walked above, before signature resolution).
 		this.validateFunctionArguments(call, functionName, signature, version);
-
-		// Validate argument expressions
-		for (const arg of call.arguments) {
-			this.validateExpression(arg.value, version);
-		}
 	}
 
 	// A value is acceptable in a bool context (if/while/ternary condition,

@@ -417,3 +417,16 @@ contradiction means re-measure, not "the earlier author was wrong."
   path compared LSP severity values against core ones, dropping every
   semantic ERROR and showing validator warnings as errors - fixed. TV
   re-baseline unchanged (46/3/32): zero new disagreements. 9 probes.
+- [INV062](INV062-unresolved-call-args-unvalidated/notes.md) - arguments
+  of UNRESOLVABLE calls (UDF, import-alias member, method calls) were
+  never validated: validateCallExpression returned before the argument
+  walk when no builtin signature resolved, so undefined variables (and
+  every other expression check) inside those args passed silently. Found
+  by the FIRST #48 mutation run - 86 mutants, one survivor (delete-decl
+  on a library-call argument, TV CE10272). Fix: walk argument expressions
+  before signature resolution. +605 corpus records (0 on both-clean
+  fixtures - zero TV contradictions; 53 post-stop on mangled v6 files,
+  552 on legacy files, mostly bare v4 builtins inside `security()` args).
+  Confirmable window unchanged (46/3/32). TV quirk: the minimal alias-arg
+  probe crashes TV's checker (internal TypeError) though it still
+  rejects. 2 probes.

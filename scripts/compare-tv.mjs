@@ -54,6 +54,9 @@ function pickDiagnostics(raw) {
 			line: e.start?.line ?? 1,
 			col: e.start?.column ?? 1,
 			message: fillTemplate(e.message ?? "", e.ctx),
+			// The CE/CW code when present - mutation-run.mjs groups
+			// survivors by (operator, TV code). see TODO #48
+			...(e.code ? { code: e.code } : {}),
 		});
 		return {
 			ok: true,

@@ -1,0 +1,13 @@
+// @test regression/INV062-unresolved-call-args
+// @description Argument expressions of UNRESOLVABLE calls (UDF calls, import-alias member calls, method calls) were never validated: validateCallExpression returned early when no builtin signature resolved, BEFORE the argument walk, so undefined variables (and everything else) inside those args passed silently. Found by the first #48 mutation run (delete-decl survivor 19b330212da3: TV CE10272 on an input var deleted out from under ZigZagLib.Settings.new). TV probed 2026-06-11: UDF-arg case draws CE10272 at the identifier (p01); the alias-arg minimal repro crashes TV's checker with an internal TypeError but still rejects (p02). See investigations/INV062-unresolved-call-args-unvalidated/notes.md.
+// @expects parse: success
+// @expects errors: 2
+// @expects error: line=5, message=/Undefined variable 'missingArg'/
+// @expects error: line=6, message=/Undefined variable 'missingLibArg'/
+
+//@version=6
+indicator("INV062 unresolved call args")
+import TradingView/ZigZag/7 as ZigZagLib
+double(x) => x * 2
+plot(double(missingArg))
+zz = ZigZagLib.newInstance(missingLibArg)
