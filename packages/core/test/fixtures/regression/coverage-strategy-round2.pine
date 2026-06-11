@@ -1,0 +1,52 @@
+// @test regression/coverage-strategy-round2
+// @description #52 coverage build-out round 2: the strategy.* order-management entries (order/exit/cancel/cancel_all/close_all/default_entry_qty), the per-trade strategy.closedtrades.* and strategy.opentrades.* function families, and the input.enum/price/session/symbol/text_area inputs - all in the corpus but no test fixture (census 2026-06-11). Valid usage per the catalog signatures; local and TV must both accept.
+// @expects parse: success
+// @expects no-errors
+
+//@version=6
+strategy("coverage strategy round2")
+
+enum Mode
+    fast = "Fast"
+    slow = "Slow"
+
+mode = input.enum(Mode.fast, "Mode")
+prc = input.price(1.0, "Price")
+ses = input.session("0900-1500", "Session")
+sym = input.symbol("AAPL", "Symbol")
+txt = input.text_area("hello", "Note")
+
+if ta.crossover(close, ta.sma(close, 20))
+    strategy.order("o1", strategy.long)
+    strategy.exit("x1", "o1", profit = 10, loss = 10)
+if ta.crossunder(close, ta.sma(close, 20))
+    strategy.cancel("o1")
+    strategy.cancel_all()
+    strategy.close_all()
+
+deq = strategy.default_entry_qty(close)
+
+cebi = strategy.closedtrades.entry_bar_index(0)
+ceid = strategy.closedtrades.entry_id(0)
+cep = strategy.closedtrades.entry_price(0)
+cet = strategy.closedtrades.entry_time(0)
+cxbi = strategy.closedtrades.exit_bar_index(0)
+cxid = strategy.closedtrades.exit_id(0)
+cxp = strategy.closedtrades.exit_price(0)
+cxt = strategy.closedtrades.exit_time(0)
+cpr = strategy.closedtrades.profit(0)
+
+ocm = strategy.opentrades.commission(0)
+oebi = strategy.opentrades.entry_bar_index(0)
+oeid = strategy.opentrades.entry_id(0)
+oep = strategy.opentrades.entry_price(0)
+oet = strategy.opentrades.entry_time(0)
+omd = strategy.opentrades.max_drawdown(0)
+omr = strategy.opentrades.max_runup(0)
+opr = strategy.opentrades.profit(0)
+opp = strategy.opentrades.profit_percent(0)
+osz = strategy.opentrades.size(0)
+
+plot(deq + cebi + cep + cet + cxbi + cxp + cxt + cpr + prc)
+plot(ocm + oebi + oep + oet + omd + omr + opr + opp + osz)
+plot(str.length(ceid + cxid + oeid + ses + sym + txt) + (mode == Mode.slow ? 1 : 0))

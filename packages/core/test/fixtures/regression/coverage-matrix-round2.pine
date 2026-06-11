@@ -1,0 +1,29 @@
+// @test regression/coverage-matrix-round2
+// @description #52 coverage build-out round 2: the matrix.* catalog entries still corpus-only after the first matrix coverage fixture (census 2026-06-11) - structure (add_col/add_row/remove_row/set/fill/copy), slices (col/row), dimensions (columns/elements_count), math (eigenvalues/inv/mult/max/min). Valid usage per the catalog signatures; local and TV must both accept.
+// @expects parse: success
+// @expects no-errors
+
+//@version=6
+indicator("coverage matrix round2")
+
+mt = matrix.new<float>(2, 2, 1.0)
+matrix.set(mt, 0, 0, 2.0)
+matrix.fill(mt, 3.0)
+matrix.add_col(mt)
+matrix.add_row(mt)
+rmv = matrix.remove_row(mt, 0)
+colA = matrix.col(mt, 0)
+rowA = matrix.row(mt, 0)
+nCols = matrix.columns(mt)
+nElems = matrix.elements_count(mt)
+cpy = matrix.copy(mt)
+
+sq = matrix.new<float>(2, 2, 1.0)
+matrix.set(sq, 0, 1, 2.0)
+eig = matrix.eigenvalues(sq)
+inv = matrix.inv(sq)
+mlt = matrix.mult(sq, sq)
+mxv = matrix.max(sq)
+mnv = matrix.min(sq)
+
+plot(nCols + nElems + mxv + mnv + array.size(rmv) + array.size(colA) + array.size(rowA) + array.size(eig) + matrix.elements_count(cpy) + matrix.elements_count(inv) + matrix.elements_count(mlt))

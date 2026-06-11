@@ -1,0 +1,26 @@
+// @test regression/coverage-table-round2
+// @description #52 coverage build-out round 2: table.* catalog entries in the corpus but no test fixture (census 2026-06-11) - the table na-cast function, per-cell setters (cell_set_bgcolor/text_color/text_halign), table-level setters (border/frame color+width), clear, merge_cells, delete. Valid usage per the catalog signatures; local and TV must both accept.
+// @expects parse: success
+// @expects no-errors
+
+//@version=6
+indicator("coverage table round2")
+
+var t = table.new(position.top_right, 2, 2)
+table.cell(t, 0, 0, "a")
+table.cell(t, 1, 0, "b")
+table.cell(t, 0, 1, "c")
+table.cell(t, 1, 1, "d")
+table.cell_set_bgcolor(t, 0, 0, color.new(color.blue, 70))
+table.cell_set_text_color(t, 0, 0, color.white)
+table.cell_set_text_halign(t, 0, 0, text.align_right)
+table.set_border_color(t, color.gray)
+table.set_border_width(t, 1)
+table.set_frame_color(t, color.black)
+table.set_frame_width(t, 2)
+table.merge_cells(t, 0, 1, 1, 1)
+table.clear(t, 0, 0)
+table tNa = table(na)
+table.delete(t)
+
+plot(close)

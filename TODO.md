@@ -159,12 +159,21 @@ IDs so the two stay in sync.
   inference bugs, and INV060's v4/v5 numeric-bool class, which is the
   argument for continuing (the reachability audit's
   corpus-but-never-in-tests slice cleared the same way - its last three
-  sites became INV063). **Remaining (softer) targets:** the ~250
-  functions that appear in the corpus but in no test fixture, and the
-  structural shapes the census lists as corpus-only (forIn tuples,
-  if-expressions, deep member chains) - same method, lower urgency.
-  This is plain fixture-building, distinct from #48's mutation testing
-  (you can't mutate a construct that appears in zero files).
+  sites became INV063). **2026-06-11: the ~250 corpus-only functions
+  are CLEARED** - six `coverage-*-round2.pine` block fixtures (array,
+  drawing, table, matrix, ta, math/str/misc, strategy+inputs) take the
+  uncovered-in-tests function list to zero, all TV-diffed with zero
+  error disagreement. Authoring them re-confirmed two known display
+  quirks (request.seed's `series <type>` placeholder in the variable
+  list - #18's astExtractor class; the checker correctly infers
+  unknown) and one real catch by our own checker (timeframe.from_seconds
+  returns a timeframe STRING - the draft summed it numerically and the
+  checker rightly objected). **Remaining (softer) targets:** the
+  structural shapes the census lists as corpus-only or near-zero in
+  tests (forIn tuples x2, forIn singles x3, if-expressions x6, deep
+  member chains) - same method, lower urgency. This is plain
+  fixture-building, distinct from #48's mutation testing (you can't
+  mutate a construct that appears in zero files).
 - **#45 - leading-operator wraps at multiple-of-4 indent (probed
   residual of INV042).** `float x = cond` / `    ? high` / `    : low`
   is TV's CE10013 `Mismatched input "?" expecting set "end of line

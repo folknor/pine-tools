@@ -1,0 +1,52 @@
+// @test regression/coverage-array-round2
+// @description #52 coverage build-out round 2: array.* catalog entries that appear in the corpus but had no test fixture (fixture-coverage census 2026-06-11) - the typed constructors (new_bool/box/color/float/int/label/line/linefill/string), search (binary_search_leftmost/rightmost, indexof/lastindexof, includes), mutation (clear/concat/fill/insert/pop/push-side remove/reverse/shift/slice/unshift), stats (median/percentrank/standardize/stdev/sort_indices), join/first/last, plus map.values. Valid usage per the catalog signatures; local and TV must both accept.
+// @expects parse: success
+// @expects no-errors
+
+//@version=6
+indicator("coverage array round2")
+
+af = array.from(3.0, 1.0, 2.0)
+af2 = array.from(4.0, 5.0)
+srt = array.copy(af)
+array.sort(srt)
+bsl = array.binary_search_leftmost(srt, 2.0)
+bsr = array.binary_search_rightmost(srt, 2.0)
+inc = array.includes(af, 1.0)
+idx = array.indexof(af, 1.0)
+lidx = array.lastindexof(af, 1.0)
+fst = array.first(af)
+lst = array.last(af)
+med = array.median(af)
+prk = array.percentrank(af, 1)
+std = array.stdev(af)
+sidx = array.sort_indices(af)
+stz = array.standardize(af)
+jn = array.join(array.from("a", "b"), ",")
+array.concat(af, af2)
+array.fill(af2, 0.0)
+array.insert(af, 0, 9.0)
+pop = array.pop(af)
+array.remove(af, 0)
+array.reverse(af)
+sh = array.shift(af)
+slc = array.slice(srt, 0, 1)
+array.unshift(af, 7.0)
+array.clear(af2)
+
+ab = array.new_bool(2, true)
+abx = array.new_box(0)
+ac = array.new_color(1, color.red)
+afl = array.new_float(1, 0.5)
+ai = array.new_int(1, 3)
+alb = array.new_label(0)
+aln = array.new_line(0)
+alf = array.new_linefill(0)
+ast = array.new_string(1, "s")
+
+m = map.new<string, float>()
+map.put(m, "k", 1.0)
+vals = map.values(m)
+
+plot(bsl + bsr + idx + lidx + fst + lst + med + prk + std + pop + sh + array.size(sidx) + array.size(stz) + array.size(slc) + str.length(jn) + (inc ? 1 : 0))
+plot(array.size(ab) + array.size(abx) + array.size(ac) + array.size(afl) + array.size(ai) + array.size(alb) + array.size(aln) + array.size(alf) + array.size(ast) + array.size(vals))

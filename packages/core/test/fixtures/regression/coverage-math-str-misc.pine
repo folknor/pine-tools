@@ -1,0 +1,85 @@
+// @test regression/coverage-math-str-misc
+// @description #52 coverage build-out round 2: the math.*, str.*, color.* component/gradient, calendar (dayofmonth/minute/weekofyear), ticker.*, timeframe second-conversions, time_close, syminfo.prefix/ticker function forms, request.currency_rate/financial/seed, log.*, runtime.error and max_bars_back entries in the corpus but no test fixture (census 2026-06-11). Valid usage per the catalog signatures; local and TV must both accept.
+// @expects parse: success
+// @expects no-errors
+
+//@version=6
+indicator("coverage math str misc")
+
+ma = math.abs(-1.5)
+mac = math.acos(0.5)
+mas = math.asin(0.5)
+mat = math.atan(1.0)
+mavg = math.avg(close, open)
+mc = math.ceil(1.2)
+mcos = math.cos(1.0)
+mex = math.exp(1.0)
+mf = math.floor(1.8)
+ml = math.log(2.0)
+ml10 = math.log10(100.0)
+mp = math.pow(2.0, 3.0)
+mr = math.random(0, 10)
+mrt = math.round_to_mintick(close)
+msg = math.sign(-2.0)
+msin = math.sin(1.0)
+msq = math.sqrt(4.0)
+msum = math.sum(close, 10)
+mtan = math.tan(1.0)
+mtd = math.todegrees(3.14)
+mtr = math.toradians(180.0)
+
+se = str.endswith("abc", "c")
+sft = str.format_time(time)
+sl = str.length("abc")
+slo = str.lower("ABC")
+sm = str.match("a1b", "\\d")
+sp = str.pos("abc", "b")
+sr = str.repeat("ab", 2)
+srp = str.replace("aaa", "a", "b")
+sra = str.replace_all("aaa", "a", "b")
+ssp = str.split("a,b", ",")
+ss = str.startswith("abc", "a")
+sub = str.substring("abcd", 1, 3)
+stn = str.tonumber("1.5")
+str_t = str.trim("  x  ")
+sup = str.upper("abc")
+
+cr = color.r(color.red)
+cg = color.g(color.red)
+cb = color.b(color.red)
+ct = color.t(color.new(color.red, 50))
+cgr = color.from_gradient(close, low, high, color.red, color.green)
+
+dom = dayofmonth(time)
+mnt = minute(time)
+woy = weekofyear(time)
+
+v = close
+max_bars_back(v, 500)
+tc = time_close("60")
+
+tfs = timeframe.from_seconds(3600)
+tis = timeframe.in_seconds("60")
+
+thk = ticker.heikinashi(syminfo.tickerid)
+tin = ticker.inherit(thk, "NASDAQ:MSFT")
+tnw = ticker.new("NASDAQ", "AAPL")
+tst = ticker.standard(syminfo.tickerid)
+spr = syminfo.prefix(syminfo.tickerid)
+stk = syminfo.ticker(syminfo.tickerid)
+
+crate = request.currency_rate("USD", "EUR")
+fin = request.financial(syminfo.tickerid, "ACCOUNTS_PAYABLE", "FY")
+seed = request.seed("seed_crypto_santiment", "BTC_DEV_ACTIVITY", close)
+
+log.info("info {0}", close)
+log.warning("warn {0}", close)
+log.error("error {0}", close)
+if bar_index < 0
+    runtime.error("never")
+
+plot(ma + mac + mas + mat + mavg + mc + mcos + mex + mf + ml + ml10 + mp + mr + mrt + msg + msin + msq + msum + mtan + mtd + mtr)
+plot(sl + sp + nz(stn) + array.size(ssp) + str.length(sft) + str.length(slo) + str.length(sm) + str.length(sr) + str.length(srp) + str.length(sra) + str.length(sub) + str.length(str_t) + str.length(sup) + (se ? 1 : 0) + (ss ? 1 : 0))
+plot(cr + cg + cb + ct + dom + mnt + woy + nz(tc) + tis + v[1])
+plot(str.length(tin + tnw + tst + spr + stk + tfs) + crate + fin + seed)
+plotshape(close > open, color = cgr)
