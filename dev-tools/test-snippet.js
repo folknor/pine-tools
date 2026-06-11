@@ -112,11 +112,20 @@ function main() {
 		process.exit(1);
 	}
 
+	// Structured errors carry an unfilled template + ctx (see INV061);
+	// substitute so the human-facing line shows the rendered message.
+	const render = (e) =>
+		e.ctx
+			? e.message.replace(/\{(\w+)\}/g, (m, k) =>
+					e.ctx[k] === undefined ? m : String(e.ctx[k]),
+				)
+			: e.message;
+
 	if (onlyErrors || filter) {
 		let errors = result.result?.errors || [];
 		if (filter) {
 			errors = errors.filter((e) =>
-				e.message?.toLowerCase().includes(filter.toLowerCase()),
+				render(e).toLowerCase().includes(filter.toLowerCase()),
 			);
 		}
 		if (errors.length === 0) {
@@ -124,7 +133,7 @@ function main() {
 		} else {
 			for (const err of errors) {
 				const loc = err.start ? `${err.start.line}:${err.start.column}` : "?:?";
-				console.log(`[${loc}] ${err.message}`);
+				console.log(`[${loc}] ${render(err)}`);
 			}
 			console.log(`\nTotal: ${errors.length} error(s)`);
 		}

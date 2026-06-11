@@ -1,0 +1,10 @@
+// @test regression/str-tostring-map
+// @description str.tostring rejects map arguments (its overload list lacks map<K,V>) - pine-lint emits CE10123 at the argument, naming the map's full type. The check dates to cf9d29a (2026-05-27, pre-methodology, no INV); it fired on zero fixtures until the INV061 audit round made addTemplateError sites visible to audit-error-reachability, which flagged it as DEAD-in-appearance. This fixture pins it.
+// @expects parse: success
+// @expects errors: 1
+// @expects error: line=4, message=/Cannot call "str.tostring" with argument "value"="m". An argument of "map<string, float>" type was used but a "series float"  is expected./
+
+//@version=6
+indicator("str.tostring map rejection")
+m = map.new<string, float>()
+plot(close, title = str.tostring(m))

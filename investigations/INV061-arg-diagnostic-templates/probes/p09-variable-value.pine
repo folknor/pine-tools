@@ -1,0 +1,4 @@
+//@version=6
+indicator("p09")
+s = "abc"
+plot(close, color = s)

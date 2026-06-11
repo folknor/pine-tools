@@ -4,6 +4,7 @@ import {
 	DiagnosticSeverity,
 	UnifiedPineValidator,
 } from "../../core/src/analyzer/checker";
+import { renderMessage } from "../../core/src/common/errors";
 import {
 	ASTExtractor,
 	type PineLintError,
@@ -132,12 +133,12 @@ interface HumanPayload {
 
 // TV messages are templates ("Undeclared identifier \"{identifier}\"") with the
 // values in `ctx`; substitute them. Local messages have no placeholders and
-// pass through unchanged.
+// pass through unchanged. Delegates to core's renderMessage (TV ctx values
+// can be numbers; the substitution stringifies either way). see INV061
 function fillTemplate(e: PineLintError): string {
-	if (!e.ctx) return e.message;
-	return e.message.replace(/\{(\w+)\}/g, (match, key) => {
-		const value = (e.ctx as Record<string, unknown>)[key];
-		return value === undefined ? match : String(value);
+	return renderMessage({
+		message: e.message,
+		ctx: e.ctx as Record<string, string> | undefined,
 	});
 }
 

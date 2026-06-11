@@ -1,0 +1,3 @@
+//@version=6
+indicator("p04")
+plot(close, color = close + 1)

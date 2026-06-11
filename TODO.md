@@ -273,23 +273,29 @@ IDs so the two stay in sync.
   the missing-required-arg check skipped ALL overloaded functions (112 of 122
   had an unenforced universally-required arg). Fixed with an arity floor. See
   [INV056](investigations/INV056-overload-missing-arg/notes.md).
-- **#53 - align arg-diagnostic wording/anchors with TV's templates
-  (INV059 residual).** Three pieces, all probed 2026-06-10: (1) TV's
-  arg-type error is the CE10123 template (`Cannot call "plot" with
-  argument "color"="red". An argument of "literal string" type was used
-  but a "series color"  is expected.`) anchored at the argument VALUE;
-  ours is `Type mismatch for parameter ...` anchored at the call. (2)
-  TV's unknown-parameter error is `The "plotshape" function does not
-  have an argument with the name "shape"` anchored at the argument NAME;
-  ours is `Invalid parameter 'shape'. Valid parameters: ...` at the call
-  - and it fires 5738 times across the corpus, so the rewording is a
-  large (mechanical) baseline churn. Exact anchors need the parser to
-  record argument-name positions (`CallArgument` carries no name
-  line/col today). (3) The too-MANY-args wording (`Too many arguments
-  for ...`, 33 corpus records) is unprobed - TV's too-few wording is the
-  terse `Wrong number of args: N` (adopted in INV059), the too-many
-  counterpart likely matches. Also: the audit's corpus-but-never-in-tests
-  list (5 sites post-INV059) is fixture build-out, same vein as #52.
+- ~~#53~~ **CLOSED 2026-06-11
+  ([INV061](investigations/INV061-arg-diagnostic-templates/notes.md)).**
+  All three pieces shipped, 9 probes, byte-for-byte local reproduction:
+  arg-type mismatches (named AND positional) are TV's CE10123 template at
+  the argument VALUE, unknown named parameter is CE10120 at the argument
+  NAME (`CallArgument` now records name positions; 5738 corpus records
+  reworded), too-many-args is CE10115 at the first argument (probed - NOT
+  the terse too-few form). TV re-baseline unchanged (46/3/32). Side catch:
+  structured (code+ctx) errors now route through a named
+  `addTemplateError`, making them visible to audit-error-reachability -
+  which immediately flagged the never-exercised str.tostring(map) check
+  (now pinned by `regression/str-tostring-map.pine`). Lateral fix: editor
+  diagnostics (language-service -> LSP/VS Code/MCP) compared LSP severity
+  values against core ones, dropping every semantic ERROR and showing
+  validator warnings as errors; also `renderMessage` in core is now the
+  canonical template renderer (CLI, editor, test helpers, snapshot/
+  regression scripts) so templated errors never leak `{placeholders}`.
+  Residuals (in INV061
+  notes): unprobed value-repr shapes (ternary/array/index) fall back to
+  the rendered type; user-variable qualifiers are best-guess ("const X")
+  until declarations track qualifiers. The audit's
+  corpus-but-never-in-tests list (3 sites post-INV061, was 5) is fixture
+  build-out, same vein as #52.
 - **#45 - leading-operator wraps at multiple-of-4 indent (probed
   residual of INV042).** `float x = cond` / `    ? high` / `    : low`
   is TV's CE10013 `Mismatched input "?" expecting set "end of line
@@ -351,7 +357,7 @@ count.
 | `scripts/check-changed-files-broken-string.mjs` | INV047 safety check: verifies every regression-changed fixture carries a broken-string record (i.e. is a file TV rejects at the lexer stage), flagging any possibly-TV-clean file whose behavior changed. |
 | `scripts/audit-fixtures.mjs` | Scans every `.pine` fixture under `packages/core/test/fixtures/` without running vitest. Flags fixtures with malformed `@expects` directives and fixtures whose only assertion is a total `errors: N` count (no per-error coverage), printing suggested `// @expects error: line=N, message="..."` directives ready to paste. Exits non-zero on malformed directives. Wrapper: `pnpm run audit:fixtures` (also rebuilds the compiled helpers it imports). |
 | `scripts/fixture-coverage.mjs` | Coverage census behind #52. Parses every corpus + test fixture with our own parser and cross-references the JSON catalog to surface BLIND SPOTS: catalog entries referenced in zero fixtures, behavioral flags whose rule is never exercised (esp. `topLevelOnly` functions never called in a violating local scope - the INV054 class), and a structural-shape census (member-chain depth, switch/forIn/tuple/enum) per set. Deterministic, offline, ~2s. `--json` for machine output. It finds gaps, it does not judge correctness - the uncovered-function list is #52's fixture-building target list. |
-| `scripts/audit-error-reachability.mjs` | The check-site half of #48's free slice. Enumerates every `addError`/`addWarning` call site in the compiled checker + SemanticAnalyzer, wraps both at runtime to capture call-site stack frames, and validates corpus + test fixtures + investigation probes in-process. Reports DEAD sites (never fire anywhere - the INV050 class), probe-only sites (nothing pins them), and corpus-but-never-in-tests sites (untested real-world behavior). Offline, ~30s. `--json` for machine output. First run yielded INV059 (4 findings). |
+| `scripts/audit-error-reachability.mjs` | The check-site half of #48's free slice. Enumerates every `addError`/`addWarning`/`addTemplateError` call site in the compiled checker + SemanticAnalyzer, wraps them at runtime to capture call-site stack frames, and validates corpus + test fixtures + investigation probes in-process. Reports DEAD sites (never fire anywhere - the INV050 class), probe-only sites (nothing pins them), and corpus-but-never-in-tests sites (untested real-world behavior). Offline, ~30s. `--json` for machine output. First run yielded INV059 (4 findings); the INV061 addTemplateError widening yielded the str.tostring(map) catch. |
 
 Repro for any fixture:
 
@@ -414,6 +420,14 @@ The reports live in `lint-reports/` which is **gitignored** - so this
 section records the latest measurement (the JSONs also embed
 `generatedAt` + `gitCommit` since #29):
 
+**Measured 2026-06-11 (morning), after INV061 (#53 shipped)**:
+**46 local-only / 3 tv-only / 32 same-pos-different-message**, plus 715
+past TV's stop point (4 unparseable, transient) - identical totals to
+the 2026-06-10 measurement. The round swapped wording/anchors on 5771
+corpus records (5738 invalid-parameter -> CE10120, 33 too-many-args ->
+CE10115) without touching the TV diff: every reworded record sits past
+TV's stop point or on non-v6 files. Corpus baseline unchanged at 15236.
+
 **Measured 2026-06-10 (evening), after the INV057-INV060 round
 (#51 shipped, audit-error-reachability built, #52 hard-uncovered list
 cleared)**: **46 local-only / 3 tv-only / 32 same-pos-different-message**,
@@ -427,20 +441,6 @@ mangle pairs + 10 small known residue (undefined-variable stragglers,
 are that same INV026 fixture seen from TV's side (CE10123 at the
 argument where we flag the ternary) - zero unexplained tv-only
 remain.
-
-**Measured 2026-06-07 (evening), working tree on `55f0c4f` + the
-#46(c)/(d) round (third INV047 addendum)**: **49 local-only / 6
-tv-only / 33 same-pos-different-message**, plus 710 past TV's stop
-point (4 unparseable, transient). Corpus baseline 17325 -> 17020.
-Five TV-clean fixtures that carried 2-72 FPs each (b16b3948…,
-f7bc17b0…, 1f6fb53c…, 73b16637…, a6d1bf91…) now lint 0 - the round's
-chases kept surfacing VALID Pine wrap/comma/switch-arm forms we
-mishandled (probes p05-p09). The 44 -> 49 rise is +6 probe-backed
-CE10156 wrap TPs (p09's trailing-`not` shape) surfacing pre-stop in
-`13a745…` while its phantom undefineds died; the confirmable set is
-now 20 wrap TPs + the 8+8 `bar index` pairs + small known residue.
-tv-only unchanged. New follow-up: #47 (TV's second broken-string
-wording - since closed, see git log / the fourth INV047 addendum).
 
 Earlier measurements live in git history (this section, prior
 revisions) - each is a dated point-in-time record per G001.

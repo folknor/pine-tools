@@ -1,0 +1,17 @@
+// @test regression/INV061-arg-diagnostic-templates
+// @description TV's argument-diagnostic templates, all probed 2026-06-11 (INV061): (1) too-many-args is CE10115 ("Too many arguments passed into ...") anchored at the first argument, not the callee; (2) arg-type mismatches (named AND positional) are the CE10123 template anchored at the argument VALUE, with TV's value reprs - identifiers/members as source text, calls as 'call "name" (type)', operators as 'call "operator +" (type)'; (3) unknown named parameter is CE10120 ("The "f" function does not have an argument with the name "x"") anchored at the argument NAME. See investigations/INV061-arg-diagnostic-templates/notes.md.
+// @expects parse: success
+// @expects errors: 5
+// @expects error: line=3, message=/Too many arguments passed into the "ta.sma\(\)" function call. Passed 3 arguments but expected 2./
+// @expects error: line=4, message=/Cannot call "plot" with argument "color"="close". An argument of "series float" type was used but a "series color"  is expected./
+// @expects error: line=5, message=/Cannot call "plot" with argument "color"="call "operator \+" \(series float\)". An argument of "series float" type was used but a "series color"  is expected./
+// @expects error: line=6, message=/Cannot call "plot" with argument "color"="call "ta.sma" \(series float\)". An argument of "series float" type was used but a "series color"  is expected./
+// @expects error: line=7, message=/Cannot call "plot" with argument "title"="color.red". An argument of "const color" type was used but a "const string"  is expected./
+
+//@version=6
+indicator("INV061 arg diagnostic templates")
+plot(ta.sma(close, 14, 99))
+plot(close, color = close)
+plot(close, color = close + 1)
+plot(close, color = ta.sma(close, 14))
+plot(close, title = color.red)

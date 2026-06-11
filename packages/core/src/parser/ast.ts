@@ -229,6 +229,10 @@ export interface CallExpression extends ASTNode {
 
 export interface CallArgument {
 	name?: string; // For named arguments like style=shape.circle
+	// 1-indexed position of the argument NAME token when named - TV anchors
+	// its unknown-parameter error (CE10120) at the name. see INV061
+	nameLine?: number;
+	nameColumn?: number;
 	value: Expression;
 }
 

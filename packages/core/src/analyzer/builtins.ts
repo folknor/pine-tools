@@ -100,6 +100,9 @@ export interface FunctionSignature {
 export interface ParameterInfo {
 	name: string;
 	type?: PineType;
+	// The catalog's qualified display form ("series color", "const string") -
+	// exactly TV's currentTypeDocStr in CE10123 templates. see INV061
+	rawType?: string;
 	optional?: boolean;
 	defaultValue?: string;
 }
@@ -240,6 +243,7 @@ export function buildSignatureFromPineFunction(
 			parameters.push({
 				name: param.name,
 				type: mapToPineType(param.type),
+				rawType: param.type,
 				optional: !param.required,
 				defaultValue: param.default,
 			});
@@ -734,6 +738,16 @@ export function getBuiltinVarInfo(
 // const-qualified by definition.
 export function isBuiltinConstant(name: string): boolean {
 	return CONSTANTS_BY_NAME.has(name);
+}
+
+// TV's qualified display type ("const color", "series float") for a built-in
+// variable or constant - the argumentType slot of CE10123 templates. see INV061
+export function getBuiltinQualifiedType(name: string): string | undefined {
+	const c = CONSTANTS_BY_NAME.get(name);
+	if (c?.type) return `const ${baseOfRawType(String(c.type))}`;
+	const v = VARIABLES_BY_NAME.get(name);
+	if (v) return `${v.qualifier} ${baseOfRawType(String(v.type))}`;
+	return undefined;
 }
 
 function baseCompatible(argBase: string, paramBase: string): boolean {

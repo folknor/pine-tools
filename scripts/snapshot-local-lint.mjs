@@ -47,12 +47,20 @@ function run(file) {
 	});
 }
 
+// Structured errors carry an unfilled template + ctx (see INV061); render
+// them so baseline records distinguish different findings at the same
+// position. Must mirror regression-check.mjs exactly.
+function fillTemplate(message, ctx) {
+	if (!ctx) return message;
+	return message.replace(/\{(\w+)\}/g, (m, key) => ctx[key] ?? m);
+}
+
 function pickErrors(raw) {
 	try {
 		const j = JSON.parse(raw);
 		const errs = j.result?.errors ?? j.errors ?? [];
 		return errs
-			.map((e) => ({ line: e.start?.line ?? 0, col: e.start?.column ?? 0, message: e.message ?? "" }))
+			.map((e) => ({ line: e.start?.line ?? 0, col: e.start?.column ?? 0, message: fillTemplate(e.message ?? "", e.ctx) }))
 			.sort((a, b) => a.line - b.line || a.col - b.col || a.message.localeCompare(b.message));
 	} catch {
 		return null;

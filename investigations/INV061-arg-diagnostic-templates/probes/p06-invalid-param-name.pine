@@ -1,0 +1,3 @@
+//@version=6
+indicator("p06")
+plotshape(close > open, shape = shape.triangleup)

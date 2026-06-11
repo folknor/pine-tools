@@ -689,7 +689,7 @@ export class ExpressionParser {
 							this.p.check(TokenType.KEYWORD)) &&
 						nextTok?.type === TokenType.ASSIGN
 					) {
-						const name = this.p.advance().value;
+						const nameTok = this.p.advance();
 						// Skip newlines before = (allows: arg\n= value)
 						while (this.p.check(TokenType.NEWLINE)) {
 							this.p.advance();
@@ -700,7 +700,12 @@ export class ExpressionParser {
 							this.p.advance();
 						}
 						const value = this.expression();
-						args.push({ name, value });
+						args.push({
+							name: nameTok.value,
+							nameLine: nameTok.line,
+							nameColumn: nameTok.column,
+							value,
+						});
 					} else {
 						// Positional argument
 						const value = this.expression();

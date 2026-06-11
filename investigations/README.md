@@ -401,3 +401,19 @@ contradiction means re-measure, not "the earlier author was wrong."
   single largest FP class in the corpus: -1605 records across 226
   legacy files (baseline 16845 -> 15236). Surfaced via INV057's lateral
   finding + the #52 coverage build-out. 1 probe.
+- [INV061](INV061-arg-diagnostic-templates/notes.md) - TODO #53 shipped:
+  the three arg-diagnostic categories adopt TV's exact templates and
+  anchors. Arg-type mismatches (named AND positional) are CE10123 at the
+  argument VALUE with TV's value reprs (literals bare, identifiers/members
+  as source text, operators/calls as `call "..." (type)`); unknown named
+  parameter is CE10120 at the argument NAME (5738 corpus records reworded;
+  CallArgument now records name positions); too-many-args is CE10115 at
+  the first argument (33 records). Probes settled the empty-typePostfix
+  double space and that currentTypeDocStr is the catalog param type
+  verbatim. Side catch: routing structured errors through a named
+  `addTemplateError` made them visible to audit-error-reachability, whose
+  next run flagged the unexercised str.tostring(map) check (cf9d29a,
+  pre-methodology) - now pinned. Lateral finding: the editor diagnostics
+  path compared LSP severity values against core ones, dropping every
+  semantic ERROR and showing validator warnings as errors - fixed. TV
+  re-baseline unchanged (46/3/32): zero new disagreements. 9 probes.

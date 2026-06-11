@@ -1,4 +1,5 @@
 import { UnifiedPineValidator } from "../../../core/src/analyzer/checker";
+import { renderMessage } from "../../../core/src/common/errors";
 import type { ParsedDocument } from "../documents/ParsedDocument";
 import { type Diagnostic, DiagnosticSeverity } from "../types";
 import { getUnresolvedImports } from "./imports";
@@ -29,9 +30,12 @@ export function getDiagnostics(doc: ParsedDocument): Diagnostic[] {
 		const validationErrors = validator.validate(doc.ast, doc.detectedVersion);
 
 		for (const error of validationErrors) {
-			// Only include errors, not warnings from validator (warnings come from patterns)
-			if (error.severity === 1) {
-				// DiagnosticSeverity.Error
+			// Only include errors, not warnings from validator (warnings come
+			// from patterns). The validator uses core severities (Error = 0) -
+			// this used to compare against the LSP convention (Error = 1),
+			// which dropped every semantic error and surfaced validator
+			// warnings AS errors. see INV061 (lateral finding)
+			if (error.severity === 0) {
 				diagnostics.push({
 					range: {
 						start: { line: error.line - 1, character: error.column - 1 },
@@ -41,7 +45,7 @@ export function getDiagnostics(doc: ParsedDocument): Diagnostic[] {
 						},
 					},
 					severity: DiagnosticSeverity.Error,
-					message: error.message,
+					message: renderMessage(error),
 					source: "pine-lint",
 				});
 			}

@@ -1,7 +1,7 @@
 // @test regression/INV013-polymorphic-arg-typecheck
 // @description math.round's precision param unioned to a clean "series int" type (#17), so the polymorphic arg-validation bypass was removed (#24): a wrong-typed arg on a cleanly-typed (ex-polymorphic) param is now caught — a real FN TV flags too. Arg-type checks are v6-only; v4/v5 calls are left lenient since pine-data ships only v6 signatures. See investigations/INV013-polymorphic-arg-validation/notes.md.
 // @expects parse: success
-// @expects error: line=3, message="Type mismatch for argument 2: expected series<int>, got string"
+// @expects error: line=3, message=/Cannot call "math.round" with argument "precision"="not a number". An argument of "literal string" type was used but a "series int"  is expected./
 //@version=6
 indicator("INV013 — polymorphic arg typecheck")
 plot(math.round(close, "not a number"))

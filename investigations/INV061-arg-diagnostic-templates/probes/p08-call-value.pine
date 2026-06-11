@@ -1,0 +1,3 @@
+//@version=6
+indicator("p08")
+plot(close, color = ta.sma(close, 14))

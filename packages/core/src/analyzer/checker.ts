@@ -28,6 +28,7 @@ import {
 	type ArgumentInfo,
 	buildFunctionSignatures,
 	type FunctionSignature,
+	getBuiltinQualifiedType,
 	getBuiltinVarInfo,
 	getConstParamDocType,
 	getMinArgsForVariadic,
@@ -1711,6 +1712,100 @@ export class UnifiedPineValidator {
 		);
 	}
 
+	// TV's CE10123 arg-type template, shared by every arg-type emit site. The
+	// {typePostfix} slot is empty in every probe, which is why TV's rendered
+	// message carries a double space before "is expected". see INV061
+	private static readonly CE10123_TEMPLATE =
+		'Cannot call "{funId}" with argument "{argDisplayName}"="{argUserFriendlyRepresentation}". An argument of "{argumentType}" type was used but a "{currentTypeDocStr}" {typePostfix} is expected.';
+
+	// Render an internal PineType in TV's qualified display form ("series
+	// float"). Our lattice collapses const/input/simple to the bare base, so a
+	// bare type's qualifier is unrecoverable - `bareQualifier` supplies the
+	// best guess for the context (user variables initialized from literals
+	// probe as "const", INV061 p09). see INV061
+	private renderTvType(t: PineType, bareQualifier: string): string {
+		const m = (t as string).match(/^(series|simple|input|const)<(.+)>$/);
+		if (m) return `${m[1]} ${m[2]}`;
+		if (
+			t === "unknown" ||
+			t === "na" ||
+			t === "void" ||
+			(t as string).includes("<")
+		) {
+			return t;
+		}
+		return `${bareQualifier} ${t}`;
+	}
+
+	// The {argUserFriendlyRepresentation} and {argumentType} slots of CE10123
+	// for ANY argument expression, matching TV's probed forms: literals render
+	// bare ("red", 42) as "literal <base>"; identifiers/members render as
+	// source text with the catalog qualifier; operator expressions and calls
+	// render as `call "operator +" (series float)` / `call "ta.sma" (series
+	// float)`. Best-effort on shapes TV was not probed for. see INV061
+	private describeArgForTemplate(
+		expr: Expression,
+		inferred: PineType,
+		version: string,
+	): { repr: string; typeStr: string } {
+		switch (expr.type) {
+			case "Literal": {
+				const lit = expr as Literal;
+				if (typeof lit.value === "string") {
+					// TV renders the string CONTENT, unquoted ("red" -> red).
+					const repr = String(lit.value).replace(/^(["'])(.*)\1$/s, "$2");
+					return { repr, typeStr: "literal string" };
+				}
+				if (typeof lit.value === "boolean") {
+					return { repr: lit.raw, typeStr: "literal bool" };
+				}
+				if (lit.raw.startsWith("#")) {
+					return { repr: lit.raw, typeStr: "literal color" };
+				}
+				const base =
+					lit.raw.includes(".") || /[eE]/.test(lit.raw) ? "float" : "int";
+				return { repr: lit.raw, typeStr: `literal ${base}` };
+			}
+			case "Identifier":
+			case "MemberExpression": {
+				const name =
+					expr.type === "Identifier"
+						? (expr as Identifier).name
+						: memberChainName(expr);
+				const qualified = name ? getBuiltinQualifiedType(name) : undefined;
+				return {
+					repr: name || "?",
+					typeStr: qualified ?? this.renderTvType(inferred, "const"),
+				};
+			}
+			case "CallExpression": {
+				const ce = expr as CallExpression;
+				const name = memberChainName(ce.callee);
+				const argTypes = ce.arguments.map((a) =>
+					this.inferExpressionType(a.value, version),
+				);
+				const raw = name ? resolveCallReturnRaw(name, argTypes) : undefined;
+				const typeStr =
+					raw && raw !== "void" ? raw : this.renderTvType(inferred, "series");
+				return { repr: `call "${name || "?"}" (${typeStr})`, typeStr };
+			}
+			case "BinaryExpression":
+			case "UnaryExpression": {
+				const op = (expr as BinaryExpression | UnaryExpression).operator;
+				const typeStr = this.renderTvType(inferred, "series");
+				return { repr: `call "operator ${op}" (${typeStr})`, typeStr };
+			}
+			case "TernaryExpression": {
+				const typeStr = this.renderTvType(inferred, "series");
+				return { repr: `call "operator ?:" (${typeStr})`, typeStr };
+			}
+			default: {
+				const typeStr = this.renderTvType(inferred, "series");
+				return { repr: typeStr, typeStr };
+			}
+		}
+	}
+
 	private validateCallExpression(
 		call: CallExpression,
 		version: string = "6",
@@ -1770,12 +1865,11 @@ export class UnifiedPineValidator {
 						: firstArg.value.type === "Literal"
 							? String((firstArg.value as Literal).raw ?? "")
 							: "";
-				this.errors.push({
+				this.addTemplateError({
 					line: firstArg.value.line,
 					column: firstArg.value.column,
 					length: 0,
-					message:
-						'Cannot call "{funId}" with argument "{argDisplayName}"="{argUserFriendlyRepresentation}". An argument of "{argumentType}" type was used but a "{currentTypeDocStr}" {typePostfix} is expected.',
+					message: UnifiedPineValidator.CE10123_TEMPLATE,
 					severity: DiagnosticSeverity.Error,
 					code: "CE10123",
 					ctx: {
@@ -1912,14 +2006,25 @@ export class UnifiedPineValidator {
 		// Check if function is variadic
 		const isVariadic = isVariadicFunction(functionName);
 
+		// TV's CE10115, anchored across the argument list (start at the first
+		// argument - probed `ta.sma(close, 14, 99)`, INV061 p01). see INV061
 		if (!isVariadic && positionalArgs.length > totalCount) {
-			this.addError(
-				call.line,
-				call.column,
-				functionName.length,
-				`Too many arguments for '${functionName}'. Expected ${totalCount}, got ${positionalArgs.length}`,
-				DiagnosticSeverity.Error,
-			);
+			const anchor = args[0]?.value ?? call;
+			this.addTemplateError({
+				line: anchor.line,
+				column: anchor.column,
+				length: 0,
+				message:
+					'Too many arguments passed into the "{funName}()" function call. Passed {passedArgsCount} arguments{expectMsg}{expectArgsCount}.',
+				severity: DiagnosticSeverity.Error,
+				code: "CE10115",
+				ctx: {
+					funName: functionName,
+					passedArgsCount: String(positionalArgs.length),
+					expectMsg: " but expected ",
+					expectArgsCount: String(totalCount),
+				},
+			});
 		}
 
 		// For variadic functions, require at least minimum number of arguments.
@@ -1962,15 +2067,31 @@ export class UnifiedPineValidator {
 			if (namedArg) {
 				// Validate type (named args are unambiguous, so we can check them).
 				// Union/polymorphic params map to "unknown" and fall through here.
+				// TV's CE10123 template, anchored at the argument VALUE (probed
+				// INV059 p01-p03, INV061 p03-p09). see INV061
 				if (checkArgTypes && param.type && param.type !== "unknown") {
 					if (!TypeChecker.isAssignable(namedArg.type, param.type)) {
-						this.addError(
-							call.line,
-							call.column,
-							param.name.length,
-							`Type mismatch for parameter '${param.name}': expected ${param.type}, got ${namedArg.type}`,
-							DiagnosticSeverity.Error,
+						const desc = this.describeArgForTemplate(
+							namedArg.arg.value,
+							namedArg.type,
+							version,
 						);
+						this.addTemplateError({
+							line: namedArg.arg.value.line,
+							column: namedArg.arg.value.column,
+							length: 0,
+							message: UnifiedPineValidator.CE10123_TEMPLATE,
+							severity: DiagnosticSeverity.Error,
+							code: "CE10123",
+							ctx: {
+								argDisplayName: param.name,
+								argUserFriendlyRepresentation: desc.repr,
+								argumentType: desc.typeStr,
+								currentTypeDocStr: param.rawType ?? String(param.type),
+								funId: functionName,
+								typePostfix: "",
+							},
+						});
 					}
 				}
 				continue;
@@ -1985,15 +2106,31 @@ export class UnifiedPineValidator {
 					continue;
 				}
 				const posArg = positionalArgs[i];
+				// Positional args use the same CE10123 template - TV resolves the
+				// param name (probed `plot(close, 42)` names "title", INV061 p02).
 				if (checkArgTypes && param.type && param.type !== "unknown") {
 					if (!TypeChecker.isAssignable(posArg.type, param.type)) {
-						this.addError(
-							call.line,
-							call.column,
-							functionName.length,
-							`Type mismatch for argument ${i + 1}: expected ${param.type}, got ${posArg.type}`,
-							DiagnosticSeverity.Error,
+						const desc = this.describeArgForTemplate(
+							posArg.arg.value,
+							posArg.type,
+							version,
 						);
+						this.addTemplateError({
+							line: posArg.arg.value.line,
+							column: posArg.arg.value.column,
+							length: 0,
+							message: UnifiedPineValidator.CE10123_TEMPLATE,
+							severity: DiagnosticSeverity.Error,
+							code: "CE10123",
+							ctx: {
+								argDisplayName: param.name,
+								argUserFriendlyRepresentation: desc.repr,
+								argumentType: desc.typeStr,
+								currentTypeDocStr: param.rawType ?? String(param.type),
+								funId: functionName,
+								typePostfix: "",
+							},
+						});
 					}
 				}
 				continue;
@@ -2051,17 +2188,21 @@ export class UnifiedPineValidator {
 			}
 		}
 
-		// Check for invalid named parameters
-		for (const [name] of providedArgs.entries()) {
+		// Check for invalid named parameters - TV's CE10120, anchored at the
+		// argument NAME (probed `plotshape(..., shape = ...)`, INV059 p05 /
+		// INV061 p06). see INV061
+		for (const [name, entry] of providedArgs.entries()) {
 			if (!signature.parameters.some((p) => p.name === name)) {
-				const validNames = signature.parameters.map((p) => p.name).join(", ");
-				this.addError(
-					call.line,
-					call.column,
-					name.length,
-					`Invalid parameter '${name}'. Valid parameters: ${validNames}`,
-					DiagnosticSeverity.Error,
-				);
+				this.addTemplateError({
+					line: entry.arg.nameLine ?? call.line,
+					column: entry.arg.nameColumn ?? call.column,
+					length: name.length,
+					message:
+						'The "{signature}" function does not have an argument with the name "{name}"',
+					severity: DiagnosticSeverity.Error,
+					code: "CE10120",
+					ctx: { name, signature: functionName },
+				});
 			}
 		}
 
@@ -2220,12 +2361,11 @@ export class UnifiedPineValidator {
 			if (!paramName || !docType) continue;
 			const desc = this.describeNonConstArg(arg.value, version);
 			if (!desc) continue;
-			this.errors.push({
+			this.addTemplateError({
 				line: arg.value.line,
 				column: arg.value.column,
 				length: 0,
-				message:
-					'Cannot call "{funId}" with argument "{argDisplayName}"="{argUserFriendlyRepresentation}". An argument of "{argumentType}" type was used but a "{currentTypeDocStr}" {typePostfix} is expected.',
+				message: UnifiedPineValidator.CE10123_TEMPLATE,
 				severity: DiagnosticSeverity.Error,
 				code: "CE10123",
 				ctx: {
@@ -3375,5 +3515,13 @@ export class UnifiedPineValidator {
 		severity: DiagnosticSeverity,
 	): void {
 		this.errors.push({ line, column, length, message, severity });
+	}
+
+	// Structured (code + ctx) twin of addError for pine-lint template errors.
+	// A named method - not a bare this.errors.push - so that
+	// audit-error-reachability can enumerate and instrument these sites the
+	// same way it does addError/addWarning ones. see INV061
+	private addTemplateError(error: ValidationError): void {
+		this.errors.push(error);
 	}
 }

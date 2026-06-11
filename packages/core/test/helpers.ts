@@ -6,6 +6,7 @@
 
 import { Parser } from "../src/parser/parser";
 import { UnifiedPineValidator } from "../src/analyzer/checker";
+import { renderMessage } from "../src/common/errors";
 import { SemanticAnalyzer } from "../src/parser/semanticAnalyzer";
 import type { Program } from "../src/parser/ast";
 
@@ -276,13 +277,15 @@ export function runTest(
 		// Match the CLI's channels (cli.ts): errors come from the validator,
 		// warnings from the SemanticAnalyzer (v6 only) - validator warnings
 		// are stripped. Fixtures thereby assert the same warning channel the
-		// CLI emits. see plan/31.
+		// CLI emits. see plan/31. Template messages (code + ctx, the
+		// pine-lint-structured form) are rendered like the CLI renders them,
+		// so fixtures can pin TV's exact wording. see INV061
 		result.validationErrors = validationResult
 			.filter((e) => e.severity === 0)
 			.map((e) => ({
 				line: e.line,
 				column: e.column,
-				message: e.message,
+				message: renderMessage(e),
 				severity: e.severity,
 			}));
 		if (version === "6") {

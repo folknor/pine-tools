@@ -36,7 +36,8 @@ const { SemanticAnalyzer } = await import(`file://${SEMANTIC}`);
 
 // --- static enumeration ------------------------------------------------------
 
-// A call site is a line containing `this.addError(` / `this.addWarning(`.
+// A call site is a line containing `this.addError(` / `this.addWarning(` /
+// `this.addTemplateError(` (the structured code+ctx twin - see INV061).
 // Method DEFINITIONS don't match (no `this.` prefix). The snippet is the
 // first string/template literal within the next few lines - best effort,
 // it exists to make the site identifiable, not to reproduce the message.
@@ -44,7 +45,8 @@ function enumerateSites(file, label) {
 	const lines = readFileSync(file, "utf8").split("\n");
 	const sites = [];
 	for (let i = 0; i < lines.length; i++) {
-		if (!/this\.(addError|addWarning)\(/.test(lines[i])) continue;
+		if (!/this\.(addError|addWarning|addTemplateError)\(/.test(lines[i]))
+			continue;
 		const window = lines.slice(i, i + 8).join(" ");
 		const m =
 			window.match(/[`]((?:[^`\\]|\\.){8,}?)[`]/) ??
@@ -96,7 +98,7 @@ function tally(label, line) {
 		);
 }
 
-for (const method of ["addError", "addWarning"]) {
+for (const method of ["addError", "addWarning", "addTemplateError"]) {
 	const orig = UnifiedPineValidator.prototype[method];
 	if (typeof orig !== "function") continue;
 	UnifiedPineValidator.prototype[method] = function (...args) {

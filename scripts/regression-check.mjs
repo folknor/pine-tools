@@ -97,11 +97,19 @@ function run(file) {
 	});
 }
 
+// Structured errors carry an unfilled template + ctx (see INV061); render
+// them so the (line, col, message) key distinguishes different findings at
+// the same position. Must mirror snapshot-local-lint.mjs exactly.
+function fillTemplate(message, ctx) {
+	if (!ctx) return message;
+	return message.replace(/\{(\w+)\}/g, (m, key) => ctx[key] ?? m);
+}
+
 function pickErrors(raw) {
 	try {
 		const j = JSON.parse(raw);
 		const errs = j.result?.errors ?? j.errors ?? [];
-		return errs.map((e) => ({ line: e.start?.line ?? 0, col: e.start?.column ?? 0, message: e.message ?? "" }));
+		return errs.map((e) => ({ line: e.start?.line ?? 0, col: e.start?.column ?? 0, message: fillTemplate(e.message ?? "", e.ctx) }));
 	} catch {
 		return null;
 	}

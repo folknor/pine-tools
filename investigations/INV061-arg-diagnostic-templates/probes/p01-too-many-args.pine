@@ -1,0 +1,3 @@
+//@version=6
+indicator("p01")
+plot(ta.sma(close, 14, 99))

@@ -1,0 +1,3 @@
+//@version=6
+indicator("p07")
+plot(close, title = color.red)
