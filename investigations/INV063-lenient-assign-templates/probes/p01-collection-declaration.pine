@@ -1,0 +1,4 @@
+//@version=6
+indicator("p")
+array<float> a = array.new<string>()
+plot(array.size(a))

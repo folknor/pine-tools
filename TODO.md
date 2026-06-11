@@ -35,7 +35,11 @@ IDs so the two stay in sync.
   union-arg check and INV014's const-arg check drop their conservative
   reliability gates (both currently skip args typed via UDF returns /
   user vars to avoid FPs, so they miss real violations that flow
-  through a variable).
+  through a variable), and would unblock INV063's residual FNs
+  (`line l = 5`, `Point p = 5`: drawing-type/UDT annotations are left
+  untyped in mapToPineType because typing them surfaces line-returning
+  UDFs mis-inferred as series<float> - 58 corpus FPs in the reverted
+  attempt).
 - **#18 (residual) - pine-lint's variable-list output
   (`astExtractor.ts`) labels some built-in color constants
   `"undetermined type"`.** A display-path quirk, cosmetic, not a
@@ -141,10 +145,10 @@ IDs so the two stay in sync.
   run: a `tv-accepts` verdict is not always "the breakage was not
   invalid" - TV skips all arg checks on calls with undetermined-typed
   arguments, so probe tv-accepts mutants minimally before discarding
-  (see G006). **Remaining:** periodic seed-rotated runs as TV budget
-  allows (new operators when the taxonomy grows), and the audit's
-  probe-only / corpus-but-never-in-tests follow-ups (3 sites
-  post-INV061 - fixture build-out, joins #52).
+  (see G006). The audit's follow-up lists are CLEARED as of 2026-06-11
+  (0 DEAD / 0 probe-only / 0 corpus-but-never-in-tests - the last three
+  sites became INV063). **Remaining:** periodic seed-rotated runs as TV
+  budget allows (new operators when the taxonomy grows).
 - **#52 - fixture-coverage build-out (the census target list).**
   `scripts/fixture-coverage.mjs` parses every corpus + test fixture and
   cross-references the JSON catalog to list entries referenced in zero
@@ -153,13 +157,14 @@ IDs so the two stay in sync.
   fixtures, 0 catalog entries referenced in no fixture, all TV-diffed
   clean) - and building it alone caught INV054, INV055, two INV059
   inference bugs, and INV060's v4/v5 numeric-bool class, which is the
-  argument for continuing. **Remaining (softer) targets:** the ~250
-  functions that appear in the corpus but in no test fixture, the
+  argument for continuing (the reachability audit's
+  corpus-but-never-in-tests slice cleared the same way - its last three
+  sites became INV063). **Remaining (softer) targets:** the ~250
+  functions that appear in the corpus but in no test fixture, and the
   structural shapes the census lists as corpus-only (forIn tuples,
-  if-expressions, deep member chains), and the reachability audit's
-  corpus-but-never-in-tests sites (3 post-INV061) - same method, lower
-  urgency. This is plain fixture-building, distinct from #48's mutation
-  testing (you can't mutate a construct that appears in zero files).
+  if-expressions, deep member chains) - same method, lower urgency.
+  This is plain fixture-building, distinct from #48's mutation testing
+  (you can't mutate a construct that appears in zero files).
 - **#45 - leading-operator wraps at multiple-of-4 indent (probed
   residual of INV042).** `float x = cond` / `    ? high` / `    : low`
   is TV's CE10013 `Mismatched input "?" expecting set "end of line

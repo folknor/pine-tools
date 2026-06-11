@@ -391,6 +391,34 @@ export namespace TypeChecker {
 		);
 	}
 
+	// Render a type for TV's CE10173 template on the LENIENT assign paths
+	// (collections, UDTs, drawing types, legacy versions): collections and
+	// UDTs are bare ("array<string>", "Point"), drawing types carry their
+	// implicit series qualifier ("series line"), scalars follow the
+	// renderQualifiedType rules below. Probed - see INV063.
+	const DRAWING_TYPES = new Set([
+		"line",
+		"label",
+		"box",
+		"table",
+		"linefill",
+		"polyline",
+	]);
+	export function renderAssignDiagnosticType(type: PineType | string): string {
+		const t = String(type);
+		if (isNaType(t as PineType)) return "simple na";
+		const m = t.match(/^(series|simple|const|input)<(.+)>$/);
+		const qualifier = m ? m[1] : null;
+		const inner = m ? m[2] : t.replace(/^(series|simple|const|input)\s+/, "");
+		if (/^(array|matrix|map)</.test(inner)) return inner;
+		if (DRAWING_TYPES.has(inner)) return `series ${inner}`;
+		if (STRICT_ASSIGN_BASES.has(inner)) {
+			const explicit = t.match(/^(series|simple|const|input)\s/)?.[1];
+			return `${qualifier ?? explicit ?? "const"} ${inner}`;
+		}
+		return inner; // UDTs and anything else unprobed: bare
+	}
+
 	// Render a type the way TV's CE10173 declaration message does:
 	// "series<float>" -> "series float"; a bare base (literal/const
 	// expression) -> "const float"; na -> "simple na". see INV032

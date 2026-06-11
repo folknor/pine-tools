@@ -1,0 +1,5 @@
+//@version=6
+indicator("p")
+var a = array.new<float>()
+a := array.new<string>()
+plot(array.size(a))

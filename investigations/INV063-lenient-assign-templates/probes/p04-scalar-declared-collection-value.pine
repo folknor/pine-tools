@@ -1,0 +1,4 @@
+//@version=6
+indicator("p")
+float x = array.new<float>()
+plot(x)

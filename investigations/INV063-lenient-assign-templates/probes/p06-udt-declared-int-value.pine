@@ -1,0 +1,6 @@
+//@version=6
+indicator("p")
+type Point
+    float x
+Point p = 5
+plot(close)

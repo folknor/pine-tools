@@ -430,3 +430,15 @@ contradiction means re-measure, not "the earlier author was wrong."
   Confirmable window unchanged (46/3/32). TV quirk: the minimal alias-arg
   probe crashes TV's checker (internal TypeError) though it still
   rejects. 2 probes.
+- [INV063](INV063-lenient-assign-templates/notes.md) - the audit's three
+  corpus-but-never-in-tests sites adopt TV's templates: the LENIENT
+  declaration/reassignment assign checks (collections/UDTs/legacy, the
+  INV032 strict rule's complement) emit TV's CE10173 template at the
+  statement start (collections/UDTs bare, drawing types
+  series-qualified, scalars qualifier-rendered -
+  `renderAssignDiagnosticType`), and unknown property reads on known
+  namespaces are CE10272 `Undeclared identifier "ns.prop"`. 17 corpus
+  records moved as same-line pairs, 26 reworded in place, count
+  unchanged. Audit now fully clean (0/0/0). Residual: `line l = 5` /
+  `Point p = 5` are FNs - typing drawing-type symbols surfaced 58 corpus
+  FPs from UDF-return mis-inference (reverted; waits on #9). 6 probes.

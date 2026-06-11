@@ -156,6 +156,12 @@ export function mapToPineType(typeStr?: string): PineType {
 		bool: "bool",
 		string: "string",
 		color: "color",
+		// Drawing types (line/label/box/table) deliberately NOT mapped: typing
+		// those symbols surfaces UDF-return mis-inference as corpus FPs (a
+		// line-returning UDF guesses series<float> from its untyped params),
+		// e.g. 50 FPs in one file on `lineN := udf(...)` reassignments. So
+		// `line l = 5` stays an FN until #9's robust UDF-return inference
+		// lands. see INV063
 		"series int": "series<int>",
 		"series float": "series<float>",
 		"series bool": "series<bool>",

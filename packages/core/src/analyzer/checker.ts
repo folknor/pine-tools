@@ -684,11 +684,20 @@ export class UnifiedPineValidator {
 									version !== "6",
 								)
 							) {
+								// TV uses the same CE10173 template and statement-start
+								// anchor here as on the strict path, with collections/
+								// UDTs rendered bare and drawing types series-qualified.
+								// Probed - see INV063.
+								const declRendered = /^(series|simple|input|const)\s/.test(
+									annotationName,
+								)
+									? annotationName
+									: TypeChecker.renderAssignDiagnosticType(annotationName);
 								this.addError(
-									statement.line,
-									statement.column,
-									statement.name.length,
-									`Cannot assign ${TypeChecker.displayType(initType)} to ${TypeChecker.displayType(varSymbol.type)}`,
+									startLine,
+									startColumn,
+									span,
+									`Cannot assign a value of the "${TypeChecker.renderAssignDiagnosticType(initType)}" type to the "${statement.name}" variable. The variable is declared with the "${declRendered}" type.`,
 									DiagnosticSeverity.Error,
 								);
 							}
@@ -1133,11 +1142,18 @@ export class UnifiedPineValidator {
 					} else if (
 						!TypeChecker.isAssignable(valueType, targetType, version !== "6")
 					) {
+						// Identifier targets get TV's CE10173 template (probed - see
+						// INV063); member/index targets keep the internal wording
+						// because the template needs a variable name (unprobed shape).
+						const message =
+							statement.target.type === "Identifier"
+								? `Cannot assign a value of the "${TypeChecker.renderAssignDiagnosticType(valueType)}" type to the "${(statement.target as Identifier).name}" variable. The variable is declared with the "${TypeChecker.renderAssignDiagnosticType(targetType)}" type.`
+								: `Cannot assign ${TypeChecker.displayType(valueType)} to ${TypeChecker.displayType(targetType)}`;
 						this.addError(
 							statement.line,
 							statement.column,
 							1, // length of operator
-							`Cannot assign ${TypeChecker.displayType(valueType)} to ${TypeChecker.displayType(targetType)}`,
+							message,
 							DiagnosticSeverity.Error,
 						);
 					}
@@ -3430,14 +3446,16 @@ export class UnifiedPineValidator {
 						break;
 					}
 
-					// Check if namespace exists but property doesn't (v6 only)
+					// Check if namespace exists but property doesn't (v6 only).
+					// TV reuses CE10272 with the full dotted name, same as the
+					// INV048 type-as-value case - probed, see INV063.
 					if (version === "6") {
 						if (KNOWN_NAMESPACES.includes(namespaceName)) {
 							this.addError(
 								memberExpr.line || 0,
 								memberExpr.column || 0,
 								propertyName.length,
-								`Unknown property '${memberExpr.property.name}' on namespace '${namespaceName}'`,
+								`Undeclared identifier "${propertyName}"`,
 								DiagnosticSeverity.Error,
 							);
 						}

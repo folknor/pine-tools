@@ -1,0 +1,17 @@
+// @test regression/INV063-lenient-assign-templates
+// @description The three corpus-but-never-in-tests checker sites from the reachability audit, reworded to TV's templates and pinned (probed 2026-06-11, see investigations/INV063-lenient-assign-templates/notes.md): the LENIENT declaration and reassignment assign checks (collections/UDTs/legacy - everything INV032's strict rule skips) now emit TV's CE10173 template with statement-start anchors (collections bare, scalars qualifier-rendered), and an unknown property read on a known builtin namespace is TV's CE10272 wording with the full dotted name (was a homegrown "Unknown property" message).
+// @expects parse: success
+// @expects errors: 4
+// @expects error: line=3, column=1, message=/Cannot assign a value of the "array<string>" type to the "a" variable. The variable is declared with the "array<float>" type./
+// @expects error: line=5, column=1, message=/Cannot assign a value of the "array<string>" type to the "b" variable. The variable is declared with the "array<float>" type./
+// @expects error: line=6, column=5, message=/Undeclared identifier "syminfo.bogus"/
+// @expects error: line=7, column=1, message=/Cannot assign a value of the "array<float>" type to the "f1" variable. The variable is declared with the "const float" type./
+
+//@version=6
+indicator("INV063")
+array<float> a = array.new<string>()
+var b = array.new<float>()
+b := array.new<string>()
+x = syminfo.bogus
+float f1 = array.new<float>()
+plot(array.size(a) + array.size(b) + x + f1)
