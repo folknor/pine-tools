@@ -18,6 +18,9 @@
 //   typo-param-name     -> CE10120  The "f" function does not have an
 //                                   argument with the name "..." (INV061)
 //   delete-decl         -> CE10272  Undeclared identifier (INV048)
+//   unbalance-bracket   -> CE10015  Missing closing parenthesis (INV046)
+//   bad-qualifier-form  -> CE10147  Cannot specify a type form "..."
+//                                   without also specifying the type (INV024)
 //
 // Module usage (the orchestrator, mutation-run.mjs):
 //   import { generateMutants, OPERATORS } from "./mutate.mjs";
@@ -334,6 +337,78 @@ export const OPERATORS = {
 					col: 1,
 					desc: `delete declaration "${lines[t.line - 1].trim().slice(0, 60)}"`,
 					apply: () => splice(source, from, to, ""),
+				});
+			}
+			return sites;
+		},
+	},
+
+	// Delete the closing ")" of a call - an unclosed "(" is TV's CE10015
+	// at the opener's logical line, column 1 (INV046). Deleting a NESTED
+	// call's closer still leaves exactly one unclosed opener overall
+	// (closers pop the nearest opener), so the breakage stays single-site.
+	"unbalance-bracket": {
+		expectedClass: "CE10015",
+		describe: 'delete the closing ")" of a call',
+		findSites(ctx) {
+			const sites = [];
+			const { tokens, offsetOf, source } = ctx;
+			for (const call of findCalls(ctx)) {
+				const rp = tokens[call.rparen];
+				const from = offsetOf(rp);
+				sites.push({
+					line: rp.line,
+					col: rp.column,
+					desc: `${call.name}(...: delete ")" at ${rp.line}:${rp.column}`,
+					apply: () => splice(source, from, from + 1, ""),
+				});
+			}
+			return sites;
+		},
+	},
+
+	// Replace the base type keyword of a simple typed declaration
+	// (`float x = ...` -> `series x = ...`) - a bare qualifier with no
+	// base type is TV's CE10147 "Cannot specify a type form ... without
+	// also specifying the type", anchored at the qualifier (INV024
+	// addendum, probes p08-p10). Top-level statement starts only (bare at
+	// column 1, or after a column-1 var/varip), matching the probed forms.
+	"bad-qualifier-form": {
+		expectedClass: "CE10147",
+		describe: "replace a declaration's base type keyword with a bare qualifier",
+		findSites(ctx) {
+			const sites = [];
+			const { tokens, offsetOf, source } = ctx;
+			const baseTypes = new Set([
+				"float",
+				"int",
+				"bool",
+				"string",
+				"color",
+				"line",
+				"label",
+				"box",
+				"table",
+			]);
+			for (let i = 0; i < tokens.length; i++) {
+				const t = tokens[i];
+				if (t.type !== "KEYWORD" || !baseTypes.has(t.value)) continue;
+				if (tokens[i + 1]?.type !== "IDENTIFIER") continue;
+				if (tokens[i + 2]?.type !== "ASSIGN") continue;
+				const prev = tokens[i - 1];
+				const bare =
+					t.column === 1 && (!prev || prev.type === "NEWLINE");
+				const afterVar =
+					prev?.type === "KEYWORD" &&
+					(prev.value === "var" || prev.value === "varip") &&
+					prev.column === 1;
+				if (!bare && !afterVar) continue;
+				const from = offsetOf(t);
+				sites.push({
+					line: t.line,
+					col: t.column,
+					desc: `"${t.value} ${tokens[i + 1].value} =" -> "series ${tokens[i + 1].value} ="`,
+					apply: () => splice(source, from, from + t.value.length, "series"),
 				});
 			}
 			return sites;

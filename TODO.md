@@ -26,33 +26,16 @@ Open work items, each either deferred from an investigation or queued
 as a discrete next step. Sequential numbering matches the task-tool
 IDs so the two stay in sync.
 
-- ~~#3~~ **CLOSED 2026-06-07 - the premise inverted.** See
-  [INV048](investigations/INV048-type-namespace-as-value/notes.md).
-  The `chart.point` FP no longer existed (fixed by intervening parser
-  work; zero corpus records); what remained was the opposite: bare
-  built-in type/namespace names in value position (`x = line`,
-  `x = ta`, `x = chart.point`) are TV's CE10272 `Undeclared identifier`
-  and bare enum names CE10074 - both now implemented (13 probes; bare
-  UDT names probed accepted). Plus one true data-gap FP:
-  `syminfo.cftc_code` is linter-accepted but reference-undocumented -
-  added via the new probe-backed `UNDOCUMENTED_VARIABLES` override in
-  `generate.ts` (the #21 override-data-file refactor should absorb it).
 - **#9 - type-inference where we infer non-bool but TV infers bool.**
-  Umbrella task. Several big wins landed via INV005, INV010, INV011;
-  remaining FPs need a fresh corpus diff and per-category dives. The
-  current top non-cascade category likely needs a new pass. Robust
-  UDF-return inference here would also let INV016's union-arg check and
-  INV014's const-arg check drop their conservative reliability gates (both
-  currently skip args typed via UDF returns / user vars to avoid FPs, so
-  they miss real violations that flow through a variable).
-  2026-06-04 progress: the biggest single cluster (11 bool-operand FPs in
-  `0277c9c016df…`) was not type inference at all but a parser bug -
-  `series`/`simple` qualifier-led declarations split the statement and
-  truncated function bodies - see
-  [INV024](investigations/INV024-qualified-type-declarations/notes.md)
-  (-324 corpus error records). The CE10147 follow-up surfaced there
-  (qualifier after const / without type) was implemented 2026-06-05 -
-  see the INV024 addendum (probes 7-10).
+  Umbrella task. Several big wins landed via INV005, INV010, INV011,
+  and INV024 (the biggest single cluster was a parser bug masquerading
+  as inference - qualifier-led declarations truncating function
+  bodies); remaining FPs need a fresh corpus diff and per-category
+  dives. Robust UDF-return inference here would also let INV016's
+  union-arg check and INV014's const-arg check drop their conservative
+  reliability gates (both currently skip args typed via UDF returns /
+  user vars to avoid FPs, so they miss real violations that flow
+  through a variable).
 - **#18 (residual) - pine-lint's variable-list output
   (`astExtractor.ts`) labels some built-in color constants
   `"undetermined type"`.** A display-path quirk, cosmetic, not a
@@ -83,18 +66,12 @@ IDs so the two stay in sync.
   `functions.json`" goal is already satisfied today. The item is about
   two risks in the inputs: (1) *unverified guessing* and (2) *silent
   drift* - facts stored as bare TS literals carry no re-verification
-  recipe, which is exactly how G002's bad widenings survived.
-  **2026-06-08: risk (1) was real and large.** The first-step audit
-  (`scripts/audit-param-optionality.mjs`) found the optionality
-  heuristics were near-dead code masking a scrape polarity bug - only
-  28/1292 params shipped required, disabling missing-arg detection
-  entirely. Fixed via INV050: a 475-function `--tv` probe sweep
-  (`scripts/probe-required-params.mjs` ->
-  `pine-data/raw/v6/required-params-probe.json`, fact + probe + date -
-  the override-data-file shape this entry asks for) is now the single
-  requiredness source; `commonOptionalParams` retired;
-  `isParameterOptional` reduced to an evidence-based fallback for
-  unprobed functions. **Remaining** for risk (2): move the other
+  recipe, which is exactly how G002's bad widenings survived. Risk (1)
+  was real and large - the param-requiredness polarity bug, fixed via
+  INV050's 475-function probe sweep
+  (`pine-data/raw/v6/required-params-probe.json` - fact + probe +
+  date, the override-data-file shape this entry asks for).
+  **Remaining** for risk (2): move the other
   hand-coded facts to the same probe-backed data-file shape -
   `getFunctionFlags.topLevelOnly` (14 fns), the `polymorphic` category
   map (shrunk by INV032 - see #17), `variadic`/`minArgs` (authoritative
@@ -126,192 +103,63 @@ IDs so the two stay in sync.
   Requires widening the internal `Diagnostic.message` type or adding a
   parallel rich field, plus a capability check before sending markup.
 - **#41 - MemberExpression callee validation.** INV036's CE10271 covers
-  Identifier callees; the **builtin-namespace slice landed 2026-06-10**
-  ([INV053](investigations/INV053-builtin-namespace-member-calls/notes.md))
-  - undefined members of a known builtin namespace (`ta.bogus`,
-  `math.notreal`) are now CE10271. **Still open:** members of import
-  *aliases* (`myLib.fn()`) and UDT method calls - both need data we
-  don't have (the imported library's export set; UDT method
-  namespaces). The interim option from INV049's residual **landed
-  2026-06-10 (INV059)**: tuple-destructure elements from unclassifiable
-  calls (import aliases included) now type `unknown` instead of guessing
-  `series<float>`, which cleared the last bool-condition FP (`b369d637…`,
-  now local 0 / TV 0) and -166 corpus FP/cascade records. Real
+  Identifier callees, and INV053 extended it to undefined members of
+  known builtin namespaces (`ta.bogus`, `math.notreal`). **Still
+  open:** members of import *aliases* (`myLib.fn()`) and UDT method
+  calls - both need data we don't have (the imported library's export
+  set; UDT method namespaces). The interim mitigations are in (INV059
+  types unclassifiable destructure elements `unknown`; INV062
+  validates the argument expressions of unresolvable calls); real
   member-call validation still needs the export-set data.
 - **#48 - mutation-testing pass (negative corpus).** INV050 exposed a
   structural blind spot: every verification layer samples valid code.
   The corpus is published working scripts, so a false-negative class
-  that only manifests on BROKEN code (missing required arg, dead
-  `required` flags) is invisible to `find-real-failures` no matter how
-  often it runs - the missing-arg check was silently disabled for the
-  project's whole life and nothing noticed. General principle: any
-  check whose precondition comes from generated data can be silently
-  disabled by a data bug, and the valid-code corpus will never tell
-  us. The fix is systematic mutation testing: take TV-clean fixtures,
-  apply mechanical breakages (drop an argument, typo a param name,
-  wrong-type a literal arg, delete a declaration, unbalance a
-  bracket), run both linters on each mutant, and flag every mutant TV
-  rejects that we accept. Needs TV budget (one `--tv` call per
-  mutant), so design the mutant set deliberately - a few mutation
-  operators over a small fixture sample per run, rotating, not a
-  combinatorial sweep. Also worth a one-shot "is every checker error
-  message reachable?" audit: grep the addError call sites and verify
-  each fires on at least one fixture/mutant (the INV050 check was
-  live-in-appearance, dead-in-practice).
+  that only manifests on BROKEN code is invisible to
+  `find-real-failures` no matter how often it runs. General principle:
+  any check whose precondition comes from generated data can be
+  silently disabled by a data bug, and the valid-code corpus will never
+  tell us. The countermeasure is built and already paying (see the
+  scripts table for the three pieces): the free check-site half,
+  `audit-error-reachability.mjs`, whose first run yielded
+  [INV059](investigations/INV059-audit-reachability-round1/notes.md);
+  and the mutation half, `mutate.mjs` + `mutation-run.mjs`, whose first
+  real run (86 mutants) produced one survivor exposing a structural
+  hole - see
+  [INV062](investigations/INV062-unresolved-call-args-unvalidated/notes.md).
 
-  **Proposed design (2026-06-10, not yet built).** Most of the harness
-  already exists - `compare-tv.mjs` / `lint-batch.mjs` /
-  `find-real-failures.mjs` already run local + `--tv` and classify the
-  diff at concurrency 4. Mutation testing reuses that and only adds a
-  mutator + a thin orchestrator/triage. Three pieces:
-
-  1. **Mutator** (`scripts/mutate.mjs`) - takes a clean `.pine`, returns
-     `{mutant, operator, site, expectedClass}` records. There is **no
-     AST printer** in the codebase, so mutate at the *text* level but
-     *locate* sites with the lexer (token line/col, as `debug:tokens`
-     emits): tokenize, pick a token matching the operator's target,
-     splice the source string. Preserves all formatting/comments, needs
-     no printer. ONE mutation per mutant (single-site) so each survivor
-     points at exactly one gap.
-  2. **Orchestrator** (`scripts/mutation-run.mjs`) - picks fixtures,
-     calls the mutator, runs each mutant through `compare-tv.mjs --json`
-     (don't reimplement the TV call), classifies. Knobs
-     `--fixtures N --operators a,b,c --sites-per S` + a rotation seed so
-     a run is bounded and deliberate (e.g. 20 fixtures x 6 operators x 1
-     site ~= 120 `--tv` calls). Output to `mutation-reports/`
-     (gitignored like `lint-reports/`); mutants live in the repo, never
-     `/tmp`.
-  3. **Triage** - group survivors by `(operator, TV error code)` the way
-     `categorize-failures.mjs` groups, so N mutants collapse to a few
-     candidate-FN categories, each worth an INV.
-
-  **Signal that matters:** only `TV-rejects AND we-accept` (the
-  `tv-only` quadrant). To keep it clean and dodge the G001 post-stop
-  problem, **start from both-clean fixtures** (local AND TV both 0
-  errors), mutate once, and check whether TV now errors and we do not -
-  starting from zero on both sides isolates the mutation's effect, no
-  pre-existing cascade to subtract. A mutant TV *also* accepts means the
-  breakage was not actually invalid - discard.
-
-  **Operators are designed around TV's error taxonomy (CE codes), not
-  just our existing checks** - that is how you find gaps we have NO
-  check for. Map each operator to the code it should provoke: drop a
-  required arg -> CE10165 (INV050); typo a builtin fn/member name ->
-  CE10271 (INV036/INV053); wrong-type a literal arg -> CE10123;
-  typo a param name -> CE10123-ish; delete a declaration -> undefined
-  var; unbalance a bracket -> parse error; bad qualifier/type form ->
-  CE10147 (INV024). A survivor is either a dead check (should fire,
-  doesn't - the INV050 failure mode) or a true no-check gap.
-
-  **Sequencing - do the free half first.** The reachability audit needs
-  ZERO TV budget: statically enumerate every `addError`/`addWarning`
-  site, lint the whole corpus once locally, and list checks that never
-  fired. Pure local, cheapest high-value slice, and it seeds the
-  operator list (each reachable check suggests a mutation that should
-  trigger it). Build order: (a) `scripts/audit-error-reachability.mjs`
-  (no TV), then (b) `scripts/mutate.mjs` with 3-4 operators
-  (drop-required-arg, typo-member, wrong-type-literal, delete-decl),
-  then (c) `scripts/mutation-run.mjs`.
-
-  **(a) built 2026-06-10: `scripts/audit-error-reachability.mjs`.** It
-  enumerates `this.addError(`/`this.addWarning(` sites in the compiled
-  checker + SemanticAnalyzer, wraps both at runtime to capture call-site
-  stack frames, and fires corpus + test fixtures + investigation probes
-  through them in-process. Its FIRST run flagged 4 never-firing sites -
-  all real, all fixed same-day, see
-  [INV059](investigations/INV059-audit-reachability-round1/notes.md)
-  (phantom cross-type coercions starving the named-arg check, a
-  double-report, two wording/severity drifts). It also reports
-  probe-only sites (no regression fixture pins them) and
-  corpus-but-never-in-tests sites (3 as of the post-INV061 run - fixture
-  build-out targets).
-
-  **(b) and (c) built 2026-06-11: `scripts/mutate.mjs` +
-  `scripts/mutation-run.mjs`** - exactly the design above (text-level
-  splices at lexer-located sites, single-site mutants, both-clean
-  fixtures only, compare-tv reused, seeded rotation). Five operators:
-  drop-required-arg (CE10165), typo-member (CE10271), wrong-type-literal
-  (CE10123), typo-param-name (CE10120), delete-decl (CE10272).
-  `--dry-run` validates an operator on the local side with zero TV
-  calls. **First real run (20 fixtures x 5 operators, 86 mutants, ~86 TV
-  calls): 84 killed, 1 tv-accepts (discarded), 0 expectation
-  divergences, and 1 SURVIVOR - which exposed a structural hole:
-  arguments of unresolvable calls (UDF/import-alias/method) were never
-  validated at all. Fixed same day, see
-  [INV062](investigations/INV062-unresolved-call-args-unvalidated/notes.md)
-  (+605 corpus records, zero TV contradictions).** Remaining: more
-  operators (unbalance-bracket, bad-qualifier-form per the taxonomy
-  map above) and periodic seed-rotated runs as TV budget allows.
-
+  Method essentials (for future operator work): mutate at the text
+  level at lexer-located sites, ONE mutation per mutant; start from
+  BOTH-CLEAN fixtures (local AND TV 0 errors) so the mutation's effect
+  is isolated; the only signal is `TV-rejects AND we-accept`; a mutant
+  TV also accepts means the breakage was not invalid - discard. Design
+  operators around TV's error taxonomy (CE codes), not our existing
+  checks - that is how you find gaps we have NO check for. Built (all
+  seven taxonomy rows): drop-required-arg (CE10165), typo-member
+  (CE10271), wrong-type-literal (CE10123), typo-param-name (CE10120),
+  delete-decl (CE10272), unbalance-bracket (CE10015, INV046),
+  bad-qualifier-form (CE10147, INV024). Triage caveat from the second
+  run: a `tv-accepts` verdict is not always "the breakage was not
+  invalid" - TV skips all arg checks on calls with undetermined-typed
+  arguments, so probe tv-accepts mutants minimally before discarding
+  (see G006). **Remaining:** periodic seed-rotated runs as TV budget
+  allows (new operators when the taxonomy grows), and the audit's
+  probe-only / corpus-but-never-in-tests follow-ups (3 sites
+  post-INV061 - fixture build-out, joins #52).
 - **#52 - fixture-coverage build-out (the census target list).**
-  `scripts/fixture-coverage.mjs` (built 2026-06-10) parses every corpus +
-  test fixture and cross-references the JSON catalog to list entries
-  referenced in zero fixtures and behavioral flags whose rule is never
-  exercised. Its first run caught the INV054 class directly (topLevelOnly
-  2/20 -> 20/20 tested) and exposed INV055's void-assignment FN.
-  **2026-06-10 (same day, second round): the hard-uncovered list is
-  CLEARED** - seven `coverage-*.pine` block fixtures (map/array, the 28
-  uncovered matrix.*, ticker/misc, strategy trade-stats, drawing setters,
-  footprint/volume_row, vars/consts) took catalog coverage to **0
-  functions / 0 variables / 0 constants referenced in no fixture**, all
-  seven TV-diffed with zero disagreement. Building them caught two real
-  inference bugs (INV059: two-level-namespace call returns never resolved
-  in `inferExpressionType`; `getBinaryOpType(unknown, unknown)` guessed
-  `int`) and surfaced the v4/v5 numeric-bool coercion class
-  ([INV060](investigations/INV060-v5-numeric-bool-contexts/notes.md),
-  -1605 corpus FP records). **Remaining (softer) targets:** the ~250
-  functions that appear in the corpus but in no test fixture, and the
+  `scripts/fixture-coverage.mjs` parses every corpus + test fixture and
+  cross-references the JSON catalog to list entries referenced in zero
+  fixtures and behavioral flags whose rule is never exercised. The
+  hard-uncovered list is CLEARED (seven `coverage-*.pine` block
+  fixtures, 0 catalog entries referenced in no fixture, all TV-diffed
+  clean) - and building it alone caught INV054, INV055, two INV059
+  inference bugs, and INV060's v4/v5 numeric-bool class, which is the
+  argument for continuing. **Remaining (softer) targets:** the ~250
+  functions that appear in the corpus but in no test fixture, the
   structural shapes the census lists as corpus-only (forIn tuples,
-  if-expressions, deep member chains) - same method, lower urgency. This
-  is plain fixture-building, distinct from #48's mutation testing (you
-  can't mutate a construct that appears in zero files).
-- ~~#49~~ **Reassignment case CLOSED 2026-06-10 (INV055).**
-  `x := voidCall()` now emits TV's type-mismatch naming the target's type,
-  via an explicit void-call branch (shared `isVoidCall` helper) rather than a
-  risky global void-infers-as-void change. The remaining void residual -
-  tuple destructure (`[a, b] = voidCall()`) - is reclassified to #51 below
-  because it is not void-specific. See
-  [INV055](investigations/INV055-void-assignment/notes.md).
-- ~~#51~~ **CLOSED 2026-06-10
-  ([INV058](investigations/INV058-tuple-destructure-arity/notes.md)).**
-  TV's tuple-destructure SHAPE and COUNT errors are implemented, matching
-  all 10 probes (wording, count direction, statement-start anchor) with
-  ZERO corpus changes - where the pre-blocker draft FP'd 51 times across
-  17 files. Shipped the same day as its three blockers: INV057 (UDF
-  tuple-capture shapes: switch-arm tails, per-arity overload shapes,
-  receiver method calls) and the INV057 addendum (`builtinTupleReturns`
-  from catalog overload `returns`; request.security/_lower_tf expression
-  passthrough). Those blocker fixes also cleared 9 latent bool-type FPs
-  on 4 TV-clean fixtures. Residuals (in INV058 notes): tuple
-  REASSIGNMENT (`[a,b] := f()`) arity is unprobed/unchecked (INV044
-  territory), and the variable-list display quirk joins #18.
-- ~~#50~~ **CLOSED 2026-06-10 (INV056).** The `matrix.sum` lead generalized:
-  the missing-required-arg check skipped ALL overloaded functions (112 of 122
-  had an unenforced universally-required arg). Fixed with an arity floor. See
-  [INV056](investigations/INV056-overload-missing-arg/notes.md).
-- ~~#53~~ **CLOSED 2026-06-11
-  ([INV061](investigations/INV061-arg-diagnostic-templates/notes.md)).**
-  All three pieces shipped, 9 probes, byte-for-byte local reproduction:
-  arg-type mismatches (named AND positional) are TV's CE10123 template at
-  the argument VALUE, unknown named parameter is CE10120 at the argument
-  NAME (`CallArgument` now records name positions; 5738 corpus records
-  reworded), too-many-args is CE10115 at the first argument (probed - NOT
-  the terse too-few form). TV re-baseline unchanged (46/3/32). Side catch:
-  structured (code+ctx) errors now route through a named
-  `addTemplateError`, making them visible to audit-error-reachability -
-  which immediately flagged the never-exercised str.tostring(map) check
-  (now pinned by `regression/str-tostring-map.pine`). Lateral fix: editor
-  diagnostics (language-service -> LSP/VS Code/MCP) compared LSP severity
-  values against core ones, dropping every semantic ERROR and showing
-  validator warnings as errors; also `renderMessage` in core is now the
-  canonical template renderer (CLI, editor, test helpers, snapshot/
-  regression scripts) so templated errors never leak `{placeholders}`.
-  Residuals (in INV061
-  notes): unprobed value-repr shapes (ternary/array/index) fall back to
-  the rendered type; user-variable qualifiers are best-guess ("const X")
-  until declarations track qualifiers. The audit's
-  corpus-but-never-in-tests list (3 sites post-INV061, was 5) is fixture
-  build-out, same vein as #52.
+  if-expressions, deep member chains), and the reachability audit's
+  corpus-but-never-in-tests sites (3 post-INV061) - same method, lower
+  urgency. This is plain fixture-building, distinct from #48's mutation
+  testing (you can't mutate a construct that appears in zero files).
 - **#45 - leading-operator wraps at multiple-of-4 indent (probed
   residual of INV042).** `float x = cond` / `    ? high` / `    : low`
   is TV's CE10013 `Mismatched input "?" expecting set "end of line
@@ -325,14 +173,7 @@ IDs so the two stay in sync.
   joining for recovery, mirroring INV042.
 - **Minor data residue (record-only, low value):** `ta.vwap.anchor`'s default
   and the "X by default" phrasing are deliberately unparsed (see
-  `parse-default.ts`). Skip unless a consumer needs them. (`since`/`deprecated`,
-  formerly #27, resolved: TV exposes no version-introduced data so `since` was
-  dropped; `deprecated` is parsed from the description - only `request.quandl`
-  in v6.) The "Returns" prose, "Remarks", and "See also" cross-references - once
-  uncaptured - now ship on every catalog as `returnsDescription`/`remarks`/
-  `seeAlso`, and operators ship as their own `operators.{ts,json}` catalog
-  (reference data for external consumers; the checker ignores both - see the
-  Data Pipeline section in CLAUDE.md).
+  `parse-default.ts`). Skip unless a consumer needs them.
 
 ## Gotchas
 
@@ -351,6 +192,11 @@ index.
   (so `\r\r\n` files double their line numbers), wrapped statements
   reported at logical-line columns (comment-stripped single-space
   join). Both probed 2026-06-04.
+- [G006](gotchas/G006-undetermined-type-suppresses-arg-checks.md) - TV
+  skips ALL argument checks on a call containing an "undetermined type"
+  argument (untyped UDF results), sibling args included - so a
+  mutation-run `tv-accepts` can be a TV FN, and our CE10123 there is an
+  INV001-class true positive. Probed 2026-06-11.
 
 Authoritative per-occurrence list lives in
 `lint-reports/failures-by-category.json`. For every category below the JSON
@@ -373,8 +219,8 @@ count.
 | `scripts/check-changed-files-broken-string.mjs` | INV047 safety check: verifies every regression-changed fixture carries a broken-string record (i.e. is a file TV rejects at the lexer stage), flagging any possibly-TV-clean file whose behavior changed. |
 | `scripts/audit-fixtures.mjs` | Scans every `.pine` fixture under `packages/core/test/fixtures/` without running vitest. Flags fixtures with malformed `@expects` directives and fixtures whose only assertion is a total `errors: N` count (no per-error coverage), printing suggested `// @expects error: line=N, message="..."` directives ready to paste. Exits non-zero on malformed directives. Wrapper: `pnpm run audit:fixtures` (also rebuilds the compiled helpers it imports). |
 | `scripts/fixture-coverage.mjs` | Coverage census behind #52. Parses every corpus + test fixture with our own parser and cross-references the JSON catalog to surface BLIND SPOTS: catalog entries referenced in zero fixtures, behavioral flags whose rule is never exercised (esp. `topLevelOnly` functions never called in a violating local scope - the INV054 class), and a structural-shape census (member-chain depth, switch/forIn/tuple/enum) per set. Deterministic, offline, ~2s. `--json` for machine output. It finds gaps, it does not judge correctness - the uncovered-function list is #52's fixture-building target list. |
-| `scripts/mutate.mjs` | The (b) piece of #48. Generates single-site mutants from a clean `.pine`: text-level splices at lexer-located sites, one mutation per mutant, operators mapped to the TV error code they should provoke (drop-required-arg/CE10165, typo-member/CE10271, wrong-type-literal/CE10123, typo-param-name/CE10120, delete-decl/CE10272). Module (for the orchestrator) + CLI (`--print <i> --out <path>` for inspection). Offline. |
-| `scripts/mutation-run.mjs` | The (c) piece of #48. Picks BOTH-CLEAN fixtures (local AND TV 0 errors, from `real-failures.json`), generates mutants, judges each via `compare-tv.mjs --json`, classifies tv-accepts / killed / SURVIVOR (TV rejects, we accept - the FN signal), groups survivors by (operator, TV code). Bounded TV budget: fixtures x operators x sites-per calls, seed-rotated. `--dry-run` = local side only, zero TV calls. Reports to `mutation-reports/` (gitignored). First run: 86 mutants, 1 survivor -> INV062. |
+| `scripts/mutate.mjs` | The (b) piece of #48. Generates single-site mutants from a clean `.pine`: text-level splices at lexer-located sites, one mutation per mutant, operators mapped to the TV error code they should provoke (drop-required-arg/CE10165, typo-member/CE10271, wrong-type-literal/CE10123, typo-param-name/CE10120, delete-decl/CE10272, unbalance-bracket/CE10015, bad-qualifier-form/CE10147). Module (for the orchestrator) + CLI (`--print <i> --out <path>` for inspection). Offline. |
+| `scripts/mutation-run.mjs` | The (c) piece of #48. Picks BOTH-CLEAN fixtures (local AND TV 0 errors, from `real-failures.json`), generates mutants, judges each via `compare-tv.mjs --json`, classifies tv-accepts / killed / SURVIVOR (TV rejects, we accept - the FN signal), groups survivors by (operator, TV code). Bounded TV budget: fixtures x operators x sites-per calls, seed-rotated. `--dry-run` = local side only, zero TV calls. Reports to `mutation-reports/` (gitignored). Run 1 (seed 1, 86 mutants): 1 survivor -> INV062. Run 2 (seed 2, 7 operators, 115 mutants): 0 survivors; the 2 tv-accepts were TV FNs -> G006. |
 | `scripts/audit-error-reachability.mjs` | The check-site half of #48's free slice. Enumerates every `addError`/`addWarning`/`addTemplateError` call site in the compiled checker + SemanticAnalyzer, wraps them at runtime to capture call-site stack frames, and validates corpus + test fixtures + investigation probes in-process. Reports DEAD sites (never fire anywhere - the INV050 class), probe-only sites (nothing pins them), and corpus-but-never-in-tests sites (untested real-world behavior). Offline, ~30s. `--json` for machine output. First run yielded INV059 (4 findings); the INV061 addTemplateError widening yielded the str.tostring(map) catch. |
 
 Repro for any fixture:
@@ -441,33 +287,16 @@ section records the latest measurement (the JSONs also embed
 **Measured 2026-06-11 (midday), after INV062 (#48 mutation harness
 built + its first survivor fixed)**: **46 local-only / 3 tv-only / 32
 same-pos-different-message**, plus 768 past TV's stop point (4
-unparseable, transient). The INV062 fix (argument expressions of
-unresolvable calls now validated) added +605 corpus records (baseline
-15236 -> 15841): 0 on both-clean fixtures, 53 post-stop on mangled v6
-files, 552 on legacy v4/v5 files (bare v4 builtins inside `security()`
-args - existing policy). The confirmable window is byte-identical to
-the morning measurement.
-
-**Measured 2026-06-11 (morning), after INV061 (#53 shipped)**:
-**46 local-only / 3 tv-only / 32 same-pos-different-message**, plus 715
-past TV's stop point (4 unparseable, transient) - identical totals to
-the 2026-06-10 measurement. The round swapped wording/anchors on 5771
-corpus records (5738 invalid-parameter -> CE10120, 33 too-many-args ->
-CE10115) without touching the TV diff: every reworded record sits past
-TV's stop point or on non-v6 files. Corpus baseline unchanged at 15236.
-
-**Measured 2026-06-10 (evening), after the INV057-INV060 round
-(#51 shipped, audit-error-reachability built, #52 hard-uncovered list
-cleared)**: **46 local-only / 3 tv-only / 32 same-pos-different-message**,
-plus 715 past TV's stop point (4 unparseable, transient). Corpus
-baseline 17325 -> 17020 -> **15236** - the round removed ~1790 error
-records, dominated by INV060's v4/v5 numeric-bool class (-1605 across
-226 files) and INV059's import-alias destructure unknowns (-166). The
-46 local-only: 20 probe-backed CE10156 wrap TPs + the 8+8 `bar index`
+unparseable, transient). Corpus baseline 15841 (the INV062 fix added
++605 records: 0 on both-clean fixtures, 53 post-stop on mangled v6
+files, 552 on legacy v4/v5 files - bare v4 builtins inside
+`security()` args, existing policy). The 46/3/32 window has been
+byte-identical since 2026-06-10 and is fully explained: the 46
+local-only are 20 probe-backed CE10156 wrap TPs + the 8+8 `bar index`
 mangle pairs + 10 small known residue (undefined-variable stragglers,
-`Unexpected token: :`) + INV026's synthetic ternary trio. The 3 tv-only
-are that same INV026 fixture seen from TV's side (CE10123 at the
-argument where we flag the ternary) - zero unexplained tv-only
+`Unexpected token: :`) + INV026's synthetic ternary trio; the 3
+tv-only are that same INV026 fixture seen from TV's side (CE10123 at
+the argument where we flag the ternary) - zero unexplained tv-only
 remain.
 
 Earlier measurements live in git history (this section, prior
@@ -479,10 +308,9 @@ revisions) - each is a dated point-in-time record per G001.
 
 One bad token causes downstream "Unexpected token" hits because recovery
 synchronizes coarsely (see #20). Much compressed since the original
-inventory (the table once started at 1086+1072+549), and the 2026-06-04
-post-INV025 measurement now excludes post-TV-stop cascades (985 records
-on mangled hard-wrapped files - no TV verdict), which is where most of
-the previous counts lived. Confirmable counts:
+inventory (the table once started at 1086+1072+549; post-TV-stop
+cascades are excluded since INV025 - no TV verdict there). Confirmable
+counts:
 
 | count | files | category |
 |---|---|---|
@@ -492,42 +320,18 @@ the previous counts lived. Confirmable counts:
 | 3 | 3 | `Undefined variable '*'` |
 | 2-1 | - | long tail: `:` `==` |
 
-## Parser - syntax we silently accept (false negatives)
-
-These are real syntax errors in the user's code that we don't surface.
-
-All categories this table once held are fixed; the trail is in git
-history and the investigations index. The two library-export
-constraints (`All exported functions args should be typified`,
-`Exported variable should have const modifier and type`) were the last
-rows - implemented 2026-06-10, see
-[INV052](investigations/INV052-library-export-constraints/notes.md),
-which also closed the parser gap on `export <type> var = ...`.
-
----
-
 ## Type checker - over-strict bool / arg / assign rules
 
 Per task #9 the root cause is more likely our type inference producing
-non-bool types where TV correctly produces bool. Much reduced this round:
-the `input`/`const` qualifier coercion and display-flag fixes cleared the
-`Type mismatch for parameter` category entirely (was 127) and most of the
-bool-operator and ternary FPs. INV049 (2026-06-07) cleared the last
-unexplained record - tuple destructures with if/switch-expression inits
-defaulted every element to `series<float>`; element types now flow from
-the branch tails. INV060 (2026-06-10) then cleared the single largest
-class corpus-wide: v4/v5 numeric values in bool contexts are a TV
-WARNING + coercion, not an error - the bool-context checks now accept
-numerics on legacy versions only (-1605 records / 226 files; the v6
-checks are unchanged and correct).
+non-bool types where TV correctly produces bool. Every once-large class
+is cleared (qualifier coercion, INV049's destructure-init types,
+INV059's unknown-typing of unclassifiable elements, INV060's v4/v5
+numeric-bool legacy gate - trail in the investigations index). What
+remains:
 
 | count | files | category |
 |---|---|---|
 | 3 | 1 | `Ternary branches must have compatible types. Got '*' and '*'` (our own synthetic fixture's deliberate true positives - TV flags them too, at the argument position; see INV026) |
-
-The `b369d637…` if-condition row (destructure from an imported library
-call) cleared 2026-06-10: INV059's unknown-typing of unclassifiable
-destructure elements removed it (local 0 / TV 0, verified).
 
 **Right approach**: pick a specific FP, trace through `inferExpressionType`
 in `checker.ts` to see why we produce e.g. `series<float>` for what
@@ -537,10 +341,9 @@ should be `series<bool>`. Don't relax the bool checks - they're correct.
 
 | count | files | category |
 |---|---|---|
-| 3 | 1 | `Cannot call "operator ?:" with argument ...` (was 13 in 9 files - never a detection gap, just anchor mismatch; resolved by INV028's operand-anchored errors. The 3 left are `35a58bb9…`'s ternary trio, where TV anchors at one branch by undecoded type-priority rules; we detect all three at the ternary) |
+| 3 | 1 | `Cannot call "operator ?:" with argument ...` (`35a58bb9…`'s ternary trio - never a detection gap, just anchor mismatch: TV anchors at one branch by undecoded type-priority rules, we detect all three at the ternary; see INV028) |
 
-Every other row this table once held is cleared (INV028, INV032-INV041);
-only the ternary trio remains.
+Every other row this table once held is cleared (INV028, INV032-INV041).
 
 ---
 
@@ -574,15 +377,9 @@ those 5 are TRUE positives - `plot()` inside `if showZones` in
 file's line-475 syntax error; probed directly, TV rejects plot-in-if
 with CE10188 "Cannot use 'plot' in local scope" (pine-lint --tv,
 2026-06-04, minimal probe `if close > open` / `    plot(close)`).
-Nothing left to relax here.
-
-INV054 (2026-06-10) extended this check the other direction (a false
-negative): the six `strategy.risk.*` rules are also CE10188-in-local-scope
-but were unflagged because the callee-name resolver only handled
-single-level `ns.member` chains, so every two-level builtin name resolved
-to "" and skipped all validation. Fixed `memberChainName` + added the rules
-to `topLevelOnly`. See
-[INV054](investigations/INV054-two-level-namespace-resolution/notes.md).
+Nothing left to relax here. (The check was also extended the other
+direction - two-level builtin names like `strategy.risk.*` once
+bypassed it entirely - see INV054.)
 
 ---
 
@@ -592,11 +389,6 @@ to `topLevelOnly`. See
   TV - retry before reading anything into it. (Root-caused 2026-06-04:
   our own CLI used to truncate >64KB responses, now fixed; what
   remains is genuinely TV-side and transient.)
-- ~~A few categories ("All exported functions args should be typified",
-  "Exported variable should have const modifier and type") look like
-  library-only constraints.~~ **Implemented 2026-06-10 (INV052)** - both
-  are real TV errors, probed and matched exactly; the parser gap under
-  `export <type> var = ...` was closed at the same time.
 - TV emits NO warnings for files with compile errors (stops at the
   first error - G001), so warning local-only counts are structurally
   inflated for error-bearing fixtures. The post-TV-stop bucketing

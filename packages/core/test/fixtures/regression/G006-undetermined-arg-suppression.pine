@@ -1,0 +1,14 @@
+// @test regression/G006-undetermined-arg-suppression
+// @description TV skips ALL argument checks on a call containing an "undetermined type" argument (here: untyped UDF results flowing into plotshape's first arg and strategy.close's comment arg), so TV is silent on both calls - probed 2026-06-11. Our CE10123s are TRUE positives (INV001 class); never relax them to match TV. see G006
+// @expects parse: success
+// @expects errors: 2
+// @expects error: line=5, column=19, message=/Cannot call "plotshape" with argument "title"="42". An argument of "literal int" type was used but a "const string"  is expected./
+// @expects error: line=7, column=20, message=/Cannot call "strategy.close" with argument "id"="42". An argument of "literal int" type was used but a "series string"  is expected./
+
+//@version=6
+strategy("G006")
+f(x) => x > 0
+goLong = f(close)
+plotshape(goLong, 42)
+if close > open
+    strategy.close(42, f(close) ? "a" : "b")

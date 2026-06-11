@@ -52,3 +52,8 @@ when TV's behavior diverged, with no stored probe to re-check it.
 - [G005](G005-tv-diagnostic-position-conventions.md) - TV positions,
   line terminators (\r\r\n doubling, CR-only), wrapped statements,
   logical-line columns, join rule, diff artifacts, TODO #38
+- [G006](G006-undetermined-type-suppresses-arg-checks.md) - TV skips
+  ALL argument checks on a call containing an "undetermined type"
+  argument (untyped UDF results), sibling args included; tv-accepts
+  mutation verdicts can be TV FNs; INV001-class true positives, never
+  relax to match
