@@ -75,6 +75,28 @@ function buildKnownNamespaces(): string[] {
 // Known namespaces for property validation (derived from pine-data)
 export const KNOWN_NAMESPACES = buildKnownNamespaces();
 
+// Every dotted namespace PATH the catalog defines - not just the first
+// segment (KNOWN_NAMESPACES) but each proper prefix, so deep paths like
+// `chart.point` / `strategy.risk` are recognised as real namespaces, not only
+// `chart` / `strategy`. Used by the CE10271 member-call check to flag an
+// unknown final member of a known multi-level namespace (`chart.point.newx`),
+// which the single-level check missed. see INV064
+function buildKnownNamespacePrefixes(): Set<string> {
+	const prefixes = new Set<string>();
+	const addFrom = (name: string) => {
+		const parts = name.split(".");
+		// every proper prefix (drop the last segment, which is the member)
+		for (let i = 1; i < parts.length; i++) {
+			prefixes.add(parts.slice(0, i).join("."));
+		}
+	};
+	for (const name of FUNCTIONS_BY_NAME.keys()) addFrom(name);
+	for (const name of VARIABLES_BY_NAME.keys()) addFrom(name);
+	for (const name of CONSTANTS_BY_NAME.keys()) addFrom(name);
+	return prefixes;
+}
+export const KNOWN_NAMESPACE_PREFIXES = buildKnownNamespacePrefixes();
+
 // Base names of generic builtin functions - the catalog keys carry the
 // template suffix (`array.new<type>`, `map.new<type,type>`), but a call's
 // callee is the bare `array.new` / `map.new`, so a plain

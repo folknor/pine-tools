@@ -1,0 +1,10 @@
+// @test regression/INV064-deep-namespace-member
+// @description Calling an undefined member of a known MULTI-LEVEL builtin namespace path is TV's CE10271, just like the single-level INV053 case - but the old check required callee.object to be an Identifier, so `chart.point.newx` / `strategy.risk.bogusxyz` (object is itself a MemberExpression) slipped through as a false negative. The #48 mutation harness surfaced chart.point.newx (typo-member on chart.point.new). Probed --tv 2026-06-11: both CE10271 'Could not find function or function reference'. See investigations/INV064-deep-namespace-member-calls/notes.md.
+// @expects parse: success
+// @expects error: line=3, column=5, message="Could not find function or function reference 'chart.point.newx'"
+// @expects error: line=4, column=1, message="Could not find function or function reference 'strategy.risk.bogusxyz'"
+//@version=6
+strategy("x")
+p = chart.point.newx(time, bar_index, close)
+strategy.risk.bogusxyz(50)
+plot(p.price)

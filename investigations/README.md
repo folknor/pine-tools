@@ -442,3 +442,13 @@ contradiction means re-measure, not "the earlier author was wrong."
   unchanged. Audit now fully clean (0/0/0). Residual: `line l = 5` /
   `Point p = 5` are FNs - typing drawing-type symbols surfaced 58 corpus
   FPs from UDF-return mis-inference (reverted; waits on #9). 6 probes.
+- [INV064](INV064-deep-namespace-member-calls/notes.md) - CE10271 FN:
+  unknown members of a MULTI-LEVEL builtin namespace path
+  (`chart.point.newx`, `strategy.risk.bogusxyz`) were unvalidated -
+  INV053's check required the callee object to be a single Identifier,
+  so deep paths slipped through. Generalized to any depth via the
+  flattened callee name + a new `KNOWN_NAMESPACE_PREFIXES` set (every
+  dotted catalog prefix). Surfaced by the #48 mutation harness, which
+  needed two of its own bugs fixed first (delete-decl matching `:=`
+  reassignments; offset reconstruction broken on `\r\r\n` files - both
+  silent under-testing). 0 corpus changes, 324 tests, 2 probes.

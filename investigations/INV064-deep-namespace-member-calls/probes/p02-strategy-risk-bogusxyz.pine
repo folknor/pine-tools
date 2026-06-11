@@ -1,0 +1,3 @@
+//@version=6
+strategy("t")
+strategy.risk.bogusxyz(50)

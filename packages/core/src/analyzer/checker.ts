@@ -45,6 +45,7 @@ import {
 	isTopLevelOnly,
 	isVariadicFunction,
 	KNOWN_NAMESPACES,
+	KNOWN_NAMESPACE_PREFIXES,
 	mapReturnTypeToPineType,
 	mapToPineType,
 	NAMESPACE_PROPERTIES,
@@ -1932,29 +1933,37 @@ export class UnifiedPineValidator {
 			} else if (
 				version === "6" &&
 				call.callee.type === "MemberExpression" &&
-				call.callee.object.type === "Identifier"
+				functionName.includes(".")
 			) {
-				// `ns.member(...)` where `ns` is a built-in namespace and
+				// `ns.member(...)` where `ns` is a built-in namespace PATH and
 				// `member` is unknown there - same CE10271 (probed `ta.bogus`,
-				// `math.notreal`; see INV053). Bounded to the data-backed
-				// subset of #41: only built-in namespaces (we have the full
-				// member catalog), and only when `ns` is NOT user-shadowed (an
-				// `import ... as ns` alias / user var has a non-builtin symbol,
-				// line !== 0 - its members we cannot resolve). A member that
-				// IS a known builtin (function via the signature lookup above,
-				// or a const/variable in NAMESPACE_PROPERTIES) is left alone:
-				// calling a built-in variable like `ta.tr(...)` is TV-silent,
-				// and calling a const like `color.red(...)` IS a TV error but
-				// the const-vs-variable split is murky, so we conservatively
-				// skip all known members - we never want a false positive on a
-				// real member.
-				const nsName = call.callee.object.name;
-				const objSym = this.symbolTable.lookup(nsName);
+				// `math.notreal`; see INV053). `functionName` is the flattened
+				// dotted callee (memberChainName, "" if any link is not a plain
+				// property access), so this covers both `ta.bogus` and deeper
+				// paths like `chart.point.newx` - the latter slipped through the
+				// old `callee.object.type === "Identifier"` guard, a CE10271 FN
+				// the #48 mutation harness surfaced (see INV064).
+				//
+				// Bounded to the data-backed subset of #41: the member's
+				// namespace PATH (everything up to the last dot) must be a real
+				// catalog namespace (KNOWN_NAMESPACE_PREFIXES), and the ROOT must
+				// NOT be user-shadowed (an `import ... as ns` alias / user var has
+				// a non-builtin symbol, line !== 0 - its members we cannot
+				// resolve). A member that IS a known builtin (function via the
+				// signature lookup above, or a const/variable in
+				// NAMESPACE_PROPERTIES) is left alone: calling a built-in variable
+				// like `ta.tr(...)` is TV-silent, and calling a const like
+				// `color.red(...)` IS a TV error but the const-vs-variable split
+				// is murky, so we conservatively skip all known members - we never
+				// want a false positive on a real member.
+				const rootName = functionName.slice(0, functionName.indexOf("."));
+				const nsPath = functionName.slice(0, functionName.lastIndexOf("."));
+				const objSym = this.symbolTable.lookup(rootName);
 				const userShadowed = !!objSym && objSym.line !== 0;
 				if (
 					!userShadowed &&
-					!this.importedNamespaces.has(nsName) &&
-					KNOWN_NAMESPACES.includes(nsName) &&
+					!this.importedNamespaces.has(rootName) &&
+					KNOWN_NAMESPACE_PREFIXES.has(nsPath) &&
 					!(functionName in NAMESPACE_PROPERTIES) &&
 					!GENERIC_FUNCTION_BASES.has(functionName)
 				) {

@@ -1,0 +1,9 @@
+// @test regression/INV064-deep-namespace-no-false-positive
+// @description The generalized deep-namespace member-call check must stay silent on VALID multi-level builtin calls (chart.point.new, strategy.risk.max_drawdown) and on user-defined-type constructors/methods reached through a chain (the namespace PATH `Foo.bar` is not a catalog prefix, so it is left alone). Guards the INV064 widening against false positives. See investigations/INV064-deep-namespace-member-calls/notes.md.
+// @expects parse: success
+// @expects no-errors
+//@version=6
+strategy("x")
+p = chart.point.new(time, bar_index, close)
+strategy.risk.max_drawdown(50, strategy.percent_of_equity)
+plot(p.price)

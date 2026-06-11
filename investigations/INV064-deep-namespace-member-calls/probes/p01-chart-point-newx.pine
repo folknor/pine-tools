@@ -1,0 +1,3 @@
+//@version=6
+indicator("t")
+p = chart.point.newx(time, bar_index, close)

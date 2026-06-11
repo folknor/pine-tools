@@ -107,14 +107,17 @@ IDs so the two stay in sync.
   Requires widening the internal `Diagnostic.message` type or adding a
   parallel rich field, plus a capability check before sending markup.
 - **#41 - MemberExpression callee validation.** INV036's CE10271 covers
-  Identifier callees, and INV053 extended it to undefined members of
-  known builtin namespaces (`ta.bogus`, `math.notreal`). **Still
-  open:** members of import *aliases* (`myLib.fn()`) and UDT method
-  calls - both need data we don't have (the imported library's export
-  set; UDT method namespaces). The interim mitigations are in (INV059
-  types unclassifiable destructure elements `unknown`; INV062
-  validates the argument expressions of unresolvable calls); real
-  member-call validation still needs the export-set data.
+  Identifier callees, INV053 extended it to undefined members of
+  known builtin namespaces (`ta.bogus`, `math.notreal`), and INV064
+  generalized that to any namespace DEPTH (`chart.point.newx`,
+  `strategy.risk.bogusxyz` - the old check only handled single-segment
+  `ns.member`). **Still open:** members of import *aliases*
+  (`myLib.fn()`) and UDT method calls - both need data we don't have
+  (the imported library's export set; UDT method namespaces). The
+  interim mitigations are in (INV059 types unclassifiable destructure
+  elements `unknown`; INV062 validates the argument expressions of
+  unresolvable calls); real member-call validation still needs the
+  export-set data.
 - **#48 - mutation-testing pass (negative corpus).** INV050 exposed a
   structural blind spot: every verification layer samples valid code.
   The corpus is published working scripts, so a false-negative class
@@ -147,7 +150,15 @@ IDs so the two stay in sync.
   arguments, so probe tv-accepts mutants minimally before discarding
   (see G006). The audit's follow-up lists are CLEARED as of 2026-06-11
   (0 DEAD / 0 probe-only / 0 corpus-but-never-in-tests - the last three
-  sites became INV063). **Remaining:** periodic seed-rotated runs as TV
+  sites became INV063). Run 3 (seeds 3-10) produced one survivor ->
+  INV064 (deep-namespace member calls, a CE10271 FN), and exposed two
+  silent under-testing bugs in `mutate.mjs` now fixed: `delete-decl`
+  matched `:=` reassignments (both lex as ASSIGN; deleting one is
+  harmless so TV accepted the bogus mutant), and offset reconstruction
+  was `\n`-only while the lexer doubles `\r\r\n` line numbers (G005), so
+  every `\r`-ending corpus fixture spliced at the wrong site and was
+  silently skipped in seeds 1-2 (fixed by normalizing line endings in
+  `makeCtx`). **Remaining:** periodic seed-rotated runs as TV
   budget allows (new operators when the taxonomy grows).
 - **#52 - fixture-coverage build-out (the census target list).**
   `scripts/fixture-coverage.mjs` parses every corpus + test fixture and

@@ -77,6 +77,16 @@ function lineStarts(source) {
 }
 
 function makeCtx(source) {
+	// Normalize line endings to \n FIRST. The lexer is G005-aware: it counts
+	// a lone \r and a \n as separate breaks, so a \r\r\n-terminated file (seen
+	// in the corpus) doubles its line numbers. Our offset reconstruction
+	// (lineStarts + split("\n")) is \n-only, so on such a file token.line
+	// indexes past the end of `starts` and every splice lands at NaN/the wrong
+	// place - a silent no-op mutant TV then "accepts". Normalizing makes the
+	// lexer, lineStarts, and split("\n") agree; both local and TV receive the
+	// same normalized mutant, so the comparison stays valid. See G005 (the
+	// lexer's \r\r\n line-doubling) and TODO #48 (the harness).
+	source = source.replace(/\r+\n|\r/g, "\n");
 	const tokens = new Lexer(source).tokenize();
 	const starts = lineStarts(source);
 	const offsetOf = (t) => starts[t.line - 1] + (t.column - 1);
@@ -312,7 +322,12 @@ export const OPERATORS = {
 				// plain declaration; `:=`/`var`/typed forms are skipped - this
 				// operator wants the simplest unambiguous shape).
 				if (t.type !== "IDENTIFIER" || t.column !== 1) continue;
-				if (tokens[i + 1]?.type !== "ASSIGN") continue;
+				// `=` and `:=` both lex as ASSIGN - distinguish by value so
+				// reassignments (`x := 10`) are skipped: deleting one leaves the
+				// variable still declared, so TV accepts (a wasted probe, not a
+				// CE10272). This is the `:=`-skip the comment above promises.
+				if (tokens[i + 1]?.type !== "ASSIGN" || tokens[i + 1].value !== "=")
+					continue;
 				if (tokens[i - 1] && tokens[i - 1].type !== "NEWLINE") continue;
 				// Single-line statements only: the declaration must end on its
 				// own line (next line blank, comment, or column-1 code - no
