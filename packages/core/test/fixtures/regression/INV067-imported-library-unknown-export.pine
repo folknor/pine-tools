@@ -1,0 +1,8 @@
+// @test regression/INV067-imported-library-unknown-export
+// @description A member call on an imported library whose vendored export set we have (TradingView/ta) is CE10271 when the member is NOT an export. `ta.emax` is not a ta export (TV-confirmed CE10271, 2026-06-19), even though `ta` collides with the builtin namespace. See investigations/INV067-imported-library-member-validation/notes.md.
+// @expects parse: success
+// @expects error: line=3, column=5, message="Could not find function or function reference 'ta.emax'"
+//@version=6
+import TradingView/ta/9 as ta
+x = ta.emax(close, 10)
+plot(x)

@@ -1,9 +1,9 @@
 // @test regression/INV053-member-call-no-false-positive
-// @description The builtin-namespace member-call check must NOT fire on: generic constructors (catalog key array.new<type>), members of an UNALIASED imported library whose name collides with a builtin namespace (import .../ta/N -> namespace ta), UDT constructors/methods, or a builtin variable called as a function (ta.tr, TV-silent). See investigations/INV053-builtin-namespace-member-calls/notes.md.
+// @description The builtin-namespace member-call check must NOT fire on: generic constructors (catalog key array.new<type>), a VALID member of an UNALIASED imported library whose name collides with a builtin namespace (import .../ta/N -> namespace ta; `ta.dema` is a real ta export), UDT constructors/methods, or a builtin variable called as a function (ta.tr, TV-silent). See investigations/INV053-builtin-namespace-member-calls/notes.md. NOTE: INV067 now validates library members against the vendored export set, so the member here must be a real export - `ta.dema` (not the v9-only `requestVolumeDelta`, which returns a tuple and would muddy the no-error assertion).
 // @expects parse: success
 // @expects no-errors
 //@version=6
-import TradingView/ta/7
+import TradingView/ta/9
 
 type point
     float v
@@ -14,5 +14,5 @@ method dist(point this) =>
 xs = array.new<float>(3, 0.0)
 p = point.new(1.0)
 d = p.dist()
-delta = ta.requestVolumeDelta("FACE", "1")
-plot(d + array.size(xs) + delta)
+dv = ta.dema(close, 10)
+plot(d + array.size(xs) + dv)

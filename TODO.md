@@ -114,9 +114,15 @@ IDs so the two stay in sync.
   `ns.member`), and INV065 closed the **scalar-shadow** slice (a local
   `string`/`int`/etc. shadowing a namespace name, e.g. `timeframe.changex`
   inside `f(simple string timeframe)`, is still CE10271 because scalars
-  carry no builtin methods). **Still open:** (a) members of import
-  *aliases* (`myLib.fn()`) and UDT method calls - need the imported
-  library's export set / UDT method namespaces; (b) **collection-typed
+  carry no builtin methods), and INV067 closed the **vendored-library**
+  slice (members of imported libraries we vendor under `vendor/` -
+  `import TradingView/ta/9` -> `ta.emax` is CE10271 because it is not in
+  ta/9's `export` set; validated against the new
+  `pine-data/v6/libraries.json`). **Still open:** (a) members of imported
+  libraries we DON'T vendor (`HeWhoMustNotBeNamed/ta`, `jason5480/*`,
+  `loxx/*`) and UDT method calls - need the library's export set (vendor
+  more sources, or wire the language-service `/// @source` local resolver
+  into the checker) / UDT method namespaces; (b) **collection-typed
   shadows** (`math.pushx()` where `math` is an `array` - INV065 p04: TV
   flags, we skip, because array/matrix/map methods are catalog functions
   AND can be user-extended); (c) **method calls on any non-namespace

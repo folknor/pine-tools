@@ -1,0 +1,9 @@
+// @test regression/INV067-imported-library-no-false-positive
+// @description The imported-library member check must NOT fire on a real library export (ta.dema) nor on a builtin function reached through a colliding library alias (ta.sma - the builtin still resolves alongside the library; TV-confirmed clean 2026-06-19). Members of libraries we do NOT vendor stay lenient too (the #41 residual) - covered by the corpus's many unvendored imports at 0 regressions. See investigations/INV067-imported-library-member-validation/notes.md.
+// @expects parse: success
+// @expects no-errors
+//@version=6
+import TradingView/ta/9 as ta
+a = ta.dema(close, 10)
+b = ta.sma(close, 10)
+plot(a + b)

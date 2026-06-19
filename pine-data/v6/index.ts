@@ -12,6 +12,7 @@ export * from "./types";
 export * from "./annotations";
 export * from "./operators";
 export * from "./keywords";
+export * from "./libraries";
 
 // Re-export types
 export type {

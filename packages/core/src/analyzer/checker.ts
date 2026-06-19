@@ -55,7 +55,7 @@ import {
 	positionalParamUnionMembers,
 	resolveCallReturnRaw,
 } from "./builtins";
-import { TYPE_NAMES } from "../../../../pine-data/v6";
+import { TYPE_NAMES, LIBRARY_EXPORTS_BY_PATH } from "../../../../pine-data/v6";
 import { TYPE_KEYWORDS } from "../constants/keywords";
 import { type Symbol as SymbolInfo, SymbolTable } from "./symbols";
 import { type PineType, TypeChecker } from "./types";
@@ -126,6 +126,12 @@ export class UnifiedPineValidator {
 	// so the builtin-namespace member-call check skips them even when the
 	// name collides with a built-in namespace. see INV053
 	private importedNamespaces: Set<string> = new Set();
+	// Imported namespace -> its full "Author/Lib/Version" path, for the
+	// libraries whose export set we vendor (pine-data/v6/libraries). Lets the
+	// member-call check VALIDATE members of those libraries (CE10271 on an
+	// unknown export) instead of skipping them - the data-backed slice of #41.
+	// see INV067
+	private importedLibraryPaths: Map<string, string> = new Map();
 	// Lexical stack of names DECLARED in each scope, for TV's CE10095
 	// ("X" is already defined): re-declaring a name in the SAME scope is
 	// an error - typed or untyped, after var/varip, and a function param
@@ -150,6 +156,7 @@ export class UnifiedPineValidator {
 		this.declaredEnumNames.clear();
 		this.declaredFunctionNames.clear();
 		this.importedNamespaces.clear();
+		this.importedLibraryPaths.clear();
 		this.declScopes = [new Set()];
 
 		// Pre-scan imports so a member call on an imported namespace is
@@ -158,7 +165,15 @@ export class UnifiedPineValidator {
 		for (const statement of ast.body) {
 			if (statement.type === "ImportStatement") {
 				const ns = statement.alias ?? statement.libraryPath.split("/")[1];
-				if (ns) this.importedNamespaces.add(ns);
+				if (ns) {
+					this.importedNamespaces.add(ns);
+					// Record the path so the member-call check can validate
+					// members against the vendored export set (INV067). The last
+					// import wins on an ns collision, matching TV's single-binding.
+					if (LIBRARY_EXPORTS_BY_PATH.has(statement.libraryPath)) {
+						this.importedLibraryPaths.set(ns, statement.libraryPath);
+					}
+				}
 			}
 		}
 
@@ -2001,6 +2016,37 @@ export class UnifiedPineValidator {
 						scalarShadow
 							? `Could not find method or method reference '${functionName}'`
 							: `Could not find function or function reference '${functionName}'`,
+						DiagnosticSeverity.Error,
+					);
+				}
+
+				// Imported-library member: `lib.export(...)` where `lib` is an
+				// imported namespace whose vendored export set we have
+				// (pine-data/v6/libraries). Valid iff `member` is one of the
+				// library's exports (probed p02 `ta.dema`), a builtin function of a
+				// colliding namespace (`ta.sma` - resolved by the signature lookup
+				// above, never reaches here; p03), or a builtin const/var
+				// (NAMESPACE_PROPERTIES). Otherwise CE10271 "function or function
+				// reference" (probed p01 `ta.emax`; INV067) - the data-backed import
+				// slice of #41. Single-dot callees only (library exports are flat).
+				// Not gated on userShadowed: for an imported library the binding IS
+				// the shadow symbol. Libraries we don't vendor have no entry, so
+				// they stay lenient.
+				const libExports = LIBRARY_EXPORTS_BY_PATH.get(
+					this.importedLibraryPaths.get(rootName) ?? "",
+				);
+				if (
+					libExports &&
+					functionName.indexOf(".") === functionName.lastIndexOf(".") &&
+					!libExports.has(memberName) &&
+					!(functionName in NAMESPACE_PROPERTIES) &&
+					!GENERIC_FUNCTION_BASES.has(functionName)
+				) {
+					this.addError(
+						call.line,
+						call.column,
+						functionName.length,
+						`Could not find function or function reference '${functionName}'`,
 						DiagnosticSeverity.Error,
 					);
 				}

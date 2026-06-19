@@ -1,0 +1,5 @@
+//@version=6
+indicator("p03")
+import TradingView/ta/9 as ta
+x = ta.sma(close, 10)
+plot(x)

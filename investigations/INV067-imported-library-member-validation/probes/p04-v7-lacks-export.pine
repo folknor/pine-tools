@@ -1,0 +1,5 @@
+//@version=6
+indicator("p04")
+import TradingView/ta/7
+delta = ta.requestVolumeDelta("FACE", "1")
+plot(delta)

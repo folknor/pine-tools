@@ -1,0 +1,5 @@
+//@version=6
+indicator("p01")
+import TradingView/ta/9 as ta
+x = ta.emax(close, 10)
+plot(x)

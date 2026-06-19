@@ -476,3 +476,18 @@ contradiction means re-measure, not "the earlier author was wrong."
   versions. Deferred behind robust receiver resolution (#9/#41).
   Surfaced by #48 run-4 (14 of 16 delete-decl local-accepts are this
   class). 2 probes.
+- [INV067](INV067-imported-library-member-validation/notes.md) - CE10271
+  FN: member calls on an imported library were skipped (INV053's
+  import-shadow residual) because we had no export set. The official TV
+  libraries are vendored as source under `vendor/TradingView/**`, and a
+  library's public surface is its `export`-keyword functions - data we
+  parse offline. New `generate:libraries` pipeline step emits
+  `pine-data/v6/libraries.{ts,json}` (Author/Lib/Version -> exports); the
+  checker validates `lib.member(...)` against it (CE10271 on unknown
+  exports; `ta.emax` flagged, `ta.dema` export + `ta.sma` builtin stay
+  clean - builtin and library coexist under `ta`). Keyed by exact version
+  (TV p04: `requestVolumeDelta` is v9-only, so ta/7 + it is CE10271 -
+  which also exposed a wrong INV053 fixture, an INV001-class catch).
+  Vendored: TradingView/ta v7-12, RelativeValue v2-3. Author libraries
+  stay the #41 residual. 0 corpus changes, 328 tests, 4 probes, 2
+  fixtures. Surfaced by #48 run-4.

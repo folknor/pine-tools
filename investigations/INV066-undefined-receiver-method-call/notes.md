@@ -64,8 +64,17 @@ no-check behavior hid:
 - **v6 scope gaps (the majority, ~137 records, mostly one file
   `4d78be7e3f`):** a function PARAMETER used as a method receiver inside a
   nested `switch`/`if` body did not resolve (`overlap(array<ob> bull, …) =>
-  … bull.remove(v)` -> "Undefined variable 'bull'"). Receiver resolution
-  doesn't reliably see params / nested-scope locals.
+  … bull.remove(v)` -> "Undefined variable 'bull'"). Root-caused: in that
+  file the switch-arm BODIES are dedented to column 1 (the arms sit at 16
+  spaces, the `bull.remove(v)` results at 0). The file is LF-only (not a
+  G005 `\r` artifact) and our parser accepts it without error - but it
+  attributes those column-1 lines to TOP-LEVEL scope, not the `overlap`
+  function, so the `bull` PARAMETER is genuinely out of scope per our parse
+  tree. TV scopes them inside the function. This is a scope-attribution /
+  parser-state issue (#20 territory: which enclosing context a dedented
+  continuation belongs to), surfaced only because the receiver check is the
+  first thing to read scope at that point. So the "receiver resolution" need
+  is really "correct nested-scope attribution," a parser concern.
 - **import namespaces/aliases (~part of the v5 + no-version files):**
   `loxxexpandedsourcetypes.fn()`, `lib.fn()`, `setting.fn()` - roots that
   live in `importedNamespaces`, not the symbol table, so `validateIdentifier`
