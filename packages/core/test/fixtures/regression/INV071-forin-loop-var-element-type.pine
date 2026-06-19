@@ -1,0 +1,14 @@
+// @test regression/INV071-forin-loop-var-element-type
+// @description A for-in loop variable carries the collection's element type, so misuse is type-checked. `for v in array<float>` makes `v` a series float and `str.length(v)` is TV's CE10123 (probed 2026-06-19); same for the tuple `for [i, s] in` value. Previously the loop var was typed "unknown" and all such misuse slipped through. See investigations/INV071-forin-loop-var-element-type/notes.md.
+// @expects parse: success
+// @expects error: line=6, column=21, message="type was used but a "
+// @expects error: line=8, column=21, message="type was used but a "
+//@version=6
+indicator("x")
+floats = array.from(1.0, 2.0)
+a = 0
+for v in floats
+    a := str.length(v)
+for [i, s] in floats
+    a := str.length(s)
+plot(a)

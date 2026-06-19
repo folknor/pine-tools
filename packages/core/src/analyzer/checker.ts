@@ -955,18 +955,39 @@ export class UnifiedPineValidator {
 				this.symbolTable.enterScope();
 				this.blockDepth++;
 
-				// Add the iterator variable to the scope. The counted form's
-				// iterator is always int; the for-in element (single form, or
-				// `iterator2` of `for [index, value] in`) has the collection's
-				// element type, which we don't derive yet - use "unknown" to
-				// stay lenient. see plan/31.
+				// The for-in ELEMENT variable (single form's iterator, or
+				// `iterator2` of `for [index, value] in`) carries the
+				// collection's element type - derive it as `series <E>` from an
+				// `array<E>` / `map<K,V>` (value side) collection so loop-var
+				// misuse is type-checked (`for v in array<float>` then
+				// `str.length(v)` is TV's CE10123). Falls back to "unknown" when
+				// the element type isn't derivable (matrix, unknown element,
+				// non-collection) - lenient, as before. The tuple INDEX stays
+				// "int" and the counted form's iterator stays "int". see INV071
+				let elemType: PineType = "unknown";
+				if (
+					statement.type === "ForInStatement" &&
+					"collection" in statement &&
+					statement.collection
+				) {
+					const base = TypeChecker.baseTypeName(
+						this.inferExpressionType(statement.collection, version) as string,
+					);
+					const am = base.match(/^array<(.+)>$/);
+					const mm = base.match(/^map<\s*[^,]+,\s*(.+)>$/);
+					const elem = am ? am[1] : mm ? mm[1].trim() : undefined;
+					if (elem && elem !== "unknown") {
+						// Canonical bracket form - `isNumericType` etc. only
+						// recognise `series<float>`, not the space form.
+						elemType = `series<${elem}>` as PineType;
+					}
+				}
 				if ("iterator" in statement) {
+					const isForInValue =
+						statement.type === "ForInStatement" && !statement.iterator2;
 					this.symbolTable.define({
 						name: statement.iterator,
-						type:
-							statement.type === "ForInStatement" && !statement.iterator2
-								? "unknown"
-								: "int",
+						type: isForInValue ? elemType : "int",
 						line: statement.line,
 						column: statement.column,
 						used: false,
@@ -977,7 +998,7 @@ export class UnifiedPineValidator {
 				if ("iterator2" in statement && statement.iterator2) {
 					this.symbolTable.define({
 						name: statement.iterator2,
-						type: "unknown",
+						type: elemType,
 						line: statement.line,
 						column: statement.column,
 						used: false,

@@ -523,3 +523,13 @@ contradiction means re-measure, not "the earlier author was wrong."
   ternary mixes (we are stricter, INV001) but flags if/switch itself.
   Surfaced by the #52 census (if-exprs under-tested). v6-only. 0 corpus
   changes, 332 tests, 8 probes, 2 fixtures.
+- [INV071](INV071-forin-loop-var-element-type/notes.md) - CE10123 FN
+  class: the for-in loop ELEMENT variable was typed "unknown", so all
+  misuse slipped through (`for v in array<float>` then `str.length(v)`).
+  Derive the element type from the collection (`array<E>`/`map<K,V>`) and
+  type the loop var `series<E>` (BRACKET form - the space form `series
+  float` isn't recognised by isNumericType, which caused 43 `series float
+  * series float` FPs in the first attempt). Tuple index/counted iterator
+  stay int; non-derivable elements stay lenient. Surfaced by the #52
+  census (for-in heavily under-tested). v6. 0 corpus changes, 334 tests,
+  4 probes, 2 fixtures.

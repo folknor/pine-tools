@@ -1,0 +1,15 @@
+// @test regression/INV071-forin-no-false-positive
+// @description Correct use of a typed for-in loop variable must NOT be flagged: a series-float element in numeric ops, a series-string element in str.* / concatenation, and the tuple index used as an int. All TV-clean (probed 2026-06-19). See investigations/INV071-forin-loop-var-element-type/notes.md.
+// @expects parse: success
+// @expects no-errors
+//@version=6
+indicator("x")
+floats = array.from(1.0, 2.0)
+sum = 0.0
+for [i, v] in floats
+    sum := sum + v * 2.0 + i
+strs = array.from("a", "b")
+joined = ""
+for s in strs
+    joined := joined + str.tostring(str.length(s))
+plot(sum)

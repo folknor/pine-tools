@@ -1,0 +1,7 @@
+//@version=6
+indicator("t")
+arr = array.from(1.0, 2.0, 3.0)
+s = 0
+for [i, v] in arr
+    s := str.length(v)
+plot(s)

@@ -233,9 +233,11 @@ IDs so the two stay in sync.
   hard-uncovered list is CLEARED (seven `coverage-*.pine` block
   fixtures, 0 catalog entries referenced in no fixture, all TV-diffed
   clean) - and building it alone caught INV054, INV055, two INV059
-  inference bugs, INV060's v4/v5 numeric-bool class, and INV070
-  (probing the census's under-tested if/switch-EXPRESSION shape found a
-  whole missing CE10235 branch-type check), which is the
+  inference bugs, INV060's v4/v5 numeric-bool class, INV070 (probing the
+  census's under-tested if/switch-EXPRESSION shape found a whole missing
+  CE10235 branch-type check), and INV071 (probing the under-tested for-in
+  shape found the loop ELEMENT variable was typed "unknown", suppressing
+  all misuse checks - a CE10123 FN class), which is the
   argument for continuing (the reachability audit's
   corpus-but-never-in-tests slice cleared the same way - its last three
   sites became INV063). **2026-06-11: the ~250 corpus-only functions

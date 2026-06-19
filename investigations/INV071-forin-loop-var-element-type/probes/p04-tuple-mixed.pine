@@ -1,0 +1,6 @@
+//@version=6
+indicator("t")
+arr = array.from("a", "b")
+for [i, v] in arr
+    x = i + v
+plot(close)
