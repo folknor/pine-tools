@@ -501,3 +501,13 @@ contradiction means re-measure, not "the earlier author was wrong."
   fix (add LBRACKET to the INV003 branch). Surfaced by the INV067
   library-vendoring quarantine (3 of 5 quarantined libs). 0 corpus
   changes; un-quarantines 3 libraries (libraries.json 84 -> 87).
+- [INV069](INV069-method-as-function-name/notes.md) - false parse error:
+  `method(...)` (a function NAMED `method` - `(` directly after the
+  keyword) errored, though TV accepts it. `method` is contextual: a
+  method declaration only when followed by `<name>(`. INV051 taught the
+  non-export dispatcher this; the function-definition detector (keys on
+  IDENTIFIER, but `method` is a KEYWORD) and the `export` path still
+  rejected it. Method declarations / `method` as a var unaffected.
+  Surfaced by the INV067 quarantine (RicardoSantos/
+  FunctionZigZagMultipleMethods/1). 0 corpus changes; libraries.json
+  87 -> 88. Last quarantine residue: TFlab switch-arm line continuation.

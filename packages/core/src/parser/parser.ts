@@ -505,7 +505,16 @@ export class Parser {
 		}
 
 		// Check for function definition: name(params) =>
-		if (this.check(TokenType.IDENTIFIER)) {
+		// `method` is the contextual method-declaration keyword ONLY when
+		// followed by `<name>(` (handled by the INV051 guard far above);
+		// `method(...)` with `(` directly after is a function NAMED `method`,
+		// which TV accepts (probed 2026-06-19). It lexes as KEYWORD, so the
+		// IDENTIFIER check below misses it - allow it explicitly. If it turns
+		// out to be a call (no `=>`), the block backtracks. see INV069
+		const methodAsFuncName =
+			this.check([TokenType.KEYWORD, ["method"]]) &&
+			this.peekNext()?.type === TokenType.LPAREN;
+		if (this.check(TokenType.IDENTIFIER) || methodAsFuncName) {
 			const checkpoint = this.current;
 			const nameToken = this.advance();
 
@@ -1692,7 +1701,18 @@ export class Parser {
 		const exportToken = this.previous();
 		const exportIndent = exportToken.indent ?? 0;
 
-		if (this.match([TokenType.KEYWORD, ["method"]])) {
+		// `export method <name>(...)` is a method declaration; `export
+		// method(...)` is an exported function NAMED `method` (TV accepts it -
+		// see INV069). Guard on the name+LPAREN shape, mirroring the non-export
+		// INV051 guard; otherwise fall through to the function path below, which
+		// now accepts `method` as the function name.
+		if (
+			this.check([TokenType.KEYWORD, ["method"]]) &&
+			(this.peekNext()?.type === TokenType.IDENTIFIER ||
+				this.peekNext()?.type === TokenType.KEYWORD) &&
+			this.tokens[this.current + 2]?.type === TokenType.LPAREN
+		) {
+			this.advance();
 			return this.methodDeclaration(true, exportIndent);
 		}
 
@@ -1756,10 +1776,17 @@ export class Parser {
 			return asExportVar(this.variableDeclaration(null, undefined, this.peek()));
 		}
 
-		const nameToken = this.consume(
-			TokenType.IDENTIFIER,
-			"Expected function name after 'export'",
-		);
+		// `export method(...)` - a function named `method` (the method-decl
+		// shape was already routed above). `method` lexes as KEYWORD, so accept
+		// it here as the function name; otherwise require an identifier. INV069.
+		const nameToken =
+			this.check([TokenType.KEYWORD, ["method"]]) &&
+			this.peekNext()?.type === TokenType.LPAREN
+				? this.advance()
+				: this.consume(
+						TokenType.IDENTIFIER,
+						"Expected function name after 'export'",
+					);
 		this.consume(TokenType.LPAREN, 'Expected "(" after function name');
 		const params = this.parseFunctionParams();
 		this.consume(TokenType.RPAREN, 'Expected ")" after function parameters');

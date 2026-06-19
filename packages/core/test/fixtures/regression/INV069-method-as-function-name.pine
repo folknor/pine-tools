@@ -1,0 +1,11 @@
+// @test regression/INV069-method-as-function-name
+// @description `method(...)` with `(` directly after the `method` keyword is a function NAMED `method` (TV accepts it; probed 2026-06-19), not a method declaration. The parser used to always treat `method` as the method-decl keyword and errored. A real method declaration (`method dbl(...)`, name before the parens) must still parse. See investigations/INV069-method-as-function-name/notes.md.
+// @expects parse: success
+// @expects no-errors
+//@version=6
+indicator("x")
+method(int idx) =>
+    idx + 1
+method dbl(float v) =>
+    v * 2
+plot(method(1) + (2.0).dbl())

@@ -895,6 +895,10 @@ export const LIBRARY_EXPORTS: Record<string, string[]> = {
     "tetradic",
     "triadic"
   ],
+  "RicardoSantos/FunctionZigZagMultipleMethods/1": [
+    "function",
+    "method"
+  ],
   "RicardoSantos/HarmonicPattern/3": [
     "extract",
     "is2Tap",
