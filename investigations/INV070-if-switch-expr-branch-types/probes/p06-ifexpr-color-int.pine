@@ -1,0 +1,7 @@
+//@version=6
+indicator("p06")
+x = if close > open
+    color.red
+else
+    1
+plot(close)

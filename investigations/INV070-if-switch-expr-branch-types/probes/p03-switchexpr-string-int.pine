@@ -1,0 +1,6 @@
+//@version=6
+indicator("p03")
+x = switch close > open
+    true => "a"
+    => 1
+plot(close)

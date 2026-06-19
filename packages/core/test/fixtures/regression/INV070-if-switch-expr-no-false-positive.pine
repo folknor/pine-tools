@@ -1,0 +1,19 @@
+// @test regression/INV070-if-switch-expr-no-false-positive
+// @description The if/switch branch-type check must NOT fire on compatible branches: int/float (coercion), an `na` branch, and series/simple of the same base. All TV-clean (probed 2026-06-19). See investigations/INV070-if-switch-expr-branch-types/notes.md.
+// @expects parse: success
+// @expects no-errors
+//@version=6
+indicator("x")
+simple float sf = 2.0
+a = if close > open
+    1
+else
+    2.5
+b = if close > open
+    close
+else
+    na
+c = switch close > open
+    true => close
+    => sf
+plot(a + b + c)

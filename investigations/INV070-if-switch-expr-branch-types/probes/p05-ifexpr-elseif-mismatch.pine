@@ -1,0 +1,9 @@
+//@version=6
+indicator("p05")
+x = if close > open
+    1.0
+else if close < open
+    "b"
+else
+    2.0
+plot(close)

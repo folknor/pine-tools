@@ -511,3 +511,15 @@ contradiction means re-measure, not "the earlier author was wrong."
   Surfaced by the INV067 quarantine (RicardoSantos/
   FunctionZigZagMultipleMethods/1). 0 corpus changes; libraries.json
   87 -> 88. Last quarantine residue: TFlab switch-arm line continuation.
+- [INV070](INV070-if-switch-expr-branch-types/notes.md) - CE10235 FN:
+  an `if`/`switch` EXPRESSION whose branches return incompatible types
+  (`x = if c \n "a" \n else \n 1`) was accepted; TV flags it at the
+  if/switch keyword. We had the check for TERNARY only (INV026). TV's
+  branch-compatibility rule is IDENTICAL to our ternary categories
+  (int/float + na compatible; string/bool/color/numeric not - probed
+  p02/p06/p07/p08), so the fix reuses `areTernaryBranchTypesCompatible`
+  over a recursive branch-type collector (handles `else if` chains and
+  switch statement-bodied arms). Note the asymmetry: TV is lenient on
+  ternary mixes (we are stricter, INV001) but flags if/switch itself.
+  Surfaced by the #52 census (if-exprs under-tested). v6-only. 0 corpus
+  changes, 332 tests, 8 probes, 2 fixtures.

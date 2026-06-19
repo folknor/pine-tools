@@ -1423,6 +1423,7 @@ export class UnifiedPineValidator {
 						this.validateExpression(switchCase.result, version);
 					}
 				}
+				this.checkIfSwitchBranchTypes(switchExpr, version);
 				break;
 			}
 
@@ -1447,6 +1448,7 @@ export class UnifiedPineValidator {
 					this.blockDepth--;
 					this.symbolTable.exitScope();
 				}
+				this.checkIfSwitchBranchTypes(ifExpr, version);
 				break;
 			}
 		}
@@ -1734,6 +1736,83 @@ export class UnifiedPineValidator {
 	private getBaseType(type: PineType): string {
 		const match = (type as string).match(/^(?:series|simple|input|const)<(.+)>$/);
 		return match ? match[1] : (type as string);
+	}
+
+	// Collect the value-producing type of every branch of an if/switch
+	// EXPRESSION. A block's value is its tail statement: an expression
+	// statement contributes its type; a nested if (the `else if` chain lowers
+	// to an IfStatement in the alternate) recurses; any other tail (assignment,
+	// void call) is skipped conservatively (no type -> no false mismatch).
+	private collectBranchResultTypes(
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		node: any,
+		version: string,
+		out: PineType[],
+	): void {
+		const blockTail = (block: { type: string }[] | undefined): void => {
+			if (!block || block.length === 0) return;
+			const tail = block[block.length - 1];
+			if (tail.type === "IfStatement" || tail.type === "IfExpression") {
+				this.collectBranchResultTypes(tail, version, out);
+			} else if (tail.type === "ExpressionStatement") {
+				out.push(
+					this.inferExpressionType(
+						(tail as unknown as ExpressionStatement).expression,
+						version,
+					),
+				);
+			}
+		};
+		if (node.type === "SwitchExpression") {
+			for (const c of (node as SwitchExpression).cases) {
+				if (c.statements) blockTail(c.statements as { type: string }[]);
+				else if (c.result)
+					out.push(this.inferExpressionType(c.result, version));
+			}
+		} else {
+			// IfExpression / IfStatement share { consequent, alternate } blocks.
+			blockTail(node.consequent);
+			blockTail(node.alternate);
+		}
+	}
+
+	// TV's CE10235: every branch of an if/switch EXPRESSION must return a
+	// compatible type (`x = if c \n "a" \n else \n 1` is rejected). Same
+	// category rule as the ternary branch check (areTernaryBranchTypesCompatible
+	// - int/float and na/unknown are compatible; string vs numeric vs bool vs
+	// color are not), TV-confirmed identical on the boundary cases (probed p02/
+	// p06/p07/p08, 2026-06-19). Unlike ternary - where TV is lenient and we are
+	// deliberately stricter (INV001) - TV itself flags if/switch, so this is a
+	// plain false-negative fix. v6-only (legacy stays lenient, G004). Anchored
+	// at the if/switch keyword. see INV070.
+	private checkIfSwitchBranchTypes(
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		node: any,
+		version: string,
+	): void {
+		if (version !== "6") return;
+		const types: PineType[] = [];
+		this.collectBranchResultTypes(node, version, types);
+		const concrete = types.filter(
+			(t) => t !== "unknown" && !TypeChecker.isNaType(t),
+		);
+		if (concrete.length < 2) return;
+		const ref = concrete[0];
+		const incompatible = concrete
+			.slice(1)
+			.some((t) => !this.areTernaryBranchTypesCompatible(ref, t));
+		if (incompatible) {
+			const kw = node.type === "SwitchExpression" ? "switch" : "if";
+			this.addError(
+				node.line,
+				node.column,
+				kw.length,
+				`Return type of one of the "if" or "switch" blocks is not compatible with return type of other block(s) (${concrete
+					.map((t) => TypeChecker.displayType(t))
+					.join("; ")})`,
+				DiagnosticSeverity.Error,
+			);
+		}
 	}
 
 	// A collection type used as a type template argument of another

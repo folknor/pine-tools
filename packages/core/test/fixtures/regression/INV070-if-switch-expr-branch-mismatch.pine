@@ -1,0 +1,15 @@
+// @test regression/INV070-if-switch-expr-branch-mismatch
+// @description An if/switch EXPRESSION whose branches return incompatible types is TV's CE10235 "Return type of one of the 'if' or 'switch' blocks is not compatible..." anchored at the if/switch keyword (probed 2026-06-19). Same compatibility rule as the ternary branch check; we previously only checked ternary. Message parenthetical differs from TV's ("string; int" vs TV "literal string; literal int") - acceptable wording diff. See investigations/INV070-if-switch-expr-branch-types/notes.md.
+// @expects parse: success
+// @expects error: line=3, column=5, message="blocks is not compatible with return type of other block(s) (string; int)"
+// @expects error: line=7, column=5, message="blocks is not compatible with return type of other block(s) (color; int)"
+//@version=6
+indicator("x")
+a = if close > open
+    "s"
+else
+    1
+b = switch close > open
+    true => color.red
+    => 2
+plot(close)

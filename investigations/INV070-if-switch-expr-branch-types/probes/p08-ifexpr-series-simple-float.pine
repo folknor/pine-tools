@@ -1,0 +1,8 @@
+//@version=6
+indicator("p08")
+simple float sf = 2.0
+x = if close > open
+    close
+else
+    sf
+plot(x)

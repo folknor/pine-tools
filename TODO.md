@@ -118,11 +118,18 @@ IDs so the two stay in sync.
   slice (members of imported libraries we vendor under `vendor/` -
   `import TradingView/ta/9` -> `ta.emax` is CE10271 because it is not in
   ta/9's `export` set; validated against the new
-  `pine-data/v6/libraries.json`). **Still open:** (a) members of imported
-  libraries we DON'T vendor (`HeWhoMustNotBeNamed/ta`, `jason5480/*`,
-  `loxx/*`) and UDT method calls - need the library's export set (vendor
-  more sources, or wire the language-service `/// @source` local resolver
-  into the checker) / UDT method namespaces; (b) **collection-typed
+  `pine-data/v6/libraries.json`). The vendored set is now 88 libraries
+  (25 authors): TradingView/ta + RelativeValue plus the ~75 MPL-2.0
+  community libraries the corpus imports, fetched via the new
+  `fetch:library` step (pine-facade) - see the library-infrastructure
+  item below. **Still open:** (a) members of imported libraries NOT in
+  `vendor/` - any published lib the corpus doesn't import (so wasn't
+  fetched), the 10 license-excluded ones (7 CC-BY-NC Trendoscope + 3
+  unlicensed, deliberately lenient), the 1 parse-quarantined
+  (`TFlab/FVGDetectorLibrary/1`, see #45), and local `/// @source`
+  libraries (the language-service resolver isn't wired into the core
+  checker); plus UDT method calls (need UDT method namespaces); (b)
+  **collection-typed
   shadows** (`math.pushx()` where `math` is an `array` - INV065 p04: TV
   flags, we skip, because array/matrix/map methods are catalog functions
   AND can be user-extended); (c) **method calls on any non-namespace
@@ -137,6 +144,28 @@ IDs so the two stay in sync.
   unclassifiable destructure elements `unknown`; INV062 validates the
   argument expressions of unresolvable calls); real member-call
   validation still needs the export-set data.
+- **#53 - vendored-library export infrastructure (INV067).** The data
+  layer powering #41's imported-library member validation. `vendor/
+  <Author>/<Lib>/<Version>.pine` holds published library SOURCE (MPL-2.0
+  only - see README Acknowledgements for the license policy); `pnpm run
+  fetch:library -- User/Lib/Major` (or `--from <reflist>`) downloads more
+  from TV's pine-facade (a node port of piners' `pine_facade.rs`; public
+  `open_no_auth` libs only; CRLF->LF; round-trip-validated against the
+  committed ta/12). `pnpm run generate:libraries` parses `vendor/` with
+  the COMPILED core parser (needs a prior `build`) into
+  `pine-data/v6/libraries.json` (Author/Lib/Version -> export names),
+  SKIPPING any library it can't parse cleanly (incomplete export set ->
+  FPs). The checker reads `LIBRARY_EXPORTS_BY_PATH`. **Build-order gotcha:**
+  `install:cli` rebuilds the BUNDLE but not the tsc `dist/` modules;
+  `generate:libraries` and node-required parser tests use the tsc dist, so
+  run `pnpm run build:tsc` after a parser/source change before regenerating
+  or the change won't take. **Pending:** (a) vendor more published libs for
+  broader member coverage (each is one `fetch:library` + `generate:libraries`
+  + regression-check; only MPL-2.0); (b) the 1 quarantined lib
+  (`TFlab/FVGDetectorLibrary/1`) becomes coverable once its parser gap is
+  fixed (see #45); (c) optionally wire the language-service `/// @source`
+  resolver into the core checker so local-file libraries validate too; (d)
+  per-version export drift is a non-issue (published majors are immutable).
 - **#48 - mutation-testing pass (negative corpus).** INV050 exposed a
   structural blind spot: every verification layer samples valid code.
   The corpus is published working scripts, so a false-negative class
@@ -185,7 +214,10 @@ IDs so the two stay in sync.
   `local-accepts` (16 delete-decl, 22 typo-member); only those can be
   survivors, so only those need TV. Triaging the 22 typo-member yielded
   INV065 (scalar-shadow member calls, a CE10271 FN - 4 corpus carriers);
-  the rest were #41 import-shadow residual. **The full-pool dry-run is
+  the rest were #41 import-shadow residual - SINCE RESOLVED by INV067
+  (vendoring the imported libraries' export sets so `lib.typo` is CE10271)
+  plus INV068/INV069 (parser fixes that un-quarantined three more of the
+  vendored libs). **The full-pool dry-run is
   now the preferred entry point** (free, deterministic, exhaustive; TV
   spend then scales with the `local-accepts` count, not the mutant
   count). The 16 delete-decl local-accepts were TV-triaged: 14
@@ -201,7 +233,9 @@ IDs so the two stay in sync.
   hard-uncovered list is CLEARED (seven `coverage-*.pine` block
   fixtures, 0 catalog entries referenced in no fixture, all TV-diffed
   clean) - and building it alone caught INV054, INV055, two INV059
-  inference bugs, and INV060's v4/v5 numeric-bool class, which is the
+  inference bugs, INV060's v4/v5 numeric-bool class, and INV070
+  (probing the census's under-tested if/switch-EXPRESSION shape found a
+  whole missing CE10235 branch-type check), which is the
   argument for continuing (the reachability audit's
   corpus-but-never-in-tests slice cleared the same way - its last three
   sites became INV063). **2026-06-11: the ~250 corpus-only functions
@@ -230,6 +264,19 @@ IDs so the two stay in sync.
   errors from the leading-wrap joins (ternary `?`/`:`, the binary
   operator loops, and parseSameLineBinary's leading path) while still
   joining for recovery, mirroring INV042.
+  **Related but OPPOSITE-direction sub-case (we are too STRICT, TV
+  accepts):** a `switch` ARM BODY whose expression wraps to a leading-
+  operator continuation line - `'Defensive' => (expr)` / `     and (expr)`
+  (continuation indented one past the arm). TV joins it; our switch-arm
+  body parser (`parseSwitchCaseBody` / its `expression()` call) stops at
+  the NEWLINE, so the next line is read as a new arm and errors
+  `Expected "=>" in switch case`. Concrete repro: the last INV067
+  parse-quarantined library `vendor/TFlab/FVGDetectorLibrary/1.pine`
+  (lines ~40-44; also `'Aggressive'`/`'Very Defensive'` arms). Fixing it
+  means the switch-arm body expression must consume leading-operator
+  continuation newlines (same machinery as the binary-op loops). Higher
+  risk (continuation handling is delicate); deferred with the rest of
+  #45. Un-quarantines that library for #53 when done.
 - **Minor data residue (record-only, low value):** `ta.vwap.anchor`'s default
   and the "X by default" phrasing are deliberately unparsed (see
   `parse-default.ts`). Skip unless a consumer needs them.
@@ -357,6 +404,14 @@ mangle pairs + 10 small known residue (undefined-variable stragglers,
 tv-only are that same INV026 fixture seen from TV's side (CE10123 at
 the argument where we flag the ternary) - zero unexplained tv-only
 remain.
+
+The 2026-06-11 window still holds as of 2026-06-19: INV065, INV067,
+INV068, and INV069 were all **0-corpus-change** per `regression-check.mjs`
+(they add catches on broken/edited code and parse fixes that only affect
+quarantined libraries, not the published corpus). A fresh
+`find-real-failures` TV sweep isn't needed to trust the window, but would
+be the way to fold in the new imported-library / parser catches if a
+re-baseline is wanted.
 
 Earlier measurements live in git history (this section, prior
 revisions) - each is a dated point-in-time record per G001.

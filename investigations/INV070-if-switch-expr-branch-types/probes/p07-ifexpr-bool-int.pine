@@ -1,0 +1,7 @@
+//@version=6
+indicator("p07")
+x = if close > open
+    true
+else
+    1
+plot(close)
