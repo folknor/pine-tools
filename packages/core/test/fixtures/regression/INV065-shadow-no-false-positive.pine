@@ -1,0 +1,23 @@
+// @test regression/INV065-shadow-no-false-positive
+// @description The scalar-shadow member-call check must NOT fire on: a VALID namespace function reached through a same-named scalar shadow (timeframe.in_seconds), a user-defined method named like the member (changex), or a real method on a collection-typed shadow (math.push on an array). All three are TV-clean (probed p02/p03/p05, 2026-06-19). See investigations/INV065-shadow-gate-oversuppresses-member-calls/notes.md.
+// @expects parse: success
+// @expects no-errors
+//@version=6
+indicator("x")
+
+method changex(simple string s) =>
+    s + "x"
+
+// valid namespace function reached despite the `timeframe` string shadow
+f(simple string timeframe) =>
+    timeframe.in_seconds(timeframe)
+
+// user-defined method `changex` legitimizes the shadowed call
+g(simple string timeframe) =>
+    timeframe.changex()
+
+// real collection method on a shadow whose name is a builtin namespace
+math = array.new<float>(0)
+math.push(1.0)
+
+plot(f("D") + array.size(math) + (g("D") == "Dx" ? 1 : 0))

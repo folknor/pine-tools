@@ -1,0 +1,4 @@
+//@version=6
+indicator("p01")
+x = undefinedArr.push(1.0)
+plot(close)

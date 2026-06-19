@@ -1,0 +1,7 @@
+//@version=6
+indicator("p05")
+method changex(simple string s) =>
+    s + "x"
+f(simple string timeframe) =>
+    timeframe.changex()
+plot(f("D") == "Dx" ? 1 : 0)

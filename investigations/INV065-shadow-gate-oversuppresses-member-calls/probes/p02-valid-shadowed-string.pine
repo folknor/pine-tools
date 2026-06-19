@@ -1,0 +1,5 @@
+//@version=6
+indicator("p02")
+f(simple string timeframe) =>
+    timeframe.in_seconds(timeframe)
+plot(f("D"))

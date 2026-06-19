@@ -452,3 +452,27 @@ contradiction means re-measure, not "the earlier author was wrong."
   needed two of its own bugs fixed first (delete-decl matching `:=`
   reassignments; offset reconstruction broken on `\r\r\n` files - both
   silent under-testing). 0 corpus changes, 324 tests, 2 probes.
+- [INV065](INV065-shadow-gate-oversuppresses-member-calls/notes.md) -
+  CE10271 FN: INV053's user-shadow gate over-suppressed the
+  member-call check. A SCALAR local (int/float/bool/string/color)
+  shadowing a builtin namespace name does NOT make `ns.member(...)`
+  unresolvable - scalars carry no builtin methods (probed `x.abs()` /
+  `s.length()` both CE10271), so an unknown member is still TV's
+  CE10271 "method or method reference" unless a user method named
+  `member` exists. Relaxed the gate for scalar shadows (member not in
+  `declaredFunctionNames`); collection/UDT shadows stay skipped (#41).
+  Surfaced by the #48 full-pool dry-run (38 local-accepts of 18,978
+  mutants; 4 were scalar-shadow typos). 0 corpus changes, 326 tests,
+  7 probes, 2 regression fixtures.
+- [INV066](INV066-undefined-receiver-method-call/notes.md) - **OPEN.**
+  CE10272/CE10271 FN: a method call on an UNDEFINED receiver
+  (`undefinedVar.push(x)`) is unvalidated - sibling of INV062 (call
+  args) and INV053/64 (member names), but the callee RECEIVER is never
+  undefined-checked. TV-confirmed (p01: CE10272 "Undeclared identifier"
+  + CE10271 method ref; p02 clean). The natural fix (undefined-check the
+  callee's root identifier) is REVERTED: it produced 247 corpus FPs by
+  exposing receiver-resolution gaps - function params inside nested
+  scopes (~137 v6 records), import namespaces/aliases, and legacy
+  versions. Deferred behind robust receiver resolution (#9/#41).
+  Surfaced by #48 run-4 (14 of 16 delete-decl local-accepts are this
+  class). 2 probes.

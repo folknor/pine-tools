@@ -63,6 +63,12 @@ import { type PineType, TypeChecker } from "./types";
 // Re-export for backward compatibility
 export { DiagnosticSeverity, type ValidationError } from "../common/errors";
 
+// The five scalar primitives. A value of one of these types carries NO
+// builtin methods (probed INV065 p06/p07: `x.abs()` / `s.length()` are both
+// CE10271), so a method-call on a scalar can only resolve to a user-defined
+// method - never a builtin. Used by the shadowed-namespace member-call check.
+const SCALAR_BASE_TYPES = new Set(["int", "float", "bool", "string", "color"]);
+
 // Flatten a member-call callee into its dotted name (`strategy.risk.max_drawdown`).
 // Walks `.object` recursively so two-level builtin namespaces resolve, not just
 // `ns.member`. Returns "" if any link in the chain isn't a plain identifier
@@ -1958,10 +1964,31 @@ export class UnifiedPineValidator {
 				// want a false positive on a real member.
 				const rootName = functionName.slice(0, functionName.indexOf("."));
 				const nsPath = functionName.slice(0, functionName.lastIndexOf("."));
+				const memberName = functionName.slice(
+					functionName.lastIndexOf(".") + 1,
+				);
 				const objSym = this.symbolTable.lookup(rootName);
 				const userShadowed = !!objSym && objSym.line !== 0;
+				// A user symbol shadowing the namespace name normally suppresses
+				// this check (an `import ... as ns` alias / user var whose members
+				// we cannot resolve - #41). But when that symbol is a SCALAR
+				// (int/float/bool/string/color), `ns.member(...)` is a METHOD call
+				// on the value, and scalars carry no builtin methods (probed p06/
+				// p07). So it is valid only as the namespace function (already ruled
+				// out by !signature here) or a user-defined method named `member`;
+				// with neither, TV still reports CE10271 - phrased "method or method
+				// reference" for the shadowed (value) form (probed p01/p05; INV065).
+				// Collections (array/matrix/map) and UDTs DO carry methods we cannot
+				// fully resolve, so a non-scalar shadow keeps suppressing (p03/p04).
+				const scalarShadow =
+					userShadowed &&
+					!!objSym &&
+					SCALAR_BASE_TYPES.has(
+						TypeChecker.baseTypeName(objSym.type as string),
+					) &&
+					!this.declaredFunctionNames.has(memberName);
 				if (
-					!userShadowed &&
+					(!userShadowed || scalarShadow) &&
 					!this.importedNamespaces.has(rootName) &&
 					KNOWN_NAMESPACE_PREFIXES.has(nsPath) &&
 					!(functionName in NAMESPACE_PROPERTIES) &&
@@ -1971,7 +1998,9 @@ export class UnifiedPineValidator {
 						call.line,
 						call.column,
 						functionName.length,
-						`Could not find function or function reference '${functionName}'`,
+						scalarShadow
+							? `Could not find method or method reference '${functionName}'`
+							: `Could not find function or function reference '${functionName}'`,
 						DiagnosticSeverity.Error,
 					);
 				}

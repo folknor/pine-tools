@@ -1,0 +1,5 @@
+//@version=6
+indicator("p07")
+f(string s) =>
+    s.length()
+plot(f("abc"))

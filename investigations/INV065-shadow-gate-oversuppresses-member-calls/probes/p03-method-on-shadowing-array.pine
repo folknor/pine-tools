@@ -1,0 +1,5 @@
+//@version=6
+indicator("p03")
+math = array.new<float>(0)
+math.push(1.0)
+plot(array.size(math))

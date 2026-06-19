@@ -1,0 +1,5 @@
+//@version=6
+indicator("p02")
+definedArr = array.new<float>(0)
+definedArr.push(1.0)
+plot(array.size(definedArr))

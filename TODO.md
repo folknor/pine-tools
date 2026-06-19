@@ -108,16 +108,29 @@ IDs so the two stay in sync.
   parallel rich field, plus a capability check before sending markup.
 - **#41 - MemberExpression callee validation.** INV036's CE10271 covers
   Identifier callees, INV053 extended it to undefined members of
-  known builtin namespaces (`ta.bogus`, `math.notreal`), and INV064
+  known builtin namespaces (`ta.bogus`, `math.notreal`), INV064
   generalized that to any namespace DEPTH (`chart.point.newx`,
   `strategy.risk.bogusxyz` - the old check only handled single-segment
-  `ns.member`). **Still open:** members of import *aliases*
-  (`myLib.fn()`) and UDT method calls - both need data we don't have
-  (the imported library's export set; UDT method namespaces). The
-  interim mitigations are in (INV059 types unclassifiable destructure
-  elements `unknown`; INV062 validates the argument expressions of
-  unresolvable calls); real member-call validation still needs the
-  export-set data.
+  `ns.member`), and INV065 closed the **scalar-shadow** slice (a local
+  `string`/`int`/etc. shadowing a namespace name, e.g. `timeframe.changex`
+  inside `f(simple string timeframe)`, is still CE10271 because scalars
+  carry no builtin methods). **Still open:** (a) members of import
+  *aliases* (`myLib.fn()`) and UDT method calls - need the imported
+  library's export set / UDT method namespaces; (b) **collection-typed
+  shadows** (`math.pushx()` where `math` is an `array` - INV065 p04: TV
+  flags, we skip, because array/matrix/map methods are catalog functions
+  AND can be user-extended); (c) **method calls on any non-namespace
+  scalar** (`x.abs()`, `s.length()` - INV065 p06/p07: TV CE10271, we skip
+  because the receiver name is not a known namespace); and (d) **method
+  calls on an UNDEFINED receiver** (`undefinedVar.push(x)` - INV066,
+  OPEN: TV CE10272+CE10271, but undefined-checking the callee's root
+  identifier produced 247 corpus FPs by exposing receiver-resolution
+  gaps - function params in nested scopes, import namespaces/aliases,
+  legacy versions - so it is gated behind robust receiver resolution,
+  same blocker as #9). The interim mitigations are in (INV059 types
+  unclassifiable destructure elements `unknown`; INV062 validates the
+  argument expressions of unresolvable calls); real member-call
+  validation still needs the export-set data.
 - **#48 - mutation-testing pass (negative corpus).** INV050 exposed a
   structural blind spot: every verification layer samples valid code.
   The corpus is published working scripts, so a false-negative class
@@ -158,8 +171,23 @@ IDs so the two stay in sync.
   was `\n`-only while the lexer doubles `\r\r\n` line numbers (G005), so
   every `\r`-ending corpus fixture spliced at the wrong site and was
   silently skipped in seeds 1-2 (fixed by normalizing line endings in
-  `makeCtx`). **Remaining:** periodic seed-rotated runs as TV
-  budget allows (new operators when the taxonomy grows).
+  `makeCtx`). Run 4 (2026-06-19) switched method: ONE free full-pool
+  `--dry-run` (`--fixtures 9999 --sites-per 6`, 18,978 mutants over all
+  697 both-clean fixtures, local side only) instead of blind seed
+  rotation - blind rotation wastes TV budget on seeds whose mutants we
+  already kill (seeds 11-16 had 0 `local-accepts`). The dry-run left 38
+  `local-accepts` (16 delete-decl, 22 typo-member); only those can be
+  survivors, so only those need TV. Triaging the 22 typo-member yielded
+  INV065 (scalar-shadow member calls, a CE10271 FN - 4 corpus carriers);
+  the rest were #41 import-shadow residual. **The full-pool dry-run is
+  now the preferred entry point** (free, deterministic, exhaustive; TV
+  spend then scales with the `local-accepts` count, not the mutant
+  count). The 16 delete-decl local-accepts were TV-triaged: 14
+  survivors (1 tv-accepts, 1 TV crash), all one class -> INV066
+  (undefined method-call receiver, OPEN: the FP-safe fix needs receiver
+  resolution we don't have - see #41). **Remaining:** periodically
+  re-run the dry-run as the corpus/operators grow and TV-verify any new
+  `local-accepts`.
 - **#52 - fixture-coverage build-out (the census target list).**
   `scripts/fixture-coverage.mjs` parses every corpus + test fixture and
   cross-references the JSON catalog to list entries referenced in zero

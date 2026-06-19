@@ -1,0 +1,5 @@
+//@version=6
+indicator("p06")
+f(float x) =>
+    x.abs()
+plot(f(-1.0))

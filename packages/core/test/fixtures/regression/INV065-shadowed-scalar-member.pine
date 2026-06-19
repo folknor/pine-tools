@@ -1,0 +1,17 @@
+// @test regression/INV065-shadowed-scalar-member
+// @description A scalar local (string param) shadowing a builtin namespace name does NOT suppress the undefined-member check: scalars carry no builtin methods, so ns.member(...) with an unknown member is TV's CE10271 "method or method reference" even when shadowed (probed p01/p06/p07, 2026-06-19). See investigations/INV065-shadow-gate-oversuppresses-member-calls/notes.md.
+// @expects parse: success
+// @expects error: line=9, column=5, message="Could not find method or method reference 'timeframe.changex'"
+// @expects error: line=11, column=5, message="Could not find method or method reference 'str.trimx'"
+//@version=6
+indicator("x")
+// A SCALAR local (string param) shadows the builtin namespace name. Scalars
+// carry no builtin methods (INV065 p06/p07), so `ns.member(...)` with an
+// unknown member is still TV's CE10271 - phrased "method or method reference"
+// for the value/shadow form (probed p01, 2026-06-19). The pre-INV065 shadow
+// gate suppressed this, a false negative the #48 mutation harness surfaced.
+f(simple string timeframe) =>
+    timeframe.changex(timeframe)
+g(series string str) =>
+    str.trimx(str)
+plot(f("D") and g("a") ? 1 : 0)
