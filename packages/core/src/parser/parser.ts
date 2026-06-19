@@ -2721,7 +2721,17 @@ export class Parser {
 					typeKeywords.push(dotted);
 				} else if (
 					next?.type === TokenType.IDENTIFIER ||
-					next?.type === TokenType.KEYWORD
+					next?.type === TokenType.KEYWORD ||
+					// Qualifier + IDENTIFIER-type + array suffix:
+					// `simple linefill[] arr`. Built-in object types that aren't
+					// hardcoded type-keywords (linefill, polyline) and import-alias
+					// types lex as IDENTIFIER, so the qualifier loop above stops at
+					// them; without LBRACKET here the type identifier is mistaken
+					// for the param name and the `[` fails ("Expected ')' after
+					// function parameters"). The `[]` is then glued on just below.
+					// see INV068 (`line[]`/`label[]` already worked - those ARE
+					// type-keywords consumed by the qualifier loop).
+					next?.type === TokenType.LBRACKET
 				) {
 					typeKeywords.push(this.advance().value);
 				}

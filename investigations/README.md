@@ -491,3 +491,13 @@ contradiction means re-measure, not "the earlier author was wrong."
   Vendored: TradingView/ta v7-12, RelativeValue v2-3. Author libraries
   stay the #41 residual. 0 corpus changes, 328 tests, 4 probes, 2
   fixtures. Surfaced by #48 run-4.
+- [INV068](INV068-qualified-identifier-array-param/notes.md) - false
+  parse error: `f(simple linefill[] arr)` (qualifier + identifier-typed
+  param + `[]` array suffix) errored "Expected ')' after function
+  parameters" though TV accepts it. `line[]`/`label[]` worked because
+  those are hardcoded type-keywords; `linefill`/`polyline` (newer object
+  types) and user/import types lex as identifiers and the qualifier
+  branch in parseFunctionParams didn't handle a following `[`. One-line
+  fix (add LBRACKET to the INV003 branch). Surfaced by the INV067
+  library-vendoring quarantine (3 of 5 quarantined libs). 0 corpus
+  changes; un-quarantines 3 libraries (libraries.json 84 -> 87).

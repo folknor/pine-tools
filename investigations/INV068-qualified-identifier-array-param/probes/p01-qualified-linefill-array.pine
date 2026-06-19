@@ -1,0 +1,4 @@
+//@version=6
+indicator("p01")
+f(simple linefill[] arr) => array.size(arr)
+plot(f(array.new<linefill>(0)))

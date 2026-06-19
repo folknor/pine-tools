@@ -1,0 +1,5 @@
+//@version=6
+indicator("p02")
+method(int idx) =>
+    idx + 1
+plot(method(1))

@@ -1,0 +1,11 @@
+// @test regression/INV068-qualified-identifier-array-param
+// @description A qualifier followed by an IDENTIFIER-typed param with the `[]` array suffix - `simple linefill[] arr` (linefill/polyline are built-in object types that lex as identifiers, not hardcoded type-keywords) and `series Pt[] pts` (a user type). Both are valid Pine (TV-clean, probed 2026-06-19); the parser used to mistake the type identifier for the param name and error at `[` ("Expected ')' after function parameters"). `line[]`/`label[]` always worked because those ARE type-keywords. See investigations/INV068-qualified-identifier-array-param/notes.md.
+// @expects parse: success
+// @expects no-errors
+//@version=6
+indicator("x")
+type Pt
+    float v
+f(simple linefill[] arr) => array.size(arr)
+g(series Pt[] pts) => array.size(pts)
+plot(f(array.new<linefill>(0)) + g(array.new<Pt>(0)))
