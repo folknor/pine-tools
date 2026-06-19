@@ -1,0 +1,8 @@
+//@version=6
+indicator("t")
+type T
+    float x
+o = T.new(1.0)
+y = str.length(o.x)
+z = o.nope
+plot(close)

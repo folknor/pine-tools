@@ -1,0 +1,5 @@
+//@version=6
+indicator("t")
+arr = array.from(1.0, 2.0, 3.0)
+y = str.length(arr.first())
+plot(y)

@@ -533,3 +533,13 @@ contradiction means re-measure, not "the earlier author was wrong."
   stay int; non-derivable elements stay lenient. Surfaced by the #52
   census (for-in heavily under-tested). v6. 0 corpus changes, 334 tests,
   4 probes, 2 fixtures.
+- [INV072](INV072-udt-field-type-and-validation/notes.md) - **OPEN.**
+  Three related FN classes: UDT field TYPE inference (`o.x` / `o.inner.x`
+  untyped, so `str.length(o.x)` misses CE10123), undefined-field
+  validation (`o.nope` -> TV "Object has no field", we have no such
+  check), and method/call chain return types (`arr.first()` untyped).
+  Even shallow `o.x` is untyped - not a depth issue. Needs a UDT
+  field-set registry + member-chain inference + a new field-existence
+  check (bigger than one INV; the parser already has the field data).
+  Deferred. Surfaced by the #52 census (deep chains under-tested). 4
+  probes.

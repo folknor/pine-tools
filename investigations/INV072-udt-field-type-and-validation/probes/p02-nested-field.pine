@@ -1,0 +1,9 @@
+//@version=6
+indicator("t")
+type Inner
+    float x
+type Outer
+    Inner inner
+o = Outer.new(Inner.new(1.0))
+y = str.length(o.inner.x)
+plot(y)
