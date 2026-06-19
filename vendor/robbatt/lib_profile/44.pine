@@ -1,0 +1,1031 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © robbatt
+
+// v354 (v1) feature complete, optimisation todo
+// v453 (v5) fixed max_bars_back through not updating box left and line start x coordinates on re-draw, added lines to mark candle ranges used for profile
+// v1234 (v24) refactored draw system
+
+//@version=6
+import PineCoders/Time/4
+import robbatt/lib_plot_objects/56 as D
+import robbatt/lib_set/1
+
+// @description a library with functions to calculate a volume profile for either a set of candles within the current chart, or a single candle from its lower timeframe security data. All you need is to feed the 
+library("lib_profile", overlay = true)
+varip int tickid = 0
+tickid += 1
+
+//@description this is a container for each bucket of the Profile. See Profile description for more info
+//@field idx the index of this Bucket within the Profile starting with 0 for the lowest Bucket at the bottom of the Profile
+//@field value the value of this Bucket, can be volume or time, for using time pass and array of 1s to the update function
+//@field top the top of this Bucket's price range (for calculation)
+//@field btm the bottom of this Bucket's price range (for calculation)
+//@field center the center of this Bucket's price range (for plotting)
+//@field fraction the fraction this Bucket's value is compared to the total of the Profile
+//@field plot_bucket_line the line that resembles this bucket and it's valeu in the Profile
+export type Bucket
+	varip int idx
+	varip float value
+	varip float top
+	varip float btm
+	varip float center
+	varip float fraction
+	D.Line plot_bucket_line
+
+//@function updates this bucket's data
+export method update(Bucket this, float top, float bottom, float value, float fraction) =>
+	rounded_top    = math.round_to_mintick(top)
+	rounded_bottom = math.round_to_mintick(bottom)
+	fraction_rounded = math.round(fraction, 2)
+	if na(this.center) or this.top != rounded_top or this.btm != rounded_bottom or this.value != value and this.fraction != fraction_rounded // value: self changed / fraction: others changed (also rounded -> significant change)
+		this.top := rounded_top    
+		this.btm := rounded_bottom 
+		this.center := math.avg(rounded_top, rounded_bottom)
+		this.value := value
+		this.fraction := fraction_rounded
+	this
+
+//@function updates this bucket's data
+export method update(Bucket this, float value, float fraction) =>
+	fraction_rounded = math.round(fraction, 2)
+	if this.value != value or this.fraction != fraction_rounded // value: self changed / fraction: others changed (also rounded -> significant change)
+		this.value := value
+		this.fraction := fraction_rounded
+	this
+
+//@function allows drawing a line in a Profile, representing this bucket and it's value + it's value's fraction of the Profile total value
+//@param start_t the time x coordinate of the line's left end (depends on the Profile box)
+//@param start_i the bar_index x coordinate of the line's left end (depends on the Profile box)
+//@param end_t the time x coordinate of the line's right end (depends on the Profile box)
+//@param end_i the bar_index x coordinate of the line's right end (depends on the Profile box)
+//@param args the default arguments for the line style and colors
+draw_bucket(Bucket this, int start_t, int start_i, int end_t, int end_i, D.LineArgs args, bool extend_only = true, simple bool force_overlay = false) =>
+	if na(this) ? false : not na(this.plot_bucket_line)
+		this.plot_bucket_line.start.update(start_t, start_i, this.center)
+		this.plot_bucket_line.end.update(end_t, end_i, this.center)
+		this.plot_bucket_line.draw(args, extend_only, force_overlay)		
+	this
+
+//@description arguments for plotting a Profile
+//@field show_poc whether to plot a POC line across the Profile Box (default: true)
+//@field show_profile whether to plot a line for each Bucket in the Profile Box, indicating the value per Bucket (Price range), e.g. volume that occured in a certain time and price range (default: false)
+//@field show_va whether to plot a VAH/VAL line across the Profile Box (default: false)
+//@field show_va_fill whether to fill the 'value' area between VAH/VAL line (default: false)
+//@field show_background whether to fill the Profile Box with a background color (default: false)
+//@field show_labels whether to add labels to the right end of the POC/VAH/VAL line (default: false)
+//@field show_price_levels whether add price values to the labels to the right end of the POC/VAH/VAL line (default: false)
+//@field extend whether extend the Profile Box to the current candle (default: false)
+//@field args_poc_line arguments for the poc line plot
+//@field args_vah_line arguments for the va line plot
+//@field args_val_line arguments for the va line plot
+//@field args_poc_label arguments for the poc label plot
+//@field args_vah_label arguments for the va label plot
+//@field args_val_label arguments for the va label plot
+//@field args_profile_line arguments for the Bucket line plots
+//@field va_fill_color color for the va area fill plot
+export type ProfileConfig
+	bool show_poc = true
+	bool show_profile = false
+	bool show_va = false
+	bool show_va_fill = false
+	bool show_background = false
+	bool show_labels = false
+	bool show_price_levels = false
+	bool extend = false
+
+	string poc_label_text = 'POC'
+	string vah_label_text = 'VAH'
+	string val_label_text = 'VAL'
+	D.LineArgs args_poc_line
+	D.LineArgs args_vah_line
+	D.LineArgs args_val_line
+	D.LabelArgs args_poc_label
+	D.LabelArgs args_vah_label
+	D.LabelArgs args_val_label
+	D.LineArgs args_profile_line
+	D.BoxArgs args_profile_bg
+	color va_fill_color = color.yellow
+	bool initialized = false
+
+//@description
+//@field left_top used as left x coordinate for the Profile Box and highest price value of the profile data | filled by update()
+//@field right_bottom used as right x coordinate for the Profile Box and lowest price value of the profile data | filled by update()
+//@field resolution the amount of buckets/price ranges the Profile will dissect the data into
+//@field vah_threshold_pc the percentage of the total data value to mark the upper threshold for the main value area
+//@field val_threshold_pc the percentage of the total data value to mark the lower threshold for the main value area
+//@field data_opens (optional) array of range open values (either from ltf or chart candles using history() function
+//@field data_closes (optional) array of range close values (either from ltf or chart candles using history() function
+//@field data_highs array of range top/high values (either from ltf or chart candles using history() function
+//@field data_lows array of range bottom/low values (either from ltf or chart candles using history() function
+//@field data_values array of range volume/1 values (either from ltf or chart candles using history() function (1s can be used for analysing candles in bucket/price range over time)
+//@field total the total data value (e.g. volume of all candles, or just one each to analyse candle distribution over time) | filled by update()
+//@field total_up the total data directional value up | filled by update()
+//@field total_down the total data directional value down | filled by update()
+//@field use_open_close_data_for_ranges_shorter_than_bars the max. amount of candles in a range that qualifies for using open/close data for profile calculation (default: 4)
+//@field buckets the Bucket objects holding the data for each price range bucket | filled by update()
+//@field poc_bucket_index the Bucket index in buckets, that holds the poc Bucket | filled by update()
+//@field vah_bucket_index the Bucket index in buckets, that holds the vah Bucket | filled by update()
+//@field val_bucket_index the Bucket index in buckets, that holds the val Bucket | filled by update()
+//@field poc the according price level marking the Point Of Control | filled by update()
+//@field vah the according price level marking the Value Area High | filled by update()
+//@field val the according price level marking the Value Area Low | filled by update()
+//@field plot_poc | filled by draw()
+//@field plot_vah | filled by draw()
+//@field plot_val | filled by draw()
+//@field plot_poc_label | filled by draw()
+//@field plot_vah_label | filled by draw()
+//@field plot_val_label | filled by draw()
+//@field plot_va_fill | filled by draw()
+//@field plot_profile_bg | filled by draw()
+export type Profile
+	// params
+	int id
+	int resolution
+	float vah_threshold_pc
+	float val_threshold_pc
+	varip float[] data_opens
+	varip float[] data_highs
+	varip float[] data_lows
+	varip float[] data_closes
+	varip float[] data_values
+	
+	// range data
+	varip float h = na
+	varip float l = na
+	varip float total = 0
+	varip float total_up = 0
+	varip float total_down = 0
+
+	Bucket[] buckets
+
+	// value levels
+	varip int poc_bucket_index
+	varip int vah_bucket_index
+	varip int val_bucket_index
+
+	// price levels
+	varip float poc
+	varip float vah
+	varip float val
+
+	// plots
+	D.Line plot_poc
+	D.Line plot_vah
+	D.Line plot_val
+	D.Label plot_poc_label
+	D.Label plot_vah_label
+	D.Label plot_val_label
+	D.LineFill plot_va_fill
+	D.Box plot_profile_bg
+
+	bool hidden = false
+
+export method apply_style(Profile this, ProfileConfig args) =>
+    if not na(this) and not na(args)
+        if not na(this.plot_poc)
+            this.plot_poc.apply_style(args.args_poc_line)            
+	    if not na(this.plot_vah)
+            this.plot_vah.apply_style(args.args_vah_line)
+	    if not na(this.plot_val)
+            this.plot_val.apply_style(args.args_val_line)
+	    if not na(this.plot_poc_label)
+            this.plot_poc_label.apply_style(args.args_poc_label)
+	    if not na(this.plot_vah_label)
+            this.plot_vah_label.apply_style(args.args_vah_label)
+	    if not na(this.plot_val_label)
+            this.plot_val_label.apply_style(args.args_val_label)
+	    if not na(this.plot_va_fill)
+            this.plot_va_fill.plot.set_color(args.va_fill_color)
+	    if not na(this.plot_profile_bg)
+            this.plot_profile_bg.apply_style(args.args_profile_bg, D.BoxTextArgs.new())
+
+//@description deletes this Profile's and Buckets' plots
+export method delete(Profile this) =>
+	if not na(this)
+		if not na(this.buckets)
+			for bucket in this.buckets
+				if not na(bucket.plot_bucket_line)
+					bucket.plot_bucket_line.delete()	
+					bucket.plot_bucket_line := na	
+		if not na(this.plot_poc)
+			this.plot_poc.delete()
+			this.plot_poc := na
+		if not na(this.plot_vah)
+			this.plot_vah.delete()
+			this.plot_vah := na
+		if not na(this.plot_val)
+			this.plot_val.delete()
+			this.plot_val := na
+		if not na(this.plot_poc_label)
+			this.plot_poc_label.delete()
+			this.plot_poc_label := na
+		if not na(this.plot_vah_label)
+			this.plot_vah_label.delete()
+			this.plot_vah_label := na
+		if not na(this.plot_val_label)
+			this.plot_val_label.delete()
+			this.plot_val_label := na
+		if not na(this.plot_va_fill)
+			this.plot_va_fill.delete()
+			this.plot_va_fill := na
+		if not na(this.plot_profile_bg)
+			this.plot_profile_bg.delete()
+			this.plot_profile_bg := na
+	this
+
+
+//@function hides this Profile's plot from the chart by setting the line end to na
+export method hide(Profile this) =>
+	if na(this) ? false : not this.hidden
+		if not na(this.buckets)
+			for bucket in this.buckets
+				if not na(bucket.plot_bucket_line)
+					bucket.plot_bucket_line.hide()
+		if not na(this.plot_poc)
+			this.plot_poc.hide()
+		if not na(this.plot_vah)
+			this.plot_vah.hide()
+		if not na(this.plot_val)
+			this.plot_val.hide()
+		if not na(this.plot_poc_label)
+			this.plot_poc_label.hide()
+		if not na(this.plot_vah_label)
+			this.plot_vah_label.hide()
+		if not na(this.plot_val_label)
+			this.plot_val_label.hide()
+		if not na(this.plot_profile_bg)
+			this.plot_profile_bg.hide()
+		this.hidden := true
+	this
+
+//@description deletes a list of Profiles' plots
+export method delete(Profile[] this) => 
+	if not na(this)
+		for item in this
+			item.delete()
+	this
+
+export method deepcopy(ProfileConfig this) =>
+	ProfileConfig.new(this.show_poc, this.show_profile, this.show_va, this.show_va_fill, this.show_background, this.show_labels, this.show_price_levels,
+	 this.extend, this.poc_label_text, this.vah_label_text, this.val_label_text, 
+	 this.args_poc_line.copy(), this.args_vah_line.copy(), this.args_val_line.copy(), 
+	 this.args_poc_label.copy(), this.args_vah_label.copy(), this.args_val_label.copy(), 
+	 this.args_profile_line.copy(), this.args_profile_bg.copy(), 
+	 this.va_fill_color, this.initialized)
+	
+//@description initialises ProfileConfig with default values if not set, will be called by update() and draw() to ensure both functions can work properly
+export method init(ProfileConfig this) =>
+	if na(this) ? false : not this.initialized
+		if na(this.args_poc_line)
+			this.args_poc_line := D.LineArgs.new(color.orange, line.style_dotted, 1, xloc.bar_time)
+		if na(this.args_vah_line)
+			this.args_vah_line := D.LineArgs.new(color.yellow, line.style_dotted, 1, xloc.bar_time)
+		if na(this.args_val_line)
+			this.args_val_line := D.LineArgs.new(color.yellow, line.style_dotted, 1, xloc.bar_time)
+		if na(this.args_poc_label)
+			this.args_poc_label := D.LabelArgs.new(color.orange, #00000000, style = label.style_label_lower_right, xloc = xloc.bar_time)
+		if na(this.args_vah_label)
+			this.args_vah_label := D.LabelArgs.new(color.yellow, #00000000, style = label.style_label_lower_right, xloc = xloc.bar_time)
+		if na(this.args_val_label)
+			this.args_val_label := D.LabelArgs.new(color.yellow, #00000000, style = label.style_label_lower_right, xloc = xloc.bar_time)
+		if na(this.args_profile_line)
+			this.args_profile_line := D.LineArgs.new(color.rgb(120, 123, 134, 40), line.style_dotted, 1, xloc.bar_time)
+		if na(this.args_profile_bg)
+			this.args_profile_bg := D.BoxArgs.new(#00000000, bg_color = color.rgb(120, 123, 134, 92), xloc = xloc.bar_time)
+		this.initialized := true
+	this
+
+//@description initialises Profile with default values if not set, will be called by update() and draw() to ensure both functions can work properly
+export method init(Profile this, bool update_buckets = false) =>
+	if not na(this)
+		create_buckets = na(this.buckets)
+		if create_buckets or update_buckets
+			float bucket_size = (this.h - this.l) / this.resolution
+
+			if create_buckets
+				this.buckets := array.new<Bucket>(this.resolution)
+					
+			for i = 0 to this.resolution - 1
+				float bucket_bottom = this.l + i * bucket_size
+				float bucket_top = bucket_bottom + bucket_size
+				if create_buckets
+					this.buckets.set(i, Bucket.new(i, 0, bucket_top, bucket_bottom, math.avg(bucket_top, bucket_bottom), 0 ))
+				else // update_buckets
+					this.buckets.get(i).update(bucket_top, bucket_bottom, 0, 0)					
+	this
+
+//@function recalculates this Profile's data (update() will only recalculate if new data is passed, this one forces recalculation)
+export method calculate(Profile this, simple int use_open_close_data_for_ranges_shorter_than_bars = 4) =>
+	// DATA
+	// ASSUMING DATA (opens/highs/lows/closes/values/h/l/total) IS SET IN create_profile OR update_profile
+
+	int range_count = array.size(this.data_values)
+    float vah_threshold = this.total * (this.vah_threshold_pc / 100)
+    float val_threshold = this.total * (this.val_threshold_pc / 100)
+	float value_range = this.h - this.l
+	float bucket_size = value_range / this.resolution
+
+	// RESULTS
+    if range_count > 0
+        float poc_volume = 0
+        float sum_volume = 0
+        float sum_volume_up = 0
+        float sum_volume_down = 0
+    	int   range_count_opens = na(this.data_opens) ? 0 : array.size(this.data_opens)
+    	int   range_count_closes = na(this.data_closes) ? 0 : array.size(this.data_closes)
+		
+		for i = 0 to this.resolution - 1
+			Bucket bucket = this.buckets.get(i)
+            float bucket_value = 0
+
+			// check all top-btm ranges, add the value (partly) to the bucket on overlap
+            for j = 0 to range_count - 1
+                float range_value = array.get(this.data_values, j)
+                float range_high  = array.get(this.data_highs, j)
+                float range_low   = array.get(this.data_lows, j)
+				float range_size  = range_high - range_low
+
+				// optimized by claude sonnet 3.5, see original code in v753
+                float overlap = math.max(0, math.min(range_high, bucket.top) - math.max(range_low, bucket.btm))
+
+				if (i == 0 or 0 < use_open_close_data_for_ranges_shorter_than_bars) and j < range_count_opens and j < range_count_closes 
+
+					float range_open  = array.get(this.data_opens, j)
+					float range_close = array.get(this.data_closes, j)
+
+					// improved calculation for directional volume in this block
+					if i == 0
+						if range_open < range_close
+							sum_volume_up += range_value
+						else
+							sum_volume_down += range_value
+
+					// improved fraction calculation to incorporate wicks with a weight of 2(each) and the body with a weight of 3 => 7 parts total
+					if j < use_open_close_data_for_ranges_shorter_than_bars
+						overlap += math.max(0, 
+						 math.min(math.max(range_open, range_close), bucket.top) - 
+						 math.max(math.min(range_open, range_close), bucket.btm)
+						 ) / 2
+						range_size += math.abs(range_open-range_close) / 2
+
+				
+                float range_value_fraction = 
+				 range_size > 0 ? overlap / range_size // regular overlap, overlapped part as ratio of full bucket
+				 : (overlap > 0 ? 1 : 0) // 0 division protection, if overlap detected anyway, count it fully
+
+				bucket_value += range_value_fraction * range_value
+
+			bucket.update(bucket_value, bucket_value / this.total)
+			
+            // track highest value (POC) inside the profile AND it's index 
+            if bucket_value >= poc_volume
+                poc_volume := bucket_value // track highest volume in profile
+                this.poc_bucket_index := i
+				this.poc := bucket.center
+
+            // while going through the profile, accumulate the bucket values. As soon as we cross the value area thresholds with a bucket, we know where the value area starts / ends.
+            if sum_volume < val_threshold and val_threshold <= (sum_volume + bucket_value)
+                this.val_bucket_index := i
+				this.val := bucket.center
+            if sum_volume < vah_threshold and vah_threshold <= (sum_volume + bucket_value)
+                this.vah_bucket_index := i
+				this.vah := bucket.center
+
+            sum_volume += bucket_value
+
+		this.total_up   := sum_volume_up
+		this.total_down := sum_volume_down
+	this
+
+//@function creates a new Profile
+//@param start index from where to draw the Profile (left edge)
+//@param end index until where to draw the Profile (right edge)
+//@param opens (optional) data for profiled range's opens
+//@param closes (optional) data for profiled range's closes
+//@param highs data for profiled range's highs
+//@param lows data for profiled range's lows
+//@param values data for profiled range's value data (volume/time)
+//@param resolution amount of buckets in which to split the analysis (default: 25)
+//@param vah_pc Value Area High percentage (default: 80)
+//@param val_pc Value Area Low percentage (default: 20)
+//@param init_calculated whether to run an initial calculation on creation (POC, VAH, VAL). Set this to false if you want to have a lightweight initialization process and only calculate at a certain event (default: true)
+//@param idx gives this Profile an index value to allow for easier identification in debugging/logs (default: bar_index)
+export create_profile(float[] opens, float[] highs, float[] lows, float[] closes, float[] values, int resolution = 25, float vah_pc = 80, float val_pc = 20, int idx = bar_index, bool init_calculated = true, simple int use_open_close_data_for_ranges_shorter_than_bars = 4) =>
+	profile = Profile.new(idx, resolution, vah_pc, val_pc, opens, highs, lows, closes, values, h = highs.max(), l = lows.min(), total = values.sum())
+	profile.init(update_buckets = true) // init buckets
+	if init_calculated
+		profile.calculate(use_open_close_data_for_ranges_shorter_than_bars)	
+	profile
+
+
+//@function update this Profile's data (recalculates the whole profile and applies the result to this object)
+//@param opens (optional) array of range open values (either from ltf or chart candles using history() function
+//@param closes (optional) array of range close values (either from ltf or chart candles using history() function
+//@param highs array of range top/high values (either from ltf or chart candles using history() function
+//@param lows array of range bottom/low values (either from ltf or chart candles using history() function
+//@param values array of range volume/1 values (either from ltf or chart candles using history() function (1s can be used for analysing candles in bucket/price range over time)
+//@param end_t (optional) end time until when to consider data for the profile calculation
+//@param end_i (optional) end index until when to consider data for the profile calculation
+export method update(Profile this, float[] opens = na, float[] highs = na, float[] lows = na, float[] closes = na, float[] values = na) =>
+	if not na(this)
+		recalculation_required = false
+		layout_required = false
+
+		if not na(opens)
+			this.data_opens := opens
+			recalculation_required := true
+		if not na(highs)
+			this.data_highs := highs
+			h = highs.max()
+			layout_required := this.h != h
+			this.h := h
+			recalculation_required := true
+		if not na(lows)
+			this.data_lows := lows
+			l = lows.min()
+			layout_required := layout_required or this.l != l
+			this.l := l
+			recalculation_required := true
+		if not na(closes)
+			this.data_closes := closes
+			recalculation_required := true
+		if not na(values)
+			this.data_values := values
+			this.total := values.sum()
+			recalculation_required := true		
+
+		if layout_required
+			this.init(update_buckets = true) // init buckets
+		if recalculation_required or na(this.poc)			
+			this.calculate()
+	this
+
+//@function draw all components of this Profile (Box, Background, Bucket lines, POC/VAH/VAL overlay levels and labels). The profile is drawn from first to last bar / start to end of the profiled bars Optional drawing from another origin is possible with draw_from_t/draw_from_i (time/bar_index). Optional the width of the drawn profile can dynamically adjusted to a number of bars via forced_width (gaps in data are not considered via xloc = bar_time). Optional with ProfileConfig.extend the profile can extend to the current bar_index (usefull for POC and Value Area lines). Optional ProfileConfig.default_size can be used to configure a shared default length for profiles.
+//@param left from which bar_index/time to draw the profile. ProfileConfig.args.xloc decides which one is used
+//@param right until which bar_index/time to draw the profile. ProfileConfig.args.xloc decides which one is used
+//@param extend_only unless draw_from_t/draw_from_i is used and changing, this can remain at default true and the start point x coordinates will not be updated, preventing errors when drawing based on bar_index
+//@param poc_text_override allows to override the text of the POC line label (price label will be added if config enables it)
+export method draw(Profile this, ProfileConfig config, int left = na, int right = na, bool extend_only = true, simple bool force_overlay = false, string poc_text_override = na) =>
+	var tf_ms = timeframe.in_seconds() * 1000
+
+	if na(this) ? false : na(this.buckets) ? false : this.buckets.size() > 0
+		config.init()
+		this.init() 
+		
+		int len = right - left
+		
+		if config.show_background
+			if na(this.plot_profile_bg)			
+				this.plot_profile_bg := D.create_box(left, this.h, right, this.l, config.args_profile_bg.xloc)
+			else				
+				this.plot_profile_bg.left_top.update(left, this.h, config.args_profile_bg.xloc)
+				this.plot_profile_bg.right_bottom.update(right, this.l, config.args_profile_bg.xloc)
+			this.plot_profile_bg.draw(config.args_profile_bg, na, extend_only, force_overlay)
+						
+		if config.show_profile
+			poc_bucket = this.buckets.get(this.poc_bucket_index)
+
+			for bucket in this.buckets				
+				if not na(bucket) and not na(poc_bucket)
+					int bucket_len = math.ceil(len * bucket.value / poc_bucket.value)
+					int bucket_end = left + bucket_len
+					
+					bucket_args = 
+					 bucket.idx == this.poc_bucket_index ? config.args_poc_line : 
+					 bucket.idx == this.vah_bucket_index ? config.args_vah_line :
+					 bucket.idx == this.val_bucket_index ? config.args_val_line : 
+					 config.args_profile_line
+
+					if na(bucket.plot_bucket_line)
+						bucket.plot_bucket_line := D.create_line(left, bucket.center, bucket_end, bucket.center, bucket_args.xloc).draw(bucket_args, extend_only, force_overlay)
+					else
+						bucket.plot_bucket_line.start.update(left, bucket.center, bucket_args.xloc)
+						bucket.plot_bucket_line.end.update(bucket_end, bucket.center, bucket_args.xloc)
+						bucket.plot_bucket_line.draw(bucket_args, extend_only, force_overlay)	
+						bucket.plot_bucket_line.plot.set_color(bucket_args.line_color) // on draw color is not updated
+
+		if config.show_poc
+			if na(this.plot_poc)
+				this.plot_poc := D.create_line(left, this.poc, right, this.poc, config.args_poc_line.xloc)
+			else
+				this.plot_poc.start.update(left, this.poc, config.args_poc_line.xloc)
+				this.plot_poc.end.update(right, this.poc, config.args_poc_line.xloc)
+			this.plot_poc.draw(config.args_poc_line, extend_only, force_overlay)
+
+			if config.show_labels
+				tooltip = str.format('{0} ({1})', na(poc_text_override) ? config.poc_label_text : poc_text_override, this.poc)
+				txt = config.show_price_levels ? tooltip : na(poc_text_override) ? config.poc_label_text : poc_text_override
+				if na(this.plot_poc_label)
+					this.plot_poc_label := D.create_label(D.create_point(right, this.poc, config.args_poc_label.xloc), txt, tooltip)
+				else
+					this.plot_poc_label.point.update(right, this.poc, config.args_poc_label.xloc)
+					this.plot_poc_label.txt := txt
+					this.plot_poc_label.tooltip := tooltip
+				this.plot_poc_label.draw(config.args_poc_label, force_overlay)
+
+		if config.show_va
+			if na(this.plot_vah)
+				this.plot_vah := D.create_line(left, this.vah, right, this.vah, config.args_vah_line.xloc)
+			else
+				this.plot_vah.start.update(left, this.vah, config.args_vah_line.xloc)
+				this.plot_vah.end.update(right, this.vah, config.args_vah_line.xloc)
+			this.plot_vah.draw(config.args_vah_line, extend_only, force_overlay)
+				
+			if na(this.plot_val)
+				this.plot_val := D.create_line(left, this.val, right, this.val, config.args_val_line.xloc)
+			else
+				this.plot_val.start.update(left, this.val, config.args_val_line.xloc)
+				this.plot_val.end.update(right, this.val, config.args_val_line.xloc)
+			this.plot_val.draw(config.args_val_line, extend_only, force_overlay)
+
+			if config.show_labels
+				vah_tooltip = str.format('{0} ({1})', config.vah_label_text, this.vah)
+				vah_txt = config.show_price_levels ? vah_tooltip : config.vah_label_text
+
+				val_tooltip = str.format('{0} ({1})', config.val_label_text, this.val)
+				val_txt = config.show_price_levels ? val_tooltip : config.val_label_text
+
+				if na(this.plot_vah_label)
+					this.plot_vah_label := D.create_label(D.create_point(right, this.vah, config.args_vah_label.xloc), vah_txt, vah_tooltip)
+				else
+					this.plot_vah_label.point.update(right, this.vah, config.args_vah_label.xloc)
+					this.plot_vah_label.txt := vah_txt
+					this.plot_vah_label.tooltip := vah_tooltip
+				this.plot_vah_label.draw(config.args_vah_label, force_overlay)
+
+				if na(this.plot_val_label)
+					this.plot_val_label := D.create_label(D.create_point(right, this.val, config.args_val_label.xloc), val_txt, val_tooltip)
+				else
+					this.plot_val_label.point.update(right, this.val, config.args_val_label.xloc)
+					this.plot_val_label.txt := val_txt
+					this.plot_val_label.tooltip := val_tooltip
+				this.plot_val_label.draw(config.args_val_label, force_overlay)
+
+			if config.show_va_fill 
+				if na(this.plot_va_fill)
+					this.plot_va_fill := D.create_fill(this.plot_val, this.plot_vah, config.va_fill_color)
+		this.hidden := false
+	this
+
+//@function creates a copy of this bucket and it's plot object
+export method deep_copy(Bucket this) =>
+	Bucket.new(this.idx, this.value, this.top, this.btm, this.center, this.fraction, this.plot_bucket_line.deep_copy())
+
+//@function creates copies of all buckets including their plot objects
+export method deep_copy(Bucket[] this) =>
+	copy = array.new<Bucket>(this.size())
+	for i = 0 to this.size() - 1
+		copy.set(i, this.get(i).deep_copy())
+	copy	
+
+//@function creates a copy of this Profile and all it's buckets and plot objects
+export method deep_copy(Profile this) =>
+	Profile.new(this.id, this.resolution, this.vah_threshold_pc, this.val_threshold_pc, 
+	 this.data_opens.copy(), this.data_highs.copy(), this.data_lows.copy(), this.data_closes.copy(), this.data_values.copy(), 
+	 this.h, this.l, this.total, this.total_up, this.total_down, this.buckets.deep_copy(), 
+	 this.poc_bucket_index, this.vah_bucket_index, this.val_bucket_index, 
+	 this.poc, this.vah, this.val, 
+	 this.plot_poc.deep_copy(), this.plot_vah.deep_copy(), this.plot_val.deep_copy(), 
+	 this.plot_poc_label.deep_copy(), this.plot_vah_label.deep_copy(), this.plot_val_label.deep_copy(), 
+	 this.plot_va_fill.deep_copy(), this.plot_profile_bg.deep_copy()
+	 )
+
+//@function resets all data and plot objects for reuse
+method reset(Bucket[] this) =>
+	for bucket in this
+		bucket.value := 0
+		bucket.fraction := 0
+		if not na(bucket.plot_bucket_line)
+			bucket.plot_bucket_line.update(chart.point.now(bucket.center), chart.point.now(bucket.center))
+
+// @function resets all data and plot objects for reuse
+export method reset(Profile this) =>	
+	// this.id // keep it
+	// this.resolution // keep it
+	// this.vah_threshold_pc // keep it
+	// this.val_threshold_pc // keep it
+	this.data_opens.clear()
+	this.data_closes.clear()
+	this.data_highs.clear()
+	this.data_lows.clear()
+	this.data_values.clear()
+
+	// range data
+	this.h := high
+	this.l := low
+	this.total := volume
+	this.total_up 	:= open < close ? volume : 0
+	this.total_down := open > close ? volume : 0
+	this.buckets.reset()
+
+	// value levels
+	this.poc_bucket_index := na
+	this.vah_bucket_index := na
+	this.val_bucket_index := na
+
+	// price levels
+	this.poc := na
+	this.vah := na
+	this.val := na
+
+	// plots
+	if not na(this.plot_poc)
+		this.plot_poc.update(chart.point.now(close), chart.point.now(close))		
+		if not na(this.plot_poc.plot)
+			this.plot_poc.plot := this.plot_poc.plot.copy()
+			this.plot_poc.plot.set_first_point(this.plot_poc.start)
+			this.plot_poc.plot.set_second_point(this.plot_poc.end)
+	if not na(this.plot_vah)
+		this.plot_vah.update(chart.point.now(close), chart.point.now(close))
+		if not na(this.plot_vah.plot)
+			this.plot_vah.plot := this.plot_vah.plot.copy()
+			this.plot_vah.plot.set_first_point(this.plot_vah.start)
+			this.plot_vah.plot.set_second_point(this.plot_vah.end)
+	if not na(this.plot_val)
+		this.plot_val.update(chart.point.now(close), chart.point.now(close))
+		if not na(this.plot_val.plot)
+			this.plot_val.plot := this.plot_val.plot.copy()
+			this.plot_val.plot.set_first_point(this.plot_val.start)
+			this.plot_val.plot.set_second_point(this.plot_val.end)
+	if not na(this.plot_poc_label)
+		this.plot_poc_label.update(chart.point.now(na))
+		if not na(this.plot_poc_label.plot)
+			this.plot_poc_label.plot.set_point(this.plot_poc_label.point)
+	if not na(this.plot_vah_label)
+		this.plot_vah_label.update(chart.point.now(na))
+		if not na(this.plot_vah_label.plot)
+			this.plot_vah_label.plot.set_point(this.plot_vah_label.point)
+	if not na(this.plot_val_label)
+		this.plot_val_label.update(chart.point.now(na))
+		if not na(this.plot_val_label.plot)
+			this.plot_val_label.plot.set_point(this.plot_val_label.point)
+	if not na(this.plot_profile_bg)
+		this.plot_profile_bg.update(chart.point.now(high), chart.point.from_index(bar_index + 1, low))
+
+//////////////////////////////////////////////////////////////////////////////////
+//#region 								DEMO
+//////////////////////////////////////////////////////////////////////////////////
+
+var resolution = input.int(20, 'resolution')
+var vah_pc = input.float(80, 'VAH %')
+var val_pc = input.float(20, 'VAL %')
+
+
+varip ProfileConfig args = ProfileConfig.new(
+ show_poc = input.bool(true, 'show POC', inline = 'poc'), 
+ args_poc_line = D.LineArgs.new(input.color(color.orange, '', inline = 'poc'), line.style_dashed, 1, xloc.bar_time), 
+
+ show_va = input.bool(true, 'Value Area', inline = 'va'), 
+ args_vah_line = D.LineArgs.new(input.color(color.yellow, '', inline = 'va'), line.style_dotted, 1, xloc.bar_time), 
+ args_val_line = D.LineArgs.new(input.color(color.yellow, '', inline = 'va'), line.style_dotted, 1, xloc.bar_time), 
+ show_va_fill = input.bool(true, 'fill', inline = 'va'), 
+ va_fill_color = input.color(#ffeb3b0e, '', inline = 'va'),
+
+ show_labels = input.bool(true, 'Show labels', inline = 'labels'),
+ show_price_levels = input.bool(true, 'with price', inline = 'labels'),
+ args_poc_label = D.LabelArgs.new(input.color(color.orange, '', inline = 'labels'), #00000000, xloc = xloc.bar_time, style = label.style_label_left, size = size.tiny), 
+ args_vah_label =  D.LabelArgs.new(input.color(color.yellow, '', inline = 'labels'), #00000000, xloc = xloc.bar_time, style = label.style_label_left, size = size.tiny), 
+ args_val_label =  D.LabelArgs.new(input.color(color.yellow, '', inline = 'labels'), #00000000, xloc = xloc.bar_time, style = label.style_label_left, size = size.tiny), 
+
+ show_profile = input.bool(true, 'show Profile', inline = 'profile'), 
+ args_profile_line = D.LineArgs.new(input.color(#787b869e, '', inline = 'profile'), line.style_solid, 3, xloc.bar_time), 
+ show_background = input.bool(true, 'with background', inline = 'profile'), 
+ args_profile_bg = D.BoxArgs.new(#00000000, bg_color = input.color(#787b860f, '', inline = 'profile'), xloc = xloc.bar_time),
+ 
+ extend = input.bool(true, 'extend profile', inline = 'extend')
+ )
+
+varip ProfileConfig argsi = args.deepcopy()
+if barstate.isfirst
+	argsi.args_poc_line.xloc := xloc.bar_index
+	argsi.args_vah_line.xloc := xloc.bar_index
+	argsi.args_val_line.xloc := xloc.bar_index
+	argsi.args_poc_label.xloc := xloc.bar_index
+	argsi.args_vah_label.xloc := xloc.bar_index
+	argsi.args_val_label.xloc := xloc.bar_index
+	argsi.args_profile_line.xloc := xloc.bar_index
+	argsi.args_profile_bg.xloc := xloc.bar_index
+ 
+
+var use_open_close_data_for_ranges_shorter_than_bars = input.int(4, 'max range to use open/close data', tooltip = 'if a range has lesser candles than this, open and close data will be included in the weight for a profile section. Body has a weight of 1.5, wicks 1 each, assuming there was more action due to accumulation.')
+
+var g_use_cases = 'DEMO'
+var use_case = input.string('High Volume Candle + LTF Detail', 'Use Case', ['High Volume Candle + LTF Detail', 'High Volume Candle + Lookback Range', 'Current Candle Live', 'Current Range Live', 'Weekly Range', 'Weekly Range Live'], group = g_use_cases)
+var use_case_LTF = str.contains(use_case, 'LTF')
+var use_case_lookback = str.contains(use_case, 'Lookback')
+var use_case_live = str.contains(use_case, 'Candle Live')
+var use_case_live_range = use_case == 'Current Range Live'
+var use_case_weekly = use_case == 'Weekly Range'
+var use_case_weekly_live = use_case == 'Weekly Range Live'
+
+var value_select = input.string('volume', 'Profile value', ['volume', 'time'], group = g_use_cases)
+var value_is_volume = value_select == 'volume'
+value = value_is_volume ? volume : time_close - time
+
+
+var is_above_1h = timeframe.in_seconds() > timeframe.in_seconds('60')
+var is_above_1h_label = label.new(chart.point.now(na), 'Chart timeframe > 1h\nprofile data incomplete', color = color.red, xloc = xloc.bar_time)
+
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+// 						USE CASE (profile single high volume candle with ltf data)
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+//@description returns a lower timeframe to get a reasonable amount of data for volume spread analysis (>1M -> 1D) / (>1W -> 1H) / (>5m -> 10S) / (else 1S)
+//@param detail_lvl select a value between 0-4 to decrease the returned LTF. This will lead to improved detail of generated profiles, but also require significant more computing power and slow down your script. (default: 1)
+//@param allow_seconds if true this will use second based timeframes. This will significantly increase detail and script runtime in <=1h timeframes (only for premium users)
+export get_ltf(simple int detail_lvl = 1, simple bool allow_seconds = false) =>
+	tf_min = timeframe.in_seconds() / 60
+
+	// detail lvl 0 (divide lvl4 by 10 => x10 the LTF timeframe)
+	// tf_min >= 43200 minutes == >= 30 days  => LTF =>  10D => candles:   3 ( 1M) -  35 (12M)
+	// tf_min >= 10080 minutes == >= 7 days   => LTF => 600m => candles:  16 ( 1W) -  67 ( 1M)
+	// tf_min >=  1440 minutes == >= 12 hours => LTF => 150m => candles:   4 (12h) -  67 ( 7D)
+	// tf_min >=    60 minutes == >=  1 hour  => LTF =>  10m => candles:   6 ( 1h) -  72 (12h)
+	// tf_min >=     6 minutes == >=  6 mins  => LTF =>   1m => candles:   1 ( 6m) -   6 ( 1h) (REGULAR)
+	// tf_min >=     6 minutes == >=  6 mins  => LTF => 100S => candles:   3 ( 6m) -  36 ( 1h) (PREMIUM)
+	// tf_min <      6 minutes == <=  6 mins  => LTF =>  10S => candles:   1 ( 1s) -  36 ( 6m) (PREMIUM)
+
+	// detail lvl 1 (divide lvl4 by 5 => x5 the LTF timeframe)
+	// tf_min >= 43200 minutes == >= 30 days  => LTF =>   5D => candles:  6 ( 1M) -  14 (12M)
+	// tf_min >= 10080 minutes == >= 7 days   => LTF => 300m => candles: 31 ( 1W) -  64 ( 1M)
+	// tf_min >=  1440 minutes == >= 12 hours => LTF =>  75m => candles:  9 (12h) -  64 ( 7D)
+	// tf_min >=    60 minutes == >=  1 hour  => LTF =>   5m => candles: 12 ( 1h) -  48 (12h)
+	// tf_min >=     6 minutes == >=  6 mins  => LTF =>   5m => candles:  1 ( 6m) -   4 ( 1h) (REGULAR)
+	// tf_min >=     6 minutes == >=  6 mins  => LTF =>  50S => candles:  7 ( 6m) -  24 ( 1h) (PREMIUM)
+	// tf_min <      6 minutes == <=  6 mins  => LTF =>   5S => candles:  1 ( 1s) -  24 ( 6m) (PREMIUM)
+
+	// detail lvl 2 (divide lvl4 by 3 => tripple the LTF timeframe)
+	// tf_min >= 43200 minutes == >= 30 days  => LTF =>   3D => candles: 10 ( 1M) - 118 (12M)
+	// tf_min >= 10080 minutes == >= 7 days   => LTF => 180m => candles: 56 ( 1W) - 324 ( 1M)
+	// tf_min >=  1440 minutes == >= 12 hours => LTF =>  45m => candles: 16 (12h) - 324 ( 7D)
+	// tf_min >=    60 minutes == >=  1 hour  => LTF =>   3m => candles: 20 ( 1h) - 240 (12h)
+	// tf_min >=     6 minutes == >=  6 mins  => LTF =>   3m => candles:  2 ( 6m) -  20 ( 1h) (REGULAR)
+	// tf_min >=     6 minutes == >=  6 mins  => LTF =>  30S => candles: 12 ( 6m) - 120 ( 1h) (PREMIUM)
+	// tf_min <      6 minutes == <=  6 mins  => LTF =>   3S => candles:  1 ( 1s) - 120 ( 6m) (PREMIUM)
+
+	// detail lvl 3 (divide lvl4 by 2 => double the LTF timeframe)
+	// tf_min >= 43200 minutes == >= 30 days  => LTF =>   2D => candles: 15 ( 1M) - 179 (12M)
+	// tf_min >= 10080 minutes == >= 7 days   => LTF => 120m => candles: 84 ( 1W) - 336 ( 1M)
+	// tf_min >=  1440 minutes == >= 12 hours => LTF =>  30m => candles: 24 (12h) - 336 ( 7D)
+	// tf_min >=    60 minutes == >=  1 hour  => LTF =>   2m => candles: 30 ( 1h) - 360 (12h)
+	// tf_min >=     6 minutes == >=  6 mins  => LTF =>   2m => candles:  3 ( 6m) -  30 ( 1h) (REGULAR)
+	// tf_min >=     6 minutes == >=  6 mins  => LTF =>  20S => candles: 18 ( 6m) - 180 ( 1h) (PREMIUM)
+	// tf_min <      6 minutes == <=  6 mins  => LTF =>   2S => candles:  1 ( 1s) - 180 ( 6m) (PREMIUM)
+
+	// detail lvl 4
+	// tf_min >= 43200 minutes == >= 30 days  => LTF =>  1D => candles:  30 ( 1M) - 356 (12M)
+	// tf_min >= 10080 minutes == >= 7 days   => LTF => 60m => candles: 168 ( 1W) - 672 ( 1M)
+	// tf_min >=  1440 minutes == >= 12 hours => LTF => 15m => candles:  48 (12h) - 672 ( 7D)
+	// tf_min >=    60 minutes == >=  1 hour  => LTF =>  1m => candles:  60 ( 1h) - 720 (12h)
+	// tf_min >=     6 minutes == >=  6 mins  => LTF =>  1m => candles:   6 ( 6m) -  60 ( 1h) (REGULAR)
+	// tf_min >=     6 minutes == >=  6 mins  => LTF => 10S => candles:  36 ( 6m) - 360 ( 1h) (PREMIUM)
+	// tf_min <      6 minutes == <=  6 mins  => LTF =>  1S => candles:   1 ( 1s) - 360 ( 6m) (PREMIUM)
+
+	ltf = switch detail_lvl
+		4 => tf_min >= 43200 ?  '1D' : tf_min >= 10080 ?  '60' : tf_min >= 1440 ?  '15' : tf_min >= 60 ?  '1' :                                           					   tf_min >= 1 ?  '10S' :  '1S'
+		3 => tf_min >= 43200 ?  '2D' : tf_min >= 10080 ? '120' : tf_min >= 1440 ?  '30' : tf_min >= 60 ?  '2' : 					 tf_min >=  6 or not allow_seconds ? '1' : tf_min >= 1 ?  '20S' :  '2S'
+		2 => tf_min >= 43200 ?  '3D' : tf_min >= 10080 ? '180' : tf_min >= 1440 ?  '45' : tf_min >= 60 ?  '3' : tf_min >= 30 ? '2' : tf_min >=  6 or not allow_seconds ? '1' : tf_min >= 1 ?  '30S' :  '3S'
+		1 => tf_min >= 43200 ?  '5D' : tf_min >= 10080 ? '300' : tf_min >= 1440 ?  '75' : tf_min >= 60 ?  '5' : tf_min >= 30 ? '3' : tf_min >= 10 or not allow_seconds ? '2' : tf_min >= 1 ?  '30S' :  '5S'
+		=>   tf_min >= 43200 ? '10D' : tf_min >= 10080 ? '600' : tf_min >= 1440 ? '150' : tf_min >= 60 ? '10' : tf_min >= 30 ? '5' : tf_min >= 15 or not allow_seconds ? '5' : tf_min >= 5 ?    '1' : '30S'
+
+var int detail_lvl = input.int(0, 'detail lvl', [0,1,2,3,4], group = g_use_cases)
+var ltf = get_ltf(detail_lvl)
+var tf_min = timeframe.in_seconds() / 60
+[ltf_opens, ltf_highs, ltf_lows, ltf_closes, ltf_values] = request.security_lower_tf(syminfo.tickerid, ltf, [open, high, low, close, value])
+
+var ltf_label = label.new(time, 0, '', xloc.bar_time, color = #938616, style = label.style_label_left, size = size.normal)
+var max_ltf_bars = 0
+if max_ltf_bars < ltf_highs.size()// every time we get more ltf bars, store the max ltf bar count
+	max_ltf_bars := ltf_highs.size()
+ltf_label.set_text(str.format('res: {0}min + detail_lvl: {1}\n-> ltf: {2} -> max {3} ltf candles\ncurrent bar has {4} ltf candles',tf_min, detail_lvl, ltf, max_ltf_bars, ltf_highs.size()))
+ltf_label.set_xy(time, high)
+
+var volume_threshold_len = input.int(50, 'High volume candle - SMA len', inline = 'volume_threshold', group = g_use_cases)
+var volume_threshold_mult = input.float(3, 'x', minval = 1, step =0.1, inline = 'volume_threshold', group = g_use_cases)
+var Profile obj_prev = na
+var Profile obj = na
+
+volume_sma = ta.sma(volume, volume_threshold_len)
+var tf_ms = timeframe.in_seconds() * 1000
+
+if use_case_LTF // HIGH VOLUME CANDLE
+	if volume > volume_sma * volume_threshold_mult
+
+		if ltf_values.size() == 0
+			label.new(bar_index, close, "ltf data empty\ncan't plot profile", yloc = yloc.abovebar, color = color.red, textcolor = color.white, size = size.normal)
+		else
+			// just keep last 2
+			if not na(obj_prev)
+				obj_prev.delete()
+
+			if not na(obj)
+				obj_prev := obj
+
+			obj := create_profile(ltf_opens, ltf_highs, ltf_lows, ltf_closes, ltf_values, resolution, vah_pc, val_pc, bar_index, init_calculated = true, use_open_close_data_for_ranges_shorter_than_bars = use_open_close_data_for_ranges_shorter_than_bars)
+			obj.draw(argsi, bar_index, bar_index + 20)
+
+			if not na(obj.plot_profile_bg)
+				ltf_label.set_point(obj.plot_profile_bg.left_top)
+
+	// obj.draw()
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+// 							USE CASE (profile timeframe from chart history candles)
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+_history(src, int amount, int offset = 0, int max_buffer_len = 250, capture_when = true, reset = false, allow_na_in_buffer = true) =>
+	var buffer = array.from(src) // prevents having to define array type with array.new
+	max_amount = ta.max(amount+offset)
+	buffer_len = math.min(max_amount, max_buffer_len)
+
+	if na(src) and not allow_na_in_buffer
+		if buffer.size() == 1
+			if na(buffer.first())
+				buffer.clear() // prevent na in buffer
+
+	if not na(src) or allow_na_in_buffer
+
+		if reset
+			buffer.clear()
+
+		if capture_when
+			if not barstate.isfirst
+				buffer.unshift(src)
+
+			if buffer.size() > buffer_len // prevent memory exceeded
+				buffer.pop()
+
+		// return
+		if buffer.size() > 0 and amount > 0
+			start_idx = math.min(buffer.size() - 1 , math.abs(offset))
+			end_idx   = math.min(buffer.size()     , start_idx + math.abs(amount))
+
+			buffer.slice(start_idx, end_idx)
+		else 
+			buffer
+
+//@function allows fetching an array of values from the history series with offset from current candle
+export history(int src, int amount, int offset = 0, int max_buffer_len = 100, bool capture_when = true, bool reset = false) => _history(src, amount, offset, max_buffer_len, capture_when, reset)
+//@function allows fetching an array of values from the history series with offset from current candle
+export history(float src, int amount, int offset = 0, int max_buffer_len = 100, bool capture_when = true, bool reset = false) => _history(src, amount, offset, max_buffer_len, capture_when, reset)
+
+
+// direct source previous candles
+var history_len = input.int(20, 'Range Candles', inline = 'range')
+var history_offset = input.int(2, 'Range Offset', inline = 'range')
+opens = history(open, history_len, history_offset)
+highs = history(high, history_len, history_offset)
+lows = history(low, history_len, history_offset)
+closes = history(close, history_len, history_offset)
+values = history(value, history_len, history_offset)
+
+var Profile obj2_prev = na
+var Profile obj2 = na
+var line range2_line_prev = na
+var line range2_line = na
+if use_case_lookback
+	if volume > volume_sma * volume_threshold_mult // HIGH VOLUME CANDLE
+
+		// just keep the last 2 profiles
+		if not na(obj2)
+			if not na(obj2_prev)
+				obj2_prev.delete() 
+				range2_line_prev.delete()
+			obj2_prev := obj2			
+			range2_line_prev := range2_line
+			
+		
+		left  = bar_index - history_offset - values.size() // width should be == history_len but could be shorter when lesser candles are available
+		right = bar_index - history_offset
+
+		obj2 := create_profile(opens[history_offset], highs[history_offset], lows[history_offset], closes[history_offset], values[history_offset], resolution, vah_pc, val_pc, tickid, init_calculated = true, use_open_close_data_for_ranges_shorter_than_bars = use_open_close_data_for_ranges_shorter_than_bars )
+		obj2.draw(argsi, left, right)
+		
+		range2_line := line.new(left, obj2.l, right, obj2.l, color = color.gray, width = 2)
+		
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+// 							USE CASE (profile timeframe from chart history candles)
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+varip Profile obj3 = na
+var lft_data_always_present_in_replay_label = label.new(chart.point.now(na), 'TV returns complete LTF data in replay\n=> shows final bar profile from the start', color = color.red, style = label.style_label_center)
+if use_case_live
+	if barstate.islastconfirmedhistory
+		lft_data_always_present_in_replay_label.set_xy(bar_index, high + ta.tr / 10)
+
+	if barstate.isfirst		
+		obj3 := create_profile(ltf_opens, ltf_highs, ltf_lows, ltf_closes, ltf_values, resolution, vah_pc, val_pc, bar_index, init_calculated = false, use_open_close_data_for_ranges_shorter_than_bars = use_open_close_data_for_ranges_shorter_than_bars)
+
+	if barstate.islast or barstate.islastconfirmedhistory
+		// GOOD EXAMPLE FOR HIGH PERFORMANT LIVE PROCESSING AND DRAWING (init everything once, then just update)
+		obj3.update(ltf_opens, ltf_highs, ltf_lows, ltf_closes, ltf_values)
+		obj3.draw(argsi, bar_index, bar_index + 20, extend_only = false)
+
+
+varip Profile obj4 = na
+var line range4_line = line.new(na, na, na, na, color = color.gray, width = 2)
+if use_case_live_range
+	if barstate.isfirst
+		obj4 := create_profile(opens, highs, lows, closes, values, resolution, vah_pc, val_pc, bar_index, init_calculated = false, use_open_close_data_for_ranges_shorter_than_bars = use_open_close_data_for_ranges_shorter_than_bars).draw(argsi, bar_index, bar_index + 1)
+
+	if barstate.islast
+		range_size = nz(values.size(), 0)
+		obj4.update(opens, highs, lows, closes, values)
+		
+		offset = history_offset + range_size - 1 // offset goes to last candle of range, then add one less than included in range
+		left   = bar_index[offset]
+		right  = bar_index[history_offset]
+
+		obj4.draw(argsi, left, right, extend_only = false)
+		range4_line.set_xy1(left , obj4.l)
+		range4_line.set_xy2(right, obj4.l)
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+// 							USE CASE (weekly profile)
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+[open_1h, high_1h, low_1h, close_1h, value_1h, confirmed_1h] = request.security(syminfo.tickerid, '60', [open, high, low, close, value, barstate.isconfirmed])
+next_period = timeframe.change('60') and not na(high_1h)
+next_week   = timeframe.change('1W')
+plotshape(next_period, 'next period', shape.circle, location.bottom, color.yellow)
+plotshape(next_week	 , 'next week'  , shape.circle, location.top, color.orange)
+
+week_bars = nz(ta.barssince(next_week) + 1, bar_index)
+period_bars = nz(ta.barssince(next_period) + 1, bar_index)
+plot(week_bars, 'week_bars', display = display.data_window)
+plot(period_bars, 'period_bars', display = display.data_window)
+
+opens_1h = history(open_1h, 7*24, max_buffer_len = 7*24, capture_when=next_period, reset = next_week)
+closes_1h = history(close_1h, 7*24, max_buffer_len = 7*24, capture_when=next_period, reset = next_week)
+highs_1h = history(high_1h, 7*24, max_buffer_len = 7*24, capture_when=next_period, reset = next_week)
+lows_1h = history(low_1h, 7*24, max_buffer_len = 7*24, capture_when=next_period, reset = next_week)
+values_1h = history(value_1h, 7*24, max_buffer_len = 7*24, capture_when=next_period, reset = next_week)
+
+var int max_buffer_len = timeframe.in_seconds('1W') / timeframe.in_seconds()
+opens_live = history(open, week_bars, 0, max_buffer_len, reset = next_week)
+highs_live = history(high, week_bars, 0, max_buffer_len, reset = next_week)
+lows_live = history(low, week_bars, 0, max_buffer_len, reset = next_week)
+closes_live = history(close, week_bars, 0, max_buffer_len, reset = next_week)
+values_live = history(value, week_bars, 0, max_buffer_len, reset = next_week)
+
+var float[] prev_opens_1h = array.new<float>(0)
+var float[] prev_highs_1h = array.new<float>(0)
+var float[] prev_lows_1h = array.new<float>(0)
+var float[] prev_closes_1h = array.new<float>(0)
+var float[] prev_values_1h = array.new<float>(0)
+
+var Profile last_week_profile = na
+if use_case_weekly // only plot last weeks profile when new week begins
+	if next_week	
+		prev_week_time = time('1W',  1)
+		curr_week_time = time('1W')
+		// next_week_time = time_close('1W')		
+
+		last_week_profile := create_profile(prev_opens_1h, prev_highs_1h, prev_lows_1h, prev_closes_1h, prev_values_1h, resolution, vah_pc, val_pc, bar_index, init_calculated = true, use_open_close_data_for_ranges_shorter_than_bars = na)
+		
+		if not barstate.isfirst and not na(last_week_profile)
+			last_week_profile.draw(args, prev_week_time, curr_week_time, extend_only = false)
+
+			// range line
+			line.new(prev_week_time, last_week_profile.l, curr_week_time, last_week_profile.l, xloc.bar_time, color = color.new(color.gray, 50), width = 2)
+
+			if is_above_1h
+				is_above_1h_label.set_xy(int(math.avg(prev_week_time, curr_week_time)), last_week_profile.h)
+
+var Profile curr_week_profile = na
+var line curr_range_line = na
+if use_case_weekly_live
+	curr_week_time = time('1W')
+	next_week_time = time_close('1W')
+	var one_week_ms = 604800000 // 7 * 24 * 60 * 60 * 1000 // this is a fallback, some weeks close earlier, not all on sunday
+	if na(next_week_time) or next_week_time < curr_week_time
+		next_week_time := curr_week_time + one_week_ms
+		
+	if next_week and barstate.islast or barstate.islastconfirmedhistory[1]
+		curr_week_profile := create_profile(opens_live, highs_live, lows_live, closes_live, values_live, resolution, vah_pc, val_pc, bar_index, init_calculated = true, use_open_close_data_for_ranges_shorter_than_bars = na)
+		curr_range_line := line.new(curr_week_time, curr_week_profile.l, next_week_time, curr_week_profile.l, xloc.bar_time, color = color.new(color.gray, 50), width = 2)
+		
+	if not na(curr_week_profile) and (time_close == next_week_time or barstate.islast)
+		curr_week_profile.update(opens_live, highs_live, lows_live, closes_live, values_live)
+		curr_week_profile.draw(args, curr_week_time, next_week_time, extend_only = false)
+
+		curr_range_line.set_xy1(curr_week_time, curr_week_profile.l)
+		curr_range_line.set_xy2(next_week_time, curr_week_profile.l)
+
+		if is_above_1h
+			is_above_1h_label.set_xy(int(math.avg(curr_week_time, next_week_time)), curr_week_profile.h)
+
+
+prev_opens_1h := opens_1h.copy()
+prev_closes_1h := closes_1h.copy()
+prev_highs_1h := highs_1h.copy()
+prev_lows_1h := lows_1h.copy()
+prev_values_1h := values_1h.copy()
+

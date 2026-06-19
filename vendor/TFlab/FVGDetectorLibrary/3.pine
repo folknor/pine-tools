@@ -1,0 +1,127 @@
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © TFlab
+
+//@version=5
+
+// @description TODO: add library description here
+library("FVGDetectorLibrary" , overlay = true)
+
+//FVG Detector Function
+export FVGDetector(string FVGFilter, string FVGFilterType, bool ShowDeFVG, bool ShowSuFVG)=>
+    var float DDFVG = 0.0 //Demand Distal Fair Value Gap
+    var float DPFVG = 0.0 //Demand Proximal Fair Value Gap
+    var int BarDFVG = 0   //Bar Index Demand Fair Value Gap
+    
+    var float SDFVG = 0.0 //Supply Distal Fair Value Gap
+    var float SPFVG = 0.0 //Supply Proximal Fair Value Gap
+    var int BarSFVG = 0   //Bar Index Supply Fair Value Gap
+
+    var line DDistal = na
+    var line DProximal = na
+    var linefill Dfillline = na
+
+    var line SDistal = na
+    var line SProximal = na
+    var linefill Sfillline = na
+
+    var label DFVGLabel = na
+    var label SFVGLabel = na
+
+    var bool DMitigated = true
+    var bool SMitigated = true
+
+    var bool DConditionFVG = false
+    var bool SConditionFVG = false
+    //ATR
+    ATR = ta.atr(55)
+    //Demand FVG Filter Method {Choose and switch}
+    DConditionFVG := if FVGFilter == 'Off' 
+        if (low > high[2] )
+            true
+        else
+            false
+
+    else if FVGFilter == 'On'
+        if FVGFilterType =='Very Aggressive' and  (low > high[2] ) and (high > high[1] ) 
+            true
+        else if FVGFilterType =='Aggressive' and ((low > high[2] )and ((high[1] - low[1]) >= (1.0 * ATR)) and (high > high[1] )) 
+            true
+        else if FVGFilterType == 'Defensive' and ((low > high[2] )and ((high[1] - low[1]) >= (1.5 * ATR)) and (high > high[1] )) 
+         and ((close[2] - open[2] > 0 and close[1] - open[1] > 0) or math.abs((close[1] - open[1])/(high[1] - low[1])) > 0.7) 
+            true         
+        else if FVGFilterType =='Very Defensive' and ((low > high[2] )and ((high[1] - low[1]) >= (1.5 * ATR)) and (high > high[1] )) 
+         and ((close[2] - open[2] > 0 and close[1] - open[1] > 0) and math.abs((close[1] - open[1])/(high[1] - low[1])) > 0.7)
+         and math.abs((close[2] - open[2])/(high[2] - low[2])) > 0.35 and math.abs((close - open)/(high - low)) > 0.35
+            true
+        else
+            false
+
+    //Supply FVG Filter Method {Choose and switch}
+    SConditionFVG := if FVGFilter == 'Off' 
+        if (high < low[2] )
+            true
+        else
+            false
+    else if FVGFilter == 'On'
+        if FVGFilterType == 'Very Aggressive' and  (high < low[2] ) and (low[1] > low )  
+            true
+        else if FVGFilterType == 'Aggressive' and ((high < low[2] )and ((high[1] - low[1]) >= (1.0 * ATR)) and (low[1] > low ))  
+            true
+        else if FVGFilterType == 'Defensive' and ((high < low[2] )and ((high[1] - low[1]) >= (1.5 * ATR)) and (low[1] > low ))  
+         and ((close[2] - open[2] < 0 and close[1] - open[1] < 0) or math.abs((close[1] - open[1])/(high[1] - low[1])) > 0.7) 
+            true
+        else if FVGFilterType == 'Very Defensive' and ((high < low[2] )and ((high[1] - low[1]) >= (1.5 * ATR)) and (low[1] > low )) 
+         and ((close[2] - open[2] < 0 and close[1] - open[1] < 0) and math.abs((close[1] - open[1])/(high[1] - low[1])) > 0.7)
+         and math.abs((close[2] - open[2])/(high[2] - low[2])) > 0.35 and math.abs((close - open)/(high - low)) > 0.35
+            true
+        else
+            false
+    //Supply and Demand Fair Value Gap Detector
+    //Demand FVG Detector
+    if DConditionFVG
+        DDFVG  := high[2]
+        DPFVG := low
+        BarDFVG := bar_index
+
+    //Supply FVG Detector
+    if SConditionFVG
+        SDFVG := low[2]
+        SPFVG := high
+        BarSFVG:= bar_index
+
+
+    if DConditionFVG and ShowDeFVG
+        DDistal := line.new(BarDFVG, DDFVG, BarDFVG   , DDFVG , color = color.rgb(0, 0, 0) , style = line.style_dotted , width = 1)
+        DProximal := line.new(BarDFVG, DPFVG, BarDFVG   , DPFVG , color = color.rgb(0, 0, 0) , style = line.style_dotted , width = 1)
+        Dfillline := linefill.new(DDistal ,DProximal ,color = #a9d60580 )
+        DFVGLabel := label.new(BarDFVG,DDFVG , text = 'FVG', style = label.style_label_up , 
+         color = color.rgb(255, 255, 255, 100) , textcolor = #000000 , 
+         textalign = text.align_center , size = size.small )  
+    if ((low > DDFVG ) or DDFVG == DDFVG[1]) and DMitigated == true
+        line.set_x2(DDistal, bar_index + 1 )
+        line.set_x2(DProximal,  bar_index + 1)
+        label.set_x(DFVGLabel , math.round((BarDFVG + bar_index) /2)  )
+    if ((low[1] >= DPFVG ) and (low <= DPFVG ))
+        DMitigated := false
+    if DConditionFVG
+        DMitigated := true
+    //Supply FVG Detector
+    if SConditionFVG and ShowSuFVG
+
+        SDistal := line.new(BarSFVG, SDFVG, BarSFVG + 10  , SDFVG , color = color.rgb(0, 0, 0) , style = line.style_dotted , width = 1)
+        SProximal := line.new(BarSFVG, SPFVG, BarSFVG + 10  , SPFVG , color = color.rgb(0, 0, 0) , style = line.style_dotted , width = 1)
+        Sfillline := linefill.new(SDistal ,SProximal ,color = #ff7d044d )
+        SFVGLabel := label.new(BarSFVG,SDFVG , text = 'FVG', style = label.style_label_down , 
+         color = color.rgb(255, 255, 255, 100) , textcolor = #000000 , 
+         textalign = text.align_center , size = size.small )
+    if ((high < SDFVG) or SDFVG == SDFVG[1]) and SMitigated == true
+        line.set_x2(SDistal, bar_index + 1 )
+        line.set_x2(SProximal,  bar_index + 1)
+        label.set_x(SFVGLabel , math.round((BarSFVG + bar_index) /2)  )
+    if ((high >= SPFVG) and (high[1] <= SPFVG))
+        SMitigated := false
+    if SConditionFVG
+        SMitigated := true
+    [DConditionFVG, DDFVG, DPFVG, BarDFVG, SConditionFVG, SDFVG, SPFVG, BarSFVG]
+
+

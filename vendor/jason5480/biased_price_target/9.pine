@@ -1,0 +1,125 @@
+//#region SETUP
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © jason5480
+
+//@version=6
+
+// @description Collection of functions that can be used for the calculation of biased price targets like stop loss and
+// take profit from a reference price using several methods that are already provided by the "distance_ratio" library plus
+// the 'CUST'. Methods supported are percentagewise (PERC), atr-based (ATR), fixed profit (PROF), tick-based (TICKS),
+// risk reward ratio (RR), and custom higher/lower price (CUST)
+library(title = 'biased_price_target')
+
+//#endregion ===========================================================================================================
+//#region BIASED PRICE =================================================================================================
+//
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+
+import jason5480/distance_ratio/16 as dr
+
+// @function Calculate the target price from the reference using the distance the long bias and the distance restrictions
+// @param this The distance settings
+// @param reference The price that will be used as a reference for the distance price calculation
+// @param longBiasedAuxData The current values of the long biased auxiliary data that will be used if needed by the method for the distance price calculation like the atr, stdev and risk reward ratio
+// @param restrict The restrict settings to define the minimum and maximum distance
+// @param bias The bias distance settings to define the offset of the desiered price
+// @param custHigherPrice The higher price to be used for the CUST method
+// @returns The target price from the reference
+export method higher_long_biased_price(dr.DistSettings this, float reference, dr.AuxData longBiasedAuxData, dr.RestrictSettings restrict, dr.DistSettings bias, float custHigherPrice) =>
+    float distPrice = this.distMethod == dr.DistMethod.cust ? math.max(custHigherPrice - reference, 0.0) : this.price(reference, longBiasedAuxData)
+    distPrice := not na(bias) ? distPrice + bias.price(reference + distPrice, longBiasedAuxData) : distPrice
+    reference + (not na(restrict) ? distPrice.restrict_price(restrict, reference, longBiasedAuxData) : distPrice)
+
+// @function Calculate the target price from the reference using the distance the short bias and the distance restrictions
+// @param this The distance settings
+// @param reference The price that will be used as a reference for the distance price calculation
+// @param longBiasedAuxData The current values of the long biased auxiliary data that will be used if needed by the method for the distance price calculation like the atr, stdev and risk reward ratio
+// @param restrict The restrict settings to define the minimum and maximum distance
+// @param bias The bias distance settings to define the offset of the desiered price
+// @param custHigherPrice The higher price to be used for the CUST method
+// @returns The target price from the reference
+export method higher_short_biased_price(dr.DistSettings this, float reference, dr.AuxData shortBiasedAuxData, dr.RestrictSettings restrict, dr.DistSettings bias, float custHigherPrice) =>
+    float distPrice = this.distMethod == dr.DistMethod.cust ? math.max(custHigherPrice - reference, 0.0) : this.price(reference, shortBiasedAuxData)
+    distPrice := not na(bias) ? distPrice - bias.price(reference + distPrice, shortBiasedAuxData) : distPrice
+    reference + (not na(restrict) ? distPrice.restrict_price(restrict, reference, shortBiasedAuxData) : distPrice)
+
+// @function Calculate the target price from the reference using the distance the long bias and the distance restrictions
+// @param this The distance settings
+// @param reference The price that will be used as a reference for the distance price calculation
+// @param longBiasedAuxData The current values of the long biased auxiliary data that will be used if needed by the method for the distance price calculation like the atr, stdev and risk reward ratio
+// @param restrict The restrict settings to define the minimum and maximum distance
+// @param bias The bias distance settings to define the offset of the desiered price
+// @param custLowerPrice The lower price to be used for the CUST method
+// @returns The target price from the reference
+export method lower_long_biased_price(dr.DistSettings this, float reference, dr.AuxData longBiasedAuxData, dr.RestrictSettings restrict, dr.DistSettings bias, float custLowerPrice) =>
+    float distPrice = this.distMethod == dr.DistMethod.cust ? math.max(reference - custLowerPrice, 0.0) : this.price(reference, longBiasedAuxData)
+    distPrice := not na(bias) ? distPrice - bias.price(reference - distPrice, longBiasedAuxData) : distPrice
+    reference - (not na(restrict) ? distPrice.restrict_price(restrict, reference, longBiasedAuxData) : distPrice)
+
+// @function Calculate the target price from the reference using the distance the short bias and the distance restrictions
+// @param this The distance settings
+// @param reference The price that will be used as a reference for the distance price calculation
+// @param longBiasedAuxData The current values of the long biased auxiliary data that will be used if needed by the method for the distance price calculation like the atr, stdev and risk reward ratio
+// @param restrict The restrict settings to define the minimum and maximum distance
+// @param bias The bias distance settings to define the offset of the desiered price
+// @param custLowerPrice The lower price to be used for the CUST method
+// @returns The target price from the reference
+export method lower_short_biased_price(dr.DistSettings this, float reference, dr.AuxData shortBiasedAuxData, dr.RestrictSettings restrict, dr.DistSettings bias, float custLowerPrice) =>
+    float distPrice = this.distMethod == dr.DistMethod.cust ? math.max(reference - custLowerPrice, 0.0) : this.price(reference, shortBiasedAuxData)
+    distPrice := not na(bias) ? distPrice + bias.price(reference - distPrice, shortBiasedAuxData) : distPrice
+    reference - (not na(restrict) ? distPrice.restrict_price(restrict, reference, shortBiasedAuxData) : distPrice)
+
+//#endregion ===========================================================================================================
+//#region EXAMPLE ======================================================================================================
+//
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+
+// INPUT ===============================================================================================================
+enum Direction
+    below = 'BELOW'
+    above = 'ABOVE'
+
+enum Bias
+    long = 'LONG'
+    short = 'SHORT'
+
+referencePrice = input.source(defval = high, title = 'Reference', tooltip = 'The price that will be used as a reference for the distance ratio calculation.', group = 'General')
+direction = input.enum(defval = Direction.below, title = 'Direction', tooltip = 'Select the relative position of the distance price compared to the reference after distance calculation.', group = 'General')
+riskRatio = input.float(defval = 5.0, title = 'Risk %', minval = 0.0, maxval = 100.0, step = 1.0, tooltip = 'The percentage to be used as a reference when the RR method is selected.', group = 'General') / 100.0
+commissionRatio = input.float(defval = 0.1, title = 'Commission %', minval = 0.0, maxval = 100.0, step = 0.05, tooltip = 'Fees paid for each transaction entry and exit (percentagewise) when the PROF method is selected.', group = 'General') / 100.0
+baseQuantity = input.float(defval = 1.0, title = 'Quantity', minval = 0.0, step = 0.05, tooltip = 'The base currency quantity to enter a trade.', group = 'General')
+bias = input.enum(defval = Bias.long, title = 'Bias', tooltip = 'The bias you have about the market. For example if you are in a long trade and you want to exit (take profit, stop loss etc.) you have a short bias. However, if you are not onto a trade and you want to enter into a long position you have a long bias.', group = 'General')
+len = input.int(defval = 5, title = 'Length', minval = 1, tooltip = 'The length to calculate the highest high and the lowest low.', group = 'General')
+
+var distSettings = dr.DistSettings.new(
+  distMethod = input.enum(defval = dr.DistMethod.perc, title = 'Tgt Dist Mtd', tooltip = 'The method to calculate the distance of the price. Percentage based (PERC), ATR based (ATR), Standard deviation based (STDEV), Tick based (TICKS), Fixed Profit (PROF), Risk-Reward based (RR) or higest high / lowest low (CUST).', group = 'Distance'),
+  distMul = input.float(defval = 10.0, title = '  Tgt Dist Mul', minval = 0.1, step = 0.05, tooltip = 'The distance multiplier to define the target price from the reference price. The multiplier will be applied to the unit price that is defeined by the distance method that is used.', group = 'Distance'),
+  commissionRatio = commissionRatio)
+
+biasEnabled = input.bool(defval = true, title = 'Bias Dist Mtd​     ', inline = 'Bias Distance', group = 'Distance')
+var biasSettings = dr.DistSettings.new(
+  distMethod = input.enum(defval = dr.DistMethod.atr, title = '​​​​​​​​​​​​​​​​​​​​​​​​​', options = [dr.DistMethod.perc, dr.DistMethod.atr, dr.DistMethod.stdev, dr.DistMethod.ticks], tooltip = 'The method to calculate the bias to offset the distance of the desiered price target. Percentage based (PERC), ATR based (ATR), Standard deviation based (STDEV) or Tick based (TICKS).', inline = 'Bias Distance', group = 'Distance', active = biasEnabled),
+  distMul = biasEnabled ? input.float(defval = 0.5, title = '  Bias Dist Mul', step = 0.5, tooltip = 'The bias multiplier to define the distance offset.', group = 'Distance', active = biasEnabled) : na)
+
+minDistEnabled = input.bool(defval = false, title = '', inline = 'Restr Distance', group = 'Distance')
+maxDistEnabled = input.bool(defval = false, title = '', inline = 'Restr Distance', group = 'Distance')
+var restrict = dr.RestrictSettings.new(
+  restrDistMethod = input.enum(defval = dr.DistMethod.perc, title = 'Min/Max Dist Mtd', tooltip = 'The method to calculate the maximum/minimum distance of the price. Percentage based (PERC), ATR based (ATR), Standard deviation based (STDEV), Tick based (TICKS), Profit based (PROF) or Risk-Reward based (RR).', inline = 'Restr Distance', group = 'Distance', active = minDistEnabled or maxDistEnabled),
+  minDistMul = minDistEnabled ? input.float(defval = 1.0, title = '  Min Dist Mul      ', minval = 0.0, step = 0.05, tooltip = 'Enable a minimum distance defined by this multiplier and the restrict distance method.', group = 'Distance', active = minDistEnabled) : na,
+  maxDistMul = maxDistEnabled ? input.float(defval = 10.0, title = '  Max Dist Mul    ', minval = 0.0, step = 0.05, tooltip = 'Enable a maximum distance defined by this multiplier and the restrict distance method.', group = 'Distance', active = maxDistEnabled) : na,
+  commissionRatio = commissionRatio)
+
+// LOGIC ===============================================================================================================
+auxData = dr.AuxData.new(atr = ta.atr(14), stdev = ta.stdev(close, 20), baseQuantity = baseQuantity, stopLossDist = referencePrice * riskRatio)
+float custHigherPrice = ta.highest(len)
+float custLowerPrice = ta.lowest(len)
+float distPrice = bias == Bias.long ?
+                   (direction == Direction.above ? distSettings.higher_long_biased_price(reference = referencePrice, longBiasedAuxData = auxData, restrict = restrict, bias = biasSettings, custHigherPrice = custHigherPrice) : distSettings.lower_long_biased_price(reference = referencePrice, longBiasedAuxData = auxData, restrict = restrict, bias = biasSettings, custLowerPrice = custLowerPrice)) :
+                   (direction == Direction.above ? distSettings.higher_short_biased_price(reference = referencePrice, shortBiasedAuxData = auxData, restrict = restrict, bias = biasSettings, custHigherPrice = custHigherPrice) : distSettings.lower_short_biased_price(reference = referencePrice, shortBiasedAuxData = auxData, restrict = restrict, bias = biasSettings, custLowerPrice = custLowerPrice))
+
+// PLOT ================================================================================================================
+plot(series = referencePrice, title = 'Reference Price', color = color.green, force_overlay = true)
+plot(series = distPrice, title = 'Distance Price', color = color.blue, force_overlay = true)
+
+//#endregion ===========================================================================================================

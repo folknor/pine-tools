@@ -1,0 +1,295 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © reees
+
+//@version=5
+
+// @description Pattern object definitions and functions. Easily draw and keep track of patterns, legs, and points.
+//
+// Supported pattern types:
+// 	Type			Leg validation		# legs
+// 	"xabcd"			Direction			3 or 4 (point D not required)
+//	"zigzag"		Direction			>= 2
+//	"free"			None				>= 2
+//
+// Summary of exported types and associated methods/functions:
+//
+//	type point					A point on the chart (x,y)
+//		draw_label()			Draw a point label
+//		erase_label()			Erase a point label
+//
+//	type leg					A pattern leg (i.e. point A to point B)
+//		leg_init()				Initialize/instantiate a leg
+//		draw()					Draw a leg
+//		erase()					Erase a leg
+//		leg_getLineTerms()		Get the slope and y-intercept of a leg
+//		leg_getPrice()			Get price (Y) at a given bar index (X) within a leg
+//
+//	type pattern				A pattern (set of at least 2 connected legs)
+//		pattern_init()			Initialize/instantiate a pattern
+//		draw()					Draw a pattern
+//		erase()					Erase a pattern
+//
+//	*See bottom of the script for example usage*
+
+library("Pattern",overlay=true)
+
+import reees/Draw/26 as draw
+import reees/Algebra/4 as alg
+import reees/Utilities/5 as u
+
+// @type 					A point on the chart (x,y)
+// @field x 				Bar index (x coordinate)
+// @field y					Price level (y coordinate)
+// @field lbl				Point label
+export type point
+	int x
+	float y
+	label label
+
+// @function				Delete the point label
+// @param this				Point
+// @returns 				Void
+export erase_label(point this) =>
+	label.delete(this.label)
+
+// @function				Draw the point label
+// @param this				Point
+// @returns 				line
+export draw_label(point this, string position="bottom", color clr=color.gray, float transp=50.0, color txt_clr=color.white, string txt=na, string tooltip=na, string size="small") =>
+	erase_label(this)
+	lbstyle = draw.label_style(position)
+	lbsize = draw.size(size)
+	t = not na(txt) ? txt : str.tostring(this.y,"#.#####")
+	this.label := label.new(this.x, this.y, text=t, textcolor=txt_clr, size=lbsize, style=lbstyle, tooltip=tooltip, color=color.new(clr,transp))
+
+// @type 					A pattern leg (point A to point B)
+// @field a 				Point A
+// @field b					Point B
+// @field deltaX			ΔX (length)
+// @field deltaY			ΔY (height)
+// @field prev				Previous leg
+// @field next				Next leg
+// @field retrace			Retracement ratio (of previous leg)
+// @field line				Line
+export type leg
+	point a
+	point b
+	int deltaX
+	float deltaY
+	leg prev
+	leg next
+	float retrace
+	line line
+
+// @function				Determine if two legs are valid (consecutive) pattern legs
+validPatternLegs(leg1, leg2) =>
+	switch 
+		leg1.b.x != leg2.a.x => false					// leg must be connected
+		leg1.b.y != leg2.a.y => false
+		=> true
+
+// @function				Initialize a pattern leg
+// @param a					Point A (required)
+// @param b					Point B (required)
+// @param prev				Previous leg
+// @param next				Next leg
+// @param line				Line
+// @returns					New instance of leg object
+export leg_init(point a, point b, leg prev=na, leg next=na, line line=na) =>
+	this = leg.new(a,b)
+	this.deltaX := b.x - a.x
+	this.deltaY := b.y - a.y
+	if not na(prev)
+		if validPatternLegs(prev,this)
+			this.prev := prev
+			this.retrace := (this.deltaY/prev.deltaY)*-1
+			prev.next := this
+	if not na(next)
+		if validPatternLegs(this,next)
+			this.next := next
+	this.line := line
+	this
+
+// @function				Delete the pattern leg
+// @param this				Leg
+// @returns 				Void
+export erase(leg this) =>
+	line.delete(this.line)
+
+// @function				Draw the pattern leg
+// @param this				Leg
+// @param clr				Color
+// @param style				Style ("solid", "dotted", "dashed", "arrowleft", "arrowright")
+// @param transp			Transparency
+// @param width				Width
+// @returns 				line
+export draw(leg this, color clr=color.gray, string style="solid", float transp=20.0, int width=1) =>
+	erase(this)
+	lstyle = draw.line_style(style)
+	this.line := line.new(this.a.x, this.a.y, this.b.x, this.b.y, color=color.new(clr,transp), width=width, style=lstyle)
+
+// @function				Get the slope and y-intercept of a leg
+// @param this				Leg
+// @returns [slope, y-intercept]
+export leg_getLineTerms(leg this) =>
+	alg.line_fromXy(this.a.x, this.a.y, this.b.x, this.b.y)
+
+// @function				Get the price (Y) at a given bar index (X) within the leg
+// @param this				Leg
+// @param index				Bar index
+// @returns 				Price (float)
+export leg_getPrice(leg this, int index) =>
+	if index >= this.a.x and index <= this.b.x
+		[slope, yint] = leg_getLineTerms(this)
+		alg.line_getPrice(index, slope, yint)
+
+// @type 					A pattern (set of at least 2 connected legs)
+// @field legs				Array of pattern legs
+// @field type				Pattern type (dft = "free")
+// @field subType			Pattern subtype
+// @field name				Pattern name
+// @field pid				Pattern Identifier string
+export type pattern
+	leg[] legs
+	string type = "free"
+	string subType
+	string name
+	string pid
+
+// @function				Determine if pattern legs are valid for the given pattern type
+validForType(tp, leg[] legs) =>
+	valid = true
+	n = array.size(legs)
+	// check size
+	if n < 2
+		valid := false
+	else if tp == "xabcd"
+		if n != 3 and n != 4
+			valid := false
+	// check legs
+	else 
+		if tp == "zigzag" or tp == "xabcd"
+			for i=1 to n-1
+				leg = array.get(legs,i)
+				prev = array.get(legs,i-1)
+				if prev.deltaY < 0 and leg.deltaY < 0			// leg must pivot in opposite direction
+					valid := false
+					break
+				else if prev.deltaY > 0 and leg.deltaY > 0
+					valid := false
+					break
+	valid
+
+// @function				Initialize a pattern object from a given set of legs
+// @param legs				Array of pattern legs (required)
+// @param tp				Pattern type ("zigzag", "xabcd", or "free". dft = "free")
+// @param name				Pattern name
+// @param subType			Pattern subtype
+// @param pid				Pattern Identifier string
+// @returns					New instance of pattern object, if one was successfully created
+export pattern_init(leg[] legs, string tp="free", string name=na, string subType=na, string pid=na) =>
+	pattern this = na
+	if validForType(tp,legs)
+		this := pattern.new(legs,tp,subType,name,pid)
+	this
+
+// @function				Initialize a pattern object from a given set of points
+// @param legs				Array of pattern legs (required)
+// @param tp				Pattern type ("zigzag", "xabcd", or "free". dft = "free")
+// @param name				Pattern name
+// @param subType			Pattern subtype
+// @param pid				Pattern Identifier string
+// @returns					New instance of pattern object, if one was successfully created
+export pattern_init(point[] points, string tp="free", string name=na, string subType=na, string pid=na) =>
+	leg[] legs = array.new<leg>()
+	n = array.size(points)
+	pattern this = na
+	if n >= 3
+		leg prevLeg = na
+		for i=1 to n-1
+			point = array.get(points,i)
+			prev = array.get(points,i-1)
+			leg = leg_init(prev,point,prevLeg)
+			if not na(leg)
+				array.push(legs,leg)
+				prevLeg := leg
+		this := pattern_init(legs,tp,name,subType,pid)
+	this
+
+// @function				Delete the pattern lines
+// @param this				Pattern
+// @returns Void
+export erase(pattern this) =>
+	for leg in this.legs
+		erase(leg)
+
+// @function				Draw the pattern
+// @param this				Pattern
+// @param clr				Color
+// @param style				Style ("solid", "dotted", "dashed", "arrowleft", "arrowright")
+// @param transp			Transparency
+// @param width				Width
+// @returns 				line[]
+export draw(pattern this, color clr=color.gray, string style="solid", float transp=20.0, int width=1) =>
+	erase(this)
+	line[] lines = array.new_line()
+	for leg in this.legs
+		array.push(lines, draw(leg, clr, style, transp, width))
+	lines
+	
+
+//********************************
+// Example / Test code
+//********************************
+
+// Hard-coded coordinates for clarity and simplicity of example
+// ADAUSD 4h gartley
+var int xX = 10681
+var float xY = .344
+var x = point.new(xX,xY)					// instantiate/initialize a point
+var int aX = 10714
+var float aY = .296
+var a = point.new(aX,aY)
+var xa = leg_init(x,a)						// instantiate/initialize a leg
+var int bX = 10743
+var float bY = .322
+var b = point.new(bX,bY)
+var ab = leg_init(a,b,xa)
+var int cX = 10752
+var float cY = .3
+var c = point.new(cX,cY)
+var bc = leg_init(b,c,ab)
+var int dX = 10796
+var float dY = .329
+var d = point.new(dX,dY)
+var cd = leg_init(c,d)
+var points = array.from(x, a, b, c, d)
+var pattern = pattern_init(points,"xabcd")	// instantiate/initialize a pattern
+var legs = array.from(xa,ab,bc,cd)
+
+if bar_index == 10796
+
+	// Draw point labels
+	draw_label(d, "top")					// default text displays the price
+	draw_label(x, "top", txt="X")
+	draw_label(a, "bottom", txt="A")
+	draw_label(c, "bottom", txt="C")
+
+	// Draw the pattern
+	draw(pattern, color.red, width=2)
+
+	// Draw a leg
+	nextPoint = point.new(d.x+50, d.y*.8) 	// projecting a 20% drop in price from point D
+	nextLeg = leg_init(d, nextPoint)	
+	draw(nextLeg,color.blue,"arrowright")
+
+	// Get details about a leg
+	abRetracement = ab.retrace
+	draw_label(b, "top", txt=("B\nRetracement\nAB/XA = " + str.tostring(abRetracement,"#.###")))	// get retracement ratio (from previous leg)
+	midX = d.x + 25
+	midPoint = point.new(midX, leg_getPrice(nextLeg,midX))	// get price at a given bar index of the leg
+	[slope, yint] = leg_getLineTerms(nextLeg)
+	draw_label(midPoint,"bottom",txt=("Slope = " + str.tostring(slope,"#.####") + "\ny-int = " + str.tostring(yint)))	// get slope/y-intercept
+
+
+

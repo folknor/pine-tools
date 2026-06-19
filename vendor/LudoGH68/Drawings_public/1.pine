@@ -1,0 +1,54 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © LudoGH68
+
+//@version=5
+
+// @description : Functions to manage drawings on the chart
+library("Drawings_public", true)
+
+// @function: Extend specific line with its label
+// @param lineId: Id of the line to extend
+// @param labelId: Id of the label associated to the line to extend
+export extend_line(line lineId, label labelId) =>
+	line.set_x2(lineId, bar_index)
+	label.set_x(labelId, label.get_x(labelId) + 1)
+
+// @function: Update specific line coordinates with its label
+// @param lineId: Id of the line to update
+// @param labelId: Id of the label associated to the line to update
+export update_line_coordinates(line lineId, label labelId, int x1, float y1, int x2, float y2) =>
+	line.set_xy1(lineId, x1, y1)
+	line.set_xy2(lineId, x2, y2)
+	label.set_xy(labelId, label.get_x(labelId) + 1, y2)
+
+// @function: Update coordinates of a label
+// @param labelId: Id of the label
+// @param value: price to update (y axis)
+export update_label_coordinates(label labelId, float value) =>
+	label.set_xy(labelId, label.get_x(labelId) + 1, value)
+
+// @function: Delete specific line with its label
+// @param lineId: Id of the line to delete
+// @param labelId: Id of the label associated to the line to delete
+export delete_line(line lineId, label labelId) =>
+	line.delete(lineId)
+	label.delete(labelId)
+
+// @function: Update specific box coordinates with its label
+// @param lineId: Id of the box to update
+// @param labelId: Id of the label associated to the box to update
+// @param left: Left box position
+// @param top: Top box position
+// @param right: Right box position 
+// @param bottom: Bottom box position
+export update_box_coordinates(box boxId, label labelId, int left, float top, int right, float bottom) =>
+	box.set_lefttop(boxId, left, top)
+	box.set_rightbottom(boxId, right, bottom)
+	label.set_y(labelId, top)
+
+// @function: Delete specific box with its label
+// @param lineId: Id of the box to delete
+// @param labelId: Id of the label associated to the box to delete
+export delete_box(box boxId, label labelId) =>
+	box.delete(boxId)
+	label.delete(labelId)

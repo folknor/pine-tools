@@ -1,0 +1,350 @@
+//#region SETUP
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © jason5480
+
+//@version=6
+
+// @description Collection of string utilities that can be used to replace sub-strings in a string and string functions
+// that are not part of the standard library.
+library(title = 'string_utils')
+
+//#endregion ===========================================================================================================
+//#region METHODS
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+
+// @function Replace the first instance of the key sub-string found in the str string with the corresponding value string
+// @param this The string that will be modified if it contains the key sub-strings
+// @param stringToStringMap The map with the key value pairs to be replaced
+// @returns series of strings with the replaced sub-strings
+export method replace(simple string this, map<string, string> stringToStringMap) =>
+    string outStr = this
+    for [key, value] in stringToStringMap
+        if not na(value)
+            outStr := str.replace(outStr, key, value)
+    outStr
+
+// @function Replace the first instance of the key sub-string found in the str string with the corresponding value string
+// @param this The string that will be modified if it contains the key sub-strings
+// @param stringToStringMap The map with the key value pairs to be replaced
+// @returns series of strings with the replaced sub-strings
+export method replace(string this, map<string, string> stringToStringMap) =>
+    string outStr = this
+    for [key, value] in stringToStringMap
+        if not na(value)
+            outStr := str.replace(outStr, key, value)
+    outStr
+
+// @function Replace the first instance of the key sub-string found in the str string with the corresponding value string
+// @param this The string that will be modified if it contains the key sub-strings
+// @param stringToNumMap The map with the key value pairs to be replaced
+// @returns series of strings with the replaced sub-strings
+export method replace(simple string this, map<string, float> stringToNumMap) =>
+    string outStr = this
+    for [key, value] in stringToNumMap
+        if not na(value)
+            outStr := str.replace(outStr, key, str.tostring(value))
+    outStr
+
+// @function Replace the first instance of the key sub-string found in the str string with the corresponding value string
+// @param this The string that will be modified if it contains the key sub-strings
+// @param stringToNumMap The map with the key value pairs to be replaced
+// @returns series of strings with the replaced sub-strings
+export method replace(string this, map<string, float> stringToNumMap) =>
+    string outStr = this
+    for [key, value] in stringToNumMap
+        if not na(value)
+            outStr := str.replace(outStr, key, str.tostring(value))
+    outStr
+
+// @function Replace all the instances of the key sub-string found in the str string with the corresponding value string
+// @param this The string that will be modified if it contains the key sub-strings
+// @param stringToStringMap The map with the key value pairs to be replaced
+// @returns series of strings with the replaced sub-strings
+export method replace_all(simple string this, map<string, string> stringToStringMap) =>
+    string outStr = this
+    for [key, value] in stringToStringMap
+        if not na(value)
+            outStr := str.replace_all(outStr, key, value)
+    outStr
+
+// @function Replace all the instances of the key sub-string found in the str string with the corresponding value string
+// @param this The string that will be modified if it contains the key sub-strings
+// @param stringToStringMap The map with the key value pairs to be replaced
+// @returns series of strings with the replaced sub-strings
+export method replace_all(string this, map<string, string> stringToStringMap) =>
+    string outStr = this
+    for [key, value] in stringToStringMap
+        if not na(value)
+            outStr := str.replace_all(outStr, key, value)
+    outStr
+
+// @function Replace all the instances of the key sub-string found in the str string with the corresponding value string
+// @param this The string that will be modified if it contains the key sub-strings
+// @param stringToNumMap The amp with the key value pairs to be replaced
+// @returns series of strings with the replaced sub-strings
+export method replace_all(simple string this, map<string, float> stringToNumMap) =>
+    string outStr = this
+    for [key, value] in stringToNumMap
+        if not na(value)
+            outStr := str.replace_all(outStr, key, str.tostring(value))
+    outStr
+
+// @function Replace all the instances of the key sub-string found in the str string with the corresponding value string
+// @param this The string that will be modified if it contains the key sub-strings
+// @param stringToNumMap The map with the key value pairs to be replaced
+// @returns series of strings with the replaced sub-strings
+export method replace_all(string this, map<string, float> stringToNumMap) =>
+    string outStr = this
+    for [key, value] in stringToNumMap
+        if not na(value)
+            outStr := str.replace_all(outStr, key, str.tostring(value))
+    outStr
+
+// @function Make a string by repeating the same string num times
+// @param this The string that will be repeated
+// @param num The number this string will be repeated
+// @returns string result by repeating the initial string
+method repeat(simple string this, simple int num) =>
+    string tempStr = ''
+    for i = 0 to num > 0 ? num - 1 : na
+        tempStr := tempStr + this
+    tempStr
+
+// @function Make a string by repeating the same string num times
+// @param this The string that will be repeated
+// @param num The number this string will be repeated
+// @returns string result by repeating the initial string
+method repeat(string this, int num) =>
+    string tempStr = ''
+    for i = 0 to num > 0 ? num - 1 : na
+        tempStr := tempStr + this
+    tempStr
+
+// Special characters
+const string EMSP = ' '
+const string ZWSP = '​'
+const string ZWNJ = '‌'
+const string WJ = '⁠'
+const string ZWNBSP = '﻿'
+
+// @function Make a string by prepending a number of "special space characters"
+// @param this The string that will be modified with the identation characters
+// @param size The number of "special space characters"
+// @returns string prepended with the "special space characters"
+export method indent(simple string this, simple int size) =>
+    EMSP.repeat(size) + this
+
+// @function Make a string by prepending a number of "special space characters"
+// @param this The string that will be modified with the identation characters
+// @param size The number of "special space characters"
+// @returns string prepended with the "special space characters"
+export method indent(string this, simple int size) =>
+    EMSP.repeat(size) + this
+
+// @function Make a string by appending a number of "special space characters"
+// @param this The string that will be modified with the filling characters
+// @param size The number of "special space characters"
+// @returns string appended with the "special space characters"
+export method fill(simple string this, simple int size) =>
+    this + EMSP.repeat(size)
+
+// @function Make a string by appending a number of "special space characters"
+// @param this The string that will be modified with the filling characters
+// @param size The number of "special space characters"
+// @returns string appended with the "special space characters"
+export method fill(string this, simple int size) =>
+    this + EMSP.repeat(size)
+
+// // @function Make a string unique by appending a number of "zero width space characters"
+// // @param this The string that will be modified with the filling characters
+// // @param id The number of "special space characters"
+// // @returns string appended with the "zero width space characters"
+// method uniquify(string this, int id) =>
+//     this + ZWSP.repeat(id)
+
+// // @function Make a title string by appending a number of "zero width space characters" on top of filling "special space characters" and also ident by prepending a number of "special space characters"
+// // @param this The string that will be modified with the identation, filling and id characters
+// // @param ident The number of "special space characters" to be prepended
+// // @param fill The number of "special space characters" to be appended
+// // @returns string prepended and appended with the number of "zero width space characters" and also appended with "zero width space characters"
+// method make_title(simple string this, simple int ident = 0, simple int fill = 0) =>
+//     EMSP.repeat(ident) + this + EMSP.repeat(fill)
+
+// // @function Make a unique title string by appending automatically a number of "zero width space characters" on top of filling "special space characters" and also ident by prepending a number of "special space characters"
+// // @param this The string that will be modified with the identation, filling and id characters
+// // @param ident The number of "special space characters" to be prepended
+// // @param fill The number of "special space characters" to be appended
+// // @returns string prepended and appended with the number of "zero width space characters" and also appended with "zero width space characters" so it is unique
+// method make_unique_title(simple string this, simple int ident = 0, simple int fill = 0) =>
+//     var map<string, int> chacheTitleToIdMap = map.new<string, int>()
+//     string title = this.make_title(ident, fill)
+//     if chacheTitleToIdMap.contains(title)
+//         int id = chacheTitleToIdMap.get(title) + 1
+//         chacheTitleToIdMap.put(title, id)
+//         title.uniquify(id)
+//     else
+//         chacheTitleToIdMap.put(title, 0)
+//         title
+
+// @function Get the map with the special characters that represent ASCII printable characters with codes 32-127
+// @returns A map with the sequense of special characters and their corresponding printable characters
+getLexicon() =>
+    const map<string, string> LEXICON = map.new<string, string>()
+    // Lowercase letters 97-122
+    LEXICON.put('‌‌​​​​‌', 'a'), LEXICON.put('‌‌​​​‌​', 'b'), LEXICON.put('‌‌​​​‌‌', 'c'), LEXICON.put('‌‌​​‌​​', 'd')
+    LEXICON.put('‌‌​​‌​‌', 'e'), LEXICON.put('‌‌​​‌‌​', 'f'), LEXICON.put('‌‌​​‌‌‌', 'g'), LEXICON.put('‌‌​‌​​​', 'h')
+    LEXICON.put('‌‌​‌​​‌', 'i'), LEXICON.put('‌‌​‌​‌​', 'j'), LEXICON.put('‌‌​‌​‌‌', 'k'), LEXICON.put('‌‌​‌‌​​', 'l')
+    LEXICON.put('‌‌​‌‌​‌', 'm'), LEXICON.put('‌‌​‌‌‌​', 'n'), LEXICON.put('‌‌​‌‌‌‌', 'o'), LEXICON.put('‌‌‌​​​​', 'p')
+    LEXICON.put('‌‌‌​​​‌', 'q'), LEXICON.put('‌‌‌​​‌​', 'r'), LEXICON.put('‌‌‌​​‌‌', 's'), LEXICON.put('‌‌‌​‌​​', 't')
+    LEXICON.put('‌‌‌​‌​‌', 'u'), LEXICON.put('‌‌‌​‌‌​', 'v'), LEXICON.put('‌‌‌​‌‌‌', 'w'), LEXICON.put('‌‌‌‌​​​', 'x')
+    // Upercase letters 65-90
+    LEXICON.put('‌​​​​​‌', 'A'), LEXICON.put('‌​​​​‌​', 'B'), LEXICON.put('‌​​​​‌‌', 'C'), LEXICON.put('‌​​​‌​​', 'D')
+    LEXICON.put('‌​​​‌​‌', 'E'), LEXICON.put('‌​​​‌‌​', 'F'), LEXICON.put('‌​​​‌‌‌', 'G'), LEXICON.put('‌​​‌​​​', 'H')
+    LEXICON.put('‌​​‌​​‌', 'I'), LEXICON.put('‌​​‌​‌​', 'J'), LEXICON.put('‌​​‌​‌‌', 'K'), LEXICON.put('‌​​‌‌​​', 'L')
+    LEXICON.put('‌​​‌‌​‌', 'M'), LEXICON.put('‌​​‌‌‌​', 'N'), LEXICON.put('‌​​‌‌‌‌', 'O'), LEXICON.put('‌​‌​​​​', 'P')
+    LEXICON.put('‌​‌​​​‌', 'Q'), LEXICON.put('‌​‌​​‌​', 'R'), LEXICON.put('‌​‌​​‌‌', 'S'), LEXICON.put('‌​‌​‌​​', 'T')
+    LEXICON.put('‌​‌​‌​‌', 'U'), LEXICON.put('‌​‌​‌‌​', 'V'), LEXICON.put('‌​‌​‌‌‌', 'W'), LEXICON.put('‌​‌‌​​​', 'X')
+    LEXICON.put('‌​‌‌​​‌', 'Y'), LEXICON.put('‌​‌‌​‌​', 'Z')
+    LEXICON.put('‌‌‌‌​​‌', 'y'), LEXICON.put('‌‌‌‌​‌​', 'z')
+    // Numbers 48-57
+    LEXICON.put('‌‌​​​​', '0'), LEXICON.put('‌‌​​​‌', '1'), LEXICON.put('‌‌​​‌​', '2'), LEXICON.put('‌‌​​‌‌', '3')
+    LEXICON.put('‌‌​‌​​', '4'), LEXICON.put('‌‌​‌​‌', '5'), LEXICON.put('‌‌​‌‌​', '6'), LEXICON.put('‌‌​‌‌‌', '7')
+    LEXICON.put('‌‌‌​​​', '8'), LEXICON.put('‌‌‌​​‌', '9')
+    // Symbols 32-56, 58-64, 91-96, 123-127
+    LEXICON.put('‌​​​​​', ' '), LEXICON.put('‌​​​​‌', '!'), LEXICON.put('‌​​​‌​', '"'), LEXICON.put('‌​​​‌‌', '#')
+    LEXICON.put('‌​​‌​​', '$'), LEXICON.put('‌​​‌​‌', '%'), LEXICON.put('‌​​‌‌​', '&'), LEXICON.put('‌​​‌‌‌', "'")
+    LEXICON.put('‌​‌​​​', '('), LEXICON.put('‌​‌​​‌', ')'), LEXICON.put('‌​‌​‌​', '*'), LEXICON.put('‌​‌​‌‌', '+')
+    LEXICON.put('‌​‌‌​​', ','), LEXICON.put('‌​‌‌​‌', '-'), LEXICON.put('‌​‌‌‌​', '.'), LEXICON.put('‌​‌‌‌‌', '/')
+    LEXICON.put('‌‌‌​‌​', ':'), LEXICON.put('‌‌‌​‌‌', ';'), LEXICON.put('‌‌‌‌​​', '<'), LEXICON.put('‌‌‌‌​‌', '=')
+    LEXICON.put('‌‌‌‌‌​', '>'), LEXICON.put('‌‌‌‌‌‌', '?'), LEXICON.put('‌​​​​​​', '@'),
+    LEXICON.put('‌​‌‌​‌‌', '['), LEXICON.put('‌​‌‌‌​​', '\\'),LEXICON.put('‌​‌‌‌​‌', ']'), LEXICON.put('‌​‌‌‌‌​', '^')
+    LEXICON.put('‌​‌‌‌‌‌', '_'), LEXICON.put('‌‌​​​​​', '`')
+    LEXICON.put('‌‌‌‌​‌‌', '{'), LEXICON.put('‌‌‌‌‌​​', '|'), LEXICON.put('‌‌‌‌‌​‌', '}'), LEXICON.put('‌‌‌‌‌‌​', '~')
+    LEXICON.put('‌‌‌‌‌‌‌', 'DEL')
+    // Symbol 169
+    LEXICON.put('‌‌​​​​‌​', '©')
+    LEXICON
+
+// @function Convert a public message to it's private equivalent using the steganograph techinque described here https://neatnik.net/steganographr/
+// @param this The string (public message) to be desteganographized
+// @returns The private message
+export method desteganographize(simple string this) =>
+    string message = this
+    string privStr = str.match(this, '[​‌⁠]+')
+    if str.length(privStr) == 0
+        log.warning('No private message was detected in the given public message')
+    else
+        var const map<string, string> LEXICON = getLexicon()
+        array<string> privLetters = str.split(privStr, WJ)
+        message := ''
+        for let in privLetters
+            message := message + LEXICON.get(let)
+    message
+
+// @function Print the string in the main chart
+// @param this The string to be printed to the chart
+// @param height The height of the cell as a percentage of the charts height. By default, 0 auto-adjusts the height based on the text inside the cell
+// @param textColor The color of the text
+// @param textSize The size of the text
+// @param position Position of the table
+// @returns The table that has the string
+export method announce(simple string this, simple float height = 0., color textColor = chart.fg_color, simple string textSize = size.large, simple string position = position.top_center) =>
+    var const table announceTable = table.new(position = position, rows = 1, columns = 1, force_overlay = true)
+    announceTable.cell(row = 0, column = 0, text = this, height = height, text_color = textColor, text_size = textSize)
+    announceTable
+
+// @function Print the string in the main chart
+// @param this The string to be printed to the chart
+// @param height The height of the cell as a percentage of the charts height. By default, 0 auto-adjusts the height based on the text inside the cell
+// @param textColor The color of the text
+// @param textSize The size of the text
+// @param position Position of the table
+// @returns The table that has the string
+export method announce(string this, simple float height = 0., color textColor = chart.fg_color, simple string textSize = size.large, simple string position = position.top_center) =>
+    var const table announceTable = table.new(position = position, rows = 1, columns = 1, force_overlay = true)
+    announceTable.cell(row = 0, column = 0, text = this, height = height, text_color = textColor, text_size = height == 0 ? textSize : size.auto)
+    announceTable
+
+// @function Print the map in the main chart as a legend
+// @param this The map with the item and explanation to be printed to the chart
+// @param maxRows The maximum number of table rows
+// @param height The height of the legend as a percentage of the charts height. By default, 0 auto-adjusts the height based on the text inside the cells
+// @param textColor The color of the text
+// @param textSize The size of the text
+// @param position Position of the table
+// @returns The table that has the string
+export method legend(map<string, string> this, int maxRows = 3, simple float height = 0., color textColor = chart.fg_color, simple string textSize = size.small, simple string position = position.bottom_center) =>
+    int rows = math.min(maxRows, this.size())
+    int columns = 2 * math.ceil(this.size() / rows)
+    float cellHeight = height / rows
+    string celTextSize = height == 0 ? textSize : size.auto
+    var const table legendTable = table.new(position = position, rows = rows, columns = columns, force_overlay = true)
+    int i = 0
+    int j = 0
+    for [sym, txt] in this
+        legendTable.cell(row = i, column = j, text = sym, height = cellHeight, text_color = textColor, text_size = celTextSize, text_halign = text.align_right)
+        legendTable.cell(row = i, column = j + 1, text = txt, height = cellHeight, text_color = textColor, text_size = celTextSize, text_halign = text.align_left)
+        i += 1
+        if i >= rows
+            i := 0
+            j += 2
+    legendTable
+
+//#endregion ===========================================================================================================
+//#region EXAMPLE
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+
+// INPUT ===============================================================================================================
+//showVarMessage = input.bool(defval = true, title = '​​​Show Var message​'.make_title(ident = 2, fill = 1, id = 1), tooltip = 'Show the intermediate var message.')
+
+// LOGIC ===============================================================================================================
+float var1 = 1.001
+float var2 = 2.999
+int var3 = bar_index
+float var4 = 0.02001
+
+var const map<string, string> stringToStringMap = map.new<string, string>()
+stringToStringMap.put('{{ticker}}', syminfo.ticker)
+var const map<string, float> stringToNumMap = map.new<string, float>()
+stringToNumMap.put('{{var1}}', var1)
+stringToNumMap.put('{{var2}}', var2)
+stringToNumMap.put('{{var3}}', var3)
+stringToNumMap.put('{{var4}}', var4)
+
+var const string message = 'Ticker = {{ticker}}\nVar1 = {{var1}}\n Var2 = {{var2}}\nVar3 = {{var3}}\n {{var4}}'
+var string varMessage = message.replace_all(stringToStringMap)
+string outMessage = varMessage.replace(stringToNumMap).indent(2)
+
+// mt(const string a, const string b) =>
+//     a + b
+
+// const string t1 = 'Title1'
+// const string title1 = t1.make_unique_title(ident = 1, fill = 1)
+// const string t2 = 'Title2'
+// const string title2 = t2.make_unique_title(ident = 2, fill = 1)
+// input1 = input.int(defval = 0, title = mt(t1, t2))
+//input2 = input.string(defval = 'na', title = title2)
+
+const string greet = 'Hello my na‌​​‌​​‌⁠‌​​​​​⁠‌‌‌​‌​​⁠‌‌‌​​‌​⁠‌‌​‌​​‌⁠‌‌​​​‌‌⁠‌‌​‌​‌‌⁠‌‌​​‌​‌⁠‌‌​​‌​​⁠‌​​​​​⁠‌‌‌‌​​‌⁠‌‌​‌‌‌‌⁠‌‌‌​‌​‌⁠‌​‌‌​​⁠‌​​​​​⁠‌‌​‌‌​‌⁠‌‌‌‌​​‌⁠‌​​​​​⁠‌‌​‌‌‌​⁠‌‌​​​​‌⁠‌‌​‌‌​‌⁠‌‌​​‌​‌⁠‌​​​​​⁠‌‌​‌​​‌⁠‌‌‌​​‌‌⁠‌​​​​​⁠‌​​‌​‌​⁠‌‌​​​​‌⁠‌‌‌​​‌‌⁠‌‌​‌‌‌‌⁠‌‌​‌‌‌​⁠‌​​​​‌me is Nick!'
+if barstate.isfirst
+    log.info('The public mesage is: "{0}", while the private message is: "{1}"', greet, greet.desteganographize())
+    'Hello World!'.announce()
+    numbersMap = map.new<string, string>()
+    numbersMap.put('1', 'one')
+    numbersMap.put('2', 'two')
+    numbersMap.put('3', 'three')
+    numbersMap.put('4', 'four')
+    numbersMap.put('5', 'five')
+    numbersMap.put('6', 'six')
+    numbersMap.legend()
+
+// PLOT ================================================================================================================
+if barstate.islastconfirmedhistory
+    label.new(x = bar_index, y = na, text = message, yloc = yloc.abovebar, color = color.red, style = label.style_label_down, textcolor = color.new(color.white, 0), force_overlay = true)
+    label.new(x = bar_index, y = close, text = varMessage, yloc = yloc.price, color = color.orange, style = close > open ? label.style_label_up : label.style_label_down, textcolor = color.new(color.white, 0), force_overlay = true)
+    label.new(x = bar_index, y = na, text = outMessage, yloc = yloc.belowbar, color = color.green, style = label.style_label_up, textcolor = color.new(color.white, 0), force_overlay = true)
+    // label.new(x = bar_index, y = close, text = title1, yloc = yloc.price, color = color.orange, style = close > open ? label.style_label_up : label.style_label_down, textcolor = color.new(color.white, 0), force_overlay = true)
+    // label.new(x = bar_index, y = na, text = title2, yloc = yloc.belowbar, color = color.green, style = label.style_label_up, textcolor = color.new(color.white, 0), force_overlay = true)
+
+//#endregion ===========================================================================================================

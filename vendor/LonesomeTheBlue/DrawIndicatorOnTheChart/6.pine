@@ -1,0 +1,121 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © LonesomeTheBlue
+
+//@version=5
+
+// @description this library is used to show an indicator (such RSI, CCI, MOM etc) on the main chart with indicator's horizontal lines in a window. Location of the window is calculated dynamically by last price movemements 
+library("DrawIndicatorOnTheChart", overlay = true)
+
+// location function is used to find Y coordinates of the indicator window, 
+// it checks the closing price movements and calculates if it needs to show the window at the top/bottom of the chart
+// returns top and bottom levels of the window
+findIndiLoc()=>
+    var int indi_loc = 0
+    float h_ = ta.highest(292)
+    float l_ = ta.lowest(292)
+    float diff_ = (h_ - l_) / 10
+    float hl2_ = (h_ + l_) / 2
+    
+    indi_loc := indi_loc == 0 ? (close >= hl2_ ? -1 : 1) :
+         indi_loc == -1 and close < hl2_ - diff_ * 2 ? 1 :
+         indi_loc ==  1 and close > hl2_ + diff_ * 2 ? -1 :
+         indi_loc
+    
+    float top = indi_loc == 1 ? h_ :  l_ + (h_ - l_) / 5 
+    float bottom = indi_loc == 1 ? h_ - (h_ - l_) / 5 :  l_
+    
+    [top, bottom, indi_loc]
+
+// finds relational location of any indicator value in the indicator window
+getIndiLevel(float indi, float indimax, float indimin, float top, float bottom)=>
+    float relationalpos = bottom + (top - bottom) * ((indi  - indimin) / (indimax - indimin))
+
+// @function draws the realted indicator on the chart
+// @param enabled if it's enabled to show
+// @param indicatorName is the indicator name as string such "RSI", "CCI" etc
+// @param indicator1 is first indicator you want to show, such rsi(close, 14), mom(close, 10) etc
+// @param indicator2 is second indicator you want to show, such -DI of DMI
+// @param indicator3 is third indicator you want to show, such ADX of DMI
+// @param indicatorcolor is the color of indicator line
+// @param period is the length of the window to show
+// @param indimax_ is the maximum value of the indicator, for example for RSI it's 100.0, if the indicator (such CCI, MOM etc) doesn't have maximum value then use "na"
+// @param indimin_ is the minimum value of the indicator, for example for RSI it's 0.0, if the indicator (such CCI, MOM etc)doesn't have maximum value then use "na"
+// @param levels is the levels of the array for the horizontal lines. for example if you want horizontal lines at 30.0, and 70.0 then use array.from(30.0, 70.0). if no horizontal lines then use array.from(na)
+// @param precision is the precision/nuber of decimals that is used to show indicator values, for example for RSI set it 2
+// @param xlocation is end location of the indicator window, for example if xlocation = 0 window is created on the index of the last bar/candle
+// @param lnwidth is the line width of the indicator lines
+// @returns none
+export drawIndicator(bool enabled, string indicatorName, float indicator1, float indicator2, float indicator3, color [] indicatorcolors, int period, float indimax_, float indimin_, float [] levels, int precision, int xlocation, int lnwidth)=>
+    // Exception if the period is less than 20, stop running and show the error
+    if period < 20
+        runtime.error('Period is too short! Please increase the Period')
+    
+    // if size of the array levels is 0 then add an null element
+    if array.size(levels) == 0
+        array.push(levels, na)
+    
+    // calculate indimax and indimin that is used for the window, 
+    float ind_h_ = ta.highest(indicator1, period)
+    float ind_l_ = ta.lowest(indicator1, period)
+    // while calculatind max/min levels, also use horizontal levels, because last length values of the indicator may not fit to the windows suitable
+    if not na(array.get(levels, 0))
+        ind_h_ := math.max(ind_h_, array.max(levels))
+        ind_l_ := math.min(ind_l_, array.min(levels))
+    
+    float indimax = not na(indimax_) ? indimax_ : ind_h_ + (ind_h_ - ind_l_) * 0.10
+    float indimin = not na(indimin_) ? indimin_ : ind_l_ - (ind_h_ - ind_l_) * 0.10
+    
+    // get top and bottom of the indicator window
+    [top, bottom, indi_loc] = findIndiLoc() // find indicator location
+    if enabled and barstate.islast
+        // draw indicator window
+        var line border_line_top = na
+        line.delete(border_line_top)
+        border_line_top := line.new(x1=bar_index - period - xlocation, y1=top, x2=bar_index + 1 - xlocation, y2=top, color=color.gray, width=4, style=line.style_solid)
+        border_line_top
+
+        var line border_line_bottom = na
+        line.delete(border_line_bottom)
+        border_line_bottom := line.new(x1=bar_index - period - xlocation, y1=bottom, x2=bar_index + 1 - xlocation, y2=bottom, color=color.gray, width=4, style=line.style_solid)
+        border_line_bottom
+
+        linefill.new(border_line_top, border_line_bottom, color.black)
+        
+        // delete old lines and draw new indicator & horizontal lines
+        var indi_lines = array.new_line(0) // keeps all lines including horizontal lines
+        var indinamelabels = array.new_label(0)
+        for x = 0 to (array.size(indi_lines) > 0 ? array.size(indi_lines) - 1 : na)
+            line.delete(array.pop(indi_lines))
+        for x = 0 to (array.size(indinamelabels) > 0 ? array.size(indinamelabels) - 1 : na)
+            label.delete(array.pop(indinamelabels))
+            
+        for x = 0 to (not na(array.get(levels, 0)) ? array.size(levels) - 1 : na)
+            array.push(indi_lines, line.new( x1 = bar_index - xlocation, y1 = getIndiLevel(array.get(levels, x), indimax, indimin, top, bottom),
+                                             x2 = bar_index - period - xlocation, y2 = getIndiLevel(array.get(levels, x), indimax, indimin, top, bottom), 
+                                             style = line.style_dashed))
+        
+            array.push(indinamelabels, label.new(x = bar_index - xlocation - period + 5, y = getIndiLevel(array.get(levels, x), indimax, indimin, top, bottom), 
+                                   text = str.tostring( array.get(levels, x)), 
+                                   textcolor = color.blue,
+                                   style = label.style_none))
+        
+        
+        
+        // if multiple levels such DMI
+        txt = ""
+        indicname = str.split(indicatorName, " ")
+        for y = 0 to (array.size(indicname) > 0 ? array.size(indicname) - 1 : na)
+            txt := txt +  (array.get(indicname, y)  + " " + 
+                         str.tostring(math.round((y == 0 ? indicator1 : y == 1 ? indicator2 : indicator3), precision))) +
+                         " "
+            for x = 0 to period - 1
+                array.push(indi_lines, line.new( x1 = bar_index - x - xlocation, y1 = getIndiLevel((y == 0 ? indicator1[x] : y == 1 ? indicator2[x] : indicator3[x]), indimax, indimin, top, bottom),
+                                                 x2 = bar_index - x - 1 - xlocation, y2 = getIndiLevel((y == 0 ? indicator1[x + 1] : y == 1 ? indicator2[x + 1] : indicator3[x + 1]), indimax, indimin, top, bottom), 
+                                                 color = array.get(indicatorcolors, y),
+                                                 width = lnwidth))
+                        
+        // show the indicator name and its last value at the top of the indicator window
+        array.push(indinamelabels, label.new(x = bar_index - 15 - xlocation, y = indi_loc == 1 ? top : bottom, 
+                                   text = txt, 
+                                   textcolor = color.blue,
+                                   style = label.style_none))

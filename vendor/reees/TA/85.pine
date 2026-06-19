@@ -1,0 +1,1502 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © reees
+
+//@version=5
+
+// @description General technical analysis functions
+library("TA",overlay=true)
+import reees/Algebra/3 as alg
+import reees/Trig/2 as trig
+import reees/Fibonacci/4 as fib
+import reees/Utilities/5 as u
+
+//-----------------------------------------
+// Divergence
+//-----------------------------------------
+
+// (private) Divergence strength of a change in series values
+deltaStrength(y1,y2,std) =>
+    // Ideally want Δy in terms of standard deviation
+    if not na(std)
+        math.abs(y2-y1)/(std*2)
+    // If we don't yet have a standard deviation, use the percent change in values
+    else if math.abs(y1) > math.abs(y2) and y1 != 0
+        1 - math.abs(y2/y1)
+    else if math.abs(y2) > math.abs(y1) and y2 != 0
+        1 - math.abs(y1/y2)
+    else if y1 == y2    // should never be true if we've already detected divergence
+        0.0
+    else
+        .5
+
+// @function Test for bullish divergence
+//
+// @param pS Price series (float)
+// @param iS Indicator series (float)
+// @param cp_length_after Bars after current (divergent) pivot low to be considered a valid pivot (optional int)
+// @param cp_length_before Bars before current (divergent) pivot low to be considered a valid pivot (optional int)
+// @param pivot_length Bars before and after prior pivot low to be considered valid pivot (optional int)
+// @param lookback Bars back to search for prior pivot low (optional int)
+// @param lookback_pivs Pivots back to search for prior pivot low (optional int)
+// @param no_broken Flag to only consider divergence valid if the pivot-to-pivot trendline is unbroken (optional bool)
+// @param pW Weight of change in price, used in degree of divergence calculation (optional float)
+// @param iW Weight of change in indicator, used in degree of divergence calculation (optional float)
+// @param hidW Weight of hidden divergence, used in degree of divergence calculation (optional float)
+// @param regW Weight of regular divergence, used in degree of divergence calculation (optional float)
+//
+// @returns [flag,degree,type,lx1,ly1,lx2,ly2]
+//      flag = true if divergence exists (bool)
+//      degree = degree (strength) of divergence (float)
+//      type = 1 = regular, 2 = hidden (int)
+//      lx1 = x coordinate 1 (int)
+//      ly1 = y coordinate 1 (float)
+//      lx2 = x coordinate 2 (int)
+//      ly2 = y coordinate 2 (float)
+//
+export div_bull(float pS, float iS, simple int cp_length_after=2, simple int cp_length_before=4, simple int pivot_length=4, simple int lookback=50, simple int lookback_pivs=5, simple bool no_broken=true, simple float pW=1.0, simple float iW=1.0, simple float hidW=.8, simple float regW = 1.2) =>
+    p = ta.pivotlow(pS,pivot_length,pivot_length)
+    cpp = ta.pivotlow(pS,cp_length_before,cp_length_after)
+    ip = ta.pivotlow(iS,pivot_length,pivot_length)
+    ix1 = ta.lowestbars(iS,cp_length_after+2) // current indicator pivot is lowest bar between current bar and two bars prior to the price pivot
+    ix1 := int(math.sign(ix1) * ix1)
+    pStd = ta.stdev(pS, bar_index<100 ? bar_index + 1 : 100)
+    iStd = ta.stdev(iS,bar_index<100 ? bar_index + 1 : 100)
+    flag = false
+    degree = 0.0
+    type = 0
+    lx1 = 0
+    ly1 = 0.0
+    lx2 = 0
+    ly2 = 0.0
+    j = 0   // pivot count
+    // if price is pivoting low
+    if not na(cpp)
+        // check last <#> bars before current pivot low for any previous pivot low
+        for i=cp_length_after to lookback+cp_length_after
+            if j == lookback_pivs
+                break
+            // Found a prior price pivot low, AND the indicator also pivoted low on the same bar, the previous bar, or the next bar
+            if not na(p[i]) and (not na(ip[i]) or not na(ip[i+1]) or (i==0 ? false : not na(ip[i-1])))
+                j+=1
+                // prior indicator pivot:
+                //  if indicator pivoted on the bar before or after the price pivot, use that value
+                //  else the pivot occurred on the same bar as the price pivot
+                ix2 = if not na(ip[i+1])
+                    i + pivot_length + 1
+                else if not na(ip[i-1])
+                    i + pivot_length - 1
+                else
+                    i + pivot_length
+                // test for divergence
+                if p[i] > pS[cp_length_after] and iS[ix2] < iS[ix1]
+                    flag := true
+                    // degree = Δprice strength + Δindicator strength (multiplied by specified weights)
+                    degree := (deltaStrength(p[i],pS[cp_length_after],pStd)*pW + deltaStrength(iS[ix1],iS[ix2],iStd)*iW)*regW
+                    type := 1
+                else if p[i] < pS[cp_length_after] and iS[ix2] > iS[ix1]
+                    flag := true
+                    // degree = Δprice strength + Δindicator strength (multiplied by specified weights)
+                    degree := (deltaStrength(p[i],pS[cp_length_after],pStd)*pW + deltaStrength(iS[ix1],iS[ix2],iStd)*iW)*hidW
+                    type := 2
+                // if divergence exists, get line
+                if flag
+                    lx1 := bar_index-i-pivot_length
+                    ly1 := p[i]
+                    lx2 := bar_index-cp_length_after
+                    ly2 := pS[cp_length_after]
+                    [slope,yInt] = alg.line_fromXy(lx1,ly1,lx2,ly2)
+                    if no_broken
+                        // invalidate divergence if an intermediate low breaks divergence trendline
+                        for k=lx1 to lx2
+                            if pS[bar_index-k] < (alg.line_getPrice(k,slope,yInt)*.99)
+                                flag := false
+                                degree := 0.0
+                                type := 0
+                                lx1 := 0
+                                ly1 := 0.0
+                                lx2 := 0
+                                ly2 := 0.0
+                                break
+                    break
+    [flag,degree,type,lx1,ly1,lx2,ly2]
+
+// @function Test for bearish divergence
+//
+// @param pS Price series (float)
+// @param iS Indicator series (float)
+// @param cp_length_after Bars after current (divergent) pivot high to be considered a valid pivot (optional int)
+// @param cp_length_before Bars before current (divergent) pivot highto be considered a valid pivot (optional int)
+// @param pivot_length Bars before and after prior pivot high to be considered valid pivot (optional int)
+// @param lookback Bars back to search for prior pivot high (optional int)
+// @param lookback_pivs Pivots back to search for prior pivot high (optional int)
+// @param no_broken Flag to only consider divergence valid if the pivot-to-pivot trendline is unbroken (optional bool)
+// @param pW Weight of change in price, used in degree of divergence calculation (optional float)
+// @param iW Weight of change in indicator, used in degree of divergence calculation (optional float)
+// @param hidW Weight of hidden divergence, used in degree of divergence calculation (optional float)
+// @param regW Weight of regular divergence, used in degree of divergence calculation (optional float)
+//
+// @returns [flag,degree,type,lx1,ly1,lx2,ly2]
+//      flag = true if divergence exists (bool)
+//      degree = degree (strength) of divergence (float)
+//      type = 1 = regular, 2 = hidden (int)
+//      lx1 = x coordinate 1 (int)
+//      ly1 = y coordinate 1 (float)
+//      lx2 = x coordinate 2 (int)
+//      ly2 = y coordinate 2 (float)
+//  
+export div_bear(float pS, float iS, simple int cp_length_after=2, simple int cp_length_before=4, simple int pivot_length=4, simple int lookback=50, simple int lookback_pivs=5, simple bool no_broken=true, simple float pW=1.0, simple float iW=1.0, simple float hidW=.8, simple float regW = 1.2) =>
+    p = ta.pivothigh(pS,pivot_length,pivot_length)
+    cpp = ta.pivothigh(pS,cp_length_before,cp_length_after)
+    ip = ta.pivothigh(iS,pivot_length,pivot_length)
+    ix1 = ta.highestbars(iS,cp_length_after+2) // current indicator pivot is highest bar between current bar and two bars prior to the price pivot
+    ix1 := int(math.sign(ix1) * ix1)
+    pStd = ta.stdev(pS, bar_index<100 ? bar_index + 1 : 100)
+    iStd = ta.stdev(iS,bar_index<100 ? bar_index + 1 : 100)
+    flag = false
+    degree = 0.0
+    type = 0
+    lx1 = 0
+    ly1 = 0.0
+    lx2 = 0
+    ly2 = 0.0
+    j = 0   // pivot count
+    // if price is pivoting high
+    if not na(cpp)
+        // check last <#> bars before current pivot high for any previous pivot high
+        for i=cp_length_after to lookback+cp_length_after
+            if j == lookback_pivs
+                break
+            // Found a prior price pivot high, AND the indicator also pivoted high on the same bar, the previous bar, or the next bar
+            if not na(p[i]) and (not na(ip[i]) or not na(ip[i+1]) or (i==0 ? false : not na(ip[i-1])))
+                j+=1
+                // prior indicator pivot:
+                //  if indicator pivoted on the bar before or after the price pivot, use that value
+                //  else the pivot occurred on the same bar as the price pivot
+                ix2 = if not na(ip[i+1])
+                    i + pivot_length + 1
+                else if not na(ip[i-1])
+                    i + pivot_length - 1
+                else
+                    i + pivot_length
+                // test for divergence
+                if p[i] > pS[cp_length_after] and iS[ix2] < iS[ix1]
+                    flag := true
+                    // degree = Δprice strength + Δindicator strength (multiplied by specified weights)
+                    degree := (deltaStrength(p[i],pS[cp_length_after],pStd)*pW + deltaStrength(iS[ix1],iS[ix2],iStd)*iW)*hidW
+                    type := 2
+                else if p[i] < pS[cp_length_after] and iS[ix2] > iS[ix1]
+                    flag := true
+                    // degree = Δprice strength + Δindicator strength (multiplied by specified weights)
+                    degree := (deltaStrength(p[i],pS[cp_length_after],pStd)*pW + deltaStrength(iS[ix1],iS[ix2],iStd)*iW)*regW
+                    type := 1
+                // if divergence exists, get line
+                if flag
+                    lx1 := bar_index-i-pivot_length
+                    ly1 := p[i]
+                    lx2 := bar_index-cp_length_after
+                    ly2 := pS[cp_length_after]
+                    [slope,yInt] = alg.line_fromXy(lx1,ly1,lx2,ly2)
+                    if no_broken
+                        // invalidate divergence if an intermediate low breaks divergence trendline
+                        for k=lx1 to lx2
+                            if pS[bar_index-k] > (alg.line_getPrice(k,slope,yInt)*1.01)
+                                flag := false
+                                degree := 0.0
+                                type := 0
+                                lx1 := 0
+                                ly1 := 0.0
+                                lx2 := 0
+                                ly2 := 0.0
+                                break
+                    break
+    [flag,degree,type,lx1,ly1,lx2,ly2]
+
+
+//-----------------------------------------
+// Harmonics
+//-----------------------------------------
+
+// (private) Validate AB leg of XABCD
+test_ab(ab,xa,pErr,p_types) =>
+    var f618 = fib.fib_precise(0.618)
+    var f382 = fib.fib_precise(0.382)
+    var f786 = fib.fib_precise(0.786)
+    t0=false,t1=false,t2=false,t3=false,t4=false,t5=false
+    rat = ab/xa
+    // gartley
+    if array.get(p_types,0)
+        t0 := rat <= f618*(1+pErr/100) and rat >= f618*(1-pErr/100) ? true : false  // within acceptable % error
+    // bat
+    if array.get(p_types,1)
+        t1 := (rat <= f382*(1+pErr/100) and rat >= f382*(1-pErr/100)) or (rat <= .5*(1+pErr/100) and rat >= .5*(1-pErr/100)) ? true : false
+    // butterfly
+    if array.get(p_types,2)
+        t2 :=  rat <= f786*(1+pErr/100) and rat >= f786*(1-pErr/100) ? true : false
+    // crab
+    if array.get(p_types,3)
+        t3 := (rat <= f382*(1+pErr/100) and rat >= f382*(1-pErr/100)) or (rat <= f618*(1+pErr/100) and rat >= f618*(1-pErr/100)) ? true : false
+    // shark
+    if array.get(p_types,4)
+        t4 :=  rat < 1 // no AB validation defined for shark
+    // cypher
+    if array.get(p_types,5)
+        t5 := (rat <= f382*(1+pErr/100) and rat >= f382*(1-pErr/100)) or (rat <= f618*(1+pErr/100) and rat >= f618*(1-pErr/100)) ? true : false
+    [t0,t1,t2,t3,t4,t5]
+
+// (private) Validate BC leg of XABCD
+test_bc(bc,ab,pErr,p_types) =>
+    var f382 = fib.fib_precise(0.382)
+    var f886 = fib.fib_precise(0.886)
+    var f1618 = fib.fib_precise(1.618)
+    var f1272 = fib.fib_precise(1.272)
+    var f1414 = fib.fib_precise(1.414)
+    t0=false,t1=false,t2=false,t3=false,t4=false,t5=false
+    rat = bc/ab
+    pass = (rat <= f886*(1+pErr/100) and rat >= f886*(1-pErr/100)) or (rat <= f382*(1+pErr/100) and rat >=f382*(1-pErr/100)) ? true : false
+    // gartley
+    if array.get(p_types,0)
+        t0 := pass
+    // bat
+    if array.get(p_types,1)
+        t1 := pass
+    // butterfly
+    if array.get(p_types,2)
+        t2 := pass
+    // crab
+    if array.get(p_types,3)
+        t3 := pass
+    // shark
+    if array.get(p_types,4)
+        t4 := (rat <= 1.13*(1+pErr/100) and rat >= 1.13*(1-pErr/100)) or (rat <= f1618*(1+pErr/100) and rat >=f1618*(1-pErr/100))
+    // cypher
+    if array.get(p_types,5)
+        t5 := (rat <= f1272*(1+pErr/100) and rat >= f1272*(1-pErr/100)) or (rat <= f1414*(1+pErr/100) and rat >=f1414*(1-pErr/100))
+    [t0,t1,t2,t3,t4,t5]
+
+//@function Validate CD leg of XABCD
+export test_cd(float cd, float bc, float xa, float xc, float ad, float pErr, bool[] p_types) =>
+    var f1618 = fib.fib_precise(1.618)
+    var f2618 = fib.fib_precise(2.618)
+    var f786 = fib.fib_precise(0.786)
+    var f886 = fib.fib_precise(0.886)
+    var f1272 = fib.fib_precise(1.272)
+    t0=false,t1=false,t2=false,t3=false,t4=false,t5=false
+    rat = cd/bc
+    rat2 = ad/xa
+    rat3 = cd/xc
+    // test D against both BC and XA legs
+    // gartley
+    if array.get(p_types,0)
+        bc_test = (rat <= f1272*(1+pErr/100) and rat >= f1272*(1-pErr/100)) or (rat <= f1618*(1+pErr/100) and rat >= f1618*(1-pErr/100))
+        xa_test = rat2 <= f786*(1+pErr/100) and rat2 >= f786*(1-pErr/100)
+        t0 :=  bc_test and xa_test ? true : false
+    // bat
+    if array.get(p_types,1)
+        bc_test = (rat <= f1618*(1+pErr/100) and rat >= f1618*(1-pErr/100)) or (rat <= f2618*(1+pErr/100) and rat >= f2618*(1-pErr/100))
+        xa_test = rat2 <= f886*(1+pErr/100) and rat2 >= f886*(1-pErr/100)
+        t1 := bc_test and xa_test ? true : false
+    // butterfly
+    if array.get(p_types,2)
+        bc_test = (rat <= f1618*(1+pErr/100) and rat >= f1618*(1-pErr/100)) or (rat <= f2618*(1+pErr/100) and rat >= f2618*(1-pErr/100))
+        xa_test = (rat2 <= f1272*(1+pErr/100) and rat2 >= f1272*(1-pErr/100)) or (rat2 <= f1618*(1+pErr/100) and rat2 >= f1618*(1-pErr/100))
+        t2 := bc_test and xa_test ? true : false
+    // crab
+    if array.get(p_types,3)
+        bc_test = (rat <= 2.24*(1+pErr/100) and rat >= 2.24*(1-pErr/100)) or (rat <= 3.618*(1+pErr/100) and rat >= 3.618*(1-pErr/100))
+        xa_test = rat2 <= f1618*(1+pErr/100) and rat2 >= f1618*(1-pErr/100)
+        t3 := bc_test and xa_test ? true : false
+    // shark
+    if array.get(p_types,4)
+        bc_test = (rat <= f1618*(1+pErr/100) and rat >= f1618*(1-pErr/100)) or (rat <= 2.24*(1+pErr/100) and rat >= 2.24*(1-pErr/100))
+        xa_test = (rat2 <= f886*(1+pErr/100) and rat2 >= f886*(1-pErr/100)) or (rat2 <= 1.13*(1+pErr/100) and rat2 >= 1.13*(1-pErr/100))
+        t4 := bc_test and xa_test ? true : false
+    // cypher
+    if array.get(p_types,5)
+        bc_test = true
+        xc_test = rat3 <= f786*(1+pErr/100) and rat3 >= f786*(1-pErr/100)   // cypher point D retraces XC
+        t5 := bc_test and xc_test ? true : false
+    //
+    [t0,t1,t2,t3,t4,t5]
+
+// (private) 
+// @function Validate ΔX symmetry of XABCD pattern 
+export pat_xabcd_testSym(int xax, int abx, int bcx, int cdx=na, float pAsym=500.0) =>
+    if not na(cdx) and (cdx > ((xax+abx+bcx)/3)*(1+pAsym/100) or cdx < ((xax+abx+bcx)/3)*(1-pAsym/100))
+        false
+    else if bcx > ((xax+abx+cdx)/3)*(1+pAsym/100) or bcx < ((xax+abx+cdx)/3)*(1-pAsym/100)
+        false
+    else if abx > ((xax+bcx+cdx)/3)*(1+pAsym/100) or abx < ((xax+bcx+cdx)/3)*(1-pAsym/100)
+        false
+    else if xax > ((abx+bcx+cdx)/3)*(1+pAsym/100) or xax < ((abx+bcx+cdx)/3)*(1-pAsym/100)
+        false
+    else
+        true
+
+// @function Validate harmonic XABCD pattern
+//
+// @param xX X coordinate of point X (int)
+// @param xY Y coordinate of point X (float)
+// @param aX X coordinate of point A (int)
+// @param aY Y coordinate of point A (float)
+// @param bX X coordinate of point B (int)
+// @param bY Y coordinate of point B (float)
+// @param cX X coordinate of point C (int)
+// @param cY Y coordinate of point C (float)
+// @param dX X coordinate of point D (int)
+// @param dY Y coordinate of point D (float)
+// @param pErr Acceptable percent error of leg ratios (does not apply to legs defined within a range) (float)
+// @param pAsym Acceptable percent asymmetry of leg ΔX (each leg tested against average ΔX of prior legs) (float)
+// @param pivot_length Bars before and after prior pivot high to be considered valid pivot (optional int)
+// @param gart Flag to validate Gartley pattern (bool)
+// @param bat Flag to validate Bat pattern (bool)
+// @param bfly Flag to validate Butterfly pattern (bool)
+// @param crab Flag to validate Crab pattern (bool)
+// @param shark Flag to validate Shark pattern (bool)
+// @param cyph Flag to validate Cypher pattern (bool)
+//
+// @returns [flag,t1,t2,t3,t4,t5,t6]
+//      flag = true if valid harmonic
+//      t1 = true if valid gartley
+//      t2 = true if valid bat
+//      t3 = true if valid butterfly
+//      t4 = true if valid crab
+//      t5 = true if valid shark
+//      t6 = true if valid cypher
+//
+export harmonic_xabcd_validate(int xX,float xY,int aX,float aY,int bX,float bY,int cX,float cY,int dX,float dY,float pErr=20,float pAsym=250,
+                               bool gart=true,bool bat=true,bool bfly=true,bool crab=true,bool shark=true,bool cyph=true) =>
+    bool[] p_types = array.from(gart,bat,bfly,crab,shark,cyph)
+    xa = math.abs(xY-aY)
+    xax = math.abs(xX-aX)
+    ab = math.abs(aY-bY)
+    abx = math.abs(aX-bX)
+    bc = math.abs(bY-cY)
+    bcx = math.abs(bX-cX)
+    cd = math.abs(cY-dY)
+    ad = math.abs(aY-dY)
+    xc = math.abs(xY-cY)
+    cdx = math.abs(cX-dX)
+    
+    // Test ΔX symmetry first. If failure, no need to check the ratios.
+    if pat_xabcd_testSym(xax,abx,bcx,cdx,pAsym)==false
+        [false,false,false,false,false,false,false]
+    else
+        [ab_t1,ab_t2,ab_t3,ab_t4,ab_t5,ab_t6] = test_ab(ab,xa,pErr,p_types)
+        p_types := array.from(ab_t1,ab_t2,ab_t3,ab_t4,ab_t5,ab_t6)
+        [bc_t1,bc_t2,bc_t3,bc_t4,bc_t5,bc_t6] = test_bc(bc,ab,pErr,p_types)
+        p_types := array.from(bc_t1,bc_t2,bc_t3,bc_t4,bc_t5,bc_t6)
+        [t1,t2,t3,t4,t5,t6] = test_cd(cd,bc,xa,xc,ad,pErr,p_types)
+        flag = t1 or t2 or t3 or t4 or t5 or t6
+        [flag,t1,t2,t3,t4,t5,t6]
+
+// @function Validate the first 3 legs of a harmonic XABCD pattern
+//
+// @param xX X coordinate of point X (int)
+// @param xY Y coordinate of point X (float)
+// @param aX X coordinate of point A (int)
+// @param aY Y coordinate of point A (float)
+// @param bX X coordinate of point B (int)
+// @param bY Y coordinate of point B (float)
+// @param cX X coordinate of point C (int)
+// @param cY Y coordinate of point C (float)
+// @param pErr Acceptable percent error of leg ratios (does not apply to legs defined within a range) (float)
+// @param pAsym Acceptable percent asymmetry of leg ΔX (each leg tested against average ΔX of prior legs) (float)
+// @param pivot_length Bars before and after prior pivot high to be considered valid pivot (optional int)
+// @param gart Flag to validate Gartley pattern (bool)
+// @param bat Flag to validate Bat pattern (bool)
+// @param bfly Flag to validate Butterfly pattern (bool)
+// @param crab Flag to validate Crab pattern (bool)
+// @param shark Flag to validate Shark pattern (bool)
+// @param cyph Flag to validate Cypher pattern (bool)
+//
+// @returns [flag,t1,t2,t3,t4]
+//      flag = true if valid harmonic
+//      t1 = true if valid gartley
+//      t2 = true if valid bat
+//      t3 = true if valid butterfly
+//      t4 = true if valid crab
+//      t5 = true if valid shark
+//      t6 = true if valid cypher
+//
+export harmonic_xabcd_validateIncomplete(int xX,float xY,int aX,float aY,int bX,float bY,int cX,float cY,float pErr=30,float pAsym=75,
+                                         bool gart=true,bool bat=true,bool bfly=true,bool crab=true,bool shark=true,bool cyph=true) =>
+    bool[] p_types = array.from(gart,bat,bfly,crab,shark,cyph)
+    xa = math.abs(xY-aY)
+    xax = math.abs(xX-aX)
+    ab = math.abs(aY-bY)
+    abx = math.abs(aX-bX)
+    bc = math.abs(bY-cY)
+    bcx = math.abs(bX-cX)
+    
+    // Test ΔX symmetry first. If failure, no need to check the ratios.
+    if pat_xabcd_testSym(xax,abx,bcx,na,pAsym)==false
+        [false,false,false,false,false,false,false]
+    else
+        [ab_t1,ab_t2,ab_t3,ab_t4,ab_t5,ab_t6] = test_ab(ab,xa,pErr,p_types)
+        p_types := array.from(ab_t1,ab_t2,ab_t3,ab_t4,ab_t5,ab_t6)
+        [t1,t2,t3,t4,t5,t6] = test_bc(bc,ab,pErr,p_types)
+        flag = t1 or t2 or t3 or t4 or t5 or t6
+        [flag,t1,t2,t3,t4,t5,t6]
+
+// @function Get the potential reversal zone (PRZ) levels of a harmonic XABCD pattern
+//
+// @param type Harmonic pattern type (int - 1 = Gartley, 2 = Bat, 3 = Butterfly, 4 = Crab, 5 = Shark, 6 = Cypher)
+// @param xY Y coordinate of point X (float)
+// @param aY Y coordinate of point A (float)
+// @param bY Y coordinate of point B (float)
+// @param cY Y coordinate of point C (float)
+//
+// @returns [bc_u, bc_l, xa_u, xa_l]
+//      bc_u = nearest BC retracement/extension level (nearest to point C)
+//      bc_l = farthest BC retracement/extension level (nearest to point C)
+//      xa_u = nearest XA retracement/extension level (or the only XA level, if applicable)
+//      xa_l = farthest XA retracement/extension level (or na if not applicable)
+//
+export harmonic_xabcd_prz(int type=1, float xY, float aY, float bY, float cY) =>
+    var f1618 = fib.fib_precise(1.618)
+    var f2618 = fib.fib_precise(2.618)
+    var f786 = fib.fib_precise(0.786)
+    var f886 = fib.fib_precise(0.886)
+    var f1272 = fib.fib_precise(1.272)
+    float bc_u = na, float bc_l = na
+    float xa_u = na, float xa_l = na
+    bc = cY-bY
+    xa = aY-xY
+    xc = cY-xY
+    if type == 1 // Gartley
+        bc_u := cY - (f1272*bc)
+        bc_l := cY - (f1618*bc)
+        xa_u := aY - (f786*xa)
+    else if type == 2 // Bat
+        bc_u := cY - (f1618*bc)
+        bc_l := cY - (f2618*bc)
+        xa_u := aY - (f886*xa)
+    else if type == 3 // Butterfly
+        bc_u := cY - (f1618*bc)
+        bc_l := cY - (f2618*bc)
+        xa_u := aY - (f1272*xa)
+        xa_l := aY - (f1618*xa)
+    else if type == 4 // Crab
+        bc_u := cY - (2.24*bc)
+        bc_l := cY - (3.618*bc)
+        xa_u := aY - (f1618*xa)
+    else if type == 5 // Shark
+        bc_u := cY - (f1618*bc)
+        bc_l := cY - (2.24*bc)
+        xa_u := aY - (f886*xa)
+        xa_l := aY - (1.13*xa)
+    else if type == 6 // Cypher
+        xa_u := cY - (f786*xc)  // cypher uses retracement of XC
+    // if type==6
+    //     xa_u := xa_u > 0 ? xa_u : 0
+    // else
+    //     bc_u := bc_u > 0 ? bc_u : 0
+    //     bc_l := bc_l > 0 ? bc_l : 0
+    //     xa_u := xa_u > 0 ? xa_u : 0
+    //     if not na(xa_l)
+    //         xa_l := xa_l > 0 ? xa_l : 0
+    [bc_u, bc_l, xa_u, xa_l]
+
+// @function Get the confluent PRZ levels (i.e. the two closest PRZ levels)
+//
+// Order of arguments does not matter
+// @param l1 level 1 (float)
+// @param l2 level 2 (float)
+// @param l3 level 3 (float)
+// @param l4 level 4 (optional, float)
+//
+// @returns [lL,lH]
+//      lL = lower confluent PRZ level
+//      lH = higher confluent PRZ level
+//
+export harmonic_xabcd_przClosest(float l1=na, float l2=na, float l3=na, float l4=na) =>
+    float lL = na, float lH = na
+
+    a = array.new_float(0)
+    if not na(l1)
+        array.push(a,l1)
+    if not na(l2)
+        array.push(a,l2)
+    if not na(l3)
+        array.push(a,l3)
+    if not na(l4)
+        array.push(a,l4)
+
+    if array.size(a) == 1
+        lL := array.get(a,0)
+        lH := array.get(a,0)
+    else if array.size(a) == 2
+        lL := array.min(a)
+        lH := array.max(a)
+    else if array.size(a) > 2
+        array.sort(a)
+        lL := array.get(a,0)
+        lH := array.get(a,1)
+        ld = lH - lL
+        if array.get(a,2) - array.get(a,1) < ld
+            ld := array.get(a,2) - array.get(a,1)
+            lL := array.get(a,1)
+            lH := array.get(a,2)
+        if array.size(a) == 4
+            if array.get(a,3) - array.get(a,2) < ld
+                ld := array.get(a,3) - array.get(a,2)
+                lL := array.get(a,2)
+                lH := array.get(a,3)
+    [lL,lH]
+
+// @function Get upper and lower PRZ levels
+export harmonic_xabcd_przRange(float l1,float l2=na,float l3=na,float l4=na) =>
+    a = array.from(l1,l2,l3,l4)
+    [array.max(a),array.min(a)]
+
+// @function Measure closeness of D to either of the two closest PRZ levels, relative to height of the XA leg
+export harmonic_xabcd_eD(float cpl1,float cpl2,float xY,float aY,float dY) =>
+    h = math.abs(aY-xY)
+    dCpl = math.abs(cpl1-dY) > math.abs(cpl2-dY) ? math.abs(cpl2-dY) : math.abs(cpl1-dY)
+    dCpl/h
+
+// @function Measure the closeness of the two closest PRZ levels, relative to the height of the XA leg
+export harmonic_xabcd_przScore(float xY,float aY,float l1=na,float l2=na,float l3=na,float l4=na) =>
+    h = math.abs(aY-xY)
+    [v1,v2] = harmonic_xabcd_przClosest(l1,l2,l3,l4)
+    // score = closeness of the two closest PRZ levels (% relative XA height)
+    score = 1 - ((v2-v1)/h)
+    [score, v1, v2]
+
+// @function Get the ratio of two pattern legs, and the percent error from the theoretical harmonic ratio
+//
+// Order of arguments does not matter
+// @param type Harmonic pattern type (int - 1 = Gartley, 2 = Bat, 3 = Butterfly, 4 = Crab)
+// @param l Leg ID ("xab", "abc", "bcd", or "xad") (string)
+// @param l1 Line 1 height (float)
+// @param l2 Line 2 height (float)
+//
+// @returns [r,e]
+//
+export harmonic_xabcd_rAndE(int type, string l, float l1, float l2) =>
+    var f1618 = fib.fib_precise(1.618)
+    var f2618 = fib.fib_precise(2.618)
+    var f786 = fib.fib_precise(0.786)
+    var f886 = fib.fib_precise(0.886)
+    var f1272 = fib.fib_precise(1.272)
+    var f618 = fib.fib_precise(0.618)
+    var f382 = fib.fib_precise(0.382)
+    var f1414 = fib.fib_precise(1.414)
+    float r = na
+    float e = na
+    if l=="xab"
+        r := math.abs(l1)/math.abs(l2)
+        e := switch type
+            1 => math.abs(1-(r/f618))
+            2 => math.min(math.abs(1-(r/f382)),math.abs(1-(r/.5)))
+            3 => math.abs(1-(r/f786))
+            4 => math.min(math.abs(1-(r/f382)),math.abs(1-(r/f618)))
+            5 => na
+            6 => math.min(math.abs(1-(r/f382)),math.abs(1-(r/f618)))
+    else if l=="abc"
+        r := math.abs(l1)/math.abs(l2)
+        e := switch type
+            5 => math.min(math.abs(1-(r/1.13)),math.abs(1-(r/f1618)))
+            6 => math.min(math.abs(1-(r/f1272)),math.abs(1-(r/f1414)))
+            => math.min(math.abs(1-(r/f382)),math.abs(1-(r/f886)))   
+    else if l=="bcd"
+        r := math.abs(l1)/math.abs(l2)
+        e := switch type
+            1 => math.min(math.abs(1-(r/f1272)),math.abs(1-(r/f1618)))
+            2 => math.min(math.abs(1-(r/f1618)),math.abs(1-(r/f2618)))
+            3 => math.min(math.abs(1-(r/f1618)),math.abs(1-(r/f2618)))
+            4 => math.min(math.abs(1-(r/2.24)),math.abs(1-(r/3.618)))
+            5 => math.min(math.abs(1-(r/f1618)),math.abs(1-(r/2.24)))
+            6 => na
+               
+    else if l=="xad"
+        r := math.abs(l1)/math.abs(l2)
+        e := switch type
+            1 => math.abs(1-(r/f786))
+            2 => math.abs(1-(r/f886))
+            3 => math.min(math.abs(1-(r/f1272)),math.abs(1-(r/f1618)))
+            4 => math.abs(1-(r/f1618))
+            5 => math.min(math.abs(1-(r/f886)),math.abs(1-(r/1.13)))
+            6 => math.abs(1-(r/f786))
+    [r,e]
+
+// @function Get the avg retracement ratio % error 
+export harmonic_xabcd_eAvg(float xbre,float acre,float bdre,float xdre,float xcdre=na) =>
+    r = array.new_float(0)
+    if not na(xbre)
+        array.push(r,xbre)
+    if not na(acre)
+        array.push(r,acre)
+    if not na(bdre)
+        array.push(r,bdre)
+    if not na(xdre)
+        array.push(r,xdre)
+    if not na(xcdre)
+        array.push(r,xcdre)
+    array.avg(r)
+
+targetBasis(b,xY,aY,bY,cY,dY) =>
+    switch b
+        "AD" => aY-dY
+        "XA" => aY-xY
+        "CD" => cY-dY
+
+// map actual target level from param
+resolveTarget(tgt,xY,aY,bY,cY,dY) =>
+    a = str.split(tgt," ")
+    if array.size(a) == 1
+        switch tgt
+            "A" => aY
+            "B" => bY
+            "C" => cY
+    else
+        r = fib.fib_from_string(array.get(a,0))
+        b = targetBasis(array.get(a,1),xY,aY,bY,cY,dY)
+        (b*r + dY) > 0 ? b*r + dY : 0.0
+
+// @function Get the avg asymmetry %
+export pat_xabcd_asym(int xX,int aX,int bX,int cX,int dX) =>
+    if na(dX)
+        xa = math.abs(1 - ((aX-xX) / (((bX-aX)+(cX-bX))/2)))
+        ab = math.abs(1 - ((bX-aX) / (((aX-xX)+(cX-bX))/2)))
+        bc = math.abs(1 - ((cX-bX) / (((aX-xX)+(bX-aX))/2)))
+        (xa+ab+bc)/3
+    else
+        xa = math.abs(1 - ((aX-xX) / (((bX-aX)+(cX-bX)+(dX-cX))/3)))
+        ab = math.abs(1 - ((bX-aX) / (((aX-xX)+(cX-bX)+(dX-cX))/3)))
+        bc = math.abs(1 - ((cX-bX) / (((aX-xX)+(bX-aX)+(dX-cX))/3)))
+        cd = math.abs(1 - ((dX-cX) / (((aX-xX)+(bX-aX)+(cX-bX))/3)))
+        (xa+ab+bc+cd)/4
+
+// @function Get potential entry levels for a harmonic XABCD pattern
+export harmonic_xabcd_entry(bool t, int tp, float xY, float aY, float bY, float cY, float dY=na,
+                           bool e_afterC=true, string e_lvlc="Nearest confluent PRZ level", bool e_afterD=true, float e_lvldPct=1.0) =>
+    [bcN,bcF,xaN,xaF] = harmonic_xabcd_prz(tp,xY,aY,bY,cY)
+    [lPrz,hPrz] = harmonic_xabcd_przClosest(bcN,bcF,xaN,xaF)
+    [u,l] = harmonic_xabcd_przRange(bcN,bcF,xaN,xaF)
+    float afterD = na
+    float afterC = na
+    if e_afterD
+        afterD := if na(dY)
+            na
+        else
+            t ? dY * (1 + e_lvldPct/100) : dY * (1 - e_lvldPct/100)
+    if e_afterC
+        afterC := switch e_lvlc
+            "Nearest confluent PRZ level" => t ? hPrz : lPrz
+            "Farthest confluent PRZ level" => t ? lPrz : hPrz
+            "Nearest PRZ level" => t ? u : l
+            "Farthest PRZ level" => t ? l : u
+            => hPrz - ((hPrz-lPrz)/2)
+    afterD := afterD<0 ? 0 : afterD
+    afterC := afterC<0 ? 0 : afterC
+    // if we have a value for both entry params, use the closest one
+    lvl = if not na(afterD) and not na(afterC)
+        t ? math.max(afterD,afterC) : math.min(afterD,afterC)
+    else if not na(afterD)
+        afterD
+    else
+        afterC
+    // [nearest lvl, after C lvl, after D lvl]
+    [lvl,afterC,afterD]
+
+// @function Determine if entry level was reached. Assumes pattern is active/not timed out. 
+export xabcd_entryHit(bool t, float afterC, float afterD, int dX=na,
+                      bool e_afterC=true, bool e_afterD=true, int dValBars=1) =>
+    int bar = na
+    float eLvl = na
+    flag = false
+    // if allowing entry after point C, check between C and valid point D
+    if e_afterC and not na(afterC) and (na(dX) or bar_index < (dX+dValBars))
+        if t and low <= afterC
+            flag := true
+            bar := bar_index
+            eLvl := open>afterC ? afterC : open    // if hit from above, entry will be on the target level, else open price
+        else if t == false and high >= afterC
+            flag := true
+            bar := bar_index
+            eLvl := open<afterC ? afterC : open    // if hit from below, entry will be on the target level, else open price
+
+    // if we didn't hit entry between C and D and we allow entry after D and we have a valid point D
+    else if e_afterD and not na(dX) and not na(afterD)
+        if t and low <= afterD
+            flag := true
+            bar := bar_index
+            eLvl := open>afterD ? afterD : open    // if hit from above, entry will be on the target level, else open price 
+        else if t == false and high >= afterD
+            flag := true
+            bar := bar_index
+            eLvl := open<afterD ? afterD : open    // if hit from below, entry will be on the target level, else open price
+    [flag,bar,eLvl]
+
+// (private) Validate AB leg of custom XABCD
+test_ab_custom(ab,abx,xa,xab,pErr) =>
+    rat = ab/xa
+    na(xab) ? true : rat <= xab*(1+pErr/100) and rat >= xab*(1-pErr/100)
+
+// (private) Validate BC leg of custom XABCD
+test_bc_custom(bc,bcx,ab,abc,pErr) =>
+    rat = bc/ab
+    na(abc) ? true : rat <= abc*(1+pErr/100) and rat >= abc*(1-pErr/100)
+
+
+// (private) Validate CD leg of custom XABCD
+test_cd_custom(cd,cdx,bc,xa,xc,ad,bcd,xad,xcd,pErr) =>
+    rat = cd/bc
+    rat2 = ad/xa
+    rat3 = cd/xc
+    // test D against both BC, XA, and/or XC legs
+    bc_test = na(bcd) ? true : rat <= bcd*(1+pErr/100) and rat >= bcd*(1-pErr/100)
+    xa_test = na(xad) ? true : rat2 <= xad*(1+pErr/100) and rat2 >= xad*(1-pErr/100)
+    xc_test = na(xcd) ? true : rat3 <= xcd*(1+pErr/100) and rat2 >= xcd*(1-pErr/100)
+    bc_test and xa_test and xc_test
+    
+
+// @function Validate custom XABCD pattern
+//
+// @param xX X coordinate of point X (int)
+// @param xY Y coordinate of point X (float)
+// @param aX X coordinate of point A (int)
+// @param aY Y coordinate of point A (float)
+// @param bX X coordinate of point B (int)
+// @param bY Y coordinate of point B (float)
+// @param cX X coordinate of point C (int)
+// @param cY Y coordinate of point C (float)
+// @param dX X coordinate of point D (int)
+// @param dY Y coordinate of point D (float)
+// @param pErr Acceptable percent error of leg ratios (does not apply to legs defined within a range) (float)
+// @param pAsym Acceptable percent asymmetry of leg ΔX (each leg tested against average ΔX of prior legs) (float)
+//
+// @returns TRUE if pattern is valid
+//
+export pat_xabcd_validate(int xX,float xY,int aX,float aY,int bX,float bY,int cX,float cY,int dX,float dY,
+                          float xab, float abc, float bcd, float xad, float xcd=na,float pErr=20,float pAsym=250) =>
+    xa = math.abs(xY-aY)
+    xax = math.abs(xX-aX)
+    ab = math.abs(aY-bY)
+    abx = math.abs(aX-bX)
+    bc = math.abs(bY-cY)
+    bcx = math.abs(bX-cX)
+    cd = math.abs(cY-dY)
+    cdx = math.abs(cX-dX)
+    ad = math.abs(aY-dY)
+    xc = math.abs(xY-cY)
+    
+    // Test ΔX symmetry first. If failure, no need to check the ratios.
+    if pat_xabcd_testSym(xax,abx,bcx,cdx,pAsym) == false
+        false
+    else if test_ab_custom(ab,abx,xa,xab,pErr) == false
+        false
+    else if test_bc_custom(bc,bcx,ab,abc,pErr) == false
+        false 
+    else if test_cd_custom(cd,cdx,bc,xa,xc,ad,bcd,xad,xcd,pErr) == false
+        false
+    else
+        true
+
+// @function Validate the first 3 legs of a custom XABCD pattern
+//
+// @param xX X coordinate of point X (int)
+// @param xY Y coordinate of point X (float)
+// @param aX X coordinate of point A (int)
+// @param aY Y coordinate of point A (float)
+// @param bX X coordinate of point B (int)
+// @param bY Y coordinate of point B (float)
+// @param cX X coordinate of point C (int)
+// @param cY Y coordinate of point C (float)
+// @param pErr Acceptable percent error of leg ratios (does not apply to legs defined within a range) (float)
+// @param pAsym Acceptable percent asymmetry of leg ΔX (each leg tested against average ΔX of prior legs) (float)
+//
+// @returns TRUE if first 3 legs are valid
+//
+export pat_xabcd_validateIncomplete(int xX,float xY,int aX,float aY,int bX,float bY,int cX,float cY,float xab, float abc,float pErr=30,float pAsym=250) =>
+
+    xa = math.abs(xY-aY)
+    xax = math.abs(xX-aX)
+    ab = math.abs(aY-bY)
+    abx = math.abs(aX-bX)
+    bc = math.abs(bY-cY)
+    bcx = math.abs(bX-cX)
+    
+    // Test ΔX symmetry first. If failure, no need to check the ratios.
+    if pat_xabcd_testSym(xax,abx,bcx,na,pAsym) == false
+        false
+    else if test_ab_custom(ab,abx,xa,xab,pErr) == false
+        false
+    else if test_bc_custom (bc,bcx,ab,abc,pErr) == false
+        false
+    else
+        true
+
+// @function Get the potential reversal zone (PRZ) levels of a custom XABCD pattern
+//
+// @param xY Y coordinate of point X (float)
+// @param aY Y coordinate of point A (float)
+// @param bY Y coordinate of point B (float)
+// @param cY Y coordinate of point C (float)
+//
+// @returns [xad_lvl,bcd_lvl,xcd_lvl]
+//
+export pat_xabcd_prz(float xY, float aY, float bY, float cY, float xad, float bcd, float xcd=na) =>
+
+    float xad_lvl = na
+    float bcd_lvl = na
+    float xcd_lvl = na
+
+    bc = cY-bY
+    xa = aY-xY
+    xc = cY-xY
+
+    xad_lvl := aY - (xad*xa)
+    xcd_lvl := cY - (xcd*xc)
+    bcd_lvl := cY - (bcd*bc)
+
+    [xad_lvl,bcd_lvl,xcd_lvl]
+
+//@function Get the average deviation of an XABCD pattern
+export pat_xabcd_avgDev(int xX, float xY, int aX, float aY, int bX, float bY, int cX, float cY,int dX=na,float dY=na) =>
+    float dev = na
+    if bar_index - xX < 500     // can't check more than 500 bars back
+        a = array.new_float(0)
+        [xa_slope,xa_yInt] = alg.line_fromXy(xX,xY,aX,aY)
+        i1 = (bar_index - aX) + 1
+        i2 = (bar_index - xX) - 1
+        for i=i1 to i2
+            p = alg.line_getPrice(bar_index-i,xa_slope,xa_yInt)
+            diff = math.max(math.abs(p-low[i]),math.abs(high[i]-p))
+            array.push(a,diff)
+        [ab_slope,ab_yInt] = alg.line_fromXy(aX,aY,bX,bY)
+        i1 := (bar_index - bX) + 1
+        i2 := (bar_index - aX) - 1
+        for i=i1 to i2
+            p = alg.line_getPrice(bar_index-i,ab_slope,ab_yInt)
+            diff = math.max(math.abs(p-low[i]),math.abs(high[i]-p))
+            array.push(a,diff)
+        [bc_slope,bc_yInt] = alg.line_fromXy(bX,bY,cX,cY)
+        i1 := (bar_index - cX) + 1
+        i2 := (bar_index - bX) - 1
+        for i=i1 to i2
+            p = alg.line_getPrice(bar_index-i,bc_slope,bc_yInt)
+            diff = math.max(math.abs(p-low[i]),math.abs(high[i]-p))
+            array.push(a,diff)
+        if not na(dX)
+            [cd_slope,cd_yInt] = alg.line_fromXy(cX,cY,dX,dY)
+            i1 := (bar_index - dX) + 1
+            i2 := (bar_index - cX) - 1
+            for i=i1 to i2
+                p = alg.line_getPrice(bar_index-i,cd_slope,cd_yInt)
+                diff = math.max(math.abs(p-low[i]),math.abs(high[i]-p))
+                array.push(a,diff)
+        dev := array.avg(a)
+    dev
+
+height(xY,aY,cY,dY) =>
+    if xY < aY
+        math.max(aY,cY) - math.min(xY,dY)
+    else
+        math.max(xY,dY) - math.min(aY,cY)
+
+//@function Get score values for a pattern
+export harmonic_xabcd_score(int tp, int xX, float xY, int aX, float aY, int bX, float bY, int cX, float cY,int dX=na,float dY=na) =>
+    [_,xbre] = harmonic_xabcd_rAndE(tp,"xab",aY-bY,aY-xY)
+    [_,acre] = harmonic_xabcd_rAndE(tp,"abc",cY-bY,aY-bY)
+    [_,bdre] = harmonic_xabcd_rAndE(tp,"bcd",cY-dY,cY-bY)
+    [_,xdre] = harmonic_xabcd_rAndE(tp,"xad", tp==6 ? cY-dY : aY-dY, tp==6 ? cY-xY : aY-xY)
+    [bcN,bcF,xaN,xaF] = harmonic_xabcd_prz(tp,xY,aY,bY,cY)
+    [przscore,cpl1,cpl2] = harmonic_xabcd_przScore(xY,aY,bcN,bcF,xaN,xaF)
+    eavg = harmonic_xabcd_eAvg(xbre,acre,bdre,xdre)
+    asym = pat_xabcd_asym(xX,aX,bX,cX,dX)
+    eD = harmonic_xabcd_eD(cpl1,cpl2,xY,aY,dY)
+    dev = 1 - (pat_xabcd_avgDev(xX,xY,aX,aY,bX,bY,cX,cY,dX,dY)/height(xY,aY,cY,dY))
+    [eavg,asym,eD,przscore,dev,cpl1,cpl2]
+
+// @function Get total weighted score value for a pattern
+export harmonic_xabcd_scoreTot(float asym, float eavg, float przscore, float eD, int tp, float w_a, float w_e, float w_p, float w_d)=>
+    if not na(eD)
+        if tp==6    // PRZ confluence doesn't apply to Cypher pattern (only XA retracement defined)
+            ((1-asym)*w_a + (1-eavg)*w_e + (1-eD)*w_d)/(w_a+w_e+w_d)
+        else
+            ((1-asym)*w_a + (1-eavg)*w_e + przscore*w_p + (1-eD)*w_d)/(w_a+w_e+w_p+w_d)
+    else    // else incomplete pattern score
+        if tp==6
+            ((1-asym)*w_a + (1-eavg)*w_e)/(w_a+w_e)
+        else
+            ((1-asym)*w_a + (1-eavg)*w_e + przscore*w_p)/(w_a+w_e+w_p)
+
+// @function Get target level
+export harmonic_xabcd_targets(float xY,float aY,float bY,float cY,float dY,string tgt1,string tgt2=na,string tgt3=na) =>
+    t1 = resolveTarget(tgt1,xY,aY,bY,cY,dY)
+    t2 = na(tgt2) ? na : resolveTarget(tgt2,xY,aY,bY,cY,dY)
+    t3 = na(tgt3) ? na : resolveTarget(tgt3,xY,aY,bY,cY,dY)
+    [t1,t2,t3]
+
+// @function Get stop level
+export harmonic_xabcd_stop(string stop, float stopPct, bool bull, float xY, float dY, float upper, float lower, float t1, float eY) =>
+    e = na(eY) ? dY : eY
+    if bull
+        switch stop
+            "% beyond Point D" => dY * (1-stopPct/100) > 0 ? dY * (1-stopPct/100) : 0.0
+            "% beyond X or D" => math.min(xY,dY) * (1-stopPct/100) > 0 ? math.min(xY,dY) * (1-stopPct/100) : 0.0
+            "% beyond entry" => e * (1-stopPct/100) > 0 ? e * (1-stopPct/100) : 0.0
+            "% of distance to target 1, beyond entry" => e - (stopPct/100)*(t1-e) > 0 ? e - (stopPct/100)*(t1-e) : 0.0
+            => lower * (1-stopPct/100) > 0 ? lower * (1-stopPct/100) : 0.0
+    else
+        switch stop
+            "% beyond Point D" => dY * (1+stopPct/100)
+            "% beyond X or D" => math.max(xY,dY) * (1+stopPct/100)
+            "% beyond entry" => e * (1+stopPct/100)
+            "% of distance to target 1, beyond entry" => e + (stopPct/100)*(e-t1)
+            => upper * (1+stopPct/100)
+
+// @function Get fib ratio display text 
+export harmonic_xabcd_fibDispTxt(int tp) =>
+    rb = switch tp
+        1 => "0.618"
+        2 => "0.382 | 0.5"
+        3 => "0.786"
+        4 => "0.382 | 0.618"
+        5 => "NA"
+        6 => "0.382 | 0.618"
+    //
+    rc = switch tp
+        1 => "0.382 | 0.886"
+        2 => "0.382 | 0.886"
+        3 => "0.382 | 0.886"
+        4 => "0.382 | 0.886"
+        5 => "1.13 | 1.618"
+        6 => "1.272 | 1.414"
+    //
+    rd1 = switch tp
+        1 => "1.272 | 1.618"
+        2 => "1.618 | 2.618"
+        3 => "1.618 | 2.618"
+        4 => "2.24 | 3.618"
+        5 => "1.618 | 2.24"
+        6 => "NA"
+    //
+    rd2 = switch tp
+        1 => "0.786"
+        2 => "0.886"
+        3 => "1.272 | 1.618"
+        4 => "1.618"
+        5 => "0.886 | 1.13"
+        6 => "0.786"
+    [rb,rc,rd1,rd2]
+
+// @function Get pattern symbol
+export harmonic_xabcd_symbol(int tp) =>
+    switch tp
+        1 => "Ɠ"
+        2 => "🦇"
+        3 => "🦋"
+        4 => "🦀"
+        5 => "🦈"
+        6 => "Ƈ"
+        => ""
+
+//-----------------------------------------
+// Patterns
+//-----------------------------------------
+
+// @function Determine if an XABCD pattern has just completed (i.e. point D is on the previous bar)
+// @param x_is_low Flag to determine if point X is a low pivot, i.e. bullish pattern (bool, dft = true)
+// @param pivot_length Number of bars before and after a valid pivot (int, dft = 5)
+// @param source Source series (float, dft = na, will use high and low series)
+// @param conf_length Number of trailing bars after pivot point D to confirm a valid pattern (int, dft = 1)
+// @param incomplete Flag to return an incomplete XABC pattern (bool, dft = false)
+// @returns [flag,xx,xy,ax,ay,bx,by,cx,cy,dx,dy]
+//      flag = true if valid XABCD pattern completed on previous bar
+//      xx = X coordinate of point X (int)
+//      xy = Y coordinate of point X (float)
+//      ax = X coordinate of point A (int)
+//      ay = Y coordinate of point A (float)
+//      bx = X coordinate of point B (int)
+//      by = Y coordinate of point B (float)
+//      cx = X coordinate of point C (int)
+//      cy = Y coordinate of point C (float)
+//      dx = X coordinate of point D (int)
+//      dy = Y coordinate of point D (float)
+//
+export pat_xabcd(bool x_is_low=true, int pivot_length=5, float source = na, int conf_length=1, bool incomplete=false) =>
+    r_flag = false
+    x = -1, a = -1, b = -1, c = -1, d = -1
+    x_y=0.0, a_y=0.0, b_y=0.0, c_y=0.0, d_y=0.0
+    
+    lb = pivot_length * 30 > bar_index ? bar_index : pivot_length * 30
+    hsrc = na(source) ? high : source
+    lsrc = na(source) ? low : source
+    pl = ta.pivotlow(lsrc,pivot_length,pivot_length)
+    ph = ta.pivothigh(hsrc,pivot_length,pivot_length)
+    lbLow = ta.pivotlow(lsrc,pivot_length,conf_length)
+    lbHigh = ta.pivothigh(hsrc,pivot_length,conf_length)
+    
+    hSince = 0.0
+    lSince = 0.0
+
+    // Check for bullish XABCD
+    if x_is_low
+        if not na(lbLow) or incomplete                        // *** Valid D ***
+            d := incomplete ? -1 : bar_index - conf_length
+            d_y := incomplete ? 0.0 : lbLow
+            for i=(incomplete?0:conf_length) to pivot_length
+                if hsrc[i] > hSince                 // get highest between D and first potential pivot
+                    hSince := hsrc[i]
+                if lsrc[i] < lSince or lSince == 0  // get lowest between D and first potential pivot
+                    lSince := lsrc[i]
+            // Loop back to look for points C, B, A, and X
+            for i=0 to lb
+                if hsrc[i+pivot_length] > hSince                // highest since last valid pivot
+                    hSince := hsrc[i+pivot_length]
+                if lsrc[i+pivot_length] < lSince or lSince == 0  // lowest since last valid pivot
+                    lSince := lsrc[i+pivot_length]
+                if c == -1                              // *** Find C ***
+                    if not na(pl[i])                        // next pivot is low
+                        if pl[i] < d_y                          // if low is lower than D, pattern is invalid (else skip to next bar)
+                            break
+                    else if not na(ph[i])                   // next pivot is high
+                        if ph[i] < d_y                          // if high is lower than D, pattern is invalid
+                            break
+                        else if hSince > ph[i]                  // if higher intermediate high (not valid pivot), pattern is invalid
+                            break
+                        else                                    // else valid pivot high, valid C
+                            c := bar_index - i - pivot_length
+                            c_y := ph[i]
+                            hSince := 0.0
+                            lSince := 0.0
+                    else if incomplete
+                        break
+                else if b == -1                         // *** Find B ***
+                    if not na(ph[i])                        // next pivot is high
+                        if ph[i] > c_y                          // if high is higher than C, pattern is invalid (else skip to next bar)
+                            break
+                    else if not na(pl[i])                   // next pivot is low
+                        if pl[i] > c_y                          // if low is higher than C, pattern is invalid
+                            break
+                        else if lSince < pl[i]                  // if lower intermediate low (not valid pivot), pattern is invalid
+                            break
+                        else                                // else valid pivot low, valid B
+                            b := bar_index - i - pivot_length
+                            b_y := pl[i]
+                            hSince := 0.0
+                            lSince := 0.0
+                else if a == -1                         // *** Find A ***
+                    if not na(pl[i])                        // next pivot is low
+                        if pl[i] < b_y                          // if low is lower than B, pattern is invalid (else skip to next bar)
+                            break
+                    else if not na(ph[i])                   // next pivot is high
+                        if ph[i] < b_y                          // if high is lower than B, pattern is invalid
+                            break
+                        else if hSince > ph[i]                  // if higher intermediate high (not valid pivot), pattern is invalid
+                            break
+                        else                                // else valid pivot high, valid A
+                            a := bar_index - i - pivot_length
+                            a_y := ph[i]
+                            hSince := 0.0
+                            lSince := 0.0
+                else if x == -1                         // *** Find X ***
+                    if not na(ph[i])                        // next pivot is high
+                        if ph[i] > a_y                          // if high is higher than A, pattern is invalid (else skip to next bar)
+                            break
+                    else if not na(pl[i])                   // next pivot is low
+                        if pl[i] > a_y                          // if low is higher than A, pattern is invalid
+                            break
+                        else if lSince < pl[i]                  // if lower intermediate low (not valid pivot), pattern is invalid
+                            break
+                        else                                // else valid pivot low, valid X
+                            r_flag := true                      // valid XABCD pattern
+                            x := bar_index - i - pivot_length
+                            x_y := pl[i]
+                            break
+    
+    // Check for bearish XABCD
+    else
+        if not na(lbHigh) or incomplete                       // *** Valid D ***
+            d := incomplete ? -1 : bar_index - conf_length
+            d_y := incomplete ? 0.0 : lbHigh
+            for i=(incomplete?0:conf_length) to pivot_length
+                if hsrc[i] > hSince                 // get highest between D and first potential pivot
+                    hSince := hsrc[i]
+                if lsrc[i] < lSince or lSince == 0  // get lowest between D and first potential pivot
+                    lSince := lsrc[i]
+            // Loop back to look for points C, B, A, and X
+            for i=0 to lb
+                if hsrc[i+pivot_length] > hSince                // highest since last valid pivot
+                    hSince := hsrc[i+pivot_length]
+                if lsrc[i+pivot_length] < lSince or lSince == 0  // lowest since last valid pivot
+                    lSince := lsrc[i+pivot_length]
+                if c == -1                              // *** Find C ***
+                    if not na(ph[i])                        // next pivot is high
+                        if ph[i] > d_y and incomplete==false    // if high is higher than D, pattern is invalid (else skip to next bar)
+                            break
+                    else if not na(pl[i])                   // next pivot is low
+                        if pl[i] > d_y and incomplete==false    // if low is higher than D, pattern is invalid
+                            break
+                        else if lSince < pl[i]                  // if lower intermediate low (not valid pivot), pattern is invalid
+                            break
+                        else                                    // else valid pivot low, valid C
+                            c := bar_index - i - pivot_length
+                            c_y := pl[i]
+                            hSince := 0.0
+                            lSince := 0.0
+                    else if incomplete
+                        break
+                else if b == -1                         // *** Find B ***
+                    if not na(pl[i])                        // next pivot is low
+                        if pl[i] < c_y                          // if low is lower than C, pattern is invalid (else skip to next bar)
+                            break
+                    else if not na(ph[i])                   // next pivot is high
+                        if ph[i] < c_y                          // if high is lower than C, pattern is invalid
+                            break
+                        else if hSince > ph[i]                  // if higher intermediate high (not valid pivot), pattern is invalid
+                            break
+                        else                                // else valid pivot high, valid B
+                            b := bar_index - i - pivot_length
+                            b_y := ph[i]
+                            hSince := 0.0
+                            lSince := 0.0
+                else if a == -1                         // *** Find A ***
+                    if not na(ph[i])                        // next pivot is high
+                        if ph[i] > b_y                          // if high is higher than B, pattern is invalid (else skip to next bar)
+                            break
+                    else if not na(pl[i])                   // next pivot is low
+                        if pl[i] > b_y                          // if low is higher than B, pattern is invalid
+                            break
+                        else if lSince < pl[i]                  // if lower intermediate low (not valid pivot), pattern is invalid
+                            break
+                        else                                // else valid pivot low, valid A
+                            a := bar_index - i - pivot_length
+                            a_y := pl[i]
+                            hSince := 0.0
+                            lSince := 0.0
+                else if x == -1                         // *** Find X ***
+                    if not na(pl[i])                        // next pivot is low
+                        if pl[i] < a_y                          // if low is lower than A, pattern is invalid (else skip to next bar)
+                            break
+                    else if not na(ph[i])                   // next pivot is high
+                        if ph[i] < a_y                          // if high is lower than A, pattern is invalid
+                            break
+                        else if hSince > ph[i]                  // if higher intermediate high (not valid pivot), pattern is invalid
+                            break
+                        else                                // else valid pivot high, valid X
+                            r_flag := true                      // valid XABCD pattern
+                            x := bar_index - i - pivot_length
+                            x_y := ph[i]
+                            break
+    [r_flag,x,x_y,a,a_y,b,b_y,c,c_y,d,d_y]
+
+//***
+// find_pattern() =>
+//     [f,xX,xY,aX,aY,bX,bY,cX,cY,dX,dY] = pat_xabcd(true,3,incomplete=true)
+//     // if aX >= 0
+//     //     u.print(str.tostring(aX),at_index=9110)
+//     //     u.print(str.tostring(bX),position.bottom_right,at_index=9110)
+//     //     u.print(str.tostring(cX),position.middle_right,at_index=9110)
+//     //     u.print(str.tostring(dX),position.middle_center,at_index=9110)
+//     //     if pat_xabcd_validateIncomplete(aX,aY,bX,bY,cX,cY,dX,dY,0.618,1.414,15.0,250.0)
+//     //         ""
+// find_pattern()
+
+// @function Determine if an XABCD pattern is in progress (point C was just confirmed)
+// @param x_is_low Flag to determine if point X is a low pivot, i.e. bullish M pattern (bool, dft = true)
+// @param pivot_length Number of bars before and after a valid pivot (int, dft = 5)
+// @param source Source series (float, dft = na, will use high and low series)
+// @param conf_length Number of trailing bars after pivot point D to confirm a valid pattern (int, dft = 1)
+// @returns [flag,xx,xy,ax,ay,bx,by,cx,cy]
+//      flag = true if valid XABC pattern completed on bar_index[conf_length]
+//      xx = X coordinate of point X (int)
+//      xy = Y coordinate of point X (float)
+//      ax = X coordinate of point A (int)
+//      ay = Y coordinate of point A (float)
+//      bx = X coordinate of point B (int)
+//      by = Y coordinate of point B (float)
+//      cx = X coordinate of point C (int)
+//      cy = Y coordinate of point C (float)
+//      dx = X coordinate of point D (int)
+//      dy = Y coordinate of point D (float)
+//
+export pat_xabcdIncomplete(bool x_is_low=true, int pivot_length=5, float source = na, int conf_length=1) =>
+    r_flag = false
+    x = -1, a = -1, b = -1, c = -1
+    x_y=0.0, a_y=0.0, b_y=0.0, c_y=0.0
+    
+    lb = pivot_length * 25 > bar_index ? bar_index : pivot_length * 25
+    hsrc = na(source) ? high : source
+    lsrc = na(source) ? low : source
+    pl = ta.pivotlow(lsrc,pivot_length,pivot_length)
+    ph = ta.pivothigh(hsrc,pivot_length,pivot_length)
+    confLow = ta.pivotlow(lsrc,pivot_length,conf_length)
+    confHigh = ta.pivothigh(hsrc,pivot_length,conf_length)
+    
+    hSince = 0.0
+    lSince = 0.0
+    int start = na
+    float highest = na
+    float lowest = na
+
+    // Check for bullish XABC
+    if x_is_low
+        for i=0 to pivot_length
+            if na(highest) or high[i] > highest
+                highest := high[i]
+            if not na(confHigh[i])
+                if confHigh[i] >= highest
+                    c := bar_index[conf_length+i]
+                    c_y := confHigh[i]
+                    start := conf_length + i
+                break
+        if c > -1                           // *** Valid C ***
+            for i=start to pivot_length
+                if hsrc[i] > hSince                 // get highest between C and first potential pivot
+                    hSince := hsrc[i]
+                if lsrc[i] < lSince or lSince == 0  // get lowest between C and first potential pivot
+                    lSince := lsrc[i]
+            // Loop back to look for points B, A, and X
+            for i=start to lb
+                if hsrc[i+pivot_length] > hSince                // highest since last valid pivot
+                    hSince := hsrc[i+pivot_length]
+                if lsrc[i+pivot_length] < lSince or lSince == 0 // lowest since last valid pivot
+                    lSince := lsrc[i+pivot_length]
+                if b == -1                          // *** Find B ***
+                    if hSince > c_y
+                        break
+                    else if not na(ph[i])                   // next pivot is high
+                        if ph[i] > c_y                          // if high is higher than C, pattern is invalid (else skip to next bar)
+                            break
+                    else if not na(pl[i])                   // next pivot is low
+                        if pl[i] > c_y                          // if low is higher than C, pattern is invalid
+                            break
+                        else if lSince < pl[i]                  // if lower intermediate low (not valid pivot), pattern is invalid
+                            break
+                        else                                // else valid pivot low, valid B
+                            b := bar_index - i - pivot_length
+                            b_y := pl[i]
+                            hSince := 0.0
+                            lSince := 0.0
+                else if a == -1                         // *** Find A ***
+                    if lSince < b_y
+                        break
+                    else if not na(pl[i])                   // next pivot is low
+                        if pl[i] < b_y                          // if low is lower than B, pattern is invalid (else skip to next bar)
+                            break
+                    else if not na(ph[i])                   // next pivot is high
+                        if ph[i] < b_y                          // if high is lower than B, pattern is invalid
+                            break
+                        else if hSince > ph[i]                  // if higher intermediate high (not valid pivot), pattern is invalid
+                            break
+                        else                                // else valid pivot high, valid A
+                            a := bar_index - i - pivot_length
+                            a_y := ph[i]
+                            hSince := 0.0
+                            lSince := 0.0
+                else if x == -1                         // *** Find X ***
+                    if hSince > a_y
+                        break
+                    else if not na(ph[i])                   // next pivot is high
+                        if ph[i] > a_y                          // if high is higher than A, pattern is invalid (else skip to next bar)
+                            break
+                    else if not na(pl[i])                   // next pivot is low
+                        if pl[i] > a_y                          // if low is higher than A, pattern is invalid
+                            break
+                        else if lSince < pl[i]                  // if lower intermediate low (not valid pivot), pattern is invalid
+                            break
+                        else                                // else valid pivot low, valid X
+                            r_flag := true                      // valid XABCD pattern
+                            x := bar_index - i - pivot_length
+                            x_y := pl[i]
+                            break
+    
+    // Check for bearish XABC
+    else
+        for i=0 to pivot_length
+            if na(lowest) or low[i] < lowest
+                lowest := low[i]
+            if not na(confLow[i])
+                if confLow[i] <= lowest
+                    c := bar_index[conf_length+i]
+                    c_y := confLow[i]
+                    start := conf_length + i
+                break
+        if c > -1                       // *** Valid C ***
+            for i=start to pivot_length
+                if hsrc[i] > hSince                 // get highest between C and first potential pivot
+                    hSince := hsrc[i]
+                if lsrc[i] < lSince or lSince == 0  // get lowest between C and first potential pivot
+                    lSince := lsrc[i]
+            // Loop back to look for points B, A, and X
+            for i=start to lb
+                if hsrc[i+pivot_length] > hSince                // highest since last valid pivot
+                    hSince := hsrc[i+pivot_length]
+                if lsrc[i+pivot_length] < lSince or lSince == 0  // lowest since last valid pivot
+                    lSince := lsrc[i+pivot_length]
+                if b == -1                              // *** Find B ***
+                    if lSince < c_y
+                        break
+                    else if not na(pl[i])                   // next pivot is low
+                        if pl[i] < c_y                          // if low is lower than C, pattern is invalid (else skip to next bar)
+                            break
+                    else if not na(ph[i])                   // next pivot is high
+                        if ph[i] < c_y                          // if high is lower than C, pattern is invalid
+                            break
+                        else if hSince > ph[i]                  // if higher intermediate high (not valid pivot), pattern is invalid
+                            break
+                        else                                // else valid pivot high, valid B
+                            b := bar_index - i - pivot_length
+                            b_y := ph[i]
+                            hSince := 0.0
+                            lSince := 0.0
+                else if a == -1                         // *** Find A ***
+                    if hSince > b_y
+                        break
+                    else if not na(ph[i])                   // next pivot is high
+                        if ph[i] > b_y                          // if high is higher than B, pattern is invalid (else skip to next bar)
+                            break
+                    else if not na(pl[i])                   // next pivot is low
+                        if pl[i] > b_y                          // if low is higher than B, pattern is invalid
+                            break
+                        else if lSince < pl[i]                  // if lower intermediate low (not valid pivot), pattern is invalid
+                            break
+                        else                                // else valid pivot low, valid A
+                            a := bar_index - i - pivot_length
+                            a_y := pl[i]
+                            hSince := 0.0
+                            lSince := 0.0
+                else if x == -1                         // *** Find X ***
+                    if lSince < a_y
+                        break
+                    else if not na(pl[i])                   // next pivot is low
+                        if pl[i] < a_y                          // if low is lower than A, pattern is invalid (else skip to next bar)
+                            break
+                    else if not na(ph[i])                   // next pivot is high
+                        if ph[i] < a_y                          // if high is lower than A, pattern is invalid
+                            break
+                        else if hSince > ph[i]                  // if higher intermediate high (not valid pivot), pattern is invalid
+                            break
+                        else                                // else valid pivot high, valid X
+                            r_flag := true                      // valid XABCD pattern
+                            x := bar_index - i - pivot_length
+                            x_y := ph[i]
+                            break
+    [r_flag,x,x_y,a,a_y,b,b_y,c,c_y]
+
+//-----------------------------------------
+// General functions
+//-----------------------------------------
+
+// @function Determine if trade is successful
+//
+// @param eX Entry bar index (int)
+// @param stop Stop level (float)
+// @param t1 Target 1 level (float)
+// @param t2 Target 2 level (float) 
+//
+// @returns [t1Hit,t2Hit,t1x,t1y,t2x,t2y]
+//
+export success(int eX, float stop, float t1, float t2=na) =>
+    bool t1Hit = na 
+    bool t2Hit = na
+    int t1x = na
+    float t1y = na
+    int t2x = na
+    float t2y = na
+    n = bar_index - eX
+    for i = 0 to n
+        if stop < t1    // long
+            // i==0 is entry bar, check that target wasn't hit before entry. Can't actually do this with historical bar data,
+            // but checking open/close in relation to the target covers most scenarios.
+            if high[n-i] >= t2 and not na(t2) and (i!=0 or open[n-i]<t2 or close[n-i]>=t2)
+                t1x := bar_index-(n-i)
+                t1y := t1
+                t2x := bar_index-(n-i)
+                t2y := t2
+                t1Hit := true
+                t2Hit := true
+                break
+            else if high[n-i] >= t1 and (i!=0 or open[n-i]<t1 or close[n-i]>=t2)
+                t1x := bar_index-(n-i)
+                t1y := t1
+                t1Hit := true
+            else if low[n-i] < stop and (i!=0 or open[n-i]>stop or close[n-i]<=stop)
+                t1Hit := t1Hit ? true : false
+                t2Hit := false
+                if t1Hit==false
+                    t1x := bar_index-(n-i)
+                    t1y := stop
+                break
+        else
+            if low[n-i] <= t2 and not na(t2) and (i!=0 or open[n-i]>t2 or close[n-i]<=t2)
+                t1x := bar_index-(n-i)
+                t1y := t1
+                t2x := bar_index-(n-i)
+                t2y := t2
+                t1Hit := true
+                t2Hit := true
+                break
+            else if low[n-i] <= t1 and (i!=0 or open[n-i]>t1 or close[n-i]<=t1)
+                t1x := bar_index-(n-i)
+                t1y := t1
+                t1Hit := true
+            else if high[n-i] > stop and (i!=0 or open[n-i]<stop or close[n-i]>=stop)
+                t1Hit := t1Hit ? true : false
+                t2Hit := false
+                if t1Hit==false
+                    t1x := bar_index-(n-i)
+                    t1y := stop
+                break
+    [t1Hit,t2Hit,t1x,t1y,t2x,t2y]
+
+// @function Determine if Target or Stop was hit on the current bar
+export tradeClosed(int eX, float eY, float stop, bool t1h, bool t2h, float t1, float t2=na) =>
+    bool t1Hit = na 
+    bool t2Hit = na
+    bool sHit = na
+    int t1x = na
+    float t1y = na
+    int t2x = na
+    float t2y = na
+    if stop < t1    // long
+        // If on entry bar, check that target wasn't hit before entry. Can't actually do this with historical bar data,
+        // but checking open/close in relation to the target covers most scenarios.
+        if na(t2h) and high >= t2 and not na(t2) and (bar_index!=eX or open<eY or close>=t2)
+            t1x := bar_index
+            t1y := t1
+            t2x := bar_index
+            t2y := t2
+            t1Hit := true
+            t2Hit := true
+        else if na(t1h) and high >= t1 and (bar_index!=eX or open<eY or close>=t1)
+            t1x := bar_index
+            t1y := t1
+            t1Hit := true
+        else if (na(t2h) or t2h==false) and low < stop and (bar_index!=eX or open>stop or close<=stop)
+            sHit := true
+            t1Hit := t1Hit or t1h ? true : false
+            t2Hit := false
+            if t1Hit==false
+                t1x := bar_index
+                t1y := stop
+        else
+            t1Hit := t1h
+            t2Hit := t2h
+    else
+        if na(t2h) and low <= t2 and not na(t2) and (bar_index!=eX or open>eY or close<=t2)
+            t1x := bar_index
+            t1y := t1
+            t2x := bar_index
+            t2y := t2
+            t1Hit := true
+            t2Hit := true
+        else if na(t1h) and low <= t1 and (bar_index!=eX or open>eY or close<=t1)
+            t1x := bar_index
+            t1y := t1
+            t1Hit := true
+        else if (na(t2h) or t2h==false) and high > stop and (bar_index!=eX or open<stop or close>=stop)
+            sHit := true
+            t1Hit := t1Hit or t1h ? true : false
+            t2Hit := false
+            if t1Hit==false
+                t1x := bar_index
+                t1y := stop
+        else
+            t1Hit := t1h
+            t2Hit := t2h
+    [t1Hit,t2Hit,sHit,t1x,t1y,t2x,t2y]

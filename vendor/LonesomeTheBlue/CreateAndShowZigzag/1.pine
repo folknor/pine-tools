@@ -1,0 +1,68 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © LonesomeTheBlue
+
+//@version=5
+
+// @description Functions in this library creates/updates zigzag array and shows the zigzag
+library("CreateAndShowZigzag")
+
+// @function adds new elements to the array
+// @param zigzag is the float array for the zigzag (should be defined like "var zigzag = array.new_float(0)"). each zigzag points contains 2 element: 1. price level of the zz point 2. bar_index of the zz point
+// @param value is the price level of the zigzag to add
+// @param max_array_size is the maximum number of elements in zigzag, keep in mind each zigzag point contains 2 elements, so for example if it's 10 then zigzag has 10/2 => 5 zigzag points 
+addtozigzag(float [] zigzag, float value, int max_array_size) =>
+    array.unshift(zigzag, bar_index)
+    array.unshift(zigzag, value)
+    if array.size(zigzag) > max_array_size
+        array.pop(zigzag)
+        array.pop(zigzag)
+
+// @function updates last element of the zigzag if there is a move on same direction
+// @param zigzag is the float array for the zigzag (should be defined like "var zigzag = array.new_float(0)"). each zigzag points contains 2 element: 1. price level of the zz point 2. bar_index of the zz point
+// @param value is the price level of the zigzag to add
+// @param dir current direction of the zigzag
+// @param max_array_size is the maximum number of elements in zigzag, keep in mind each zigzag point contains 2 elements, so for example if it's 10 then zigzag has 10/2 => 5 zigzag points 
+updatezigzag(float [] zigzag, float value, int dir, int max_array_size) =>
+    if array.size(zigzag) == 0
+        addtozigzag(zigzag, value,  max_array_size)
+    else
+        if dir == 1 and value > array.get(zigzag, 0) or dir == -1 and value < array.get(zigzag, 0)
+            array.set(zigzag, 0, value)
+            array.set(zigzag, 1, bar_index)
+        0.
+
+// @function calculates zigzag using period
+// @param zigzag is the float array for the zigzag (should be defined like "var zigzag = array.new_float(0)"). each zigzag points contains 2 element: 1. price level of the zz point 2. bar_index of the zz point
+// @param prd is the length to calculate zigzag waves by highest(prd)/lowest(prd)
+// @param max_array_size is the maximum number of elements in zigzag, keep in mind each zigzag point contains 2 elements, so for example if it's 10 then zigzag has 10/2 => 5 zigzag points 
+// @returns dir that is the current direction of the zigzag
+export getZigzag(float [] zigzag, int prd, int max_array_size)=> 
+    float ph = ta.highestbars(high, prd) == 0 ? high : na
+    float pl = ta.lowestbars(low, prd) == 0 ? low : na
+    var int dir = 0
+    dir := (ph and na(pl)) ? 1 : 
+           (pl and na(ph)) ? -1 : 
+           dir
+    bool dirchanged = (dir != dir[1])
+    if ph or pl
+        if dirchanged
+            addtozigzag(zigzag, dir == 1 ? ph : pl, max_array_size)
+        else
+            updatezigzag(zigzag, dir == 1 ? ph : pl, dir, max_array_size)
+    dir
+
+// @function this function show zigzag
+// @param zigzag is the float array for the zigzag (should be defined like "var zigzag = array.new_float(0)"). each zigzag points contains 2 element: 1. price level of the zz point 2. bar_index of the zz point
+// @param oldzigzag is the float array for the zigzag, you get copy the zigzag array to oldzigzag by "oldzigzag = array.copy(zigzay)" before calling get_zigzag() function
+// @param dir is the direction of the zigzag wave
+// @param upcol is the color of the line if zigzag direction is up
+// @param dncol is the color of the line if zigzag direction is down
+// @returns null
+export showZigzag(float [] zigzag, float [] oldzigzag, int dir, color upcol, color dncol)=>
+    if array.size(zigzag) >= 4 and array.size(oldzigzag) >= 4
+        var line zzline = na
+        if array.get(zigzag, 0) != array.get(oldzigzag, 0) or array.get(zigzag, 1) != array.get(oldzigzag, 1)
+            if array.get(zigzag, 2) == array.get(oldzigzag, 2) and array.get(zigzag, 3) == math.round(array.get(oldzigzag, 3))
+                line.delete(zzline)
+            zzline := line.new(x1 = math.round(array.get(zigzag, 1)), y1 = array.get(zigzag, 0), x2 = math.round(array.get(zigzag, 3)), y2 = array.get(zigzag, 2), color = dir == 1 ? upcol : dncol, width = 2)
+ 

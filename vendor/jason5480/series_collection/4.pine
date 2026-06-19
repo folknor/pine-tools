@@ -1,0 +1,989 @@
+//#region SETUP
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © jason5480
+
+//@version=6
+
+// @description A personal collection of commonly used series types like moving averages that are supported directly by
+// the pinescript library ('ALMA', 'DEMA', 'EMA', 'HMA', 'RMA', 'SMA', 'SWMA', 'VWMA', 'WMA'), highest and lowest source,
+// median and pivots. One single function (with overloads) that can be configured easily by the user input and can be
+// used as a core piece of functionality for many user cases. This library was created to abstract away and re-use this
+// commonly used functionality in my "Two MA Signal Indicator" script and the "Template Trailing Strategy" script. Both
+// of them use the "two_ma_logic" for defining entry and exit signals. While this piece of work does not contain any
+// novel mathematical expressions and just adds a convinient (and configurable) way to do things, I hope that might add
+// value to other scripts as well and future projects.
+library(title = 'series_collection')
+
+//#endregion ===========================================================================================================
+//#region SERIES =======================================================================================================
+//
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+
+// @enum The enum of supported moving averages, metrics and source scpesific series
+// @field alma Arnaud Legoux Moving Average
+// @field dema Double EMA Moving Average
+// @field ema Exponential Moving Average
+// @field hma Harmonic Moving Average
+// @field rma Welles Wilders Smoothing Moving Average [RMA = SMMA = WWMA]
+// @field sma Simple Moving Average
+// @field swma Self-Weighted Moving Average
+// @field vwma Volume Weighted Moving Average
+// @field wma Weighted Moving Average
+// @field highest Highest source value
+// @field lowest Lowest source value
+// @field hiloestavg Average of lowest and highest values
+// @field median Median source value
+// @field medianHighest Median of the highest source values
+// @field medianLowest Median of the lowest source values
+// @field linreg Linear regresion source value
+// @field pivotHigh Pivot high of the source values
+// @field pivotLow Pivot low of the source values
+// @field source The source value
+export enum SeriesType
+    alma = 'ALMA'
+    dema = 'DEMA'
+    ema = 'EMA'
+    hma = 'HMA'
+    rma = 'RMA'
+    sma = 'SMA'
+    swma = 'SWMA'
+    vwma = 'VWMA'
+    wma = 'WMA'
+    highest = 'HIGHEST'
+    lowest = 'LOWEST'
+    hiloestavg = 'HILOESTAVG'
+    median = 'MEDIAN'
+    medianHighest = 'MEDIANHIGHEST'
+    medianLowest = 'MEDIANLOWEST'
+    linreg = 'LINREG'
+    pivotHigh = 'PIVOTHIGH'
+    pivotLow = 'PIVOTLOW'
+    source = 'SOURCE'
+
+// @function Calculate the custom series of the given source for the given length and type
+// @param length The length of the custom series
+// @param seriesType The enum type of the custom series
+// @param source The source of the values
+// @returns The resulting value of the calculations of the custom series
+export cust_series(simple int length, simple SeriesType seriesType = SeriesType.sma, float source = close) =>
+    switch seriesType
+        // Moving Averages
+        SeriesType.alma => ta.alma(source, length, 0.85, 6)
+        SeriesType.dema => ema = ta.ema(source, length), 2 * ema - ta.ema(ema, length)
+        SeriesType.ema => ta.ema(source, length)
+        SeriesType.hma => ta.hma(source, length)
+        SeriesType.rma => ta.rma(source, length)
+        SeriesType.sma => ta.sma(source, length)
+        SeriesType.swma => ta.swma(source)
+        SeriesType.vwma => ta.vwma(source, length)
+        SeriesType.wma => ta.wma(source, length)
+        // Ohter metrics
+        SeriesType.highest => ta.highest(source, length)
+        SeriesType.lowest => ta.lowest(source, length)
+        SeriesType.hiloestavg => (ta.lowest(source, length) + ta.highest(source, length)) / 2
+        SeriesType.median => ta.median(source, length)
+        SeriesType.medianHighest => ta.median(ta.highest(source, length), length)
+        SeriesType.medianLowest => ta.median(ta.lowest(source, length), length)
+        SeriesType.linreg => ta.linreg(source, length, 0)
+        // Source specific series
+        SeriesType.pivotHigh => fixnan(ta.pivothigh(source, length, 2))
+        SeriesType.pivotLow => fixnan(ta.pivotlow(source, length, 2))
+        SeriesType.source => source
+        =>
+            runtime.error(str.tostring(seriesType) + ' is not a supported series type. The supported types are [ALMA, DEMA, EMA, HMA, RMA, SMA, SWMA, VWMA, WMA, HIGHEST, LOWEST, HILOESTAVG, MEDIAN, MEDIANHIGHEST, MEDIANLOWEST, LINREG, PIVOTHIGH, PIVOTLOW, SOURCE]')
+            na
+
+// @function Calculate the custom series of the given source for the given length and type
+// @param length The length of the custom series (ceiled)
+// @param seriesType The enum type of the custom series
+// @param source The source of the values
+// @returns The resulting value of the calculations of the custom series
+export cust_series(simple float length, simple SeriesType seriesType = SeriesType.sma, float source = close) =>
+    cust_series(math.ceil(length), seriesType, source)
+
+//#endregion ===========================================================================================================
+//#region ARRAY FRONT ==================================================================================================
+//
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+
+// @function Add a number to the start of the array. Remove item from the end to preserve the maximum items cap
+// @param this The array
+// @param val The value to be pushed
+// @param maxItems The max number of items array can hold
+// @returns The value that was popped from the array
+export method push_front_pop(array<float> this, float val, int maxItems) =>
+    this.unshift(val)
+    while this.size() > maxItems
+        this.pop()
+
+//@function Checks and returns an index withing the [0, size) range
+// @param this The array
+// @param index The index to be normalized
+// @returns The normalized index
+method normalize_index(array<float> this, index) =>
+    int size = this.size()
+    int i = index
+    while i < 0
+        i += size
+    while i >= size
+        i -= size
+    i
+
+//@function Rotates values in the array towards the first position, in such a way that the value in the position will be moved to the first place
+// @param this The array
+// @param newFirstPos The position of the value of the array that will be moved to the first place
+// @returns The modied array
+method rotate(array<float> this, int newFirstPos) =>
+    array.concat(this.slice(newFirstPos, this.size()).copy(), this.slice(0, newFirstPos))
+
+//@function Rotates values in the array towards the first position, in such a way that the value in the position will be moved to the first place
+// @param this The array
+// @param newFirstPos The position of the value of the array that will be moved to the first place
+// @returns The modied array
+export method rotate_left(array<float> this, int newFirstPos) =>
+    int pos = this.normalize_index(newFirstPos)
+    this.rotate(pos)
+
+//@function Rotates values in the array towards the last position, in such a way that the first value will be moved to the position
+// @param this The array
+// @param newFirstPos The position where the first value of the array will be moved to
+// @returns The modied array
+export method rotate_right(array<float> this, int newFirstPos) =>
+    this.rotate_left(this.size() - newFirstPos)
+
+// @function Calculates the Arnaud Legoux moving average for the values in array
+// @param this The source array
+// @returns The ALMA value
+export method alma_front(array<float> this, simple float offset = 0.85, simple int sigma = 6) =>
+    int length = this.size()
+    float m = offset * (length - 1)
+    float s = length / sigma
+    float norm = 0.0
+    float sum = 0.0
+    for [i, src] in this
+        float weight = math.exp(-1 * math.pow(i - m, 2) / (2 * math.pow(s, 2)))
+        norm += weight
+        sum += this.get(length - 1 - i) * weight
+    sum / norm
+
+// @function Calculates the exponential moving average for the values in the array
+// @param this The source array
+// @returns The EMA value
+export method ema_front(array<float> this) =>
+    float mostRecent = this.first()
+    float k = 2 / (this.size() + 1)
+    var float ema = mostRecent
+    ema := mostRecent * k + (1 - k) * ema
+
+// @function Calculates the double exponential moving average for the values in the array
+// @param this The source array
+// @returns The EMA value
+export method dema_front(array<float> this) =>
+    float mostRecent = this.first()
+    float k = 2 / (this.size() + 1)
+    var float ema = mostRecent
+    ema := mostRecent * k + (1 - k) * ema
+    var float dema = ema
+    dema := ema * k + (1 - k) * dema
+    2 * ema - dema
+
+// @function Calculates the rolling moving average for the values in array
+// @param this The source array
+// @returns The RMA value
+export method rma_front(array<float> this) =>
+    float mostRecent = this.first()
+    int length = this.size()
+    var float ma = mostRecent
+    ma := (ma * (length - 1) + mostRecent) / length
+
+// @function Calculates the weighted moving average for the values in array
+// @param this The source array
+// @returns The WMA value
+export method wma_front(array<float> this) =>
+    int length = this.size()
+    float lenSum = length * (length + 1) / 2
+    float maSum = 0.0
+    for [i, src] in this
+        maSum += src * (length - i)
+    maSum / lenSum
+
+// @function Calculates the symetrically weighted moving average for the values in array
+// @param this The source array
+// @returns The SWMA value
+export method swma_front(array<float> this) =>
+    if this.size() >= 4
+        this.get(3) / 6 + this.get(2) / 3 + this.get(1) / 3 + this.get(0) / 6
+    else
+        na
+
+// @function Calculates the volume weighted moving average for the values in array
+// @param this The source array
+// @returns The VWMA value
+export method vwma_front(array<float> this) =>
+    int length = this.size()
+    var volWeighted = array.new<float>()
+    volWeighted.push_front_pop(this.get(0) * volume, length)
+    volWeighted.sum() / math.sum(volume, this.size())
+
+// @function Calculates the hull moving average for the values in array
+// @param this The source array
+// @returns The HMA value
+export method hma_front(array<float> this) =>
+    int length = this.size()
+    float wmaSlow = this.wma_front()
+    float wmaFast = this.slice(0, math.max(int(length / 2), 1)).wma_front()
+    var rawHmaRange = array.new<float>()
+    rawHmaRange.push_front_pop(2 * wmaFast - wmaSlow, int(math.sqrt(length)))
+    rawHmaRange.wma_front()
+
+// @function Calculates the linear regression for the values in array
+// @param this The source array
+// @returns The linreg value
+export method linreg_front(array<float> this) =>
+    int length = this.size()
+    float sumX = length * (length + 1) / 2
+    float sumY = this.sum()
+    float sumXY = 0.0
+    float sumX2 = 0.0
+    for [i, src] in this
+        int j = length - i
+        sumXY += (j * src)
+        sumX2 += math.pow(j, 2)
+    
+    float den = length * sumX2 - math.pow(sumX, 2)
+    float a = (length * sumXY - sumX * sumY) / den
+    float b = (sumY * sumX2 - sumX * sumXY) / den
+    // y = a*x + b
+    // x = length - 1
+    a * length + b
+
+// @function Calculate the custom series of the given array for the given type
+// @param this The source array
+// @param seriesType The enum type of the custom series
+// @returns The resulting value of the calculations of the custom series
+export method cust_series_front(array<float> this, simple SeriesType seriesType) =>
+    switch seriesType
+        // Moving Averages
+        SeriesType.alma => this.alma_front()
+        SeriesType.dema => this.dema_front()
+        SeriesType.ema => this.ema_front()
+        SeriesType.hma => this.hma_front()
+        SeriesType.rma => this.rma_front()
+        SeriesType.sma => this.avg()
+        SeriesType.swma => this.swma_front()
+        SeriesType.vwma => this.vwma_front()
+        SeriesType.wma => this.wma_front()
+        // Ohter metrics
+        SeriesType.highest => this.max()
+        SeriesType.lowest => this.min()
+        SeriesType.hiloestavg => (this.min() + this.max()) / 2
+        SeriesType.median => this.median()
+        SeriesType.medianHighest => ta.median(this.max(), this.size())
+        SeriesType.medianLowest => ta.median(this.min(), this.size())
+        SeriesType.linreg => this.linreg_front()
+        =>
+            runtime.error(str.tostring(seriesType) + ' is not a supported series type. The supported types are [ALMA, DEMA, EMA, HMA, RMA, SMA, SWMA, VWMA, WMA, HIGHEST, LOWEST, HILOESTAVG, MEDIAN, MEDIANHIGHEST, MEDIANLOWEST, LINREG]')
+            na
+
+//#endregion ===========================================================================================================
+//#region ARRAY BACK ===================================================================================================
+//
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+
+// @function Add a number to the end of the array. Remove item from the start to preserve the maximum items cap
+// @param this The array
+// @param val The value to be pushed
+// @param maxItems The max number of items array can hold
+// @returns The value that was shifted from the array
+export method push_back_shift(array<float> this, float val, int maxItems) =>
+    this.push(val)
+    while this.size() > maxItems
+        this.shift()
+
+// @function Calculates the Arnaud Legoux moving average for the values in array
+// @param this The source array
+// @returns The ALMA value
+export method alma_back(array<float> this, simple float offset = 0.85, simple int sigma = 6) =>
+    int length = this.size()
+    float m = offset * (length - 1)
+    float s = length / sigma
+    float norm = 0.0
+    float sum = 0.0
+    for [i, src] in this
+        float weight = math.exp(-1 * math.pow(i - m, 2) / (2 * math.pow(s, 2)))
+        norm += weight
+        sum += src * weight
+    sum / norm
+
+// @function Calculates the exponential moving average for the values in the array
+// @param this The source array
+// @returns The EMA value
+export method ema_back(array<float> this) =>
+    float mostRecent = this.last()
+    float k = 2 / (this.size() + 1)
+    var float ma = mostRecent
+    ma := mostRecent * k + (1 - k) * ma
+
+// @function Calculates the double exponential moving average for the values in the array
+// @param this The source array
+// @returns The EMA value
+export method dema_back(array<float> this) =>
+    float mostRecent = this.last()
+    float k = 2 / (this.size() + 1)
+    var float ema = mostRecent
+    ema := mostRecent * k + (1 - k) * ema
+    var float dema = ema
+    dema := ema * k + (1 - k) * dema
+    2 * ema - dema
+
+// @function Calculates the rolling moving average for the values in array
+// @param this The source array
+// @returns The RMA value
+export method rma_back(array<float> this) =>
+    float mostRecent = this.last()
+    int length = this.size()
+    var float ma = mostRecent
+    ma := (ma * (length - 1) + mostRecent) / length
+
+// @function Calculates the weighted moving average for the values in array
+// @param this The source array
+// @returns The WMA value
+export method wma_back(array<float> this) =>
+    int length = this.size()
+    float lenSum = length * (length + 1) / 2
+    float maSum = 0.0
+    for [i, src] in this
+        maSum += src * (i + 1)
+    maSum / lenSum
+
+// @function Calculates the symetrically weighted moving average for the values in array
+// @param this The source array
+// @returns The SWMA value
+export method swma_back(array<float> this) =>
+    if this.size() >= 4
+        this.get(this.size() - 1) / 6 + this.get(this.size() - 2) / 3 + this.get(this.size() - 3) / 3 + this.get(this.size() - 4) / 6
+    else
+        na
+
+// @function Calculates the volume weighted moving average for the values in array
+// @param this The source array
+// @returns The VWMA value
+export method vwma_back(array<float> this) =>
+    int length = this.size()
+    var volWeighted = array.new<float>()
+    volWeighted.push_back_shift(this.get(this.size() - 1) * volume, length)
+    volWeighted.sum() / math.sum(volume, this.size())
+
+// @function Calculates the hull moving average for the values in array
+// @param this The source array
+// @returns The HMA value
+export method hma_back(array<float> this) =>
+    int length = this.size()
+    float wmaSlow = this.wma_back()
+    float wmaFast = this.slice(math.min(length - int(length / 2), length - 1), length).wma_back()
+    var rawHmaRange = array.new<float>()
+    rawHmaRange.push_back_shift(2 * wmaFast - wmaSlow, int(math.sqrt(length)))
+    rawHmaRange.wma_back()
+
+// @function Calculates the linear regression for the values in array
+// @param this The source array
+// @returns The linreg value
+export method linreg_back(array<float> this) =>
+    int length = this.size()
+    float sumX = length * (length + 1) / 2
+    float sumY = this.sum()
+    float sumXY = 0.0
+    float sumX2 = 0.0
+    for [i, src] in this
+        int j = i + 1
+        sumXY += (j * src)
+        sumX2 += math.pow(j, 2)
+    
+    float den = length * sumX2 - math.pow(sumX, 2)
+    float a = (length * sumXY - sumX * sumY) / den
+    float b = (sumY * sumX2 - sumX * sumXY) / den
+    // y = a*x + b
+    // x = length - 1
+    a * length + b
+
+// @function Calculate the custom series of the given array for the given type
+// @param this The source array
+// @param seriesType The enum type of the custom series
+// @returns The resulting value of the calculations of the custom series
+export method cust_series_back(array<float> this, simple SeriesType seriesType) =>
+    switch seriesType
+        // Moving Averages
+        SeriesType.alma => this.alma_back()
+        SeriesType.dema => this.dema_back()
+        SeriesType.ema => this.ema_back()
+        SeriesType.hma => this.hma_back()
+        SeriesType.rma => this.rma_back()
+        SeriesType.sma => this.avg()
+        SeriesType.swma => this.swma_back()
+        SeriesType.vwma => this.vwma_back()
+        SeriesType.wma => this.wma_back()
+        // Ohter metrics
+        SeriesType.highest => this.max()
+        SeriesType.lowest => this.min()
+        SeriesType.hiloestavg => (this.min() + this.max()) / 2
+        SeriesType.median => this.median()
+        SeriesType.medianHighest => ta.median(this.max(), this.size())
+        SeriesType.medianLowest => ta.median(this.min(), this.size())
+        SeriesType.linreg => this.linreg_back()
+        =>
+            runtime.error(str.tostring(seriesType) + ' is not a supported series type. The supported types are [ALMA, DEMA, EMA, HMA, RMA, SMA, SWMA, VWMA, WMA, HIGHEST, LOWEST, HILOESTAVG, MEDIAN, MEDIANHIGHEST, MEDIANLOWEST, LINREG]')
+            na
+
+//#endregion ===========================================================================================================
+//#region RING BUFFER  =================================================================================================
+//
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+
+// @type Object that represents a counter clock wise cyclic buffer that has a fixed size of data
+// @field curIndex The index of the most recent value
+// @field data The array with all the data
+export type RingBuffer
+    int curIndex
+    int size
+    array<float> data
+
+// @function Creates new ring buffer object from a fixed size
+// @param capacity The maximum size of the ring buffer
+// @returns The new ring buffer object
+export newRingBuffer(int capacity) =>
+    RingBuffer.new(capacity, 0, array.new<float>(capacity))
+
+// @function Initialize the ring buffer object from a fixed size
+// @param this The ring buffer object
+// @param capacity The maximum size of the ring buffer
+// @returns The initialized ring buffer object
+export method init(RingBuffer this, simple int capacity) =>
+    this.curIndex := capacity
+    this.size := 0
+    this.data := array.new<float>(capacity)
+    this
+
+// @function Increase the size of the ring buffer if the capacity has not been reached
+// @param this The ring buffer object
+// @returns The new size of the ring buffer
+export method size_inc(RingBuffer this) =>
+    this.size := this.size == this.data.size() ? this.size : this.size + 1
+
+// @function Get next index after the given index of the ring buffer
+// @param this The ring buffer object
+// @param index The index that will be decreased
+// @returns The new index of the ring buffer
+export method index_after(RingBuffer this, int index) =>
+    index <= this.data.size() - this.size ? this.data.size() - 1 : index - 1
+
+// @function Get next index after the current index of the ring buffer
+// @param this The ring buffer object
+// @returns The next index of the ring buffer
+export method next_index(RingBuffer this) =>
+    this.index_after(this.curIndex)
+
+// @function Get previous index before the given index of the ring buffer
+// @param this The ring buffer object
+// @param index The index that will be increased
+// @returns The new index of the ring buffer
+export method index_before(RingBuffer this, int index) =>
+    index >= this.data.size() - 1 ? this.data.size() - this.size : index + 1
+
+// @function Get previous index before the current index of the ring buffer
+// @param this The ring buffer object
+// @returns The next index of the ring buffer
+export method prev_index(RingBuffer this) =>
+    this.index_before(this.curIndex)
+
+// @function Set the most recent value
+// @param this The ring buffer object
+// @param val The new value that will replace the current value
+export method set_curVal(RingBuffer this, float val) =>
+    this.data.set(this.curIndex, val)
+
+// @function Get the most recent value
+// @param this The ring buffer object
+// @returns The most recent value
+export method get_curVal(RingBuffer this) =>
+    this.data.get(this.curIndex)
+
+// @function Sets the new value to the next index of the ring buffer
+// @param this The ring buffer object
+// @param newVal The new value that will replace the old value
+export method push_newVal(RingBuffer this, float newVal) =>
+    this.size_inc()
+    this.curIndex := this.next_index()
+    this.set_curVal(newVal)
+
+// @function Sets the new value to the next index of the ring buffer and pops the old value that was replaced
+// @param this The ring buffer object
+// @param newVal The new value that will replace the old value
+// @returns The least recent value
+export method push_newVal_pop_oldVal(RingBuffer this, float newVal) =>
+    this.size_inc()
+    this.curIndex := this.next_index()
+    oldVal = this.get_curVal()
+    this.set_curVal(newVal)
+    oldVal
+
+//@function Rotates the order of the values in the ring buffer, in such a way that the value pointed by position becomes the new first value in the data array
+// @param this The ring buffer object
+// @param position The position of the value that will become the first in the data array
+// @returns The modied ring buffer
+export method rotate_cw(RingBuffer this, int position) =>
+    this.data := this.data.rotate(this.data.normalize_index(this.data.size() - position))
+    this.curIndex := this.data.normalize_index(this.curIndex + position)
+    this
+
+//@function Rotates the order of the values in the ring buffer, in such a way that the current value becomes the new first value in the data array
+// @param this The ring buffer object
+// @returns The modied ring buffer
+export method rotate(RingBuffer this) =>
+    this.data := array.concat(this.data.slice(this.curIndex, this.data.size()).copy(), this.data.slice(0, this.curIndex))
+    this.curIndex := 0
+    this
+
+//@function Shrinks the buffers data so that all elements fit to size and discards na that fills the unused capacity
+// @param this The ring buffer object
+// @returns The modied ring buffer
+export method get_shrinked_data(RingBuffer this) =>
+    this.rotate().data.slice(0, this.size)
+
+// @function Calculates the simple moving average for the values in the ring buffer
+// @param this The ring buffer object
+// @returns The SMA value
+export method sma(RingBuffer this) =>
+    this.data.avg()
+
+// @function Calculates the Arnaud Legoux moving average for the values the ring buffer
+// @param this The ring buffer object
+// @param offset Controls tradeoff between smoothness (closer to 1) and responsiveness (closer to 0)
+// @param sigma Changes the smoothness of ALMA. The larger sigma the smoother ALMA
+// @returns The ALMA value
+export method alma(RingBuffer this, simple float offset = 0.85, simple int sigma = 6) =>
+    array<float> arr = this.get_shrinked_data()
+    arr.alma_front(offset, sigma)
+
+// @function Calculates the exponential moving average for the values in the ring buffer
+// @param this The ring buffer object
+// @returns The EMA value
+export method ema(RingBuffer this) =>
+    float mostRecent = this.get_curVal()
+    float k = 2 / (this.size + 1)
+    var float ma = mostRecent
+    ma := mostRecent * k + (1 - k) * ma
+
+// @function Calculates the double exponential moving average for the values in the ring buffer
+// @param this The ring buffer object
+// @returns The EMA value
+export method dema(RingBuffer this) =>
+    float mostRecent = this.get_curVal()
+    float k = 2 / (this.size + 1)
+    var float ema = mostRecent
+    ema := mostRecent * k + (1 - k) * ema
+    var float dema = ema
+    dema := ema * k + (1 - k) * dema
+    2 * ema - dema
+
+// @function Calculates the rolling moving average for the values in the ring buffer
+// @param this The ring buffer object
+// @returns The RMA value
+export method rma(RingBuffer this) =>
+    float mostRecent = this.get_curVal()
+    int length = this.size
+    var float ma = mostRecent
+    ma := (ma * (length - 1) + mostRecent) / length
+
+// @function Calculates the weighted moving average for the values in the ring buffer
+// @param this The ring buffer object
+// @returns The WMA value
+export method wma(RingBuffer this) =>
+    int length = this.size
+    float lenSum = length * (length + 1) / 2
+    float maSum = 0.0
+    for i = this.data.size() - length to this.data.size() - 1
+        int j = this.curIndex - i
+        maSum += this.data.get(i) * (j <= 0 ? length + j : j)
+    maSum / lenSum
+
+// @function Calculates the symetrically weighted moving average for the values in the ring buffer
+// @param this The ring buffer object
+// @returns The SWMA value
+export method swma(RingBuffer this) =>
+    int index0 = this.curIndex
+    int index1 = this.index_before(index0)
+    int index2 = this.index_before(index1)
+    int index3 = this.index_before(index2)
+    this.data.get(index0) / 6 + this.data.get(index1) / 3 + this.data.get(index2) / 3 + this.data.get(index3) / 6
+
+// @function Calculates the volume weighted moving average for the values in the ring buffer
+// @param this The ring buffer object
+// @returns The VWMA value
+export method vwma(RingBuffer this) =>
+    var volWeighted = newRingBuffer(this.data.size())
+    volWeighted.push_newVal(this.get_curVal() * volume)
+    volWeighted.data.sum() / math.sum(volume, this.size)
+
+// @function Calculates the hull moving average for the values in the ring buffer
+// @param this The ring buffer object
+// @returns The HMA value
+export method hma(RingBuffer this) =>
+    array<float> arr = this.get_shrinked_data()
+    arr.hma_front()
+
+// @function Calculates the linear regression for the values in the ring buffer
+// @param this The ring buffer object
+// @returns The linreg value
+export method linreg(RingBuffer this) =>
+    array<float> arr = this.get_shrinked_data()
+    arr.linreg_front()
+
+// @function Calculate the custom series of the given array for the given type
+// @param this The source array
+// @param seriesType The enum type of the custom series
+// @returns The resulting value of the calculations of the custom series
+export method cust_series(RingBuffer this, simple SeriesType seriesType) =>
+    switch seriesType
+        // Moving Averages
+        SeriesType.alma => this.alma()
+        SeriesType.dema => this.dema()
+        SeriesType.ema => this.ema()
+        SeriesType.hma => this.hma()
+        SeriesType.rma => this.rma()
+        SeriesType.sma => this.sma()
+        SeriesType.swma => this.swma()
+        SeriesType.vwma => this.vwma()
+        SeriesType.wma => this.wma()
+        // Ohter metrics
+        SeriesType.highest => this.data.max()
+        SeriesType.lowest => this.data.min()
+        SeriesType.hiloestavg => (this.data.min() + this.data.max()) / 2
+        SeriesType.median => this.data.median()
+        SeriesType.medianHighest => ta.median(this.data.max(), this.size)
+        SeriesType.medianLowest => ta.median(this.data.min(), this.size)
+        SeriesType.linreg => this.linreg()
+        =>
+            runtime.error(str.tostring(seriesType) + ' is not a supported series type. The supported types are [ALMA, DEMA, EMA, HMA, RMA, SMA, SWMA, VWMA, WMA, HIGHEST, LOWEST, HILOESTAVG, MEDIAN, MEDIANHIGHEST, MEDIANLOWEST, LINREG]')
+            na
+
+//#endregion ===========================================================================================================
+//#region CLOCK BUFFER  ================================================================================================
+//
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+
+// @type Object that represents a clock wise cyclic buffer that has a fixed size of data
+// @field curIndex The index of the most recent value
+// @field data The array with all the data
+export type ClockBuffer
+    int curIndex
+    int size
+    array<float> data
+
+// @function Creates new clock buffer object from a fixed size
+// @param capacity The maxium size of the clock buffer
+// @returns The new clock buffer object
+export newClockBuffer(int capacity) =>
+    ClockBuffer.new(-1, 0, array.new<float>(capacity))
+
+// @function Initialize the clock buffer object from a fixed size
+// @param this The clock buffer object
+// @param capacity The maximum size of the clock buffer
+// @returns The initialized clock buffer object
+export method init(ClockBuffer this, simple int capacity) =>
+    this.curIndex := -1
+    this.size := 0
+    this.data := array.new<float>(capacity)
+    this
+
+// @function Increase the size of the clock buffer if the capacity has not been reached
+// @param this The clock buffer object
+// @returns The new size of the clock buffer
+export method size_inc(ClockBuffer this) =>
+    this.size := this.size == this.data.size() ? this.size : this.size + 1
+
+// @function Get next index after the given index of the clock buffer
+// @param this The clock buffer object
+// @param index The index that will be decreased
+// @returns The new index of the clock buffer
+export method index_after(ClockBuffer this, int index) =>
+    index >= this.size - 1 ? 0 : index + 1
+
+// @function Get next index after the current index of the clock buffer
+// @param this The clock buffer object
+// @returns The next index of the clock buffer
+export method next_index(ClockBuffer this) =>
+    this.index_after(this.curIndex)
+
+// @function Get previous index before the given index of the clock buffer
+// @param this The clock buffer object
+// @param index The index that will be increased
+// @returns The new index of the clock buffer
+export method index_before(ClockBuffer this, int index) =>
+    index <= 0 ? this.size - 1 : index - 1
+
+// @function Get previous index before the current index of the clock buffer
+// @param this The clock buffer object
+// @returns The next index of the clock buffer
+export method prev_index(ClockBuffer this) =>
+    this.index_before(this.curIndex)
+
+// @function Set the most recent value
+// @param this The clock buffer object
+// @param val The new value that will replace the current value
+export method set_curVal(ClockBuffer this, float val) =>
+    this.data.set(this.curIndex, val)
+
+// @function Get the most recent value
+// @param this The clock buffer object
+// @returns The most recent value
+export method get_curVal(ClockBuffer this) =>
+    this.data.get(this.curIndex)
+
+// @function Sets the new value to the next index of the clock buffer
+// @param this The clock buffer object
+// @param newVal The new value that will replace the old value
+export method push_newVal(ClockBuffer this, float newVal) =>
+    this.size_inc() 
+    this.curIndex := this.next_index()
+    this.set_curVal(newVal)
+
+// @function Sets the new value to the next index of the clock buffer and pops the old value that was replaced
+// @param this The clock buffer object
+// @param newVal The new value that will replace the old value
+// @returns The least recent value
+export method push_newVal_pop_oldVal(ClockBuffer this, float newVal) =>
+    this.size_inc() 
+    this.curIndex := this.next_index()
+    oldVal = this.get_curVal()
+    this.set_curVal(newVal)
+    oldVal
+
+//@function Rotates the order of the values in the clock buffer, in such a way that the value pointed by position becomes the new last value in the data array
+// @param this The clock buffer object
+// @param position The index of the value that will become the last in the data array
+// @returns The modied clock buffer
+export method rotate_ccw(ClockBuffer this, int position) =>
+    this.data := this.data.rotate(this.data.normalize_index(position))
+    this.curIndex := this.data.normalize_index(this.curIndex - position)
+    this
+
+//@function Rotates the order of the values in the clock buffer, in such a way that the current value becomes the new last value in the data array
+// @param this The clock buffer object
+// @returns The modied clock buffer
+export method rotate(ClockBuffer this) =>
+    int capacity = this.data.size()
+    int i = this.curIndex + 1 >= capacity ? this.curIndex + 1 - capacity : this.curIndex + 1
+    this.data := array.concat(this.data.slice(i, capacity).copy(), this.data.slice(0, i))
+    this.curIndex := capacity - 1
+    this
+
+//@function Shrinks the buffers data so that all elements fit to size and discards na that fills the unused capacity
+// @param this The clock buffer object
+// @returns The modied clock buffer
+export method get_shrinked_data(ClockBuffer this) =>
+    this.rotate().data.slice(this.data.size() - this.size, this.data.size())
+
+// @function Calculates the simple moving average for the values in the clock buffer
+// @param this The clock buffer object
+// @returns The SMA value
+export method sma(ClockBuffer this) =>
+    this.data.avg()
+
+// @function Calculates the Arnaud Legoux moving average for the values the clock buffer
+// @param this The clock buffer object
+// @param offset Controls tradeoff between smoothness (closer to 1) and responsiveness (closer to 0)
+// @param sigma Changes the smoothness of ALMA. The larger sigma the smoother ALMA
+// @returns The ALMA value
+export method alma(ClockBuffer this, simple float offset = 0.85, simple int sigma = 6) =>
+    array<float> arr = this.get_shrinked_data()
+    arr.alma_back(offset, sigma)
+
+// @function Calculates the exponential moving average for the values in the clock buffer
+// @param this The clock buffer object
+// @returns The EMA value
+export method ema(ClockBuffer this) =>
+    float mostRecent = this.get_curVal()
+    float k = 2 / (this.size + 1)
+    var float ma = mostRecent
+    ma := mostRecent * k + (1 - k) * ma
+
+// @function Calculates the double exponential moving average for the values in the clock buffer
+// @param this The clock buffer object
+// @returns The EMA value
+export method dema(ClockBuffer this) =>
+    float mostRecent = this.get_curVal()
+    float k = 2 / (this.size + 1)
+    var float ema = mostRecent
+    ema := mostRecent * k + (1 - k) * ema
+    var float dema = ema
+    dema := ema * k + (1 - k) * dema
+    2 * ema - dema
+
+// @function Calculates the rolling moving average for the values in the clock buffer
+// @param this The clock buffer object
+// @returns The RMA value
+export method rma(ClockBuffer this) =>
+    float mostRecent = this.get_curVal()
+    int length = this.size
+    var float ma = mostRecent
+    ma := (ma * (length - 1) + mostRecent) / length
+
+// @function Calculates the weighted moving average for the values in the clock buffer
+// @param this The clock buffer object
+// @returns The WMA value
+export method wma(ClockBuffer this) =>
+    int length = this.size
+    float lenSum = length * (length + 1) / 2
+    float maSum = 0.0
+    for i = 0 to length - 1
+        int j = i - this.curIndex
+        maSum += this.data.get(i) * (j > 0 ? j : length + j)
+    maSum / lenSum
+
+// @function Calculates the symetrically weighted moving average for the values in the clock buffer
+// @param this The clock buffer object
+// @returns The SWMA value
+export method swma(ClockBuffer this) =>
+    int index0 = this.curIndex
+    int index1 = this.index_before(index0)
+    int index2 = this.index_before(index1)
+    int index3 = this.index_before(index2)
+    this.data.get(index0) / 6 + this.data.get(index1) / 3 + this.data.get(index2) / 3 + this.data.get(index3) / 6
+
+// @function Calculates the volume weighted moving average for the values in the clock buffer
+// @param this The clock buffer object
+// @returns The VWMA value
+export method vwma(ClockBuffer this) =>
+    var volWeighted = newClockBuffer(this.data.size())
+    volWeighted.push_newVal(this.get_curVal() * volume)
+    volWeighted.data.sum() / math.sum(volume, this.size)
+
+// @function Calculates the hull moving average for the values in the clock buffer
+// @param this The clock buffer object
+// @returns The HMA value
+export method hma(ClockBuffer this) =>
+    array<float> arr = this.get_shrinked_data()
+    arr.hma_back()
+
+// @function Calculates the linear regression for the values in the clock buffer
+// @param this The clock buffer object
+// @returns The linreg value
+export method linreg(ClockBuffer this) =>
+    array<float> arr = this.get_shrinked_data()
+    arr.linreg_back()
+
+// @function Calculate the custom series of the given array for the given type
+// @param this The clock buffer object
+// @param seriesType The enum type of the custom series
+// @returns The resulting value of the calculations of the custom series
+export method cust_series(ClockBuffer this, simple SeriesType seriesType) =>
+    switch seriesType
+        // Moving Averages
+        SeriesType.alma => this.alma()
+        SeriesType.dema => this.dema()
+        SeriesType.ema => this.ema()
+        SeriesType.hma => this.hma()
+        SeriesType.rma => this.rma()
+        SeriesType.sma => this.sma()
+        SeriesType.swma => this.swma()
+        SeriesType.vwma => this.vwma()
+        SeriesType.wma => this.wma()
+        // Ohter metrics
+        SeriesType.highest => this.data.max()
+        SeriesType.lowest => this.data.min()
+        SeriesType.hiloestavg => (this.data.min() + this.data.max()) / 2
+        SeriesType.median => this.data.median()
+        SeriesType.medianHighest => ta.median(this.data.max(), this.size)
+        SeriesType.medianLowest => ta.median(this.data.min(), this.size)
+        SeriesType.linreg => this.linreg()
+        =>
+            runtime.error(str.tostring(seriesType) + ' is not a supported series type. The supported types are [ALMA, DEMA, EMA, HMA, RMA, SMA, SWMA, VWMA, WMA, HIGHEST, LOWEST, HILOESTAVG, MEDIAN, MEDIANHIGHEST, MEDIANLOWEST, LINREG]')
+            na
+
+//#endregion ===========================================================================================================
+//#region EXAMPLE ======================================================================================================
+//
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+
+// INPUT ===============================================================================================================
+seriesType = input.enum(defval = SeriesType.sma, title = 'Series Type/Src/Len', inline = 'Series')
+seriesSource = input.source(defval = close, title = '​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​', inline = 'Series')
+seriesLength = input.int(defval = 9, title = '', minval = 1, tooltip = 'The type, source and the length of the custom series.', inline = 'Series')
+showFrontArr = input.bool(defval = true, title = 'Front Array')
+showBackArr = input.bool(defval = true, title = 'Back Array')
+showBufCyclic = input.bool(defval = true, title = 'Cyclic Buffer')
+showBufClock = input.bool(defval = true, title = 'Clock Buffer')
+offsetRot = input.int(defval = 1, title = 'Rotate offset')
+
+// LOGIC ===============================================================================================================
+float seriesLine = cust_series(seriesLength, seriesType, seriesSource)
+
+float arrFrontLine = na
+if showFrontArr
+    var arrFront = array.new<float>()
+    float valPopped = arrFront.push_front_pop(close, seriesLength)
+    arrFrontLine := arrFront.cust_series_front(seriesType)
+
+float arrBackLine = na
+if showBackArr
+    var arrBack = array.new<float>()
+    float valShifted = arrBack.push_back_shift(close, seriesLength)
+    arrBackLine := arrBack.cust_series_back(seriesType)
+
+float ringBufLine = na
+if showBufCyclic
+    var bufCyclic = newRingBuffer(seriesLength)
+    bufCyclic.push_newVal(close)
+    ringBufLine := bufCyclic.cust_series(seriesType)
+
+float clockBufLine = na
+if showBufClock
+    var bufClock = newClockBuffer(seriesLength)
+    bufClock.push_newVal(close)
+    clockBufLine := bufClock.cust_series(seriesType)
+
+if barstate.islastconfirmedhistory
+    var testArr = array.from(0., 1., 2., 3., 4., 5., 6., 7., 8.)
+    log.info('testArr rot LEFT: {0}', testArr.rotate_left(offsetRot))
+    log.info('testArr: {0}', testArr)
+    log.info('testArr rot RIGHT: {0}', testArr.rotate_right(offsetRot))
+
+    var testClockBuf = newClockBuffer(10)
+    testClockBuf.push_newVal(0)
+    testClockBuf.push_newVal(1)
+    testClockBuf.push_newVal(2)
+    testClockBuf.push_newVal(3)
+    testClockBuf.push_newVal(4)
+    testClockBuf.push_newVal(5)
+    testClockBuf.push_newVal(6)
+    testClockBuf.push_newVal(7)
+    testClockBuf.push_newVal(8)
+    log.info('testClockBuf: {0}, curIndex: {1}', testClockBuf.data, testClockBuf.curIndex)
+    log.info('testClockBuf rot CCW: {0}, curIndex: {1}', testClockBuf.rotate_ccw(offsetRot).data, testClockBuf.curIndex)
+    log.info('testClockBuf rot ALL: {0}, curIndex: {1}', testClockBuf.rotate().data, testClockBuf.curIndex)
+
+    var testRingBuf = newRingBuffer(10)
+    testRingBuf.push_newVal(0)
+    testRingBuf.push_newVal(1)
+    testRingBuf.push_newVal(2)
+    testRingBuf.push_newVal(3)
+    testRingBuf.push_newVal(4)
+    testRingBuf.push_newVal(5)
+    testRingBuf.push_newVal(6)
+    testRingBuf.push_newVal(7)
+    testRingBuf.push_newVal(8)
+    log.info('testRingBuf: {0}, curIndex: {1}', testRingBuf.data, testRingBuf.curIndex)
+    log.info('testRingBuf rot CW: {0}, curIndex: {1}', testRingBuf.rotate_cw(offsetRot).data, testRingBuf.curIndex)
+    log.info('testRingBuf rot ALL: {0}, curIndex: {1}', testRingBuf.rotate().data, testRingBuf.curIndex)
+
+// PLOT ================================================================================================================
+plot(series = seriesLine, color = chart.fg_color, style = plot.style_linebr, linewidth = 2, title = 'Custom Series', force_overlay = true)
+
+plot(series = arrFrontLine, color = color.aqua, style = plot.style_linebr, linewidth = 2, title = 'Front Array Series', force_overlay = true)
+plot(series = arrBackLine, color = color.yellow, style = plot.style_linebr, linewidth = 2, title = 'Back Array Series', force_overlay = true)
+
+plot(series = ringBufLine, color = color.green, style = plot.style_linebr, linewidth = 2, title = 'Ring Buffer Series', force_overlay = true)
+plot(series = clockBufLine, color = color.red, style = plot.style_linebr, linewidth = 2, title = 'Clock Buffer Series', force_overlay = true)
+
+//#endregion ===========================================================================================================

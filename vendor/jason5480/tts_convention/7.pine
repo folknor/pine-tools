@@ -1,0 +1,339 @@
+//#region SETUP
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © jason5480
+
+//@version=6
+
+// @description This library can convert the start, end, cancel start, and cancel end deal conditions used in the
+// "Template Trailing Strategy (Backtester)" into a signal value and vice versa. The convention is used internally for
+// the deal conditions; the signal value can be composed/decomposed into channels containing that information for the
+// long and short positions. You can use this library to your signal indicator to compose a signal like this:
+// [pine] import jason5480/tts_convention/6 as conv
+// // Calculate the start, end , cancel start, cancel end conditions
+// dealConditions = conv.DealConditions.new(
+//   startLongDeal = [...],
+//   startShortDeal = [...],
+//   endLongDeal = [...],
+//   endShortDeal = [...],
+//   cnlStartLongDeal = [...],
+//   cnlStartShortDeal = [...],
+//   cnlEndLongDeal = [...],
+//   cnlEndShortDeal = [...])
+// // Use this signal in scripts like "Template Trailing Strategy (Backtester)" and "Signal Adapter" that can utilize its value
+// // Emit the current signal value according to the TTS framework convention
+// plot(series = conv.getSignal(dealConditions), title = '🔌Signal to TTS', color = #808000, editable = false, display = display.data_window + display.status_line, precision = 0)[/pine]
+// Make sure you use the latest version of the library in the import statement above! Also do not forget to put one space
+// infront of the 'Deal' arguments of the DealConditions object to indicate line continuation.
+// You should write your deal conditions appropriately based on your trading logic and put them in the code section shown
+// above by replacing the “…” part after “=”. You can omit the conditions that are not relevant to your logic.
+library(title = 'tts_convention')
+
+//#endregion ===========================================================================================================
+//#region CONVENTIONS
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+
+import jason5480/signal_datagram/5 as sd
+
+// The versioning of the schema consists of two parts, the major and the minor.
+// Increment in the minor version implies backward compatible changes. You can levarage those just by upgrading the
+// library. Increment in the in the major version implies that further code changes are needed in your code to make it
+// work as before, and also take advantage of the new features. The framework id is to make sure that the signal was
+// meant to be connected in the correct framework.
+const int SCHEMA_VERSION_MIN = 1
+const int SCHEMA_VERSION_MAJ = 0
+const int FRAMEWORK_ID = 0
+
+// Constants of the Handshake convention
+const sd.NumericSystem HANDSHAKE_NUMERIC_SYSTEM = sd.NumericSystem.hexadecimal
+const string SCHEMA_VERSION_MIN_NAME = 'VERSION_MIN'
+const string SCHEMA_VERSION_MAJ_NAME = 'VERSION_MAJ'
+const string FRAMEWORK_NAME = 'TTS'
+
+// Constants of the Conditions convention
+const sd.NumericSystem CONDITIONS_NUMERIC_SYSTEM = sd.NumericSystem.decimal
+const string CONDITION_SHORT_NAME = 'SHORT'
+const string CONDITION_LONG_NAME = 'LONG'
+const string CONDITION_NOOP_NAME = 'NOOP'
+const string CONDITION_END_NAME = 'END'
+const string CONDITION_START_NAME = 'START'
+const string CONDITION_CNL_END_NAME = 'CNL_END'
+const string CONDITION_CNL_START_NAME = 'CNL_START'
+
+// @function Get the datagram that is used for the versioning in the TTS framework
+// @param frameworkIdName The name of the framework
+// @param majorVersionName The name of the second digit channel
+// @param minorVersionName The name of the first digit channel
+// @returns The initialized datagram object with the versioning handshake channel names
+getHandshakeDatagramImpl(simple string frameworkIdName, simple string majorVersionName, simple string minorVersionName) =>
+    // Use two channels, one for minor and one for major version. Each channel uses one nibble
+    sd.ChannelDesc channelWordPosMap = sd.ChannelDesc.new().init()
+    channelWordPosMap.add_channel(minorVersionName, array.from(10)) // Use the second before last nibble for the minor version channel
+    channelWordPosMap.add_channel(majorVersionName, array.from(11)) // Use the before last nibble for the major version channel
+    channelWordPosMap.add_channel(frameworkIdName, array.from(12)) // Use the last nibble for the framework id channel
+    sd.Datagram.new().init(HANDSHAKE_NUMERIC_SYSTEM, channelWordPosMap)
+
+// @function Get the datagram that is used for the major and minor shema versions in the TTS framework
+// @returns The initialized datagram object with the versioning handshake channel names
+getHandshakeDatagram() =>
+    getHandshakeDatagramImpl(FRAMEWORK_NAME, SCHEMA_VERSION_MAJ_NAME, SCHEMA_VERSION_MIN_NAME)
+
+// @function Get the datagram that is used for the deal conditions in the TTS framework
+// @param longChannelName The name of the second digit channel
+// @param shortChannelName The name of the first digit channel
+// @returns The initialized datagram object with the long and short deal conditions channel names
+getDealConditionsDatagramImpl(simple string longChannelName, simple string shortChannelName) =>
+    // Use two channels, one for short and one for long. Each channel uses one digit
+    sd.ChannelDesc channelWordPosMap = sd.ChannelDesc.new().init()
+    channelWordPosMap.add_channel(shortChannelName, array.from(0)) // Use the first digit for the short channel
+    channelWordPosMap.add_channel(longChannelName, array.from(1)) // Use the second digit for the long channel
+    sd.Datagram.new().init(CONDITIONS_NUMERIC_SYSTEM, channelWordPosMap)
+
+// @function Get the datagram that is used for the deal conditions in the TTS framework
+// @returns The initialized datagram object with the long and short deal conditions channel names
+getDealConditionsDatagram() =>
+    getDealConditionsDatagramImpl(CONDITION_LONG_NAME, CONDITION_SHORT_NAME)
+
+// @function Get the map with the conditions that are used in the TTS framework
+// @returns A map with the names of possible conditions and their underlying values
+getConditionsMap() =>
+    var const map<string, int> CONDITIONS = map.new<string, int>()
+    CONDITIONS.put(CONDITION_NOOP_NAME, 0)
+    CONDITIONS.put(CONDITION_END_NAME, 1)
+    CONDITIONS.put(CONDITION_START_NAME, 2)
+    CONDITIONS.put(CONDITION_CNL_END_NAME, 3)
+    CONDITIONS.put(CONDITION_CNL_START_NAME, 4)
+    CONDITIONS
+
+// @function Check that the schema version of the given signal is compatible with the current schema version of the framework
+// @param frameworkId The framework id of the signal
+// @param majorVersion The major version of the signal
+// @param minorVersion The minor version of the signal
+// @returns Raises an error if the version is incompatible or issues a log error if a minor update is possible
+doVersionCheck(int frameworkId, int majorVersion, int minorVersion) =>
+    if frameworkId != FRAMEWORK_ID
+        runtime.error(str.format('The framework of the connected signal is incompatible with the {0} framework! Please contact the author for more information.', FRAMEWORK_NAME))
+    if majorVersion != SCHEMA_VERSION_MAJ
+        runtime.error(str.format('The schema version of the connected signal is {0,number,integer}.{1,number,integer} and is incompatible with the current version of the {2} framework that uses schema version {3,number,integer}.{4,number,integer}! Please update your signal indicator to use the latest version of the "{5}_convention" library.', majorVersion, minorVersion, FRAMEWORK_NAME, SCHEMA_VERSION_MAJ, SCHEMA_VERSION_MIN, str.lower(FRAMEWORK_NAME)))
+    if minorVersion < SCHEMA_VERSION_MIN
+        string warn = str.format('⚠️ Please update your signal indicator to use the latest version of the "{5}_convention" library!\nThe schema version of the connected signal is {0,number,integer}.{1,number,integer} and the current version of the {2} framework uses schema version {3,number,integer}.{4,number,integer}.', majorVersion, minorVersion, FRAMEWORK_NAME, SCHEMA_VERSION_MAJ, SCHEMA_VERSION_MIN, str.lower(FRAMEWORK_NAME))
+        table.new(position = position.middle_center, columns = 1, rows = 1, force_overlay = true).cell(column = 0, row = 0, text = warn, text_color = color.orange, text_size = size.large)
+    else
+        log.info('The schema version of the connected signal is {0,number,integer}.{1,number,integer} and the current version of the {2} framework uses schema version {3,number,integer}.{4,number,integer}.', majorVersion, minorVersion, FRAMEWORK_NAME, SCHEMA_VERSION_MAJ, SCHEMA_VERSION_MIN)
+
+// @type Object that represents the deal conditions to start, end, and cancel start and end deals for long and short positions
+// @field startLongDeal Flag to enter into a long position (if not already)
+// @field startShortDeal Flag to enter into a short position (if not already)
+// @field endLongDeal Flag to exit long position (if it is currently in one)
+// @field endShortDeal Flag to exit short position (if it is currently in one)
+// @field cnlStartLongDeal Flag to cancel trying to enter into a long position (if not already entered)
+// @field cnlStartShortDeal Flag to cancel trying to enter into a short postition (if not already entered)
+// @field cnlEndLongDeal Flag to cancel trying to exit the long position (if not already exited)
+// @field cnlEndShortDeal Flag to cancel trying to exit the short position (if not already exited)
+export type DealConditions
+    bool startLongDeal
+    bool startShortDeal
+    bool endLongDeal
+    bool endShortDeal
+    bool cnlStartLongDeal
+    bool cnlStartShortDeal
+    bool cnlEndLongDeal
+    bool cnlEndShortDeal
+
+// @function Get the start, end, cancel start and cancel end deal conditions that are used in the TTS framework by decomposing the given signal
+// @param signal The signal value to decompose
+// @returns An object with the start, end, cancel start and cancel end deal conditions for long and short
+export getDealConditions(int signal) =>
+    // In the first bar the versioning checking is done. A default dealConditions object is returned.
+    if barstate.isfirst
+        var sd.Datagram handshakeDatagram = getHandshakeDatagram()
+        handshakeDatagram.set_signal(signal)
+        // Decompose the signal to the framework, major and minor version channels according to the handshake convention
+        doVersionCheck(handshakeDatagram.get_channel_value(FRAMEWORK_NAME), handshakeDatagram.get_channel_value(SCHEMA_VERSION_MAJ_NAME), handshakeDatagram.get_channel_value(SCHEMA_VERSION_MIN_NAME))
+        DealConditions.new()
+    else
+        // In this convention the possible conditions for each channel are the following
+        var const map<string, int> CONDITIONS = getConditionsMap()
+        var int startCondition = CONDITIONS.get(CONDITION_START_NAME)
+        var int endCondition = CONDITIONS.get(CONDITION_END_NAME)
+        var int cnlStartCondition = CONDITIONS.get(CONDITION_CNL_START_NAME)
+        var int cnlEndCondition = CONDITIONS.get(CONDITION_CNL_END_NAME)
+
+        // Get the datagram of the deal conditions convention
+        var sd.Datagram dealConditionsDatagram = getDealConditionsDatagram()
+        dealConditionsDatagram.set_signal(signal)
+        // Decompose the signal to the short and long channels according to the conditions convention
+        int shortCondition = dealConditionsDatagram.get_channel_value(CONDITION_SHORT_NAME)
+        int longCondition = dealConditionsDatagram.get_channel_value(CONDITION_LONG_NAME)
+
+        // Start, End, Cancel Start and Cancel End deal conditions for long and short should be derived from the corresponding decomposed channel values
+        DealConditions.new(
+          startLongDeal = longCondition == startCondition,
+          startShortDeal = shortCondition == startCondition,
+          endLongDeal = longCondition == endCondition,
+          endShortDeal = shortCondition == endCondition,
+          cnlStartLongDeal = longCondition == cnlStartCondition,
+          cnlStartShortDeal = shortCondition == cnlStartCondition,
+          cnlEndLongDeal = longCondition == cnlEndCondition,
+          cnlEndShortDeal = shortCondition == cnlEndCondition)
+
+// @function Get the signal value from the composition of the start, end, cancel start and cancel end deal conditions that are used in the TTS framework
+// @param dealConditions The deal conditions object that contains the start, end, cancel start and cancel end deal conditions for long and short
+// @param frameworkId The id of the given framework
+// @param majorVersion The major schema verion number
+// @param minorVersion The minor schema version number
+// @returns The composed signal value
+getSignalImpl(DealConditions dealConditions, simple int frameworkId, simple int majorVersion, simple int minorVersion) =>
+    if na(dealConditions)
+        runtime.error('The dealConditions object cannot be na!')
+    // In the first bar do the handshake by sending the schema versions for the versioning check
+    if barstate.isfirst
+        var sd.Datagram handshakeDatagram = getHandshakeDatagram()
+        // Compose the signal from the channel values. This will be passed to the "Template Trailing Strategy (Backtester)" following the handshake convention
+        handshakeDatagram.set_channel_value(SCHEMA_VERSION_MIN_NAME, minorVersion)
+        handshakeDatagram.set_channel_value(SCHEMA_VERSION_MAJ_NAME, majorVersion)
+        handshakeDatagram.set_channel_value(FRAMEWORK_NAME, frameworkId)
+        handshakeDatagram.get_signal()
+    else
+        // In this convention the possible conditions for each channel are the following
+        var const map<string, int> CONDITIONS = getConditionsMap()
+        var int startCondition = CONDITIONS.get(CONDITION_START_NAME)
+        var int endCondition = CONDITIONS.get(CONDITION_END_NAME)
+        var int cnlStartCondition = CONDITIONS.get(CONDITION_CNL_START_NAME)
+        var int cnlEndCondition = CONDITIONS.get(CONDITION_CNL_END_NAME)
+        var int noopCondition = CONDITIONS.get(CONDITION_NOOP_NAME)
+
+        int shortCondition = switch
+            dealConditions.startShortDeal => startCondition
+            dealConditions.endShortDeal => endCondition
+            dealConditions.cnlStartShortDeal => cnlStartCondition
+            dealConditions.cnlEndShortDeal => cnlEndCondition
+            => noopCondition
+
+        int longCondition = switch
+            dealConditions.startLongDeal => startCondition
+            dealConditions.endLongDeal => endCondition
+            dealConditions.cnlStartLongDeal => cnlStartCondition
+            dealConditions.cnlEndLongDeal => cnlEndCondition
+            => noopCondition
+
+        // Get the datagram of the deal conditions convention
+        var sd.Datagram dealConditionsDatagram = getDealConditionsDatagram()
+        // Compose the signal from the channel values. This will be passed to the "Template Trailing Strategy (Backtester)" following the conditions convention
+        dealConditionsDatagram.set_channel_value(CONDITION_SHORT_NAME, shortCondition)
+        dealConditionsDatagram.set_channel_value(CONDITION_LONG_NAME, longCondition)
+        // This is the ONLY value that will be passed to the "Template Trailing Strategy (Backtester)" as Signal
+        dealConditionsDatagram.get_signal()
+
+// @function Get the signal value from the composition of the start, end, cancel start and cancel end deal conditions that are used in the TTS framework
+// @param dealConditions The deal conditions object that contains the start, end, cancel start and cancel end deal conditions for long and short
+// @returns The composed signal value
+export getSignal(DealConditions dealConditions) =>
+    getSignalImpl(dealConditions, FRAMEWORK_ID, SCHEMA_VERSION_MAJ, SCHEMA_VERSION_MIN)
+
+//#endregion ===========================================================================================================
+//#region EXAMPLE PRODUCE ==============================================================================================
+//
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+
+// INPUT ===============================================================================================================
+enum SignalMode
+    produce = 'PRODUCE ONLY'
+    consume = 'CONSUME ONLY'
+    connect = 'CONNECT'
+
+mode = input.enum(defval = SignalMode.connect, title = 'Mode', tooltip = 'Select the mode to either produce a signal as an output or consume the signal as an input or connect the produced signal as input and consume it at the same time.')
+frId = input.int(defval = FRAMEWORK_ID, title = 'Framework Id', minval = 0, maxval = 15, tooltip = 'The id of the framework of the produced signal', group = 'Output')
+majVer = input.int(defval = SCHEMA_VERSION_MAJ, title = 'Major Version', minval = 0, maxval = 15, tooltip = 'The major version number of the schema of the produced signal', group = 'Output')
+minVer = input.int(defval = SCHEMA_VERSION_MIN, title = 'Minor Version', minval = 0, maxval = 15, tooltip = 'The minor version number of the schema of the produced signal', group = 'Output')
+seed = input.int(defval = 0, title = 'Random seed', tooltip = 'The seed that will be used to produce random signal', group = 'Output')
+
+// LOGIC ===============================================================================================================
+// Produce a signal from random generated DealConditions object
+bool isNotConsumeOnly = mode != SignalMode.consume
+
+// Calculate the start, end, cancel start, cancel end conditions according to a random logic
+float rand = math.random(0, 1, seed)
+outDealConditions = isNotConsumeOnly ? DealConditions.new(
+  startLongDeal = rand < 0.1,
+  startShortDeal = rand >= 0.1 and rand < 0.2,
+  endLongDeal = rand >= 0.2 and rand < 0.3,
+  endShortDeal = rand >= 0.3 and rand < 0.4,
+  cnlStartLongDeal = rand >= 0.4 and rand < 0.5,
+  cnlStartShortDeal = rand >= 0.5 and rand < 0.6,
+  cnlEndLongDeal = rand >= 0.6 and rand < 0.7,
+  cnlEndShortDeal = rand >= 0.7 and rand < 0.8) : na
+
+int outSignal = isNotConsumeOnly ? getSignalImpl(outDealConditions, frId, majVer, minVer) : na
+
+// PLOT ================================================================================================================
+var const table buyTable = table.new(position = position.top_right, columns = 1, rows = 1)
+var const table sellTable = table.new(position = position.bottom_right, columns = 1, rows = 1)
+if barstate.isfirst
+    buyTable.cell(column = 0, row = 0, text = 'Buy', text_color = color.blue)
+    sellTable.cell(column = 0, row = 0, text = 'Sell', text_color = color.red)
+
+const color LONG_OPEN_COLOR = #0074BA
+const color SHORT_OPEN_COLOR = #FF6723
+const color CLOSE_COLOR = #C790F1
+const color LONG_CANCEL_OPEN_COLOR = #0074BA
+const color SHORT_CANCEL_OPEN_COLOR = #FF6723
+const color CANCEL_CLOSE_COLOR = #C790F1
+color outSignalColor = isNotConsumeOnly ?
+                   outDealConditions.startLongDeal ? LONG_OPEN_COLOR :
+                   outDealConditions.startShortDeal ? SHORT_OPEN_COLOR :
+                   outDealConditions.endLongDeal or outDealConditions.endShortDeal ? CLOSE_COLOR :
+                   outDealConditions.cnlStartLongDeal ? LONG_CANCEL_OPEN_COLOR :
+                   outDealConditions.cnlStartShortDeal ? SHORT_CANCEL_OPEN_COLOR :
+                   outDealConditions.cnlEndLongDeal or outDealConditions.cnlEndShortDeal ? CANCEL_CLOSE_COLOR :
+                   chart.fg_color : na
+
+plot(series = isNotConsumeOnly ? outSignal : na, title = '🔌Output Signal to TTS', color = outSignalColor, editable = false, style = plot.style_stepline, precision = 0)
+
+plotshape(series = isNotConsumeOnly ? outDealConditions.startLongDeal : false, title = 'Output Start Long', style = shape.triangleup, location = location.top, color = color.new(LONG_OPEN_COLOR, 70), offset = 1, size = size.small, display = display.pane + display.data_window)
+plotshape(series = isNotConsumeOnly ? outDealConditions.endLongDeal : false, title = 'Output End Long', style = shape.square, location = location.bottom, color = color.new(CLOSE_COLOR, 70), offset = 1, size = size.tiny, display = display.pane + display.data_window)
+plotshape(series = isNotConsumeOnly ? outDealConditions.cnlStartLongDeal : false, title = 'Output Cancel Start Long', style = shape.xcross, location = location.top, color = color.new(LONG_CANCEL_OPEN_COLOR, 70), size = size.tiny, display = display.pane + display.data_window)
+plotshape(series = isNotConsumeOnly ? outDealConditions.cnlEndLongDeal : false, title = 'Output Cancel End Long', style = shape.xcross, location = location.bottom, color = color.new(CANCEL_CLOSE_COLOR, 70), size = size.tiny, display = display.pane + display.data_window)
+plotshape(series = isNotConsumeOnly ? outDealConditions.startShortDeal : false, title = 'Output Start Short', style = shape.triangledown, location = location.bottom, color = color.new(SHORT_OPEN_COLOR, 70), offset = 1, size = size.small, display = display.pane + display.data_window)
+plotshape(series = isNotConsumeOnly ? outDealConditions.endShortDeal : false, title = 'Output End Short', style = shape.square, location = location.top, color = color.new(CLOSE_COLOR, 70), offset = 1, size = size.tiny, display = display.pane + display.data_window)
+plotshape(series = isNotConsumeOnly ? outDealConditions.cnlStartShortDeal : false, title = 'Output Cancel Start Short', style = shape.xcross, location = location.bottom, color = color.new(SHORT_CANCEL_OPEN_COLOR, 70), size = size.tiny, display = display.pane + display.data_window)
+plotshape(series = isNotConsumeOnly ? outDealConditions.cnlEndShortDeal : false, title = 'Output Cancel End Short', style = shape.xcross, location = location.top, color = color.new(CANCEL_CLOSE_COLOR, 70), size = size.tiny, display = display.pane + display.data_window)
+
+//#endregion ===========================================================================================================
+//#region EXAMPLE CONSUME ==============================================================================================
+//
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+
+// INPUT ===============================================================================================================
+inSignal = int(input.source(defval = close, title = '🔌Signal 🛈', tooltip = 'Select input from an signal indicator. INFORMATION! The indicator should be added to the same chart with this strategy and the desired value that will take part in the conditions below should be plotted in the chart.', group = 'Input'))
+
+// LOGIC ===============================================================================================================
+// Consume the external input signal or the produced signal if CONNECT mode is enabled
+bool isNotProduceOnly = mode != SignalMode.produce
+bool isExternalSignalConnected = mode != SignalMode.connect and inSignal != close
+
+// Get the start, end, cancel start and cancel end deal conditions by decomposing the signal
+inDealConditions = isNotProduceOnly ? getDealConditions(mode == SignalMode.connect ? outSignal : inSignal) : na
+
+// PLOT ================================================================================================================
+color inSignalColor = isNotProduceOnly ?
+                   inDealConditions.startLongDeal ? LONG_OPEN_COLOR :
+                   inDealConditions.startShortDeal ? SHORT_OPEN_COLOR :
+                   inDealConditions.endLongDeal or inDealConditions.endShortDeal ? CLOSE_COLOR :
+                   inDealConditions.cnlStartLongDeal ? LONG_CANCEL_OPEN_COLOR :
+                   inDealConditions.cnlStartShortDeal ? SHORT_CANCEL_OPEN_COLOR :
+                   inDealConditions.cnlEndLongDeal or inDealConditions.cnlEndShortDeal ? CANCEL_CLOSE_COLOR :
+                   chart.fg_color : na
+
+plot(series = isNotProduceOnly and isExternalSignalConnected ? inSignal : na, title = '🔌Input Signal from SI', color = inSignalColor, editable = false, style = plot.style_stepline, precision = 0)
+
+plotshape(series = isNotProduceOnly and isExternalSignalConnected ? inDealConditions.startLongDeal : false, title = 'Input Start Long', style = shape.triangleup, location = location.top, color = color.new(LONG_OPEN_COLOR, 70), offset = 1, size = size.small, display = display.pane + display.data_window)
+plotshape(series = isNotProduceOnly and isExternalSignalConnected ? inDealConditions.endLongDeal : false, title = 'Input End Long', style = shape.square, location = location.bottom, color = color.new(CLOSE_COLOR, 70), offset = 1, size = size.tiny, display = display.pane + display.data_window)
+plotshape(series = isNotProduceOnly and isExternalSignalConnected ? inDealConditions.cnlStartLongDeal : false, title = 'Input Cancel Start Long', style = shape.xcross, location = location.top, color = color.new(LONG_CANCEL_OPEN_COLOR, 70), size = size.tiny, display = display.pane + display.data_window)
+plotshape(series = isNotProduceOnly and isExternalSignalConnected ? inDealConditions.cnlEndLongDeal : false, title = 'Input Cancel End Long', style = shape.xcross, location = location.bottom, color = color.new(CANCEL_CLOSE_COLOR, 70), size = size.tiny, display = display.pane + display.data_window)
+plotshape(series = isNotProduceOnly and isExternalSignalConnected ? inDealConditions.startShortDeal : false, title = 'Input Start Short', style = shape.triangledown, location = location.bottom, color = color.new(SHORT_OPEN_COLOR, 70), offset = 1, size = size.small, display = display.pane + display.data_window)
+plotshape(series = isNotProduceOnly and isExternalSignalConnected ? inDealConditions.endShortDeal : false, title = 'Input End Short', style = shape.square, location = location.top, color = color.new(CLOSE_COLOR, 70), offset = 1, size = size.tiny, display = display.pane + display.data_window)
+plotshape(series = isNotProduceOnly and isExternalSignalConnected ? inDealConditions.cnlStartShortDeal : false, title = 'Input Cancel Start Short', style = shape.xcross, location = location.bottom, color = color.new(SHORT_CANCEL_OPEN_COLOR, 70), size = size.tiny, display = display.pane + display.data_window)
+plotshape(series = isNotProduceOnly and isExternalSignalConnected ? inDealConditions.cnlEndShortDeal : false, title = 'Input Cancel End Short', style = shape.xcross, location = location.top, color = color.new(CANCEL_CLOSE_COLOR, 70), size = size.tiny, display = display.pane + display.data_window)
+
+//#endregion ===========================================================================================================

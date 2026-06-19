@@ -133,6 +133,7 @@
     "debug:internals": "node dev-tools/debug-internals.js",
     "debug:tokens": "node dev-tools/debug-internals.js tokens",
     "generate": "node --experimental-strip-types packages/pipeline/src/generate.ts",
+    "fetch:library": "node --experimental-strip-types packages/pipeline/src/fetch-library.ts",
     "generate:libraries": "node --experimental-strip-types packages/pipeline/src/generate-libraries.ts",
     "generate:manual": "node --experimental-strip-types packages/pipeline/src/generate-manual.ts",
     "generate:markdown": "node --experimental-strip-types packages/pipeline/src/generate-markdown.ts",

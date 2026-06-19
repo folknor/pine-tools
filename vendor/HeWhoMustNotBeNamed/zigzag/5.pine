@@ -1,0 +1,356 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © HeWhoMustNotBeNamed
+
+//   __    __            __       __  __                  __       __                        __      __    __              __      _______             __    __                                          __ 
+//  /  |  /  |          /  |  _  /  |/  |                /  \     /  |                      /  |    /  \  /  |            /  |    /       \           /  \  /  |                                        /  |
+//  $$ |  $$ |  ______  $$ | / \ $$ |$$ |____    ______  $$  \   /$$ | __    __   _______  _$$ |_   $$  \ $$ |  ______   _$$ |_   $$$$$$$  |  ______  $$  \ $$ |  ______   _____  ____    ______    ____$$ |
+//  $$ |__$$ | /      \ $$ |/$  \$$ |$$      \  /      \ $$$  \ /$$$ |/  |  /  | /       |/ $$   |  $$$  \$$ | /      \ / $$   |  $$ |__$$ | /      \ $$$  \$$ | /      \ /     \/    \  /      \  /    $$ |
+//  $$    $$ |/$$$$$$  |$$ /$$$  $$ |$$$$$$$  |/$$$$$$  |$$$$  /$$$$ |$$ |  $$ |/$$$$$$$/ $$$$$$/   $$$$  $$ |/$$$$$$  |$$$$$$/   $$    $$< /$$$$$$  |$$$$  $$ | $$$$$$  |$$$$$$ $$$$  |/$$$$$$  |/$$$$$$$ |
+//  $$$$$$$$ |$$    $$ |$$ $$/$$ $$ |$$ |  $$ |$$ |  $$ |$$ $$ $$/$$ |$$ |  $$ |$$      \   $$ | __ $$ $$ $$ |$$ |  $$ |  $$ | __ $$$$$$$  |$$    $$ |$$ $$ $$ | /    $$ |$$ | $$ | $$ |$$    $$ |$$ |  $$ |
+//  $$ |  $$ |$$$$$$$$/ $$$$/  $$$$ |$$ |  $$ |$$ \__$$ |$$ |$$$/ $$ |$$ \__$$ | $$$$$$  |  $$ |/  |$$ |$$$$ |$$ \__$$ |  $$ |/  |$$ |__$$ |$$$$$$$$/ $$ |$$$$ |/$$$$$$$ |$$ | $$ | $$ |$$$$$$$$/ $$ \__$$ |
+//  $$ |  $$ |$$       |$$$/    $$$ |$$ |  $$ |$$    $$/ $$ | $/  $$ |$$    $$/ /     $$/   $$  $$/ $$ | $$$ |$$    $$/   $$  $$/ $$    $$/ $$       |$$ | $$$ |$$    $$ |$$ | $$ | $$ |$$       |$$    $$ |
+//  $$/   $$/  $$$$$$$/ $$/      $$/ $$/   $$/  $$$$$$/  $$/      $$/  $$$$$$/  $$$$$$$/     $$$$/  $$/   $$/  $$$$$$/     $$$$/  $$$$$$$/   $$$$$$$/ $$/   $$/  $$$$$$$/ $$/  $$/  $$/  $$$$$$$/  $$$$$$$/ 
+//                                                                                                                                                                                                          
+//                                                                                                                                                                                                          
+//
+//@version=5
+// @description Library dedicated to zigzags and related indicators
+library("zigzag", overlay=true)
+add_to_array(arr, val, maxItems) =>
+    array.insert(arr, 0, val)
+    if array.size(arr) > maxItems
+        array.pop(arr)
+
+pivots(length, highSource=high, lowSource = low) =>
+    float phigh = ta.highestbars(highSource, length) == 0 ? highSource : na
+    float plow = ta.lowestbars(lowSource, length) == 0 ? lowSource : na
+    [phigh, plow, bar_index, bar_index]
+
+getSentiment(pDir, oDir, sDir) =>
+    sentiment = pDir == oDir ? sDir == pDir or sDir * 2 == -pDir ? -sDir : sDir * 4 : sDir == pDir or sDir == -oDir ? 0 : (math.abs(oDir) > math.abs(pDir) ? sDir : -sDir) * (sDir == oDir ? 2 : 3)
+    sentiment
+
+getSentimentDetails(sentiment) =>
+    sentimentSymbol = sentiment == 4 ? '⬆' : sentiment == -4 ? '⬇' : sentiment == 3 ? '↗' : sentiment == -3 ? '↘' : sentiment == 2 ? '⤴' : sentiment == -2 ? '⤵' : sentiment == 1 ? '⤒' : sentiment == -1 ? '⤓' : '▣'
+    sentimentColor = sentiment == 4 ? color.green : sentiment == -4 ? color.red : sentiment == 3 ? color.lime : sentiment == -3 ? color.orange : sentiment == 2 ? color.rgb(202, 224, 13, 0) : sentiment == -2 ? color.rgb(250, 128, 114, 0) : color.silver
+    sentimentLabel = math.abs(sentiment) == 4 ? 'C' : math.abs(sentiment) == 3 ? 'H' : math.abs(sentiment) == 2 ? 'D' : 'I'
+    [sentimentSymbol, sentimentLabel, sentimentColor]
+    
+addnewpivot(zigzagpivots, zigzagpivotbars, zigzagpivotdirs, zigzagpivotratios, zigzagoscillators,
+                                     zigzagoscillatordirs, zigzagtrendbias, zigzagdivergence, 
+                                     value, bar, dir, numberOfPivots,
+                                     oscHigh, oscLow, directionBias) =>
+    newDir = dir
+    oscDir = dir
+    ratio = 1.0
+    oscillatorSource = dir > 0? oscHigh[bar_index - bar] : oscLow[bar_index - bar]
+    if array.size(zigzagpivots) >= 2
+        lastPoint = array.get(zigzagpivots, 0)
+        llastPoint = array.get(zigzagpivots, 1)
+        newDir := dir * value > dir * llastPoint ? dir * 2 : dir
+        ratio := math.round(math.abs(value-lastPoint)/math.abs(llastPoint-lastPoint), 2)
+        
+        llastOsc = array.get(zigzagoscillators, 1)
+        oscDir := dir * oscillatorSource > dir * llastOsc ? dir * 2 : dir
+    
+    
+    sentiment = getSentiment(newDir, oscDir, directionBias[bar_index-bar])
+    add_to_array(zigzagpivots, value, numberOfPivots)
+    add_to_array(zigzagpivotbars, bar, numberOfPivots)
+    add_to_array(zigzagpivotdirs, newDir, numberOfPivots)
+    add_to_array(zigzagpivotratios, ratio, numberOfPivots)
+    add_to_array(zigzagoscillators, oscillatorSource, numberOfPivots)
+    add_to_array(zigzagoscillatordirs, oscDir, numberOfPivots)
+    add_to_array(zigzagtrendbias, directionBias[bar_index-bar], numberOfPivots)
+    add_to_array(zigzagdivergence, sentiment, numberOfPivots)
+
+zigzagcore(phigh, plow, phighbar, plowbar, numberOfPivots, oscHigh, oscLow, directionBias,
+                                     zigzagpivots, zigzagpivotbars, zigzagpivotdirs, zigzagpivotratios, zigzagoscillators,
+                                     zigzagoscillatordirs, zigzagtrendbias, zigzagdivergence) =>
+    pDir = 1
+    newZG = false
+    doubleZG = phigh and plow
+    if array.size(zigzagpivots) >= 1
+        pDir := array.get(zigzagpivotdirs, 0)
+        pDir := pDir % 2 == 0 ? pDir / 2 : pDir
+        pDir
+
+    if (pDir == 1 and phigh or pDir == -1 and plow) and array.size(zigzagpivots) >= 1
+        pivot = array.remove(zigzagpivots,0)
+        pivotbar = array.remove(zigzagpivotbars,0)
+        pivotdir = array.remove(zigzagpivotdirs,0)
+        array.remove(zigzagpivotratios, 0)
+        array.remove(zigzagoscillators, 0)
+        array.remove(zigzagoscillatordirs, 0)
+        array.remove(zigzagtrendbias, 0)
+        array.remove(zigzagdivergence, 0)
+        value = pDir == 1 ? phigh : plow
+        bar = pDir == 1 ? phighbar : plowbar
+
+        useNewValues = value * pivotdir > pivot * pivotdir
+        value := useNewValues ? value : pivot
+        bar := useNewValues ? bar : pivotbar
+        newZG := newZG or useNewValues
+        addnewpivot(zigzagpivots, zigzagpivotbars, zigzagpivotdirs, zigzagpivotratios, zigzagoscillators,
+                                     zigzagoscillatordirs, zigzagtrendbias, zigzagdivergence, value, bar, pDir, numberOfPivots,
+                                     oscHigh, oscLow, directionBias)
+
+    if pDir == 1 and plow or pDir == -1 and phigh
+        value = pDir == 1 ? plow : phigh
+        bar = pDir == 1 ? plowbar : phighbar
+        dir = pDir == 1 ? -1 : 1
+        newZG := true
+        addnewpivot(zigzagpivots, zigzagpivotbars, zigzagpivotdirs, zigzagpivotratios, zigzagoscillators,
+                                     zigzagoscillatordirs, zigzagtrendbias, zigzagdivergence, value, bar, dir, numberOfPivots,
+                                     oscHigh, oscLow, directionBias)
+
+    [newZG, doubleZG]
+
+draw_zg_line(idx1, idx2, zigzaglines, zigzaglabels, zigzagpivots, zigzagpivotbars, zigzagpivotdirs, zigzagpivotratios, zigzagdivergence,
+                         zigzagcolor, zigzagwidth, zigzagstyle, showHighLow, showRatios, showDivergence) =>
+    if array.size(zigzagpivots) > 2
+        y1 = array.get(zigzagpivots, idx1)
+        y2 = array.get(zigzagpivots, idx2)
+        x1 = array.get(zigzagpivotbars, idx1)
+        x2 = array.get(zigzagpivotbars, idx2)
+        zline = line.new(x1=x1, y1=y1, x2=x2, y2=y2, color=zigzagcolor, width=zigzagwidth, style=zigzagstyle)
+        currentDir = y1 > y2? 1 : -1
+        label zlabel = na
+        if(showHighLow or showRatios or showDivergence)
+            dir = array.get(zigzagpivotdirs, idx1)
+            ratio = array.get(zigzagpivotratios, idx1)
+            sentiment = array.get(zigzagdivergence, idx1)
+            [sentimentSymbol, sentimentLabel, sentimentColor] = getSentimentDetails(sentiment)
+            [hhllText, labelColor] = switch dir
+                1 => ["LH", color.orange]
+                2 => ["HH", color.green]
+                -1 => ["HL", color.lime]
+                -2 => ["LL", color.red]
+                => ["NA", color.silver]
+            labelText = (showHighLow? hhllText : "") + 
+                             (showHighLow and showRatios? " - " : "") +
+                             (showRatios? str.tostring(ratio) : "") +
+                             ((showHighLow or showRatios) and showDivergence? " : " : "") +
+                             (showDivergence? sentimentSymbol : "")
+            labelStyle = dir >= 0? label.style_label_down : label.style_label_up
+            zlabel := label.new(x=x1, y=y1, yloc=yloc.price, color=showDivergence? sentimentColor : labelColor, style=labelStyle, text=labelText, 
+                                     textcolor=color.black, size = size.small, tooltip=hhllText)
+        if array.size(zigzaglines) > 0
+            lastLine = array.get(zigzaglines, 0)
+            if line.get_x2(lastLine) == x2 and line.get_x1(lastLine) <= x1
+                line.delete(array.shift(zigzaglines))
+                label.delete(array.shift(zigzaglabels))
+        
+        array.unshift(zigzaglines, zline)
+        array.unshift(zigzaglabels, zlabel)
+        if array.size(zigzaglines) > 500
+            line.delete(array.pop(zigzaglines))
+            label.delete(array.pop(zigzaglabels))
+
+// @function zigzag: Calculates zigzag pivots and generates an array
+// @param   length                  : Zigzag Length
+// @param   numberOfPivots          : Max number of pivots to return in the array. Default is 20
+// @param   useAlternativeSource    : If set uses the source for genrating zigzag. Default is false
+// @param   source                  : Alternative source used only if useAlternativeSource is set to true. Default is close
+// @param   oscillatorSource        : Oscillator source for calculating divergence
+// @param   directionBias           : Direction bias for calculating divergence
+// @returns zigzagpivots        : Array containing zigzag pivots
+//          zigzagpivotbars     : Array containing zigzag pivot bars
+//          zigzagpivotdirs     : Array containing zigzag pivot directions (Lower High : 1, Higher High : 2, Lower Low : -2 and Higher Low : -1)
+//          zigzagpivotratios   : Array containing zigzag retracement ratios for each pivot
+//          zigzagoscillators   : Array of oscillator values at pivots. Will have valid values only if valid oscillatorSource is provided as per input.
+//          zigzagoscillatordirs: Array of oscillator directions (HH, HL, LH, LL) at pivots. Will have valid values only if valid oscillatorSource is provided as per input.
+//          zigzagtrendbias     : Array of trend bias at pivots. Will have valid value only if directionBias series is sent in input parameters
+//          zigzagdivergence    :   Array of divergence sentiment at each pivot. Will have valid values only if oscillatorSource and directionBias inputs are provided
+//          newPivot            : Returns true if new pivot created
+//          doublePivot         : Returns true if two new pivots are created on same bar (Happens in case of candles with long wicks and shorter zigzag lengths)
+export zigzag(int length, simple int numberOfPivots = 20, simple bool useAlternativeSource = false, float source=close, 
+         float oscillatorSource = close, float oscillatorHighSource = high, float oscillatorLowSource  = close, int directionBias = 1) =>
+    var zigzagpivots = array.new_float(0)
+    var zigzagpivotbars = array.new_int(0)
+    var zigzagpivotdirs = array.new_int(0)
+    var zigzagpivotratios = array.new_float(0)
+    var zigzagoscillators = array.new_float(0)
+    var zigzagoscillatordirs = array.new_int(0)
+    var zigzagtrendbias = array.new_int(0)
+    var zigzagdivergence = array.new_int(0)
+    oscHigh = not useAlternativeSource and oscillatorHighSource!= source? oscillatorHighSource : oscillatorSource
+    oscLow = not useAlternativeSource and oscillatorLowSource != source? oscillatorLowSource : oscillatorSource
+    highSource = useAlternativeSource ? source : high
+    lowSource = useAlternativeSource ? source : low
+    [phigh, plow, phighbar, plowbar] = pivots(length, highSource, lowSource)
+    [newPivot, doublePivot] = zigzagcore(phigh, plow, phighbar, plowbar, numberOfPivots,
+                                     oscHigh, oscLow, directionBias,
+                                     zigzagpivots, zigzagpivotbars, zigzagpivotdirs, zigzagpivotratios, zigzagoscillators,
+                                     zigzagoscillatordirs, zigzagtrendbias, zigzagdivergence)
+    [zigzagpivots, zigzagpivotbars, zigzagpivotdirs, zigzagpivotratios, zigzagoscillators,
+                                     zigzagoscillatordirs, zigzagtrendbias, zigzagdivergence, 
+                                     newPivot, doublePivot]
+
+
+// @function czigzag: Calculates zigzag pivots and generates an array based on custom high and low source
+// @param   length                  : Zigzag Length
+// @param   numberOfPivots          : Max number of pivots to return in the array. Default is 20
+// @param   highSource              : High Source for prices to calculate zigzag.
+// @param   lowSource               : Low source for prices to calculate zigzag.
+// @param   oscillatorHighSource    : Oscillator high source for calculating divergence
+// @param   oscillatorLowSource     : Oscillator high source for calculating divergence
+// @param   directionBias           : Direction bias for calculating divergence
+// @returns zigzagpivots        : Array containing zigzag pivots
+//          zigzagpivotbars     : Array containing zigzag pivot bars
+//          zigzagpivotdirs     : Array containing zigzag pivot directions (Lower High : 1, Higher High : 2, Lower Low : -2 and Higher Low : -1)
+//          zigzagpivotratios   : Array containing zigzag retracement ratios for each pivot
+//          zigzagoscillators   : Array of oscillator values at pivots. Will have valid values only if valid oscillatorSource is provided as per input.
+//          zigzagoscillatordirs: Array of oscillator directions (HH, HL, LH, LL) at pivots. Will have valid values only if valid oscillatorSource is provided as per input.
+//          zigzagtrendbias     : Array of trend bias at pivots. Will have valid value only if directionBias series is sent in input parameters
+//          zigzagdivergence    :   Array of divergence sentiment at each pivot. Will have valid values only if oscillatorSource and directionBias inputs are provided
+//          newPivot            : Returns true if new pivot created
+//          doublePivot         : Returns true if two new pivots are created on same bar (Happens in case of candles with long wicks and shorter zigzag lengths)
+export czigzag(int length, simple int numberOfPivots = 20, float highSource = high, float lowSource = low, 
+                 float oscillatorHighSource = high, float oscillatorLowSource  = low, int directionBias = 1) =>
+    var zigzagpivots = array.new_float(0)
+    var zigzagpivotbars = array.new_int(0)
+    var zigzagpivotdirs = array.new_int(0)
+    var zigzagpivotratios = array.new_float(0)
+    var zigzagoscillators = array.new_float(0)
+    var zigzagoscillatordirs = array.new_int(0)
+    var zigzagtrendbias = array.new_int(0)
+    var zigzagdivergence = array.new_int(0)
+    [phigh, plow, phighbar, plowbar] = pivots(length, highSource, lowSource)
+    [newPivot, doublePivot] = zigzagcore(phigh, plow, phighbar, plowbar, numberOfPivots,
+                                     oscillatorHighSource, oscillatorLowSource, directionBias,
+                                     zigzagpivots, zigzagpivotbars, zigzagpivotdirs, zigzagpivotratios, zigzagoscillators,
+                                     zigzagoscillatordirs, zigzagtrendbias, zigzagdivergence)
+    [zigzagpivots, zigzagpivotbars, zigzagpivotdirs, zigzagpivotratios, zigzagoscillators,
+                                     zigzagoscillatordirs, zigzagtrendbias, zigzagdivergence, 
+                                     newPivot, doublePivot]
+
+// @function drawzigzag: Calculates and draws zigzag pivots
+// @param   length              : Zigzag Length
+// @param   numberOfPivots      : Max number of pivots to return in the array. Default is 20
+// @param   useAlternativeSource: If set uses the source for genrating zigzag. Default is false
+// @param   source              : Alternative source used only if useAlternativeSource is set to true. Default is close
+// @param   linecolor           : zigzag line color
+// @param   linewidth           : zigzag line width
+// @param   linestyle           : zigzag line style
+// @param   oscillatorSource    : Oscillator source for calculating divergence
+// @param   directionBias       : Direction bias for calculating divergence
+// @param   showHighLow         : show highlow label
+// @param   showRatios          : show retracement ratios
+// @param   showDivergence      : Show divergence on label (Only works if divergence data is available - that is if we pass valid oscillatorSource and directionBias input)
+// @returns zigzagpivots        : Array containing zigzag pivots
+//          zigzagpivotbars     : Array containing zigzag pivot bars
+//          zigzagpivotdirs     : Array containing zigzag pivot directions (Lower High : 1, Higher High : 2, Lower Low : -2 and Higher Low : -1)
+//          zigzagpivotratios   : Array containing zigzag retracement ratios for each pivot
+//          zigzagoscillators   : Array of oscillator values at pivots. Will have valid values only if valid oscillatorSource is provided as per input.
+//          zigzagoscillatordirs: Array of oscillator directions (HH, HL, LH, LL) at pivots. Will have valid values only if valid oscillatorSource is provided as per input.
+//          zigzagtrendbias     : Array of trend bias at pivots. Will have valid value only if directionBias series is sent in input parameters
+//          zigzagdivergence    :   Array of divergence sentiment at each pivot. Will have valid values only if oscillatorSource and directionBias inputs are provided
+//          zigzaglines         : Returns array of zigzag lines
+//          zigzaglabels        : Returns array of zigzag labels
+export drawzigzag(int length, simple int numberOfPivots = 20, simple bool useAlternativeSource = false, float source=close,
+                     color linecolor = color.blue, int linewidth = 1, string linestyle = line.style_solid,
+                     float oscillatorSource = close,  float oscillatorHighSource = high, float oscillatorLowSource = close, int directionBias = 1,
+                     simple bool showHighLow=false, simple bool showRatios = false, simple bool showDivergence = false)=>
+    [zigzagpivots, zigzagpivotbars, zigzagpivotdirs, zigzagpivotratios, zigzagoscillators,
+                                     zigzagoscillatordirs, zigzagtrendbias, zigzagdivergence, 
+                                     newPivot, doublePivot] = zigzag(length, numberOfPivots, useAlternativeSource, source, 
+                                                                     oscillatorSource, oscillatorHighSource, oscillatorLowSource, directionBias)
+    var zigzaglines = array.new_line(0)
+    var zigzaglabels = array.new_label(0)
+    if(newPivot)
+        if doublePivot
+            draw_zg_line(1, 2, zigzaglines, zigzaglabels, zigzagpivots, zigzagpivotbars, zigzagpivotdirs, zigzagpivotratios, zigzagdivergence,
+                             linecolor, linewidth, linestyle, showHighLow, showRatios, showDivergence)
+
+        if array.size(zigzagpivots) >= 2
+            draw_zg_line(0, 1, zigzaglines, zigzaglabels, zigzagpivots, zigzagpivotbars, zigzagpivotdirs, zigzagpivotratios, zigzagdivergence,
+                             linecolor, linewidth, linestyle, showHighLow, showRatios, showDivergence)
+    [zigzagpivots, zigzagpivotbars, zigzagpivotdirs, zigzagpivotratios, zigzagoscillators,
+                                     zigzagoscillatordirs, zigzagtrendbias, zigzagdivergence, 
+                                     zigzaglines, zigzaglabels]
+
+
+// ************************************************************* Demonstrating usage examples *************************************************************/
+operation = input.string("Draw Zigzag", "Operation", options=["Draw Zigzag", "Get Zigzag"], group="Zigzag", inline="z")
+zigzagLength = input.int(5, "", group="Zigzag", inline="z")
+useAlternativeSource = input.bool(false, "Use Alternative Source", group="Alternate Source", inline="s")
+source = input.source(close, "", group="Alternate Source", inline="s")
+
+useDifferentLineStyle = input.bool(false, "Use Different Line Style", group="Line Style", inline="l")
+linecolor = input.color(color.maroon, "", group="Line Style", inline="l")
+linewidth = input.int(3, "", group="Line Style", inline="l")
+linestyle = input.string(line.style_dashed, "", options=[line.style_solid, line.style_dashed, line.style_dotted], group="Line Style", inline="l")
+showHighLow = input.bool(false, "HHLL", group="Display Labels", inline="lb")
+showRatios = input.bool(false, "Ratios", group="Display Labels", inline="lb")
+showDivergence = input.bool(false, "Divergence", group="Display Labels", inline="lb")
+
+
+if(operation == "Draw Zigzag")
+    // Plain zigzag when nothing is selected
+    if(not useAlternativeSource and not useDifferentLineStyle and not showDivergence and not showHighLow and not showRatios)
+        drawzigzag(zigzagLength)
+    
+    // When using Alternate source
+    else if(useAlternativeSource and not useDifferentLineStyle and not showDivergence and not showHighLow and not showRatios)
+        drawzigzag(zigzagLength, useAlternativeSource=useAlternativeSource, source = source)
+        
+    // When using different line style
+    else if(not useAlternativeSource and useDifferentLineStyle and not showDivergence and not showHighLow and not showRatios)
+        drawzigzag(zigzagLength, linecolor=linecolor, linewidth = linewidth, linestyle = linestyle)
+    
+    // Few options selected - just for example
+    else if(not useAlternativeSource and not useDifferentLineStyle and not showDivergence)
+        drawzigzag(zigzagLength, showHighLow=showHighLow, showRatios=showRatios)
+    
+    // Few options selected - just for example
+    else if(useAlternativeSource and not useDifferentLineStyle and not showDivergence)
+        drawzigzag(zigzagLength, useAlternativeSource=useAlternativeSource, source = source, showHighLow=showHighLow, showRatios=showRatios)
+    
+    // All other cases when divergence is not needed
+    else if not showDivergence
+        drawzigzag(zigzagLength, useAlternativeSource=useAlternativeSource, source = source,
+                         linecolor=linecolor, linewidth = linewidth, linestyle = linestyle,
+                         showHighLow=showHighLow, showRatios=showRatios)
+    // When showing divergence
+    else
+        //Calculating Oscillator and direction bias for divergence
+        rsi = ta.rsi(close, 14)
+        rsiHigh = ta.rsi(high, 14)
+        rsiLow = ta.rsi(low, 14)
+        [supertrend, dir] = ta.supertrend(4, 22)
+        directionBias = int(-dir)
+        if(not useDifferentLineStyle)
+            drawzigzag(zigzagLength, useAlternativeSource=useAlternativeSource, source = source,
+                             oscillatorSource=rsi, oscillatorHighSource=rsiHigh, oscillatorLowSource=rsiLow, directionBias = directionBias,
+                             showHighLow=showHighLow, showRatios=showRatios, showDivergence=showDivergence)
+        else
+            drawzigzag(zigzagLength, useAlternativeSource=useAlternativeSource, source = source,
+                             linecolor=linecolor, linewidth = linewidth, linestyle = linestyle,
+                             oscillatorSource=rsi, oscillatorHighSource=rsiHigh, oscillatorLowSource=rsiLow, directionBias = directionBias,
+                             showHighLow=showHighLow, showRatios=showRatios, showDivergence=showDivergence)
+    false
+else
+    // Plain zigzag when nothing is selected
+    if(not useAlternativeSource and not showDivergence)
+        [zigzagpivots, zigzagpivotbars, zigzagpivotdirs, zigzagpivotratios, zigzagoscillators,
+                                     zigzagoscillatordirs, zigzagtrendbias, zigzagdivergence, 
+                                     newPivot, doublePivot] = zigzag(zigzagLength)
+    
+    // When using Alternate source
+    else if(useAlternativeSource and not showDivergence)
+        [zigzagpivots, zigzagpivotbars, zigzagpivotdirs, zigzagpivotratios, zigzagoscillators,
+                                     zigzagoscillatordirs, zigzagtrendbias, zigzagdivergence, 
+                                     newPivot, doublePivot] = zigzag(zigzagLength, useAlternativeSource=useAlternativeSource, source = source)
+        
+    // When divergence is included
+    else 
+        //Calculating Oscillator and direction bias for divergence
+        rsi = ta.rsi(close, 14)
+        [supertrend, dir] = ta.supertrend(4, 22)
+        directionBias = int(-dir)
+        [zigzagpivots, zigzagpivotbars, zigzagpivotdirs, zigzagpivotratios, zigzagoscillators,
+                                     zigzagoscillatordirs, zigzagtrendbias, zigzagdivergence, 
+                                     newPivot, doublePivot] = zigzag(zigzagLength, useAlternativeSource=useAlternativeSource, source = source,
+                                                                 oscillatorSource=rsi, directionBias = directionBias)
+    false

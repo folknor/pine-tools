@@ -1,0 +1,508 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/ 
+// © reees
+
+//@version=5
+
+// @description Harmonic XABCD Pattern object and associated methods. Easily validate, draw, and get information about harmonic patterns. See example code at the end of the script for details. 
+library("Obj_XABCD_Harmonic",true)
+
+import reees/TA/76 as t
+import reees/Draw/26 as draw
+import reees/Utilities/5 as u
+import reees/Pattern/1 as p
+
+// @type 					Validation and scoring parameters for a Harmonic Pattern object (xabcd_harmonic)
+// @field pct_error 		Allowed % error of leg retracement ratio versus the defined harmonic ratio 
+// @field pct_asym	 		Allowed leg length/period asymmetry % (a leg is considered invalid if it is this % longer or shorter than the average length of the other legs)
+// @field types				Array of pattern types to validate (1=Gartley, 2=Bat, 3=Butterfly, 4=Crab, 5=Shark, 6=Cypher)
+// @field w_e				Weight of ratio % error (used in score calculation, dft = 1)
+// @field w_p				Weight of PRZ confluence (used in score calculation, dft = 1)
+// @field w_d				Weight of Point D / PRZ confluence (used in score calculation, dft = 1)
+export type harmonic_params
+	float pct_error = 15.0
+	float pct_asym = 250.0
+	int[] types
+	float w_e = 1.0
+	float w_p = 1.0
+	float w_d = 1.0
+
+// @function				Create a harmonic parameters object (used by xabcd_harmonic object for pattern validation and scoring).
+// @param pct_error 		Allowed % error of leg retracement ratio versus the defined harmonic ratio 
+// @param pct_asym	 		Allowed leg length/period asymmetry % (a leg is considered invalid if it is this % longer or shorter than the average length of the other legs)
+// @param types				Array of pattern types to validate (1=Gartley, 2=Bat, 3=Butterfly, 4=Crab, 5=Shark, 6=Cypher)
+// @param w_e				Weight of ratio % error (used in score calculation, dft = 1)
+// @param w_p				Weight of PRZ confluence (used in score calculation, dft = 1)
+// @param w_d				Weight of Point D / PRZ confluence (used in score calculation, dft = 1)
+// @returns 				harmonic_params object instance. It is recommended to store and reuse this object for multiple xabcd_harmonic objects rather than creating new params objects unnecessarily.
+export init_params(float pct_error=15.0, float pct_asym=250.0, int[] types=na, float w_e=1, float w_p=1, float w_d=1) =>
+	harmonic_params.new(pct_error,
+					     pct_asym,
+						 na(types)?array.from(1,2,3,4,5,6):types,
+						 w_e,
+						 w_p,
+						 w_d)
+
+// @type 				Harmonic Pattern object
+// @field bull 			Bullish pattern flag 
+// @field tp	 		Pattern type (1=Gartley, 2=Bat, 3=Butterfly, 4=Crab, 5=Shark, 6=Cypher)
+// @field x				Point X
+// @field a				Point A
+// @field b				Point B
+// @field c				Point C
+// @field d				Point D
+// @field r_xb			XAB ratio
+// @field re_xb			XAB ratio % error
+// @field r_ac			ABC ratio
+// @field re_ac			ABC ratio % error
+// @field r_bd			BCD ratio
+// @field re_bd			BCD ratio % error
+// @field r_xd			XAD or XCD ratio, depending on pattern type
+// @field re_xd			XAD ratio % error
+// @field score			Total score
+// @field score_eAvg	Avg % error
+// @field score_prz		PRZ score
+// @field score_eD		Point D/PRZ confluence score
+// @field prz_bN		BCD retracement near
+// @field prz_bF		BCD retracement far
+// @field prz_xN		XAD/XCD retracement near
+// @field prz_xF		XAD/XCD retracement far
+// @field t1Hit 		Target 1 flag
+// @field t1	 		Target 1 level
+// @field t2Hit			Target 2 flag
+// @field t2	 		Target 2 level
+// @field sHit 			Stop flag
+// @field stop 			Stop level
+// @field entry 		Entry level
+// @field eHit			Entry flag
+// @field eX			Entry bar index
+// @field eY			Enty price/level
+// @field invalid_d		TRUE if point D is an invalid or unconfirmed pivot
+// @field pLines		Pattern lines
+// @field pLabel		Pattern label
+// @field pid			Pattern ID
+// @field params		harmonic_params for validating and scoring the pattern
+export type xabcd_harmonic
+// *** Type ***
+	bool bull			// Bullish flag
+	int tp				// Type (1=Gartley, 2=Bat, 3=Butterfly, 4=Crab, 5=Shark, 6=Cypher)
+// *** Points ***
+	p.point x
+	p.point a
+	p.point b
+	p.point c
+	p.point d
+// *** Values ***
+	float r_xb			// XAB ratio
+	float re_xb			// XAB ratio % error
+	float r_ac			// etc...
+	float re_ac
+	float r_bd
+	float re_bd
+	float r_xd			// XAD or XCD, depending on pattern type
+	float re_xd
+	// Score
+	float score			// total score
+	float score_eAvg	// avg % error
+	// float sym		// leg length symmetry
+	float score_prz		// PRZ score
+	float score_eD		// Point D/PRZ confluence score
+	// PRZ
+	float prz_bN		// BCD retracement near
+	float prz_bF		// BCD retracement far
+	float prz_xN		// XAD/XCD retracement near
+	float prz_xF		// XAD/XCD retracement far
+	// State flags/values
+	bool t1Hit			// target 1 flag
+	float t1			// target 1 level
+	bool t2Hit			// target 2 flag
+	float t2			// target 2 level
+	bool sHit			// stop-loss flag
+	float stop			// stop-loss level
+	float entry			// entry level
+	bool eHit			// entry flag
+	p.point e			// entry point
+	bool invalid_d		// TRUE if point D is an invalid or unconfirmed pivot
+// *** Drawings ***
+	line[] pLines
+	label pLabel
+//
+	string pid				// Pattern ID
+	harmonic_params params	// Validation parameters
+
+
+//*******************************************************************
+// Object functions/methods
+//*******************************************************************
+
+// (private) Pattern ID
+pid(p) =>
+	str.tostring(p.tp) + "_"
+     + str.tostring(p.x.x) + "_"
+     + str.tostring(p.a.x) + "_"
+     + str.tostring(p.b.x) + "_"
+     + str.tostring(p.c.x) + "_"
+     + str.tostring(p.d.x)
+
+// (private) Set pattern ID
+set_pid(p) =>
+	p.pid := pid(p)
+
+// (private) Get the highest scoring pattern type. It's unlikely that a complete pattern will be valid for more than one harmonic,
+// but it's possible (especially if your validation parameters are more inclusive).
+highestScoringType(tps,params,x,a,b,c,d) =>
+	int hst = na
+	float hs=0.0, float hs1=0.0, float hs2=0.0, float hs3=0.0
+	for tp in tps
+		[eavg,asym,eD,prz,_,_,_] = t.harmonic_xabcd_score(tp+1,x.x,x.y,a.x,a.y,b.x,b.y,c.x,c.y,d.x,d.y)
+		s = t.harmonic_xabcd_scoreTot(asym,eavg,prz,eD,tp+1,0.0,params.w_e,params.w_p,params.w_d)
+		if s>hs
+			hst := tp+1
+			hs := s
+			hs1 := eavg
+			hs2 := eD
+			hs3 := prz
+	[hst,hs,hs1,hs2,hs3]
+
+// (private) Validate ABCD
+validAbcd(bull,a,b,c,d) =>
+	if bull
+		a.y > b.y and c.y> b.y and (na(d.y) ? true : c.y > d.y)
+	else
+		a.y < b.y and c.y < b.y and (na(d.y) ? true : c.y < d.y)
+
+delete_lines(p) =>
+	for l in p.pLines
+		line.delete(l)
+
+delete_label(p) =>
+	if not na(p.pLabel)
+		label.delete(p.pLabel)
+
+delete_drawings(p) =>
+	delete_lines(p)
+	delete_label(p)
+	p
+
+// @function 		Initialize an xabcd_harmonic object instance from a given set of points 
+//     				If the pattern is valid, an xabcd_harmonic object instance is returned. If you want to specify your
+//	   				own validation and scoring parameters, you can do so by passing a harmonic_params object (params).
+//					Or, if you prefer to do your own validation, you can explicitly pass the harmonic pattern type (tp)
+//					and validation will be skipped. You can also pass in an existing xabcd_harmonic instance if you wish
+//					to re-initialize it (e.g. for re-validation and/or re-scoring).
+// @param x			Point X
+// @param a			Point A
+// @param b			Point B
+// @param c			Point C
+// @param d			Point D
+// @param params	harmonic_params used to validate and score the pattern. Validation will be skipped if a type (tp) is explicitly passed in.
+// @param tp	 	Pattern type
+// @param p 		xabcd_harmonic object instance to initialize (optional, for re-validation/re-scoring)
+// @returns 		xabcd_harmonic object instance if a valid harmonic, else na
+export init(p.point x, p.point a, p.point b, p.point c, p.point d=na,
+		   harmonic_params params=na, int tp=na, xabcd_harmonic p=na) =>
+
+	xabcd_harmonic obj = p
+	int validType = tp>0 and tp<7 ? tp : na
+	float[] scores = array.new_float()
+	par = na(params) ? init_params() : params
+	p.point ptD = na(d) ? p.point.new() : d
+
+	// Validate XABCD pattern
+	bull = x.y < a.y
+	if validAbcd(bull,a,b,c,ptD) == false
+		validType := na
+	// Validate Harmonic pattern
+	else if na(validType)
+		tps = u.intToBoolArr(par.types,7)
+		int[] intTps = na
+		if not na(ptD.x)
+			[f,h1,h2,h3,h4,h5,h6] =
+			 t.harmonic_xabcd_validate(x.x,x.y,a.x,a.y,b.x,b.y,c.x,c.y,ptD.x,ptD.y,par.pct_error,par.pct_asym,
+									   array.get(tps,1),array.get(tps,2),array.get(tps,3),array.get(tps,4),array.get(tps,5),array.get(tps,6))
+			intTps := u.boolToIntArr(array.from(h1,h2,h3,h4,h5,h6))
+		else
+			[f,h1,h2,h3,h4,h5,h6] =
+			 t.harmonic_xabcd_validateIncomplete(x.x,x.y,a.x,a.y,b.x,b.y,c.x,c.y,par.pct_error,par.pct_asym,
+			 									 array.get(tps,1),array.get(tps,2),array.get(tps,3),array.get(tps,4),array.get(tps,5),array.get(tps,6))
+			intTps := u.boolToIntArr(array.from(h1,h2,h3,h4,h5,h6))
+		if array.size(intTps) == 1
+			validType := array.pop(intTps)+1
+		else if array.size(intTps) > 1
+			[hst,s,s1,s2,s3] = highestScoringType(intTps,par,x,a,b,c,ptD)
+			scores := array.from(s,s1,s2,s3)
+			validType := hst
+		else
+			validType := na
+
+	// Create object if we have a valid type (or type was explicitly passed)		
+	if not na(validType)
+		obj := na(p) ? xabcd_harmonic.new() : delete_drawings(p)
+		[xbr,xbre] = t.harmonic_xabcd_rAndE(validType,"xab",a.y-b.y,a.y-x.y)
+		[acr,acre] = t.harmonic_xabcd_rAndE(validType,"abc",c.y-b.y,a.y-b.y)
+		[bdr,bdre] = t.harmonic_xabcd_rAndE(validType,"bcd",c.y-ptD.y,c.y-b.y)
+		[xdr,xdre] = t.harmonic_xabcd_rAndE(validType,"xad",a.y-ptD.y,a.y-x.y)
+		if array.size(scores) == 0
+			[eavg,asym,eD,przscore,_,cpl1,cpl2] = t.harmonic_xabcd_score(validType,x.x,x.y,a.x,a.y,b.x,b.y,c.x,c.y,ptD.x,ptD.y)
+			s = t.harmonic_xabcd_scoreTot(asym,eavg,przscore,eD,validType,0.0,par.w_e,par.w_p,par.w_d)
+			scores := array.from(s,eavg,eD,przscore)
+		[bcN,bcF,xaN,xaF] = t.harmonic_xabcd_prz(validType,x.y,a.y,b.y,c.y)
+		obj.bull := bull
+		obj.tp := validType
+		obj.x := x
+		obj.a := a
+		obj.b := b
+		obj.c := c
+		obj.d := ptD
+		obj.r_xb := xbr
+		obj.re_xb := xbre
+		obj.r_ac := acr
+		obj.re_ac := acre
+		obj.r_bd := obj.invalid_d ? na : bdr
+		obj.re_bd := obj.invalid_d ? na : bdre
+		obj.r_xd := obj.invalid_d ? na : xdr
+		obj.re_xd := obj.invalid_d ? na : xdre
+		obj.score := array.get(scores,0)
+		obj.score_eAvg := array.get(scores,1)
+		obj.score_prz := array.get(scores,3)
+		obj.score_eD := obj.invalid_d ? na : array.get(scores,2)
+		obj.prz_bN := bcN
+		obj.prz_bF := bcF
+		obj.prz_xN := xaN
+		obj.prz_xF := xaF
+		obj.e := na(p) ? p.point.new() : p.e
+		obj.pLines := array.new_line()
+		set_pid(obj)
+	obj
+
+// @function 		Initialize an xabcd_harmonic object instance from a given set of x and y coordinate values. 
+//     				If the pattern is valid, an xabcd_harmonic object instance is returned. If you want to specify your
+//	   				own validation and scoring parameters, you can do so by passing a harmonic_params object (params).
+//					Or, if you prefer to do your own validation, you can explicitly pass the harmonic pattern type (tp)
+//					and validation will be skipped. You can also pass in an existing xabcd_harmonic instance if you wish
+//					to re-initialize it (e.g. for re-validation and/or re-scoring).
+// @param xX		Point X bar index (required)
+// @param xY		Point X price/level (required)
+// @param aX		Point A bar index (required)
+// @param aY		Point A price/level (required)
+// @param bX		Point B bar index (required)
+// @param bY		Point B price/level (required)
+// @param cX		Point C bar index (required)
+// @param cY		Point C price/level (required)
+// @param dX		Point D bar index
+// @param dY		Point D price/level
+// @param params	harmonic_params used to validate and score the pattern. Validation will be skipped if a type (tp) is explicitly passed in.
+// @param tp	 	Pattern type
+// @param p 		xabcd_harmonic object instance to initialize (optional, for re-validation/re-scoring)
+// @returns 		xabcd_harmonic object instance if a valid harmonic, else na
+export init(int xX, float xY, int aX, float aY, int bX, float bY, int cX, float cY,int dX=na,float dY=na,
+		   harmonic_params params=na, int tp=na, xabcd_harmonic p=na) =>
+	init(p.point.new(xX,xY), p.point.new(aX,aY), p.point.new(bX,bY), p.point.new(cX,cY), p.point.new(dX,dY), params, tp, p)
+
+// @function 		Initialize an xabcd_harmonic object instance from a given pattern
+//     				If the pattern is valid, an xabcd_harmonic object instance is returned. If you want to specify your
+//	   				own validation and scoring parameters, you can do so by passing a harmonic_params object (params).
+//					Or, if you prefer to do your own validation, you can explicitly pass the harmonic pattern type (tp)
+//					and validation will be skipped. You can also pass in an existing xabcd_harmonic instance if you wish
+//					to re-initialize it (e.g. for re-validation and/or re-scoring).
+// @param pattern	Pattern
+// @param params	harmonic_params used to validate and score the pattern. Validation will be skipped if a type (tp) is explicitly passed in.
+// @param tp	 	Pattern type
+// @param p 		xabcd_harmonic object instance to initialize (optional, for re-validation/re-scoring)
+// @returns 		xabcd_harmonic object instance if a valid harmonic, else na
+export init(p.pattern pattern, harmonic_params params=na, int tp=na, xabcd_harmonic p=na) =>
+	if array.size(pattern.legs) == 4
+		xa = array.get(pattern.legs,0)
+		bc = array.get(pattern.legs,2)
+		cd = array.get(pattern.legs,3)
+		init(xa.a, xa.b, bc.a, bc.b, cd.b, params, tp, p)
+	else if array.size(pattern.legs) == 3
+		xa = array.get(pattern.legs,0)
+		bc = array.get(pattern.legs,2)
+		init(xa.a, xa.b, bc.a, bc.b, na, params, tp, p)
+	else
+		na
+
+// *** Get/Set ***
+
+// @function 	Get the pattern name
+// @param p 	Instance of xabcd_harmonic object
+// @returns 	Pattern name (string)
+export method get_name(xabcd_harmonic p) =>
+	a = p.bull ? "Bullish" : "Bearish"
+    b = switch p.tp
+    	1 => "Gartley"
+        2 => "Bat"
+        3 => "Butterfly"
+        4 => "Crab"
+        5 => "Shark"
+        6 => "Cypher"
+		=> "Undefined harmonic"
+	a + " " + b
+
+// @function 	Get the pattern symbol
+// @param p 	Instance of xabcd_harmonic object
+// @returns 	Pattern symbol (1 byte string)
+export method get_symbol(xabcd_harmonic p) =>
+	t.harmonic_xabcd_symbol(p.tp)
+	
+// @function 	Get the Pattern ID. Patterns of the same type with the same coordinates will have the same Pattern ID.
+// @param p 	Instance of xabcd_harmonic object
+// @returns 	Pattern ID (string)
+export method get_pid(xabcd_harmonic p) =>
+	if na(p.pid)
+		set_pid(p)
+	p.pid
+
+// @function 			Set value for a target. Use the calc_target parameter to automatically calculate the target for a specific harmonic ratio. 
+// @param p 			Instance of xabcd_harmonic object
+// @param target		Target (1 or 2)
+// @param target_lvl	Target price/level (required if calc_target is not specified)
+// @param calc_target	Target to auto calculate (required if target is not specified)
+//							Options: [".382 AD", ".5 AD", ".618 AD", "1.272 AD", "1.618 AD"
+//									  ".382 XA", ".5 XA" ,".618 XA", "1.272 XA", "1.618 XA",
+//									  ".382 CD", ".5 CD", ".618 CD", "1.272 CD", "1.618 CD",
+//									  "A", "B", "C"]
+// @returns 			Target price/level (float)
+export method set_target(xabcd_harmonic p, int target=1, float target_lvl=na, string calc_target=".618 AD") =>
+	if na(target_lvl)
+		[t,_,_] = t.harmonic_xabcd_targets(p.x.y,p.a.y,p.b.y,p.c.y,p.d.y,calc_target)
+		if target==1
+			p.t1 := t
+		else
+			p.t2 := t
+	else
+		if target==1
+			p.t1 := target_lvl
+		else
+			p.t2 := target_lvl
+
+// *** Functions ***
+
+// @function 	Erase the pattern
+// @param p 	Instance of xabcd_harmonic object
+// @returns 	p
+export method erase_pattern(xabcd_harmonic p) =>
+	delete_lines(p)
+	p.pLines := array.new_line()
+	p
+
+// @function 	Draw the pattern
+// @param p 	Instance of xabcd_harmonic object
+// @returns 	Pattern lines 
+//				[l1,l2,l3,l4,l5,l6]
+export method draw_pattern(xabcd_harmonic p, color clr) =>
+	erase_pattern(p)
+	[lower,higher] = t.harmonic_xabcd_przClosest(p.prz_bN,p.prz_bF,p.prz_xN,p.prz_xF)
+	float iE = na(p.d.x) ? (p.bull?higher:lower) : na	// potential point D for incomplete pattern
+	[l1,l2,l3,l4,l5,l6] = draw.xabcd(p.x.x,p.x.y,p.a.x,p.a.y,p.b.x,p.b.y,p.c.x,p.c.y,p.d.x,p.d.y,iE,p.bull,color.new(clr,20),color.new(clr,20))
+	p.pLines := array.from(l1,l2,l3,l4,l5,l6)
+	[l1,l2,l3,l4,l5,l6]
+
+// @function 	Erase the pattern label
+// @param p 	Instance of xabcd_harmonic object
+// @returns 	p
+export method erase_label(xabcd_harmonic p) =>
+	delete_label(p)
+	p
+
+// @function 		Draw the pattern label. Default text is the pattern name.
+// @param p 		Instance of xabcd_harmonic object
+// @param txt		Label text
+// @param tooltip	Tooltip text
+// @param clr		Label color
+// @param txt_clr	Text color
+// @returns 		Label
+export method draw_label(xabcd_harmonic p, color clr=color.gray, color txt_clr=color.white, string txt=na, string tooltip=na) =>
+	erase_label(p)
+	lbstyle = p.bull ? label.style_label_up : label.style_label_down
+	incLbstyle = p.bull ? label.style_label_down : label.style_label_up
+	t = not na(txt) ? txt : get_name(p)
+	lbl = 
+	 if not na(p.d.x)   // Completed pattern
+		label.new(p.d.x,p.d.y,text=t,textcolor=txt_clr,size=size.small,style=lbstyle,tooltip=tooltip,color=clr)
+	else    // Incomplete pattern
+		if array.size(p.pLines)>0
+			l4 = array.get(p.pLines,3)
+			not na(l4) ? label.new(line.get_x2(l4),line.get_y2(l4),text=t,tooltip=tooltip,textcolor=txt_clr,size=size.small,style=lbstyle,color=clr)
+								 : label.new(p.c.x,p.c.y,text=t,tooltip=tooltip,textcolor=txt_clr,size=size.small,style=lbstyle,color=clr)
+		else
+			label.new(p.c.x,p.c.y,text=t,tooltip=tooltip,textcolor=txt_clr,size=size.small,style=lbstyle,color=clr)
+	p.pLabel := lbl
+
+
+
+//********************************
+// Example / Test code
+//********************************
+
+// Use your preferred zig-zag method to get the XABCD pattern coordinates.
+// Coordinates are hard-coded here for simplicity of the example. 
+// ADA 4h gartley
+var int xX = 10681
+var float xY = .344
+var x = p.point.new(xX,xY)
+var int aX = 10714
+var float aY = .296
+var a = p.point.new(aX,aY)
+var xa = p.leg_init(x,a)
+var int bX = 10743
+var float bY = .322
+var b = p.point.new(bX,bY)
+var ab = p.leg_init(a,b)
+var int cX = 10752
+var float cY = .3
+var c = p.point.new(cX,cY)
+var bc = p.leg_init(b,c)
+var int dX = 10796
+var float dY = .329
+var d = p.point.new(dX,dY)
+var cd = p.leg_init(c,d)
+var points = array.from(x, a, b, c, d)
+var pattern = p.pattern_init(points,"xabcd")
+var legs = array.from(xa,ab,bc,cd)
+
+if bar_index == 10796
+// *** Instantiate the xabcd_harmonic ***
+	// [0] Simply pass in the pattern coordinates and the pattern will be automatically validated.
+	//     If the pattern is valid, an xabcd_harmonic object instance is returned. If you prefer to do
+	//	   your own validation, you can skip it by explicitly passing a type (tp) to the init() function.
+	//	   Or, if you want to specify the validation and scoring parameters, you can do so by passing a
+	//	   harmonic_params object to the init() function.
+	// pat = init(xX, xY, aX, aY, bX, bY, cX, cY, dX, dY)
+	// pat = init(xX, xY, aX, aY, bX, bY, cX, cY)		// pattern can be incomplete, i.e. point D not yet established
+	// pat = init(pattern)								// can also be initialized from a pattern object
+	// pat = init(legs)									// or from an array of leg objects
+	pat = init(x,a,b,c,d)								// or from an array of point objects
+
+	if not na(pat)
+	// *** When a valid xabcd_harmonic is initialized... ***
+		// [1] We know what type of harmonic pattern we have (pat.tp field)
+		name = pat.get_name() + " (" + pat.get_symbol() + ")"	// get pattern name and symbol with exported functions
+		u.print(name)
+
+		// [2] PRZ levels are automatically calculated
+		// 		e.g. pat.prz_bN, pat.prz_xN, pat.prz_bF, pat.prz_xF
+		draw.level(pat.prz_bN,na(pat.d)?pat.c.x:pat.d.x,length=100,padding=.5,txt="Near BC PRZ level")	// illustrate near BC PRZ retracement level
+		draw.level(pat.prz_xN,na(pat.d)?pat.c.x:pat.d.x,length=100,padding=.5,txt="Near XA PRZ level")	// illustrate near XA PRZ retracement level
+
+		// [3] Scores are calculated to represent the quality of the harmonic pattern
+		// 		e.g. pat.score, pat.score_prz, pat.score_eAvg, pat.score_eD
+		u.print(("Leg avg retracement % error: " + str.tostring(pat.score_eAvg*100,"#.#") + "%"),position.bottom_left)	// illustrate avg leg retracement % error score
+
+		// [4] Easily draw the pattern and a label
+		pat.draw_pattern(color.red)
+		pat.draw_label(color.new(color.red,70))
+
+		// [5] Set targets. You can specify a specific target level, or have the target automatically calculated for a specific 
+		// harmonic retracement ratio of a pattern leg
+		// 		e.g. ".618 AD" or "1.272 XA"
+		pat.set_target(1, calc_target=".618 AD")
+		pat.set_target(2, calc_target="1.272 XA")
+		draw.level(pat.t1,na(pat.d)?pat.c.x:pat.d.x,length=100,padding=.5,txt="Target 1")	// illustrate target 1
+		draw.level(pat.t2,na(pat.d)?pat.c.x:pat.d.x,length=100,padding=.5,txt="Target 2")	// illustrate target 2
+		
+		//erase_pattern(pat)
+		//erase_label(pat)
+
+		// [6] Set stop/entry values, and track trades with state flags
+		// 		e.g. pat.stop, pat.entry, pat.sHit, pat.eHit, pat.t1Hit, pat.t2Hit

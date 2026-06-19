@@ -1,0 +1,34 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © algotraderdev
+
+// @version=5
+
+// @description This lightweight library provides a utility method that analyzes any provided background color and
+// automatically chooses the optimal black or white foreground color to ensure maximum visual contrast and readability.
+library('contrast', overlay = true)
+
+// @function Calculates the optimal foreground color for the given background color.
+// @param bg The background color.
+// @param threshold The threshold brightness (0-1) above which black text is used. Default is 0.5.
+// @returns The optimal foreground color.
+export method contrast(color bg, float threshold = 0.5) =>
+	float r = color.r(bg) / 255
+	float g = color.g(bg) / 255
+	float b = color.b(bg) / 255
+	float brightness = math.sqrt(
+	  0.299 * r * r +
+      0.587 * g * g +
+	  0.114 * b * b)
+	brightness > threshold ? #000000 : #ffffff
+
+
+// Demo code below. They will NOT be run in indicators that uses this library.
+
+int rows = 10
+int columns = 8
+table t = table.new(position.middle_center, columns, rows)
+for i = 0 to rows - 1
+	for j = 0 to columns - 1
+		color bg = color.rgb(math.random(0, 255), math.random(0, 255), math.random(0, 255))
+		color fg = bg.contrast()
+		t.cell(j, i, 'Test123', width = 10, height = 4, bgcolor = bg, text_color = fg)

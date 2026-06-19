@@ -1,0 +1,179 @@
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © TFlab
+//@version=5
+
+library('OrderBlockDrawing_TradingFinder', overlay = true)
+
+
+export OBDrawing(string OBType, bool TriggerCondition ,float distalPrice, float proximalPrice, int  Index, bool OBValidGlobal, int OBValidDis, string MitigationLvL, string MitigationLvL_BB ,bool ShowAll,bool ShowAll_BB,bool Show,bool Show_BB,color ColorZone,color ColorZone_BB) =>
+
+	var string oBType = OBType
+	var bool show = Show
+	var color colorZone = ColorZone
+	var float DistalPrice = 0.0
+	var float ProximalPrice = 0.0
+	var bool Check = true
+	var int Counter = 1
+	var line Distal = na
+	var line Proximal = na
+	var line Line50per = na
+	var linefill fillline = na
+	var bool MitigationAlert = false
+
+	var bool show_BB = Show_BB
+	var color colorZone_BB = ColorZone_BB
+    var bool TriggerCondition_BB = false 
+	var float DistalPrice_BB = 0.0
+	var float ProximalPrice_BB = 0.0
+    var int Index_BB = 0
+	var bool Check_BB = true
+	var int Counter_BB = 1
+	var line Distal_BB = na
+	var line Proximal_BB = na
+	var line Line50per_BB = na
+	var linefill fillline_BB = na
+	var bool MitigationAlert_BB = false
+	var bool CBB = false // Condition Breaker Block
+
+	if TriggerCondition
+		DistalPrice := distalPrice
+		ProximalPrice := proximalPrice
+
+	float ML = switch MitigationLvL
+		'Proximal' => ProximalPrice
+		'Distal' => DistalPrice
+		'50 % OB' => (ProximalPrice+DistalPrice) / 2
+
+	float ML_BB = switch MitigationLvL_BB
+		'Proximal' => ProximalPrice_BB
+		'Distal' => DistalPrice_BB
+		'50 % OB' => (ProximalPrice_BB+DistalPrice_BB) / 2	
+
+    //Demand Oreder Block
+	if oBType == 'Demand' 
+		if  TriggerCondition  and Show
+			Distal := line.new(Index, DistalPrice, bar_index  , DistalPrice , color = color.rgb(0, 0, 0 , 45) , style = line.style_dashed , width = 1)
+			Proximal := line.new(Index, ProximalPrice, bar_index , ProximalPrice , color = color.rgb(0, 0, 0 , 45) , style = line.style_dashed , width = 1)
+			Line50per := line.new(Index, (ProximalPrice+DistalPrice) / 2 , bar_index , (ProximalPrice+DistalPrice) / 2  , color = color.rgb(0, 0, 0) , 
+			 style = line.style_dotted , width = 1)
+			fillline := linefill.new(Distal ,Proximal ,color = colorZone )
+
+		if (Check == true) and OBValidGlobal == true 
+			Counter := Counter + 1  
+			line.set_x2(Distal, bar_index + 1 )
+			line.set_x2(Proximal,  bar_index + 1)
+			line.set_x2(Line50per,  bar_index + 1)
+
+		if (low < ML)  or (bar_index -  Index) >= OBValidDis 
+			Counter := Counter
+			Check := false
+			
+		if TriggerCondition
+			Counter := 1
+			Check := true
+    //Demand Block to Supply Breaker Block
+		CBB := Check[1] == true and Check == false
+        if (CBB[1] or CBB[2] or CBB[3] or CBB)  and Check_BB == false
+            if close < DistalPrice
+                Index_BB := bar_index
+                Check_BB := true
+				DistalPrice_BB := ProximalPrice
+				ProximalPrice_BB := DistalPrice
+
+
+        if  Check_BB[1] == false and Check_BB == true  and Show_BB
+            Distal_BB := line.new(Index_BB, DistalPrice_BB, bar_index  , DistalPrice_BB , color = color.rgb(0, 0, 0 , 45) , style = line.style_dashed , width = 1)
+            Proximal_BB := line.new(Index_BB, ProximalPrice_BB, bar_index , ProximalPrice_BB , color = color.rgb(0, 0, 0 , 45) , style = line.style_dashed , width = 1)
+            Line50per_BB := line.new(Index_BB, (ProximalPrice_BB+DistalPrice_BB) / 2 , bar_index , (ProximalPrice_BB+DistalPrice_BB) / 2  , color = color.rgb(0, 0, 0) , 
+             style = line.style_dotted , width = 1)
+            fillline_BB := linefill.new(Distal_BB ,Proximal_BB ,color = colorZone_BB )
+			TriggerCondition_BB := Check_BB[1] == false and Check_BB == true
+        else 
+			TriggerCondition_BB := false            
+
+		if (Check_BB[1] == true) and (Check_BB == true) and OBValidGlobal == true  
+			line.set_x2(Distal_BB, bar_index + 1 )
+			line.set_x2(Proximal_BB,  bar_index + 1)
+			line.set_x2(Line50per_BB,  bar_index + 1)
+
+		if (high > ML_BB)  or (bar_index -  Index_BB) >= OBValidDis or (Check[1] == true and Check == false)
+			Check_BB := false
+			
+
+    //Supply Oreder Block
+	if oBType == 'Supply' 
+		if TriggerCondition and show
+			Distal := line.new(Index, DistalPrice, bar_index , DistalPrice , color = color.rgb(0, 0, 0, 45) , style = line.style_dashed , width = 1)
+			Proximal := line.new(Index, ProximalPrice, bar_index  , ProximalPrice , color = color.rgb(0, 0, 0 , 45) , style = line.style_dashed , width = 1)
+			Line50per :=line.new(Index, (ProximalPrice+DistalPrice) / 2 , bar_index  , (ProximalPrice+DistalPrice) / 2  , color = color.rgb(0, 0, 0) , 
+			 style = line.style_dotted , width = 1)
+			fillline := linefill.new(Distal ,Proximal ,color = colorZone )
+
+		if (Check == true) and OBValidGlobal == true 
+			Counter := Counter + 1
+			line.set_x2(Distal, bar_index + 1 )
+			line.set_x2(Proximal,  bar_index + 1)
+			line.set_x2(Line50per,  bar_index + 1)
+
+		if (high > ML) or (bar_index -  Index) >= OBValidDis 
+			Counter := Counter
+			Check := false
+
+		if TriggerCondition
+			Counter := 1
+			Check := true
+    //Supply Block to Demand Breaker Block
+		CBB := Check[1] == true and Check == false
+        if (CBB[1] or CBB[2] or CBB[3]  or CBB)  and Check_BB == false
+            if close > DistalPrice
+                Index_BB := bar_index
+                Check_BB := true
+				DistalPrice_BB := ProximalPrice
+				ProximalPrice_BB := DistalPrice
+
+
+        if  Check_BB[1] == false and Check_BB == true  and Show_BB
+            Distal_BB := line.new(Index_BB, DistalPrice_BB, bar_index  , DistalPrice_BB , color = color.rgb(0, 0, 0 , 45) , style = line.style_dashed , width = 1)
+            Proximal_BB := line.new(Index_BB, ProximalPrice_BB, bar_index , ProximalPrice_BB , color = color.rgb(0, 0, 0 , 45) , style = line.style_dashed , width = 1)
+            Line50per_BB := line.new(Index_BB, (ProximalPrice_BB+DistalPrice_BB) / 2 , bar_index , (ProximalPrice_BB+DistalPrice_BB) / 2  , color = color.rgb(0, 0, 0) , 
+             style = line.style_dotted , width = 1)
+            fillline_BB := linefill.new(Distal_BB ,Proximal_BB ,color = colorZone_BB )
+			TriggerCondition_BB := Check_BB[1] == false and Check_BB == true
+        else 
+			TriggerCondition_BB := false
+
+		if (Check_BB[1] == true) and (Check_BB == true) and OBValidGlobal == true  
+			line.set_x2(Distal_BB, bar_index + 1 )
+			line.set_x2(Proximal_BB,  bar_index + 1)
+			line.set_x2(Line50per_BB,  bar_index + 1)
+
+		if (low < ML_BB)  or (bar_index -  Index_BB) >= OBValidDis or (Check[1] == true and Check == false)
+			Check_BB := false
+
+	//Delete Last OB
+	if not ShowAll and TriggerCondition and TriggerCondition != false
+		line.delete(Distal[1])
+		line.delete(Proximal[1])
+		line.delete(Line50per[1])
+		linefill.delete(fillline[1])
+
+	//Delete Last BB
+	if not ShowAll_BB and TriggerCondition_BB and TriggerCondition_BB != false
+		line.delete(Distal_BB[1])
+		line.delete(Proximal_BB[1])
+		line.delete(Line50per_BB[1])
+		linefill.delete(fillline_BB[1])	
+
+	//Mitigation Order Block Alert
+	if Check[1] == true and Check == false
+		MitigationAlert := true
+	else
+		MitigationAlert := false
+
+	//Mitigation Breaker Block Alert
+	if Check_BB[1] == true and Check_BB == false and MitigationAlert == false 
+		MitigationAlert_BB := true
+	else
+		MitigationAlert_BB := false
+
+	[MitigationAlert, MitigationAlert_BB, ProximalPrice_BB, DistalPrice_BB, Index_BB]

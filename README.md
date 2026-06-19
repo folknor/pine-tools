@@ -134,3 +134,23 @@ MIT
 ## Credits
 
 Original barebones vscode extension by Jaroslav Pantsjoha. Completely rewritten by folknor.
+
+## Acknowledgements
+
+`vendor/` contains the source of published Pine Script libraries, used only to
+derive each library's exported-symbol set (`pine-data/v6/libraries.json`) so the
+linter can validate `import`ed-library member calls (flagging calls to functions
+a library does not export). Each file retains its original license header.
+
+All vendored libraries are licensed under the Mozilla Public License 2.0
+(<https://mozilla.org/MPL/2.0/>) by their respective authors. Libraries published
+under non-redistributable or unstated terms are deliberately not vendored; the
+linter stays lenient on those imports.
+
+TradingView's own `ta` and `RelativeValue` libraries are TradingView's
+pure-Pine reference implementations. The community libraries are the work of, in
+alphabetical order: algotraderdev, andre_007, Bjorgum, boitoki, DevLucem,
+HeWhoMustNotBeNamed, HoanGhetti, HPotter, jason5480, jdehorty, jmosullivan,
+kaigouthro, LonesomeTheBlue, loxx, LucF, LudoGH68, PineCoders, reees,
+RicardoSantos, robbatt, TFlab, toodegrees, Trendoscope, and
+ZenAndTheArtOfTrading. Thank you for publishing your work open-source.

@@ -69,6 +69,7 @@ function collectLibraryFiles(): { libPath: string; file: string }[] {
 }
 
 const libraries: Record<string, string[]> = {};
+const quarantined: string[] = [];
 
 for (const { libPath, file } of collectLibraryFiles().sort((a, b) =>
 	a.libPath.localeCompare(b.libPath),
@@ -78,11 +79,17 @@ for (const { libPath, file } of collectLibraryFiles().sort((a, b) =>
 	const ast = parser.parse();
 	const errs = [...parser.getLexerErrors(), ...parser.getParserErrors()];
 	if (errs.length > 0) {
-		// A parse error means the export surface is incomplete - that would
-		// MISS real exports and produce false positives in the checker. Loud.
+		// A parse error means the export surface is INCOMPLETE - some `export`
+		// would be missed, and the checker would then flag a real member as a
+		// CE10271 false positive. So SKIP the library entirely (no entry ->
+		// checker stays lenient on it, the #41 residual) rather than ship a
+		// partial export set. Author libraries reach parser constructs the
+		// official ones don't, so this is the common case for them.
 		console.warn(
-			`WARNING: ${libPath} parsed with ${errs.length} error(s) - export set may be incomplete: ${errs[0]}`,
+			`SKIP ${libPath}: ${errs.length} parse error(s), export set would be incomplete (${errs[0]})`,
 		);
+		quarantined.push(libPath);
+		continue;
 	}
 	const exports = [
 		...new Set(
@@ -127,3 +134,8 @@ fs.writeFileSync(
 console.log(
 	`\nWrote ${Object.keys(libraries).length} libraries to pine-data/v6/libraries.{ts,json}`,
 );
+if (quarantined.length > 0) {
+	console.log(
+		`Quarantined ${quarantined.length} (parse errors, left lenient): ${quarantined.join(", ")}`,
+	);
+}

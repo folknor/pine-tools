@@ -1,0 +1,888 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// @version=5
+// @Author andre_007
+
+// @description Utility functions. Mathematics, colors, and auxiliary algorithms.
+library("Utils")
+
+
+// ———————————————————————————————————————————————————————————————————————————————————————————————————————————— {
+// #region valueColorSpectrum: Theme for a Oscillator with levels of colors. Levels from 0 to 100/0 to -100.
+
+// @type	# Object to associate a color with a value, taking into account the previous value and its levels.
+//			## Stores a color theme, which is used according to the position of the value within the levels.
+// @field	(float) currentValue			Current value.
+// @field	(float) previousValue			Previous value.
+// @field	(float) level1					Level 1. Default is 10.
+// @field	(float) level2					Level 2. Default is 30.
+// @field	(float) level3					Level 3. Default is 50.
+// @field	(float) level4					Level 4. Default is 70.
+// @field	(float) level5					Level 5. Default is 90.
+// @field	(color) currentColorValue		Color associeted with current value. This value must be calculated with setCurrentColorValue method.
+// @field	(color) colorLevel_Lv1			Color associeted with value when below Level 1.
+// @field	(color) colorLevel_Lv1_Lv2		Color associeted with value when between Level 1 and 2.
+// @field	(color) colorLevel_Lv2_Lv3		Color associeted with value when between Level 2 and 3.
+// @field	(color) colorLevel_Lv3_Lv4		Color associeted with value when between Level 3 and 4.
+// @field	(color) colorLevel_Lv4_Lv5		Color associeted with value when between Level 4 and 5.
+// @field	(color) colorLevel_Lv5			Color associeted with value when above Level 5.
+// @field	(int) theme						Theme (predefined colors). 1='Spectrum Blue-Green-Red'; 2='Monokai'; 3='User defined'
+export type valueColorSpectrum
+	// Values
+	float currentValue
+	float previousValue
+	
+	// Levels
+	float level1 = 10
+	float level2 = 30
+	float level3 = 50
+	float level4 = 70
+	float level5 = 90
+
+	// Colors. Default colors from theme 'Spectrum Blue-Green-Red'
+	color currentColorValue
+	color colorLevel_Lv1 		= #0000FF
+	color colorLevel_Lv1_Lv2 	= #01b5cc
+	color colorLevel_Lv2_Lv3 	= #3af13c
+	color colorLevel_Lv3_Lv4 	= #ffeb3b
+	color colorLevel_Lv4_Lv5 	= #ff6d00
+	color colorLevel_Lv5 		= #ff0000
+
+	int theme					= 1		// Spectrum Blue-Green-Red
+
+// @function	Set theme for levels (predefined colors).
+//
+// #### Usage
+// ___
+// ```
+// #region Theme for Histogram above 0
+// var string GRP_THEME_HISTOGRAM_ABOVE = 'Theme for Histogram above 0'
+// var int themeHistoP = input.int(defval=0, title='Theme',
+//   options=[0, 1, 2, 3, 4, 5, 6], inline='1', group='Theme for Histogram above 0', tooltip=THEME_TOOLTIP_HISTOGRAM)  
+// var colorHistogramUp_1 = input(color.new(#0064bb, 0), "", inline="2", group=GRP_THEME_HISTOGRAM_ABOVE)
+// var colorHistogramUp_2 = input(color.new(#007ce9, 0), "", inline="2", group=GRP_THEME_HISTOGRAM_ABOVE)
+// var colorHistogramUp_3 = input(color.new(#1893ff, 0), "", inline="2", group=GRP_THEME_HISTOGRAM_ABOVE)
+// var colorHistogramUp_4 = input(color.new(#46a9ff, 0), "", inline="2", group=GRP_THEME_HISTOGRAM_ABOVE)
+// var colorHistogramUp_5 = input(color.new(#75beff, 0), "", inline="2", group=GRP_THEME_HISTOGRAM_ABOVE)
+// var colorHistogramUp_6 = input(color.new(#91c9fa, 0), "", inline="2", group=GRP_THEME_HISTOGRAM_ABOVE)
+// // #endregion
+//
+// vcHistogram = UTIL.valueColorSpectrum.new()    
+
+// vcHistogram.currentValue         := histogram
+// vcHistogram.previousValue        := histogram[1]
+//
+// UTIL.setCustomLevels(vcHistogram, 5, 10, 15, 20, 25)
+//
+// UTIL.setTheme(vcHistogram, themeHistoP)
+// ```
+// ___
+// @param vc	(valueColorSpectrum) Object to associate a color with a value, taking into account the previous value and its levels.   
+// @param theme	(int) Theme (predefined colors). 
+//		10 to 15   → Spectrum Blue-Green-Red
+//		20 to 21   → Monokai
+//		30 to 31   → Spectrum White-Green-Red
+//		40 to 41   → Green-Purple
+//		50 to 51   → Blue-Red
+//		60 to 61   → Blue-Yellow
+//		70 to 71   → Green-Red
+//		80 to 81   → Green
+//		90 to 91   → Purple
+//		100 to 107 → Blue
+//		120 to 123 → Blue-Aqua
+//		130 to 133 → Blue-Green
+//		140 to 153 → Red
+//		160 to 161 → Red-Yellow
+//		170 to 171 → Red-White
+//		180 to 185 → White-Black
+//		190 to 200 → Spectrum Blue-Red
+//	
+// @returns 	(void)
+export setTheme(valueColorSpectrum vc, simple int theme) =>
+	vc.theme := theme
+	
+	switch theme
+		// Spectrum Blue-Green-Red
+        10 =>
+			vc.colorLevel_Lv1 		:= #0000FF
+			vc.colorLevel_Lv1_Lv2 	:= #01b5cc
+			vc.colorLevel_Lv2_Lv3 	:= #3af13c
+			vc.colorLevel_Lv3_Lv4 	:= #ffeb3b
+			vc.colorLevel_Lv4_Lv5 	:= #ff6d00
+			vc.colorLevel_Lv5 		:= #ff0000
+		11 =>
+			vc.colorLevel_Lv1 		:= #ff0000
+			vc.colorLevel_Lv1_Lv2 	:= #ff6d00
+			vc.colorLevel_Lv2_Lv3 	:= #ffeb3b
+			vc.colorLevel_Lv3_Lv4 	:= #3af13c
+			vc.colorLevel_Lv4_Lv5 	:= #01b5cc
+			vc.colorLevel_Lv5 		:= #0000FF
+		12 => 	
+			vc.colorLevel_Lv1 		:= #0028ff
+			vc.colorLevel_Lv1_Lv2 	:= #24fffe
+			vc.colorLevel_Lv2_Lv3 	:= #00ff00
+			vc.colorLevel_Lv3_Lv4 	:= #ffff00
+			vc.colorLevel_Lv4_Lv5 	:= #ff7f00
+			vc.colorLevel_Lv5 		:= #ff0000
+		13 => 	
+			vc.colorLevel_Lv1 		:= #ff0000
+			vc.colorLevel_Lv1_Lv2 	:= #ff7f00
+			vc.colorLevel_Lv2_Lv3 	:= #ffff00
+			vc.colorLevel_Lv3_Lv4 	:= #00ff00
+			vc.colorLevel_Lv4_Lv5 	:= #24fffe
+			vc.colorLevel_Lv5 		:= #0028ff	
+		14 => 	
+			vc.colorLevel_Lv1 		:= #0036ff
+			vc.colorLevel_Lv1_Lv2 	:= #00bcd4
+			vc.colorLevel_Lv2_Lv3 	:= #1aa814
+			vc.colorLevel_Lv3_Lv4 	:= #f57f17
+			vc.colorLevel_Lv4_Lv5 	:= #dc1e5f
+			vc.colorLevel_Lv5 		:= #b800d8
+		15 => 	
+			vc.colorLevel_Lv1 		:= #b800d8
+			vc.colorLevel_Lv1_Lv2 	:= #dc1e5f
+			vc.colorLevel_Lv2_Lv3 	:= #f57f17
+			vc.colorLevel_Lv3_Lv4 	:= #1aa814
+			vc.colorLevel_Lv4_Lv5 	:= #00bcd4
+			vc.colorLevel_Lv5 		:= #0036ff
+        
+        // Monokai
+		20 => 	
+			vc.colorLevel_Lv1 		:= #a6e22e
+			vc.colorLevel_Lv1_Lv2 	:= #00fff0
+			vc.colorLevel_Lv2_Lv3 	:= #8080ff
+			vc.colorLevel_Lv3_Lv4 	:= #e0e0e0
+			vc.colorLevel_Lv4_Lv5 	:= #f3ff6c
+			vc.colorLevel_Lv5 		:= #f54081
+		21 => 	
+			vc.colorLevel_Lv1 		:= #f54081
+			vc.colorLevel_Lv1_Lv2 	:= #f3ff6c
+			vc.colorLevel_Lv2_Lv3 	:= #e0e0e0
+			vc.colorLevel_Lv3_Lv4 	:= #8080ff
+			vc.colorLevel_Lv4_Lv5 	:= #00fff0
+			vc.colorLevel_Lv5 		:= #a6e22e
+        
+        // Spectrum White-Green-Red
+		30 => 	
+			vc.colorLevel_Lv1 		:= #ffffff
+			vc.colorLevel_Lv1_Lv2 	:= #24fffe
+			vc.colorLevel_Lv2_Lv3 	:= #00ff00
+			vc.colorLevel_Lv3_Lv4 	:= #ffff00
+			vc.colorLevel_Lv4_Lv5 	:= #ff7f00
+			vc.colorLevel_Lv5 		:= #ff0000
+		31 => 	
+			vc.colorLevel_Lv1 		:= #ff0000
+			vc.colorLevel_Lv1_Lv2 	:= #ff7f00
+			vc.colorLevel_Lv2_Lv3 	:= #ffff00
+			vc.colorLevel_Lv3_Lv4 	:= #00ff00
+			vc.colorLevel_Lv4_Lv5 	:= #24fffe
+			vc.colorLevel_Lv5 		:= #ffffff      
+        
+        // Green-Purple
+		40 =>	
+			vc.colorLevel_Lv1 		:= #228B22
+			vc.colorLevel_Lv1_Lv2 	:= #3ACF3A
+			vc.colorLevel_Lv2_Lv3 	:= #6AE76A
+			vc.colorLevel_Lv3_Lv4 	:= #ca82f7
+			vc.colorLevel_Lv4_Lv5 	:= #b44df5
+			vc.colorLevel_Lv5 		:= #880ED4
+		41 =>	
+			vc.colorLevel_Lv1 		:= #880ED4
+			vc.colorLevel_Lv1_Lv2 	:= #b44df5
+			vc.colorLevel_Lv2_Lv3 	:= #ca82f7
+			vc.colorLevel_Lv3_Lv4 	:= #6AE76A
+			vc.colorLevel_Lv4_Lv5 	:= #3ACF3A
+			vc.colorLevel_Lv5 		:= #228B22
+		
+        // Blue-Red
+        50 =>	
+			vc.colorLevel_Lv1 		:= #120ef6
+			vc.colorLevel_Lv1_Lv2 	:= #5086e1
+			vc.colorLevel_Lv2_Lv3 	:= #8ba8c9
+			vc.colorLevel_Lv3_Lv4 	:= #ddafae
+			vc.colorLevel_Lv4_Lv5 	:= #c97479
+			vc.colorLevel_Lv5 		:= #be1642
+		51 =>
+			vc.colorLevel_Lv1 		:= #be1642			
+			vc.colorLevel_Lv1_Lv2 	:= #c97479
+			vc.colorLevel_Lv2_Lv3 	:= #ddafae
+			vc.colorLevel_Lv3_Lv4 	:= #8ba8c9
+			vc.colorLevel_Lv4_Lv5 	:= #5086e1
+			vc.colorLevel_Lv5 		:= #120ef6
+		
+        // Blue-Yellow
+        60 =>	
+			vc.colorLevel_Lv1 		:= #267af7
+			vc.colorLevel_Lv1_Lv2 	:= #6e9de6
+			vc.colorLevel_Lv2_Lv3 	:= #b1c6d8
+			vc.colorLevel_Lv3_Lv4 	:= #f7eca9
+			vc.colorLevel_Lv4_Lv5 	:= #f7e16b
+			vc.colorLevel_Lv5 		:= #f7d126
+		61 =>
+			vc.colorLevel_Lv1 		:= #f7d126
+			vc.colorLevel_Lv1_Lv2 	:= #f7e16b
+			vc.colorLevel_Lv2_Lv3 	:= #f7eca9
+			vc.colorLevel_Lv3_Lv4 	:= #b1c6d8
+			vc.colorLevel_Lv4_Lv5 	:= #6e9de6
+			vc.colorLevel_Lv5 		:= #267af7
+		
+        // Green-Red
+        70 =>	
+			vc.colorLevel_Lv1 		:= color.rgb(0, 255, 0)
+			vc.colorLevel_Lv1_Lv2 	:= color.rgb(51, 204, 0)
+			vc.colorLevel_Lv2_Lv3 	:= color.rgb(102, 153, 0)
+			vc.colorLevel_Lv3_Lv4 	:= color.rgb(153, 102, 0)
+			vc.colorLevel_Lv4_Lv5 	:= color.rgb(204, 51, 0)
+			vc.colorLevel_Lv5 		:= color.rgb(255, 0, 0)
+		71 =>
+			vc.colorLevel_Lv1 		:= color.rgb(255, 0, 0)
+			vc.colorLevel_Lv1_Lv2 	:= color.rgb(204, 51, 0)
+			vc.colorLevel_Lv2_Lv3 	:= color.rgb(153, 102, 0)
+			vc.colorLevel_Lv3_Lv4 	:= color.rgb(102, 153, 0)
+			vc.colorLevel_Lv4_Lv5 	:= color.rgb(51, 204, 0)
+			vc.colorLevel_Lv5 		:= color.rgb(0, 255, 0)            
+
+        // Green
+		80 =>	
+			vc.colorLevel_Lv1 		:= #228B22
+			vc.colorLevel_Lv1_Lv2 	:= #2BB02B
+			vc.colorLevel_Lv2_Lv3 	:= #3ACF3A
+			vc.colorLevel_Lv3_Lv4 	:= #5FD85F
+			vc.colorLevel_Lv4_Lv5 	:= #84E184
+			vc.colorLevel_Lv5 		:= #96f196
+		81 =>	
+			vc.colorLevel_Lv1 		:= #96f196
+			vc.colorLevel_Lv1_Lv2 	:= #84E184
+			vc.colorLevel_Lv2_Lv3 	:= #5FD85F
+			vc.colorLevel_Lv3_Lv4 	:= #3ACF3A
+			vc.colorLevel_Lv4_Lv5 	:= #2BB02B
+			vc.colorLevel_Lv5 		:= #228B22
+
+        // Purple
+		90 =>	
+			vc.colorLevel_Lv1 		:= #6C0BA9
+			vc.colorLevel_Lv1_Lv2 	:= #880ED4
+			vc.colorLevel_Lv2_Lv3 	:= #A020F0
+			vc.colorLevel_Lv3_Lv4 	:= #B24BF3
+			vc.colorLevel_Lv4_Lv5 	:= #cd90f3
+			vc.colorLevel_Lv5 		:= #d9b0f2
+		91 =>	
+			vc.colorLevel_Lv1 		:= #d9b0f2
+			vc.colorLevel_Lv1_Lv2 	:= #cd90f3
+			vc.colorLevel_Lv2_Lv3 	:= #B24BF3
+			vc.colorLevel_Lv3_Lv4 	:= #A020F0
+			vc.colorLevel_Lv4_Lv5 	:= #880ED4
+			vc.colorLevel_Lv5 		:= #6C0BA9
+
+        // Blue
+		100 =>	
+			vc.colorLevel_Lv1 		:= #0064bb
+			vc.colorLevel_Lv1_Lv2 	:= #007ce9
+			vc.colorLevel_Lv2_Lv3 	:= #1893ff
+			vc.colorLevel_Lv3_Lv4 	:= #46a9ff
+			vc.colorLevel_Lv4_Lv5 	:= #75beff
+			vc.colorLevel_Lv5 		:= #91c9fa
+		101 =>
+			vc.colorLevel_Lv1 		:= #91c9fa
+			vc.colorLevel_Lv1_Lv2 	:= #75beff
+			vc.colorLevel_Lv2_Lv3 	:= #46a9ff
+			vc.colorLevel_Lv3_Lv4 	:= #1893ff
+			vc.colorLevel_Lv4_Lv5 	:= #007ce9
+			vc.colorLevel_Lv5 		:= #0064bb
+		102 =>
+			vc.colorLevel_Lv1 		:= #1c3bfb
+			vc.colorLevel_Lv1_Lv2 	:= #2855fc
+			vc.colorLevel_Lv2_Lv3 	:= #346ffd
+			vc.colorLevel_Lv3_Lv4 	:= #4078fe
+			vc.colorLevel_Lv4_Lv5 	:= #5b9bf9
+			vc.colorLevel_Lv5 		:= #72b6fc
+		103 =>
+			vc.colorLevel_Lv1 		:= #72b6fc
+			vc.colorLevel_Lv1_Lv2 	:= #5b9bf9
+			vc.colorLevel_Lv2_Lv3 	:= #4078fe
+			vc.colorLevel_Lv3_Lv4 	:= #346ffd
+			vc.colorLevel_Lv4_Lv5 	:= #2855fc
+			vc.colorLevel_Lv5 		:= #1c3bfb
+		104 =>
+			vc.colorLevel_Lv1 		:= color.rgb(0, 0, 255)
+			vc.colorLevel_Lv1_Lv2 	:= color.rgb(30, 30, 255)
+			vc.colorLevel_Lv2_Lv3 	:= color.rgb(60, 60, 255)
+			vc.colorLevel_Lv3_Lv4 	:= color.rgb(90, 90, 255)
+			vc.colorLevel_Lv4_Lv5 	:= color.rgb(120, 120, 255)
+			vc.colorLevel_Lv5 		:= color.rgb(150, 150, 255)
+		105 =>
+			vc.colorLevel_Lv1 		:= color.rgb(150, 150, 255)
+			vc.colorLevel_Lv1_Lv2 	:= color.rgb(120, 120, 255)
+			vc.colorLevel_Lv2_Lv3 	:= color.rgb(90, 90, 255)
+			vc.colorLevel_Lv3_Lv4 	:= color.rgb(60, 60, 255)
+			vc.colorLevel_Lv4_Lv5 	:= color.rgb(30, 30, 255)
+			vc.colorLevel_Lv5 		:= color.rgb(0, 0, 255)
+		106 =>
+			vc.colorLevel_Lv1 		:= color.rgb(0, 0, 255)
+			vc.colorLevel_Lv1_Lv2 	:= color.rgb(51, 51, 255)
+			vc.colorLevel_Lv2_Lv3 	:= color.rgb(102, 102, 255)
+			vc.colorLevel_Lv3_Lv4 	:= color.rgb(153, 153, 255)
+			vc.colorLevel_Lv4_Lv5 	:= color.rgb(204, 204, 255)
+			vc.colorLevel_Lv5 		:= color.rgb(255, 255, 255)
+		107 =>
+			vc.colorLevel_Lv1 		:= color.rgb(255, 255, 255)
+			vc.colorLevel_Lv1_Lv2 	:= color.rgb(204, 204, 255)
+			vc.colorLevel_Lv2_Lv3 	:= color.rgb(153, 153, 255)
+			vc.colorLevel_Lv3_Lv4 	:= color.rgb(102, 102, 255)
+			vc.colorLevel_Lv4_Lv5 	:= color.rgb(51, 51, 255)
+			vc.colorLevel_Lv5 		:= color.rgb(0, 0, 255)
+		
+		// Blue-Aqua
+		120 =>
+			vc.colorLevel_Lv1 		:= color.rgb(0, 0, 255)
+			vc.colorLevel_Lv1_Lv2 	:= color.rgb(12, 51, 255)
+			vc.colorLevel_Lv2_Lv3 	:= color.rgb(25, 102, 255)
+			vc.colorLevel_Lv3_Lv4 	:= color.rgb(38, 153, 255)
+			vc.colorLevel_Lv4_Lv5 	:= color.rgb(51, 204, 255)
+			vc.colorLevel_Lv5 		:= color.rgb(64, 255, 255)
+		121 =>
+			vc.colorLevel_Lv1 		:= color.rgb(64, 255, 255)
+			vc.colorLevel_Lv1_Lv2 	:= color.rgb(51, 204, 255)
+			vc.colorLevel_Lv2_Lv3 	:= color.rgb(38, 153, 255)
+			vc.colorLevel_Lv3_Lv4 	:= color.rgb(25, 102, 255)
+			vc.colorLevel_Lv4_Lv5 	:= color.rgb(12, 51, 255)
+			vc.colorLevel_Lv5 		:= color.rgb(0, 0, 255)            
+		122 =>
+			vc.colorLevel_Lv1 		:= color.rgb(28, 59, 251)
+			vc.colorLevel_Lv1_Lv2 	:= color.rgb(40, 85, 252)
+			vc.colorLevel_Lv2_Lv3 	:= color.rgb(52, 111, 253)
+			vc.colorLevel_Lv3_Lv4 	:= color.rgb(58, 166, 250)
+			vc.colorLevel_Lv4_Lv5 	:= color.rgb(58, 198, 250)
+			vc.colorLevel_Lv5 		:= color.rgb(58, 231, 250)
+		123 =>
+			vc.colorLevel_Lv1 		:= color.rgb(58, 231, 250)
+			vc.colorLevel_Lv1_Lv2 	:= color.rgb(58, 198, 250)
+			vc.colorLevel_Lv2_Lv3 	:= color.rgb(58, 166, 250)
+			vc.colorLevel_Lv3_Lv4 	:= color.rgb(52, 111, 253)
+			vc.colorLevel_Lv4_Lv5 	:= color.rgb(40, 85, 252)
+			vc.colorLevel_Lv5 		:= color.rgb(28, 59, 251)
+
+		// Blue-Green
+		130 =>
+			vc.colorLevel_Lv1 		:= color.rgb(0, 255, 0)
+			vc.colorLevel_Lv1_Lv2 	:= color.rgb(0, 206, 209)
+			vc.colorLevel_Lv2_Lv3 	:= color.rgb(0, 191, 255)
+			vc.colorLevel_Lv3_Lv4 	:= color.rgb(30, 144, 255)
+			vc.colorLevel_Lv4_Lv5 	:= color.rgb(30, 89, 255)
+			vc.colorLevel_Lv5 		:= color.rgb(0, 0, 225)
+		131 =>
+			vc.colorLevel_Lv1 		:= color.rgb(0, 0, 225)
+			vc.colorLevel_Lv1_Lv2 	:= color.rgb(30, 89, 255)
+			vc.colorLevel_Lv2_Lv3 	:= color.rgb(30, 144, 255)
+			vc.colorLevel_Lv3_Lv4 	:= color.rgb(0, 191, 255)
+			vc.colorLevel_Lv4_Lv5 	:= color.rgb(0, 206, 209)
+			vc.colorLevel_Lv5 		:= color.rgb(0, 255, 0)
+		132 =>
+			vc.colorLevel_Lv1 		:= color.rgb(0, 255, 0)
+			vc.colorLevel_Lv1_Lv2 	:= color.rgb(127, 255, 212)
+			vc.colorLevel_Lv2_Lv3 	:= color.rgb(175, 238, 238)
+			vc.colorLevel_Lv3_Lv4 	:= color.rgb(0, 191, 255)
+			vc.colorLevel_Lv4_Lv5 	:= color.rgb(30, 144, 255)
+			vc.colorLevel_Lv5 		:= color.rgb(0, 55, 225)
+		133 =>
+			vc.colorLevel_Lv1 		:= color.rgb(0, 55, 225)
+			vc.colorLevel_Lv1_Lv2 	:= color.rgb(30, 144, 255)
+			vc.colorLevel_Lv2_Lv3 	:= color.rgb(0, 191, 255)
+			vc.colorLevel_Lv3_Lv4 	:= color.rgb(175, 238, 238)
+			vc.colorLevel_Lv4_Lv5 	:= color.rgb(127, 255, 212)
+			vc.colorLevel_Lv5 		:= color.rgb(0, 255, 0)
+		134 =>
+			vc.colorLevel_Lv1 		:= color.rgb(0, 186, 8)
+			vc.colorLevel_Lv1_Lv2 	:= color.rgb(124, 226, 132)
+			vc.colorLevel_Lv2_Lv3 	:= color.rgb(124, 222, 222)
+			vc.colorLevel_Lv3_Lv4 	:= color.rgb(0, 191, 255)
+			vc.colorLevel_Lv4_Lv5 	:= color.rgb(30, 144, 255)
+			vc.colorLevel_Lv5 		:= color.rgb(41, 98, 255)
+		135 =>
+			vc.colorLevel_Lv1 		:= color.rgb(41, 98, 255)
+			vc.colorLevel_Lv1_Lv2 	:= color.rgb(30, 144, 255)
+			vc.colorLevel_Lv2_Lv3 	:= color.rgb(0, 191, 255)
+			vc.colorLevel_Lv3_Lv4 	:= color.rgb(124, 222, 222)
+			vc.colorLevel_Lv4_Lv5 	:= color.rgb(124, 226, 132)
+			vc.colorLevel_Lv5 		:= color.rgb(0, 186, 8)
+		136 =>
+			vc.colorLevel_Lv1 		:= #00ba08
+			vc.colorLevel_Lv1_Lv2 	:= #14e024
+			vc.colorLevel_Lv2_Lv3 	:= #7dff5b
+			vc.colorLevel_Lv3_Lv4 	:= #00bcd4
+			vc.colorLevel_Lv4_Lv5 	:= #2962ff
+			vc.colorLevel_Lv5 		:= #0044ff
+		137 =>
+			vc.colorLevel_Lv1 		:= #0044ff
+			vc.colorLevel_Lv1_Lv2 	:= #2962ff
+			vc.colorLevel_Lv2_Lv3 	:= #00bcd4
+			vc.colorLevel_Lv3_Lv4 	:= #7dff5b
+			vc.colorLevel_Lv4_Lv5 	:= #14e024
+			vc.colorLevel_Lv5 		:= #00ba08
+
+        // Red
+		140 =>
+			vc.colorLevel_Lv1 		:= #8e1031
+			vc.colorLevel_Lv1_Lv2 	:= #be1642
+			vc.colorLevel_Lv2_Lv3 	:= #e62356
+			vc.colorLevel_Lv3_Lv4 	:= #eb527a
+			vc.colorLevel_Lv4_Lv5 	:= #f1829f
+			vc.colorLevel_Lv5 		:= #f395ae
+		141 =>
+			vc.colorLevel_Lv1 		:= #f395ae
+			vc.colorLevel_Lv1_Lv2 	:= #f1829f
+			vc.colorLevel_Lv2_Lv3 	:= #eb527a
+			vc.colorLevel_Lv3_Lv4 	:= #e62356
+			vc.colorLevel_Lv4_Lv5 	:= #be1642
+			vc.colorLevel_Lv5 		:= #8e1031			
+		142 =>
+			vc.colorLevel_Lv1 		:= color.rgb(255, 0, 0)
+			vc.colorLevel_Lv1_Lv2 	:= color.rgb(255, 30, 30)
+			vc.colorLevel_Lv2_Lv3 	:= color.rgb(255, 60, 60)
+			vc.colorLevel_Lv3_Lv4 	:= color.rgb(255, 90, 90)
+			vc.colorLevel_Lv4_Lv5 	:= color.rgb(255, 120, 120)
+			vc.colorLevel_Lv5 		:= color.rgb(255, 150, 150)
+		143 =>
+			vc.colorLevel_Lv1 		:= color.rgb(255, 150, 150)
+			vc.colorLevel_Lv1_Lv2 	:= color.rgb(255, 120, 120)
+			vc.colorLevel_Lv2_Lv3 	:= color.rgb(255, 90, 90)
+			vc.colorLevel_Lv3_Lv4 	:= color.rgb(255, 60, 60)
+			vc.colorLevel_Lv4_Lv5 	:= color.rgb(255, 30, 30)
+			vc.colorLevel_Lv5 		:= color.rgb(255, 0, 0)
+		144 =>
+			vc.colorLevel_Lv1 		:= color.rgb(255, 0, 0)
+			vc.colorLevel_Lv1_Lv2 	:= color.rgb(255, 50, 50)
+			vc.colorLevel_Lv2_Lv3 	:= color.rgb(255, 100, 100)
+			vc.colorLevel_Lv3_Lv4 	:= color.rgb(255, 150, 150)
+			vc.colorLevel_Lv4_Lv5 	:= color.rgb(255, 180, 180)
+			vc.colorLevel_Lv5 		:= color.rgb(255, 200, 200)
+		145 =>
+			vc.colorLevel_Lv1 		:= color.rgb(255, 200, 200)
+			vc.colorLevel_Lv1_Lv2 	:= color.rgb(255, 180, 180)
+			vc.colorLevel_Lv2_Lv3 	:= color.rgb(255, 150, 150)
+			vc.colorLevel_Lv3_Lv4 	:= color.rgb(255, 100, 100)
+			vc.colorLevel_Lv4_Lv5 	:= color.rgb(255, 50, 50)
+			vc.colorLevel_Lv5 		:= color.rgb(255, 0, 0)
+		146 =>
+			vc.colorLevel_Lv1 		:= color.rgb(200, 0, 0)
+			vc.colorLevel_Lv1_Lv2 	:= color.rgb(218, 28, 28)
+			vc.colorLevel_Lv2_Lv3 	:= color.rgb(236, 56, 56)
+			vc.colorLevel_Lv3_Lv4 	:= color.rgb(244, 84, 84)
+			vc.colorLevel_Lv4_Lv5 	:= color.rgb(251, 107, 107)
+			vc.colorLevel_Lv5 		:= color.rgb(255, 130, 130)
+		147 =>
+			vc.colorLevel_Lv1 		:= color.rgb(255, 130, 130)
+			vc.colorLevel_Lv1_Lv2 	:= color.rgb(251, 107, 107)
+			vc.colorLevel_Lv2_Lv3 	:= color.rgb(244, 84, 84)
+			vc.colorLevel_Lv3_Lv4 	:= color.rgb(236, 56, 56)
+			vc.colorLevel_Lv4_Lv5 	:= color.rgb(218, 28, 28)
+			vc.colorLevel_Lv5 		:= color.rgb(200, 0, 0)
+		148 =>
+			vc.colorLevel_Lv1 		:= color.rgb(220, 20, 60)
+			vc.colorLevel_Lv1_Lv2 	:= color.rgb(230, 50, 80)
+			vc.colorLevel_Lv2_Lv3 	:= color.rgb(240, 80, 100)
+			vc.colorLevel_Lv3_Lv4 	:= color.rgb(250, 105, 130)
+			vc.colorLevel_Lv4_Lv5 	:= color.rgb(255, 105, 155)
+			vc.colorLevel_Lv5 		:= color.rgb(255, 105, 180)
+		149 =>
+			vc.colorLevel_Lv1 		:= color.rgb(255, 105, 180)
+			vc.colorLevel_Lv1_Lv2 	:= color.rgb(255, 105, 155)
+			vc.colorLevel_Lv2_Lv3 	:= color.rgb(250, 105, 130)
+			vc.colorLevel_Lv3_Lv4 	:= color.rgb(240, 80, 100)
+			vc.colorLevel_Lv4_Lv5 	:= color.rgb(230, 50, 80)
+			vc.colorLevel_Lv5 		:= color.rgb(220, 20, 60)
+		150 =>
+			vc.colorLevel_Lv1 		:= color.rgb(165, 0, 0)
+			vc.colorLevel_Lv1_Lv2 	:= color.rgb(200, 0, 0)
+			vc.colorLevel_Lv2_Lv3 	:= color.rgb(225, 30, 30)
+			vc.colorLevel_Lv3_Lv4 	:= color.rgb(240, 60, 60)
+			vc.colorLevel_Lv4_Lv5 	:= color.rgb(250, 70, 70)
+			vc.colorLevel_Lv5 		:= color.rgb(255, 80, 80)
+		151 =>
+			vc.colorLevel_Lv1 		:= color.rgb(255, 80, 80)
+			vc.colorLevel_Lv1_Lv2 	:= color.rgb(250, 70, 70)
+			vc.colorLevel_Lv2_Lv3 	:= color.rgb(240, 60, 60)
+			vc.colorLevel_Lv3_Lv4 	:= color.rgb(225, 30, 30)
+			vc.colorLevel_Lv4_Lv5 	:= color.rgb(200, 0, 0)
+			vc.colorLevel_Lv5 		:= color.rgb(165, 0, 0)
+		152 =>
+			vc.colorLevel_Lv1 		:= color.rgb(178, 34, 34)
+			vc.colorLevel_Lv1_Lv2 	:= color.rgb(200, 50, 50)
+			vc.colorLevel_Lv2_Lv3 	:= color.rgb(220, 75, 75)
+			vc.colorLevel_Lv3_Lv4 	:= color.rgb(240, 105, 105)
+			vc.colorLevel_Lv4_Lv5 	:= color.rgb(250, 130, 130)
+			vc.colorLevel_Lv5 		:= color.rgb(255, 160, 122)				
+		153 =>
+			vc.colorLevel_Lv1 		:= color.rgb(255, 160, 122)		
+			vc.colorLevel_Lv1_Lv2 	:= color.rgb(250, 130, 130)
+			vc.colorLevel_Lv2_Lv3 	:= color.rgb(240, 105, 105)
+			vc.colorLevel_Lv3_Lv4 	:= color.rgb(220, 75, 75)
+			vc.colorLevel_Lv4_Lv5 	:= color.rgb(200, 50, 50)
+			vc.colorLevel_Lv5 		:= color.rgb(178, 34, 34)
+		
+		// Red-Yellow
+		160 =>
+			vc.colorLevel_Lv1 		:= color.rgb(255, 255, 102)
+			vc.colorLevel_Lv1_Lv2 	:= color.rgb(255, 204, 51) 
+			vc.colorLevel_Lv2_Lv3 	:= color.rgb(255, 153, 0) 
+			vc.colorLevel_Lv3_Lv4 	:= color.rgb(255, 102, 0) 
+			vc.colorLevel_Lv4_Lv5 	:= color.rgb(255, 51, 0) 
+			vc.colorLevel_Lv5 		:= color.rgb(204, 0, 0) 
+		161 =>
+			vc.colorLevel_Lv1 		:= color.rgb(204, 0, 0) 
+			vc.colorLevel_Lv1_Lv2 	:= color.rgb(255, 51, 0) 
+			vc.colorLevel_Lv2_Lv3 	:= color.rgb(255, 102, 0) 
+			vc.colorLevel_Lv3_Lv4 	:= color.rgb(255, 153, 0) 
+			vc.colorLevel_Lv4_Lv5 	:= color.rgb(255, 204, 51) 
+			vc.colorLevel_Lv5 		:= color.rgb(255, 255, 102)
+		162 =>
+			vc.colorLevel_Lv1 		:= color.rgb(182, 0, 0)
+			vc.colorLevel_Lv1_Lv2 	:= color.rgb(255, 0, 0)
+			vc.colorLevel_Lv2_Lv3 	:= color.rgb(242, 54, 69)
+			vc.colorLevel_Lv3_Lv4 	:= color.rgb(255, 90, 0)
+			vc.colorLevel_Lv4_Lv5 	:= color.rgb(255, 152, 0)
+			vc.colorLevel_Lv5 		:= color.rgb(255, 235, 59)
+		163 =>
+			vc.colorLevel_Lv1 		:= color.rgb(255, 235, 59)
+			vc.colorLevel_Lv1_Lv2 	:= color.rgb(255, 152, 0)
+			vc.colorLevel_Lv2_Lv3 	:= color.rgb(255, 90, 0)
+			vc.colorLevel_Lv3_Lv4 	:= color.rgb(242, 54, 69)
+			vc.colorLevel_Lv4_Lv5 	:= color.rgb(255, 0, 0)
+			vc.colorLevel_Lv5 		:= color.rgb(182, 0, 0)
+		164 =>
+			vc.colorLevel_Lv1 		:= #fbc02d
+			vc.colorLevel_Lv1_Lv2 	:= #ff9800
+			vc.colorLevel_Lv2_Lv3 	:= #e65100
+			vc.colorLevel_Lv3_Lv4 	:= #f23645
+			vc.colorLevel_Lv4_Lv5 	:= #ff0000
+			vc.colorLevel_Lv5 		:= #bf0000
+		165 =>
+			vc.colorLevel_Lv1 		:= #bf0000
+			vc.colorLevel_Lv1_Lv2 	:= #ff0000
+			vc.colorLevel_Lv2_Lv3 	:= #f23645
+			vc.colorLevel_Lv3_Lv4 	:= #e65100
+			vc.colorLevel_Lv4_Lv5 	:= #ff9800
+			vc.colorLevel_Lv5 		:= #fbc02d
+		
+		// Red-White
+		170 =>
+			vc.colorLevel_Lv1 		:= color.rgb(255, 255, 255) 
+			vc.colorLevel_Lv1_Lv2 	:= color.rgb(255, 153, 153) 
+			vc.colorLevel_Lv2_Lv3 	:= color.rgb(255, 102, 102) 
+			vc.colorLevel_Lv3_Lv4 	:= color.rgb(255, 51, 51) 
+			vc.colorLevel_Lv4_Lv5 	:= color.rgb(204, 0, 0) 
+			vc.colorLevel_Lv5 		:= color.rgb(153, 0, 0) 
+		171 =>
+			vc.colorLevel_Lv1 		:= color.rgb(153, 0, 0) 
+			vc.colorLevel_Lv1_Lv2 	:= color.rgb(204, 0, 0) 
+			vc.colorLevel_Lv2_Lv3 	:= color.rgb(255, 51, 51) 
+			vc.colorLevel_Lv3_Lv4 	:= color.rgb(255, 102, 102) 
+			vc.colorLevel_Lv4_Lv5 	:= color.rgb(255, 153, 153) 
+			vc.colorLevel_Lv5 		:= color.rgb(255, 255, 255) 
+
+		// White-Black
+        180 =>
+			vc.colorLevel_Lv1 		:= color.rgb(255, 255, 255) 
+			vc.colorLevel_Lv1_Lv2 	:= color.rgb(240, 240, 240) 
+			vc.colorLevel_Lv2_Lv3 	:= color.rgb(221, 221, 221) 
+			vc.colorLevel_Lv3_Lv4 	:= color.rgb(204, 204, 204) 
+			vc.colorLevel_Lv4_Lv5 	:= color.rgb(187, 187, 187) 
+			vc.colorLevel_Lv5 		:= color.rgb(170, 170, 170)
+		181 =>
+			vc.colorLevel_Lv1 		:= color.rgb(170, 170, 170)
+			vc.colorLevel_Lv1_Lv2 	:= color.rgb(187, 187, 187) 
+			vc.colorLevel_Lv2_Lv3 	:= color.rgb(204, 204, 204) 
+			vc.colorLevel_Lv3_Lv4 	:= color.rgb(221, 221, 221) 
+			vc.colorLevel_Lv4_Lv5 	:= color.rgb(240, 240, 240) 
+			vc.colorLevel_Lv5 		:= color.rgb(255, 255, 255) 
+		182 =>
+			vc.colorLevel_Lv1 		:= color.rgb(255, 255, 255) 
+			vc.colorLevel_Lv1_Lv2 	:= color.rgb(214, 214, 214) 
+			vc.colorLevel_Lv2_Lv3 	:= color.rgb(153, 153, 153) 
+			vc.colorLevel_Lv3_Lv4 	:= color.rgb(125, 125, 125) 
+			vc.colorLevel_Lv4_Lv5 	:= color.rgb(100, 100, 100) 
+			vc.colorLevel_Lv5 		:= color.rgb(75, 75, 75) 
+		183 =>
+			vc.colorLevel_Lv1 		:= color.rgb(75, 75, 75) 		
+			vc.colorLevel_Lv1_Lv2 	:= color.rgb(100, 100, 100) 
+			vc.colorLevel_Lv2_Lv3 	:= color.rgb(125, 125, 125) 
+			vc.colorLevel_Lv3_Lv4 	:= color.rgb(153, 153, 153) 
+			vc.colorLevel_Lv4_Lv5 	:= color.rgb(214, 214, 214) 
+			vc.colorLevel_Lv5 		:= color.rgb(255, 255, 255) 		
+		184 =>
+			vc.colorLevel_Lv1 		:= color.rgb(30, 30, 30)
+			vc.colorLevel_Lv1_Lv2 	:= color.rgb(48, 48, 48)
+			vc.colorLevel_Lv2_Lv3 	:= color.rgb(68, 68, 68)
+			vc.colorLevel_Lv3_Lv4 	:= color.rgb(92, 92, 92)
+			vc.colorLevel_Lv4_Lv5 	:= color.rgb(115, 115, 115)
+			vc.colorLevel_Lv5 		:= color.rgb(128, 128, 128)
+		185 =>
+			vc.colorLevel_Lv1 		:= color.rgb(128, 128, 128)
+			vc.colorLevel_Lv1_Lv2 	:= color.rgb(115, 115, 115)
+			vc.colorLevel_Lv2_Lv3 	:= color.rgb(92, 92, 92)
+			vc.colorLevel_Lv3_Lv4 	:= color.rgb(68, 68, 68)
+			vc.colorLevel_Lv4_Lv5 	:= color.rgb(48, 48, 48)
+			vc.colorLevel_Lv5 		:= color.rgb(30, 30, 30)
+		
+		// Spectrum Blue-Red			
+		190 =>
+			vc.colorLevel_Lv1 		:= color.rgb(0, 0, 255)
+			vc.colorLevel_Lv1_Lv2 	:= color.rgb(51, 0, 204)
+			vc.colorLevel_Lv2_Lv3 	:= color.rgb(102, 0, 153)
+			vc.colorLevel_Lv3_Lv4 	:= color.rgb(153, 0, 102)
+			vc.colorLevel_Lv4_Lv5 	:= color.rgb(204, 0, 51)
+			vc.colorLevel_Lv5 		:= color.rgb(255, 0, 0)
+		191 =>
+			vc.colorLevel_Lv1 		:= color.rgb(255, 0, 0)			
+			vc.colorLevel_Lv1_Lv2 	:= color.rgb(204, 0, 51)
+			vc.colorLevel_Lv2_Lv3 	:= color.rgb(153, 0, 102)
+			vc.colorLevel_Lv3_Lv4 	:= color.rgb(102, 0, 153)
+			vc.colorLevel_Lv4_Lv5 	:= color.rgb(51, 0, 204)
+			vc.colorLevel_Lv5 		:= color.rgb(0, 0, 255)
+
+// @function					Set theme for levels (customized colors).
+//
+// #### Usage
+// ___
+// ```
+// #region Theme for Histogram above 0
+// var string GRP_THEME_HISTOGRAM_ABOVE = 'Theme for Histogram above 0'
+// var colorHistogramUp_1 = input(color.new(#0064bb, 0), "", inline="2", group=GRP_THEME_HISTOGRAM_ABOVE)
+// var colorHistogramUp_2 = input(color.new(#007ce9, 0), "", inline="2", group=GRP_THEME_HISTOGRAM_ABOVE)
+// var colorHistogramUp_3 = input(color.new(#1893ff, 0), "", inline="2", group=GRP_THEME_HISTOGRAM_ABOVE)
+// var colorHistogramUp_4 = input(color.new(#46a9ff, 0), "", inline="2", group=GRP_THEME_HISTOGRAM_ABOVE)
+// var colorHistogramUp_5 = input(color.new(#75beff, 0), "", inline="2", group=GRP_THEME_HISTOGRAM_ABOVE)
+// var colorHistogramUp_6 = input(color.new(#91c9fa, 0), "", inline="2", group=GRP_THEME_HISTOGRAM_ABOVE)
+// // #endregion
+//
+// vcHistogram = UTIL.valueColorSpectrum.new()    
+//
+// vcHistogram.currentValue         := histogram
+// vcHistogram.previousValue        := histogram[1]
+//
+// UTIL.setCustomLevels(vcHistogram, 5, 10, 15, 20, 25)
+//
+// UTIL.setTheme(vcHistogram, colorHistogramUp_1, colorHistogramUp_2, colorHistogramUp_3, colorHistogramUp_4, colorHistogramUp_5, colorHistogramUp_6)
+// ```
+// ___
+// @param vc					(valueColorSpectrum) Object to associate a color with a value, taking into account the previous value and its levels
+// @param colorLevel_Lv1		(color) Color associeted with value when below Level 1.
+// @param colorLevel_Lv1_Lv2	(color) Color associeted with value when between Level 1 and 2.
+// @param colorLevel_Lv2_Lv3	(color) Color associeted with value when between Level 2 and 3.
+// @param colorLevel_Lv3_Lv4	(color) Color associeted with value when between Level 3 and 4.
+// @param colorLevel_Lv4_Lv5	(color) Color associeted with value when between Level 4 and 5.
+// @param colorLevel_Lv5		(color) Color associeted with value when above Level 5.
+// @returns 					(void)
+export setTheme(valueColorSpectrum vc, simple color colorLevel_Lv1, simple color colorLevel_Lv1_Lv2, 
+  simple color colorLevel_Lv2_Lv3, simple color colorLevel_Lv3_Lv4, simple color colorLevel_Lv4_Lv5, 
+  simple color colorLevel_Lv5) =>
+	vc.theme := 0
+	
+	vc.colorLevel_Lv1 		:= colorLevel_Lv1
+	vc.colorLevel_Lv1_Lv2 	:= colorLevel_Lv1_Lv2
+	vc.colorLevel_Lv2_Lv3 	:= colorLevel_Lv2_Lv3
+	vc.colorLevel_Lv3_Lv4 	:= colorLevel_Lv3_Lv4
+	vc.colorLevel_Lv4_Lv5 	:= colorLevel_Lv4_Lv5
+	vc.colorLevel_Lv5 		:= colorLevel_Lv5
+
+// @function	Set color to a current value, taking into account the previous value and its levels
+//
+// #### Usage
+// ___
+// ```
+// vcHistogram = UTIL.valueColorSpectrum.new()    
+
+// vcHistogram.currentValue         := histogram
+// vcHistogram.previousValue        := histogram[1]
+
+// UTIL.setCustomLevels(vcHistogram, 5, 10, 15, 20, 25)
+
+// if histogram >= 0         
+//     UTIL.setTheme(vcHistogram, themeHistoP)
+//     if themeHistoP == 0
+//         UTIL.setTheme(vcHistogram, colorHistogramUp_1, colorHistogramUp_2, colorHistogramUp_3, colorHistogramUp_4, colorHistogramUp_5, colorHistogramUp_6)
+// else        
+//     UTIL.setTheme(vcHistogram, themeHistoN)
+//     if themeHistoN == 0
+//         UTIL.setTheme(vcHistogram, colorHistogramDown_1, colorHistogramDown_2, colorHistogramDown_3, colorHistogramDown_4, colorHistogramDown_5, colorHistogramDown_6)
+
+// UTIL.setCurrentColorValue(vcHistogram)
+// color colorHistogram = vcHistogram.currentColorValue
+// ```
+// ___
+// @param vc	(valueColorSpectrum) Object to associate a color with a value, taking into account the previous value and its levels
+// @returns 	(void)
+export setCurrentColorValue(valueColorSpectrum vc) =>
+    
+	currentValue = math.abs(vc.currentValue)
+	previousValue = math.abs(vc.previousValue)
+	
+	vc.currentColorValue := switch
+        (currentValue <= vc.level1) or (previousValue <= vc.level1) => vc.colorLevel_Lv1
+        (currentValue > vc.level1 and currentValue <= vc.level2) or (previousValue > vc.level1 and previousValue <= vc.level2)  => color.from_gradient(currentValue, vc.level1, vc.level2, vc.colorLevel_Lv1, vc.colorLevel_Lv1_Lv2)
+        (currentValue > vc.level2 and currentValue <= vc.level3) or (previousValue > vc.level2 and previousValue <= vc.level3)  => color.from_gradient(currentValue, vc.level2, vc.level3, vc.colorLevel_Lv1_Lv2, vc.colorLevel_Lv2_Lv3)
+        (currentValue > vc.level3 and currentValue <= vc.level4) or (previousValue > vc.level3 and previousValue <= vc.level4)  => color.from_gradient(currentValue, vc.level3, vc.level4, vc.colorLevel_Lv2_Lv3, vc.colorLevel_Lv3_Lv4)
+        (currentValue > vc.level4 and currentValue <= vc.level5) or (previousValue > vc.level4 and previousValue <= vc.level5)  => color.from_gradient(currentValue, vc.level4, vc.level5, vc.colorLevel_Lv3_Lv4, vc.colorLevel_Lv4_Lv5)
+        (currentValue > vc.level5) or (previousValue > vc.level5)  => vc.colorLevel_Lv5
+
+// @function		Set boundaries for custom levels.
+// @param vc		(valueColorSpectrum) Object to associate a color with a value, taking into account the previous value and its levels
+// @param level1	(float) Boundary for level 1
+// @param level2	(float) Boundary for level 2
+// @param level3	(float) Boundary for level 3
+// @param level4	(float) Boundary for level 4 
+// @param level5	(float) Boundary for level 5
+// @returns 		(void)
+export setCustomLevels(valueColorSpectrum vc,
+  simple float level1 = 10,
+  simple float level2 = 30,
+  simple float level3 = 50,
+  simple float level4 = 70,
+  simple float level5 = 90) =>
+
+	vc.level1 := level1
+	vc.level2 := level2
+	vc.level3 := level3
+	vc.level4 := level4
+	vc.level5 := level5
+
+// #endregion      
+// ———————————————————————————————————————————————————————————————————————————————————————————————————————————— }
+
+
+// ———————————————————————————————————————————————————————————————————————————————————————————————————————————— {
+// #region valueColor: Simple theme for a Oscillator (2 colors)
+
+// @type	# Object to associate a color with a value, taking into account the previous value
+//			## Stores a color theme, which is used according if value is greater or lesser than previous value
+// @field	(float) currentValue			Current value.
+// @field	(float) previousValue			Previous value.
+// @field	(color) currentColorValue		Color associeted with current value. This value must be calculated with setCurrentColorValue method.
+// @field	(color) colorUp					Color associeted with value when below Level 1.
+// @field	(color) colorDown				Color associeted with value when between Level 1 and 2.
+export type valueColor
+	// Values
+	float currentValue
+	float previousValue
+
+	// Colors
+	color currentColorValue
+	color colorUp				= #2962ff
+	color colorDown				= #ff1000 
+
+// @function	Set color to a current value, taking into account the previous value.
+// @param vc	(valueColor) Object to associate a color with a value, taking into account the previous value
+// @returns 	(void)
+export setCurrentColorValue(valueColor vc, bool gradient) =>
+	vc.currentColorValue := if gradient
+		color.from_gradient( vc.currentValue > vc.previousValue ? vc.currentValue : vc.previousValue, 0, 100, vc.colorDown, vc.colorUp )
+	else
+		(vc.currentValue >= vc.previousValue) ? vc.colorUp : vc.colorDown
+
+// @function	Set color to a current value, taking into account the previous value.
+// @param vc			(valueColor) Object to associate a color with a value, taking into account the previous value.
+// @param bottom_value  (float) Bottom position value corresponding to bottom_color.
+// @param top_value  	(float) Top position value corresponding to top_color.
+// @returns 	(void)
+export setCurrentColorValue(valueColor vc, bool gradient, float bottom_value, float top_value) =>
+	vc.currentColorValue := if gradient
+		color.from_gradient( vc.currentValue > vc.previousValue ? vc.currentValue : vc.previousValue, bottom_value, top_value, vc.colorDown, vc.colorUp )
+	else
+		(vc.currentValue >= vc.previousValue) ? vc.colorUp : vc.colorDown
+// #endregion
+// ———————————————————————————————————————————————————————————————————————————————————————————————————————————— }
+
+
+// ———————————————————————————————————————————————————————————————————————————————————————————————————————————— {
+// #region Periodic Color
+
+// @function	Returns a periodic color. Useful for creating dotted lines for example.
+// @param originalColor		(color) Original color.
+// @param density			(float) Density of color. Expression used in modulo to obtain the integer remainder.
+//								If the remainder equals zero, the color appears, otherwise it remains hidden.
+// @returns 				(color) Periodic color.
+export getPeriodicColor(simple color originalColor, simple float density) =>
+	newColor = (bar_index % density == 0) ? originalColor : na
+
+// #endregion
+// ———————————————————————————————————————————————————————————————————————————————————————————————————————————— }
+
+
+// ———————————————————————————————————————————————————————————————————————————————————————————————————————————— {
+// #region Math
+
+// @function 		Round a value between .999 and -.999. Function used in Fisher Transform.
+// @param value	  	(float) Value to be rounded.
+// @returns 	    (float) Value rounded.
+export round(float value) => 
+	value > .99 ? .999 : value < -.99 ? -.999 : value
+
+// TODO: place this function in Volatility Indicators
+// @function 			Get Dynamic Zones
+// @param source		(float) Source
+// @param sampleLength	(int) Sample Length
+// @param pcntAbove		(float) Calculates the top of the dynamic zone, considering that the maximum values are above x% of the sample
+// @param pcntBelow		(float) Calculates the bottom of the dynamic zone, considering that the minimum values are below x% of the sample
+// @returns 			[float, float, float] A tuple with 3 series of values: (1) Upper Line of Dynamic Zone; 
+//						(2) Lower Line of Dynamic Zone; (3) Center of Dynamic Zone (x = 50%)
+export dinamicZone(float source, simple int sampleLength, simple float pcntAbove, simple float pcntBelow) =>
+
+	dZoneAbove 	= ta.percentile_nearest_rank(source, sampleLength, pcntAbove)
+	dZoneBelow 	= ta.percentile_nearest_rank(source, sampleLength, 100 - pcntBelow)
+	dZoneCenter	= ta.percentile_nearest_rank(source, sampleLength, 100 - 50)
+
+	[dZoneAbove, dZoneBelow, dZoneCenter]
+
+// #endregion
+// ———————————————————————————————————————————————————————————————————————————————————————————————————————————— }
+
+
+// Sample code for using themes in a histogram
+
+// // #region Theme for Histogram above 0
+// var string GRP_THEME_HISTOGRAM_ABOVE = 'Theme for Histogram above 0'
+// var int themeHistoP = input.int(defval=0, title='Theme',
+//   options=[0, 1, 2, 3, 4, 5, 6], inline='1', group='Theme for Histogram above 0', tooltip=THEME_TOOLTIP_HISTOGRAM)  
+// var colorHistogramUp_1 = input(color.new(#0064bb, 0), "", inline="2", group=GRP_THEME_HISTOGRAM_ABOVE)
+// var colorHistogramUp_2 = input(color.new(#007ce9, 0), "", inline="2", group=GRP_THEME_HISTOGRAM_ABOVE)
+// var colorHistogramUp_3 = input(color.new(#1893ff, 0), "", inline="2", group=GRP_THEME_HISTOGRAM_ABOVE)
+// var colorHistogramUp_4 = input(color.new(#46a9ff, 0), "", inline="2", group=GRP_THEME_HISTOGRAM_ABOVE)
+// var colorHistogramUp_5 = input(color.new(#75beff, 0), "", inline="2", group=GRP_THEME_HISTOGRAM_ABOVE)
+// var colorHistogramUp_6 = input(color.new(#91c9fa, 0), "", inline="2", group=GRP_THEME_HISTOGRAM_ABOVE)
+// // #endregion
+
+// // #region Theme for Histogram below 0
+// var string GRP_THEME_HISTOGRAM_BELOW = 'Theme for Histogram below 0'
+// var int themeHistoN = input.int(defval=0, title='Theme',
+//   options=[0, 1, 2, 3, 4, 5, 6], inline='1', group='Theme for Histogram below 0')  
+// var colorHistogramDown_1 = input(color.new(#8e1031, 0), "", inline="2", group=GRP_THEME_HISTOGRAM_BELOW)
+// var colorHistogramDown_2 = input(color.new(#be1642, 0), "", inline="2", group=GRP_THEME_HISTOGRAM_BELOW)
+// var colorHistogramDown_3 = input(color.new(#e62356, 0), "", inline="2", group=GRP_THEME_HISTOGRAM_BELOW)
+// var colorHistogramDown_4 = input(color.new(#eb527a, 0), "", inline="2", group=GRP_THEME_HISTOGRAM_BELOW)
+// var colorHistogramDown_5 = input(color.new(#f1829f, 0), "", inline="2", group=GRP_THEME_HISTOGRAM_BELOW)
+// var colorHistogramDown_6 = input(color.new(#f395ae, 0), "", inline="2", group=GRP_THEME_HISTOGRAM_BELOW)
+// // #endregion
+
+// // ———————————————————————————————————————————————————————————————————————————————————————————————————————————— {
+// // #region Theme for Histogram
+
+// vcHistogram = UTIL.valueColorSpectrum.new()    
+
+// vcHistogram.currentValue         := histogram
+// vcHistogram.previousValue        := histogram[1]
+
+// UTIL.setCustomLevels(vcHistogram, 5, 10, 15, 20, 25)
+
+// if histogram >= 0         
+//     UTIL.setTheme(vcHistogram, themeHistoP)
+//     if themeHistoP == 0
+//         UTIL.setTheme(vcHistogram, colorHistogramUp_1, colorHistogramUp_2, colorHistogramUp_3, colorHistogramUp_4, colorHistogramUp_5, colorHistogramUp_6)
+// else        
+//     UTIL.setTheme(vcHistogram, themeHistoN)
+//     if themeHistoN == 0
+//         UTIL.setTheme(vcHistogram, colorHistogramDown_1, colorHistogramDown_2, colorHistogramDown_3, colorHistogramDown_4, colorHistogramDown_5, colorHistogramDown_6)
+
+// UTIL.setCurrentColorValue(vcHistogram)
+// color colorHistogram = vcHistogram.currentColorValue
+
+// // #endregion
+// // ———————————————————————————————————————————————————————————————————————————————————————————————————————————— }

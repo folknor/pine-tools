@@ -1,0 +1,275 @@
+//#region SETUP
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © jason5480
+
+//@version=6
+
+// @description Collection of types and functions that can be used for the calculation of the ratio [0, 1] of a distance
+// from a reference price using several methods. Methods supported are percentagewise (PERC), atr-based (ATR), fixed
+// profit (PROF), tick-based (TICKS) and risk reward ratio (RR)
+library(title = 'distance_ratio')
+
+//#endregion ===========================================================================================================
+//#region DISTANCE =====================================================================================================
+//
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+
+// @enum The enum of supported distance methods
+// @field perc percentagewise from reference
+// @field atr Average True Range multiple
+// @field stdev Standard deviation multiple
+// @field ticks Ticks multiple
+// @field prof Profit based
+// @field rr Risk reward based
+export enum DistMethod
+    perc = 'PERC'
+    atr = 'ATR'
+    stdev = 'STDEV'
+    ticks = 'TICKS'
+    prof = 'PROF'
+    rr = 'RR'
+    cust = 'CUST'
+
+// @type Object that represents the settings of the distance
+// @field distMethod The method to be used for the distance calculation
+// @field distMul The multiplier to be used based for the distance
+// @field commissionRatio The commision fees ratio
+export type DistSettings
+    DistMethod distMethod
+    float distMul
+    float commissionRatio
+
+// @type Object that represents the maximum and minimum distance
+// @field restrDistMethod The method to be used for the distance calculation
+// @field minDistMul The multiplier to be used based for the minimum distance
+// @field maxDistMul The multiplier to be used based for the maximum distance
+// @field commissionRatio The commision fees ratio
+export type RestrictSettings
+    DistMethod restrDistMethod
+    float minDistMul
+    float maxDistMul
+    float commissionRatio
+
+// @type Object that represents the auxiliary data that might be used for the distance
+// @field atr The average true range
+// @field stdev The standard deviation
+// @baseQuantity The quantity in base currency
+// @stopLossDist The stop loss distance
+export type AuxData
+    float atr
+    float stdev
+    float baseQuantity
+    float stopLossDist
+
+// @function Calculate the unit price of the distance of the given method
+// @param distMethod The distance method to define the unit
+// @param commissionRatio The commission ratio paid per quantity unit per trade 
+// @param reference The price that will be used as a reference for the percentage unit calculation
+// @param aux The current values of the auxiliary data that will be used if needed by the method for the distance ratio calculation like the atr and stdev
+// @returns The distance unit price
+method unit_price(DistMethod distMethod, float commissionRatio, float reference, AuxData aux) =>
+    switch distMethod
+        DistMethod.perc => reference / 100.0
+        DistMethod.atr => aux.atr
+        DistMethod.stdev => aux.stdev
+        DistMethod.prof => (1.0 - commissionRatio) / aux.baseQuantity
+        DistMethod.ticks => syminfo.mintick
+        DistMethod.rr => aux.stopLossDist
+        =>
+            runtime.error(str.tostring(distMethod) + ' is not a supported distance method. The supported methods are [PERC, ATR, STDEV, PROF, TICKS, RR]')
+            na
+
+// @function Calculate the unit price of the distance of the given distance method
+// @param this The settings of the distance method
+// @param reference The price that will be used as a reference for the percentage unit calculation
+// @param aux The current values of the auxiliary data that will be used if needed by the method for the distance ratio calculation like the atr and stdev
+// @returns The distance unit price
+export method unit_price(DistSettings this, float reference, AuxData aux) =>
+    unit_price(this.distMethod, this.commissionRatio, reference, aux)
+
+// @function Calculate the unit price of the distance of the given restrict margin method
+// @param this The settings of the distance method
+// @param reference The price that will be used as a reference for the percentage unit calculation
+// @param aux The current values of the auxiliary data that will be used if needed by the method for the distance ratio calculation like the atr and stdev
+// @returns The distance unit price
+method unit_price(RestrictSettings this, float reference, AuxData aux) =>
+    unit_price(this.restrDistMethod, this.commissionRatio, reference, aux)
+
+// @function Calculate the minimum distance allowed
+// @param this The settings of the distance method
+// @param reference The price that will be used as a reference for the percentage unit calculation
+// @param aux The current values of the auxiliary data that will be used if needed by the method for the distance ratio calculation like the atr and stdev
+// @returns The minimum distance ratio
+method min_ratio(RestrictSettings this, float reference, AuxData aux) =>
+    this.minDistMul * this.unit_price(reference, aux) / reference
+
+// @function Calculate the maximum distance allowed
+// @param this The settings of the distance method
+// @param reference The price that will be used as a reference for the percentage unit calculation
+// @param aux The current values of the auxiliary data that will be used if needed by the method for the distance ratio calculation like the atr and stdev
+// @returns The maximum distance ratio
+method max_ratio(RestrictSettings this, float reference, AuxData aux) =>
+    this.maxDistMul * this.unit_price(reference, aux) / reference
+
+// @function Calculate the minimum distance allowed
+// @param this The settings of the distance method
+// @param reference The price that will be used as a reference for the percentage unit calculation
+// @param aux The current values of the auxiliary data that will be used if needed by the method for the distance ratio calculation like the atr and stdev
+// @returns The minimum distance price
+method min_price(RestrictSettings this, float reference, AuxData aux) =>
+    math.round_to_mintick(this.minDistMul * this.unit_price(reference, aux))
+
+// @function Calculate the maximum distance allowed
+// @param this The settings of the distance method
+// @param reference The price that will be used as a reference for the percentage unit calculation
+// @param aux The current values of the auxiliary data that will be used if needed by the method for the distance ratio calculation like the atr and stdev
+// @returns The maximum distance price
+method max_price(RestrictSettings this, float reference, AuxData aux) =>
+    math.round_to_mintick(this.maxDistMul * this.unit_price(reference, aux))
+
+// @function Calculate the minimum distance allowed
+// @param this The settings of the distance method
+// @param reference The ticks that will be used as a reference for the percentage unit calculation
+// @param aux The current values of the auxiliary data that will be used if needed by the method for the distance ratio calculation like the atr and stdev
+// @returns The minimum distance ticks
+method min_ticks(RestrictSettings this, float reference, AuxData aux) =>
+    math.floor(this.min_price(reference, aux) / syminfo.mintick)
+
+// @function Calculate the maximum distance allowed
+// @param this The settings of the distance method
+// @param reference The ticks that will be used as a reference for the percentage unit calculation
+// @param aux The current values of the auxiliary data that will be used if needed by the method for the distance ratio calculation like the atr and stdev
+// @returns The maximum distance ticks
+method max_ticks(RestrictSettings this, float reference, AuxData aux) =>
+    math.floor(this.max_price(reference, aux) / syminfo.mintick)
+
+// @function Calculate the distance ratio of the target price from the reference price
+// @param this The distance ratio
+// @param restr The restrict settings to define the minimum and maximum distance
+// @param reference The price that will be used as a reference for the distance ratio calculation
+// @param aux The current values of the auxiliary data that will be used if needed by the method for the distance ratio calculation like the atr, stdev and risk reward ratio
+// @returns The distance ratio from the reference price after ratio restrictions applied
+export method restrict_ratio(float this, RestrictSettings restr, float reference, AuxData aux) =>
+    float distRatio = this
+    distRatio := not na(restr.minDistMul) ? math.max(distRatio, restr.min_ratio(reference, aux)) : distRatio
+    distRatio := not na(restr.maxDistMul) ? math.min(distRatio, restr.max_ratio(reference, aux)) : distRatio
+
+// @function Calculate the distance price of the target price from the reference price
+// @param this The distance price
+// @param restr The restrict settings to define the minimum and maximum distance
+// @param reference The price that will be used as a reference for the distance price calculation
+// @param aux The current values of the auxiliary data that will be used if needed by the method for the distance price calculation like the atr, stdev and risk reward ratio
+// @returns The distance price from the reference price after price restrictions applied
+export method restrict_price(float this, RestrictSettings restr, float reference, AuxData aux) =>
+    float distPrice = this
+    distPrice := not na(restr.minDistMul) ? math.max(distPrice, restr.min_price(reference, aux)) : distPrice
+    distPrice := not na(restr.maxDistMul) ? math.min(distPrice, restr.max_price(reference, aux)) : distPrice
+
+// @function Calculate the distance ticks of the target price from the reference price
+// @param this The distance ticks
+// @param restr The restrict settings to define the minimum and maximum distance
+// @param reference The price that will be used as a reference for the distance ticks calculation
+// @param aux The current values of the auxiliary data that will be used if needed by the method for the distance ticks calculation like the atr, stdev and risk reward ratio
+// @returns The distance ticks from the reference price after ticks restrictions applied
+export method restrict_ticks(int this, RestrictSettings restr, float reference, AuxData aux) =>
+    int distTicks = this
+    distTicks := not na(restr.minDistMul) ? math.max(distTicks, restr.min_ticks(reference, aux)) : distTicks
+    distTicks := not na(restr.maxDistMul) ? math.min(distTicks, restr.max_ticks(reference, aux)) : distTicks
+
+// @function Calculate the distance ratio of the target price from the reference price in percentage
+// @param this The settings of the distance method
+// @param reference The price that will be used as a reference for the distance ratio calculation
+// @param aux The current values of the auxiliary data that will be used if needed by the method for the distance ratio calculation like the atr, stdev and risk reward ratio
+// @returns The distance ratio of the price from the reference
+export method ratio(DistSettings this, float reference, AuxData aux) =>
+    float distRatio = switch this.distMethod
+        DistMethod.perc => this.distMul / 100.0
+        DistMethod.atr => this.distMul * aux.atr / reference
+        DistMethod.stdev => this.distMul * aux.stdev / reference
+        DistMethod.ticks => int(this.distMul) * syminfo.mintick / reference
+        DistMethod.prof =>
+            if na(this.commissionRatio)
+                runtime.error('PROF method needs the commission fees ratio [0, 1] to function properly')
+            float entryQuoteQuantity = reference * aux.baseQuantity
+            float entryQuoteCommissionFee = entryQuoteQuantity * this.commissionRatio
+            float exitQuoteCommissionFee = (entryQuoteQuantity + this.distMul) * this.commissionRatio * (1.0 - this.commissionRatio)
+            this.commissionRatio + (this.distMul + exitQuoteCommissionFee) / (entryQuoteQuantity - entryQuoteCommissionFee)
+        DistMethod.rr => this.distMul * aux.stopLossDist / reference
+        =>
+            runtime.error(str.tostring(this.distMethod) + ' is not a supported distance method. The supported methods are [PERC, ATR, STDEV, TICKS, PROF, RR]')
+            na
+    not na(distRatio) ? distRatio : 0.0
+
+// @function Calculate the distance of the target price from the reference price in quote currency
+// @param this The settings of the distance method
+// @param reference The price that will be used as a reference for the distance price calculation
+// @param aux The current values of the auxiliary data that will be used if needed by the method for the distance price calculation like the atr, stdev and risk reward ratio
+// @returns The distance of the target from the reference price in quote currency
+export method price(DistSettings this, float reference, AuxData aux) =>
+    math.round_to_mintick(reference * this.ratio(reference, aux))
+
+// @function Calculate the ticks of the target price from the reference price in number of ticks
+// @param this The settings of the distance method
+// @param reference The price that will be used as a reference for the distance ticks calculation
+// @param aux The current values of the auxiliary data that will be used if needed by the method for the distance price calculation like the atr, stdev and risk reward ratio
+// @returns The distance of the target from the reference price in number of ticks
+export method ticks(DistSettings this, float reference, AuxData aux) =>
+    math.floor(this.price(reference, aux) / syminfo.mintick)
+
+//#endregion ===========================================================================================================
+//#region EXAMPLE ======================================================================================================
+//
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+
+// INPUT ===============================================================================================================
+enum Direction
+    below = 'BELOW'
+    above = 'ABOVE'
+
+enum CalcMethod
+    ratio = 'RATIO'
+    price = 'PRICE'
+    ticks = 'TICKS'
+
+referencePrice = input.source(defval = high, title = 'Reference', tooltip = 'The price that will be used as a reference for the distance ratio calculation.', group = 'General')
+direction = input.enum(defval = Direction.below, title = 'Direction', tooltip = 'Select the relative position of the distance price compared to the reference after distance calculation.', group = 'General')
+riskRatio = input.float(defval = 5.0, title = 'Risk %', minval = 0.0, maxval = 100.0, step = 1.0, tooltip = 'The percentage to be used as a reference when the RR method is selected.', group = 'General') / 100.0
+commissionRatio = input.float(defval = 0.1, title = 'Commission %', minval = 0.0, maxval = 100.0, step = 0.05, tooltip = 'Fees paid for each transaction entry and exit (percentagewise) when the PROF method is selected.', group = 'General') / 100.0
+baseQuantity = input.float(defval = 1.0, title = 'Quantity', minval = 0.0, step = 0.05, tooltip = 'The base currency quantity to enter a trade.', group = 'General')
+calcMethod = input.enum(defval = CalcMethod.ratio, title = 'Calc Method', tooltip = 'Select the target distance price calculation method it will use ratio (RATIO), or the price (PRICE) or the ticks (TICKS).', group = 'General')
+
+var distSettings = DistSettings.new(
+  distMethod = input.enum(defval = DistMethod.perc, title = 'Tgt Dist Mtd', options = [DistMethod.perc, DistMethod.atr, DistMethod.stdev, DistMethod.prof, DistMethod.ticks, DistMethod.rr], tooltip = 'The method to calculate the distance of the price. Percentage based (PERC), ATR based (ATR), Standard deviation based (STDEV), Fixed Profit (PROF), Tick based (TICKS), or Risk-Reward based (RR).', group = 'Distance'),
+  distMul = input.float(defval = 10.0, title = '  Tgt Dist Mul', minval = 0.1, step = 0.05, tooltip = 'The distance multiplier to define the target price from the reference price. The multiplier will be applied to the unit price that is defeined by the distance method that is used.', group = 'Distance'),
+  commissionRatio = commissionRatio)
+
+minDistEnabled = input.bool(defval = false, title = '', inline = 'Restr Distance', group = 'Distance')
+maxDistEnabled = input.bool(defval = false, title = '', inline = 'Restr Distance', group = 'Distance')
+var restrict = RestrictSettings.new(
+  restrDistMethod = input.enum(defval = DistMethod.perc, title = 'Min/Max Dist Mtd', tooltip = 'The method to calculate the maximum/minimum distance of the price. Percentage based (PERC), ATR based (ATR), Standard deviation based (STDEV), Profit based (PROF), Tick based (TICKS) or Risk-Reward based (RR).', inline = 'Restr Distance', group = 'Distance', active = minDistEnabled or maxDistEnabled),
+  minDistMul = minDistEnabled ? input.float(defval = 1.0, title = '  Min Dist Mul      ', minval = 0.0, step = 0.05, tooltip = 'Enable a minimum distance defined by this multiplier and the restrict distance method.', group = 'Distance', active = minDistEnabled) : na,
+  maxDistMul = maxDistEnabled ? input.float(defval = 10.0, title = '  Max Dist Mul    ', minval = 0.0, step = 0.05, tooltip = 'Enable a maximum distance defined by this multiplier and the restrict distance method.', group = 'Distance', active = maxDistEnabled) : na,
+  commissionRatio = commissionRatio)
+
+// LOGIC ===============================================================================================================
+auxData = AuxData.new(atr = ta.atr(14), stdev = ta.stdev(close, 20), baseQuantity = baseQuantity, stopLossDist = referencePrice * riskRatio)
+float distPrice = switch calcMethod
+    CalcMethod.ratio =>
+        float distRatio = distSettings.ratio(reference = referencePrice, aux = auxData).restrict_ratio(restr = restrict, reference = referencePrice, aux = auxData)
+        referencePrice * (direction == Direction.above ? 1 + distRatio : 1 - distRatio)
+    CalcMethod.price =>
+        float distPrice = distSettings.price(reference = referencePrice, aux = auxData).restrict_price(restr = restrict, reference = referencePrice, aux = auxData)
+        referencePrice + (direction == Direction.above ? distPrice : -distPrice)
+    CalcMethod.ticks =>
+        int distTicks = distSettings.ticks(reference = referencePrice, aux = auxData).restrict_ticks(restr = restrict, reference = referencePrice, aux = auxData)
+        referencePrice + syminfo.mintick * (direction == Direction.above ? distTicks : -distTicks)
+    =>
+        runtime.error(str.tostring(calcMethod) + ' is not a supported calculation method. The supported methods are [RATIO, PRICE, TICKS]')
+        na
+
+// PLOT ================================================================================================================
+plot(series = referencePrice, title = 'Reference Price', color = color.green, force_overlay = true)
+plot(series = distPrice, title = 'Distance Price', color = color.blue, force_overlay = true)
+
+//#endregion ===========================================================================================================

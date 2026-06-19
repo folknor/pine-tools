@@ -1,0 +1,176 @@
+// This Pine Script® code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © PineCoders
+
+// @version=6
+library("ConditionalAverages")
+
+// ConditionalAverages Library
+// v2, 2025.03.26
+
+// This code was written using the recommendations from the Pine Script® User Manual's Style guide:
+//    https://www.tradingview.com/pine-script-docs/writing/style-guide/
+
+
+
+//#region ———————————————————— Library functions
+
+
+// @function            Calculates the cumulative average of `source` values sampled based on the specified `condition`.
+//                      This function should execute once per bar for consistent calculations. 
+// @param source        (series float) The series of values to process.
+// @param condition     (series bool) If `true`, the function includes the `source` value in the average. Otherwise, 
+//                      it ignores the value.
+// @returns             (float) The cumulative average of all `source` values whose corresponding `condition` is `true`.
+export avgWhen(series float source, series bool condition) =>
+    float result = ta.cum(condition ? source : 0.0) / ta.cum(condition ? 1 : 0)
+
+
+// @function            Calculates the average `source` value for the most recent `count` bars where the 
+//                      specified `condition` is `true` and the `source` is not `na`.
+//                      This function should execute once per bar for consistent calculations.
+// @param source        (series float) The series of values to process.
+// @param condition     (series bool) If `true`, the function includes the `source` value in the average. Otherwise, 
+//                      it ignores the value.
+// @param count         (series int) The number of bars where the `condition` is `true` to use in the average. 
+// @returns             (float) The average of `source` values for the latest `count` bars that met the `condition` 
+//                      criteria.
+export avgWhenLast(series float source, series bool condition, series int count) =>
+    float result = ta.sma(condition ? source : na, count)
+
+
+// @function            Calculates the average `source` value for the bars where the `condition` is `true` across the 
+//                      `length` most recent bars with non-na `source` data.
+//                      This function should execute once per bar for consistent calculations.
+// @param source        (series float) The series of values to process.
+// @param condition     (series bool) If `true`, the function includes the `source` value in the average. Otherwise, 
+//                      it ignores the value.
+// @param length        (series int) The number of bars to evaluate in the average calculation. The average excludes 
+//                      all bars in the window where the `condition` is `false`. 
+// @returns             (float) The average of only all `source` values across `length` bars whose `condition` value 
+//                      is `true`.
+export avgWhenInLast(series float source, series bool condition, series int length) =>
+    bool  cond   = condition and not na(source)
+    float result = math.sum(cond ? source : 0.0, length) / math.sum(cond ? 1 : 0, length)
+
+
+// @function            Calculates the average `source` value for all bars with non-na `source` data since the latest 
+//                      bar where the specified `condition` is `true`.
+//                      This function should execute once per bar for consistent calculations.
+// @param source        (series float) The series of values to process.
+// @param condition     (series bool) The condition that resets the average. The average considers all bars since the 
+//                      latest bar where this value is `true`.
+// @returns             (float) The average `source` value across all bars since the last occurrence of the `condition`.
+export avgSince(series float source, series bool condition) =>
+    var float lastTotal = 0.0
+    var int   lastIndex = na
+    var float lastNaCt  = na
+    float     total     = ta.cum(nz(source))
+    float     naBars    = ta.cum(na(source) ? 1 : 0)
+    float result = if condition
+        lastTotal := nz(total[1])
+        lastIndex := bar_index - 1
+        lastNaCt  := nz(naBars[1])
+        source
+    else
+        (total - lastTotal) / (bar_index - lastIndex - naBars + lastNaCt)
+
+
+// @function            Calculates the average of `source` values across bars where the `condition` is `true`
+//                      and `source` is not `na` within a moving time window. The number of bars with non-na values in 
+//                      the window is the maximum of `minBars` and the total bars covered by the `ms` millisecond range. 
+//                      This function should execute once per bar for consistent calculations.
+// @param source        (series float) The series of values to process.
+// @param ms            (simple int) The span of the moving window, in milliseconds. The average uses all conditional 
+//                      bars with non-na values whose opening times differ from the current bar's opening time by less 
+//                      than this amount.  
+// @param condition     (series bool) Optional. The function considers a new bar for the average only when the value 
+//                      is `true` and the `source` is not `na`. The default is `true`.
+// @param minBars       (simple int) Optional. The absolute minimum number of conditional bars to use in the average, 
+//                      regardless of their opening times. The default is 1.
+// @returns             (float) The average of all non-na `source` values where the `condition` is `true` within the 
+//                      moving time window. 
+avgForTimeWhen(series float source, simple int ms, series bool condition = true, simple int minBars = 1) =>
+    var array<float> sources   = array.new<float>()
+    var array<int>   times     = array.new<int>()
+    var float        result    = na
+    var float        numerator = 0.0
+    if condition and not na(source)
+        sources.push(source)
+        times.push(time)
+        numerator += source
+        while sources.size() > math.max(minBars, 0) and time - times.first() >= ms
+            numerator -= sources.shift()
+            times.shift()
+        result := numerator / sources.size()
+    sources.size() < minBars ? na : result
+
+
+// @function            Calculates the sum of `source` values across bars where the `condition` is `true`
+//                      and `source` is not `na` within a moving time window. The number of bars with non-na values in 
+//                      the window is the maximum of `minBars` and the total bars covered by the `ms` millisecond range. 
+//                      This function should execute once per bar for consistent calculations.
+// @param source        (series float) The series of values to process.
+// @param ms            (simple int) The span of the moving window, in milliseconds. The sum uses all conditional 
+//                      bars with non-na values whose opening times differ from the current bar's opening time by less 
+//                      than this amount.  
+// @param condition     (series bool) Optional. The function considers a new bar for the sum only when the value 
+//                      is `true` and the `source` is not `na`. The default is `true`.
+// @param minBars       (simple int) Optional. The absolute minimum number of conditional bars to use in the sum, 
+//                      regardless of their opening times. The default is 1.
+// @returns             (float) The sum of all non-na `source` values where the `condition` is `true` within the 
+//                      moving time window. 
+export totalForTimeWhen(series float source, simple int ms, series bool condition = true, simple int minBars = 1) =>
+    var array<float> sources   = array.new<float>(0)
+    var array<int>   times     = array.new<int>(0)
+    var float        result    = 0.0
+    if condition and not na(source)
+        sources.push(source)
+        times.push(time)
+        result += source
+        while sources.size() > math.max(minBars, 0) and time - times.first() >= ms
+            result -= sources.shift()
+            times.shift()
+    sources.size() < minBars ? na : result
+//#endregion
+
+
+
+//#region ———————————————————— Example code
+
+
+// Base colors
+color MAGENTA    = #FF00FF
+color GREEN1     = #00FF00
+color LINK_WATER = #D1D4DC
+color STORM_GREY = #787B86
+
+// @variable Defines the number of most recent occurrences to consider when calculating the average in `avgWhenLast()`.
+int LAST_OCCURRENCES = 20
+// @variable Defines the number of bars to look back when averaging the source in `avgWhenInLast()`.
+int LAST_BARS = 20
+// @variable Represents the number of milliseconds in a single day (24 hours).
+int MS_IN_1D = 24 * 60 * 60 * 1000
+// @variable Minimum qty of bars to retain in `avgForTimeWhen()` and `totalForTimeWhen()` calculations.
+int MIN_BARS = 10
+// @variable Source values used in the average calculations.
+float source = volume
+// @variable Condition used to determine when to calculate averages. 
+bool condition = close > open
+// @variable Color for volume columns based on direction (up/down).
+color volumeColor = condition ? LINK_WATER : STORM_GREY
+
+// Plot the volume columns.
+plot(volume, "volume", color.new(volumeColor, 65), 4, plot.style_histogram)
+// Average volume over all occurrences of the condition (average volume on all up bars) in the dataset.
+plot(avgWhen(source, condition), "avgWhen()", color.navy)
+// Average volume over the last number of occurrences of the condition (avg. volume of the `LAST_OCCURRENCES` up bars).
+plot(avgWhenLast(source, condition, LAST_OCCURRENCES), "avgWhenLast()", color.orange)
+// Average volume over `LAST_BARS` bars when the condition was true (e.g., up bars).
+plot(avgWhenInLast(source, condition, LAST_BARS), "avgWhenInLast()", color.aqua)
+// Average volume since the condition was true (average volume since the start of the day).
+plot(avgSince(source, timeframe.change("D")), "avgSince()", MAGENTA)
+// Average volume in a rolling window of time equal to 1 day.
+plot(avgForTimeWhen(source, MS_IN_1D, true, MIN_BARS), "avgForTimeWhen()", GREEN1)
+// Total volume in a rolling window of time equal to 1 day.
+plotchar(totalForTimeWhen(source, MS_IN_1D, true, MIN_BARS), "totalForTimeWhen()", "", location.top, size = size.tiny)
+//#endregion

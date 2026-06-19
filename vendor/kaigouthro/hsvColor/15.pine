@@ -1,0 +1,364 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © kaigouthro
+//@version=5
+
+// @description HSV and HSL Color Tools
+library("hsvColor")
+
+import kaigouthro/calc/5
+
+//@funcction Limiter for out of range values
+//@param _h   _hueValue input to limit signals before using color.
+//@param _s   _saturation input to limit signals before using color.
+//@param _vl  _value input to limit signals before using color.
+//@param _a   _alpha input to limit signals before using color.
+export hslimit(float _h,float _s,float _vl,float _a) =>
+    _saturation = 0., _alpha = 0., _valOrLum = 0.
+    _hueValue   = nz(_h)
+    if _hueValue < 0 or _hueValue >= 360
+        while _hueValue  <  0   
+            _hueValue += 360
+        if _hueValue  >= 360 
+            _hueValue %= 360
+    _saturation       := math.max ( 0 , math.min ( 1 , nz(_s)  ))
+    _alpha            := math.max ( 0 , math.min ( 1 , nz(_a)  ))
+    _valOrLum         := math.max ( 0 , math.min ( 1 , nz(_vl) ))
+    [_hueValue,_saturation,_valOrLum,_alpha]
+
+//@funcction helper for hsl
+hue2rgb(p, q, tr) =>
+    var _2thrd  = 2/3.
+    var _1six   = 1/6.
+    var _1half  = 1/2.
+    _trasnparency = tr
+    while (_trasnparency < 0)
+        _trasnparency += 1
+    while (_trasnparency > 1)
+        _trasnparency -= 1
+    switch        
+        (_trasnparency < _1six ) =>  p + (q - p) * 6 * _trasnparency
+        (_trasnparency < _1half) =>  q
+        (_trasnparency < _2thrd) =>  p + (q - p) * (_2thrd - _trasnparency) * 6
+        => p/1.
+
+// @function RGB Color to HSV Values
+// @param _col Color input (#abc012 or color.name or color.rgb(0,0,0,0))
+// @returns [_hueValue,_saturation,_value,_alpha] values
+export rgbhsv(color _col)  =>
+    var _255 = 1/255.
+    _red        = color.r(_col) * _255
+    _green      = color.g(_col) * _255
+    _blue       = color.b(_col) * _255
+    _value      = math.max(_red, _green, _blue)
+    _chroma     = _value - math.min(_red, _green, _blue)
+    _saturation = _value == 0 ? 0 : _chroma / _value
+    _hue  = 0.
+    _hue  := switch
+        _chroma == 0      => 0.0
+        _value  == _red   => 60 * (0 + (_green - _blue) / _chroma)
+        _value  == _green => 60 * (2 + (_blue - _red) / _chroma)
+        => 60 * (4 + (_red - _green) / _chroma)
+    _alpha = 1 - color.t(_col)/100.
+    [_h,_s,_v,_a] = hslimit(_hue,_saturation,_value,_alpha)
+
+// @function RGB Color to HSV Values
+// @param _r Red    0 - 255
+// @param _g Green  0 - 255
+// @param _b Blue   0 - 255
+// @param _t Transp 0 - 100
+// @returns [_hueValue,_saturation,_value,_alpha] values
+export rgbhsv(float _r, float _g, float _b, float  _t = 0)=>
+    rgbhsv(color.rgb(_r,_g,_b,_t))
+
+    
+// @function HSV colors, Auto fix if past boundaries
+// @param _h Hue Input (-360 - 360) or further
+// @param _s Saturation 0.- 1.
+// @param _v Value      0.- 1.
+// @param _a Alpha      0.- 1.
+// @returns Color output
+export hsv  ( float _h, float _s,  float _v, float _a = 1)  =>
+    [_hueValue,_saturation,_value,_alpha] = hslimit(_h,_s,_v,_a)
+    varip _red    = 0., varip _green = 0., varip _blue  = 0., var color out = na
+    _hueValue        := switch 
+        _s == 0 or _v == 0 => _hueValue
+        => _hueValue/60.
+    _chroma          =  _value  * _saturation
+    _secondaryChroma =  _chroma * ( 1 - math.abs ( _hueValue % 2 - 1 ) )
+    _mval            =  _value  - _chroma
+    _red := _chroma              , _green:=_chroma              ,_blue:=_chroma              
+    if _saturation > 0
+        switch math.floor(_hueValue)
+            0 => _red := _chroma , _green := _secondaryChroma  , _blue := 0
+            1 => _red := _secondaryChroma  , _green := _chroma   , _blue := 0
+            2 => _red := 0 , _green := _chroma   , _blue := _secondaryChroma 
+            3 => _red := 0 , _green := _secondaryChroma  , _blue := _chroma 
+            4 => _red := _secondaryChroma  , _green := 0   , _blue := _chroma 
+            5 => _red := _chroma   , _green := 0   , _blue := _secondaryChroma 
+    _trasnparency   = 100 - _a * 100
+    out := switch
+        _trasnparency < 100 => color.rgb((_mval+_red)*255,(_mval+_green)*255,(_mval+_blue)*255,_trasnparency)
+        => color.rgb(0,0,0,100)
+
+// @function   returns 0-359 hue on color wheel
+// @param      _col    
+// @param      _rotate Turn output by N degrees (+/-)    
+// @returns    360 degree hue value
+export hue  (color _col, float _rotate = 0.) => 
+    [_hueValue,_s,_v,_a] = rgbhsv(_col)
+    _hueValue += _rotate
+
+// @function HSL vals from rgb col in
+// @param    _col       The Color
+// @returns  HSLA tuple out
+export rgbhsl ( color _col)=>
+    var _red = 0., var _green = 0., var _blue = 0.
+    _trasnparency     =  color.t(_col)
+    _red   := color.r(_col)/255
+    _green := color.g(_col)/255
+    _blue  := color.b(_col)/255
+    max     = math.max(_red, _green, _blue)
+    min     = math.min(_red, _green, _blue)
+    _hueValue = hue(_col)
+    _saturation = 0.
+    _distance   = 0.
+    _luminosity = max + min
+    _luminosity *= .5
+    switch max
+        min =>
+            _hueValue   := 0
+            _saturation := 0
+        =>
+            _distance := max - min
+            _saturation := _luminosity > 0.5 ? _distance / (2 - max - min) : _distance / (max + min)
+    _alpha = 1 - _trasnparency/100
+    [_h,_s,_l,_a] = hslimit(_hueValue, _saturation, _luminosity, _alpha)
+
+// @function HLS input to color output
+// @param   _hueValue   hue
+// @param   _saturation   saturation
+// @param   _luminosity   lightness
+// @returns The RGB Color
+export hsl(float _h, float _s, float _l, float _a) =>
+    var _red = 0., var _green = 0., var _blue = 0.
+    var color out = na, var _1thr = 1/3.
+    [_hueValue,_saturation,_luminosity,_alpha] = hslimit(_h,_s,_l,_a)
+    _hueValue /= 360
+
+    _red   :=  _luminosity 
+    _green :=  _luminosity 
+    _blue  :=  _luminosity 
+    if _saturation > 0
+        q      =  _luminosity < 0.5 ? _luminosity * (1 + _saturation) : _luminosity + _saturation - _luminosity * _saturation
+        p      =  2 * _luminosity - q
+        _red   := hue2rgb(p, q, _hueValue + _1thr)
+        _green := hue2rgb(p, q, _hueValue)
+        _blue  := hue2rgb(p, q, _hueValue - _1thr)
+    _trasnparency   = 100 - _a * 100
+    out := switch
+        _trasnparency <= 99 => color.rgb(_red * 255, _green * 255, _blue * 255, _trasnparency)
+        => color.rgb(0,0,0,100)
+
+//@function helper
+_hueValue(x)=>varip _value=x,_value+=x,_value/=2
+fix(x)=> varip a = 1+x , a := 1 + x , varip b = 1-x , b := 1 - x , math.sqrt( (a*a+b*b) / 2 )
+
+// @function Calculate relative luminance in sRGB colour space
+// for use in WCAG 2.0 compliance
+// @link http://www.w3.org/TR/WCAG20/#relativeluminancedef
+// @param  col (hex,rgb,color.___)
+// @returns float
+export relativeluminance (color col) =>
+    newrgb = array.new<float>()
+    //Convert hex to 0-1 scale
+    _rgb = array.from(color.r(col)/254,color.g(col)/254,color.b(col)/254)
+    //Correct for web
+    for val in _rgb
+        _chroma = val
+        if _chroma <= 0.04045
+            _chroma /= 12.92
+        else
+            _chroma := math.pow(((_chroma + 0.055) / 1.055), 2.4)
+        array.push(newrgb,_chroma)
+    // output (correccted to 0-1.0 rathern than 1-21)
+    0.05 + (array.get(newrgb,0) * 0.2126 + array.get(newrgb,1) * 0.7152 + array.get(newrgb,2) * 0.0722)/20
+
+
+// @function Calculate Brightness Level of color.
+// @param  col  (hex,rgb,color.___)
+// @returns float brightness level
+export bright(color col) =>
+    varip _1223  = 12+23/25.
+    varip _11200 = 11 /  200.
+    varip _1011  = _11200 + 1
+    varip _red   = 0.
+    varip _green = 0.
+    varip _blue  = 0.
+    _value =  0.
+    _red   := color.r(col)
+    _green := color.g(col)
+    _blue  := color.b(col)
+    _value += 212 / 500.  * ((_red  / 255.) <= 1/25. ? (_red    / 255.)/(_1223) : math.pow(((_red   /255.) + _11200)/_1011, 2.4))
+    _value += 143 / 200.  * ((_green/ 255.) <= 1/25. ? (_green  / 255.)/(_1223) : math.pow(((_green /255.) + _11200)/_1011, 2.4))
+    _value += 9   / 125.  * ((_blue / 255.) <= 1/25. ? (_blue   / 255.)/(_1223) : math.pow(((_blue  /255.) + _11200)/_1011, 2.4))
+    _value <= 3   / 1000. ?  _value * _1223 : _1011 * math.pow(_value,1/2.4) - _11200
+
+// @function Switch between colors based on Color Brightness
+// @param _signal  color control signal
+// @param _th   threshold for switch between colors
+// @param _colora if below threshold
+// @param _colorb if above threshold
+// @returns Contrasting color switched by input control color
+export tripswitch(float _signal, float _th = 0, color _colora = #000000, color _colorb = #ffffff) =>
+    var color _out = _colora
+    _out := switch 
+        _signal < _th => _colora
+        _signal > _th => _colorb
+        => _out
+
+// @function Switch between colors based on Color Brightness
+// @param _color  color control signal
+// @param _th   threshold for switch between colors
+// @param _colora if below threshold (default white)
+// @param _colorb if above threshold (default black)
+// @returns Contrasting color switched by input control color
+export tripswitch(color _col, float _th = 0.5, color _colora = #ffffff, color _colorb = #000000) =>
+    var color _out = _colora
+    _signal = bright(_col)
+    _out := switch 
+        _signal < _th => _colora
+        _signal > _th => _colorb 
+        => _out
+
+//@function shape easing utility for sat/val/lum/alpha
+//@input  ( 0 - 1.0 ) 
+//@returns this -> _/`` eased value
+export easeBoth    (float _val) =>
+    out = switch
+        _val < 0.5 => 4 * _val * _val * _val 
+        =>  1 - math.pow(-2 * _val + 2, 3) / 2
+    math.max(0,math.min(1,out))        
+
+//@function shape easing utility for sat/val/lum/alpha
+//@input  ( 0 - 1.0 ) 
+//@returns this -> __/  eased value
+export easeIn      (float _val) =>
+    out = switch _val
+        0 => 0
+        =>  math.pow(2, 10 * _val - 10) 
+    math.max(0,math.min(1,out))        
+
+//@function shape easing utility for sat/val/lum/alpha
+//@input  ( 0 - 1.0 ) 
+//@returns this -> /``` eased value
+export easeOut     (float _val) =>
+    out = switch _val
+        1 => 1
+        => 1 - math.pow(2, -10 * _val)
+    math.max(0,math.min(1,out))        
+ 
+// @function Color Gradient Replacement Function for HSV calculated Gradents
+// @param signal Control signal
+// @param _startVal  start color limit
+export hsvInvert(color _color) =>
+    [_h,_s ,_v ,_a] = rgbhsv(_color)
+    _v := 1 - easeBoth(_v)
+    hsv(_h,_s,_v,_a)
+
+//@function Invert _alpha color with hsl method (original experimental)
+//@param _color color input
+//@returns inverted color
+export hslInvert(color _color) =>
+    [_h ,_s ,_l ,_a] = rgbhsv(_color)
+    _l := 1 - easeBoth(_l)
+    hsl(_h,_s,_l,_a)
+
+// @function Color Gradient Replacement Function for HSV calculated Gradents
+// @param signal Control signal
+// @param _startVal  start color limit
+// @param _endVal    end   color limit
+// @param  _startCol start color
+// @param  _endCol   end   color
+// @returns HSV calculated gradient
+export hsv_gradient(float signal, float _startVal, float _endVal,color _startCol,color _endCol)=>
+    varip _hueValue=0.,varip _saturation=0.,varip _value =0.,varip _alpha=0.
+    [ h1,s1,v1,a1 ]  = rgbhsv(_startCol)   
+    [ h2,s2,v2,a2 ]  = rgbhsv(_endCol)
+    varip _position =  0.
+    _position       := calc.percentOfDistance(signal,_startVal,_endVal)
+    switch 
+        _startVal != _endVal =>
+            _hueValue       := h1 + 360 + _position * ((h2 - h1 + 540 ) % 360 - 180)
+            _saturation     := s1 + (s2 - s1) * _position
+            _value          := v1 + (v2 - v1) * _position
+            _alpha          := a1 + (a2 - a1) * _position
+    hsv(_hueValue, _saturation, _value, _alpha)
+
+// @function Color Gradient Replacement Function for HSV calculated Gradents
+// @param signal Control signal
+// @param  _startVal start color limit
+// @param  _endVal   end   color limit
+// @param  _startCol start color
+// @param  _endCol   end   color
+// @returns HSV calculated gradient
+export hsl_gradient(float signal, float _startVal, float _endVal,color _startCol,color _endCol)=>
+    varip _hueValue=0.,varip _saturation=0.,varip _luminosity=0.,varip _alpha=0.
+    [ h1,s1,l1,a1 ] =  rgbhsl(_startCol)   
+    [ h2,s2,l2,a2 ] =  rgbhsl(_endCol)
+    varip _position =  0.
+    _position       := calc.percentOfDistance(signal,_startVal,_endVal)
+    switch 
+        _startVal != _endVal =>
+            _hueValue       := h1 + 360 + _position * ((h2 - h1 + 540 ) % 360 - 180)
+            _saturation     := s1 + (s2 - s1) * _position
+            _luminosity     := l1 + (l2 - l1) * _position
+            _alpha          := a1 + (a2 - a1) * _position
+    hsl(_hueValue, _saturation, _luminosity, _alpha)
+// @function Step of multiplot hue shifter by source value.
+// @param _source  (float) value being plotted
+// @param _basehue (float) starting point hue from step 0
+// @param _step    (float) in a stack of plots, which number is it
+// @param _range   (float) hue range to have mobility in.
+// @returns Float for Hue
+export stepHue(float _src, float _basehue, float _step, float _range) => 
+    varip _min = float(na), varip _max = float(na),varip _source = float(na)
+    _source := nz(_src,_source)
+    _min := nz(_min,_src)
+    _max := nz(_max,_src)
+    _min := math.avg(ta.sma(ta.lowest (_source,7),7),_min) 
+    _max := math.avg(ta.sma(ta.highest(_source,7),7),_max) 
+    _basehue + _step * _range + easeBoth(calc.percentOfDistance(_src,0,calc.gapSize(_min,_max))) *  _range
+
+
+// @function Gradient color helper for fills
+// @param _source value to folloow
+// @param _soften adjusts edging short of value (fill softener)
+// @param _step Which step of the muliplot is this
+// @param _color1 Color at Low
+// @param _color2 Color at high
+// @return Color for fill usage (plot,not linefill)
+export stepGradient(float _src, float _soften, float _step, color _color1,color _color2) => 
+    var _col = #000000, varip _min = float(na), varip _max = float(na),varip float _source = na
+    _srci  = _step * fix(_soften) * fix(_src)
+    _source := nz(_srci,_source)
+    _min := math.min(nz(_min[1],_source),nz(_min[1]))
+    _max := math.max(nz(_max[1],_source),nz(_max[1]))
+    _min := ta.sma(math.avg(_min,_source),15)
+    _max := ta.sma(math.avg(_max,_source),15)
+    _Avg = math.avg(nz(_min),nz(_max))
+    _source += _Avg
+    _col := hsv_gradient(_source, _min, _max , _color1, _color2)
+
+// @function Angle of travel
+// @param _src  Input to get angle for
+// @param _hist distane back along source for origin point
+// @returns angle +/- from 0 being flat
+export degree(float _src,int _hist)  => 
+    varip _y = float(na)
+    _y    := nz(_src,_y)
+    deltaX = math.max(_hist,1)
+    deltaY = _y/_y[deltaX] -1
+    rad    = math.atan(deltaY)
+    deg    = rad * (180 / math.pi)
+    deg
+

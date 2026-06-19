@@ -43,8 +43,24 @@ run `pnpm run build` first (it needs the compiled parser). A parse error on a
 vendored file is logged loudly because it would yield an INCOMPLETE export set
 -> false positives.
 
-Vendored now: TradingView/ta v7-12 (45-57 exports each), TradingView/
-RelativeValue v2-3.
+Vendored now: TradingView/ta v7-12 + RelativeValue v2-3, plus ~75 community
+libraries the corpus imports (25 authors), fetched with the new `fetch:library`
+step (`fetch-library.ts`) - a node port of piners' `pine_facade.rs`: resolve
+`lib_list/?lib_id_prefix=...` to the `PUB;<hash>` id, `get/<id>/<major>` for the
+source, normalize CRLF->LF, write `vendor/<Author>/<Lib>/<Major>.pine`. Only
+`open_no_auth` (public open-source) libraries resolve. Validated by round-trip:
+re-fetching TradingView/ta/12 reproduced the committed copy byte-for-byte.
+
+84 libraries have export sets after two filters:
+- **License**: only MPL-2.0 sources are vendored. Of the corpus's 93 author
+  imports, 7 (all Trendoscope) are CC BY-NC-SA 4.0 (non-commercial + ShareAlike)
+  and 3 (Steversteves, TradersReality x2) declare no license - all 10 excluded
+  (left lenient), see README Acknowledgements.
+- **Parse**: `generate-libraries.ts` SKIPS any library our parser cannot parse
+  cleanly (an incomplete export set would cause false positives) - 5 quarantined
+  (HeWhoMustNotBeNamed/arrays/1 & arrayutils/10,21; RicardoSantos/
+  FunctionZigZagMultipleMethods/1; TFlab/FVGDetectorLibrary/1). These are real
+  parser gaps on valid published libraries - candidate future investigations.
 
 ## TV's model (probes, `pine-lint --tv`, 2026-06-19)
 
@@ -89,12 +105,18 @@ libraries like `HeWhoMustNotBeNamed/ta`, `jason5480/*`).
   (CE10271, p04). The pre-INV067 blanket import-skip masked it - an
   INV001-class catch. Bumped to a real export (`ta.dema`).
 - Corpus survivors now caught, position + message EXACT vs TV: `40d4dc00`
-  (`ta.emax` 86:30), `f57565a9` (`ta.lowestx` 83:5).
-- `regression-check.mjs`: 0 changes over 1879 fixtures. Full suite: 328 pass.
+  (`ta.emax` 86:30), `f57565a9` (`ta.lowestx` 83:5), and `90decddb`
+  (`ta.highestx` 65:14, via the now-vendored `HeWhoMustNotBeNamed/ta/1`).
+- `regression-check.mjs`: 0 changes over 1879 fixtures, even with all 84
+  community+official export sets active (extraction is correct everywhere the
+  corpus uses real members). Full suite: 328 pass.
 
 ## Residual (still #41)
 
-Author/community libraries the corpus imports are not vendored
-(`HeWhoMustNotBeNamed/ta/1`, `jason5480/*`, `loxx/*`), so their members stay
-unvalidated. Vendoring more sources (or wiring the language-service's
-`/// @source` local resolver into the checker) extends the same mechanism.
+Imports we still can't validate, all left lenient: the 10 license-excluded
+libraries (7 CC BY-NC-SA Trendoscope + 3 unlicensed), the 5 parse-quarantined
+ones, any published library the corpus doesn't import (so isn't vendored), and
+UDT method calls. The quarantined 5 are the most actionable - fixing those
+parser gaps would both vendor them and likely fix real FNs on user scripts using
+the same constructs. Wiring the language-service's `/// @source` local resolver
+into the checker would also let local-file libraries validate.

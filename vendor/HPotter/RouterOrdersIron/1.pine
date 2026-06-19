@@ -1,0 +1,89 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © HPotter
+
+//@version=5
+doAlert(uid, sym, side,  bal, price, type)=>
+    id = timenow 
+    alert("{\"userid\": \""+uid+"\", \"symbol\": \""+sym+"\",\"price\": "+str.tostring(price)+", \"side\": \""+side+"\",\"balance\":"+str.tostring(bal)+",\"order_type\": \""+type+"\", \"id\": "+str.tostring(id)+"}")
+
+doMessage(uid, sym, side, bal, price, type)=>
+    id = timenow 
+    m = "{\"userid\": \""+uid+"\", \"symbol\": \""+sym+"\",\"price\": "+str.tostring(price)+", \"side\": \""+side+"\",\"balance\":"+str.tostring(bal)+",\"order_type\": \""+type+"\", \"id\": "+str.tostring(id)+"}"
+    m
+
+// @description Library for routing orders to the Binance exchange. Routing is carried out by the Iron program that you can run on your VPS server. More: t.me/hpottersoft
+library("RouterOrdersIron")
+
+// @function Returns json for Iron to buy a symbol for the amount of the balance with market order.
+// @param id ID of your Iron router.
+// @param symbol Symbol for a trade, BTC example
+// @param balance The amount for which to carry out the transaction.
+// @returns true
+export MsgDoLongMKT(string id,  string symbol, float balance) =>
+	doMessage(id, symbol, "long", balance, 1000, "market")
+
+// @function Returns json for Iron to sell a symbol for the amount of the balance with market order.
+// @param id ID of your Iron router.
+// @param symbol Symbol for a trade, BTC example
+// @param balance The amount for which to carry out the transaction.
+// @returns true
+export MsgDoShortMKT(string id,string symbol,  float balance) =>
+	doMessage(id, symbol, "short", balance, 1000, "market")
+
+// @function Returns json for Iron to buy a symbol for the amount of the balance. It is set at the best price and is re-set each time if a new price has risen before the application.
+// @param id ID of your Iron router.
+// @param symbol Symbol for a trade, BTC example
+// @param balance The amount for which to carry out the transaction.
+// @returns true
+export MsgDoLongLR(string id,  string symbol,float price,  float balance) =>
+	doMessage(id, symbol, "long",balance, price, "limit_refresh")
+
+// @function Returns json for Iron to sell a symbol for the amount of the balance. It is set at the best price and is re-set each time if a new price has risen before the application.
+// @param id ID of your Iron router.
+// @param symbol Symbol for a trade, BTC example
+// @param balance The amount for which to carry out the transaction.
+// @returns true
+export MsgDoShortLR(string id,string symbol,float price,  float balance) =>
+	doMessage(id, symbol, "short", balance, price, "limit_refresh")
+
+// @function Buy a symbol for the amount of the balance. It is send market order to Iron.
+// @param id ID of your Iron router.
+// @param symbol Symbol for a trade, BTC example
+// @param balance The amount for which to carry out the transaction.
+// @returns true
+export DoLongMKT(string id,string symbol, float balance) =>
+	doAlert(id,symbol, "long", balance, 1000, "market")
+	true
+// @function Sell a symbol for the amount of the balance. It is send market order to Iron.
+// @param id ID of your Iron router.
+// @param symbol Symbol for a trade, BTC example
+// @param balance The amount for which to carry out the transaction.
+// @returns true
+export DoShortMKT(string id,string symbol, float balance) =>
+	doAlert(id, symbol, "short",  balance, 1000, "market")
+	true
+
+// @function Buy a symbol for the amount of the balance. It is set at the best price and is re-set each time if a new price has risen before the application.
+// @param id ID of your Iron router.
+// @param symbol Symbol for a trade, BTC example
+// @param balance The amount for which to carry out the transaction.
+// @returns true
+export DoLongLR(string id,string symbol,float price,  float balance) =>
+	doAlert(id, symbol, "long",  balance, price, "limit_refresh") 
+	true
+
+// @function Sell a symbol for the amount of the balance. It is set at the best price and is re-set each time if a new price has risen before the application.
+// @param id ID of your Iron router.
+// @param symbol Symbol for a trade, BTC example
+// @param balance The amount for which to carry out the transaction.
+// @returns true
+export DoShortLR(string id,string symbol,float price,  float balance) =>
+	doAlert(id,symbol, "short", balance, price, "limit_refresh")
+	true
+
+// @function Get Qty for strategy on balance
+// @param price Order price
+// @param balance The amount for which to carry out the transaction.
+// @returns Qty for strategy order TV
+export GetQty(float price, float balance) =>
+	balance / price

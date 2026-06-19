@@ -242,6 +242,7 @@ pnpm run scrape           # Scrape details + build .cache/dom mirror
 pnpm run reextract:dom    # Re-derive overloadArgs from the mirror (offline; run after scrape)
 pnpm run reextract:sections # Re-derive returnsDescription/remarks/seeAlso from the mirror (offline; run after scrape)
 pnpm run generate         # Generate pine-data/v6/*.{ts,json}
+pnpm run fetch:library -- User/Lib/Major  # Download a published library's source into vendor/ (network: TV pine-facade; public open_no_auth libs only)
 pnpm run generate:libraries # Generate pine-data/v6/libraries.{ts,json} from vendor/**.pine (offline; needs a prior `build`)
 pnpm run generate:syntax  # Generate syntaxes/pine.tmLanguage.json
 
@@ -347,7 +348,8 @@ All API data is scraped from TradingView docs and generated:
 | `reextract:dom` | re-derives `overloadArgs` from the mirror, **offline** - run after every `scrape` (see below) |
 | `reextract:sections` | re-derives `returnsDescription`/`remarks`/`seeAlso` from the mirror, **offline** - run after every `scrape` (see below) |
 | `generate` | `pine-data/v6/*.ts` + `*.json` (vendor-friendly snapshot for downstream Rust/non-node consumers) |
-| `generate:libraries` | `pine-data/v6/libraries.{ts,json}` - the `export` surface of each vendored Pine library under `vendor/<Author>/<Lib>/<Version>.pine`, keyed by `Author/Lib/Version`. The checker validates imported-library member calls against this (CE10271 on unknown exports). Offline, parses with the COMPILED core parser so it needs a prior `build`. Re-run after vendoring/updating a library. See INV067. |
+| `generate:libraries` | `pine-data/v6/libraries.{ts,json}` - the `export` surface of each vendored Pine library under `vendor/<Author>/<Lib>/<Version>.pine`, keyed by `Author/Lib/Version`. The checker validates imported-library member calls against this (CE10271 on unknown exports). Offline, parses with the COMPILED core parser so it needs a prior `build`. SKIPS libraries that don't parse cleanly (incomplete export set -> would cause FPs; left lenient). Re-run after vendoring/updating a library. Only MPL-2.0 sources may be vendored - CC-BY-NC/unlicensed libs are excluded and stay lenient (see README Acknowledgements). See INV067. |
+| `fetch:library` | Downloads a published library's source from TV pine-facade into `vendor/<Author>/<Lib>/<Major>.pine` (the only network step in this feature; public `open_no_auth` libs only). `--from <file>` reads a newline-separated ref list. Port of piners' `pine_facade.rs`. See INV067. |
 | `generate:syntax` | `syntaxes/pine.tmLanguage.json` |
 | `scrape:manual` | `pine-data/raw/v6/manual-pages.json` (page inventory) + `.cache/manual/v6/*.html` mirror |
 | `generate:manual` | `pine-manual/v6/**.md` (per-page tree mirroring the Manual's URLs) + `README.md` index |

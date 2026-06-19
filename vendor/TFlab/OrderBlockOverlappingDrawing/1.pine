@@ -1,0 +1,135 @@
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © TFlab
+//@version=5
+
+library('OrderBlockOverlappingDrawing', overlay = true)
+
+export OBOverlappingDrawing(string OBType , bool TriggerConditionOrigin, float distalPrice_Pre, float proximalPrice_Pre ,float distalPrice_Curr, float proximalPrice_Curr, int  Index_Curr ,
+ bool OBValidGlobal, int OBValidDis, string MitigationLvL,bool ShowAll,bool Show,color ColorZone) =>
+
+	var string oBType = OBType
+	var bool Trigger = false
+	var bool show = Show
+	var color colorZone = ColorZone
+	var float DistalPrice = 0.0
+	var float ProximalPrice = 0.0
+	var bool Check = true
+	var int Counter = 1
+	var line Distal = na
+	var line Proximal = na
+	var line Line50per = na
+	var linefill fillline = na
+	var bool MitigationAlert = false 
+	var int Index_Curr_Mit = 0
+	var int Index_Pre_Mit  = 0
+	var int Bar = 0
+
+	if oBType == 'Demand'
+		if  TriggerConditionOrigin	 and Bar != Index_Curr	
+			Bar := Index_Curr
+			if (proximalPrice_Curr >= proximalPrice_Pre) and (distalPrice_Curr <= proximalPrice_Pre) and (distalPrice_Curr >= distalPrice_Pre)
+				ProximalPrice := proximalPrice_Pre
+				DistalPrice := distalPrice_Curr
+				Trigger := true
+
+			else if  (proximalPrice_Curr <= proximalPrice_Pre) and (distalPrice_Pre <= proximalPrice_Curr) and (distalPrice_Curr <= distalPrice_Pre)
+				ProximalPrice := proximalPrice_Curr
+				DistalPrice := distalPrice_Pre
+				Trigger := true
+				
+			else if (proximalPrice_Curr <= proximalPrice_Pre) and (distalPrice_Pre <= proximalPrice_Curr) 
+				ProximalPrice := proximalPrice_Curr
+				DistalPrice := distalPrice_Curr		
+				Trigger := true
+			else 
+				Trigger := false
+		
+	if oBType == 'Supply'
+		if  TriggerConditionOrigin	 and Bar != Index_Curr
+			Bar := Index_Curr
+			if (distalPrice_Curr >= distalPrice_Pre) and (distalPrice_Pre >= proximalPrice_Curr) and (proximalPrice_Pre <= proximalPrice_Curr)
+				ProximalPrice := proximalPrice_Curr
+				DistalPrice := distalPrice_Pre
+				Trigger := true
+			else if (distalPrice_Pre >= distalPrice_Curr) and (proximalPrice_Pre <= distalPrice_Curr) and (proximalPrice_Pre >= proximalPrice_Curr)
+				ProximalPrice := proximalPrice_Pre
+				DistalPrice := distalPrice_Curr
+				Trigger := true				
+			else if (distalPrice_Pre >= distalPrice_Curr) and (proximalPrice_Curr >= proximalPrice_Pre) 
+				ProximalPrice := proximalPrice_Curr
+				DistalPrice := 	distalPrice_Curr
+				Trigger := true
+			// else 
+			// 	Trigger := false 
+
+	float ML = switch MitigationLvL
+		'Proximal' => ProximalPrice
+		'Distal' => DistalPrice
+		'50 % OB' => (ProximalPrice+DistalPrice) / 2
+
+    //Demand Oreder Block
+	if oBType == 'Demand' 
+		if  Trigger  and Show
+			Distal := line.new(Index_Curr, DistalPrice, bar_index  , DistalPrice , color = color.rgb(0, 0, 0 , 45) , style = line.style_dashed , width = 1)
+			Proximal := line.new(Index_Curr, ProximalPrice, bar_index , ProximalPrice , color = color.rgb(0, 0, 0 , 45) , style = line.style_dashed , width = 1)
+			Line50per := line.new(Index_Curr, (ProximalPrice+DistalPrice) / 2 , bar_index , (ProximalPrice+DistalPrice) / 2  , color = color.rgb(0, 0, 0) , 
+			 style = line.style_dotted , width = 1)
+			fillline := linefill.new(Distal ,Proximal ,color = colorZone )
+			
+		if (Check == true) and OBValidGlobal == true 
+			Counter := Counter + 1  
+			line.set_x2(Distal, bar_index + 1 )
+			line.set_x2(Proximal,  bar_index + 1)
+			line.set_x2(Line50per,  bar_index + 1)
+
+		if (low < ML)  or (bar_index -  Index_Curr) >= OBValidDis 
+			Counter := Counter
+			Check := false
+			
+		if Trigger
+			Counter := 1
+			Check := true
+			Trigger := false
+
+    //Supply Oreder Block
+	if oBType == 'Supply' 
+		if Trigger and show
+			Distal := line.new(Index_Curr, DistalPrice, bar_index , DistalPrice , color = color.rgb(0, 0, 0, 45) , style = line.style_dashed , width = 1)
+			Proximal := line.new(Index_Curr, ProximalPrice, bar_index  , ProximalPrice , color = color.rgb(0, 0, 0 , 45) , style = line.style_dashed , width = 1)
+			Line50per :=line.new(Index_Curr, (ProximalPrice+DistalPrice) / 2 , bar_index  , (ProximalPrice+DistalPrice) / 2  , color = color.rgb(0, 0, 0) , 
+			 style = line.style_dotted , width = 1)
+			fillline := linefill.new(Distal ,Proximal ,color = colorZone )
+			
+
+		if (Check == true) and OBValidGlobal == true 
+			Counter := Counter + 1
+			line.set_x2(Distal, bar_index + 1 )
+			line.set_x2(Proximal,  bar_index + 1)
+			line.set_x2(Line50per,  bar_index + 1)
+
+		if (high > ML) or (bar_index -  Index_Curr) >= OBValidDis 
+			Counter := Counter
+			Check := false
+
+		if Trigger
+			Counter := 1
+			Check := true
+			Trigger := false
+
+	//Delete Last OB
+	if not ShowAll and Trigger and Trigger != false
+		line.delete(Distal[1])
+		line.delete(Proximal[1])
+		line.delete(Line50per[1])
+		linefill.delete(fillline[1])
+
+
+	//Mitigation Order Block Alert
+	if Check[1] == true and Check == false
+		MitigationAlert := true
+	else
+		MitigationAlert := false
+
+	[MitigationAlert]
+
+

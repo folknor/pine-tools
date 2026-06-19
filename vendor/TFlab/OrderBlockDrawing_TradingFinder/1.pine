@@ -1,0 +1,77 @@
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © TFlab
+//@version=5
+
+library('OrderBlockDrawing_TradingFinder', overlay = true)
+
+export OBDrawing(string OBType, bool TriggerCondition ,float DistalPrice, float ProximalPrice, int  Index, int OBValidDis, bool Show,color ColorZone) =>
+
+	var string oBType = OBType
+	var bool show = Show
+	var color colorZone = ColorZone
+	
+	var bool Check = true
+	var int Counter = 1
+	var line Distal = na
+	var line Proximal = na
+	var line Line50per = na
+	var linefill fillline = na
+
+	var bool MitigationAlert = false
+		
+		
+
+	if oBType == 'Demand' 
+		if  TriggerCondition  and Show
+			Distal := line.new(Index, DistalPrice, bar_index  , DistalPrice , color = color.rgb(0, 0, 0 , 45) , style = line.style_dashed , width = 1)
+			Proximal := line.new(Index, ProximalPrice, bar_index , ProximalPrice , color = color.rgb(0, 0, 0 , 45) , style = line.style_dashed , width = 1)
+			Line50per := line.new(Index, (ProximalPrice+DistalPrice) / 2 , bar_index , (ProximalPrice+DistalPrice) / 2  , color = color.rgb(0, 0, 0) , 
+			 style = line.style_dotted , width = 1)
+			fillline := linefill.new(Distal ,Proximal ,color = colorZone )
+
+		if (low > ProximalPrice)  and (Check == true) and (bar_index -  Index) <= OBValidDis
+			Counter := Counter + 1
+			line.set_x2(Distal, bar_index + 1 )
+			line.set_x2(Proximal,  bar_index + 1)
+			line.set_x2(Line50per,  bar_index + 1)
+
+		if (low < ProximalPrice) and (low[1] > ProximalPrice) and (bar_index -  Index) <= OBValidDis
+			Counter := Counter
+			Check := false
+			
+		if TriggerCondition
+			Counter := 1
+			Check := true
+
+
+
+	if oBType == 'Supply' 
+		if TriggerCondition and show
+			Distal := line.new(Index, DistalPrice, bar_index , DistalPrice , color = color.rgb(0, 0, 0, 45) , style = line.style_dashed , width = 1)
+			Proximal := line.new(Index, ProximalPrice, bar_index  , ProximalPrice , color = color.rgb(0, 0, 0 , 45) , style = line.style_dashed , width = 1)
+			Line50per :=line.new(Index, (ProximalPrice+DistalPrice) / 2 , bar_index  , (ProximalPrice+DistalPrice) / 2  , color = color.rgb(0, 0, 0) , 
+			 style = line.style_dotted , width = 1)
+			fillline := linefill.new(Distal ,Proximal ,color = colorZone )
+
+		if (high < ProximalPrice)  and (Check == true) and (bar_index -  Index) <= OBValidDis
+			Counter := Counter + 1
+			line.set_x2(Distal, bar_index + 1 )
+			line.set_x2(Proximal,  bar_index + 1)
+			line.set_x2(Line50per,  bar_index + 1)
+
+		if (high > ProximalPrice) and (high[1] < ProximalPrice) and (bar_index -  Index) <= OBValidDis
+			Counter := Counter
+			Check := false
+
+		if TriggerCondition
+			Counter := 1
+			Check := true
+
+
+	//Mitigation Alert
+	if Check[1] == true and Check == false
+		MitigationAlert := true
+	else
+		MitigationAlert := false
+
+	[MitigationAlert]

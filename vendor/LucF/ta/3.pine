@@ -1,0 +1,305 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © LucF
+
+//@version=5
+
+// @description This library is a Pine Script™ programmer’s tool containing calcs for my oscillators and some helper functions.
+library("ta")
+
+// ta
+// v3, 2023.04.06 13:46 — LucF
+
+// This code was written using the recommendations from the Pine Script™ User Manual's Style Guide:
+//   https://www.tradingview.com/pine-script-docs/en/v5/writing/Style_guide.html
+
+
+
+// @function             Calculates buoyancy using a target of `src` summed over `targetPeriod` bars, not searching back farther than `maxLookback` bars. See: https://www.tradingview.com/script/18fu8TxD-Volume-Buoyancy-LucF/
+// @param src            (series float) The source value that is summed to constitute the target.
+// @param targetPeriod   (series int) The qty of bars to sum `src` for in order to calculate the target.
+// @param maxLookback    (simple int) The maximum number of bars back the function will search.
+// @returns              (series float) Buoyancy: the gap between the avg distance of past up and dn bars added to reach the target, divided by the max distance reached. Returns zero when an error condition occurs.
+export buoyancy(series float src, series int targetPeriod, simple int maxLookback) =>
+    bool  barUp = ta.rising(close, 1)
+    bool  barDn = ta.falling(close, 1)
+    float targetSum = math.sum(nz(src), targetPeriod)
+    float slotUp = 0.
+    float slotDn = 0.
+    array<int> barOffsetsUp = array.new<int>(0)
+    array<int> barOffsetsDn = array.new<int>(0)
+
+    // True when the target is found for both up and down bars.
+    bool targetFound = false
+    // True when the beginning of the dataset is reached before reaching `maxLookback`.
+    bool overrun = false
+    // Start analyzing the current bar and go back in bars, one by one.
+    int bar = 0
+    // We go back until the target is found or `maxLookback` or the beginning of the dataset is reached.
+    while bar <= maxLookback and not (targetFound or overrun)
+        if barUp[bar] and slotUp < targetSum
+            slotUp += nz(src[bar])
+            array.push(barOffsetsUp, bar)
+        else if barDn[bar] and slotDn < targetSum
+            slotDn += nz(src[bar])
+            array.push(barOffsetsDn, bar)
+        overrun     := bar >= bar_index
+        targetFound := slotUp >= targetSum and slotDn >= targetSum
+        bar         += 1
+    
+    float delta = array.avg(barOffsetsDn) - array.avg(barOffsetsUp)
+    int barsAnalyzed = bar - 1
+    float result = not targetFound ? 0. : nz(delta / barsAnalyzed)
+
+
+// @function     Calculates Efficient Work on `length` bars. See: https://www.tradingview.com/script/yG0rpNzO-Efficient-Work-LucF/
+// @param length (simple int) The length of the ALMA used to calculate the result.
+// @returns      (series float) A -1 to +1 value representing the efficiency of price travel, bar to bar.
+export efficientWork(simple int length) => 
+    float workUp = high - math.min(open, nz(close[1], close))
+    float workDn = math.max(open, nz(close[1])) - low
+    float work   = workUp + workDn
+    float ew     = nz((close - nz(close[1], open)) / work)
+    float result = ta.alma(ew, length, 0.85, 6)
+
+
+// Reference MA names used in the following `ma()` function. The calling script must use these arguments for its `type` parameter for the function to work correctly.
+string MA01 = "Simple MA"
+string MA02 = "Exponential MA"
+string MA03 = "Wilder MA"
+string MA04 = "Weighted MA"
+string MA05 = "Volume-weighted MA"
+string MA06 = "Arnaud Legoux MA"
+string MA07 = "Hull MA"
+string MA08 = "Symmetrically-weighted MA"
+
+// @function         Returns the `type` MA of the `src` over the `length`.
+// @param type       (simple string) The type of MA required (uses constants that must be defined earlier in the script).
+// @param src        (series float) The source value used to calculate the MA.
+// @param length     (simple int) The length value used to calculate the MA.
+// @returns          (series float) The MA value.
+export ma(simple string type, series float src, simple int length) =>
+    float result = switch type
+        MA01 => ta.sma( src, length)
+        MA02 => ta.ema( src, length)
+        MA03 => ta.rma( src, length)
+        MA04 => ta.wma( src, length)
+        MA05 => ta.vwma(src, length)
+        MA06 => ta.alma(src, length, 0.85, 6)
+        MA07 => ta.hma( src, length)
+        MA08 => ta.swma(src)
+        => na
+
+
+// @function         	Calculates the levels and states of divergence channels, which are created when divergences occur.
+// @param divergence 	(series bool) `true` on divergences, which can be defined any way. On breached channels it creates a new channel, otherwise, channel levels are expanded.
+// @param hiSrc 		(series float) The price source used to set the channel's hi level when a divergence occurs.
+// @param loSrc 		(series float) The price source used to set the channel's lo level when a divergence occurs.
+// @param breachHiSrc 	(series float) The price source that must breach over the channel's `channelHi` level for a breach to occur.
+// @param breachLoSrc 	(series float) The price source that must breach under the channel's `channelLo` level for a breach to occur.
+// @returns          	A tuple containing the following values: 
+//                  	[
+//                  	(series float) channelHi — the channel's high level, 
+//                  	(series float) channelLo — the channel's low level, 
+//                  	(series bool) channelIsBull — `true` when `breachHiSrc` is higher than the channel's high, 
+//                  	(series bool) channelIsBear — `true` when `breachLoSrc` is lower than the channel's low, 
+//                  	(series bool) channelWasBreached — `true` on the first bar where `breachHiSrc`/`breachHiSrc` breaches the channel's high/low level, 
+//                  	(series bool) newChannel — `true` when a new divergence on a breached channel causes a new channel to be created,
+//                  	(series int) preBreachUpChanges — Number of times the channel's high level was increased,
+//                  	(series int) preBreachDnChanges — Number of times the channel's low level was decreased
+//                  	]
+export divergenceChannel(series bool divergence, series float hiSrc, series float loSrc, series float breachHiSrc, series float breachLoSrc) =>
+
+    // Current hi/lo levels of the channel.
+    var float channelHi = na
+    var float channelLo = na
+
+    // Used to track the quantity of channel level changes of a yet unbreached channel.
+    var int preBreachUpChanges = 0
+    var int preBreachDnChanges = 0
+
+    // Determine levels state by comparing the breach source to existing channels levels.
+    bool channelIsBull = breachHiSrc > channelHi and not divergence
+    bool channelIsBear = breachLoSrc < channelLo and not divergence
+
+    // This is `true` when a channel was already breached at least once.
+    var bool channelWasBreached = false
+    // This is `true` on the first bar that breaches a channel.
+    bool priceBreachesChannel = not divergence and not channelWasBreached and (breachHiSrc > channelHi or breachLoSrc < channelLo)
+    // Update `breached` state.
+    channelWasBreached := channelWasBreached or priceBreachesChannel
+
+    // `true` when a new channel is created.
+    bool newChannel = false
+
+    // We only change levels on divergences.
+    if divergence
+        if channelWasBreached and not divergence[1]
+            // First divergence since breach out of levels; reset both levels.
+            channelHi           := hiSrc
+            channelLo           := loSrc
+            // Reset state to neutral.
+            channelIsBull       := false
+            channelIsBear       := false
+            channelWasBreached  := false
+            // Cue enabling plotting functions to transition to a new channel.
+            newChannel          := true
+            // Reset cum changes.
+            preBreachUpChanges  := 0
+            preBreachDnChanges  := 0
+        else
+            channelHi := math.max(nz(channelHi, hiSrc), hiSrc)
+            channelLo := math.min(nz(channelLo, loSrc), loSrc)
+
+    // Track level changes of the channel.
+    int levelChangeUp = int(math.abs(math.sign(ta.change(channelHi))))
+    int levelChangeDn = int(math.abs(math.sign(ta.change(channelLo))))
+    if not (channelWasBreached or newChannel)
+        preBreachUpChanges += levelChangeUp
+        preBreachDnChanges += levelChangeDn
+
+    [channelHi, channelLo, channelIsBull, channelIsBear, channelWasBreached, newChannel, preBreachUpChanges, preBreachDnChanges]
+
+
+// @function         Converts the name of a source in the `srcString` to its numerical equivalent.
+// @param srcString  (series string) The string representing the name of the source value to be returned.
+// @returns          (series float) The source's value.
+export sourceStrToFloat(series string srcString) =>
+    float result = switch srcString
+        "open"   => open
+        "high"   => high
+        "low"    => low
+        "close"  => close
+        "hl2"    => hl2
+        "hlc3"   => hlc3
+        "ohlc4"  => ohlc4
+        "hlcc4"  => hlcc4
+        "volume" => volume
+
+
+// @function             Calculates an instant value for Signs of the Times, a directional measure of bar strength.
+// @returns              (series float) SOTT: a value between -1 and +1.
+export sott() =>
+    // Bar properties.
+    bool  barUp = close > open
+    bool  barDn = close < open
+    float body  = math.abs(close - open)
+    float wicks = high - low - body
+    bool  risingVolume = ta.change(volume, 1) > 0
+
+    // Evaluate up weights.
+    float up =
+      // Bar Up/Dn
+      (barUp ? 1 : 0) +
+      // Open > previous open
+      (ta.rising(open, 1) ? 1 : 0) +
+      // High > previous high
+      (ta.rising(high, 1) ? 1 : 0) +
+      // Low > previous low
+      (ta.rising(low, 1) ? 1 : 0) +
+      // Close > previous close
+      (ta.rising(close, 1) ? 1 : 0) +
+      // Larger body
+      (barUp and ta.rising(body, 1) ? 1 : 0) +
+      // Body is larger than wicks.
+      (barUp and body > wicks ? 1 : 0) +
+      // Gaps (double-weighted).
+      (open > close[1] ? 2 : 0) +
+      // Efficient work returns a float value between -1 and +1 but is double-weighted.
+      (math.max(0, efficientWork(1)) * 2) +
+      // Rising volume (double-weighted).
+      (barUp and risingVolume ? 2 : 0)
+
+    // Evaluate down weights.
+    float dn =
+      // Bar Up/Dn
+      (barDn ? 1 : 0) +
+      // Open < previous open
+      (ta.falling(open, 1) ? 1 : 0) +
+      // High < previous high
+      (ta.falling(high, 1) ? 1 : 0) +
+      // Low < previous low
+      (ta.falling(low, 1) ? 1 : 0) +
+      // Close < previous close
+      (ta.falling(close, 1) ? 1 : 0) +
+      // Larger body
+      (barDn and ta.rising(body, 1) ? 1 : 0) +
+      // Body is larger than wicks.
+      (barDn and body > wicks ? 1 : 0) +
+      // Gaps (double-weighted).
+      (open < close[1] ? 2 : 0) +
+      // Efficient work returns a float value between -1 and +1 but is double-weighted.
+      (math.abs(math.min(0, efficientWork(1))) * 2) +
+      // Rising volume (double-weighted).
+      (barDn and risingVolume ? 2 : 0)
+
+    // Maximum value that up or dn weights can have, adjusting for charts where no volume is available.
+    float weightRange = na(risingVolume) ? 11. : 13.
+
+    float result = (up - dn) / weightRange
+
+
+// @function    Converts a "bool" cond to 1 when it is `true`, 0 when it's false.
+// @param cond  (bool) The "bool" value to be converted.
+// @returns     (int) 1 when `cond` is `true`, `false` otherwise.
+export zeroOne(bool cond) => 
+    int result = cond ? 1 : 0
+
+
+// @function    Appends `sep` and `txt` to `msg` when `cond` is true.
+// @param cond  (bool) The condition determining if text will be added.
+// @param msg   (string) The string to which we add text.
+// @param txt   (string) The text to be added.
+// @param sep   (string) A separator string to be added before `txt` when `msg` already contains text.
+// @returns     (int) The modified `msg` string if `cond` is `true`. Returns `msg` unchanged if `cond` is `false`.
+export addTextIf(bool cond, string msg, string txt, string sep) => 
+    string result = cond ? msg + (msg != "" ? sep : "") + txt : msg
+
+
+// @function                Calculates a gradient between two bull or two bear colors, depending on whether the source signal is above/below the centerline.
+//                          The gradient is proportional to the current qty of advances/declines of the `source`.
+//                          The count of advances/declines resets to one when the `source` crosses the `center` and is limited by `steps`.
+// @param source            (float) input signal.
+// @param center            (float) (- ∞ to ∞) centerline used to determine if signal is bullish/bearish.
+// @param steps             (float) Maximum number of steps in the gradient from the weak color to the strong color.
+// @param bearWeakColor     (color) bear color at adv/dec qty of 1.
+// @param bearStrongColor   (color) bear color at adv/dec qty of `steps`.
+// @param bullWeakColor     (color) bull color at adv/dec qty of 1.
+// @param bullStrongColor   (color) bull color at adv/dec qty of `steps`.
+// @returns                 (color) The calculated color.
+export gradientAdvDecPro(float source, float center, float steps, color bearWeakColor, color bearStrongColor, color bullWeakColor, color bullStrongColor) =>
+    var float qtyAdvDec = 0.
+    var float maxSteps  = math.max(1, steps)
+    bool  xUp     = ta.crossover(source, center)
+    bool  xDn     = ta.crossunder(source, center)
+    float chg     = ta.change(source)
+    bool  up      = chg > 0
+    bool  dn      = chg < 0
+    bool  srcBull = source > center
+    bool  srcBear = source < center
+    qtyAdvDec := 
+      srcBull ? xUp ? 1 : up ? math.min(maxSteps, qtyAdvDec + 1) : dn ? math.max(1, qtyAdvDec - 1) : qtyAdvDec :
+      srcBear ? xDn ? 1 : dn ? math.min(maxSteps, qtyAdvDec + 1) : up ? math.max(1, qtyAdvDec - 1) : qtyAdvDec : qtyAdvDec
+    var color result = na
+    result := 
+      srcBull ? color.from_gradient(qtyAdvDec, 1, maxSteps, bullWeakColor, bullStrongColor) : 
+      srcBear ? color.from_gradient(qtyAdvDec, 1, maxSteps, bearWeakColor, bearStrongColor) : result
+
+
+// @function    Determines if the volume for an intrabar is up or down.
+// @returns     ([float, float]) A tuple of two values, one of which contains the bar's volume. `upVol` is the positive volume of up bars. `dnVol` is the negative volume of down bars.
+//              Note that when this function is designed to be called with `request.security_lower_tf()`,
+//              which will return a tuple of "array<float>" arrays containing up and dn volume for all the intrabars in a chart bar.
+export upDnIntrabarVolumesByPolarity() =>
+    float upVol = 0.0
+    float dnVol = 0.0
+    switch
+        // Bar polarity can be determined.
+        close > open => upVol += volume
+        close < open => dnVol -= volume
+        // If not, use price movement since last bar.
+        close > nz(close[1]) => upVol += volume
+        close < nz(close[1]) => dnVol -= volume
+        // If not, use previously known polarity.
+        nz(upVol[1]) > 0 => upVol += volume
+        nz(dnVol[1]) < 0 => dnVol -= volume
+    [upVol, dnVol]

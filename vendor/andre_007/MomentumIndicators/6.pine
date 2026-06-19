@@ -1,0 +1,2032 @@
+// @version=5
+// @Author andre_007
+//
+// @Thanks and credits:
+//		* Indicators:
+// 			- RSI: J. Welles Wilder Jr.
+// 			- ROC:	Welles Wilder
+// 			- Stochastic Oscillator: George Lane
+// 			- SMI: William Blau
+// 			- Williams Percent Range: Larry Williams
+// 			- CCI: Donald Lambert
+// 			- Ultimate Oscillator: Larry Williams
+// 			- MACD: Gerald Appel
+// 			- Fisher Transform:	John Ehlers
+// 			- Inverse Fisher Transform: John Ehlers
+// 			- Stochastic RSI: Tushar Chande and Stanley Kroll
+//		* Sourcecode:
+//      	- TradingView
+//      	- PineCoders
+//
+// @description This is a library of 'Momentum Indicators', also denominated as oscillators.
+// The purpose of this library is to organize momentum indicators in just one place, making it easy to access.
+// In addition, it aims to allow customized versions, not being restricted to just the price value.
+// An example of this use case is the popular Stochastic RSI.
+//
+// 	# Indicators:
+//
+// 	1. Relative Strength Index (RSI):
+// 		Measures the relative strength of recent price gains to recent price losses of an asset.
+//
+// 	2. Rate of Change (ROC):
+// 		Measures the percentage change in price of an asset over a specified time period.
+//
+// 	3. Stochastic Oscillator (Stoch):
+// 		Compares the current price of an asset to its price range over a specified time period.
+//
+// 	4. True Strength Index (TSI):
+//		Measures the price change, calculating the ratio of the price change (positive or negative) in relation to the
+//    absolute price change.
+//		The values of both are smoothed twice to reduce noise, and the final result is normalized
+//    in a range between 100 and -100.
+//
+// 	5. Stochastic Momentum Index (SMI):
+//		An oscillator that compares the closing price of an asset with the range of its prices over a certain
+//    period of time.
+//    The SMI is designed to be more responsive to price changes than the traditional stochastic oscillator.
+//
+// 	6. Williams Percent Range (Williams %R):
+// 		Compares the current price of an asset to its highest high and lowest low over a specified time period.
+//
+// 	7. Commodity Channel Index (CCI):
+// 		Measures the relationship between an asset's current price and its moving average.
+//
+// 	8. Ultimate Oscillator (UO):
+// 		Combines three different time periods to help identify possible reversal points.
+//
+// 	9. Moving Average Convergence/Divergence (MACD):
+// 		Shows the difference between short-term and long-term exponential moving averages.
+//
+// 	10. Fisher Transform (FT):
+// 		Normalize prices into a Gaussian normal distribution.
+//
+// 	11. Inverse Fisher Transform (IFT):
+// 		Transform the values of the Fisher Transform into a smaller and more easily interpretable scale is through the
+//    	application of an inverse transformation to the hyperbolic tangent function.
+//		This transformation takes the values of the FT, which range from -infinity to +infinity, to a scale limited
+//    	between -1 and +1, allowing them to be more easily visualized and compared.
+//
+//	12. Premier Stochastic Oscillator (PSO):
+//		Normalizes the standard stochastic oscillator by applying a five-period double exponential smoothing average of
+//    	the %K value, resulting in a symmetric scale of 1 to -1
+//
+//  13. Momentum (MOM):
+//		Shows the difference between the current price and the price of a certain period in the past.
+//
+//  14. Know Sure Thing in Trend Indicators (KST):
+//		Know Sure Thing (KST) is a momentum oscillator based on the smoothed rate-of-change for four different timeframes.
+//		Developed by Martin Pring, the KST oscillator is used to identify major market cycles and their reversals.
+//
+//	# Indicators of indicators:
+//
+// 		## Stochastic:
+//      	1. Stochastic of RSI (Relative Strengh Index)
+//      	2. Stochastic of ROC (Rate of Change)
+//      	3. Stochastic of UO (Ultimate Oscillator)
+//      	4. Stochastic of TSI (True Strengh Index)
+//      	5. Stochastic of Williams R%
+//      	6. Stochastic of CCI (Commodity Channel Index).
+//      	7. Stochastic of MACD (Moving Average Convergence/Divergence)
+//      	8. Stochastic of FT (Fisher Transform)
+//      	9. Stochastic of Volume
+//      	10. Stochastic of MFI (Money Flow Index)
+//      	11. Stochastic of On OBV (Balance Volume)
+//      	12. Stochastic of PVI (Positive Volume Index)
+//      	13. Stochastic of NVI (Negative Volume Index)
+//      	14. Stochastic of PVT (Price-Volume Trend)
+//      	15. Stochastic of VO (Volume Oscillator)
+//      	16. Stochastic of VROC (Volume Rate of Change)
+//
+//		## Inverse Fisher Transform:
+//  		1.Inverse Fisher Transform on RSI (Relative Strengh Index)
+//  		2.Inverse Fisher Transform on ROC (Rate of Change)
+//  		3.Inverse Fisher Transform on UO (Ultimate Oscillator)
+//  		4.Inverse Fisher Transform on Stochastic
+//  		5.Inverse Fisher Transform on TSI (True Strength Index)
+//  		6.Inverse Fisher Transform on CCI (Commodity Channel Index)
+//  		7.Inverse Fisher Transform on Fisher Transform (FT)
+//  		8.Inverse Fisher Transform on MACD (Moving Average Convergence/Divergence)
+//  		9.Inverse Fisher Transfor on Williams R% (Williams Percent Range)
+//  		10.Inverse Fisher Transfor on CMF (Chaikin Money Flow)
+//  		11.Inverse Fisher Transform on VO (Volume Oscillator)
+//  		12.Inverse Fisher Transform on VROC (Volume Rate of Change)
+//
+//		## Stochastic Momentum Index:
+//  		1.Stochastic Momentum Index of RSI (Relative Strength Index)
+//  		2.Stochastic Momentum Index of ROC (Rate of Change)
+//  		3.Stochastic Momentum Index of VROC (Volume Rate of Change)
+//  		4.Stochastic Momentum Index of Williams R% (Williams Percent Range)
+//  		5.Stochastic Momentum Index of FT (Fisher Transform)
+//  		6.Stochastic Momentum Index of CCI (Commodity Channel Index)
+//  		7.Stochastic Momentum Index of UO (Ultimate Oscillator)
+//  		8.Stochastic Momentum Index of MACD (Moving Average Convergence/Divergence)
+//  		9.Stochastic Momentum Index of Volume
+//  		10.Stochastic Momentum Index of MFI (Money Flow Index)
+//  		11.Stochastic Momentum Index of CMF (Chaikin Money Flow)
+//  		12.Stochastic Momentum Index of On Balance Volume (OBV)
+//  		13.Stochastic Momentum Index of Price-Volume Trend (PVT)
+//  		14.Stochastic Momentum Index of Volume Oscillator (VO)
+//  		15.Stochastic Momentum Index of Positive Volume Index (PVI)
+//  		16.Stochastic Momentum Index of Negative Volume Index (NVI)
+//      17.Stochastic Momentum Index of Momentum (MOM)
+//
+//		## Relative Strength Index:
+// 			1. RSI for Volume
+// 			2. RSI for Moving Average
+library("MomentumIndicators", overlay=false)
+
+import andre_007/VolumeIndicators/3 as VI
+import andre_007/Utils/11 as UTIL
+import andre_007/MovingAveragesProxy/4 as MAP
+
+// Moving Averages Types
+// 1  = var string AARMA        = 'Adaptive Autonomous Recursive Moving Average'
+// 2  = var string ADEMA        = '* Alpha-Decreasing Exponential Moving Average'
+// 3  = var string AHMA         = 'Ahrens Moving Average'
+// 4  = var string ALMA         = 'Arnaud Legoux Moving Average'
+// 5  = var string ALSMA        = 'Adaptive Least Squares'
+// 6  = var string AUTOL        = 'Auto-Line'
+// 7  = var string CMA          = 'Corrective Moving average'
+// 8  = var string CORMA        = 'Correlation Moving Average Price'
+// 9  = var string COVWEMA      = 'Coefficient of Variation Weighted Exponential Moving Average'
+// 10 = var string COVWMA       = 'Coefficient of Variation Weighted Moving Average'
+// 11 = var string DEMA         = 'Double Exponential Moving Average'
+// 12 = var string DONCHIAN     = 'Donchian Middle Channel'
+// 13 = var string DONCHIAN_HL  = 'Donchian Middle Channel High-Low Version'
+// 14 = var string EDMA         = 'Exponentially Deviating Moving Average'
+// 15 = var string EDSMA        = 'Ehlers Dynamic Smoothed Moving Average'
+// 16 = var string EFRAMA       = '* Ehlrs Modified Fractal Adaptive Moving Average'
+// 17 = var string EHMA         = 'Exponential Hull Moving Average'
+// 18 = var string EMA          = 'Exponential Moving Average'
+// 19 = var string EPMA         = 'End Point Moving Average'
+// 20 = var string ETMA         = 'Exponential Triangular Moving Average'
+// 21 = var string EVWMA        = 'Elastic Volume Weighted Moving Average'
+// 22 = var string FAMA         = 'Following Adaptive Moving Average'
+// 23 = var string FIBOWMA      = 'Fibonacci Weighted Moving Average'
+// 24 = var string FISHLSMA     = 'Fisher Least Squares Moving Average'
+// 25 = var string FRAMA        = 'Fractal Adaptive Moving Average'
+// 26 = var string GMA          = 'Geometric Moving Average'
+// 27 = var string HKAMA        = 'Hilbert based Kaufman\'s Adaptive Moving Average'
+// 28 = var string HMA          = 'Hull Moving Average'
+// 29 = var string JURIK        = 'Jurik Moving Average'
+// 30 = var string KAMA         = 'Kaufman\'s Adaptive Moving Average'
+// 31 = var string LC_LSMA      = '1LC-LSMA (1 line code lsma with 3 functions)'
+// 32 = var string LEOMA        = 'Leo Moving Average'
+// 33 = var string LINWMA       = 'Linear Weighted Moving Average'
+// 34 = var string LSMA         = 'Least Squares Moving Average'
+// 35 = var string MAMA         = 'MESA Adaptive Moving Average'
+// 36 = var string MCMA         = 'McNicholl Moving Average'
+// 37 = var string MEDIAN       = 'Median'
+// 38 = var string REGMA        = 'Regularized Exponential Moving Average'
+// 39 = var string REMA         = 'Range EMA'
+// 40 = var string REPMA        = 'Repulsion Moving Average'
+// 41 = var string RMA          = 'Relative Moving Average'
+// 42 = var string RSIMA        = 'RSI Moving average'
+// 43 = var string RVWAP        = '* Rolling VWAP'
+// 44 = var string SMA          = 'Simple Moving Average'
+// 45 = var string SMMA         = 'Smoothed Moving Average'
+// 46 = var string SRWMA        = 'Square Root Weighted Moving Average'
+// 47 = var string SW_MA        = 'Sine-Weighted Moving Average'
+// 48 = var string SWMA         = '* Symmetrically Weighted Moving Average'
+// 49 = var string TEMA         = 'Triple Exponential Moving Average'
+// 50 = var string THMA         = 'Triple Hull Moving Average'
+// 51 = var string TREMA        = 'Triangular Exponential Moving Average'
+// 52 = var string TRSMA        = 'Triangular Simple Moving Average'
+// 53 = var string TT3          = 'Tillson T3'
+// 54 = var string VAMA         = 'Volatility Adjusted Moving Average'
+// 55 = var string VIDYA        = 'Variable Index Dynamic Average'
+// 56 = var string VWAP         = '* VWAP'
+// 57 = var string VWMA         = 'Volume-weighted Moving Average'
+// 58 = var string WMA          = 'Weighted Moving Average'
+// 59 = var string WWMA         = 'Welles Wilder Moving Average'
+// 60 = var string XEMA         = 'Optimized Exponential Moving Average'
+// 61 = var string ZEMA         = 'Zero-Lag Exponential Moving Average'
+// 62 = var string ZSMA         = 'Zero-Lag Simple Moving Average'
+
+// ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+// #region Misc {						TODO: put code in a separate library
+
+// @function  Weighted Average
+// @param source	  (float) Source of series (close, high, low, etc.)
+// @param length 	  (int) Period of loopback
+// @param weight 	  (float) Weight
+// @returns 		  (float) Series of weighted average
+weightedAverage(source, weight, length) =>
+	math.sum(source, length) / math.sum(weight, length)
+
+// @function  Double smooth a value
+// @param src			(float) Value
+// @param firstSmoothLength	(int) First Smooth length
+// @param secondSmoothLength	(int) Second Smooth length
+// @param maType		(int) Type of moving average for smoothing
+// @param almaOffset	(float) Offset for Arnauld Legoux Moving Average
+// @param almaSigma		(float) Sigma for Arnauld Legoux Moving Average
+// @param lsmaOffSet	(float) Offset for Least Squares Moving Average
+// @returns             (float) Value smoothed
+double_smooth(float src, simple int firstSmoothLength, simple int secondSmoothLength,
+  simple int maType, simple float almaOffset=0.85, simple float almaSigma=6, simple int lsmaOffSet=0) =>
+
+	first_smooth = MAP.getMovingAverage(typeID=maType, src=src, len=firstSmoothLength, inputAlmaOffset=almaOffset, inputAlmaSigma=almaSigma, lsmaOffset=lsmaOffSet)
+	second_smooth = MAP.getMovingAverage(typeID=maType, src=first_smooth, len=secondSmoothLength, inputAlmaOffset=almaOffset, inputAlmaSigma=almaSigma, lsmaOffset=lsmaOffSet)
+
+// @function  Measure of difference between the series and it's moving average. Same as ta.dev(), but with customized type of moving average
+// @param source        (float) Series
+// @param length        (int) Length for moving average
+// @param maType        (int) Type of moving average for smoothing
+// @param almaOffset    (float) Offset for Arnauld Legoux Moving Average
+// @param almaSigma	    (float) Sigma for Arnauld Legoux Moving Average
+// @param lsmaOffSet    (float) Offset for Least Squares Moving Average
+// @returns 			(float) Value
+dev(float source, simple int length,
+  simple int maType,
+  simple float almaOffset=0.85, simple float almaSigma=6,
+  simple int lsmaOffSet=0) =>
+
+    mean = MAP.getMovingAverage(typeID=maType, src=source, len=length, inputAlmaOffset=almaOffset, inputAlmaSigma=almaSigma, lsmaOffset=lsmaOffSet)
+
+    sum = 0.0
+    for i = 0 to length - 1
+        val = source[i]
+        sum := sum + math.abs(val - mean)
+
+    dev = sum/length
+
+// #endregion }
+// ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+
+
+// ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+// Oscillators {
+
+// @function  RSI (Relative Strengh Index). Measures the relative strength of recent price gains to recent price losses of an asset.
+// @param source    (float) Source of series (close, high, low, etc.)
+// @param length    (int) Period of loopback
+// @returns         (float) Series of RSI
+export rsi(float source, simple int length) =>
+    ta.rsi(source, length)
+
+// @function    Asymmetrical RSI. Measures the relative strength of recent price gains to recent price losses of an asset.
+// It uses an asymmetrical approach to calculate the RSI. It uses two different alpha values for the up and down movements.
+// The asymmetrical RSI is more responsive to price changes than the traditional RSI.
+// @author       Alex Orekhov (script), Sylvain Vervoort (original idea)
+// @param src    (float) Source of series (close, high, low, etc.)
+// @param length (int) Period of loopback
+// @returns      (float) Series of asymmetrical RSI
+export arsi(float src, simple int length) =>
+
+    roc = ta.roc(src, 1)
+
+    upCount = math.sum(roc >= 0 ? 1 : 0, length)
+    upAlpha = 1 / upCount
+
+    upSum = 0.0
+    upSum := upAlpha * (roc >= 0 ? roc : 0) + (1 - upAlpha) * nz(upSum[1], upSum)
+
+    downCount = length - upCount
+    downAlpha = 1 / downCount
+
+    downSum = 0.0
+    downSum := downAlpha * (roc >= 0 ? 0 : math.abs(roc)) + (1 - downAlpha) * nz(downSum[1], downSum)
+
+    arsi = fixnan(100 * upSum / (upSum + downSum))
+
+// @function    ROC (Rate of Change). Measures the percentage change in price of an asset over a specified time period.
+// @param source    (float) Source of series (close, high, low, etc.)
+// @param length    (int) Period of loopback
+// @returns         (float) Series of ROC
+export roc(float source, simple int length) =>
+    100 * (source - source[length])/source[length]
+
+// @function  Stochastic Oscillator. Compares the current price of an asset to its price range over a specified time period.
+// @param kLengt        (int) Period of loopback to calculate the stochastic
+// @param kSmoothing    (int) Period for smoothig stochastic
+// @param dSmoothing    (int) Period for signal (moving average of stochastic)
+// @param maTypeK       (int) Type of Moving Average for Stochastic Oscillator
+// @param maTypeD       (int) Type of Moving Average for Stochastic Oscillator Signal
+// @param almaOffsetKD  (float) Offset for Arnaud Legoux Moving Average for Oscillator and Signal
+// @param almaSigmaKD   (float) Sigma for Arnaud Legoux Moving Average for Oscillator and Signal
+// @param lsmaOffSetKD  (int) Offset for Least Squares Moving Average for Oscillator and Signal
+// @returns             [float, float] A tuple of Stochastic Oscillator and Moving Average of Stochastic Oscillator
+export stoch(simple int kLength, simple int kSmoothing, simple int dSmoothing,
+  simple int maTypeK, simple int maTypeD,
+  simple float almaOffsetKD=0.85, simple float almaSigmaKD=6, simple int lsmaOffSetKD=0) =>
+
+	_k = ta.stoch(close, high, low, kLength)
+
+	k = MAP.getMovingAverage(typeID=maTypeK, src=_k, len=kSmoothing, inputAlmaOffset=almaOffsetKD, inputAlmaSigma=almaSigmaKD, lsmaOffset=lsmaOffSetKD)
+	d = MAP.getMovingAverage(typeID=maTypeD, src=k, len=dSmoothing, inputAlmaOffset=almaOffsetKD, inputAlmaSigma=almaSigmaKD, lsmaOffset=lsmaOffSetKD)
+
+	[k, d]
+
+// @function    Stochastic Oscillator. Customized source. Compares the current price of an asset to its price range over a specified time period.
+// @param source        (float) Source of series (close, high, low, etc.)
+// @param kLength       (int) Period of loopback to calculate the stochastic
+// @param kSmoothing    (int) Period for smoothig stochastic
+// @param dSmoothing    (int) Period for signal (moving average of stochastic)
+// @param maTypeK       (int) Type of Moving Average for Stochastic Oscillator
+// @param maTypeD       (int) Type of Moving Average for Stochastic Oscillator Signal
+// @param almaOffsetKD 	(float) Offset for Arnaud Legoux Moving Average for Stoch and Signal
+// @param almaSigmaKD 	(float) Sigma for Arnaud Legoux Moving Average for Stoch and Signal
+// @param lsmaOffSetKD 	(int) Offset for Least Squares Moving Average for Stoch and Signal
+// @returns             [float, float] A tuple of Stochastic Oscillator and Moving Average of Stochastic Oscillator
+export stoch(float source, simple int kLength, simple int kSmoothing, simple int dSmoothing,
+  simple int maTypeK, simple int maTypeD,
+  simple float almaOffsetKD=0.85, simple float almaSigmaKD=6, simple int lsmaOffSetKD=0) =>
+
+	_k = ta.stoch(source, ta.highest(source, 1), ta.lowest(source, 1), kLength)
+
+	k = MAP.getMovingAverage(typeID=maTypeK, src=_k, len=kSmoothing, inputAlmaOffset=almaOffsetKD, inputAlmaSigma=almaSigmaKD, lsmaOffset=lsmaOffSetKD)
+	d = MAP.getMovingAverage(typeID=maTypeD, src=k, len=dSmoothing, inputAlmaOffset=almaOffsetKD, inputAlmaSigma=almaSigmaKD, lsmaOffset=lsmaOffSetKD)
+
+	[k, d]
+
+// @function  TSI (True Strengh Index). Measures the price change, calculating the ratio of the price change (positive or negative) in relation to the absolute price change.
+//    The values of both are smoothed twice to reduce noise, and the final result is normalized in a range between 100 and -100.
+// @param source 	    (float) Source of series (close, high, low, etc.)
+// @param firstSmoothLength	(int) First Smooth length
+// @param secondSmoothLength	(int) Second Smooth length
+// @param maType	    (int) Type of Moving Average for TSI
+// @param almaOffset    (float) Offset for Arnaud Legoux Moving Average
+// @param almaSigma	    (float) Sigma for Arnaud Legoux Moving Average
+// @param lsmaOffSet    (int) Offset for Least Squares Moving Average
+// @returns             (float) TSI
+export tsi(float source, simple int firstSmoothLength, simple int secondSmoothLength,
+  simple int maType, simple float almaOffset=0.85, simple float almaSigma=6,
+  simple int lsmaOffSet=0) =>
+
+	priceChange = ta.change(source)
+	double_smoothed_pc = double_smooth(priceChange, firstSmoothLength, secondSmoothLength, maType, almaOffset, almaSigma, lsmaOffSet)
+	double_smoothed_abs_pc = double_smooth(math.abs(priceChange), firstSmoothLength, secondSmoothLength, maType, almaOffset, almaSigma, lsmaOffSet)
+	100 * (double_smoothed_pc / double_smoothed_abs_pc)
+
+// @function  SMIE (Stochastic Momentum Index Ergodic). 
+//    The Stochastic Momentum Index (SMI) Ergodic indicator works much like the True Strength Index, 
+//    except it uses a signal line in its market analysis.
+//    This version also returns the histogram of the difference between the SMI and the signal, which is 
+//    "SMIO - Stochastic Momentum Index Ergodic Oscillator".
+// @param source            (float) Source of series (close, high, low, etc.)
+// @param lengthK           (int) Length for K%. Lengh for calculate SMI's oscillator.
+// @param lengthD	        (int) Length for D%. lengh for smoothing SMI's oscillator.
+// @param maTypeSMI         (int) Type of Moving Average for SMI
+// @param almaOffsetSMI		  (float) Offset for Arnaud Legoux Moving Average
+// @param almaSigmaSMI		  (float) Sigma for Arnaud Legoux Moving Average
+// @param lsmaOffSetSMI		  (int) Offset for Least Squares Moving Average
+// @param maTypeSignal      (int) Type of Moving Average for SMI
+// @param smoothingLengthSignal (int) Length for smoothing SMI's signal
+// @param almaOffsetSignal  (float) Offset for Arnaud Legoux Moving Average
+// @param almaSigmaSignal		(float) Sigma for Arnaud Legoux Moving Average
+// @param lsmaOffSetSignal	(int) Offset for Least Squares Moving Average
+// @returns               [float, float, float] A tuple with SMI, signal of SMI and histogram of difference
+export smie(float source, simple int lengthK, simple int lengthD,
+  simple int maTypeSMI,
+  simple float almaOffsetSMI=0.85, simple float almaSigmaSMI=6,
+  simple int lsmaOffSetSMI=0,
+
+  simple int maTypeSignal, simple int smoothingLengthSignal,
+  simple float almaOffsetSignal=0.85, simple float almaSigmaSignal=6,
+  simple int lsmaOffSetSignal=0) =>
+
+    tsi = tsi(source, lengthK, lengthD, maTypeSMI, almaOffsetSMI, almaSigmaSMI, lsmaOffSetSMI)
+    signal = MAP.getMovingAverage(typeID=maTypeSignal, src=tsi, len=smoothingLengthSignal, inputAlmaOffset=almaOffsetSignal,
+      inputAlmaSigma=almaSigmaSignal, lsmaOffset=lsmaOffSetSignal)
+
+    histogram = tsi - signal
+
+    [tsi, signal, histogram]
+
+// @function  SMI (Stochastic Momentum Index).
+// @param lengthK           (int) Length for K%. Lengh for calculate SMI's oscillator.
+// @param lengthD	        (int) Length for D%. lengh for smoothing SMI's oscillator.
+// @param maTypeSMI         (int) Type of Moving Average for SMI
+// @param almaOffsetSMI		(float) Offset for Arnaud Legoux Moving Average
+// @param almaSigmaSMI		(float) Sigma for Arnaud Legoux Moving Average
+// @param lsmaOffSetSMI		(int) Offset for Least Squares Moving Average
+// @param maTypeSignal      (int) Type of Moving Average for SMI
+// @param smoothingLengthSignal (int) Length for smoothing SMI's signal
+// @param almaOffsetSignal  (float) Offset for Arnaud Legoux Moving Average
+// @param almaSigmaSignal	(float) Sigma for Arnaud Legoux Moving Average
+// @param lsmaOffSetSignal	(int) Offset for Least Squares Moving Average
+// @returns               [float, float, float] A tuple with SMI, signal of SMI and histogram of difference
+export smi(simple int lengthK, simple int lengthD,
+  simple int maTypeSMI,
+  simple float almaOffsetSMI=0.85, simple float almaSigmaSMI=6,
+  simple int lsmaOffSetSMI=0,
+
+  simple int maTypeSignal, simple int smoothingLengthSignal,
+  simple float almaOffsetSignal=0.85, simple float almaSigmaSignal=6,
+  simple int lsmaOffSetSignal=0) =>
+
+	highestHigh = ta.highest(lengthK)
+    lowestLow = ta.lowest(lengthK)
+
+    relativeRange = close - (highestHigh + lowestLow) / 2
+    highestLowestRange = highestHigh - lowestLow
+
+    relativeRangeSmooth = double_smooth(relativeRange, lengthD, lengthD, maTypeSMI, almaOffsetSMI, almaSigmaSMI, lsmaOffSetSMI)
+    highestLowestRangeSmooth = double_smooth(highestLowestRange, lengthD, lengthD, maTypeSMI, almaOffsetSMI, almaSigmaSMI, lsmaOffSetSMI)
+
+    smi = 200 * relativeRangeSmooth / highestLowestRangeSmooth
+
+	signal = MAP.getMovingAverage(typeID=maTypeSignal, src=smi, len=smoothingLengthSignal, inputAlmaOffset=almaOffsetSignal,
+      inputAlmaSigma=almaSigmaSignal, lsmaOffset=lsmaOffSetSignal)
+
+
+	histogram = smi - signal
+
+	[smi, signal, histogram]
+
+// @function  SMI (Stochastic Momentum Index). Version with custom source.
+// @param source            (float) Source to get the highest, lowest and relative range.
+// @param lengthK           (int) Length K
+// @param lengthD	        (int) Length D
+// @param maTypeSMI         (int) Type of Moving Average for SMI
+// @param almaOffsetSMI		(float) Offset for Arnaud Legoux Moving Average
+// @param almaSigmaSMI		(float) Sigma for Arnaud Legoux Moving Average
+// @param lsmaOffSetSMI		(int) Offset for Least Squares Moving Average
+// @param maTypeSignal      (int) Type of Moving Average for SMI
+// @param smoothingLengthSignal (int) Length for smoothing SMI's signal
+// @param almaOffsetSignal  (float) Offset for Arnaud Legoux Moving Average
+// @param almaSigmaSignal	(float) Sigma for Arnaud Legoux Moving Average
+// @param lsmaOffSetSignal	(int) Offset for Least Squares Moving Average
+// @returns               [float, float, float] A tuple with SMI, signal of SMI and histogram of difference
+export smi(float source, simple int lengthK, simple int lengthD,
+  simple int maTypeSMI,
+  simple float almaOffsetSMI=0.85, simple float almaSigmaSMI=6,
+  simple int lsmaOffSetSMI=0,
+
+  simple int maTypeSignal, simple int smoothingLengthSignal,
+  simple float almaOffsetSignal=0.85, simple float almaSigmaSignal=6,
+  simple int lsmaOffSetSignal=0) =>
+
+	highestHigh = ta.highest(source, lengthK)
+    lowestLow = ta.lowest(source, lengthK)
+
+    relativeRange = source - (highestHigh + lowestLow) / 2
+    highestLowestRange = highestHigh - lowestLow
+
+    relativeRangeSmooth = double_smooth(relativeRange, lengthD, lengthD, maTypeSMI, almaOffsetSMI, almaSigmaSMI, lsmaOffSetSMI)
+    highestLowestRangeSmooth = double_smooth(highestLowestRange, lengthD, lengthD, maTypeSMI, almaOffsetSMI, almaSigmaSMI, lsmaOffSetSMI)
+
+    smi = 200 * relativeRangeSmooth / highestLowestRangeSmooth
+
+	signal = MAP.getMovingAverage(typeID=maTypeSignal, src=smi, len=smoothingLengthSignal, inputAlmaOffset=almaOffsetSignal,
+      inputAlmaSigma=almaSigmaSignal, lsmaOffset=lsmaOffSetSignal)
+
+	histogram = smi - signal
+
+	[smi, signal, histogram]
+
+// @function  SMI (Stochastic Momentum Index). Version with custom source.
+// @param sourceHigh        (float) Source for high
+// @param sourceLow         (float) Source for low
+// @param sourceRelativeRange    (float) Source for relative range
+// @param lengthK           (int) Length K
+// @param lengthD	        (int) Length D
+// @param maTypeSMI         (int) Type of Moving Average for SMI
+// @param almaOffsetSMI		(float) Offset for Arnaud Legoux Moving Average
+// @param almaSigmaSMI		(float) Sigma for Arnaud Legoux Moving Average
+// @param lsmaOffSetSMI		(int) Offset for Least Squares Moving Average
+// @param maTypeSignal      (int) Type of Moving Average for SMI
+// @param smoothingLengthSignal (int) Length for smoothing SMI's signal
+// @param almaOffsetSignal  (float) Offset for Arnaud Legoux Moving Average
+// @param almaSigmaSignal	(float) Sigma for Arnaud Legoux Moving Average
+// @param lsmaOffSetSignal	(int) Offset for Least Squares Moving Average
+// @returns               [float, float, float] A tuple with SMI, signal of SMI and histogram of difference
+export smi(float sourceHigh, float sourceLow, float sourceRelativeRange,
+  simple int lengthK, simple int lengthD,
+  simple int maTypeSMI,
+  simple float almaOffsetSMI=0.85, simple float almaSigmaSMI=6,
+  simple int lsmaOffSetSMI=0,
+
+  simple int maTypeSignal, simple int smoothingLengthSignal,
+  simple float almaOffsetSignal=0.85, simple float almaSigmaSignal=6,
+  simple int lsmaOffSetSignal=0) =>
+
+	highestHigh = ta.highest(sourceHigh, lengthK)
+    lowestLow = ta.lowest(sourceLow, lengthK)
+
+    relativeRange = sourceRelativeRange - (highestHigh + lowestLow) / 2
+    highestLowestRange = highestHigh - lowestLow
+
+    relativeRangeSmooth = double_smooth(relativeRange, lengthD, lengthD, maTypeSMI, almaOffsetSMI, almaSigmaSMI, lsmaOffSetSMI)
+    highestLowestRangeSmooth = double_smooth(highestLowestRange, lengthD, lengthD, maTypeSMI, almaOffsetSMI, almaSigmaSMI, lsmaOffSetSMI)
+
+    smi = 200 * relativeRangeSmooth / highestLowestRangeSmooth
+
+	signal = MAP.getMovingAverage(typeID=maTypeSignal, src=smi, len=smoothingLengthSignal, inputAlmaOffset=almaOffsetSignal,
+      inputAlmaSigma=almaSigmaSignal, lsmaOffset=lsmaOffSetSignal)
+
+	histogram = smi - signal
+
+	[smi, signal, histogram]
+
+// @function  Williams R% (Williams Percent Range). Compares the current price of an asset to its highest high and lowest low over a specified time period.
+// @param source    (float) Source of series (close, high, low, etc.)
+// @param length    (int) Period of loopback
+// @returns         (float) Series of Williams R%
+export wpr(float source, simple int length) =>
+    max = ta.highest(source, length)
+	min = ta.lowest(source, length)
+	100 * (source - max) / (max - min)
+
+// @function  CCI (Commodity Channel Index). Measures the relationship between an asset's current price
+//  and its moving average.
+// Fun Facts:
+// Is mean deviation the same as standard deviation?
+// No, Mean Deviation (MD) and Standard Deviation (SD) are two different measures of dispersion, although both are used to quantify the variability of a data set in relation to its mean. Here are the main differences:
+// Calculation:
+// Mean Deviation is calculated by adding the absolute deviations of each value in relation to the mean and dividing by the number of observations.
+// Standard Deviation is calculated by taking the square root of the mean of the squares of the deviations of each value in relation to the mean.
+// Sensitivity to Outliers:
+// Mean Deviation is less sensitive to outliers (extreme values) because it considers absolute deviations.
+// Standard Deviation is more sensitive to outliers because it squares the deviations, giving greater weight to extreme values.
+// // Unit of Measurement:
+
+// Mean Deviation is expressed in the same unit of measurement as the original data.
+// Standard Deviation is expressed in the unit of measurement of the original data squared
+// (although the square root is used at the end, bringing it back to the original unit).
+
+// Use in Statistics:
+
+// Mean Deviation is less commonly used in statistics due to its lower mathematical efficiency compared
+// to Standard Deviation.
+// Standard Deviation is widely used in statistics and is the most frequently employed measure of dispersion
+// due to its mathematical properties.
+
+// Use in CCI:
+
+// The CCI (Commodity Channel Index) indicator uses Mean Deviation in its calculation to measure price volatility.
+// Standard Deviation is not used directly in the calculation of CCI, but is the basis for other indicators,
+// such as Bollinger Bands. // In summary, although Mean Deviation and Standard Deviation are both measures of dispersion,
+// they differ in their calculation, sensitivity to outliers, unit of measurement, and use in statistics and technical analysis.
+// The CCI chooses to use Mean Deviation in its formula due to its lower sensitivity to extreme values ​​in prices.
+
+// @param source        (float) Source of series (close, high, low, etc.)
+// @param lengthMA      (int) Period of loopback (length of moving average)
+// @param maType        (int) Type of Moving Average
+// @param almaOffset    (float) Offset for Arnaud Legoux Moving Average
+// @param almaSigma     (float) Sigma for Arnaud Legoux Moving Average
+// @param lsmaOffSet    (int) Offset for Least Squares Moving Average
+// @param lenghDEV      (int) Length for mean deviation
+// @param maType        (int) Type of Moving Average used in Mean Deviation
+// @returns             (float) Series of CCI
+export cci(float source, simple int lengthMA, simple int maType,
+  simple float almaOffset=0.85, simple float almaSigma=6, simple int lsmaOffSet=0,
+  simple int lenghDEV, simple int maTypeDEV) =>
+
+	ma = MAP.getMovingAverage(typeID=maType, src=source, len=lengthMA, inputAlmaOffset=almaOffset,
+      inputAlmaSigma=almaSigma, lsmaOffset=lsmaOffSet)
+
+	(source - ma) / (0.015 * dev(source, lenghDEV, maTypeDEV, almaOffset, almaSigma, lsmaOffSet))
+
+// @function  UO (Ultimate Oscilator). Combines three different time periods to help identify possible reversal points.
+// @param fastLength    (int) Fast period of loopback
+// @param middleLength  (int) Middle period of loopback
+// @param slowLength    (int) Slow period of loopback
+// @returns             (float) Series of Ultimate Oscilator
+export ultimateOscillator(simple int fastLength, simple int middleLength, simple int slowLength) =>
+    high_ = math.max(high, close[1])
+    low_ = math.min(low, close[1])
+
+    bp = close - low_
+    tr_ = high_ - low_
+
+    avg7 = weightedAverage(bp, tr_, fastLength)
+    avg14 = weightedAverage(bp, tr_, middleLength)
+    avg28 = weightedAverage(bp, tr_, slowLength)
+
+    100 * (4*avg7 + 2*avg14 + avg28)/7
+
+// @function 	UO (Ultimate Oscilator). Customized source. Combines three different time periods to help identify possible reversal points.
+// @param source        (float) Source of series (close, high, low, etc.)
+// @param fastLength    (int) Fast period of loopback
+// @param middleLength  (int) Middle period of loopback
+// @param slowLength    (int) Slow period of loopback
+// @returns             (float) Series of Ultimate Oscilator
+export ultimateOscillator(float source, simple int fastLength, simple int middleLength, simple int slowLength) =>
+    high_ = math.max(ta.highest(source, 1), source[1])
+    low_ = math.min(ta.lowest(source, 1), source[1])
+
+    bp = source - low_
+    tr_ = high_ - low_
+
+    avg7 = weightedAverage(bp, tr_, fastLength)
+    avg14 = weightedAverage(bp, tr_, middleLength)
+    avg28 = weightedAverage(bp, tr_, slowLength)
+
+    100 * (4*avg7 + 2*avg14 + avg28)/7
+
+// @function 	MACD (Moving Average Convergence/Divergence). Shows the difference between short-term and long-term exponential moving averages.
+// @param source            (float) Source of series (close, high, low, etc.)
+// @param fastLength 	  	(int) Period for fast moving average
+// @param slowLength 	  	(int) Period for slow moving average
+// @param signalLength		(int) Signal length
+// @param maTypeFast 	  	(int) Type of fast moving average
+// @param maTypeSlow 	  	(int) Type of slow moving average
+// @param maTypeMACD 	  	(int) Type of MACD moving average
+// @param almaOffset 	  	(float) Offset for Arnaud Legoux Moving Average
+// @param almaSigma 	  	(float) Sigma for Arnaud Legoux Moving Average
+// @param lsmaOffSet 	  	(int) Offset for Least Squares Moving Average
+// @returns                 [float, float, float] A tuple with MACD, Signal, and Histgram
+export macd(float source, simple int fastLength, simple int slowLength, simple int signalLength,
+  simple int maTypeFast, simple int maTypeSlow, simple int maTypeMACD,
+  simple float almaOffset=0.85, simple float almaSigma=6,
+  simple int lsmaOffSet=0) =>
+
+    fastMA = MAP.getMovingAverage(typeID=maTypeFast, src=source, len=fastLength, inputAlmaOffset=almaOffset,
+      inputAlmaSigma=almaSigma, lsmaOffset=lsmaOffSet)
+
+    slowMA = MAP.getMovingAverage(typeID=maTypeSlow, src=source, len=slowLength, inputAlmaOffset=almaOffset,
+      inputAlmaSigma=almaSigma, lsmaOffset=lsmaOffSet)
+
+    macd = fastMA - slowMA
+
+    signal = MAP.getMovingAverage(typeID=maTypeMACD, src=macd, len=signalLength, inputAlmaOffset=almaOffset,
+      inputAlmaSigma=almaSigma, lsmaOffset=lsmaOffSet)
+
+
+    histogram = macd - signal
+
+    [macd, signal, histogram]
+
+// @function  Fisher Transform. Normalize prices into a Gaussian normal distribution.
+// @param length 	    (int) Period for loopback
+// @returns             [float, float] A tuple with Fisher Transform and signal
+export fisher(simple int length) =>
+
+    high_ = ta.highest(hl2, length)
+    low_ = ta.lowest(hl2, length)
+
+    value = 0.0
+    value := UTIL.round(.66 * ((hl2 - low_) / (high_ - low_) - .5) + .67 * nz(value[1]))
+
+    fish1 = 0.0
+    fish1 := .5 * math.log((1 + value) / (1 - value)) + .5 * nz(fish1[1])
+    fish2 = fish1[1]
+    [fish1, fish2]
+
+// @function  Fisher Transform. Customized source. Normalize prices into a Gaussian normal distribution.
+// @param sourceHigh 	 (float) Source of series for high values
+// @param sourceLow 	 (float) Source of series for low values
+// @param length 	  	(int) Period for loopback
+// @returns             [float, float] A tuple with Fisher Transform and signal
+export fisher(float sourceHigh, float sourceLow, simple int length) =>
+
+    high_ = ta.highest(sourceHigh, length)
+    low_ = ta.lowest(sourceLow, length)
+    hl2_ = (sourceHigh + sourceLow)/2
+
+    value = 0.0
+    value := UTIL.round(.66 * ((hl2_ - low_) / (high_ - low_) - .5) + .67 * nz(value[1]))
+
+    fish1 = 0.0
+    fish1 := .5 * math.log((1 + value) / (1 - value)) + .5 * nz(fish1[1])
+    fish2 = fish1[1]
+
+    [fish1, fish2]
+
+// @function  Inverse Fisher Transform.
+//    Transform the values of the Fisher Transform into a smaller and more easily interpretable scale is
+//	  through the application of an inverse transformation to the hyperbolic tangent function.
+//	  This transformation takes the values of the FT, which range from -infinity to +infinity,
+//    to a scale limited between -1 and +1, allowing them to be more easily visualized and compared.
+// @param source 	    (float) Source of series (close, high, low, etc.)
+// @param length 	    (int) Period for loopback
+// @param subtrahend    (int) Subtrahend. Useful in bounded indicators. For example, in RSI use a value of -50.
+// @param subtrahend    (int) Denominator. Useful in unbounded indicators. For example, in CCI.
+// @returns             (float) Series of Inverse Fisher Transform
+export inverseFisher(float source, simple int length, simple float subtrahend=0, simple int denominator=1) =>
+
+    v1 = 0.1 * (source - subtrahend)/denominator
+    v2 = ta.wma(v1, length)
+
+    ift = (math.exp(2 * v2) - 1) / (math.exp(2 * v2) + 1)
+
+// @function  Premier Stochastic Oscillator (PSO).
+//    Normalizes the standard stochastic oscillator by applying a five-period double exponential smoothing
+//    average of the %K value, resulting in a symmetric scale of 1 to -1.
+// @param length 	    (int) Period for loopback
+// @param smoothlen     (int) Period for smoothing
+// @returns 		    (float) Series of PSO
+export premierStoch(simple int length, simple int smoothlen) =>
+
+    sk = ta.stoch( close, high, low, length)
+    len = math.round(math.sqrt( smoothlen ))
+
+    nsk = 0.1 * ( sk - 50 )
+    ss = ta.ema( ta.ema( nsk, len ), len )
+    expss = math.exp( ss )
+    pso = ( expss - 1 )/( expss + 1 )
+
+// @function  Premier Stochastic Oscillator (PSO) of custom source.
+//    Normalizes the source by applying a five-period double exponential smoothing average.
+// @param source        (float) Source of series (close, high, low, etc.)
+// @param smoothlen     (int) Period for smoothing
+// @param subtrahend    (int) Subtrahend. Useful in bounded indicators. For example, in RSI use a value of -50.
+// @param denominator    (int) Denominator. Useful in unbounded indicators. For example, in CCI.
+// @returns             (float) Series of PSO
+export premierStoch(float source, simple int smoothlen, simple float subtrahend=0, simple int denominator=1) =>
+
+	len = math.round(math.sqrt( smoothlen ))
+
+	nsk = 0.1 * ( source - subtrahend )/denominator
+	ss = ta.ema( ta.ema( nsk, len ), len )
+	expss = math.exp( ss )
+	pso = ( expss - 1 )/( expss + 1 )
+
+// @function  Momentum. Measures the change in price over a specified period of time.
+// @param source 	    (float) Source of series (close, high, low, etc.)
+// @param length 	    (int) Period for loopback
+// @returns           (float) Series of Momentum
+export momentum(float source, simple int length) =>
+    mom = source - source[length]
+
+// @function Know Sure Thing in Trend Indicators. 
+//    The Know Sure Thing (KST) indicator is a momentum oscillator that compares the rate of change of four different price cycles.
+//    The KST indicator is used to identify major stock market trends and generate buy and sell signals.
+// @param lengthRoc1 		(int) Period for Rate of Change 1
+// @param lengthRoc2 		(int) Period for Rate of Change 2
+// @param lengthRoc3 		(int) Period for Rate of Change 3
+// @param lengthRoc4 		(int) Period for Rate of Change 4
+// @param lengthMA1 	(int) Period for Moving Average 1
+// @param typeMA1 	(int) Type of Moving Average 1
+// @param lengthMA2 	(int) Period for Moving Average 2
+// @param typeMA2 	(int) Type of Moving Average 2
+// @param lengthMA3 	(int) Period for Moving Average 3
+// @param typeMA3 	(int) Type of Moving Average 3
+// @param lengthMA4 	(int) Period for Moving Average 4
+// @param typeMA4 	(int) Type of Moving Average 4
+// @param lengthSignal 	(int) Period for Signal
+// @param typeSignal 	(int) Type of Signal
+// @returns 		[float, float] A tuple with KST and Signal
+export kst(simple int lengthRoc1, simple int lengthRoc2, simple int lengthRoc3, simple int lengthRoc4,
+  simple int lengthMA1, simple int typeMA1, simple int lengthMA2, simple int typeMA2,
+  simple int lengthMA3, simple int typeMA3, simple int lengthMA4, simple int typeMA4,
+  simple int lengthSignal, simple int typeSignal) =>
+
+    roc1 = ta.roc(close, lengthRoc1)
+    roc2 = ta.roc(close, lengthRoc2)
+    roc3 = ta.roc(close, lengthRoc3)
+    roc4 = ta.roc(close, lengthRoc4)
+
+    ma1 = MAP.getMovingAverage(typeID=typeMA1, src=roc1, len=lengthMA1)
+    ma2 = MAP.getMovingAverage(typeID=typeMA2, src=roc2, len=lengthMA2)
+    ma3 = MAP.getMovingAverage(typeID=typeMA3, src=roc3, len=lengthMA3)
+    ma4 = MAP.getMovingAverage(typeID=typeMA4, src=roc4, len=lengthMA4)
+
+    kst = ma1 + (2 * ma2) + (3 * ma3) + (4 * ma4)
+    signal = MAP.getMovingAverage(typeID=typeSignal, src=kst, len=lengthSignal)
+
+    [kst, signal]
+
+// @function Know Sure Thing in Trend Indicators. Customized source.
+//    The Know Sure Thing (KST) indicator is a momentum oscillator that compares the rate of change of four different price cycles
+//    The KST indicator is used to identify major stock market trends and generate buy and sell signals.
+// @param source 		(float) Source of series (close, high, low, etc.)
+// @param lengthRoc1 		(int) Period for Rate of Change 1
+// @param lengthRoc2 		(int) Period for Rate of Change 2
+// @param lengthRoc3 		(int) Period for Rate of Change 3
+// @param lengthRoc4 		(int) Period for Rate of Change 4
+// @param lengthMA1 	(int) Period for Moving Average 1
+// @param typeMA1 	(int) Type of Moving Average 1
+// @param lengthMA2 	(int) Period for Moving Average 2
+// @param typeMA2 	(int) Type of Moving Average 2
+// @param lengthMA3 	(int) Period for Moving Average 3
+// @param typeMA3 	(int) Type of Moving Average 3
+// @param lengthMA4 	(int) Period for Moving Average 4
+// @param typeMA4 	(int) Type of Moving Average 4
+// @param lengthSignal 	(int) Period for Signal
+// @param typeSignal 	(int) Type of Signal
+// @returns 		[float, float] A tuple with KST and Signal
+export kst(float source, simple int lengthRoc1, simple int lengthRoc2, simple int lengthRoc3, simple int lengthRoc4,
+  simple int lengthMA1, simple int typeMA1, simple int lengthMA2, simple int typeMA2,
+  simple int lengthMA3, simple int typeMA3, simple int lengthMA4, simple int typeMA4,
+  simple int lengthSignal, simple int typeSignal) =>
+
+    roc1 = ta.roc(source, lengthRoc1)
+    roc2 = ta.roc(source, lengthRoc2)
+    roc3 = ta.roc(source, lengthRoc3)
+    roc4 = ta.roc(source, lengthRoc4)
+
+    ma1 = MAP.getMovingAverage(typeID=typeMA1, src=roc1, len=lengthMA1)
+    ma2 = MAP.getMovingAverage(typeID=typeMA2, src=roc2, len=lengthMA2)
+    ma3 = MAP.getMovingAverage(typeID=typeMA3, src=roc3, len=lengthMA3)
+    ma4 = MAP.getMovingAverage(typeID=typeMA4, src=roc4, len=lengthMA4)
+
+    kst = ma1 + (2 * ma2) + (3 * ma3) + (4 * ma4)
+    signal = MAP.getMovingAverage(typeID=typeSignal, src=kst, len=lengthSignal)
+
+    [kst, signal]
+
+// #endregion }
+// ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+
+
+// ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+// Derivations of Stochastic Oscillator {
+
+// @function  Stochastic of RSI (Relative Strengh Index).
+//    Combination of the RSI and Stochastic Oscillator to help identify possible reversal points.
+// @param sourceRSI 		(float) Source for RSI
+// @param lengthRSI 		(int) Period of loopback for RSI
+// @param kLength 		  	(int) Period of loopback to calculate the stochastic
+// @param kSmoothing 	  	(int) Period for smoothig stochastic
+// @param dSmoothing 	  	(int) Period for signal (moving average of stochastic)
+// @param maTypeK 		  	(int) Type of Moving Average for Stochastic Oscillator
+// @param maTypeD 		  	(int) Type of Moving Average for Stochastic Oscillator Signal
+// @param almaOffsetKD 		(float) Offset for Arnaud Legoux Moving Average
+// @param almaSigmaKD 		(float) Sigma for Arnaud Legoux Moving Average
+// @param lsmaOffSetKD 		(int) Offset for Least Squares Moving Average
+// @returns 				[float, float] A tuple of Stochastic Oscillator and Moving Average of Stochastic Oscillator
+export stochRsi(
+  // RSI settings
+  float sourceRSI, simple int lengthRSI,
+  // Stoch settings
+  simple int kLength, simple int kSmoothing, simple int dSmoothing,
+  simple int maTypeK, simple int maTypeD,
+  simple float almaOffsetKD=0.85, simple float almaSigmaKD=6, simple int lsmaOffSetKD=0) =>
+
+    rsi = rsi(sourceRSI, lengthRSI)
+    [k, d] = stoch(rsi, kLength, kSmoothing, dSmoothing, maTypeK, maTypeD, almaOffsetKD, almaSigmaKD, lsmaOffSetKD)
+
+// @function  Stochastic of ROC (Rate of Change).
+// @param sourceROC 		(float) Source for ROC
+// @param lengthROC 		(int) Period of loopback for ROC
+// @param kLength 		  	(int) Period of loopback to calculate the stochastic
+// @param kSmoothing 	  	(int) Period for smoothig stochastic
+// @param dSmoothing 	  	(int) Period for signal (moving average of stochastic)
+// @param maTypeK 		  	(int) Type of Moving Average for Stochastic Oscillator
+// @param maTypeD 		  	(int) Type of Moving Average for Stochastic Oscillator Signal
+// @param almaOffsetKD 		(float) Offset for Arnaud Legoux Moving Average
+// @param almaSigmaKD 		(float) Sigma for Arnaud Legoux Moving Average
+// @param lsmaOffSetKD 		(int) Offset for Least Squares Moving Average
+// @returns					[float, float] A tuple of Stochastic Oscillator and Moving Average of Stochastic Oscillator
+export stochRoc(
+  // ROC settings
+  float sourceROC, simple int lengthROC,
+  // Stoch settings
+  simple int kLength, simple int kSmoothing, simple int dSmoothing,
+  simple int maTypeK, simple int maTypeD,
+  simple float almaOffsetKD=0.85, simple float almaSigmaKD=6, simple int lsmaOffSetKD=0) =>
+
+    roc = roc(sourceROC, lengthROC)
+    [k, d] = stoch(roc, kLength, kSmoothing, dSmoothing, maTypeK, maTypeD, almaOffsetKD, almaSigmaKD, lsmaOffSetKD)
+
+// @function  Stochastic of UO (Ultimate Oscillator).
+// @param fastLength 		(int) Fast period of loopback for UO
+// @param middleLength 		(int) Middle period of loopback for UO
+// @param slowLength 	  	(int) Slow period of loopback for UO
+// @param kLength 		  	(int) Period of loopback to calculate the stochastic
+// @param kSmoothing 	  	(int) Period for smoothig stochastic
+// @param dSmoothing 	  	(int) Period for signal (moving average of stochastic)
+// @param maTypeK 		  	(int) Type of Moving Average for Stochastic Oscillator
+// @param maTypeD 		  	(int) Type of Moving Average for Stochastic Oscillator Signal
+// @param almaOffsetKD 		(float) Offset for Arnaud Legoux Moving Average
+// @param almaSigmaKD 		(float) Sigma for Arnaud Legoux Moving Average
+// @param lsmaOffSetKD 		(int) Offset for Least Squares Moving Average
+// @returns 				[float, float] A tuple of Stochastic Oscillator and Moving Average of Stochastic Oscillator
+export stochUO(
+  // UO settings
+  simple int fastLength, simple int middleLength, simple int slowLength,
+  // Stoch settings
+  simple int kLength, simple int kSmoothing, simple int dSmoothing,
+  simple int maTypeK, simple int maTypeD,
+  simple float almaOffsetKD=0.85, simple float almaSigmaKD=6, simple int lsmaOffSetKD=0) =>
+
+    uo = ultimateOscillator(fastLength, middleLength, slowLength)
+	[k, d] = stoch(uo, kLength, kSmoothing, dSmoothing, maTypeK, maTypeD, almaOffsetKD, almaSigmaKD, lsmaOffSetKD)
+
+// @function  Stochastic of TSI (True Strengh Index).
+// @param source 			(float) Source of series for TSI (close, high, low, etc.)
+// @param shortLength 		(int) Short length for TSI
+// @param longLength 		(int) Long length for TSI
+// @param maType		    (int) Type of Moving Average for TSI
+// @param almaOffset 		(float) Offset for Arnaud Legoux Moving Average in TSI
+// @param almaSigma	 		(float) Sigma for Arnaud Legoux Moving Average in TSI
+// @param lsmaOffSet 		(int) Offset for Least Squares Moving Average in TSI
+// @param kLength 	 		(int) Period of loopback to calculate the stochastic
+// @param kSmoothing  		(int) Period for smoothig stochastic
+// @param dSmoothing  		(int) Period for signal (moving average of stochastic)
+// @param maTypeK 	 		(int) Type of Moving Average for Stochastic Oscillator
+// @param maTypeD 	 		(int) Type of Moving Average for Stochastic Oscillator Signal
+// @param almaOffsetKD   	(float) Offset for Arnaud Legoux Moving Average for Stoch Oscillator and Signal
+// @param almaSigmaKD   	(float) Sigma for Arnaud Legoux Moving Average for Stoch Oscillator and Signal
+// @param lsmaOffSetKD   	(int) Offset for Least Squares Moving Average for Stoch Oscillator and Signal
+// @returns 				[float, float] A tuple of Stochastic Oscillator and Moving Average of Stochastic Oscillator
+export stochTSI(
+  // TSI settings
+  float source, simple int shortLength, simple int longLength,
+  simple int maType, simple float almaOffset=0.85, simple float almaSigma=6, simple int lsmaOffSet=0,
+  // Stoch settings
+  simple int kLength, simple int kSmoothing, simple int dSmoothing,
+  simple int maTypeK, simple int maTypeD,
+  simple float almaOffsetKD=0.85, simple float almaSigmaKD=6, simple int lsmaOffSetKD=0) =>
+
+    tsi = tsi(source, shortLength, longLength, maType, almaOffset, almaSigma, lsmaOffSet)
+	[k, d] = stoch(tsi, kLength, kSmoothing, dSmoothing, maTypeK, maTypeD, almaOffsetKD, almaSigmaKD, lsmaOffSetKD)
+
+// @function  Stochastic of Williams R%
+// @param source 			(float) Source of series for Williams R% (close, high, low, etc.)
+// @param length 			(int) Period of loopback for Williams R%
+// @param kLength 		  	(int) Period of loopback to calculate the stochastic
+// @param kSmoothing 	  	(int) Period for smoothig stochastic
+// @param dSmoothing 	  	(int) Period for signal (moving average of stochastic)
+// @param maTypeK 		  	(int) Type of Moving Average for Stochastic Oscillator
+// @param maTypeD 		  	(int) Type of Moving Average for Stochastic Oscillator Signal
+// @param almaOffsetKD 		(float) Offset for Arnaud Legoux Moving Average for Stoch Oscillator and Signal
+// @param almaSigmaKD 		(float) Sigma for Arnaud Legoux Moving Average for Stoch Oscillator and Signal
+// @param lsmaOffSetKD 		(int) Offset for Least Squares Moving Average for Stoch Oscillator and Signal
+// @returns					[float, float] A tuple of Stochastic Oscillator and Moving Average of Stochastic Oscillator
+export stochWPR(
+  // Williams R% settings
+  float source, simple int length,
+  // Stoch settings
+  simple int kLength, simple int kSmoothing, simple int dSmoothing,
+  simple int maTypeK, simple int maTypeD,
+  simple float almaOffsetKD=0.85, simple float almaSigmaKD=6, simple int lsmaOffSetKD=0) =>
+
+    wpr = wpr(source, length)
+	[k, d] = stoch(wpr, kLength, kSmoothing, dSmoothing, maTypeK, maTypeD, almaOffsetKD, almaSigmaKD, lsmaOffSetKD)
+
+// @function 	Stochastic of CCI (Commodity Channel Index).
+// @param source 		(float) Source of series for CCI (close, high, low, etc.)
+// @param length 		(int) Period of loopback for CCI
+// @param maType 		(int) Type of Moving Average
+// @param almaOffset	(float) Offset for Arnaud Legoux Moving Average
+// @param almaSigma 	(float) Sigma for Arnaud Legoux Moving Average
+// @param lsmaOffSet 	(int) Offset for Least Squares Moving Average
+// @param kLength 		(int) Period of loopback to calculate the stochastic
+// @param kSmoothing 	(int) Period for smoothig stochastic
+// @param dSmoothing 	(int) Period for signal (moving average of stochastic)
+// @param maTypeK 		(int) Type of Moving Average for Stochastic Oscillator
+// @param maTypeD 		(int) Type of Moving Average for Stochastic Oscillator Signal
+// @param almaOffsetKD 	(float) Offset for Arnaud Legoux Moving Average for Stoch Oscillator and Signal
+// @param almaSigmaKD 	(float) Sigma for Arnaud Legoux Moving Average for Stoch Oscillator and Signal
+// @param lsmaOffSetKD 	(int) Offset for Least Squares Moving Average for Stoch Oscillator and Signal
+// @returns 			[float, float] A tuple of Stochastic Oscillator and Moving Average of Stochastic Oscillator
+export stochCCI(
+  // CCI settings
+  float source, simple int length,
+  simple int maType, simple float almaOffset=0.85, simple float almaSigma=6, simple int lsmaOffSet=0,
+  // Stoch settings
+  simple int kLength, simple int kSmoothing, simple int dSmoothing,
+  simple int maTypeK, simple int maTypeD,
+  simple float almaOffsetKD=0.85, simple float almaSigmaKD=6, simple int lsmaOffSetKD=0) =>
+
+    cci = cci(source, length, maType, almaOffset, almaSigma, lsmaOffSet, length, maType)
+	[k, d] = stoch(cci, kLength, kSmoothing, dSmoothing, maTypeK, maTypeD, almaOffsetKD, almaSigmaKD, lsmaOffSetKD)
+
+// @function 	Stochastic of MACD (Moving Average Convergence/Divergence).
+// @param source 		(float) Source of series for MACD (close, high, low, etc.)
+// @param fastLength 	(int) Period for fast moving average for MACD
+// @param slowLength 	(int) Period for slow moving average for MACD
+// @param signalLength 	(int) Signal length for MACD
+// @param maTypeFast 	(int) Type of fast moving average for MACD
+// @param maTypeSlow 	(int) Type of slow moving average for MACD
+// @param maTypeMACD 	(int) Type of MACD moving average for MACD
+// @param almaOffset 	(float) Offset for Arnaud Legoux Moving Average for MACD
+// @param almaSigma 	(float) Sigma for Arnaud Legoux Moving Average for MACD
+// @param lsmaOffSet 	(int) Offset for Least Squares Moving Average for MACD
+// @param kLength 		(int) Period of loopback to calculate the stochastic
+// @param kSmoothing 	(int) Period for smoothig stochastic
+// @param dSmoothing 	(int) Period for signal (moving average of stochastic)
+// @param maTypeK 		(int) Type of Moving Average for Stochastic Oscillator
+// @param maTypeD 		(int) Type of Moving Average for Stochastic Oscillator Signal
+// @param almaOffsetKD 	(float) Offset for Arnaud Legoux Moving Average for Stoch Oscillator and Signal
+// @param almaSigmaKD 	(float) Sigma for Arnaud Legoux Moving Average for Stoch Oscillator and Signal
+// @param lsmaOffSetKD 	(int) Offset for Least Squares Moving Average for Stoch Oscillator and Signal
+// @returns 			[float, float] A tuple of Stochastic Oscillator and Moving Average of Stochastic Oscillator
+export stochMACD(
+  // MACD settings
+  float source, simple int fastLength, simple int slowLength, simple int signalLength,
+  simple int maTypeFast, simple int maTypeSlow, simple int maTypeMACD,
+  simple float almaOffset=0.85, simple float almaSigma=6,
+  simple int lsmaOffSet=0,
+  // Stoch settings
+  simple int kLength, simple int kSmoothing, simple int dSmoothing,
+  simple int maTypeK, simple int maTypeD,
+  simple float almaOffsetKD=0.85, simple float almaSigmaKD=6, simple int lsmaOffSetKD=0) =>
+
+    [macd, signal, histogram] = macd(source, fastLength, slowLength, signalLength, maTypeFast, maTypeSlow, maTypeMACD,
+	  almaOffset, almaSigma, lsmaOffSet)
+	[k, d] = stoch(macd, kLength, kSmoothing, dSmoothing, maTypeK, maTypeD, almaOffsetKD, almaSigmaKD, lsmaOffSetKD)
+
+// @function 	Stochastic of FT (Fisher Transform).
+// @param length 		(int) Period of loopback to calculate the Fisher Transform
+// @param kLength 		(int) Period of loopback to calculate the stochastic
+// @param kSmoothing 	(int) Period for smoothig stochastic
+// @param dSmoothing 	(int) Period for signal (moving average of stochastic)
+// @param maTypeK 		(int) Type of Moving Average for Stochastic Oscillator
+// @param maTypeD 		(int) Type of Moving Average for Stochastic Oscillator Signal
+// @param almaOffsetKD 	(float) Offset for Arnaud Legoux Moving Average for Stoch Oscillator and Signal
+// @param almaSigmaKD 	(float) Sigma for Arnaud Legoux Moving Average for Stoch Oscillator and Signal
+// @param lsmaOffSetKD 	(int) Offset for Least Squares Moving Average for Stoch Oscillator and Signal
+// @returns 			[float, float] A tuple of Stochastic Oscillator and Moving Average of Stochastic Oscillator
+export stochFT(
+  // FT settings
+  simple int length,
+  // Stoch settings
+  simple int kLength, simple int kSmoothing, simple int dSmoothing,
+  simple int maTypeK, simple int maTypeD,
+  simple float almaOffsetKD=0.85, simple float almaSigmaKD=6, simple int lsmaOffSetKD=0) =>
+
+    [ft, signal] = fisher(length)
+	[k, d] = stoch(ft, kLength, kSmoothing, dSmoothing, maTypeK, maTypeD, almaOffsetKD, almaSigmaKD, lsmaOffSetKD)
+
+// @function 	Stochastic of Volume.
+// @param kLength 		(int) Period of loopback to calculate the stochastic
+// @param kSmoothing 	(int) Period for smoothig stochastic
+// @param dSmoothing 	(int) Period for signal (moving average of stochastic)
+// @param maTypeK 		(int) Type of Moving Average for Stochastic Oscillator
+// @param maTypeD 		(int) Type of Moving Average for Stochastic Oscillator Signal
+// @param almaOffsetKD 	(float) Offset for Arnaud Legoux Moving Average for Stoch Oscillator and Signal
+// @param almaSigmaKD 	(float) Sigma for Arnaud Legoux Moving Average for Stoch Oscillator and Signal
+// @param lsmaOffSetKD 	(int) Offset for Least Squares Moving Average for Stoch Oscillator and Signal
+// @returns 			[float, float] A tuple of Stochastic Oscillator and Moving Average of Stochastic Oscillator
+export stochVolume(
+  // Stoch settings
+  simple int kLength, simple int kSmoothing, simple int dSmoothing,
+  simple int maTypeK, simple int maTypeD,
+  simple float almaOffsetKD=0.85, simple float almaSigmaKD=6, simple int lsmaOffSetKD=0) =>
+
+	[k, d] = stoch(volume, kLength, kSmoothing, dSmoothing, maTypeK, maTypeD, almaOffsetKD, almaSigmaKD, lsmaOffSetKD)
+
+// @function 	Stochastic of MFI (Money Flow Index).
+// @param source 		(float) Source of series for MFI (close, high, low, etc.)
+// @param Length 		(int) Period for loopback for MFI
+// @param kLength 		(int) Period of loopback to calculate the stochastic
+// @param kSmoothing 	(int) Period for smoothig stochastic
+// @param dSmoothing 	(int) Period for signal (moving average of stochastic)
+// @param maTypeK 		(int) Type of Moving Average for Stochastic Oscillator
+// @param maTypeD 		(int) Type of Moving Average for Stochastic Oscillator Signal
+// @param almaOffsetKD 	(float) Offset for Arnaud Legoux Moving Average for Stoch Oscillator and Signal
+// @param almaSigmaKD 	(float) Sigma for Arnaud Legoux Moving Average for Stoch Oscillator and Signal
+// @param lsmaOffSetKD 	(int) Offset for Least Squares Moving Average for Stoch Oscillator and Signal
+// @returns 			[float, float] A tuple of Stochastic Oscillator and Moving Average of Stochastic Oscillator
+export stochMFI(
+  // MFI settings
+  float source, simple int length,
+  // Stoch settings
+  simple int kLength, simple int kSmoothing, simple int dSmoothing,
+  simple int maTypeK, simple int maTypeD,
+  simple float almaOffsetKD=0.85, simple float almaSigmaKD=6, simple int lsmaOffSetKD=0) =>
+
+    mfi = VI.mfi(source, length)
+	[k, d] = stoch(mfi, kLength, kSmoothing, dSmoothing, maTypeK, maTypeD, almaOffsetKD, almaSigmaKD, lsmaOffSetKD)
+
+// @function 	Stochastic of On Balance Volume (OBV)
+// @param source 		(float) Source of series for OBV (close, high, low, etc.)
+// @param kLength 		(int) Period of loopback to calculate the stochastic
+// @param kSmoothing 	(int) Period for smoothig stochastic
+// @param dSmoothing 	(int) Period for signal (moving average of stochastic)
+// @param maTypeK 		(int) Type of Moving Average for Stochastic Oscillator
+// @param maTypeD 		(int) Type of Moving Average for Stochastic Oscillator Signal
+// @param almaOffsetKD 	(float) Offset for Arnaud Legoux Moving Average for Stoch Oscillator and Signal
+// @param almaSigmaKD 	(float) Sigma for Arnaud Legoux Moving Average for Stoch Oscillator and Signal
+// @param lsmaOffSetKD 	(int) Offset for Least Squares Moving Average for Stoch Oscillator and Signal
+// @returns 			[float, float] A tuple of Stochastic Oscillator and Moving Average of Stochastic Oscillator
+export stochOBV(
+  // OBV settings
+  float source,
+  // Stoch settings
+  simple int kLength, simple int kSmoothing, simple int dSmoothing,
+  simple int maTypeK, simple int maTypeD,
+  simple float almaOffsetKD=0.85, simple float almaSigmaKD=6, simple int lsmaOffSetKD=0) =>
+
+    obv = VI.obv(source)
+	[k, d] = stoch(obv, kLength, kSmoothing, dSmoothing, maTypeK, maTypeD, almaOffsetKD, almaSigmaKD, lsmaOffSetKD)
+
+// @function 	Stochastic of Positive Volume Index (PVI)
+// @param source		(float) Source for PVI
+// @param kLength 		(int) Period of loopback to calculate the stochastic
+// @param kSmoothing 	(int) Period for smoothig stochastic
+// @param dSmoothing 	(int) Period for signal (moving average of stochastic)
+// @param maTypeK 		(int) Type of Moving Average for Stochastic Oscillator
+// @param maTypeD 		(int) Type of Moving Average for Stochastic Oscillator Signal
+// @param almaOffsetKD 	(float) Offset for Arnaud Legoux Moving Average for Stoch Oscillator and Signal
+// @param almaSigmaKD 	(float) Sigma for Arnaud Legoux Moving Average for Stoch Oscillator and Signal
+// @param lsmaOffSetKD 	(int) Offset for Least Squares Moving Average for Stoch Oscillator and Signal
+// @returns 			[float, float] A tuple of Stochastic Oscillator and Moving Average of Stochastic Oscillator
+export stochPVI(
+  // PVI settings
+  float source,
+  // Stoch settings
+  simple int kLength, simple int kSmoothing, simple int dSmoothing,
+  simple int maTypeK, simple int maTypeD,
+  simple float almaOffsetKD=0.85, simple float almaSigmaKD=6, simple int lsmaOffSetKD=0) =>
+
+    pvi = VI.pvi(source)
+	[k, d] = stoch(pvi, kLength, kSmoothing, dSmoothing, maTypeK, maTypeD, almaOffsetKD, almaSigmaKD, lsmaOffSetKD)
+
+// @function 	Stochastic of Negative Volume Index (NVI)
+// @param source 		(float) Source of series for NVI (close, high, low, etc.)
+// @param kLength 		(int) Period of loopback to calculate the stochastic
+// @param kSmoothing 	(int) Period for smoothig stochastic
+// @param dSmoothing 	(int) Period for signal (moving average of stochastic)
+// @param maTypeK 		(int) Type of Moving Average for Stochastic Oscillator
+// @param maTypeD 		(int) Type of Moving Average for Stochastic Oscillator Signal
+// @param almaOffsetKD 	(float) Offset for Arnaud Legoux Moving Average for Stoch Oscillator and Signal
+// @param almaSigmaKD 	(float) Sigma for Arnaud Legoux Moving Average for Stoch Oscillator and Signal
+// @param lsmaOffSetKD 	(int) Offset for Least Squares Moving Average for Stoch Oscillator and Signal
+// @returns 			[float, float] A tuple of Stochastic Oscillator and Moving Average of Stochastic Oscillator
+export stochNVI(
+  // NVI settings
+  float source,
+  // Stoch settings
+  simple int kLength, simple int kSmoothing, simple int dSmoothing,
+  simple int maTypeK, simple int maTypeD,
+  simple float almaOffsetKD=0.85, simple float almaSigmaKD=6, simple int lsmaOffSetKD=0) =>
+
+    nvi = VI.nvi(source)
+	[k, d] = stoch(nvi, kLength, kSmoothing, dSmoothing, maTypeK, maTypeD, almaOffsetKD, almaSigmaKD, lsmaOffSetKD)
+
+// @function 	Stochastic of Price-Volume Trend (PVT)
+// @param source 		(float) Source of series for PVT (close, high, low, etc.)
+// @param kLength 		(int) Period of loopback to calculate the stochastic
+// @param kSmoothing 	(int) Period for smoothig stochastic
+// @param dSmoothing 	(int) Period for signal (moving average of stochastic)
+// @param maTypeK 		(int) Type of Moving Average for Stochastic Oscillator
+// @param maTypeD 		(int) Type of Moving Average for Stochastic Oscillator Signal
+// @param almaOffsetKD 	(float) Offset for Arnaud Legoux Moving Average for Stoch Oscillator and Signal
+// @param almaSigmaKD 	(float) Sigma for Arnaud Legoux Moving Average for Stoch Oscillator and Signal
+// @param lsmaOffSetKD 	(int) Offset for Least Squares Moving Average for Stoch Oscillator and Signal
+// @returns 			[float, float] A tuple of Stochastic Oscillator and Moving Average of Stochastic Oscillator
+export stochPVT(
+  // PVT settings
+  float source,
+  // Stoch settings
+  simple int kLength, simple int kSmoothing, simple int dSmoothing,
+  simple int maTypeK, simple int maTypeD,
+  simple float almaOffsetKD=0.85, simple float almaSigmaKD=6, simple int lsmaOffSetKD=0) =>
+
+    pvt = VI.pvt(source)
+	[k, d] = stoch(pvt, kLength, kSmoothing, dSmoothing, maTypeK, maTypeD, almaOffsetKD, almaSigmaKD, lsmaOffSetKD)
+
+// @function 	Stochastic of Volume Oscillator (VO)
+// @param shortLen		(int) Fast period for volume for VO
+// @param longLen		(int) Slow period for volume for VO
+// @param maType		(int) Type of moving average for smoothing for VO
+// @param kLength 		(int) Period of loopback to calculate the stochastic
+// @param kSmoothing 	(int) Period for smoothig stochastic
+// @param dSmoothing 	(int) Period for signal (moving average of stochastic)
+// @param maTypeK 		(int) Type of Moving Average for Stochastic Oscillator
+// @param maTypeD 		(int) Type of Moving Average for Stochastic Oscillator Signal
+// @param almaOffsetKD 	(float) Offset for Arnaud Legoux Moving Average for Stoch Oscillator and Signal
+// @param almaSigmaKD 	(float) Sigma for Arnaud Legoux Moving Average for Stoch Oscillator and Signal
+// @param lsmaOffSetKD 	(int) Offset for Least Squares Moving Average for Stoch Oscillator and Signal
+// @returns 			[float, float] A tuple of Stochastic Oscillator and Moving Average of Stochastic Oscillator
+export stochVO(
+  // VO settings
+  simple int shortLen, simple int longLen,
+  simple int matypeID,
+  simple float almaOffset=0.85, simple float almaSigma=6,
+  simple int lsmaOffSet=0,
+  // Stoch settings
+  simple int kLength, simple int kSmoothing, simple int dSmoothing,
+  simple int maTypeK, simple int maTypeD,
+  simple float almaOffsetKD=0.85, simple float almaSigmaKD=6, simple int lsmaOffSetKD=0) =>
+
+    vo = VI.vo(shortLen, longLen, matypeID, almaOffset, almaSigma, lsmaOffSet)
+	[k, d] = stoch(vo, kLength, kSmoothing, dSmoothing, maTypeK, maTypeD, almaOffsetKD, almaSigmaKD, lsmaOffSetKD)
+
+// @function 	Stochastic of Volume Rate of Change (VROC).
+// @param length 		(int) Period of loopback for VROC
+// @param kLength 		(int) Period of loopback to calculate the stochastic
+// @param kSmoothing 	(int) Period for smoothig stochastic
+// @param dSmoothing 	(int) Period for signal (moving average of stochastic)
+// @param maTypeK 		(int) Type of Moving Average for Stochastic Oscillator
+// @param maTypeD 		(int) Type of Moving Average for Stochastic Oscillator Signal
+// @param almaOffsetKD 	(float) Offset for Arnaud Legoux Moving Average for Stoch Oscillator and Signal
+// @param almaSigmaKD 	(float) Sigma for Arnaud Legoux Moving Average for Stoch Oscillator and Signal
+// @param lsmaOffSetKD 	(int) Offset for Least Squares Moving Average for Stoch Oscillator and Signal
+// @returns 			[float, float] A tuple of Stochastic Oscillator and Moving Average of Stochastic Oscillator
+export stochVROC(
+  // VROC settings
+  simple int length,
+  // Stoch settings
+  simple int kLength, simple int kSmoothing, simple int dSmoothing,
+  simple int maTypeK, simple int maTypeD,
+  simple float almaOffsetKD=0.85, simple float almaSigmaKD=6, simple int lsmaOffSetKD=0) =>
+
+    vroc = VI.vroc(length)
+	[k, d] = stoch(vroc, kLength, kSmoothing, dSmoothing, maTypeK, maTypeD, almaOffsetKD, almaSigmaKD, lsmaOffSetKD)
+
+// #endregion
+// ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+
+
+// ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+// Inverse Fisher Transform variations {
+
+// @function 	Inverse Fisher Transform (IFT) on RSI (Relative Strengh Index).
+// @param sourceRSI 	(float) Source for RSI
+// @param lengthRSI 	(int) Length for RSI
+// @param lengthIFT 	(int) Length for IFT
+// @returns 			(float) Inverse Fisher Transform
+export iftRSI(
+  float sourceRSI, simple int lengthRSI,
+  simple int lengthIFT) =>
+
+	rsi = rsi(sourceRSI, lengthRSI)
+	inverseFisher(rsi, lengthIFT, 50)
+
+// @function 	Inverse Fisher Transform (IFT) on ROC (Rate of Change).
+// @param sourceROC 	(float) Source for ROC
+// @param lengthROC 	(int) Length for ROC
+// @param lengthIFT 	(int) Length for IFT
+// @returns 			(float) Inverse Fisher Transform
+export iftROC(
+  float sourceROC, simple int lengthROC,
+  simple int lengthIFT) =>
+
+	roc = roc(sourceROC, lengthROC)
+	inverseFisher(roc, lengthIFT, 0, 4)
+
+// @function 	Inverse Fisher Transform (IFT) on UO (Ultimate Oscillator).
+// @param fastLength 	(int) Fast period of loopback for UO
+// @param middleLength 	(int) Middle period of loopback for UO
+// @param slowLength 	(int) Slow period of loopback for UO
+// @param lengthIFT 	(int) Length for IFT
+// @returns 			(float) Inverse Fisher Transform
+export iftUO(
+  // UO settings
+  simple int fastLength, simple int middleLength, simple int slowLength,
+  // IFT settings
+  simple int lengthIFT) =>
+
+    uo = ultimateOscillator(fastLength, middleLength, slowLength)
+	inverseFisher(uo, lengthIFT, 50)
+
+// @function 	Inverse Fisher Transform (IFT) on Stochastic
+// @param kLength 		(int) Period of loopback to calculate the stochastic
+// @param kSmoothing 	(int) Period for smoothig stochastic
+// @param dSmoothing 	(int) Period for signal (moving average of stochastic)
+// @param maTypeK 		(int) Type of Moving Average for Stochastic Oscillator
+// @param maTypeD 		(int) Type of Moving Average for Stochastic Oscillator Signal
+// @param almaOffsetKD 	(float) Offset for Arnaud Legoux Moving Average for Oscillator and Signal
+// @param almaSigmaKD 	(float) Sigma for Arnaud Legoux Moving Average for Oscillator and Signal
+// @param lsmaOffSetKD 	(int) Offset for Least Squares Moving Average for Oscillator and Signal
+// @param lengthIFT 	(int) Length for IFT
+// @returns 			(float) Inverse Fisher Transform
+export iftStoch(
+  // Stoch settings
+  simple int kLength, simple int kSmoothing, simple int dSmoothing,
+  simple int maTypeK, simple int maTypeD, simple float almaOffsetKD=0.85, simple float almaSigmaKD=6, simple int lsmaOffSetKD=0,
+  // IFT settings
+  simple int lengthIFT) =>
+
+	[k, d] = stoch(kLength, kSmoothing, dSmoothing, maTypeK, maTypeD, almaOffsetKD, almaSigmaKD, lsmaOffSetKD)
+	inverseFisher(k, lengthIFT, 50)
+
+// @function 	Inverse Fisher Transform (IFT) on TSI (True Strength Index)
+// @param source 		(float) Source for TSI
+// @param shortLength	(int) Short length for TSI
+// @param longLength	(int) Long length for TSI
+// @param maType		(int) Type of Moving Average for TSI
+// @param almaOffset	(float) Offset for Arnaud Legoux Moving Average for TSI
+// @param almaSigma		(float) Sigma for Arnaud Legoux Moving Average for TSI
+// @param lsmaOffSet	(int) Offset for Least Squares Moving Average for TSI
+// @param lengthIFT 	(int) Length for IFT
+// @returns 			(float) Inverse Fisher Transform
+export iftTSI(
+  // TSI Settings
+  float source, simple int shortLength, simple int longLength,
+  simple int maType, simple float almaOffset=0.85, simple float almaSigma=6, simple int lsmaOffSet=0,
+  // IFT settings
+  simple int lengthIFT) =>
+
+	tsi = tsi(source, shortLength, longLength, maType, almaOffset, almaSigma, lsmaOffSet)
+	inverseFisher(tsi, lengthIFT)
+
+// @function 	Inverse Fisher Transform (IFT) on CCI (Commodity Channel Index).
+// @param source 		(float) Source for CCI
+// @param length 		(int) Length for CCI
+// @param maType 		(int) Type of Moving Average for CCI
+// @param almaOffset 	(float) Offset for Arnaud Legoux Moving Average
+// @param almaSigma  	(float) Sigma for Arnaud Legoux Moving Average
+// @param lsmaOffSet  	(int) Offset for Least Squares Moving Average
+// @param lengthIFT  	(int) Length for IFT
+// @returns 			(float) Inverse Fisher Transform
+export iftCCI(
+  // CCI Settings
+  float source, simple int length,
+  simple int maType, simple float almaOffset=0.85, simple float almaSigma=6, simple int lsmaOffSet=0,
+  // IFT settings
+  simple int lengthIFT) =>
+
+	cci = cci(source, length, maType, almaOffset, almaSigma, lsmaOffSet, length, maType)
+	inverseFisher(cci, lengthIFT, 0, 4)
+
+// @function 	Inverse Fisher Transform (IFT) on Fisher Transform (FT).
+// @param source 	  	(float) Source of FT
+// @param Length 	  	(int) Length for FT
+// @param lengthIFT		(int) Length for IFT
+// @returns  			(float) Inverse Fisher Transform
+export iftFisher(
+  // FT Settings
+  simple int length,
+  // IFT settings
+  simple int lengthIFT) =>
+
+	[fisher, signal] = fisher(length)
+	inverseFisher(fisher, lengthIFT, 0, 4)
+
+// @function 	Inverse Fisher Transform (IFT) on MACD (Moving Average Convergence/Divergence).
+// @param source  			(float) Source of series (close, high, low, etc.)
+// @param fastLength 		(int) Period for fast moving average
+// @param slowLength 		(int) Period for slow moving average
+// @param signalLength 		(int) Signal length
+// @param maTypeFast 		(int) Type of fast moving average
+// @param maTypeSlow 		(int) Type of slow moving average
+// @param maTypeMACD 		(int) Type of MACD moving average
+// @param almaOffset 		(float) Offset for Arnaud Legoux Moving Average
+// @param almaSigma 		(float) Sigma for Arnaud Legoux Moving Average
+// @param lsmaOffSet 		(int) Offset for Least Squares Moving Average
+// @param lengthIFT 		(int) Length for IFT
+// @returns 				(float) Inverse Fisher Transform
+export iftMACD(
+  // MACD Settings
+  float source, simple int fastLength, simple int slowLength, simple int signalLength,
+  simple int maTypeFast, simple int maTypeSlow, simple int maTypeMACD,
+  simple float almaOffset=0.85, simple float almaSigma=6, simple int lsmaOffSet=0,
+  // IFT settings
+  simple int lengthIFT) =>
+
+    [macd, signal, histogram] = macd(source, fastLength, slowLength, signalLength, maTypeFast, maTypeSlow, maTypeMACD,
+      almaOffset, almaSigma, lsmaOffSet)
+
+    inverseFisher(macd, lengthIFT, 0, 4)
+
+// @function 	Inverse Fisher Transfor of Williams R% (Williams Percent Range).
+// 		Compares the current price of an asset to its highest high and lowest low over a specified time period.
+// @param source 		(float) Source of WPR
+// @param length 		(int) Length for WPR
+// @param lengthIFT 	(int) Length for IFT
+// @returns 			(float) Inverse Fisher Transform
+export iftWPR(
+  // Williams R% Settings
+  float source, simple int length,
+  // IFT settings
+  simple int lengthIFT) =>
+
+    wpr = wpr(source, length)
+    inverseFisher(wpr, lengthIFT, -50)
+
+// @function 	Inverse Fisher Transfor of Williams R% (Williams Percent Range).
+// @param source 	   	(float) Source of WPR
+// @param length 	   	(int) Length for WPR
+// @param lengthIFT 	(int) Length for IFT
+// @returns 			(float) Inverse Fisher Transform
+export iftMFI(
+  // MFI R% Settings
+  float source, simple int length,
+  // IFT settings
+  simple int lengthIFT) =>
+
+    mfi = VI.mfi(source, length)
+    inverseFisher(mfi, lengthIFT, 50)
+
+// @function 	Inverse Fisher Transfor of CMF (Chaikin Money Flow).
+// @param length 	   	(int) Length for CMF
+// @param lengthIFT 	(int) Length for IFT
+// @returns 			(float) Inverse Fisher Transform
+export iftCMF(
+  // CMF Settings
+  simple int length,
+  // IFT settings
+  simple int lengthIFT) =>
+
+    cmf = VI.cmf(length)
+    inverseFisher(cmf, lengthIFT, 0.5)
+
+// @function 	Inverse Fisher Transform (IFT) on VO (Volume Oscillator)
+// @param shortLen 		(int) Fast period for volume
+// @param longLen 		(int) Slow period for volume
+// @param maType 		(int) Type of moving average for smoothing
+// @param lengthIFT 	(int) Length for IFT
+// @returns 	 		(float) Inverse Fisher Transform
+export iftVO(
+  // VO Settings
+  simple int shortLen, simple int longLen,
+  simple int matypeID,
+  simple float almaOffset=0.85, simple float almaSigma=6,
+  simple int lsmaOffSet=0,
+  // IFT settings
+  simple int lengthIFT) =>
+
+	vo = VI.vo(shortLen, longLen, matypeID, almaOffset, almaSigma, lsmaOffSet)
+	inverseFisher(vo, lengthIFT)
+
+// @function 	Inverse Fisher Transform (IFT) on VROC (Volume Rate of Change)
+// @param length 		(int) Length for VROC
+// @param lengthIFT 	(int) Length for IFT
+// @returns 	 		(float) Inverse Fisher Transform
+export iftVROC(
+  // VROC Settings
+  simple int length,
+  // IFT settings
+  simple int lengthIFT) =>
+
+	vroc = VI.vroc(length)
+	inverseFisher(vroc, lengthIFT, 0, 4)
+
+// #endregion
+// ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+
+
+// ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+// SMI variations {
+
+// @function 	SMI (Stochastic Momentum Index) of RSI (Relative Strength Index)
+// @param source 	  		(float) Source for RSI
+// @param length 	  		(int) Length for RSI
+// @param shortLengthTSI	(int) Short length for TSI
+// @param longLengthTSI		(int) Long length for TSI
+// @param maTypeTSI			(int) Type of Moving Average for TSI
+// @param maTypeTSI			(int) Type of Moving Average for Signal of TSI
+// @param almaOffsetTSI		(float) Offset for Arnaud Legoux Moving Average
+// @param almaSigmaTSI		(float) Sigma for Arnaud Legoux Moving Average
+// @param lsmaOffSetTSI		(int) Offset for Least Squares Moving Average
+// @returns 				[float, float, float] A tuple with TSI, signal of TSI and histogram of difference
+export smiRSI(
+  // RSI Settings
+  float source, simple int length,
+  // SMI Settings
+  simple int shortLengthTSI, simple int longLengthTSI,
+  simple int maTypeTSI,
+  simple float almaOffsetTSI=0.85, simple float almaSigmaTSI=6,
+  simple int lsmaOffSetTSI=0,
+
+  simple int maTypeSignal, simple int smoothingLengthSignal,
+  simple float almaOffsetSignal=0.85, simple float almaSigmaSignal=6,
+  simple int lsmaOffSetSignal=0) =>
+
+	rsi = rsi(source, length)
+
+	[smi, signal, histogram] = smi(rsi, shortLengthTSI, longLengthTSI, maTypeTSI, almaOffsetTSI, almaSigmaTSI,
+	  lsmaOffSetTSI, maTypeSignal, smoothingLengthSignal, almaOffsetSignal, almaSigmaSignal, lsmaOffSetSignal)
+
+// @function 	Stochastic Momentum Index of ROC (Rate of Change)
+// @param source 			(float) Source for ROC
+// @param length 			(int) Length for ROC
+// @param shortLengthTSI 	(int) Short length for TSI
+// @param longLengthTSI	 	(int) Long length for TSI
+// @param maTypeTSI 		(int) Type of Moving Average for TSI
+// @param maTypeTSI 		(int) Type of Moving Average for Signal of TSI
+// @param almaOffsetTSI 	(float) Offset for Arnaud Legoux Moving Average
+// @param almaSigmaTSI 		(float) Sigma for Arnaud Legoux Moving Average
+// @param lsmaOffSetTSI 	(int) Offset for Least Squares Moving Average
+// @returns 				[float, float, float] A tuple with TSI, signal of TSI and histogram of difference
+export smiROC(
+  // ROC Settings
+  float source, simple int length,
+  // SMI Settings
+  simple int shortLengthTSI, simple int longLengthTSI,
+  simple int maTypeTSI,
+  simple float almaOffsetTSI=0.85, simple float almaSigmaTSI=6,
+  simple int lsmaOffSetTSI=0,
+
+  simple int maTypeSignal, simple int smoothingLengthSignal,
+  simple float almaOffsetSignal=0.85, simple float almaSigmaSignal=6,
+  simple int lsmaOffSetSignal=0) =>
+
+	roc = roc(source, length)
+
+	[smi, signal, histogram] = smi(roc, shortLengthTSI, longLengthTSI, maTypeTSI, almaOffsetTSI, almaSigmaTSI,
+	  lsmaOffSetTSI, maTypeSignal, smoothingLengthSignal, almaOffsetSignal, almaSigmaSignal, lsmaOffSetSignal)
+
+// @function 	Stochastic Momentum Index of VROC (Volume Rate of Change)
+// @param length 			(int) Length for VROC
+// @param shortLengthTSI 	(int) Short length for TSI
+// @param longLengthTSI	 	(int) Long length for TSI
+// @param maTypeTSI 		(int) Type of Moving Average for TSI
+// @param maTypeTSI 		(int) Type of Moving Average for Signal of TSI
+// @param almaOffsetTSI 	(float) Offset for Arnaud Legoux Moving Average
+// @param almaSigmaTSI 		(float) Sigma for Arnaud Legoux Moving Average
+// @param lsmaOffSetTSI 	(int) Offset for Least Squares Moving Average
+// @returns 				[float, float, float] A tuple with TSI, signal of TSI and histogram of difference
+export smiVROC(
+  // VROC Settings
+  simple int length,
+  // SMI Settings
+  simple int shortLengthTSI, simple int longLengthTSI,
+  simple int maTypeTSI,
+  simple float almaOffsetTSI=0.85, simple float almaSigmaTSI=6,
+  simple int lsmaOffSetTSI=0,
+
+  simple int maTypeSignal, simple int smoothingLengthSignal,
+  simple float almaOffsetSignal=0.85, simple float almaSigmaSignal=6,
+  simple int lsmaOffSetSignal=0) =>
+
+	vroc = VI.vroc(length)
+
+	[smi, signal, histogram] = smi(vroc, shortLengthTSI, longLengthTSI, maTypeTSI, almaOffsetTSI, almaSigmaTSI,
+	  lsmaOffSetTSI, maTypeSignal, smoothingLengthSignal, almaOffsetSignal, almaSigmaSignal, lsmaOffSetSignal)
+
+// @function 	Stochastic Momentum Index of Williams R% (Williams Percent Range)
+// @param source 			(float) Source for WPR
+// @param length 			(int) Length for WPR
+// @param shortLengthTSI 	(int) Short length for TSI
+// @param longLengthTSI	 	(int) Long length for TSI
+// @param maTypeTSI 		(int) Type of Moving Average for TSI
+// @param maTypeTSI 		(int) Type of Moving Average for Signal of TSI
+// @param almaOffsetTSI 	(float) Offset for Arnaud Legoux Moving Average
+// @param almaSigmaTSI 		(float) Sigma for Arnaud Legoux Moving Average
+// @param lsmaOffSetTSI 	(int) Offset for Least Squares Moving Average
+// @returns 				[float, float, float] A tuple with TSI, signal of TSI and histogram of difference
+export smiWPR(
+  // Williams R% Settings
+  float source, simple int length,
+  // SMI Settings
+  simple int shortLengthTSI, simple int longLengthTSI,
+  simple int maTypeTSI,
+  simple float almaOffsetTSI=0.85, simple float almaSigmaTSI=6,
+  simple int lsmaOffSetTSI=0,
+
+  simple int maTypeSignal, simple int smoothingLengthSignal,
+  simple float almaOffsetSignal=0.85, simple float almaSigmaSignal=6,
+  simple int lsmaOffSetSignal=0) =>
+
+	wpr = wpr(source, length)
+
+	[smi, signal, histogram] = smi(wpr, shortLengthTSI, longLengthTSI, maTypeTSI, almaOffsetTSI, almaSigmaTSI,
+	  lsmaOffSetTSI, maTypeSignal, smoothingLengthSignal, almaOffsetSignal, almaSigmaSignal, lsmaOffSetSignal)
+
+// @function 	Stochastic Momentum Index of FT (Fisher Transform).
+// @param length 			(int) Period of loopback to calculate the Fisher Transform
+// @param shortLengthTSI 	(int) Short length for TSI
+// @param longLengthTSI	 	(int) Long length for TSI
+// @param maTypeTSI  		(int) Type of Moving Average for TSI
+// @param maTypeTSI  		(int) Type of Moving Average for Signal of TSI
+// @param almaOffsetTSI 	(float) Offset for Arnaud Legoux Moving Average
+// @param almaSigmaTSI 		(float) Sigma for Arnaud Legoux Moving Average
+// @param lsmaOffSetTSI 	(int) Offset for Least Squares Moving Average
+// @returns 				[float, float, float] A tuple with TSI, signal of TSI and histogram of difference
+export smiFT(
+  // FT settings
+  simple int length,
+  // SMI Settings
+  simple int shortLengthTSI, simple int longLengthTSI,
+  simple int maTypeTSI,
+  simple float almaOffsetTSI=0.85, simple float almaSigmaTSI=6,
+  simple int lsmaOffSetTSI=0,
+
+  simple int maTypeSignal, simple int smoothingLengthSignal,
+  simple float almaOffsetSignal=0.85, simple float almaSigmaSignal=6,
+  simple int lsmaOffSetSignal=0) =>
+
+	[ft, signal_ft] = fisher(length)
+
+	[smi, signal, histogram] = smi(ft, shortLengthTSI, longLengthTSI, maTypeTSI, almaOffsetTSI, almaSigmaTSI,
+	  lsmaOffSetTSI, maTypeSignal, smoothingLengthSignal, almaOffsetSignal, almaSigmaSignal, lsmaOffSetSignal)
+
+// @function 	Stochastic Momentum Index of Fisher Transform. Version with custom source
+// @param sourceHigh 	 (float) Source of series for high values in Fisher Transform
+// @param sourceLow 	 (float) Source of series for low values in Fisher Transform
+// @param length 	  	(int) Period for loopback in Fisher Transform
+// @param shortLengthTSI 	(int) Short length for TSI
+// @param longLengthTSI	 	(int) Long length for TSI
+// @param maTypeTSI 		(int) Type of Moving Average for TSI
+// @param maTypeTSI 		(int) Type of Moving Average for Signal of TSI
+// @param almaOffsetTSI 	(float) Offset for Arnaud Legoux Moving Average
+// @param almaSigmaTSI 		(float) Sigma for Arnaud Legoux Moving Average
+// @param lsmaOffSetTSI 	(int) Offset for Least Squares Moving Average
+// @returns 				[float, float, float] A tuple with TSI, signal of TSI and histogram of difference
+export smiFT(
+  // Fisher Transform Settings
+  float sourceHigh, float sourceLow, simple int length,
+  // SMI Settings
+  simple int shortLengthTSI, simple int longLengthTSI,
+  simple int maTypeTSI,
+  simple float almaOffsetTSI=0.85, simple float almaSigmaTSI=6,
+  simple int lsmaOffSetTSI=0,
+
+  simple int maTypeSignal, simple int smoothingLengthSignal,
+  simple float almaOffsetSignal=0.85, simple float almaSigmaSignal=6,
+  simple int lsmaOffSetSignal=0) =>
+
+	[ft1, ft2] = fisher(sourceHigh, sourceLow, length)
+
+	[smi, signal, histogram] = smi(ft1, shortLengthTSI, longLengthTSI, maTypeTSI, almaOffsetTSI, almaSigmaTSI,
+	  lsmaOffSetTSI, maTypeSignal, smoothingLengthSignal, almaOffsetSignal, almaSigmaSignal, lsmaOffSetSignal)
+
+// @function 	Stochastic Momentum Index of CCI (Commodity Channel Index).
+// @param source 	  		(float) Source for CCI
+// @param length 	  		(int) Length for CCI
+// @param maTypeCCI 		(int) Type of Moving Average
+// @param almaOffsetCCI		(float) Offset for Arnaud Legoux Moving Average
+// @param almaSigmaCCI		(float) Sigma for Arnaud Legoux Moving Average
+// @param lsmaOffSetCCI		(int) Offset for Least Squares Moving Average
+// @param shortLengthTSI	(int) Short length for TSI
+// @param longLengthTSI		(int) Long length for TSI
+// @param maTypeTSI 		(int) Type of Moving Average for TSI
+// @param maTypeTSI 		(int) Type of Moving Average for Signal of TSI
+// @param almaOffsetTSI		(float) Offset for Arnaud Legoux Moving Average
+// @param almaSigmaTSI		(float) Sigma for Arnaud Legoux Moving Average
+// @param lsmaOffSetTSI		(int) Offset for Least Squares Moving Average
+// @returns 				[float, float, float] A tuple with TSI, signal of TSI and histogram of difference
+export smiCCI(
+  // CCI Transform Settings
+  float source, simple int length,
+  simple int maTypeCCI, simple float almaOffsetCCI=0.85, simple float almaSigmaCCI=6, simple int lsmaOffSetCCI=0,
+  // SMI Settings
+  simple int shortLengthTSI, simple int longLengthTSI,
+  simple int maTypeTSI,
+  simple float almaOffsetTSI=0.85, simple float almaSigmaTSI=6,
+  simple int lsmaOffSetTSI=0,
+
+  simple int maTypeSignal, simple int smoothingLengthSignal,
+  simple float almaOffsetSignal=0.85, simple float almaSigmaSignal=6,
+  simple int lsmaOffSetSignal=0) =>
+
+	cci = cci(source, length, maTypeCCI, almaOffsetCCI, almaSigmaCCI, lsmaOffSetCCI, length, maTypeCCI)
+
+	[smi, signal, histogram] = smi(cci, shortLengthTSI, longLengthTSI, maTypeTSI, almaOffsetTSI, almaSigmaTSI,
+	  lsmaOffSetTSI, maTypeSignal, smoothingLengthSignal, almaOffsetSignal, almaSigmaSignal, lsmaOffSetSignal)
+
+// @function 	Stochastic Momentum Index of UO (Ultimate Oscillator).
+// @param fastLength 		(int) Fast period of loopback for Ultimate Oscillator
+// @param middleLength 		(int) Middle period of loopback for Ultimate Oscillator
+// @param slowLength 		(int) Slow period of loopback for Ultimate Oscillator
+// @param shortLengthTSI	(int) Short length for TSI
+// @param longLengthTSI		(int) Long length for TSI
+// @param maTypeTSI			(int) Type of Moving Average for TSI
+// @param maTypeTSI			(int) Type of Moving Average for Signal of TSI
+// @param almaOffsetTSI		(float) Offset for Arnaud Legoux Moving Average
+// @param almaSigmaTSI		(float) Sigma for Arnaud Legoux Moving Average
+// @param lsmaOffSetTSI		(int) Offset for Least Squares Moving Average
+// @returns 				[float, float, float] A tuple with TSI, signal of TSI and histogram of difference
+export smiUO(
+  // Ultimate Oscillator Settings
+  simple int fastLength, simple int middleLength, simple int slowLength,
+  // SMI Settings
+  simple int shortLengthTSI, simple int longLengthTSI,
+  simple int maTypeTSI,
+  simple float almaOffsetTSI=0.85, simple float almaSigmaTSI=6,
+  simple int lsmaOffSetTSI=0,
+
+  simple int maTypeSignal, simple int smoothingLengthSignal,
+  simple float almaOffsetSignal=0.85, simple float almaSigmaSignal=6,
+  simple int lsmaOffSetSignal=0) =>
+
+	uo = ultimateOscillator(fastLength, middleLength, slowLength)
+
+	[smi, signal, histogram] = smi(uo, shortLengthTSI, longLengthTSI, maTypeTSI, almaOffsetTSI, almaSigmaTSI,
+	  lsmaOffSetTSI, maTypeSignal, smoothingLengthSignal, almaOffsetSignal, almaSigmaSignal, lsmaOffSetSignal)
+
+// @function 	Stochastic Momentum Index of MACD (Moving Average Convergence/Divergence).
+// @param source			(float) Source of series for MACD (close, high, low, etc.)
+// @param fastLength 		(int) Period for fast moving average for MACD
+// @param slowLength 		(int) Period for slow moving average for MACD
+// @param signalLength 		(int) Signal length for MACD
+// @param maTypeFast 		(int) Type of fast moving average for MACD
+// @param maTypeSlow 		(int) Type of slow moving average for MACD
+// @param maTypeMACD 		(int) Type of MACD moving average for MACD
+// @param almaOffset 		(float) Offset for Arnaud Legoux Moving Average for MACD
+// @param almaSigma 		(float) Sigma for Arnaud Legoux Moving Average for MACD
+// @param lsmaOffSet 		(int) Offset for Least Squares Moving Average for MACD
+// @param shortLengthTSI	(int) Short length for TSI
+// @param longLengthTSI		(int) Long length for TSI
+// @param maTypeTSI			(int) Type of Moving Average for TSI
+// @param maTypeTSI			(int) Type of Moving Average for Signal of TSI
+// @param almaOffsetTSI		(float) Offset for Arnaud Legoux Moving Average
+// @param almaSigmaTSI		(float) Sigma for Arnaud Legoux Moving Average
+// @param lsmaOffSetTSI		(int) Offset for Least Squares Moving Average
+// @returns 				[float, float, float] A tuple with TSI, signal of TSI and histogram of difference
+export smiMACD(
+  // MACD settings
+  float source, simple int fastLength, simple int slowLength, simple int signalLength,
+  simple int maTypeFast, simple int maTypeSlow, simple int maTypeMACD,
+  simple float almaOffset=0.85, simple float almaSigma=6,
+  simple int lsmaOffSet=0,
+  // SMI Settings
+  simple int shortLengthTSI, simple int longLengthTSI,
+  simple int maTypeTSI,
+  simple float almaOffsetTSI=0.85, simple float almaSigmaTSI=6,
+  simple int lsmaOffSetTSI=0,
+
+  simple int maTypeSignal, simple int smoothingLengthSignal,
+  simple float almaOffsetSignal=0.85, simple float almaSigmaSignal=6,
+  simple int lsmaOffSetSignal=0) =>
+
+	[macd, signal_macd, histogram_macd] = macd(source, fastLength, slowLength, signalLength, maTypeFast, maTypeSlow, maTypeMACD,
+	  almaOffset, almaSigma, lsmaOffSet)
+
+	[smi, signal, histogram] = smi(macd, shortLengthTSI, longLengthTSI, maTypeTSI, almaOffsetTSI, almaSigmaTSI,
+	  lsmaOffSetTSI, maTypeSignal, smoothingLengthSignal, almaOffsetSignal, almaSigmaSignal, lsmaOffSetSignal)
+
+// @function 	Stochastic Momentum Index (SMI) of Volume
+// @param shortLengthTSI 	(int) Short length for TSI
+// @param longLengthTSI	 	(int) Long length for TSI
+// @param maTypeTSI	 		(int) Type of Moving Average for TSI
+// @param maTypeTSI	 		(int) Type of Moving Average for Signal of TSI
+// @param almaOffsetTSI		(float) Offset for Arnaud Legoux Moving Average
+// @param almaSigmaTSI		(float) Sigma for Arnaud Legoux Moving Average
+// @param lsmaOffSetTSI		(int) Offset for Least Squares Moving Average
+// @returns 				[float, float, float] A tuple with TSI, signal of TSI and histogram of difference
+export smiVol(
+  // SMI Settings
+  simple int shortLengthTSI, simple int longLengthTSI,
+  simple int maTypeTSI,
+  simple float almaOffsetTSI=0.85, simple float almaSigmaTSI=6,
+  simple int lsmaOffSetTSI=0,
+
+  simple int maTypeSignal, simple int smoothingLengthSignal,
+  simple float almaOffsetSignal=0.85, simple float almaSigmaSignal=6,
+  simple int lsmaOffSetSignal=0) =>
+
+	[smi, signal, histogram] = smi(volume, shortLengthTSI, longLengthTSI, maTypeTSI, almaOffsetTSI, almaSigmaTSI,
+	  lsmaOffSetTSI, maTypeSignal, smoothingLengthSignal, almaOffsetSignal, almaSigmaSignal, lsmaOffSetSignal)
+
+// @function 	Stochastic Momentum Index of MFI (Money Flow Index)
+// @param length 			(int) Period for loopback for MFI
+// @param lengthK           (int) Length for K%. Lengh for calculate SMI's oscillator.
+// @param lengthD	        (int) Length for D%. lengh for smoothing SMI's oscillator.
+// @param maTypeSMI 		(int) Type of Moving Average for SMI
+// @param maTypeSMI 		(int) Type of Moving Average for Signal of SMI
+// @param almaOffsetSMI		(float) Offset for Arnaud Legoux Moving Average
+// @param almaSigmaSMI		(float) Sigma for Arnaud Legoux Moving Average
+// @param lsmaOffSetSMI		(int) Offset for Least Squares Moving Average
+// @returns 				[float, float, float] A tuple with SMI, signal of SMI and histogram of difference
+export smiMFI(
+  // MFI settings
+  simple int length,
+  // SMI Settings
+  simple int lengthK, simple int lengthD,
+  simple int maTypeSMI,
+  simple float almaOffsetSMI=0.85, simple float almaSigmaSMI=6,
+  simple int lsmaOffSetSMI=0,
+  // Signal Settings
+  simple int maTypeSignal, simple int smoothingLengthSignal,
+  simple float almaOffsetSignal=0.85, simple float almaSigmaSignal=6,
+  simple int lsmaOffSetSignal=0) =>
+
+    mfi = VI.mfi(source=close, length=length)
+
+    [smi, signal, histogram] = smi(source=mfi, lengthK=lengthK, lengthD=lengthD, maTypeSMI=maTypeSMI, almaOffsetSMI=almaOffsetSMI,
+      almaSigmaSMI=almaSigmaSMI, lsmaOffSetSMI=lsmaOffSetSMI, maTypeSignal=maTypeSignal, smoothingLengthSignal=smoothingLengthSignal,
+      almaOffsetSignal=almaOffsetSignal, almaSigmaSignal=almaSigmaSignal, lsmaOffSetSignal=lsmaOffSetSignal)
+
+// @function 	Stochastic Momentum Index of MFI (Money Flow Index)
+// @param source 			(float) Source of series for MFI (close, high, low, etc.)
+// @param length 			(int) Period for loopback for MFI
+// @param lengthK           (int) Length for K%. Lengh for calculate SMI's oscillator.
+// @param lengthD	        (int) Length for D%. lengh for smoothing SMI's oscillator.
+// @param maTypeSMI 		(int) Type of Moving Average for SMI
+// @param maTypeSMI 		(int) Type of Moving Average for Signal of SMI
+// @param almaOffsetSMI		(float) Offset for Arnaud Legoux Moving Average
+// @param almaSigmaSMI		(float) Sigma for Arnaud Legoux Moving Average
+// @param lsmaOffSetSMI		(int) Offset for Least Squares Moving Average
+// @returns 				[float, float, float] A tuple with SMI, signal of SMI and histogram of difference
+export smiMFI(
+  // MFI settings
+  float source, simple int length,
+  // SMI Settings
+  simple int lengthK, simple int lengthD,
+  simple int maTypeSMI,
+  simple float almaOffsetSMI=0.85, simple float almaSigmaSMI=6,
+  simple int lsmaOffSetSMI=0,
+  // Signal Settings
+  simple int maTypeSignal, simple int smoothingLengthSignal,
+  simple float almaOffsetSignal=0.85, simple float almaSigmaSignal=6,
+  simple int lsmaOffSetSignal=0) =>
+
+    mfi = VI.mfi(source=source, length=length)
+
+    [smi, signal, histogram] = smi(source=mfi, lengthK=lengthK, lengthD=lengthD, maTypeSMI=maTypeSMI, almaOffsetSMI=almaOffsetSMI,
+      almaSigmaSMI=almaSigmaSMI, lsmaOffSetSMI=lsmaOffSetSMI, maTypeSignal=maTypeSignal, smoothingLengthSignal=smoothingLengthSignal,
+      almaOffsetSignal=almaOffsetSignal, almaSigmaSignal=almaSigmaSignal, lsmaOffSetSignal=lsmaOffSetSignal)
+
+// @function 	Stochastic Momentum Index of CMF (Chaikin Money Flow).
+// @param length 			(int) Period for loopback for CMF
+// @param shortLengthTSI 	(int) Short length for TSI
+// @param longLengthTSI	 	(int) Long length for TSI
+// @param maTypeTSI 		(int) Type of Moving Average for TSI
+// @param maTypeTSI 		(int) Type of Moving Average for Signal of TSI
+// @param almaOffsetTSI		(float) Offset for Arnaud Legoux Moving Average
+// @param almaSigmaTSI		(float) Sigma for Arnaud Legoux Moving Average
+// @param lsmaOffSetTSI		(int) Offset for Least Squares Moving Average
+// @returns 				[float, float, float] A tuple with TSI, signal of TSI and histogram of difference
+export smiCMF(
+  // CMF settings
+  simple int length,
+  // SMI Settings
+  simple int shortLengthTSI, simple int longLengthTSI,
+  simple int maTypeTSI,
+  simple float almaOffsetTSI=0.85, simple float almaSigmaTSI=6,
+  simple int lsmaOffSetTSI=0,
+
+  simple int maTypeSignal, simple int smoothingLengthSignal,
+  simple float almaOffsetSignal=0.85, simple float almaSigmaSignal=6,
+  simple int lsmaOffSetSignal=0) =>
+
+	cmf = VI.cmf(length)
+
+	[smi, signal, histogram] = smi(cmf, shortLengthTSI, longLengthTSI, maTypeTSI, almaOffsetTSI, almaSigmaTSI,
+	  lsmaOffSetTSI, maTypeSignal, smoothingLengthSignal, almaOffsetSignal, almaSigmaSignal, lsmaOffSetSignal)
+
+// @function 	Stochastic Momentum Index of On Balance Volume (OBV)
+// @param source 			(float) Series for OBV
+// @param shortLengthTSI 	(int) Short length for TSI
+// @param longLengthTSI	 	(int) Long length for TSI
+// @param maTypeTSI			(int) Type of Moving Average for TSI
+// @param maTypeTSI			(int) Type of Moving Average for Signal of TSI
+// @param almaOffsetTSI		(float) Offset for Arnaud Legoux Moving Average
+// @param almaSigmaTSI		(float) Sigma for Arnaud Legoux Moving Average
+// @param lsmaOffSetTSI		(int) Offset for Least Squares Moving Average
+// @returns 				[float, float, float] A tuple with TSI, signal of TSI and histogram of difference
+export smiOBV(
+  // OBV settings
+  float source,
+  // SMI Settings
+  simple int shortLengthTSI, simple int longLengthTSI,
+  simple int maTypeTSI,
+  simple float almaOffsetTSI=0.85, simple float almaSigmaTSI=6,
+  simple int lsmaOffSetTSI=0,
+
+  simple int maTypeSignal, simple int smoothingLengthSignal,
+  simple float almaOffsetSignal=0.85, simple float almaSigmaSignal=6,
+  simple int lsmaOffSetSignal=0) =>
+
+	obv = VI.obv(source)
+
+	[smi, signal, histogram] = smi(obv, shortLengthTSI, longLengthTSI, maTypeTSI, almaOffsetTSI, almaSigmaTSI,
+	  lsmaOffSetTSI, maTypeSignal, smoothingLengthSignal, almaOffsetSignal, almaSigmaSignal, lsmaOffSetSignal)
+
+// @function 	Stochastic Momentum Index of Price-Volume Trend (PVT)
+// @param source			(float) Series for PVT
+// @param shortLengthTSI	(int) Short length for TSI
+// @param longLengthTSI		(int) Long length for TSI
+// @param maTypeTSI 		(int) Type of Moving Average for TSI
+// @param maTypeTSI 		(int) Type of Moving Average for Signal of TSI
+// @param almaOffsetTSI		(float) Offset for Arnaud Legoux Moving Average
+// @param almaSigmaTSI		(float) Sigma for Arnaud Legoux Moving Average
+// @param lsmaOffSetTSI		(int) Offset for Least Squares Moving Average
+// @returns 				[float, float, float] A tuple with TSI, signal of TSI and histogram of difference
+export smiPVT(
+  // PVT settings
+  float source,
+  // SMI Settings
+  simple int shortLengthTSI, simple int longLengthTSI,
+  simple int maTypeTSI,
+  simple float almaOffsetTSI=0.85, simple float almaSigmaTSI=6,
+  simple int lsmaOffSetTSI=0,
+
+  simple int maTypeSignal, simple int smoothingLengthSignal,
+  simple float almaOffsetSignal=0.85, simple float almaSigmaSignal=6,
+  simple int lsmaOffSetSignal=0) =>
+
+	pvt = VI.pvt(source)
+
+	[smi, signal, histogram] = smi(pvt, shortLengthTSI, longLengthTSI, maTypeTSI, almaOffsetTSI, almaSigmaTSI,
+	  lsmaOffSetTSI, maTypeSignal, smoothingLengthSignal, almaOffsetSignal, almaSigmaSignal, lsmaOffSetSignal)
+
+// @function 	Stochastic Momentum Index of Volume Oscillator (VO)
+// @param shortLen 			(int) Fast period for volume Oscillator
+// @param longLen 			(int) Slow period for volume Oscillator
+// @param maType 			(int) Type of moving average for smoothing of Volume Oscillator
+// @param shortLengthTSI 	(int) Short length for TSI
+// @param longLengthTSI	 	(int) Long length for TSI
+// @param maTypeTSI 		(int) Type of Moving Average for TSI
+// @param maTypeTSI 		(int) Type of Moving Average for Signal of TSI
+// @param almaOffsetTSI		(float) Offset for Arnaud Legoux Moving Average
+// @param almaSigmaTSI		(float) Sigma for Arnaud Legoux Moving Average
+// @param lsmaOffSetTSI		(int) Offset for Least Squares Moving Average
+// @returns 				[float, float, float] A tuple with TSI, signal of TSI and histogram of difference
+export smiVO(
+  // VO settings
+  simple int shortLen, simple int longLen,
+  simple int matypeID,
+  simple float almaOffset=0.85, simple float almaSigma=6,
+  simple int lsmaOffSet=0,
+  // SMI Settings
+  simple int shortLengthTSI, simple int longLengthTSI,
+  simple int maTypeTSI,
+  simple float almaOffsetTSI=0.85, simple float almaSigmaTSI=6,
+  simple int lsmaOffSetTSI=0,
+
+  simple int maTypeSignal, simple int smoothingLengthSignal,
+  simple float almaOffsetSignal=0.85, simple float almaSigmaSignal=6,
+  simple int lsmaOffSetSignal=0) =>
+
+	vo = VI.vo(shortLen, longLen, matypeID, almaOffset, almaSigma, lsmaOffSet)
+
+	[smi, signal, histogram] = smi(vo, shortLengthTSI, longLengthTSI, maTypeTSI, almaOffsetTSI, almaSigmaTSI,
+	  lsmaOffSetTSI, maTypeSignal, smoothingLengthSignal, almaOffsetSignal, almaSigmaSignal, lsmaOffSetSignal)
+
+// @function 	Stochastic Momentum Index of Positive Volume Index (PVI)
+// @param source			(float) Source for PVI
+// @param shortLengthTSI	(int) Short length for TSI
+// @param longLengthTSI		(int) Long length for TSI
+// @param maTypeTSI			(int) Type of Moving Average for TSI
+// @param maTypeTSI			(int) Type of Moving Average for Signal of TSI
+// @param almaOffsetTSI		(float) Offset for Arnaud Legoux Moving Average
+// @param almaSigmaTSI		(float) Sigma for Arnaud Legoux Moving Average
+// @param lsmaOffSetTSI		(int) Offset for Least Squares Moving Average
+// @returns 				[float, float, float] A tuple with TSI, signal of TSI and histogram of difference
+export smiPVI(
+  // PVI settings
+  float source,
+  // SMI Settings
+  simple int shortLengthTSI, simple int longLengthTSI,
+  simple int maTypeTSI,
+  simple float almaOffsetTSI=0.85, simple float almaSigmaTSI=6,
+  simple int lsmaOffSetTSI=0,
+
+  simple int maTypeSignal, simple int smoothingLengthSignal,
+  simple float almaOffsetSignal=0.85, simple float almaSigmaSignal=6,
+  simple int lsmaOffSetSignal=0) =>
+
+	pvi = VI.pvi(source)
+
+	[smi, signal, histogram] = smi(pvi, shortLengthTSI, longLengthTSI, maTypeTSI, almaOffsetTSI, almaSigmaTSI,
+	  lsmaOffSetTSI, maTypeSignal, smoothingLengthSignal, almaOffsetSignal, almaSigmaSignal, lsmaOffSetSignal)
+
+// @function 	Stochastic Momentum Index of Negative Volume Index (NVI)
+// @param source			(float) Source for NVI
+// @param shortLengthTSI	(int) Short length for TSI
+// @param longLengthTSI		(int) Long length for TSI
+// @param maTypeTSI			(int) Type of Moving Average for TSI
+// @param maTypeTSI			(int) Type of Moving Average for Signal of TSI
+// @param almaOffsetTSI		(float) Offset for Arnaud Legoux Moving Average
+// @param almaSigmaTSI		(float) Sigma for Arnaud Legoux Moving Average
+// @param lsmaOffSetTSI		(int) Offset for Least Squares Moving Average
+// @returns 				[float, float, float] A tuple with TSI, signal of TSI and histogram of difference
+export smiNVI(
+  // NVI settings
+  float source,
+  // SMI Settings
+  simple int shortLengthTSI, simple int longLengthTSI,
+  simple int maTypeTSI,
+  simple float almaOffsetTSI=0.85, simple float almaSigmaTSI=6,
+  simple int lsmaOffSetTSI=0,
+
+  simple int maTypeSignal, simple int smoothingLengthSignal,
+  simple float almaOffsetSignal=0.85, simple float almaSigmaSignal=6,
+  simple int lsmaOffSetSignal=0) =>
+
+	nvi = VI.nvi(source)
+
+	[smi, signal, histogram] = smi(nvi, shortLengthTSI, longLengthTSI, maTypeTSI, almaOffsetTSI, almaSigmaTSI,
+	  lsmaOffSetTSI, maTypeSignal, smoothingLengthSignal, almaOffsetSignal, almaSigmaSignal, lsmaOffSetSignal)
+
+// @function 		Stochastic Momentum Index of Momentum (MOM).
+// @param source 		(float) Source for MOM
+// @param length 		(int) Period of loopback for MOM
+// @param shortLengthTSI 	(int) Short length for TSI
+// @param longLengthTSI	 	(int) Long length for TSI
+// @param maTypeTSI 		(int) Type of Moving Average for TSI
+// @param maTypeTSI 		(int) Type of Moving Average for Signal of TSI
+// @param almaOffsetTSI 	(float) Offset for Arnaud Legoux Moving Average
+// @param almaSigmaTSI 		(float) Sigma for Arnaud Legoux Moving Average
+// @param lsmaOffSetTSI 	(int) Offset for Least Squares Moving Average
+// @returns 				[float, float, float] A tuple with TSI, signal of TSI and histogram of difference
+export smiMom(
+  // MOM settings
+  float source, simple int length,
+  // SMI Settings
+  simple int shortLengthTSI, simple int longLengthTSI,
+  simple int maTypeTSI,
+  simple float almaOffsetTSI=0.85, simple float almaSigmaTSI=6,
+  simple int lsmaOffSetTSI=0,
+
+  simple int maTypeSignal, simple int smoothingLengthSignal,
+  simple float almaOffsetSignal=0.85, simple float almaSigmaSignal=6,
+  simple int lsmaOffSetSignal=0) =>
+
+    mom = ta.mom(source, length)
+
+    [smi, signal, histogram] = smi(mom, shortLengthTSI, longLengthTSI, maTypeTSI, almaOffsetTSI, almaSigmaTSI,
+      lsmaOffSetTSI, maTypeSignal, smoothingLengthSignal, almaOffsetSignal, almaSigmaSignal, lsmaOffSetSignal)
+
+// #endregion }
+// ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+
+
+// ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+// RSI variations {
+
+// @function 	RSI (Relative Strengh Index) for Volume. In this variation, the oscillator is calculated based on volume instead of price.
+// @param length 	  	(int) Period of loopback
+// @returns 		    (float) Series of RSI
+export rsiVolume(simple int length) =>
+  ta.rsi(volume, length)
+
+// @function 	RSI (Relative Strengh Index) for Moving Average. In this variation, the oscillator is calculated based on a Moving Average instead of price.
+// @param sourceMA 		(float) Source for Moving Average
+// @param lengthMA 		(int) Period for Moving Average
+// @param maType 	  	(int) Type of Moving Average
+// @param lengthRSI 	(int) Length for RIS
+// @returns 			(float) Series of RSI
+export rsiMA(
+  // MA Settings
+  float sourceMA, simple int lengthMA, simple int maType,
+  simple float almaOffset=0.85, simple float almaSigma=6, simple int lsmaOffSet=0,
+  // RSI Settings
+  simple int lengthRSI) =>
+
+	ma = MAP.getMovingAverage(typeID=maType, src=sourceMA, len=lengthMA, inputAlmaOffset=almaOffset, inputAlmaSigma=almaSigma, lsmaOffset=lsmaOffSet)
+	ta.rsi(ma, lengthRSI)
+
+// #endregion
+// ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■

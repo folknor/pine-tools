@@ -1,0 +1,268 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © boitoki
+
+//@version=5
+
+// @description TODO: add library description here
+library("Utilities")
+
+import boitoki/Heikinashi/6 as heikinashi
+
+// @function Convert price to pips.
+// @param _v Price
+// @returns Pips
+export to_pips (float _v) => _v / (syminfo.mintick * 10)
+export toPips (float _v) => _v / (syminfo.mintick * 10)
+
+
+// @function Convert pips to price.
+// @param _v Pips
+// @returns Price
+export to_price (float _p) => _p * (syminfo.mintick * 10)
+export toPrice (float _p) => _p * (syminfo.mintick * 10)
+
+
+export round (float _x, string _type = 'round') =>
+    switch _type
+        'ceil' => math.ceil(_x)
+        'floor' => math.floor(_x)
+        'round' => math.round(_x)
+        'int' => int(_x)
+        => _x
+
+// @function Round price
+// @param _price Price
+// @param _unit Number of Round
+// @param _type Method type 'ceil' or 'floor'
+// @param _index Index to get
+export rounded_price (float _price, float _unit, string _type = 'ceil', bool is_up = true, int _index = 0) =>
+    unit    = _unit * syminfo.mintick
+    tick    = _price / unit
+    price   = round(tick, _type)
+    index   = math.max(_index, 0)
+
+    if (_index > 0)
+        arr = array.new<float>()
+        for i = 0 to _index
+            p = is_up ? (price + (unit * i)) : (price - (unit * i))
+            array.push(arr, p)
+
+        array.get(arr, _index)
+    else 
+        price * unit
+
+// @function The difference will be returned.
+// @param _a begin
+// @param _b end
+// @return Price as positive number
+export price_range (float _a = open, float _b = close) => math.abs(_a - _b)
+
+// @function Get the day of the week
+// @param _n Number of day of week
+// @param _lang en or ja
+export get_day (int _n, string _lang = 'en') =>
+	_day = _lang == 'ja' ? _n + 10 : _n
+
+    switch _day
+        1 => 'Sun'
+        2 => 'Mon'
+        3 => 'Tue'
+        4 => 'Wed'
+        5 => 'Thu'
+        6 => 'Fri'
+        7 => 'Sat'
+		11 => '日'
+		12 => '月'
+		13 => '火'
+		14 => '水'
+		15 => '木'
+		16 => '金'
+		17 => '土'
+
+// @function 
+// @return 
+export auto_htf () =>
+     timeframe.isintraday ? timeframe.multiplier <= 60 ? 'D' : timeframe.multiplier <= 240 ? 'W' : 'M' : timeframe.period == 'D' ? '6M' : '12M'
+
+// @function TODO: add function description here
+// @param x TODO: add parameter x description here
+// @returns TODO: add what function returns
+export source (string _name) =>
+    name = str.lower(_name)
+    hopen = 0.0, hclose = 0.0
+
+    if str.contains(name, 'heikinashi:')
+	    [_hopen, _, _, _hclose] = heikinashi.calc(open, high, low, close)
+        hopen := _hopen
+        hclose := hclose
+
+    switch name
+        'open'      => open
+        'high'      => high
+        'low'       => low
+        'close'     => close
+        'oc2'       => math.avg(open, close)
+        'hl2'       => hl2
+        'hlc3'      => hlc3
+		'ohlc4'     => ohlc4
+        'hlcc4'     => math.avg(high, low, close, close)
+        'volume'    => volume
+		'heikinashi: open'  => hopen
+		'heikinashi: close' => hclose
+		'heikinashi: oc2'   => math.avg(hopen, hclose)
+		=> close
+
+// @function Deletes the lines included in the array.
+// @param _arr Array of lines
+// @param _min　Deletes the lines included in the array.
+export clear_lines (line[] _arr, int _min = 0) =>
+    if array.size(_arr) > math.max(0, _min)
+        for i = (0 + _min) to array.size(_arr)
+            line.delete(array.shift(_arr))
+
+// @function Deletes the labels included in the array.
+// @param _arr Array of labels
+// @param _min　Deletes the labels included in the array.
+export clear_labels (label[] _arr, int _min = 0) =>
+    if array.size(_arr) > math.max(0, _min)
+        for i = (0 + _min) to array.size(_arr)
+            label.delete(array.shift(_arr))
+
+// @function Deletes the boxes included in the array.
+// @param _arr Array of boxes
+// @param _min　Deletes the boxes included in the array.
+export clear_boxes (box[] _arr, int _min = 0) =>
+    if array.size(_arr) > math.max(0, _min)
+        for i = (0 + _min) to array.size(_arr)
+            box.delete(array.shift(_arr))
+
+// @param _arr Array of line
+// @param _max Max
+// @param _start Start
+// @param _step Step number
+export remove_lines (line[] _arr, int _max, int _start, int _step) =>
+    if array.size(_arr) > (_max * _step)
+        for i = _start to array.size(_arr) - 1
+            line.delete(array.shift(_arr))
+
+// @param _arr Array of linefill
+// @param _max Max
+// @param _start Start
+// @param _step Step number
+export remove_linefills (linefill[] _arr, int _max, int _start, int _step) =>
+    if array.size(_arr) > (_max * _step)
+        for i = _start to array.size(_arr) - 1
+            linefill.delete(array.shift(_arr))
+
+// @param _arr Array of box
+// @param _max Max
+// @param _start Start
+// @param _step Step number
+export remove_boxes (box[] _arr, int _max, int _start, int _step) =>
+    if array.size(_arr) > (_max * _step)
+        for i = _start to array.size(_arr) - 1
+            box.delete(array.shift(_arr))
+
+// @param _arr Array of label
+// @param _max Max
+// @param _start Start
+// @param _step Step number
+export remove_labels (label[] _arr, int _max, int _start, int _step) =>
+    if array.size(_arr) > (_max * _step)
+        for i = _start to array.size(_arr) - 1
+            label.delete(array.shift(_arr))
+
+// @description Countdown on HTF
+// @param tf Timeframe
+// @retuirn String
+// https://www.tradingview.com/script/MKj0V6Pi-HTF-Bar-Close-Countdown/
+export countdown (string tf) =>
+    til_next    = ((time_close(tf) / 1000) - math.floor(timenow / 1000))
+    next_day    = math.floor(((til_next / 60) / 60) / 24)
+    next_hour   = math.floor((til_next / 60) / 60) - (next_day * 24)
+    next_min    = math.floor(til_next / 60) - math.floor((til_next / 60) / 60) * 60
+    next_sec    = til_next - (math.floor(til_next / 60) * 60)
+    place0      = next_day == 0 ? '' : str.tostring(next_day, '00') + ':'
+    place1      = next_hour == 0 ? '' : str.tostring(next_hour, '00') + ':'
+    place2      = str.tostring(next_min, '00') + ':'
+    place3      = str.tostring(next_sec, '00')
+    place0 + place1 + place2 + place3
+
+
+// @description QQE Library
+// @param _src Source
+// @param _period Period
+// @param _s_factor Smoothing
+// @param _f_factor Fast Factor
+// @param _threshold Threshold
+// @return [QQE, QQE MOD, QQE Line]
+export qqe_func (float _src, simple int _period, simple int _s_factor, float _f_factor, float _threshold) =>
+    Wilders_Period      = _period * 2 - 1
+
+    Rsi                 = ta.rsi(_src, _period)
+    RsiMa               = ta.ema(Rsi , _s_factor)
+    AtrRsi              = math.abs(RsiMa[1] - RsiMa)
+    MaAtrRsi            = ta.ema(AtrRsi,   Wilders_Period)
+    dar                 = ta.ema(MaAtrRsi, Wilders_Period) * _f_factor
+    longband            = 0.0
+    shortband           = 0.0
+    trend               = 0
+
+    DeltaFastAtrRsi     = dar
+    RSIndex             = RsiMa
+    newshortband        = RSIndex + DeltaFastAtrRsi
+    newlongband         = RSIndex - DeltaFastAtrRsi
+    longband           := RSIndex[1] > longband[1]  and RSIndex > longband[1]  ? math.max(longband[1] , newlongband)  : newlongband
+    shortband          := RSIndex[1] < shortband[1] and RSIndex < shortband[1] ? math.min(shortband[1], newshortband) : newshortband
+    cross               = ta.cross(longband[1], RSIndex)
+    trend              := ta.cross(RSIndex, shortband[1]) ? 1 : cross ? -1 : nz(trend[1], 1)
+    FastAtrRsiTL        = trend == 1 ? longband : shortband
+
+    // Zero cross
+    // QQExlong            = 0
+    // QQExlong           := nz(QQExlong[1])
+    // QQExshort           = 0
+    // QQExshort          := nz(QQExshort[1])
+    // QQExlong           := FastAtrRsiTL < RSIndex ? QQExlong + 1  : 0
+    // QQExshort          := FastAtrRsiTL > RSIndex ? QQExshort + 1 : 0
+    // qqeLong             = QQExlong  == 1 ? FastAtrRsiTL[1] - 50 : na
+    // qqeShort            = QQExshort == 1 ? FastAtrRsiTL[1] - 50 : na
+
+    osc                 = RsiMa - 50
+    mod                 = (osc > _threshold) or (osc < 0 - _threshold) ? osc : 0
+    qqe                 = FastAtrRsiTL - 50
+
+    [osc, mod, qqe]
+
+// @function qqe_func's sugar
+export QQE (float _src, simple int _period, simple int _s_factor, float _f_factor, float _threshold) =>
+    qqe_func(_src, _period, _s_factor, _f_factor, _threshold)
+
+////////////////
+// Test suite //
+var testTable = table.new(position = position.top_right, columns = 2, rows = 10, bgcolor = color.yellow, border_width = 1)
+
+if barstate.islast
+    table.cell(table_id = testTable, column = 0, row = 0, text = "Open-Close is")
+    table.cell(table_id = testTable, column = 1, row = 0, text = str.format('{0,number,#.#}', toPips(open - close)) + 'pips', bgcolor=color.white)
+	table.cell(table_id = testTable, column = 0, row = 1, text = "10pips is")
+	table.cell(table_id = testTable, column = 1, row = 1, text = str.tostring(toPrice(10)) + ' ' + syminfo.currency, bgcolor=color.white)
+	table.cell(table_id = testTable, column = 0, row = 2, text = "Today is")
+	table.cell(table_id = testTable, column = 1, row = 2, text = get_day(dayofweek), bgcolor=color.white)
+	table.cell(table_id = testTable, column = 0, row = 3, text = "今日は")
+	table.cell(table_id = testTable, column = 1, row = 3, text = get_day(dayofweek, 'ja') + '曜日', bgcolor=color.white)
+	table.cell(table_id = testTable, column = 0, row = 4, text = "平均足")
+	table.cell(table_id = testTable, column = 1, row = 4, text = str.format('{0,number,#.##}', source('heikinashi-open')) + ', ' + str.format('{0,number,#.##}', source('heikinashi-close')), bgcolor=color.white)
+	table.cell(table_id = testTable, column = 0, row = 5, text = "HTF")
+	table.cell(table_id = testTable, column = 1, row = 5, text = auto_htf(), bgcolor=color.white)
+    table.cell(table_id = testTable, column = 0, row = 6, text = "カウントダウン")
+    table.cell(table_id = testTable, column = 1, row = 6, text = countdown(auto_htf()), bgcolor=color.white)
+
+var a = array.new<label>()
+var b = array.new<line>()
+
+array.push(a, label.new(bar_index, na, str.tostring(dayofweek), yloc=yloc.abovebar, size=size.tiny))
+array.push(b, line.new(bar_index, high + ta.sma(high - low, 10), bar_index, low - ta.sma(high - low, 10)))
+
+clear_labels(a, 3)
+clear_lines(b, 20)

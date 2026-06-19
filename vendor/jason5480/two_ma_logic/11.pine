@@ -1,0 +1,133 @@
+//#region SETUP
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © jason5480
+
+//@version=6
+
+// @description The core logic for the two moving average strategy that is used as an example for the internal logic of
+// the "Template Trailing Strategy" and the "Two MA Signal Indicator"
+library(title = 'two_ma_logic')
+
+//#endregion ===========================================================================================================
+//#region TWO MA LOGIC =================================================================================================
+//
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+
+import jason5480/series_collection/4 as col
+import jason5480/tts_convention/7 as conv
+
+// @type Object containing all the dynamic lines of the strategy that can be drawn
+// @field fastMA The fast moving average
+// @field slowMA The slow moving average
+// @field emaLine The exponentional moving average
+// @field emaUpperBand The upper band of the exponentional moving average
+// @field emaLowerBand The lower band of the exponentional moving average
+export type TwoMaDrawings
+    float fastMA
+    float slowMA
+    float emaLine
+    float emaUpperBand
+    float emaLowerBand
+
+// @function Calculate the start, end, cancel strart, cancel end conditions according to the two moving average logic
+// @param this The two moving average settings
+// @param reference The price that will be used as a reference for the distance price calculation
+// @param longBiasedAuxData The current values of the long biased auxiliary data that will be used if needed by the method for the distance price calculation like the atr, stdev and risk reward ratio
+// @param restrict The restrict settings to define the minimum and maximum distance
+// @param margin The margin settings to define the offset of the price from the distance based on the bias
+// @param highestHigh The highest high to be used for the HHLL method
+// @returns The deal conditions 
+export getDealConditions(TwoMaDrawings drawings, simple bool longDealsEnabled, simple bool shortDealsEnabled, simple bool endDealsEnabled, simple bool cnlStartDealsEnabled, simple bool cnlEndDealsEnabled,
+ simple bool emaFilterEnabled, simple bool emaAtrBandEnabled, simple bool adxFilterEnabled, simple int adxSmoothing, simple int diLength, simple float adxThreshold) =>
+    // The EMA filter
+    var bool emaLongApproval = true
+    var bool emaShortApproval = true
+    if emaFilterEnabled
+        float emaLongLine = emaAtrBandEnabled ? drawings.emaUpperBand : drawings.emaLine
+        float emaShortLine = emaAtrBandEnabled ? drawings.emaLowerBand : drawings.emaLine
+        emaLongApproval := close > emaLongLine and open > emaLongLine
+        emaShortApproval := close < emaShortLine and open < emaShortLine
+    
+    // The ADX filter
+    [_, _, adx] = ta.dmi(diLength, adxSmoothing)
+    bool adxApproval = adxFilterEnabled ? adx > adxThreshold : true
+    
+    // The overall filter approvals for each direction
+    bool longFiltersApproval = emaLongApproval and adxApproval
+    bool shortFiltersApproval = emaShortApproval and adxApproval
+    
+    // Then main logic for starting and ending deals is based on crossover/crossunder conditions
+    bool crossover = ta.crossover(drawings.fastMA, drawings.slowMA)
+    bool crossunder = ta.crossunder(drawings.fastMA, drawings.slowMA)
+    
+    // The start, end and cancel signals. Those should match with the "Two MA Signal Indicator" deal conditions
+    conv.DealConditions.new(
+     // Start deals should happen when the main logic applies and the filters for that direction are approved
+     startLongDeal = longDealsEnabled ? crossover and longFiltersApproval : false,
+     startShortDeal = shortDealsEnabled ? crossunder and shortFiltersApproval : false,
+     // End deals should happen when the main logic applies
+     endLongDeal = endDealsEnabled and longDealsEnabled ? crossunder : false,
+     endShortDeal = endDealsEnabled and shortDealsEnabled ? crossover : false,
+     // If you are using limit, stop or stop-limit orders for the entry and not entered yet you may want to cancel if the conditions are not still favorable to the initial direction
+     cnlStartLongDeal = cnlStartDealsEnabled and longDealsEnabled ? not longFiltersApproval and longFiltersApproval[1] : false,
+     cnlStartShortDeal = cnlStartDealsEnabled and shortDealsEnabled ? not shortFiltersApproval and shortFiltersApproval[1] : false,
+     // If you are using limit, stop or stop-limit orders for exit and not exited yet you may want to cancel if the conditions turned favorable again to the initial direction
+     cnlEndLongDeal = cnlEndDealsEnabled and endDealsEnabled and longDealsEnabled ? longFiltersApproval and not longFiltersApproval[1] : false,
+     cnlEndShortDeal = cnlEndDealsEnabled and endDealsEnabled and shortDealsEnabled ? shortFiltersApproval and not shortFiltersApproval[1] : false)
+
+//#endregion ===========================================================================================================
+//#region EXAMPLE ======================================================================================================
+//
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+
+// INPUT ===============================================================================================================
+const string MA_GROUP_NAME = 'Moving Averages'
+fastMaType = input.enum(defval = col.SeriesType.sma, title = 'Fast MA Type/Len       ', options = [col.SeriesType.alma, col.SeriesType.dema, col.SeriesType.ema, col.SeriesType.hma, col.SeriesType.rma, col.SeriesType.sma, col.SeriesType.swma, col.SeriesType.vwma, col.SeriesType.wma, col.SeriesType.linreg, col.SeriesType.median], inline = 'Fast MA', group = MA_GROUP_NAME, display = display.data_window)
+fastMaLength = input.int(defval = 21, title = '', minval = 1, tooltip = 'The type and the length of the fast MA.', inline = 'Fast MA', group = MA_GROUP_NAME, display = display.data_window)
+slowMaType = input.enum(defval = col.SeriesType.sma, title = 'Slow MA Type/Len       ', options = [col.SeriesType.alma, col.SeriesType.dema, col.SeriesType.ema, col.SeriesType.hma, col.SeriesType.rma, col.SeriesType.sma, col.SeriesType.swma, col.SeriesType.vwma, col.SeriesType.wma, col.SeriesType.linreg, col.SeriesType.median], inline = 'Slow MA', group = MA_GROUP_NAME, display = display.data_window)
+slowMaLength = input.int(defval = 49, title = '', minval = 1, tooltip = 'The type and the length of the slow MA.', inline = 'Slow MA', group = MA_GROUP_NAME, display = display.data_window)
+
+const string DEALS_GROUP_NAME = 'Deal Conditions'
+longDealsEnabled = input.bool(defval = true, title = 'Long Deals', inline = 'Long/Short Deals', group = DEALS_GROUP_NAME, display = display.data_window)
+shortDealsEnabled = input.bool(defval = true, title = 'Short Deals', tooltip = 'Enable long/short start/end/cancel deals. An open signal will be emitted when the long/short start deal conditions are met. If this option is unchecked you will not enter into long/short positions.', inline = 'Long/Short Deals', group = DEALS_GROUP_NAME, display = display.data_window)
+endDealsEnabled = input.bool(defval = false, title = 'End Deals', tooltip = 'Enable end deals. A close signal will be emitted when the end deal conditions are met. If this option is unchecked you will not exit your existing position based on the strategy logic. You will exit only when the stop loss or the take profit targets are reached.', group = DEALS_GROUP_NAME, display = display.data_window)
+cnlStartDealsEnabled = input.bool(defval = true, title = 'Cancel Start Deals', inline = 'Start/End Deals', group = DEALS_GROUP_NAME, display = display.data_window)
+cnlEndDealsEnabled = input.bool(defval = true, title = 'Cancel End Deals', tooltip = 'Enable cancel start/end deals. A cancel start/close signal will be emitted when the cancel start/end deal conditions are met. If this option is unchecked you will not cancel your entry/exit order based on the strategy logic when use limit, stop or stop-limit orders.', inline = 'Start/End Deals', group = DEALS_GROUP_NAME, display = display.data_window)
+
+const string FILTERS_GROUP_NAME = 'Filters'
+emaFilterEnabled = input.bool(defval = true, title = 'EMA Filter', tooltip = 'Enable long/short trades based on EMA.', group = FILTERS_GROUP_NAME, display = display.data_window)
+emaTimeframe = input.timeframe(defval = '', title = '  EMA Res/Len/Src', inline = 'EMA Filter', group = FILTERS_GROUP_NAME, display = display.data_window)
+emaLength = input.int(defval = 200, title = '', minval = 1, inline = 'EMA Filter', group = FILTERS_GROUP_NAME, display = display.data_window)
+emaSrc = input.source(defval = close, title = '', tooltip = 'The timeframe, period and source for the EMA calculation.', inline = 'EMA Filter', group = FILTERS_GROUP_NAME, display = display.data_window)
+emaAtrBandEnabled = input.bool(defval = true, title = 'EMA ATR Band', tooltip = 'Enable ATR band for EMA filter.', group = FILTERS_GROUP_NAME, display = display.data_window)
+filterAtrMul = input.float(defval = 1.0, title = '  EMA ATR Mul/Len', minval = 0.1, step = 0.1, inline = 'EMA ATR', group = FILTERS_GROUP_NAME, display = display.data_window)
+filterAtrLength = input.int(defval = 5, title = '', minval = 1, tooltip = 'ATR multiplier and length to be used for the ATR calculation that will be added on top of the EMA filter.', inline = 'EMA ATR', group = FILTERS_GROUP_NAME, display = display.data_window)
+
+adxFilterEnabled = input.bool(defval = false, title = 'ADX Filter', tooltip = 'Enable long/short trades based on ADX.', group = FILTERS_GROUP_NAME, display = display.data_window)
+adxSmoothing = input.int(defval = 14, title = '  Smooth/DI Len', minval = 1, inline = 'ADX Filter', group = FILTERS_GROUP_NAME, display = display.data_window)
+diLength = input.int(defval = 14, title = '', minval = 1, tooltip = 'ADX Smoothing length and Direction Length.', inline = 'ADX Filter', group = FILTERS_GROUP_NAME, display = display.data_window)
+adxThreshold = input.float(defval = 20.0, title = '  Threshold', minval = 0.1, maxval = 100.0, step = 5.0, tooltip = 'ADX lower threshold.', group = FILTERS_GROUP_NAME, display = display.data_window)
+
+// LOGIC ===============================================================================================================
+float emaLine = emaFilterEnabled ? request.security(symbol = syminfo.tickerid, timeframe = emaTimeframe, expression = ta.ema(emaSrc, emaLength)[1]) : na
+float emaAtr = filterAtrMul * ta.atr(filterAtrLength)
+twoMaDrawings = TwoMaDrawings.new(
+  fastMA = col.cust_series(fastMaLength, fastMaType),
+  slowMA = col.cust_series(slowMaLength, slowMaType),
+  emaLine = emaLine,
+  emaUpperBand = emaLine + emaAtr,
+  emaLowerBand = emaLine - emaAtr)
+dealConditions = getDealConditions(twoMaDrawings, longDealsEnabled, shortDealsEnabled, endDealsEnabled, cnlStartDealsEnabled, cnlEndDealsEnabled, emaFilterEnabled, emaAtrBandEnabled, adxFilterEnabled, adxSmoothing, diLength, adxThreshold)
+
+// PLOT ================================================================================================================
+plot(series = twoMaDrawings.emaLine, color = color.silver, style = plot.style_linebr, linewidth = 2, title = 'EMA Line', display = emaFilterEnabled ? display.all - display.status_line : display.none, force_overlay = true)
+color EMA_BAND_FILL_COLOR = emaFilterEnabled and emaAtrBandEnabled ? color.new(color.silver, 90) : na
+emaUpperBandPlot = plot(series = twoMaDrawings.emaUpperBand, color = EMA_BAND_FILL_COLOR, style = plot.style_linebr, title = 'EMA Upper Band', display = display.data_window, force_overlay = true)
+emaLowerBandPlot = plot(series = twoMaDrawings.emaLowerBand, color = EMA_BAND_FILL_COLOR, style = plot.style_linebr, title = 'EMA Lower Band', display = display.data_window, force_overlay = true)
+fill(plot1 = emaUpperBandPlot, plot2 = emaLowerBandPlot, color = EMA_BAND_FILL_COLOR, title = 'EMA Band')
+
+plot(series = twoMaDrawings.fastMA, title = 'Fast MA', color = color.yellow, linewidth = 1, style = plot.style_line, display = display.all - display.status_line, force_overlay = true)
+plot(series = twoMaDrawings.slowMA, title = 'Slow MA', color = color.orange, linewidth = 1, style = plot.style_line, display = display.all - display.status_line, force_overlay = true)
+
+//#endregion ===========================================================================================================

@@ -1,0 +1,116 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © reees
+
+//@version=5
+
+// @description General utilities
+library("Utilities", overlay = true)
+
+//
+//*********** Private ************
+//
+
+print_array(a, position = position.bottom_center, show_index = true, from_index = 0, to_index = last_bar_index) =>
+    size = array.size(a)
+    if bar_index == to_index
+        if size > 0
+            var t = table.new(position = position, columns = size, rows = 2, bgcolor = color.new(color.black,40), border_width = 1)
+            for i=from_index to size-1
+                txt = array.get(a,i)
+                r = -1
+                if show_index==true
+                    r+=1
+                    table.cell(table_id = t, text_color=color.white, column = i, row = r, text = str.tostring(i), text_size = size.tiny)
+                r+=1
+                table.cell(table_id = t, text_color=color.white,column = i, row = r, text = str.tostring(txt))
+
+//
+//************ Public *************
+//
+
+// @function Print series values
+// @param s Series (string)
+// @param skip_na Flag to skip na values (optional bool, dft = false)
+// @param position Position to print the Table (optional string, dft = position.bottom_center)
+// @param show_index Flag to show series indices (optional bool, dft = true)
+// @param from_index First index to print (optional int, dft = 0)
+// @param to_index Last index to print (optional int, dft = last_bar_index)
+// @param label label for series table
+// @returns Table object, if series was printed
+export print_series(string s, simple bool skip_na = false, simple string position = position.bottom_center, simple bool show_index = true, int from_index = 0, int to_index = last_bar_index) =>
+    if bar_index == to_index
+        t = table.new(position = position, columns = to_index+1, rows = 2, bgcolor = color.new(color.black,40), border_width = 1)
+        for i=from_index to to_index
+            txt = s[to_index-i]
+            r = 0
+            if skip_na==false or (skip_na==true and txt!="NaN")
+                if show_index==true
+                    table.cell(table_id = t, text_color=color.white, column = i, row = r, text = str.tostring(i), text_size = size.tiny)
+                    r+=1
+                table.cell(table_id = t, text_color=color.white,column = i, row = r, text = txt)
+                r+=1
+        t
+// e.g. print pivot highs last 200 bars
+s1 = ta.pivothigh(high,5,5)
+print_series(str.tostring(s1), true, from_index = last_bar_index-200)
+
+// @function Print value
+// @param v Value (string)
+// @param position Position to print the Table (optional string, dft = position.bottom_center)
+// @param at_index Index at which to print (optional int, dft = bar_index)
+// @returns Table object, if value was printed
+export print(string v, simple string position = position.bottom_center, int at_index = bar_index) =>
+    if bar_index == at_index
+        t = table.new(position = position, columns = 1, rows = 1, bgcolor = color.new(color.black,40), border_width = 1)
+        table.cell(table_id = t, text_color=color.white, column = 0, row = 0, text = str.tostring(v))
+        t
+// e.g. print highest high last 200 bars
+h = ta.highest(high,200)
+print(str.tostring(h), position.top_right)
+
+// @function Print value
+// @param v Value (int)
+// @param position Position to print the Table (optional string, dft = position.bottom_center)
+// @param at_index Index at which to print (optional int, dft = bar_index)
+// @returns Table object, if value was printed
+export print(int v, simple string position = position.bottom_center, int at_index = bar_index) =>
+    if bar_index == at_index
+        t = table.new(position = position, columns = 1, rows = 1, bgcolor = color.new(color.black,40), border_width = 1)
+        table.cell(table_id = t, text_color=color.white, column = 0, row = 0, text = str.tostring(v))
+        t
+
+// @function Print value
+// @param v Value (float)
+// @param position Position to print the Table (optional string, dft = position.bottom_center)
+// @param at_index Index at which to print (optional int, dft = bar_index)
+// @returns Table object, if value was printed
+export print(float v, simple string position = position.bottom_center, int at_index = bar_index) =>
+    if bar_index == at_index
+        t = table.new(position = position, columns = 1, rows = 1, bgcolor = color.new(color.black,40), border_width = 1)
+        table.cell(table_id = t, text_color=color.white, column = 0, row = 0, text = str.tostring(v))
+        t
+
+// @function Print value
+// @param v Value (bool)
+// @param position Position to print the Table (optional string, dft = position.bottom_center)
+// @param at_index Index at which to print (optional int, dft = bar_index)
+// @returns Table object, if value was printed
+export print(bool v, simple string position = position.bottom_center, int at_index = bar_index) =>
+    if bar_index == at_index
+        t = table.new(position = position, columns = 1, rows = 1, bgcolor = color.new(color.black,40), border_width = 1)
+        table.cell(table_id = t, text_color=color.white, column = 0, row = 0, text = str.tostring(v))
+        t
+
+// @function return array of offsets (int) of true values 
+export boolToIntArr(bool[] a) =>
+    int[] r = array.new_int(0)
+    for i=0 to array.size(a)-1
+        if array.get(a,i)
+            array.push(r,i)
+    r
+
+export intToBoolArr(int[] a, int n) =>
+    bool[] r = array.new_bool(n,false)
+    for i in a
+        array.set(r,i,true)
+    r

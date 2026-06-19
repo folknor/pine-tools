@@ -1,0 +1,314 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © PineCoders
+//@version=5
+
+// @description This library is a Pine programmer’s tool containing functions that return values from visible chart bars.
+library("VisibleChart", true)
+
+// VisibleChart Library
+// v4, 2022.08.17
+
+// This code was written using the recommendations from the Pine Script™ User Manual's Style Guide:
+//   https://www.tradingview.com/pine-script-docs/en/v5/writing/Style_guide.html
+
+
+
+// ———————————————————— Library functions {
+
+
+// @function        Condition to determine if a given bar is visible on the chart.
+// @returns         (bool) True if the current bar is visible.
+export barIsVisible() =>
+    bool result = time >= chart.left_visible_bar_time and time <= chart.right_visible_bar_time
+    
+
+// @function        Condition to determine if a bar is the first visible bar.
+// @returns         (bool) True if the current bar is the first visible bar.
+export isFirstVisibleBar() =>
+    bool result = time == chart.left_visible_bar_time
+
+
+// @function        Condition to determine if a bar is the last visible bar.
+// @returns         (bool) True if the current bar is the last visible bar.
+export isLastVisibleBar() =>
+    bool result = time == chart.right_visible_bar_time
+
+
+// @function        Determines the value of the highest `high` in visible bars.
+// @returns         (float) The maximum high value of visible chart bars. 
+export high() => 
+    var float result = na
+    if barIsVisible() and high >= nz(result, high)
+        result := high
+    result
+
+
+// @function        Determines the `bar_index` of the highest `high` in visible bars.
+// @returns         (int) The `bar_index` of the `high()`.
+export highBarIndex() =>
+    var float chartHigh = na
+    var int   highBar   = na
+    if barIsVisible() and high >= nz(chartHigh, high)
+        highBar   := bar_index
+        chartHigh := high
+    int result = highBar
+
+
+// @function        Determines the bar time of the highest `high` in visible bars.
+// @returns         (int) The `time` of the `high()`. 
+export highBarTime() =>
+    var float chartHigh = na
+    var int   highTime  = na
+    if barIsVisible() and high >= nz(chartHigh, high)
+        highTime  := time
+        chartHigh := high
+    int result = highTime
+
+
+// @function        Determines the value of the lowest `low` in visible bars.
+// @returns         (float) The minimum low value of visible chart bars. 
+export low() => 
+    var float result = na
+    if barIsVisible() and low <= nz(result, low)
+        result := low
+    result
+
+
+// @function        Determines the `bar_index` of the lowest `low` in visible bars.
+// @returns         (int) The `bar_index` of the `low()`. 
+export lowBarIndex() =>
+    var float chartLow = na
+    var int   lowBar   = na
+    if barIsVisible() and low <= nz(chartLow, low)
+        lowBar   := bar_index
+        chartLow := low
+    int result = lowBar
+
+
+// @function        Determines the bar time of the lowest `low` in visible bars.
+// @returns         (int) The `time` of the `low()`. 
+export lowBarTime() =>
+    var float chartLow = na
+    var int   lowTime  = na
+    if barIsVisible() and low <= nz(chartLow, low)
+        lowTime  := time
+        chartLow := low
+    int result = lowTime
+
+
+// @function        Determines the value of the opening price in the visible chart time range.
+// @returns         (float) The `open` of the leftmost visible chart bar.
+export open() => 
+    var float result = na
+    if time == chart.left_visible_bar_time
+        result := open
+    result
+
+
+// @function        Determines the value of the closing price in the visible chart time range.
+// @returns         (float) The `close` of the rightmost visible chart bar.
+export close() => 
+    var float result = na
+    if barIsVisible()
+        result := close
+    result
+
+
+// @function        Determines the `bar_index` of the leftmost visible chart bar.
+// @returns         (int) A `bar_index`.
+export leftBarIndex() => 
+    var int result = na
+    if time == chart.left_visible_bar_time
+        result := bar_index
+    result
+
+
+// @function        Determines the `bar_index` of the rightmost visible chart bar.
+// @returns         (int) A `bar_index` 
+export rightBarIndex() => 
+    var int result = na
+    if barIsVisible()
+        result := bar_index
+    result
+
+
+// @function        Determines the number of visible chart bars. 
+// @returns         (int) The number of bars.
+export bars() => 
+    var int result = 0
+    if barIsVisible()
+        result += 1
+    result
+
+
+// @function        Determines the sum of volume of all visible chart bars.
+// @returns         (float) The cumulative sum of volume.
+export volume() =>
+    var float result = 0
+    if barIsVisible()
+        result += volume
+    result
+
+
+// @function        Determines the open, high, low, close, and volume sum of the visible bar time range. 
+// @returns         ([float, float, float, float, float]) A tuple of the OHLCV values for the visible chart bars. Example: open is chart left, high is the highest visible high, etc.  
+export ohlcv() =>
+    var float   chartOpen   = na
+    var float   chartHigh   = na
+    var float   chartLow    = na
+    var float   chartClose  = na
+    var float   chartVolume = na  
+
+    if time == chart.left_visible_bar_time
+        chartOpen      := open
+        chartHigh      := high
+        chartLow       := low
+        chartClose     := close
+        chartVolume    := volume
+
+    else if barIsVisible()
+        chartHigh      := math.max(high, chartHigh)
+        chartLow       := math.min(low,  chartLow)
+        chartClose     := close
+        chartVolume    += volume
+
+    [chartOpen, chartHigh, chartLow, chartClose, chartVolume]
+
+
+// @function        Determines a price level as a percentage of the visible bar price range, which depends on the chart's top/bottom margins in "Settings/Appearance".
+// @param pct       (series float) Percentage of the visible price range (50 is 50%). Negative values are allowed.
+// @returns         (float) A price level equal to the `pct` of the price range between the high and low of visible chart bars. Example: 50 is halfway between the visible high and low. 
+export chartYPct(series float pct) =>
+    float result = low() + ((high() - low()) * (pct / 100))
+
+
+// @function        Determines a time as a percentage of the visible bar time range. 
+// @param pct       (series float) Percentage of the visible time range (50 is 50%). Negative values are allowed.
+// @returns         (float) A time in UNIX format equal to the `pct` of the time range from the `chart.left_visible_bar_time` to the `chart.right_visible_bar_time`. Example: 50 is halfway from the leftmost visible bar to the rightmost.
+export chartXTimePct(series float pct) => 
+    int result = chart.left_visible_bar_time + int((chart.right_visible_bar_time - chart.left_visible_bar_time) * (pct / 100))
+
+
+// @function        Determines a `bar_index` as a percentage of the visible bar time range. 
+// @param pct       (series float) Percentage of the visible time range (50 is 50%). Negative values are allowed.
+// @returns         (float) A time in UNIX format equal to the `pct` of the time range from the `chart.left_visible_bar_time` to the `chart.right_visible_bar_time`. Example: 50 is halfway from the leftmost visible bar to the rightmost.
+export chartXIndexPct(series float pct) => 
+    int leftBarIndex  = leftBarIndex()
+    int rightBarIndex = rightBarIndex()
+    int result = leftBarIndex + int((rightBarIndex - leftBarIndex) * (pct / 100))
+
+
+// @function        Creates an array containing the `length` last `src` values where `whenCond` is true for visible chart bars.
+// @param src       (series int/float) The source of the values to be included. 
+// @param whenCond  (series bool) The condition determining which values are included. Optional. The default is `true`.
+// @param length    (simple int) The number of last values to return. Optional. The default is all values.
+// @returns         (float[]) The array ID of the accumulated `src` values.
+export whenVisible(series float src, series bool whenCond = true, simple int length = na) =>
+    var float[] values = array.new_float(0)
+    int cappedLen = math.max(1, length)
+    if barIsVisible() and whenCond
+        array.push(values, src)
+    if not na(cappedLen) and array.size(values) > cappedLen
+        array.shift(values)
+    float[] result = values
+
+
+// @function        Gathers values of the source over visible chart bars and averages them.
+// @param src       (series int/float) The source of the values to be averaged. Optional. Default is `close`. 
+// @returns         (float) A cumulative average of values for the visible time range.
+export avg(series float src = close) =>
+    bool  visible  = barIsVisible() 
+    float cumTotal = ta.cum(visible ? src : 0)
+    float cumCount = ta.cum(visible ? 1   : 0)
+    float result   = cumTotal / cumCount
+
+
+// @function        Calculates the median of a source over visible chart bars.
+// @param src       (series int/float) The source of the values. Optional. Default is `close`.
+// @returns         (float) The median of the `src` for the visible time range.
+export median(series float src = close) =>
+    float result = array.median(whenVisible(src))
+
+
+// @function        Calculates a volume-weighted average for visible chart bars.
+// @param src       (series int/float) Source used for the VWAP calculation. Optional. Default is `hlc3`.
+// @returns         (float) The VWAP for the visible time range.
+export vVwap(series float src = hlc3) =>
+    bool  startTime = time == chart.left_visible_bar_time
+    float result    = ta.vwap(src, startTime)
+// }
+
+
+
+// ———————————————————— Example Code {
+
+
+// !!!!! WARNING
+// !!!!! All functions must be called on each bar to return correct results.
+
+
+// Chart's high and low values and their time x-coordinate. 
+float chartHigh  = high()
+float chartLow   = low()
+int   highTime   = highBarTime()
+int   lowTime    = lowBarTime()
+int   leftTime   = math.min(highTime, lowTime)
+int   rightTime  = math.max(highTime, lowTime)
+bool  isBull     = lowTime < highTime
+int   bars       = bars()
+float vol        = volume()
+
+// Function to manage fib lines. It declares fib lines and label the first time it is called, then sets their properties on subsequent calls. 
+fibLine(series color fibColor, series float fibLevel) => 
+    float fibRatio = fibLevel / 100
+    float fibPrice = isBull ? chartLow  + ((chartHigh - chartLow) * fibRatio) : 
+                              chartHigh - ((chartHigh - chartLow) * fibRatio)
+    var line  fibLine  =  line.new(na, na, na, na, xloc.bar_time, extend.none, fibColor,  line.style_solid,  1)
+    var line  fibLine2 =  line.new(na, na, na, na, xloc.bar_time, extend.none, fibColor,  line.style_dotted, 1)
+    var label fibLabel = label.new(na, na, "",     xloc.bar_time, yloc.price,  color(na), label.style_label_up, fibColor)
+    line.set_xy1(fibLine,  leftTime,  fibPrice)
+    line.set_xy2(fibLine,  rightTime, fibPrice)
+    line.set_xy1(fibLine2, rightTime, fibPrice)
+    line.set_xy2(fibLine2, time,      fibPrice)
+    label.set_xy(fibLabel, int(math.avg(leftTime, rightTime)), fibPrice)
+    label.set_text(fibLabel, str.format("{0, number, #.###} ({1})", fibRatio, str.tostring(fibPrice, format.mintick)))
+
+
+// Display code that only runs on the last bar but displays visuals on visible bars, wherever they might be in the dataset.
+if barstate.islast
+    // ————— Table displaying visible bars and volume.
+    // Declare the table once.
+    var table display = table.new(position.top_right, 1, 1)
+    // String for table showing the cumulative volume and number of visible chart bars. 
+    string displayString = "Total Visible Bars: "     + str.tostring(bars)
+                         + "\nTotal Visible Volume: " + str.tostring(vol, format.volume)
+    // Populate table on last bar.
+    table.cell(display, 0, 0, displayString, bgcolor = color.yellow, text_color = color.black, text_size = size.normal)
+
+    // ————— Labels displaying hi/lo points and time.
+    // Declare basic labels once.
+    var label hiLabel = label.new(na, na, na, xloc.bar_time, yloc.price, color.new(color.lime,    80), label.style_label_down, color.lime)
+    var label loLabel = label.new(na, na, na, xloc.bar_time, yloc.price, color.new(color.fuchsia, 80), label.style_label_up,   color.fuchsia)
+    // Update label for changes to location, and text.
+    label.set_xy(hiLabel, highTime, chartHigh)
+    label.set_xy(loLabel, lowTime,  chartLow)
+    label.set_text(hiLabel, str.format("{0}\n{1,time, dd/MM/yy @ HH:mm:ss}", str.tostring(chartHigh, format.mintick), highTime))
+    label.set_text(loLabel, str.format("{0}\n{1,time, dd/MM/yy @ HH:mm:ss}", str.tostring(chartLow,  format.mintick), lowTime))
+
+    // ————— Fib lines
+    // Declare fib lines and labels once, then set properties on each bar. 
+    fibLine(color.gray,  100)
+    fibLine(#64b5f6,     78.6)
+    fibLine(#089981,     61.8)
+    fibLine(color.green, 50)
+    fibLine(#81c784,     38.2)
+    fibLine(color.red,   23.6)
+    fibLine(color.gray,  0)
+
+    // ————— Dashed line between hi/lo.
+    // Declare line once.
+    var line hiLoLine =  line.new(na, na, na, na, xloc.bar_time, extend.none, color.gray, line.style_dashed, 1)
+    // Re-position line on each update.
+    line.set_xy1(hiLoLine, highTime, chartHigh)
+    line.set_xy2(hiLoLine, lowTime,  chartLow)
+// }

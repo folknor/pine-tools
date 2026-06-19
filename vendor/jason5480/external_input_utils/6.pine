@@ -1,0 +1,90 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © jason5480
+
+//@version=5
+
+// @description Collection of external input utilities for conversion and other hacky functions
+library(title = 'external_input_utils', overlay = true)
+
+//
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+// CONVERSION =======================================================================================================
+
+// @function str_to_src - Convert the string value to the coresponding source series. It can be used to limit the "input.source" choices provided to the end user.
+// The most interesting part is that it can be used to overcome the "one input.source call limitation" for external inputs to your script
+// @param value - The string equivalent to the source to be converted
+// @returns series of the coresponding source
+export str_to_src(simple string value) =>
+    switch value
+        'open' => open
+        'high' => high
+        'low' => low
+        'close' => close
+        'hl2' => hl2
+        'hlc3' => hlc3
+        'ohlc4' => ohlc4
+        'hlcc4' => hlcc4
+        =>
+            runtime.error(value + 'is not a supported source series. The supported series are [open, high, low, close, hl2, hlc3, ohlc4, hlcc4]')
+            na
+
+//
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+// CONDITION ========================================================================================================
+
+// @function eval_cond - Evaluate the condition given an operator
+// @param input - The input to be compared with. It can be an external input or a regular one
+// @param operator - The string operator that describe the coparison operation
+// @param value - The value to compare with the input. This can be a serries or a constant
+// @param defval - The boolean value to return when 'noop' is selected
+// @returns series of bool the result of the operation evaluation
+export eval_cond(float input, simple string operator, float value, simple bool defval = false) =>
+    switch operator
+        '==' => input == value
+        '<' => input < value
+        '>' => input > value
+        '<=' => input <= value
+        '>=' => input >= value
+        '!=' => input != value
+        'crossover' => ta.crossover(input, value)
+        'crossunder' => ta.crossunder(input, value)
+        'mod2==' => input % 2 == value
+        'mod3==' => input % 3 == value
+        'mod10==' => input % 10 == value
+        'mod100==' => input % 100 == value
+        '/10==' => int(input / 10) == value
+        'noop' => defval
+        =>
+            runtime.error(operator + 'is not a supported condition operator. The supported operators are [==, <, >, <=, >=, !=, crossover, crossunder, mod2==, mod3==, mod10==, mod100==, /10==, noop]')
+            na
+
+//
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+// EXAMPLE ==========================================================================================================
+
+// INPUT ============================================================================================================
+// use input.string and convert it with str_to_src instead of usiong input.source so that does not block the externalInput input.source combobox populating with all external options
+src = str_to_src(input.string(defval = 'close', title = 'Source', options = ['open', 'high', 'low', 'close', 'hl2', 'hlc3', 'ohlc4', 'hlcc4'], tooltip = 'Source for the EMA.', group = 'EMA'))
+externalInput = input.source(defval = close, title = 'External Input', tooltip = 'Select input from an external indicator. The indicator should be added to the same chart with this strategy and the desired value that will take part in the condition should be ploted in the chart.', group = 'EMA')
+startLongDealOperator = input.string(defval = 'crossover', title = 'Start Long Deal when input', options=['==', '<', '>', '<=', '>=', '!=', 'crossover', 'crossunder', 'mod2==', 'mod3==', 'mod10==', 'mod100==', '/10==', 'noop'], tooltip = 'Define the condition between extranal input and EMA for setting the start long deal signal.', inline = 'Start Long Deal', group = 'External')
+startShortDealOperator = input.string(defval = 'crossunder', title = 'Start Short Deal when input', options=['==', '<', '>', '<=', '>=', '!=', 'crossover', 'crossunder', 'mod2==', 'mod3==', 'mod10==', 'mod100==', '/10==', 'noop'], tooltip = 'Define the condition between extranal input and EMA for setting the start short deal signal.', inline = 'Start Short Deal', group = 'External')
+
+// LOGIC ============================================================================================================
+ema = ta.ema(src, 200)
+
+startLongDeal = eval_cond(externalInput, startLongDealOperator, ema)
+startShortDeal = eval_cond(externalInput, startShortDealOperator, ema)
+
+signal = startLongDeal ? 1 : startShortDeal ? -1 : 0
+
+// PLOT =============================================================================================================
+plot(series = ema, title = 'EMA', color = color.orange, linewidth = 1, style = plot.style_line)
+
+var longColor = color.new(#2962ff, 0)
+var shortColor = color.new(#ff1744, 0)
+plotshape(series = signal == 1, title = 'Start Long', style = shape.triangleup, location = location.abovebar, color = longColor, size = size.tiny)
+plotshape(series = signal == -1, title = 'Start Short', style = shape.triangledown, location = location.belowbar, color = shortColor, size = size.tiny)
+
+// Use this indicator as an external input in other scripts like "Template Trailing Strategy" that can utilize the signal value.
+// Emit the current signal value (-1, 0, 1).
+plot(series = signal, title = 'Signal', display = display.none)

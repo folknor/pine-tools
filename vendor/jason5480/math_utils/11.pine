@@ -1,0 +1,258 @@
+//#region SETUP
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © jason5480
+
+//@version=6
+
+// @description Collection of math functions that are not part of the standard math library
+library(title = 'math_utils')
+
+//#endregion ===========================================================================================================
+//#region MATH =========================================================================================================
+//
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+
+// @function The number of the most significant digits on the left of the dot
+// @param this The floating point number
+// @returns number of non digits
+export method num_of_non_decimal_digits(simple float this) =>
+    math.max(math.floor(math.log10(this) + 1), 0)
+
+// @function The number of the most significant digits on the left of the dot
+// @param this The floating point number
+// @returns number of non digits
+export method num_of_non_decimal_digits(float this) =>
+    math.max(math.floor(math.log10(this) + 1), 0)
+
+// @function The number of the most significant digits on the right of the dot
+// @param this The floating point number
+// @returns number of decimal digits
+export method num_of_decimal_digits(simple float this) =>
+    float n = this > 1.0 ? this - math.floor(this) : this
+    math.max(math.ceil(-1 * math.log10(n)), 0)
+
+// @function The number of the most significant digits on the right of the dot
+// @param this The floating point number
+// @returns number of decimal digits
+export method num_of_decimal_digits(float this) =>
+    float n = this > 1.0 ? this - math.floor(this) : this
+    math.max(math.ceil(-1 * math.log10(n)), 0)
+
+// @function Floor with precision to the given most significant decimal point
+// @param this The floating point number
+// @param precision The number of decimal places a.k.a the most significant decimal digit - e.g precision 2 will produce 0.01 minimum change 
+// @returns number floored to the decimal digits defined by the precision
+export method floor(float this, simple int precision) =>
+    float fact = math.pow(10, precision)
+    float num = this * fact
+    math.floor(num) / fact
+
+// @function Floor with precision to the given most significant decimal point
+// @param this The floating point number
+// @param precision The number of decimal places a.k.a the most significant decimal digit - e.g precision 2 will produce 0.01 minimum change 
+// @returns number floored to the decimal digits defined by the precision
+export method floor(float this, int precision) =>
+    float fact = math.pow(10, precision)
+    float num = this * fact
+    math.floor(num) / fact
+
+// @function Floor with precision to the given most significant decimal point
+// @param this The floating point number
+// @param precision The number of decimal places a.k.a the most significant decimal digit e.g precision 2 will produce 0.01 minimum change 
+// @returns number floored to the decimal digits defined by the precision
+export method floor(simple float this, simple int precision) =>
+    float fact = math.pow(10, precision)
+    float num = this * fact
+    math.floor(num) / fact
+
+// @function Floor with precision to the given most significant decimal point
+// @param this The floating point number
+// @param precision The number of decimal places a.k.a the most significant decimal digit e.g precision 2 will produce 0.01 minimum change 
+// @returns number floored to the decimal digits defined by the precision
+export method floor(simple float this, int precision) =>
+    float fact = math.pow(10, precision)
+    float num = this * fact
+    math.floor(num) / fact
+
+// @function Floor with precision to the mintick most significant decimal point
+// @param this The floating point number
+// @returns number floored to the decimal digits defined by the mintick precision
+export method floor_to_mintick(float this) =>
+    var int precision = num_of_decimal_digits(syminfo.mintick)
+    this.floor(precision)
+
+// @function Ceil with precision to the given most significant decimal point
+// @param this The floating point number
+// @param precision The number of decimal places a.k.a the most significant decimal digit e.g precision 2 will produce 0.01 minimum change 
+// @returns number ceiled to the decimal digits defined by the precision
+export method ceil(float this, simple int precision) =>
+    float fact = math.pow(10, precision)
+    float num = this * fact
+    math.ceil(num) / fact
+
+// @function Ceil with precision to the given most significant decimal point
+// @param this The floating point number
+// @param precision The number of decimal places a.k.a the most significant decimal digit e.g precision 2 will produce 0.01 minimum change 
+// @returns number ceiled to the decimal digits defined by the precision
+export method ceil(float this, int precision) =>
+    float fact = math.pow(10, precision)
+    float num = this * fact
+    math.ceil(num) / fact
+
+// @function Ceil with precision to the given most significant decimal point
+// @param this The floating point number
+// @param precision The number of decimal places a.k.a the most significant decimal digit e.g precision 2 will produce 0.01 minimum change 
+// @returns number ceiled to the decimal digits defined by the precision
+export method ceil(simple float this, simple int precision) =>
+    float fact = math.pow(10, precision)
+    float num = this * fact
+    math.ceil(num) / fact
+
+// @function Ceil with precision to the given most significant decimal point
+// @param this The floating point number
+// @param precision The number of decimal places a.k.a the most significant decimal digit e.g precision 2 will produce 0.01 minimum change 
+// @returns number ceiled to the decimal digits defined by the precision
+export method ceil(simple float this, int precision) =>
+    float fact = math.pow(10, precision)
+    float num = this * fact
+    math.ceil(num) / fact
+
+// @function Ceil with precision to the mintick most significant decimal point
+// @param this The floating point number
+// @returns number ceiled to the decimal digits defined by the mintick precision
+export method ceil_to_mintick(float this) =>
+    var int precision = num_of_decimal_digits(syminfo.mintick)
+    this.ceil(precision)
+
+// @function Clamp with precision to the given most significant decimal point. Ceil is favored for the precision rounding.
+// @param this The floating point number
+// @param lower The lowerst number limit to return
+// @param higher The highest number limit to return
+// @param precision The number of decimal places a.k.a the most significant decimal digit e.g precision 2 will produce 0.01 minimum change 
+// @returns number clamped to the decimal digits defined by the precision
+export method clamp_up(float this, float lower, float higher, simple int precision) =>
+    floor(math.min(ceil(math.max(this, lower), precision), higher), precision)
+
+// @function Clamp with precision to the given most significant decimal point. Ceil is favored for the precision rounding.
+// @param this The floating point number
+// @param lower The lowerst number limit to return
+// @param higher The highest number limit to return
+// @param precision The number of decimal places a.k.a the most significant decimal digit e.g precision 2 will produce 0.01 minimum change 
+// @returns number clamped to the decimal digits defined by the precision
+export method clamp_up(float this, float lower, float higher, int precision) =>
+    floor(math.min(ceil(math.max(this, lower), precision), higher), precision)
+
+// @function Clamp with precision to the given most significant decimal point. Ceil is favored for the precision rounding.
+// @param this The floating point number
+// @param lower The lowerst number limit to return
+// @param higher The highest number limit to return
+// @param precision The number of decimal places a.k.a the most significant decimal digit e.g precision 2 will produce 0.01 minimum change 
+// @returns number clamped to the decimal digits defined by the precision
+export method clamp_up(simple float this, simple float lower, simple float higher, simple int precision) =>
+    floor(math.min(ceil(math.max(this, lower), precision), higher), precision)
+
+// @function Clamp with precision to the given most significant decimal point. Ceil is favored for the precision rounding.
+// @param this The floating point number
+// @param lower The lowerst number limit to return
+// @param higher The highest number limit to return
+// @param precision The number of decimal places a.k.a the most significant decimal digit e.g precision 2 will produce 0.01 minimum change 
+// @returns number clamped to the decimal digits defined by the precision
+export method clamp_up(simple float this, float lower, float higher, int precision) =>
+    floor(math.min(ceil(math.max(this, lower), precision), higher), precision)
+
+// @function Clamp with precision to the given most significant decimal point. Floor is favored for the precision rounding.
+// @param this The floating point number
+// @param lower The lowerst number limit to return
+// @param higher The highest number limit to return
+// @param precision The number of decimal places a.k.a the most significant decimal digit e.g precision 2 will produce 0.01 minimum change 
+// @returns number clamped to the decimal digits defined by the precision
+export method clamp_down(float this, float lower, float higher, simple int precision) =>
+    ceil(math.max(floor(math.min(this, higher), precision), lower), precision)
+
+// @function Clamp with precision to the given most significant decimal point. Floor is favored for the precision rounding.
+// @param this The floating point number
+// @param lower The lowerst number limit to return
+// @param higher The highest number limit to return
+// @param precision The number of decimal places a.k.a the most significant decimal digit e.g precision 2 will produce 0.01 minimum change 
+// @returns number clamped to the decimal digits defined by the precision
+export method clamp_down(float this, float lower, float higher, int precision) =>
+    ceil(math.max(floor(math.min(this, higher), precision), lower), precision)
+
+// @function Clamp with precision to the given most significant decimal point. Floor is favored for the precision rounding.
+// @param this The floating point number
+// @param lower The lowerst number limit to return
+// @param higher The highest number limit to return
+// @param precision The number of decimal places a.k.a the most significant decimal digit e.g precision 2 will produce 0.01 minimum change 
+// @returns number clamped to the decimal digits defined by the precision
+export method clamp_down(simple float this, simple float lower, simple float higher, simple int precision) =>
+    ceil(math.max(floor(math.min(this, higher), precision), lower), precision)
+
+// @function Clamp with precision to the given most significant decimal point. Floor is favored for the precision rounding.
+// @param this The floating point number
+// @param lower The lowerst number limit to return
+// @param higher The highest number limit to return
+// @param precision The number of decimal places a.k.a the most significant decimal digit e.g precision 2 will produce 0.01 minimum change 
+// @returns number clamped to the decimal digits defined by the precision
+export method clamp_down(simple float this, float lower, float higher, int precision) =>
+    ceil(math.max(floor(math.min(this, higher), precision), lower), precision)
+
+// @function Clamp with precision to the given most significant decimal point. No specific direction is favored for the precision rounding.
+// @param this The floating point number
+// @param lower The lowerst number limit to return
+// @param higher The highest number limit to return
+// @param precision The number of decimal places a.k.a the most significant decimal digit e.g precision 2 will produce 0.01 minimum change 
+// @returns number clamped to the decimal digits defined by the precision
+export method clamp(float this, float lower, float higher, simple int precision) =>
+    math.max(math.min(math.round(this, precision), higher), lower)
+
+// @function Clamp with precision to the given most significant decimal point. No specific direction is favored for the precision rounding.
+// @param this The floating point number
+// @param lower The lowerst number limit to return
+// @param higher The highest number limit to return
+// @param precision The number of decimal places a.k.a the most significant decimal digit e.g precision 2 will produce 0.01 minimum change 
+// @returns number clamped to the decimal digits defined by the precision
+export method clamp(float this, float lower, float higher, int precision) =>
+    math.max(math.min(math.round(this, precision), higher), lower)
+
+// @function Clamp with precision to the given most significant decimal point. No specific direction is favored for the precision rounding.
+// @param this The floating point number
+// @param lower The lowerst number limit to return
+// @param higher The highest number limit to return
+// @param precision The number of decimal places a.k.a the most significant decimal digit e.g precision 2 will produce 0.01 minimum change 
+// @returns number clamped to the decimal digits defined by the precision
+export method clamp(simple float this, simple float lower, simple float higher, simple int precision) =>
+    math.max(math.min(math.round(this, precision), higher), lower)
+
+// @function Clamp with precision to the given most significant decimal point. No specific direction is favored for the precision rounding.
+// @param this The floating point number
+// @param lower The lowerst number limit to return
+// @param higher The highest number limit to return
+// @param precision The number of decimal places a.k.a the most significant decimal digit e.g precision 2 will produce 0.01 minimum change 
+// @returns number clamped to the decimal digits defined by the precision
+export method clamp(simple float this, float lower, float higher, int precision) =>
+    math.max(math.min(math.round(this, precision), higher), lower)
+
+//#endregion ===========================================================================================================
+//#region EXAMPLE ======================================================================================================
+//
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+
+// INPUT ===============================================================================================================
+contracts = input.int(defval = 1, title = 'Contracts', minval = 1, tooltip = 'The fixed number of contracts to enter in every trade when no leverage is used.', group = 'Quantity')
+minOrderSize = input.float(defval = 10.0, title = 'Minimum Order Size', minval = 0.0, step = 1.0, tooltip = 'The minimum trade size in quote currency that is allowed in the exchange for a valid new position (e.g. in Binance you cannot trade amounts that are equal or less than 10 USD).', group = 'Quantity')
+leverage = input.int(defval = 1, title = 'Leverage', minval = 1, tooltip = 'Leverage factor used to multiply the initial risk quantity of each trade (by borrowing the remaining amount). Thus, the profits and losses are multiplied respectively. INFORMATION! The margin for long/short positions value in the "Settings/Properties" should be adjusted accoridngly to correctly trigger margin calls.', group = 'Quantity')
+
+// LOGIC ===============================================================================================================
+var float minQuotePrice = syminfo.mintick * syminfo.pointvalue
+var int quoteDecimalDigits = minQuotePrice.num_of_decimal_digits() + 1
+float entryQuoteQuantity = (contracts * close * leverage).clamp_down(minOrderSize, 100000 * leverage, quoteDecimalDigits)
+float minBasePrice = minOrderSize / close
+int baseDecimalDigits = minBasePrice.num_of_decimal_digits() + 1
+float entryBaseQuantity = (entryQuoteQuantity / close).floor(baseDecimalDigits)
+
+// PLOT ================================================================================================================
+if barstate.islastconfirmedhistory or barstate.islast
+    label.new(x = bar_index, y = close, text = '[' + str.tostring(minQuotePrice) + ', ' + str.tostring(quoteDecimalDigits) + ', ' + str.tostring(entryQuoteQuantity) + ']\n[' + str.tostring(minBasePrice) + ', ' + str.tostring(baseDecimalDigits) + ', ' + str.tostring(entryBaseQuantity) + ']', yloc = yloc.abovebar, color = color.black, style = label.style_label_down, textcolor = color.white, force_overlay = true)
+
+//#endregion ===========================================================================================================

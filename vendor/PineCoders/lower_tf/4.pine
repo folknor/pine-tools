@@ -1,0 +1,246 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © PineCoders
+
+//@version=5
+library("lower_tf")
+
+// LTF Library
+// v4, 2023.03.25
+
+// This code was written using the recommendations from the Pine Script™ User Manual's Style Guide:
+//   https://www.tradingview.com/pine-script-docs/en/v5/writing/Style_guide.html
+
+
+
+import PineCoders/Time/4 as PCtime
+
+
+
+//#region ———————————————————— Constants and Inputs 
+
+
+// ————— Constants
+color WHITE   = color.white
+color GRAY    = color.gray
+
+string LTF1   = "Covering most chart bars (least precise)"
+string LTF2   = "Covering some chart bars (less precise)"
+string LTF3   = "Covering less chart bars (more precise)"
+string LTF4   = "Covering few chart bars (very precise)"
+string LTF5   = "Covering the least chart bars (most precise)"
+string LTF6   = "~12 intrabars per chart bar"
+string LTF7   = "~24 intrabars per chart bar"
+string LTF8   = "~50 intrabars per chart bar"
+string LTF9   = "~100 intrabars per chart bar"
+string LTF10  = "~250 intrabars per chart bar"
+string TT_LTF = "Your selection here controls how many intrabars will be analyzed for each chart bar. 
+  The more intrabars you analyze, the more precise the calculations will be,
+  but the less chart bars will be covered by the indicator's calculations because a maximum of 100K intrabars can be analyzed.\n\n
+  The first five choices determine the lower timeframe used for intrabars using how much chart coverage you want.
+  The last five choices allow you to select approximately how many intrabars you want analyzed per chart bar."
+string TAB_TXT = "Uses intrabars at {0}\nAvg intrabars per chart bar: {1,number,#.#}\nChart bars covered: {2} of {3} ({4,number,#.##}%)"
+string ERR_TXT = "No intrabar information exists at the '{0}' timeframe."
+
+// ————— Inputs
+string  ltfModeInput            = input.string(LTF3,     "Intrabar precision",         options = [LTF1, LTF2, LTF3, LTF4, LTF5, LTF6, LTF7, LTF8, LTF9, LTF10], tooltip = TT_LTF)
+bool    showInfoBoxInput        = input.bool(true,       "Show information box ")
+string  infoBoxSizeInput        = input.string("normal", "Size ",                      inline = "01", options = ["tiny", "small", "normal", "large", "huge", "auto"])
+string  infoBoxYPosInput        = input.string("bottom", "↕",                          inline = "01", options = ["top", "middle", "bottom"])
+string  infoBoxXPosInput        = input.string("left",   "↔",                          inline = "01", options = ["left", "center", "right"])
+color   infoBoxColorInput       = input.color(GRAY,      "",                           inline = "01")
+color   infoBoxTxtColorInput    = input.color(WHITE,     "T",                          inline = "01")
+//#endregion
+
+
+
+//#region ———————————————————— Functions 
+
+
+// @function            Filters small timeframes by returning the original value if it is greater than or equal to 5 seconds, or 1 second otherwise.
+// @param tfInSeconds   (simple int) A timeframe in seconds.
+// @returns             (int) The filtered timeframe in seconds.
+filterSmallTfs(simple int tfInSeconds) =>
+    int result = tfInSeconds < 5 ? 1 : tfInSeconds
+
+
+// @function            Selects a LTF from the chart's TF, depending on the `userSelection` input string.
+// @param userSelection (simple string) User-selected input string which must be one of the `choicex` arguments.
+// @param choice1       (simple string) Input selection corresponding to "Covering most chart bars (least precise)".
+// @param choice2       (simple string) Input selection corresponding to "Covering some chart bars (less precise)".
+// @param choice3       (simple string) Input selection corresponding to "Covering less chart bars (more precise)".
+// @param choice4       (simple string) Input selection corresponding to "Covering few chart bars (very precise)".
+// @param choice5       (simple string) Input selection corresponding to "Covering the least chart bars (most precise)".
+// @param choice6       (simple string) Input selection corresponding to "~12 intrabars per chart bar".
+// @param choice7       (simple string) Input selection corresponding to "~24 intrabars per chart bar".
+// @param choice8       (simple string) Input selection corresponding to "~50 intrabars per chart bar".
+// @param choice9       (simple string) Input selection corresponding to "~100 intrabars per chart bar".
+// @param choice10      (simple string) Input selection corresponding to "~250 intrabars per chart bar".
+// @returns             (simple string) A timeframe string to be used with `request.security_lower_tf()`.
+export ltf( simple string userSelection,
+     simple string choice1, 
+     simple string choice2, 
+     simple string choice3, 
+     simple string choice4, 
+     simple string choice5, 
+     simple string choice6,
+     simple string choice7,
+     simple string choice8,
+     simple string choice9,
+     simple string choice10) =>
+  
+    // Qty of minutes in each reference TF.
+    int  ONE_MIN    = 1
+    int  ONE_SEC    = ONE_MIN  / 60
+    int  ONE_HOUR   = ONE_MIN  * 60
+    int  ONE_DAY    = ONE_HOUR * 24
+    int  ONE_WEEK   = ONE_DAY  * 7
+
+    float chartTfInMinutes = timeframe.in_seconds() / 60.
+    bool  marketIs24Hours  = syminfo.type == "crypto" or syminfo.type == "forex"
+    float marketIs24HoursFactor = marketIs24Hours ? 0.25 : 1.0
+
+    // Determine user selection.
+    bool leastPrecise = false
+    bool lessPrecise  = false
+    bool morePrecise  = false
+    bool veryPrecise  = false
+    bool mostPrecise  = false
+    bool intrabars12  = false
+    bool intrabars24  = false
+    bool intrabars50  = false
+    bool intrabars100 = false
+    bool intrabars250 = false
+    switch userSelection
+        choice1  => leastPrecise := true
+        choice2  => lessPrecise  := true
+        choice3  => morePrecise  := true
+        choice4  => veryPrecise  := true
+        choice5  => mostPrecise  := true
+        choice6  => intrabars12  := true
+        choice7  => intrabars24  := true
+        choice8  => intrabars50  := true
+        choice9  => intrabars100 := true
+        choice10 => intrabars250 := true
+    
+    // Find the LTF corresponding to user's selection.
+    string result =
+      switch
+        leastPrecise => PCtime.secondsToTfString(timeframe.in_seconds() / 4)
+        veryPrecise  =>             
+            switch
+                chartTfInMinutes <= ONE_HOUR      => "5S"
+                chartTfInMinutes <= ONE_HOUR * 2  => "15S"
+                chartTfInMinutes <= ONE_HOUR * 4  => "30S"
+                chartTfInMinutes <= ONE_HOUR * 12 => marketIs24Hours ? "1"  : "30S"
+                chartTfInMinutes <= ONE_DAY       => marketIs24Hours ? "2"  : "1"
+                chartTfInMinutes <= ONE_WEEK      => marketIs24Hours ? "15" : "5"
+                =>                                   marketIs24Hours ? "60" : "30"
+        mostPrecise  =>             
+            switch
+                chartTfInMinutes <= ONE_HOUR      => "1S"
+                chartTfInMinutes <= ONE_HOUR * 2  => "5S"
+                chartTfInMinutes <= ONE_HOUR * 4  => "15S"
+                chartTfInMinutes <= ONE_HOUR * 12 => marketIs24Hours ? "30S" : "15S"
+                chartTfInMinutes <= ONE_DAY       => marketIs24Hours ? "1"   : "30S"
+                chartTfInMinutes <= ONE_WEEK      => marketIs24Hours ? "10"  : "3"
+                =>                                   marketIs24Hours ? "30"  : "15"
+        lessPrecise  =>
+            switch
+                chartTfInMinutes <= ONE_MIN       => "5S"
+                chartTfInMinutes <= ONE_MIN * 2   => "10S"
+                chartTfInMinutes <= ONE_MIN * 3   => "15S"
+                chartTfInMinutes <= ONE_MIN * 5   => "30S"
+                chartTfInMinutes <= ONE_MIN * 15  => "1"
+                chartTfInMinutes <= ONE_HOUR      => "3"
+                chartTfInMinutes <  ONE_HOUR * 2  => "5"
+                chartTfInMinutes <  ONE_HOUR * 4  => "15"
+                chartTfInMinutes <  ONE_HOUR * 6  => "30"
+                chartTfInMinutes <  ONE_HOUR * 12 => marketIs24Hours ? "60"  : "30"
+                chartTfInMinutes <  ONE_DAY       => marketIs24Hours ? "120" : "30"
+                chartTfInMinutes <  ONE_WEEK      => marketIs24Hours ? "720" : "120"
+                => "D"
+        morePrecise =>
+            switch
+                chartTfInMinutes <= ONE_MIN       => "1S"
+                chartTfInMinutes <= ONE_MIN * 2   => "5S"
+                chartTfInMinutes <= ONE_MIN * 3   => "10S"
+                chartTfInMinutes <= ONE_MIN * 5   => "15S"
+                chartTfInMinutes <= ONE_MIN * 15  => "30S"
+                chartTfInMinutes <= ONE_HOUR      => "1"
+                chartTfInMinutes <  ONE_HOUR * 2  => "2"
+                chartTfInMinutes <  ONE_HOUR * 4  => "3"
+                chartTfInMinutes <  ONE_HOUR * 6  => "5"
+                chartTfInMinutes <  ONE_HOUR * 12 => marketIs24Hours ? "10"  : "5"
+                chartTfInMinutes <  ONE_DAY       => marketIs24Hours ? "15"  : "5"
+                chartTfInMinutes <  ONE_WEEK      => marketIs24Hours ? "120" : "30"
+                => "720"
+        intrabars12  => PCtime.secondsToTfString(filterSmallTfs(timeframe.in_seconds() / int((48   * marketIs24HoursFactor))))
+        intrabars24  => PCtime.secondsToTfString(filterSmallTfs(timeframe.in_seconds() / int((96   * marketIs24HoursFactor))))
+        intrabars50  => PCtime.secondsToTfString(filterSmallTfs(timeframe.in_seconds() / int((200  * marketIs24HoursFactor))))
+        intrabars100 => PCtime.secondsToTfString(filterSmallTfs(timeframe.in_seconds() / int((400  * marketIs24HoursFactor))))
+        intrabars250 => PCtime.secondsToTfString(filterSmallTfs(timeframe.in_seconds() / int((1000 * marketIs24HoursFactor))))
+        => "1S"
+
+
+// @function                Returns statistics about analyzed intrabars and chart bars covered by calls to `request.security_lower_tf()`.
+// @param intrabarValues    (float[]) The ID of a float array containing values fetched by a call to `request.security_lower_tf()`.
+// @returns                 A 3-element tuple: ([(series int) intrabarsInChartBar, (series int) chartBarsCovered, (series float) avgIntrabars].
+export ltfStats(float[] intrabarValues) =>
+    // Qty of intrabars in the current chart bar.
+    int intrabarsInChartBar = array.size(intrabarValues)
+    // Chart bars where intrabar information is available.
+    int chartBarsCovered = int(ta.cum(math.sign(intrabarsInChartBar)))
+    // Avg qty of intrabars per chart bar.
+    float avgIntrabars = nz(ta.cum(intrabarsInChartBar) / chartBarsCovered)
+    [intrabarsInChartBar, chartBarsCovered, avgIntrabars]
+//#endregion
+
+
+
+//#region ———————————————————— Calculations 
+
+
+// Get the LTF corresponding to user's selection.
+//   NOTE
+//      This is a good example of a case where we declare a variable with `var` to improve the script's execution time.
+//      Declaring it this way calls the `ltf()` function only once, on the dataset's first bar.
+//      The `ltf()` function has many string arguments and because it only needs to return a "simple string" for use in `request.security_lower_tf()`,
+//      this entails that its value cannot change on further bars, so there is no need to execute it on them.
+//      Because the function's code mostly manipulates strings, which the Pine runtime doesn't process as efficiently as numbers, this speeds up the script.
+var string ltfString = ltf(ltfModeInput, LTF1, LTF2, LTF3, LTF4, LTF5, LTF6, LTF7, LTF8, LTF9, LTF10)
+
+// Get array of `close` values for each intrabar in the chart's bar.
+float[] intrabarCloses = request.security_lower_tf(syminfo.tickerid, ltfString, close)
+
+// ———— Intrabar stats
+[intrabars, chartBarsCovered, avgIntrabars] = ltfStats(intrabarCloses)
+int chartBars = bar_index + 1
+//#endregion
+
+
+
+//#region ———————————————————— Visuals 
+
+
+// Plots visible in the pane.
+plot(avgIntrabars, "Average intrabars", color.silver, 6)
+plot(intrabars,    "Intrabars",         color.blue,   2)
+
+// Values visible in the Data Window and in the script's status line.
+plot(chartBarsCovered,  "Chart bars covered", display = display.data_window + display.status_line)
+plot(chartBars,         "Chart bars total",   display = display.data_window + display.status_line)
+
+// Information box.
+if showInfoBoxInput
+    var table infoBox = table.new(infoBoxYPosInput + "_" + infoBoxXPosInput, 1, 1)
+    string formattedLtf = PCtime.formattedNoOfPeriods(timeframe.in_seconds(ltfString) * 1000)
+    string txt = str.format(TAB_TXT, formattedLtf, avgIntrabars,  chartBarsCovered, chartBars, chartBarsCovered / chartBars * 100)
+    if barstate.isfirst
+        table.cell(infoBox, 0, 0, txt, text_color = infoBoxTxtColorInput, text_size = infoBoxSizeInput, bgcolor = infoBoxColorInput)
+    else if barstate.islast
+        table.cell_set_text(infoBox, 0, 0, txt)        
+
+// Error if no intrabars exist. 
+if ta.cum(intrabars) == 0 and barstate.islast
+    runtime.error(str.format(ERR_TXT, ltfString))
+//#endregion

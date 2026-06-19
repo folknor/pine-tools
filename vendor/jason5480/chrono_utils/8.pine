@@ -1,0 +1,1205 @@
+//#region SETUP
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © jason5480
+
+//@version=6
+
+// @description Collection of objects and common functions that are related to datetime windows session days and time
+// ranges. The main purpose of this library is to handle time-related functionality and make it easy to reason about a
+// future bar checking if it will be part of a predefined session and/or inside a datetime window. All existing session
+// functionality I found in the documentation e.g. "not na(time(timeframe, session, timezone))" are not suitable for
+// strategy scripts, since the execution of the orders is delayed by one bar, due to the script execution happening at
+// the bar close. Moreover, a history operator with a negative value that looks forward is not allowed in any pinescript
+// expression. So, a prediction for the next bar using the bars_back argument of "time()"" and "time_close()" was
+// necessary. Thus, I created this library to overcome this small but very important limitation. In the meantime, I
+// added useful functionality to handle session-based behavior. An interesting utility that emerged from this
+// development is the data anomaly detection where a comparison between the prediction and the actual value is happening.
+// If those two values are different then a data inconsistency happened between the prediction bar and the actual bar 
+// (probably due to a holiday, half session day, a timezone daylight saving change etc..)
+library(title = 'chrono_utils')
+
+//#endregion ===========================================================================================================
+//#region HELPER FUNCTIONS =============================================================================================
+//
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+
+// @enum The enum of the supported timezones
+// @field Exchange The timezone of the exchange
+export enum Timezone
+    Utc             = "UTC"
+    Exchange        = "Exchange"
+    Honolulu        = "(UTC-10) Honolulu"
+    Anchorage       = "(UTC-9/-8) Anchorage"
+    Juneau          = "(UTC-9/-8) Juneau"
+    Los_Angeles     = "(UTC-8/-7) Los Angeles"
+    Vancouver       = "(UTC-8/-7) Vancouver"
+    Denver          = "(UTC-7/-6) Denver"
+    Phoenix         = "(UTC-7) Phoenix"
+    Chicago         = "(UTC-6/-5) Chicago"
+    Mexico_City     = "(UTC-6) Mexico City"
+    San_Salvador    = "(UTC-6) San Salvador"
+    Bogota          = "(UTC-5) Bogota"
+    Lima            = "(UTC-5) Lima"
+    New_York        = "(UTC-5/-4) New York"
+    Toronto         = "(UTC-5/-4) Toronto"
+    Caracas         = "(UTC-4) Caracas"
+    Santiago        = "(UTC-4/-3) Santiago"
+    Buenos_Aires    = "(UTC-3) Buenos Aires"
+    Sao_Palo        = "(UTC-3) Sao Paulo"
+    Azores          = "(UTC-1/+0) Azores"
+    Dublin          = "(UTC+0/+1) Dublin"
+    Lisbon          = "(UTC+0/+1) Lisbon"
+    London          = "(UTC+0/+1) London"
+    Reykjavik       = "(UTC) Reykjavik"
+    Amsterdam       = "(UTC+1/+2) Amsterdam"
+    Belgrade        = "(UTC+1/+2) Belgrade"
+    Berlin          = "(UTC+1/+2) Berlin"
+    Bratislava      = "(UTC+1/+2) Bratislava"
+    Brussels        = "(UTC+1/+2) Brussels"
+    Budapest        = "(UTC+1/+2) Budapest"
+    Casablanca      = "(UTC+1/+0) Casablanca"
+    Copenhagen      = "(UTC+1/+2) Copenhagen"
+    Lagos           = "(UTC+1) Lagos"
+    Luxembourg      = "(UTC+1/+2) Luxembourg"
+    Madrid          = "(UTC+1/+2) Madrid"
+    Malta           = "(UTC+1/+2) Malta"
+    Oslo            = "(UTC+1/+2) Oslo"
+    Paris           = "(UTC+1/+2) Paris"
+    Prague          = "(UTC+1/+2) Prague"
+    Rome            = "(UTC+1/+2) Rome"
+    Stockholm       = "(UTC+1/+2) Stockholm"
+    Tunis           = "(UTC+1) Tunis"
+    Vienna          = "(UTC+1/+2) Vienna"
+    Warsaw          = "(UTC+1/+2) Warsaw"
+    Zurich          = "(UTC+1/+2) Zurich"
+    Athens          = "(UTC+2/+3) Athens"
+    Bucharest       = "(UTC+2/+3) Bucharest"
+    Cairo           = "(UTC+2/+3) Cairo"
+    Helsinki        = "(UTC+2/+3) Helsinki"
+    Jerusalem       = "(UTC+2/+3) Jerusalem"
+    Johannesburg    = "(UTC+2) Johannesburg"
+    Nicosia         = "(UTC+2/+3) Nicosia"
+    Riga            = "(UTC+2/+3) Riga"
+    Tallinn         = "(UTC+2/+3) Tallinn"
+    Vilnius         = "(UTC+2/+3) Vilnius"
+    Bahrain         = "(UTC+3) Bahrain"
+    Istanbul        = "(UTC+3) Istanbul"
+    Kuwait          = "(UTC+3) Kuwait"
+    Moscow          = "(UTC+3) Moscow"
+    Nairobi         = "(UTC+3) Nairobi"
+    Qatar           = "(UTC+3) Qatar"
+    Riyadh          = "(UTC+3) Riyadh"
+    Tehran          = "(UTC+3:30) Tehran"
+    Dubai           = "(UTC+4) Dubai"
+    Muscat          = "(UTC+4) Muscat"
+    Kabul           = "(UTC+4:30) Kabul"
+    Ashgabat        = "(UTC+5) Ashgabat"
+    Astana          = "(UTC+5) Astana"
+    Karachi         = "(UTC+5) Karachi"
+    Colombo         = "(UTC+5:30) Colombo"
+    Kolkata         = "(UTC+5:30) Kolkata"
+    Kathmandu       = "(UTC+5:45) Kathmandu"
+    Dhaka           = "(UTC+6) Dhaka"
+    Yangon          = "(UTC+6:30) Yangon"
+    Bangkok         = "(UTC+7) Bangkok"
+    Ho_Chi_Minh     = "(UTC+7) Ho Chi Minh"
+    Jakarta         = "(UTC+7) Jakarta"
+    Chongqing       = "(UTC+8) Chongqing"
+    Hong_Kong       = "(UTC+8) Hong Kong"
+    Kuala_Lumpur    = "(UTC+8) Kuala Lumpur"
+    Manila          = "(UTC+8) Manila"
+    Perth           = "(UTC+8) Perth"
+    Shanghai        = "(UTC+8) Shanghai"
+    Singapore       = "(UTC+8) Singapore"
+    Taipei          = "(UTC+8) Taipei"
+    Seoul           = "(UTC+9) Seoul"
+    Tokyo           = "(UTC+9) Tokyo"
+    Adelaide        = "(UTC+9:30/+10:30) Adelaide"
+    Brisbane        = "(UTC+10) Brisbane"
+    Sydney          = "(UTC+10/+11) Sydney"
+    Norfolk_Island  = "(UTC+11/+12) Norfolk Island"
+    New_Zealand     = "(UTC+12/+13) New Zealand"
+    Chatham_Islands = "(UTC+12:45/+13:45) Chatham Islands"
+    Tokelau         = "(UTC+13) Tokelau"
+
+// @function Convert timezone to IANA timezone string identifier
+// @param timezone The timezone enum
+// @returns string representing the IANA timezone identifier
+export method to_string(simple Timezone timezone) =>
+    switch timezone
+        Timezone.Utc             => "Etc/UTC"
+        Timezone.Exchange        => syminfo.timezone
+        Timezone.Honolulu        => "Pacific/Honolulu"
+        Timezone.Anchorage       => "America/Anchorage"
+        Timezone.Juneau          => "America/Juneau"
+        Timezone.Los_Angeles     => "America/Los_Angeles"
+        Timezone.Vancouver       => "America/Vancouver"
+        Timezone.Denver          => "America/Denver"
+        Timezone.Phoenix         => "America/Phoenix"
+        Timezone.Chicago         => "America/Chicago"
+        Timezone.Mexico_City     => "America/Mexico_City"
+        Timezone.San_Salvador    => "America/El_Salvador"
+        Timezone.Bogota          => "America/Bogota"
+        Timezone.Lima            => "America/Lima"
+        Timezone.New_York        => "America/New_York"
+        Timezone.Toronto         => "America/Toronto"
+        Timezone.Caracas         => "America/Caracas"
+        Timezone.Santiago        => "America/Santiago"
+        Timezone.Buenos_Aires    => "America/Argentina/Buenos_Aires"
+        Timezone.Sao_Palo        => "America/Sao_Paulo"
+        Timezone.Azores          => "Atlantic/Azores"
+        Timezone.Dublin          => "Europe/Dublin"
+        Timezone.Lisbon          => "Europe/Lisbon"
+        Timezone.London          => "Europe/London"
+        Timezone.Reykjavik       => "Atlantic/Reykjavik"
+        Timezone.Amsterdam       => "Europe/Amsterdam"
+        Timezone.Belgrade        => "Europe/Belgrade"
+        Timezone.Berlin          => "Europe/Berlin"
+        Timezone.Bratislava      => "Europe/Bratislava"
+        Timezone.Brussels        => "Europe/Brussels"
+        Timezone.Budapest        => "Europe/Budapest"
+        Timezone.Casablanca      => "Africa/Casablanca"
+        Timezone.Copenhagen      => "Europe/Copenhagen"
+        Timezone.Lagos           => "Africa/Lagos"
+        Timezone.Luxembourg      => "Europe/Luxembourg"
+        Timezone.Madrid          => "Europe/Madrid"
+        Timezone.Malta           => "Europe/Malta"
+        Timezone.Oslo            => "Europe/Oslo"
+        Timezone.Paris           => "Europe/Paris"
+        Timezone.Prague          => "Europe/Prague"
+        Timezone.Rome            => "Europe/Rome"
+        Timezone.Stockholm       => "Europe/Stockholm"
+        Timezone.Tunis           => "Africa/Tunis"
+        Timezone.Vienna          => "Europe/Vienna"
+        Timezone.Warsaw          => "Europe/Warsaw"
+        Timezone.Zurich          => "Europe/Zurich"
+        Timezone.Athens          => "Europe/Athens"
+        Timezone.Bucharest       => "Europe/Bucharest"
+        Timezone.Cairo           => "Africa/Cairo"
+        Timezone.Helsinki        => "Europe/Helsinki"
+        Timezone.Jerusalem       => "Asia/Jerusalem"
+        Timezone.Johannesburg    => "Africa/Johannesburg"
+        Timezone.Nicosia         => "Asia/Nicosia"
+        Timezone.Riga            => "Europe/Riga"
+        Timezone.Tallinn         => "Europe/Tallinn"
+        Timezone.Vilnius         => "Europe/Vilnius"
+        Timezone.Bahrain         => "Asia/Bahrain"
+        Timezone.Istanbul        => "Europe/Istanbul"
+        Timezone.Kuwait          => "Asia/Kuwait"
+        Timezone.Moscow          => "Europe/Moscow"
+        Timezone.Nairobi         => "Africa/Nairobi"
+        Timezone.Qatar           => "Asia/Qatar"
+        Timezone.Riyadh          => "Asia/Riyadh"
+        Timezone.Tehran          => "Asia/Tehran"
+        Timezone.Dubai           => "Asia/Dubai"
+        Timezone.Muscat          => "Asia/Muscat"
+        Timezone.Kabul           => "Asia/Kabul"
+        Timezone.Ashgabat        => "Asia/Ashgabat"
+        Timezone.Astana          => "Asia/Almaty"
+        Timezone.Karachi         => "Asia/Karachi"
+        Timezone.Colombo         => "Asia/Colombo"
+        Timezone.Kolkata         => "Asia/Kolkata"
+        Timezone.Kathmandu       => "Asia/Kathmandu"
+        Timezone.Dhaka           => "Asia/Dhaka"
+        Timezone.Yangon          => "Asia/Yangon"
+        Timezone.Bangkok         => "Asia/Bangkok"
+        Timezone.Ho_Chi_Minh     => "Asia/Ho_Chi_Minh"
+        Timezone.Jakarta         => "Asia/Jakarta"
+        Timezone.Chongqing       => "Asia/Chongqing"
+        Timezone.Hong_Kong       => "Asia/Hong_Kong"
+        Timezone.Kuala_Lumpur    => "Asia/Kuala_Lumpur"
+        Timezone.Manila          => "Asia/Manila"
+        Timezone.Perth           => "Australia/Perth"
+        Timezone.Shanghai        => "Asia/Shanghai"
+        Timezone.Singapore       => "Asia/Singapore"
+        Timezone.Taipei          => "Asia/Taipei"
+        Timezone.Seoul           => "Asia/Seoul"
+        Timezone.Tokyo           => "Asia/Tokyo"
+        Timezone.Adelaide        => "Australia/Adelaide"
+        Timezone.Brisbane        => "Australia/Brisbane"
+        Timezone.Sydney          => "Australia/Sydney"
+        Timezone.Norfolk_Island  => "Pacific/Norfolk"
+        Timezone.New_Zealand     => "Pacific/Auckland"
+        Timezone.Chatham_Islands => "Pacific/Chatham"
+        Timezone.Tokelau         => "Pacific/Fakaofo"
+
+// @function Convert the day id into a short nameOfDay
+// @param day The day id to convert
+// @returns The short name of the day
+export nameOfDay(int day) =>
+    switch day
+        dayofweek.sunday => 'Sun'
+        dayofweek.monday => 'Mon'
+        dayofweek.tuesday => 'Tue'
+        dayofweek.wednesday => 'Wed'
+        dayofweek.thursday => 'Thu'
+        dayofweek.friday => 'Fri'
+        dayofweek.saturday => 'Sat'
+        => 'NaN'
+
+// @function Get the day id of this day
+// @returns The day id
+export today() =>
+    dayofweek
+
+// @function Get the day id of n days after the given day
+// @param day The day id of the reference day
+// @param n The number of days to go forward
+// @returns The day id of the day that is n days after the reference day
+export nthDayAfter(int day, int n) =>
+    ((day - 1 + n) % 7) + 1
+
+// @function Get the day id of next day after the given day
+// @param day The day id of the reference day
+// @returns The day id of the next day after the reference day
+export nextDayAfter(int day) =>
+    nthDayAfter(day, 1)
+
+// @function Get the day id of n days before the given day
+// @param day The day id of the reference day
+// @param n The number of days to go forward
+// @returns The day id of the day that is n days before the reference day
+export nthDayBefore(int day, int n = 1) =>
+    ((day - 1 + (7 - n)) % 7) + 1
+
+// @function Get the day id of previous day before the given day
+// @param day The day id of the reference day
+// @returns The day id of the previous day before the reference day
+export prevDayBefore(int day) =>
+    nthDayBefore(day, 1)
+
+// @function Get the day id of the next day
+// @returns The next day day id
+export tomorrow() =>
+    nextDayAfter(today())
+
+// @function Check if number is in the range of [min, max]
+// @returns The normalized number
+export normalize(int num, int min, int max) =>
+    int normalizedNum = num    
+    while normalizedNum < min
+        normalizedNum := normalizedNum + max
+    while normalizedNum > max
+        normalizedNum := normalizedNum - max
+    normalizedNum
+
+// @function Check if hour is valid and return a noralized hour range from [0, 24]
+// @returns The normalized hour
+export normalizeHour(int hourInDay) =>
+    normalize(hourInDay, 0, 24)
+
+// @function Check if minute is valid and return a noralized minute from [0, 59]
+// @returns The normalized minute
+export normalizeMinute(int minuteInHour) =>
+    normalize(minuteInHour, 0, 60)
+
+// @function Calculate the days of each month of the year
+// @param mon The month of reference to get the days
+// @param yer The year of reference to check if it is a leap year
+// @param rolloverMonths Policy on how to handle months that are out of [1, 12] range
+// @returns The number of days of the month with leap year accuracy
+export monthInDays(int mon, int yer, bool rolloverMonths = false) =>
+    int m = if rolloverMonths
+        int normalizedMonth = mon
+        while normalizedMonth <= 0
+            normalizedMonth += 12
+        ((normalizedMonth - 1) % 12) + 1
+    else
+        math.min(math.max(mon, 1), 12)
+    
+    bool isLeapYear = (yer + math.floor(mon / 12)) % 4 == 0
+    int extraDays = (m + math.floor(m / 8)) % 2 + 2 % m + 2 * math.floor(1 / m)
+    28 + (m == 2 and isLeapYear ? 1 : 0) + extraDays
+
+const int MS_PER_DAY = 86400000
+
+// @function Calculate the miliseconds in one bar of the timeframe
+// @param mon The month of reference to get the miliseconds
+// @returns The number of milliseconds of the month
+export monthInMilliseconds(int mon, int yer, bool rolloverMonths = true) =>
+    monthInDays(mon, yer, rolloverMonths) * MS_PER_DAY
+
+// @function Calculate the miliseconds in one bar of the timeframe
+// @param mon The month of reference to get the miliseconds
+// @returns The number of milliseconds of the month
+export monthInMilliseconds(int mon) =>
+    int daysInMonth = switch mon
+        2 => 28
+        4 => 30
+        6 => 30
+        9 => 30
+        11 => 30
+        => 31
+    daysInMonth * MS_PER_DAY
+
+// @function Calculate the miliseconds in one bar of the timeframe
+// @returns The number of milliseconds in one bar
+export barInMilliseconds() =>
+    if timeframe.ismonthly
+        monthInMilliseconds(month, year, false)
+    else
+        1000 * timeframe.in_seconds()
+
+//#endregion ===========================================================================================================
+//#region BAR ==========================================================================================================
+//
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+
+// @type Object that represents the bars' open and close times
+// @field openUnixTime The open time of the bar
+// @field closeUnixTime The close time of the bar
+type Bar
+    int openUnixTime
+    int closeUnixTime
+
+// @function Formats the bar into a human-readable string
+// @param this The bar object with the open and close times
+// @returns The string of the bar times
+method to_string(Bar this) =>
+    str.format('[open = {0}, close = {1}]', str.format_time(this.openUnixTime, 'HH:mm d/M/yyyy (z)'), str.format_time(this.closeUnixTime, 'HH:mm d/M/yyyy (z)'))
+
+// @function Compare two bars
+// @param this The bar object with the open and close times
+// @param other The bar object to compare with
+// @returns Whether this bar is equal to the other one
+method eq(Bar this, Bar other) =>
+    this.openUnixTime == other.openUnixTime and this.closeUnixTime == other.closeUnixTime
+
+// @function Get the current bar object with time and time_close timestamps
+// @returns The current bar
+getCurrentBar() =>
+    Bar.new(time, time_close)
+
+// @function Get the next bar (offset bars forward) with time and time_close timestamps
+// @param offset_forward The number of bars forward
+// @returns The next bar
+getNextBar(simple int offset_forward = 1) =>
+    int openUnixTime = time(timeframe.period, -1 * offset_forward)
+    Bar.new(openUnixTime, time_close(timeframe.period, -1 * offset_forward))
+
+//#endregion ===========================================================================================================
+//#region DATETIME WINDOW ==============================================================================================
+//
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+
+// @type Object that represents a datetime window with a beginning and an end
+// @field fromDateTime The beginning of the datetime window
+// @field toDateTime The end of the datetime window
+export type DateTimeWindow
+    int fromDateTime
+    int toDateTime
+
+// @function Initialize the time window object from boolean values of each session day
+// @param this The time window object that will hold the from and to datetimes
+// @param fromDateTime The starting datetime of the time window
+// @param toDateTime The ending datetime of the time window
+// @returns The time window object
+export method init(DateTimeWindow this, int fromDateTime, int toDateTime) =>
+    this.fromDateTime := na(fromDateTime) ? na : timestamp(year(fromDateTime), month(fromDateTime), dayofmonth(fromDateTime), hour(fromDateTime), minute(fromDateTime), second(fromDateTime))
+    this.toDateTime := na(toDateTime) ? na : timestamp(year(toDateTime), month(toDateTime), dayofmonth(toDateTime), hour(toDateTime), minute(toDateTime), second(toDateTime))
+    this
+
+// @function Initialize the time window object from boolean values of each session day
+// @param this The time window object that will hold the from and to datetimes
+// @param fromDateTime The starting datetime of the time window
+// @param toDateTime The ending datetime of the time window
+// @param refTimezone The timezone of reference of the 'from' and 'to' dates
+// @param chTimezone The target timezone to convert the 'from' and 'to' dates
+// @returns The time window object
+export method init(DateTimeWindow this, simple string refTimezone, simple string chTimezone, int fromDateTime, int toDateTime) =>
+    this.fromDateTime := na(fromDateTime) ? na : timestamp(refTimezone, year(fromDateTime, chTimezone), month(fromDateTime, chTimezone), dayofmonth(fromDateTime, chTimezone), hour(fromDateTime, chTimezone), minute(fromDateTime, chTimezone), second(fromDateTime, chTimezone))
+    this.toDateTime := na(toDateTime) ? na : timestamp(refTimezone, year(toDateTime, chTimezone), month(toDateTime, chTimezone), dayofmonth(toDateTime, chTimezone), hour(toDateTime, chTimezone), minute(toDateTime, chTimezone), second(toDateTime, chTimezone))
+    this
+
+// @function Formats the time window into a human-readable string
+// @param this The time window object with the from and to datetimes
+// @returns The string of the time window
+export method to_string(DateTimeWindow this) =>
+    str.format('[{0} - {1}]', str.format_time(na(this.fromDateTime) ? 0 : this.fromDateTime, 'HH:mm d/M/yyyy (z)'), str.format_time(na(this.toDateTime) ? time_close : this.toDateTime, 'HH:mm d/M/yyyy (z)'))
+
+// @function Count the seconds from start to end in the given timeframe
+// @param this The time window object with the from and to datetimes
+// @returns The number of seconds inside the time widow for the given timeframe
+export method get_size_in_secs(DateTimeWindow this) =>
+    math.abs((na(this.fromDateTime) ? 0 : this.fromDateTime) - (na(this.toDateTime) ? time_close : this.toDateTime)) / 1000
+
+// @function Count the bars from start to end in the given timeframe
+// @param this The time window object with the from and to datetimes
+// @returns The number of bars inside the time widow for the given timeframe
+export method get_size_in_bars(DateTimeWindow this) =>
+    math.floor(this.get_size_in_secs() / timeframe.in_seconds())
+
+// @function Check if the given bar is between the start and end dates of the window
+// @param this The time window object with the from and to datetimes
+// @param offset_forward The number of bars forward. Default is 1
+// @returns Whether the current bar is inside the datetime window
+export method is_bar_included(DateTimeWindow this, simple int offset_forward = 1) =>
+    // Predict the next bar (offset bars forward) based on the chart session
+    Bar nextBar = getNextBar(offset_forward)
+    (na(this.fromDateTime) ? true : nextBar.openUnixTime >= this.fromDateTime) and (na(this.toDateTime) ? true : nextBar.closeUnixTime <= this.toDateTime)
+
+//#endregion ===========================================================================================================
+//#region SESSION DAYS =================================================================================================
+//
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+
+// @type Object that represent the trading days of the week
+// @field days The map that contains all days of the week and their session flag
+export type SessionDays
+    map<int, bool> days
+
+// @function Initialize the session days object from boolean values of each session day
+// @param this The session days object that will hold the day selection
+// @param sun Is Sunday a trading day?
+// @param mon Is Monday a trading day?
+// @param tue Is Tuesday a trading day?
+// @param wed Is Wednesday a trading day?
+// @param thu Is Thursday a trading day?
+// @param fri Is Friday a trading day?
+// @param sat Is Saturday a trading day?
+// @returns The session days object
+export method init(SessionDays this, bool sun = true, bool mon = true, bool tue = true, bool wed = true, bool thu = true, bool fri = true, bool sat = true) =>
+    this.days := map.new<int, bool>()
+    this.days.put(dayofweek.sunday, sun)
+    this.days.put(dayofweek.monday, mon)
+    this.days.put(dayofweek.tuesday, tue)
+    this.days.put(dayofweek.wednesday, wed)
+    this.days.put(dayofweek.thursday, thu)
+    this.days.put(dayofweek.friday, fri)
+    this.days.put(dayofweek.saturday, sat)
+    this
+
+// @function Formats the session days into a session string with day ids
+// @param this The session days object
+// @returns The string of the session day ids
+export method to_sess_string(SessionDays this) =>
+    string sess = ''
+    for [day, isSession] in this.days
+        if isSession
+            sess += str.tostring(day)
+    sess
+
+// @function Initialize the session days object from the session string
+// @param this The session days object that will hold the day selection
+// @param sess The session string part that represents the days [1-7]
+// @returns The session days object
+export method from_sess_string(SessionDays this, string sess) =>
+    if na(str.tonumber(sess))
+        runtime.error(str.format('Invalid days session string {0}', sess))
+    this.days := map.new<int, bool>()
+    for i = 1 to 7
+        this.days.put(i, str.contains(sess, str.tostring(i)))
+    this
+
+// @function Formats the session days into a human-readable string with short day names
+// @param this The session days object with the day selection
+// @returns The string of the session day short names
+export method to_string(SessionDays this) =>
+    string s = ''
+    string comma = ''
+    for [day, isSession] in this.days
+        if isSession
+            s += comma + nameOfDay(day)
+            comma := ','
+    '[' + str.substring(s, 0, str.length(s)) + ']'
+
+// @function The nth day after the given day that is a session day (true) in the object
+// @param this The session days object with the day selection
+// @param day The day id of the reference day
+// @param n The number of days after
+// @returns The day id of the nth session day of the week after the given day
+export method nth_day_after(SessionDays this, int day, int n) =>
+    int nthSessionDay = day
+    int count = n
+    int i = 1
+    while count > 0 and i <= 7
+        int nthDay = nthDayAfter(day, i)
+        if this.days.get(nthDay)
+            count -= 1
+            nthSessionDay := nthDay
+        i += 1
+    nthSessionDay
+
+// @function The nth day before the given day that is a session day (true) in the object
+// @param this The session days object with the day selection
+// @param day The day id of the reference day
+// @param n The number of days after
+// @returns The day id of the nth session day of the week before the given day
+export method nth_day_before(SessionDays this, int day, int n) =>
+    int nthSessionDay = day
+    int count = n
+    int i = 1
+    while count > 0 and i <= 7
+        int nthDay = nthDayBefore(day, i)
+        if this.days.get(nthDay)
+            count -= 1
+            nthSessionDay := nthDay
+        i += 1
+    nthSessionDay
+
+// @function The next day that is a session day (true) in the object
+// @param this The session days object with the day selection
+// @returns The day id of the next session day of the week
+export method next_day(SessionDays this) =>
+    this.nth_day_after(today(), 1)
+
+// @function The previous day that is session day (true) in the object
+// @param this The session days object with the day selection
+// @returns The day id of the previous session day of the week
+export method previous_day(SessionDays this) =>
+    this.nth_day_before(today(), 1)
+
+//#endregion ===========================================================================================================
+//#region SESSION TIME =================================================================================================
+//
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+
+// @type Object that represents the time (hour and minutes)
+// @field hourInDay The hour of the day that ranges from 0 to 24
+// @field minuteInHour The minute of the hour that ranges from 0 to 59
+// @field minuteInDay The minute of the day that ranges from 0 to 1440. They will be calculated based on hourInDay and minuteInHour when method is called
+export type SessionTime
+    int hourInDay = 00
+    int minuteInHour = 00
+    int minuteInDay = 0
+
+// @function Initialize the object from the hour and minute of the session time in exchange timezone (syminfo.timezone)
+// @param this The session time object with the hour and minute of the time of the day
+// @param unixTime The unix time
+// @returns The session time object
+export method init(SessionTime this, int unixTime) =>
+    this.hourInDay := na(unixTime) ? 0 : hour(unixTime)
+    this.minuteInHour := na(unixTime) ? 0 : minute(unixTime)
+    this.minuteInDay := 60 * this.hourInDay + this.minuteInHour
+    this
+
+// @function Initialize the object from the hour and minute of the session time in exchange timezone (syminfo.timezone)
+// @param this The session time object with the hour and minute of the time of the day
+// @param hourInDay The hour of the time
+// @param minuteInHour The minute of the time
+// @returns The session time object
+export method init(SessionTime this, int hourInDay, int minuteInHour) =>
+    if hourInDay > 24 or minuteInHour > 60 or hourInDay < 0 or minuteInHour < 0
+        runtime.error('Invalid hour or day values passed: ' + str.tostring(hourInDay) + ', ' + str.tostring(minuteInHour))
+    this.hourInDay := na(hourInDay) ? 0 : hourInDay
+    this.minuteInHour := na(minuteInHour) ? 0 : minuteInHour
+    this.minuteInDay := 60 * hourInDay + minuteInHour
+    this
+
+// @function Initialize the object from the hour and minute of the session time
+// @param this The session time object with the hour and minute of the time of the day
+// @param hourInDay The hour of the time
+// @param minuteInHour The minute of the time
+// @param refTimezone The timezone of reference of the 'hour' and 'minute'
+// @returns The session time object
+export method init(SessionTime this, int hourInDay, int minuteInHour, string refTimezone) =>
+    this.init(normalizeHour(hourInDay + hour - hour(time, refTimezone)), normalizeMinute(minuteInHour + minute - minute(time, refTimezone)))
+
+// @function Formats the session time into a session string
+// @param this The session time object with the hour and minute of the time of the day
+// @returns The string of the session time
+export method to_sess_string(SessionTime this) =>
+    str.format('{0, number,00}{1, number,00}', this.hourInDay, this.minuteInHour)
+
+// @function Initialize the session time object from the session string in exchange timezone (syminfo.timezone)
+// @param this The session time object that will hold the hour and minute of the time
+// @param sess The session string part that represents the time HHmm
+// @returns The session time object
+export method from_sess_string(SessionTime this, string sess) =>
+    if str.length(sess) != 4
+        runtime.error(str.format('Invalid time session string {0}', sess))
+    this.init(int(str.tonumber(str.substring(sess, 0, 2))), int(str.tonumber(str.substring(sess, 2))))
+
+// @function Initialize the session time object from the session string
+// @param this The session time object that will hold the hour and minute of the time
+// @param sess The session string part that represents the time HHmm
+// @param refTimezone The timezone of reference of the 'hour' and 'minute'
+// @returns The session time object
+export method from_sess_string(SessionTime this, string sess, simple string refTimezone) =>
+    if str.length(sess) != 4
+        runtime.error(str.format('Invalid time session string {0}', sess))
+    this.init(int(str.tonumber(str.substring(sess, 0, 2))), int(str.tonumber(str.substring(sess, 2))), refTimezone)
+
+// @function Formats the session time into a human-readable string
+// @param this The session time object with the hour and minute of the time of the day
+// @returns The string of the session time
+export method to_string(SessionTime this) =>
+    str.format('{0, number,00}:{1, number,00}', this.hourInDay, this.minuteInHour)
+
+// @function Count the seconds since the start of the day this session time represents
+// @param this The session time object with the hour and minute of the time of the day
+// @returns The number of seconds passed from the start of the day until that session time
+export method get_sec_in_day(SessionTime this) =>
+    60 * this.minuteInDay
+
+// @function Count the milliseconds since the start of the day this session time represents
+// @param this The session time object with the hour and minute of the time of the day
+// @returns The number of milliseconds passed from the start of the day until that session time
+export method get_ms_in_day(SessionTime this) =>
+    1000 * this.get_sec_in_day()
+
+// @function The open time object
+// @param this The bar object with the open and close times
+// @returns The open time object
+method get_open_time(Bar this) =>
+    SessionTime.new().init(this.openUnixTime)
+
+// @function The close time object
+// @param this The bar object with the open and close times
+// @returns The close time object
+method get_close_time(Bar this) =>
+    SessionTime closeBarTime = SessionTime.new().init(this.closeUnixTime)
+    if closeBarTime.minuteInDay == 0
+        closeBarTime := SessionTime.new().init(24, 00)
+    closeBarTime
+
+//#endregion ===========================================================================================================
+//#region SESSION TIME RANGE ===========================================================================================
+//
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+
+// @type Object that represents a range that extends from the start to the end time
+// @field startTime The beginning of the time range
+// @field endTime The end of the time range
+// @field isOvernight Whether or not this is an overnight time range
+export type SessionTimeRange
+    SessionTime startTime
+    SessionTime endTime
+    bool isOvernight
+
+// @function Initialize the object from the start and end session time in exchange timezone (syminfo.timezone)
+// @param this The session time range object that will hold the start and end time of the daily session
+// @param startTime The time the session begins
+// @param endTime The time the session ends
+// @returns The session time range object
+export method init(SessionTimeRange this, SessionTime startTime = na, SessionTime endTime = na) =>
+    this.startTime := na(startTime) ? SessionTime.new().init(00, 00) : startTime
+    this.endTime := na(endTime) ? SessionTime.new().init(24, 00) : endTime
+    this.isOvernight := timeframe.isintraday ? this.startTime.minuteInDay >= this.endTime.minuteInDay : false
+    this
+
+// @function Initialize the object from the start and end session time
+// @param this The session time range object that will hold the start and end time of the daily session
+// @param startTimeHour The time hour the session begins
+// @param startTimeMinute The time minute the session begins
+// @param endTimeHour The time hour the session ends
+// @param endTimeMinute The time minute the session ends
+// @returns The session time range object
+export method init(SessionTimeRange this, int startTimeHour, int startTimeMinute, int endTimeHour, int endTimeMinute, string refTimezone) =>
+    this.init(
+     na(startTimeHour) or na(startTimeMinute) ? SessionTime.new().init(00, 00, refTimezone) : SessionTime.new().init(startTimeHour, startTimeMinute, refTimezone),
+     na(endTimeHour) or na(endTimeMinute) ? SessionTime.new().init(24, 00, refTimezone) : SessionTime.new().init(endTimeHour, endTimeMinute, refTimezone))
+
+// @function Formats the session time into a session string
+// @param this The session time range object with the start and end time of the daily session
+// @returns The string of the session time
+export method to_sess_string(SessionTimeRange this) =>
+    str.format('{0}-{1}', (na(this.startTime) ? SessionTime.new().init(00, 00) : this.startTime).to_sess_string(), (na(this.endTime) ? SessionTime.new().init(24, 00) : this.endTime).to_sess_string())
+
+// @function Initialize the session time range object from the session string in exchange timezone (syminfo.timezone)
+// @param this The session time range object that will hold the start and end time of the daily session
+// @param sess The session string part that represents the time range HHmm-HHmm
+// @returns The session time range object
+export method from_sess_string(SessionTimeRange this, string sess) =>
+    array<string> sessParts = str.split(sess, '-')
+    if sessParts.size() != 2
+        runtime.error(str.format('Invalid time range session string {0}', sess))
+    this.init(SessionTime.new().from_sess_string(sessParts.get(0)), SessionTime.new().from_sess_string(sessParts.get(1)))
+
+// @function Initialize the session time range object from the session string
+// @param this The session time range object that will hold the start and end time of the daily session
+// @param sess The session string part that represents the time range HHmm-HHmm
+// @param refTimezone The timezone of reference of the time ranges
+// @returns The session time range object
+export method from_sess_string(SessionTimeRange this, string sess, simple string refTimezone) =>
+    array<string> sessParts = str.split(sess, '-')
+    if sessParts.size() != 2
+        runtime.error(str.format('Invalid time range session string {0}', sess))
+    this.init(SessionTime.new().from_sess_string(sessParts.get(0), refTimezone), SessionTime.new().from_sess_string(sessParts.get(1), refTimezone))
+
+// @function Formats the session time into a human-readable string
+// @param this The session time range object with the start and end time of the daily session
+// @returns The string of the session time
+export method to_string(SessionTimeRange this) =>
+    str.format('[{0} - {1}]{2}', (na(this.startTime) ? SessionTime.new().init(00, 00) : this.startTime).to_string(), (na(this.endTime) ? SessionTime.new().init(24, 00) : this.endTime).to_string(), (this.isOvernight ? ' (over)' : ''))
+
+// @function Calculate the seconds inside the session
+// @param this The session time range object with the start and end time of the daily session
+// @returns The number of seconds inside the session
+export method get_size_in_secs(SessionTimeRange this) =>
+    int secs = (na(this.endTime) ? SessionTime.new().init(24, 00) : this.endTime).get_sec_in_day() - (na(this.startTime) ? SessionTime.new().init(00, 00) : this.startTime).get_sec_in_day()
+    if secs <= 0 // it is an overnight session
+        secs += 86400
+    secs
+
+// @function Calculate the bars inside the session
+// @param this The session time range object with the start and end time of the daily session
+// @returns The number of bars inside the session for the given timeframe
+export method get_size_in_bars(SessionTimeRange this) =>
+    math.floor(this.get_size_in_secs() / timeframe.in_seconds())
+
+// @function Check if the given bar is inside the session time range
+// @param this The session time range object with the start and end time of the daily session
+// @param bar The bar to be checked
+// @returns Whether the given bar is inside the session time range
+method is_bar_included(SessionTimeRange this, Bar bar) =>
+    SessionTime barOpenTime = bar.get_open_time()
+    SessionTime barCloseTime = bar.get_close_time()
+    this.isOvernight
+      ? barCloseTime.minuteInDay <= this.endTime.minuteInDay or this.startTime.minuteInDay <= barOpenTime.minuteInDay // bar start time >= session start time or bar end time <= session end time
+      : this.startTime.minuteInDay <= barOpenTime.minuteInDay and barCloseTime.minuteInDay <= this.endTime.minuteInDay // bar start time >= session start time and bar end time <= session end time
+
+// @function Get the time range of the bar
+// @param this The bar object with the open and close times
+// @returns The time range that the bar is in 
+method get_time_range(Bar this) =>
+    SessionTimeRange.new().init(this.get_open_time(), this.get_close_time())
+
+// @function Calculate the trading day of the bar in the session time range
+// @param this The session time range object with the start and end time of the daily session
+// @param bar The bar to be checked
+// @returns The trading day of the week of the bar 
+method get_trading_day(SessionTimeRange this, Bar bar) =>
+    SessionTime barOpenTime = bar.get_open_time()
+    (this.isOvernight ? barOpenTime.minuteInDay >= this.startTime.minuteInDay : false) ? nextDayAfter(dayofweek(bar.openUnixTime)) : dayofweek(bar.openUnixTime)
+
+//#endregion ===========================================================================================================
+//#region SESSION ======================================================================================================
+//
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+
+// @type Object that represents a session
+// @field days The map of the trading days
+// @field timeRanges The array with all time ranges of the session during the trading days
+export type Session
+    SessionDays days
+    array<SessionTimeRange> timeRanges
+
+// @function Initialize the session object from session days and time range
+// @param this The session object that will hold the day and the time range selection
+// @param days The session days object that defines the days the session is happening
+// @param timeRanges The array of all the session time ranges during a session day
+// @returns The session object
+export method init(Session this, SessionDays days, array<SessionTimeRange> timeRanges) =>
+    this.days := na(days) ? SessionDays.new().init() : days
+    if na(timeRanges)
+        this.timeRanges := array.from(SessionTimeRange.new().init())
+    else
+        // Check for na time range objects in the given array
+        for i = timeRanges.size() - 1 to 0
+            if na(timeRanges.get(i))
+                timeRanges.remove(i)
+        // The array should have at least one valid element
+        if timeRanges.size() == 0
+            timeRanges.push(SessionTimeRange.new().init())
+        this.timeRanges := timeRanges
+    this
+
+// @function Formats the session into a session string
+// @param this The session object with the day and the time range selection
+// @returns The string of the session
+export method to_sess_string(Session this) =>
+    string daysSessStr = (na(this.days) ? SessionDays.new().init() : this.days).to_sess_string()
+    string delim = daysSessStr == '' ? '' : ':'
+    string sessTimeRanges = ''
+    string comma = ''
+    for timeRange in this.timeRanges
+        sessTimeRanges += comma + timeRange.to_sess_string()
+        comma := ','
+    str.format('{0}{1}{2}', sessTimeRanges, delim, daysSessStr)
+
+// @function Formats the session into an array of session strings
+// @param this The session object with the day and the time range selection
+// @returns The array of strings of the sessions
+export method to_sess_strings(Session this) =>
+    string daysSessStr = (na(this.days) ? SessionDays.new().init() : this.days).to_sess_string()
+    string delim = daysSessStr == '' ? '' : ':'
+    array<string> sessTimeRanges = array.new<string>(this.timeRanges.size(), '')
+    for [i, timeRange] in this.timeRanges
+        sessTimeRanges.set(i, str.format('{0}{1}{2}', timeRange.to_sess_string(), delim, daysSessStr))
+    sessTimeRanges
+
+// @function Initialize the session object from the session string in exchange timezone (syminfo.timezone)
+// @param this The session object that will hold the day and the time range selection
+// @param sess The session string that represents the session HHmm-HHmm,HHmm-HHmm:ddddddd
+// @returns The session time range object
+export method from_sess_string(Session this, string sess) =>
+    array<string> sessParts = str.split(sess, ':')
+    array<string> sessTimeRangeParts = str.split(sessParts.get(0), ',')
+    array<SessionTimeRange> timeRanges = array.new<SessionTimeRange>()
+    for sessTimeRange in sessTimeRangeParts
+        timeRanges.push(SessionTimeRange.new().from_sess_string(sessTimeRange))
+    this.timeRanges := timeRanges
+    if sessParts.size() > 1
+        this.days := SessionDays.new().from_sess_string(sessParts.get(1))
+    else
+        this.days := SessionDays.new().init()
+    this
+
+// @function Initialize the session object from the session string
+// @param this The session object that will hold the day and the time range selection
+// @param sess The session string that represents the session HHmm-HHmm,HHmm-HHmm:ddddddd
+// @param refTimezone The timezone of reference of the time ranges
+// @returns The session time range object
+export method from_sess_string(Session this, string sess, simple string refTimezone) =>
+    array<string> sessParts = str.split(sess, ':')
+    array<string> sessTimeRangeParts = str.split(sessParts.get(0), ',')
+    array<SessionTimeRange> timeRanges = array.new<SessionTimeRange>()
+    for sessTimeRange in sessTimeRangeParts
+        timeRanges.push(SessionTimeRange.new().from_sess_string(sessTimeRange, refTimezone))
+    this.timeRanges := timeRanges
+    if sessParts.size() > 1
+        this.days := SessionDays.new().from_sess_string(sessParts.get(1))
+    else
+        this.days := SessionDays.new().init()
+    this
+
+// @function Formats the session into a human-readable string
+// @param this The session object with the day and the time range selection
+// @returns The string of the session
+export method to_string(Session this) =>
+    string sessTimeRanges = ''
+    string comma = ''
+    for timeRange in this.timeRanges
+        sessTimeRanges += comma + timeRange.to_string()
+        comma := ','
+    str.format('{0} -> {1}', (na(this.days) ? SessionDays.new().init() : this.days).to_string(), sessTimeRanges)
+
+// @function Check if the given day is inside the session days
+// @param day The day to check if it is a trading day
+// @param this The session days object with the day selection
+// @returns Whether the current day is included in the session days
+export method is_day_included(SessionDays this, int day) =>
+    if timeframe.isintraday or timeframe.isdaily
+        this.days.get(day)
+    else if timeframe.isweekly
+        int closeDay = dayofweek(time_close)
+        bool inDaysApproval = this.days.get(day)
+        int nextDay = nextDayAfter(day)
+        while inDaysApproval and nextDay != closeDay
+            inDaysApproval := this.days.get(nextDay)
+            nextDay := nextDayAfter(nextDay)
+        inDaysApproval
+    else // timeframe.ismonthly
+        map.values(this.days).indexof(false) == -1 // If none of the days is false then we approve
+
+// @function Check if the given bar is inside the session as defined by the input params (what "not na(time(timeframe.period, this.to_sess_string())[-1])" should return if you could write it
+// @param this The session with the day and the time range selection
+// @param offset_forward The bar forward to check if it is between the from and to datetimes. Default is 1
+// @returns Whether the current time is inside the session
+export method is_bar_included(Session this, simple int offset_forward = 1) =>
+    // Predict the next bar (offset bars forward) based on the chart session
+    Bar nextBar = getNextBar(offset_forward)
+    bool inSessApproval = na(this.days) and na(this.timeRanges)
+    if not na(this.timeRanges)
+        for timeRange in this.timeRanges
+            inSessApproval := not na(timeRange) and timeRange.is_bar_included(nextBar) and (na(this.days) ? true : this.days.is_day_included(timeRange.get_trading_day(nextBar)))
+            if inSessApproval
+                break
+    else if not na(this.days)
+        inSessApproval := this.days.is_day_included(dayofweek(nextBar.openUnixTime))
+    inSessApproval
+
+//#endregion ===========================================================================================================
+//#region SESSION VIEW =================================================================================================
+//
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+
+// @type Object that visualize a session
+// @field sess The Session object to be visualized
+// @field names The names of the session time ranges
+// @field colors The colors of the session time ranges
+export type SessionView
+    Session sess
+    array<string> names
+    array<color> colors
+
+// @function Initialize the session object from session days and time range
+// @param this The session view object that will hold the session, the names and the color selections
+// @param days The session days object that defines the days the session is happening
+// @param timeRanges The array of all the session time ranges during a session day
+// @param names The array of the names of the sessions
+// @param colors The array of the colors of the sessions
+// @returns The session object
+export method init(SessionView this, SessionDays days, array<SessionTimeRange> timeRanges, array<string> names, array<color> colors) =>
+    this.sess := Session.new(na(days) ? SessionDays.new().init() : days, na)
+    if na(timeRanges)
+        this.sess.timeRanges := array.from(SessionTimeRange.new().init())
+        this.names := array.from("Session")
+        this.colors := array.from(color.green)
+    else
+        // Check for na time range objects in the given array
+        for i = timeRanges.size() - 1 to 0
+            if na(timeRanges.get(i))
+                timeRanges.remove(i)
+                names.remove(i)
+                colors.remove(i)
+        // The array should have at least one valid element
+        if timeRanges.size() == 0
+            timeRanges.push(SessionTimeRange.new().init())
+            names.push("Session")
+            colors.push(color.green)
+        this.sess.timeRanges := timeRanges
+        this.names := names
+        this.colors := colors
+    this
+
+// @function Draw the sessions into the chart as boxes
+// @param this The session view object with the day and the time range selection
+export method draw_boxes(SessionView this) =>
+    var array<bool> approvals = array.new<bool>(this.sess.timeRanges.size())
+    var array<float> highestHighs = array.new<float>(this.sess.timeRanges.size())
+    var array<float> lowestLows = array.new<float>(this.sess.timeRanges.size())
+    var array<float> opens = array.new<float>(this.sess.timeRanges.size())
+    var array<box> boxes = array.new<box>(this.sess.timeRanges.size())
+
+    Bar currentBar = getCurrentBar()
+    for [i, timeRange] in this.sess.timeRanges
+        bool inSessApproval = not na(timeRange) and timeRange.is_bar_included(currentBar) and (na(this.sess.days) ? true : this.sess.days.is_day_included(timeRange.get_trading_day(currentBar)))
+        approvals.set(i, inSessApproval)
+
+        if inSessApproval and (bar_index == 1 or (bar_index > 1 and not (approvals[1]).get(i))) // New time range
+            highestHighs.set(i, high)
+            lowestLows.set(i, low)
+            opens.set(i, open)
+            boxes.set(i, box.new(top_left = chart.point.from_index(bar_index, high), bottom_right = chart.point.from_index(bar_index, low), border_color = this.colors.get(i), bgcolor = close > open ? color.new(color.teal, 80) : color.new(color.red, 80), text = this.names.get(i), text_size = size.tiny, text_color = this.colors.get(i), text_halign = text.align_left, text_valign = text.align_top, force_overlay = true))
+        else if inSessApproval and bar_index > 1 // Update time range values
+            highestHighs.set(i, math.max(high, (highestHighs[1]).get(i)))
+            lowestLows.set(i, math.min(low, (lowestLows[1]).get(i)))
+
+        if inSessApproval and bar_index > 1 // Update time range drawings
+            boxes.get(i).set_top(highestHighs.get(i))
+            boxes.get(i).set_bottom(lowestLows.get(i))
+            boxes.get(i).set_right(bar_index)
+            boxes.get(i).set_bgcolor(close > opens.get(i) ? color.new(color.teal, 80) : color.new(color.red, 80))
+
+// @function Draw the sessions into the chart as candles
+// @param this The session view object with the day and the time range selection
+export method draw_candles(SessionView this) =>
+    var array<bool> approvals = array.new<bool>(this.sess.timeRanges.size())
+    var array<float> highestHighs = array.new<float>(this.sess.timeRanges.size())
+    var array<float> lowestLows = array.new<float>(this.sess.timeRanges.size())
+    var array<chart.point> opens = array.new<chart.point>(this.sess.timeRanges.size())
+    var array<box> bodies = array.new<box>(this.sess.timeRanges.size())
+    var array<line> upWicks = array.new<line>(this.sess.timeRanges.size())
+    var array<line> downWicks = array.new<line>(this.sess.timeRanges.size())
+
+    Bar currentBar = getCurrentBar()
+    for [i, timeRange] in this.sess.timeRanges
+        bool inSessApproval = not na(timeRange) and timeRange.is_bar_included(currentBar) and (na(this.sess.days) ? true : this.sess.days.is_day_included(timeRange.get_trading_day(currentBar)))
+        approvals.set(i, inSessApproval)
+
+        if inSessApproval and (bar_index == 1 or (bar_index > 1 and not (approvals[1]).get(i))) // New time range
+            highestHighs.set(i, high)
+            lowestLows.set(i, low)
+            opens.set(i, chart.point.now(open))
+            bodies.set(i, box.new(top_left = chart.point.from_index(bar_index, open), bottom_right = chart.point.from_index(bar_index, close), border_color = this.colors.get(i), bgcolor = close > open ? color.new(color.teal, 80) : color.new(color.red, 80), text = this.names.get(i), text_size = size.tiny, text_color = this.colors.get(i), text_halign = text.align_left, text_valign = text.align_top, force_overlay = true))
+            upWicks.set(i, line.new(first_point = chart.point.from_index(bar_index, math.max(open, close)), second_point = chart.point.from_index(bar_index, highestHighs.get(i)), color = this.colors.get(i), force_overlay = true))
+            downWicks.set(i, line.new(first_point = chart.point.from_index(bar_index, math.min(open, close)), second_point = chart.point.from_index(bar_index, lowestLows.get(i)), color = this.colors.get(i), force_overlay = true))
+        else if inSessApproval and bar_index > 1 // Update time range values
+            highestHighs.set(i, math.max(high, (highestHighs[1]).get(i)))
+            lowestLows.set(i, math.min(low, (lowestLows[1]).get(i)))
+
+        if inSessApproval and bar_index > 1 // Update time range drawings
+            bodies.get(i).set_bottom(close)
+            bodies.get(i).set_right(bar_index)
+            bodies.get(i).set_bgcolor(close > opens.get(i).price ? color.new(color.teal, 80) : color.new(color.red, 80))
+            upWicks.get(i).set_y1(math.max(opens.get(i).price, close))
+            upWicks.get(i).set_y2(highestHighs.get(i))
+            downWicks.get(i).set_y1(math.min(opens.get(i).price, close))
+            downWicks.get(i).set_y2(lowestLows.get(i))
+            int avgBarId = (opens.get(i).index + bar_index) / 2
+            upWicks.get(i).set_x1(avgBarId)
+            upWicks.get(i).set_x2(avgBarId)
+            downWicks.get(i).set_x1(avgBarId)
+            downWicks.get(i).set_x2(avgBarId)
+
+// @function Draw the sessions into the chart as bars
+// @param this The session view object with the day and the time range selection
+export method draw_bars(SessionView this) =>
+    var array<bool> approvals = array.new<bool>(this.sess.timeRanges.size())
+    var array<float> highestHighs = array.new<float>(this.sess.timeRanges.size())
+    var array<float> lowestLows = array.new<float>(this.sess.timeRanges.size())
+    var array<chart.point> opens = array.new<chart.point>(this.sess.timeRanges.size())
+    var array<line> bodies = array.new<line>(this.sess.timeRanges.size())
+    var array<line> openWicks = array.new<line>(this.sess.timeRanges.size())
+    var array<line> closeWicks = array.new<line>(this.sess.timeRanges.size())
+
+    Bar currentBar = getCurrentBar()
+    for [i, timeRange] in this.sess.timeRanges
+        bool inSessApproval = not na(timeRange) and timeRange.is_bar_included(currentBar) and (na(this.sess.days) ? true : this.sess.days.is_day_included(timeRange.get_trading_day(currentBar)))
+        approvals.set(i, inSessApproval)
+
+        if inSessApproval and (bar_index == 1 or (bar_index > 1 and not (approvals[1]).get(i))) // New time range
+            highestHighs.set(i, high)
+            lowestLows.set(i, low)
+            opens.set(i, chart.point.now(open))
+            bodies.set(i, line.new(first_point = chart.point.from_index(bar_index, lowestLows.get(i)), second_point = chart.point.from_index(bar_index, highestHighs.get(i)), color = this.colors.get(i), force_overlay = true))
+            openWicks.set(i, line.new(first_point = chart.point.from_index(bar_index, opens.get(i).price), second_point = chart.point.from_index(bar_index, opens.get(i).price), color = this.colors.get(i), force_overlay = true))
+            closeWicks.set(i, line.new(first_point = chart.point.from_index(bar_index, close), second_point = chart.point.from_index(bar_index, close), color = this.colors.get(i), force_overlay = true))
+        else if inSessApproval and bar_index > 1 // Update time range values
+            highestHighs.set(i, math.max(high, (highestHighs[1]).get(i)))
+            lowestLows.set(i, math.min(low, (lowestLows[1]).get(i)))
+        
+        if inSessApproval and bar_index > 1 // Update time range drawings
+            bodies.get(i).set_y1(lowestLows.get(i))
+            bodies.get(i).set_y2(highestHighs.get(i))
+            int avgBarId = (opens.get(i).index + bar_index) / 2
+            bodies.get(i).set_x1(avgBarId)
+            bodies.get(i).set_x2(avgBarId)
+            openWicks.get(i).set_x2(avgBarId)
+            closeWicks.get(i).set_y1(close)
+            closeWicks.get(i).set_y2(close)
+            closeWicks.get(i).set_x1(avgBarId)
+            closeWicks.get(i).set_x2(bar_index)
+
+// @enum The enum of the supported session visualizations
+export enum ViewMode
+    Boxes
+    Candles
+    Bars
+
+// @function Draw the sessions into the chart according to the mode
+// @param this The session view object with the day and the time range selection
+export method draw(SessionView this, simple ViewMode viewMode = ViewMode.Boxes) =>
+    switch viewMode
+        ViewMode.Candles => this.draw_candles()
+        ViewMode.Bars => this.draw_bars()
+        => this.draw_boxes()
+
+//#endregion ===========================================================================================================
+//#region EXAMPLE DATETIME WINDOW FILTER ===============================================================================
+//
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+
+// INPUT ===============================================================================================================
+const string GENERAL_GROUP_NAME = 'General'
+offset_forward = input.int(defval = 1, title = 'Offset Bars Forward', minval = 0, step = 1, tooltip = 'The number of future bar to predict from the current bar. The higher the offset number is, the more error prone the prediction due to holydays and data anomalies.', group = GENERAL_GROUP_NAME, display = display.data_window)
+
+const string WINDOW_GROUP_NAME = 'Window'
+var referenceTimezone = input.enum(defval = Timezone.Exchange, title = 'Timezones Ref->Chart', inline = 'Timezone', group = WINDOW_GROUP_NAME, display = display.data_window).to_string()
+fromEnabled = input.bool(defval = false, title = 'From      ', inline = 'From Date', group = WINDOW_GROUP_NAME, display = display.data_window)
+toEnabled = input.bool(defval = false, title = 'To       ', inline = 'To Date', group = WINDOW_GROUP_NAME, display = display.data_window)
+var dateTimeWindow = DateTimeWindow.new().init(
+  fromDateTime = fromEnabled ? input.time(defval = timestamp('01 Jan 2024 00:00'), title = '', inline = 'From Date', group = WINDOW_GROUP_NAME, display = display.data_window, active = fromEnabled) : na,
+  toDateTime = toEnabled ? input.time(defval = timestamp('01 Jan 2025 00:00'), title = '', inline = 'To Date', group = WINDOW_GROUP_NAME, display = display.data_window, active = toEnabled) : na,
+  refTimezone = referenceTimezone,
+  chTimezone = input.enum(defval = Timezone.Exchange, title = '->', tooltip = 'The Timezone Ref is the reference timezone that is used for the "From" and "To" datetime window settings. The Timezone Chart is the timezone to convert into. WARNING! The chart timezone setting should always match with the actual chart timezone on the bottom right corner of your chart.', inline = 'Timezone', group = WINDOW_GROUP_NAME, display = display.data_window).to_string())
+
+// LOGIC ===============================================================================================================
+// Filter bars outside of the datetime window
+bool dateFilterApproval = dateTimeWindow.is_bar_included(offset_forward)
+
+// PLOT ================================================================================================================
+bgcolor(color = dateFilterApproval ? na : color.new(color.fuchsia, 90), offset = offset_forward, title = 'Datetime Window Filter', force_overlay = true)
+
+//#endregion ===========================================================================================================
+//#region EXAMPLE SESSION FILTER =======================================================================================
+//
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+
+// INPUT ===============================================================================================================
+const string SESSION_GROUP_NAME = 'Session'
+daysEnabled = input.bool(defval = true, title = 'Session Days', inline = 'Session Days', group = SESSION_GROUP_NAME, display = display.data_window)
+var days = daysEnabled ? SessionDays.new().init(
+  sun = input.bool(defval = false, title = 'Sun', inline = 'Session Days', group = SESSION_GROUP_NAME, display = display.data_window, active = daysEnabled),
+  mon = input.bool(defval = true, title = 'Mon', inline = 'Session Days', group = SESSION_GROUP_NAME, display = display.data_window, active = daysEnabled),
+  tue = input.bool(defval = true, title = 'Tue', inline = 'Session Days', group = SESSION_GROUP_NAME, display = display.data_window, active = daysEnabled),
+  wed = input.bool(defval = true, title = 'Wed', inline = 'Session Days', group = SESSION_GROUP_NAME, display = display.data_window, active = daysEnabled),
+  thu = input.bool(defval = true, title = 'Thu', inline = 'Session Days', group = SESSION_GROUP_NAME, display = display.data_window, active = daysEnabled),
+  fri = input.bool(defval = true, title = 'Fri', inline = 'Session Days', group = SESSION_GROUP_NAME, display = display.data_window, active = daysEnabled),
+  sat = input.bool(defval = false, title = 'Sat', inline = 'Session Days', group = SESSION_GROUP_NAME, display = display.data_window, active = daysEnabled)) : na
+
+sessionEnabled1 = input.bool(defval = true, title = '', inline = 'Session 1', group = SESSION_GROUP_NAME, display = display.data_window)
+sessionName1 = input.string(defval = 'Tokyo', title = '', inline = 'Session 1', group = SESSION_GROUP_NAME, display = display.data_window, active = sessionEnabled1)
+sessionColor1 = input.color(defval = color.yellow, title = '', inline = 'Session 1', group = SESSION_GROUP_NAME, display = display.data_window, active = sessionEnabled1)
+var sessionTimeRange1 = sessionEnabled1 ? SessionTimeRange.new().from_sess_string(
+  sess = input.session(defval = '0000-0900', title = '   ', inline = 'Session Range 1', group = SESSION_GROUP_NAME, display = display.data_window, active = sessionEnabled1),
+  refTimezone = input.enum(defval = Timezone.Utc, title = '', inline = 'Session Range 1', group = SESSION_GROUP_NAME, display = display.data_window, active = sessionEnabled1).to_string()) : na
+
+sessionEnabled2 = input.bool(defval = true, title = '', inline = 'Session 2', group = SESSION_GROUP_NAME, display = display.data_window)
+sessionName2 = input.string(defval = 'London', title = '', inline = 'Session 2', group = SESSION_GROUP_NAME, display = display.data_window, active = sessionEnabled2)
+sessionColor2 = input.color(defval = color.blue, title = '', inline = 'Session 2', group = SESSION_GROUP_NAME, display = display.data_window, active = sessionEnabled2)
+var sessionTimeRange2 = sessionEnabled2 ? SessionTimeRange.new().from_sess_string(
+  sess = input.session(defval = '0800-1600', title = '   ', inline = 'Session Range 2', group = SESSION_GROUP_NAME, display = display.data_window, active = sessionEnabled2),
+  refTimezone = input.enum(Timezone.Utc, title = '', inline = 'Session Range 2', group = SESSION_GROUP_NAME, display = display.data_window, active = sessionEnabled2).to_string()) : na
+
+sessionEnabled3 = input.bool(defval = true, title = '', inline = 'Session 3', group = SESSION_GROUP_NAME, display = display.data_window)
+sessionName3 = input.string(defval = 'New York', title = '', inline = 'Session 3', group = SESSION_GROUP_NAME, display = display.data_window, active = sessionEnabled3)
+sessionColor3 = input.color(defval = color.orange, title = '', inline = 'Session 3', group = SESSION_GROUP_NAME, display = display.data_window, active = sessionEnabled3)
+var sessionTimeRange3 = sessionEnabled3 ? SessionTimeRange.new().from_sess_string(
+  sess = input.session(defval = '1300-2200', title = '   ', inline = 'Session Range 3', group = SESSION_GROUP_NAME, display = display.data_window, active = sessionEnabled3),
+  refTimezone = input.enum(defval = Timezone.Utc, title = '', inline = 'Session Range 3', group = SESSION_GROUP_NAME, display = display.data_window, active = sessionEnabled3).to_string()) : na
+
+sessionEnabled4 = input.bool(defval = true, title = '', inline = 'Session 4', group = SESSION_GROUP_NAME, display = display.data_window)
+sessionName4 = input.string(defval = 'Sydney', title = '', inline = 'Session 4', group = SESSION_GROUP_NAME, display = display.data_window, active = sessionEnabled4)
+sessionColor4 = input.color(defval = color.red, title = '', inline = 'Session 4', group = SESSION_GROUP_NAME, display = display.data_window, active = sessionEnabled4)
+var sessionTimeRange4 = sessionEnabled4 ? SessionTimeRange.new().from_sess_string(
+  sess = input.session(defval = '2000-0500', title = '   ', inline = 'Session Range 4', group = SESSION_GROUP_NAME, display = display.data_window, active = sessionEnabled4),
+  refTimezone = input.enum(defval = Timezone.Utc, title = '', inline = 'Session Range 4', group = SESSION_GROUP_NAME, display = display.data_window, active = sessionEnabled4).to_string()) : na
+
+var view = SessionView.new().init(days, array.from(sessionTimeRange1, sessionTimeRange2, sessionTimeRange3, sessionTimeRange4), array.from(sessionName1, sessionName2, sessionName3, sessionName4), array.from(sessionColor1, sessionColor2, sessionColor3, sessionColor4))
+
+viewMode = input.enum(defval = ViewMode.Boxes, title = 'View Mode', tooltip = 'The method to visualize the session using either boxes, candles or bars', group = 'Visual')
+
+// LOGIC ===============================================================================================================
+// Filter bars outside the sessions
+bool sessionFilterApproval = view.sess.is_bar_included(offset_forward)
+
+// PLOT ================================================================================================================
+view.draw(viewMode)
+
+bgcolor(color = sessionFilterApproval ? na : color.new(#FF0000, 90), offset = offset_forward, title = 'Session Filter', force_overlay = true)
+var sessTable = table.new(position = position.top_right, columns = 1, rows = 2, bgcolor = color.new(chart.bg_color, 90), force_overlay = true)
+var sessStr = view.sess.to_sess_string()
+if barstate.islastconfirmedhistory
+    table.cell(table_id = sessTable, column = 0, row = 0, text = 'Session', text_color = chart.fg_color)
+    table.cell(table_id = sessTable, column = 0, row = 1, text = sessStr, text_color = chart.fg_color)
+
+//#endregion ===========================================================================================================
+//#region EXAMPLE DATA ANOMALY DETECTION AND TESTS =====================================================================
+//
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+
+// INPUT ===============================================================================================================
+const string TEST_GROUP_NAME = 'Test'
+anomalyDetectionEnabled = input.bool(defval = true, title = 'Data anomaly detection', tooltip = 'Test if the session prediction for the current bar is correct. If not log an error.', group = TEST_GROUP_NAME)
+debugEnabled = input.bool(defval = false, title = 'Debug', tooltip = 'Add additional drawings and logs for debug purposes.', group = TEST_GROUP_NAME)
+
+// LOGIC ===============================================================================================================
+// Test if the predicted bar time (by offset bars before) actually match the current bar time now
+if anomalyDetectionEnabled or debugEnabled
+    Bar currentBar = getCurrentBar()
+    Bar nextBar = getNextBar(offset_forward)
+    Bar predictedCurrentBar = nextBar[offset_forward]
+    bool anomalyDetected = bar_index > offset_forward ? not predictedCurrentBar.eq(currentBar) : false
+    if anomalyDetectionEnabled and anomalyDetected
+        log.error('Data anomaly detected in bar {0}! In the previous {1} bar(s) the predicted bar was {2}', currentBar.to_string(), offset_forward, predictedCurrentBar.to_string())
+
+    // Test if the predicted filter values (by offset bars before) actually match the current filter values
+    bool predictedDateFilterApproval = dateFilterApproval[offset_forward]
+    bool currentDateFilterApproval = (na(dateTimeWindow.fromDateTime) ? true : time >= dateTimeWindow.fromDateTime) and (na(dateTimeWindow.toDateTime) ? true : time_close <= dateTimeWindow.toDateTime)
+    if debugEnabled and predictedDateFilterApproval != currentDateFilterApproval and not anomalyDetected
+        log.error('DateTime window filter value of bar {0} is {1}! In the previous {2} bar(s) the predicted filter value was {3}', predictedCurrentBar.to_string(), currentDateFilterApproval, offset_forward, predictedDateFilterApproval)
+    
+    bool predictedSessionFilterApproval = sessionFilterApproval[offset_forward]
+    // Due to a limitation (bug) in the build-in time() function when the sum of total time ranges exceeds 24 hours, we
+    // check each time range separately to see if the current time is inside of at least one of the given time ranges.
+    array<string> sessStrs = view.sess.to_sess_strings()
+    bool currentSessionFilterApproval = false
+    for sessString in sessStrs
+        currentSessionFilterApproval := currentSessionFilterApproval or not na(time(timeframe.period, sessString))
+    if debugEnabled and predictedSessionFilterApproval != currentSessionFilterApproval and not anomalyDetected
+        log.error('Session filter value of bar {0} is {1}! In the previous {2} bar(s) the predicted filter value was {3}', predictedCurrentBar.to_string(), currentSessionFilterApproval, offset_forward, predictedSessionFilterApproval)
+
+    if barstate.islastconfirmedhistory
+        log.warning('The session is {0} -> {1}', view.sess.to_string(), sessStr)
+        log.warning('The size of the DateTime window {0} is: {1, number, integer} secs or {2, number, integer} bars', dateTimeWindow.to_string(), dateTimeWindow.get_size_in_secs(), dateTimeWindow.get_size_in_bars())
+        log.warning('The size of the session {0} is: {1, number, integer} secs or {2, number, integer} bars', sessStr, view.sess.timeRanges.get(0).get_size_in_secs(), view.sess.timeRanges.get(0).get_size_in_bars())
+
+// PLOT ================================================================================================================
+plotchar(series = debugEnabled ? dateFilterApproval : false, title = 'DateTime Filter', char = '*', location = location.belowbar, display = display.pane + display.data_window, force_overlay = true)
+plotchar(series = debugEnabled ? sessionFilterApproval : false, title = 'Session Filter', char = '^', location = location.abovebar, display = display.pane + display.data_window, force_overlay = true)
+
+//#endregion ===========================================================================================================

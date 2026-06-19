@@ -1,0 +1,523 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © reees
+
+//@version=5
+
+// @description Draw patterns, lines, labels, shapes etc.
+
+library("Draw",overlay=true)
+
+import reees/TA/66 as t
+import reees/Utilities/2 as u
+
+//----------------------------------------------------------
+// Color palettes 
+//----------------------------------------------------------
+
+export pat_colors(bool bull, color buLn=na, color beLn=na, color ltxt=na) =>
+    red = color.new(color.red,50)
+    grn = color.new(color.green,50)
+    [
+     color.new(color.gray,30),
+     red,
+     grn,
+     color.new(color.white,100),
+     na(ltxt) ? color.new(color.white,30) : ltxt,
+     color.new(color.blue,100),
+     bull==true ? (na(buLn) ? grn : buLn) : (na(beLn) ? red : beLn),
+     bull==true ? grn : red,
+     color.new(color.red,80),
+     color.new(color.green,80)
+     ]
+
+//----------------------------------------------------------
+// Attribute maps  
+//----------------------------------------------------------
+
+export size(string size) =>
+	switch size
+		"tiny" => size.tiny
+		"small" => size.small
+		"large" => size.large
+		=> size.normal
+
+export label_style(string style) =>
+	switch style
+		"bottom" => label.style_label_up
+		=> label.style_label_down
+
+export line_style(string style) =>
+	switch style
+		"dotted" => line.style_dotted
+		"dashed" => line.style_dashed
+		"arrowleft" => line.style_arrow_left
+		"arrowright" => line.style_arrow_right
+		=> line.style_solid
+
+//----------------------------------------------------------
+// Patterns
+//----------------------------------------------------------
+
+// @function Draw XABCD pattern
+export xabcd(int xX, float xY,int aX,float aY,int bX,float bY,int cX, float cY, int dX=na,float dY=na, float iE=na,bool bull, color bu, color be) =>
+    lcol = bull==true ? bu : be
+    lfcol = bull==true ? color.new(color.green,85) : color.new(color.red,85)
+    w = 3
+    style = not na(dX) ? line.style_solid : line.style_dotted
+    lbsize = size.small
+    avgX = int(math.avg(aX-xX,bX-aX,cX-bX)*1.5)
+    // pattern lines
+    l1 = line.new(xX,xY,aX,aY,color=lcol,width=w,style=style)
+    l2 = line.new(aX,aY,bX,bY,color=lcol,width=w,style=style)
+    l3 = line.new(bX,bY,cX,cY,color=lcol,width=w,style=style)
+    l4 = not na(dX) ? line.new(cX,cY,dX,dY,color=lcol,width=w,style=style)
+                     : (iE<0 ? na : line.new(cX,cY,cX+avgX,iE,color=lcol,width=2,style=line.style_arrow_right))
+    l5 = not na(dX) ? line.new(xX,xY,bX,bY,color=lcol,width=2,style=style) : na
+    l6 = not na(dX) ? line.new(bX,bY,dX,dY,color=lcol,width=2,style=style) : na
+    if not na(dX)
+        linefill.new(l1,l5,lfcol)
+        linefill.new(l3,l6,lfcol)
+    [l1,l2,l3,l4,l5,l6]
+
+distX(dY,pH,p,avgLeg) =>
+    halfLeg = math.round(avgLeg/2)
+    qLeg = math.round(avgLeg/4)
+    eLeg = math.round(avgLeg/8)
+    dist = math.abs(p-dY)/pH
+    if dist>.75
+        avgLeg + qLeg + eLeg
+    else if dist > .5
+        avgLeg + qLeg
+    else if dist > .25
+        avgLeg + eLeg
+    else if dist > .1
+        avgLeg
+    else
+        0
+
+// @function draw PRZ, entry, stop, targets, and projected reversal paths for XABCD pattern
+export xabcd_inProgress(bool bull, int type, int tLimit, float entry, float stop,
+					   float t1, float t2, float bcNt, float bcFt, float xaNt, float xaFt,
+					   int xX, float xY, float aY, int bX, float bY, float cY, int dX, float dY,
+					   color cBu, color cBe, color lTxt) =>
+	line[] fullIpLn = array.new_line(0)
+	label[] fullIpL = array.new_label(0)
+	linefill[] fullIpLf = array.new_linefill(0)
+	[ccol,red,grn,ccl,cltxt,clbkg,cproj,cproj2,przFill,tgtFill] = pat_colors(bull,cBu,cBe,lTxt)
+	midX = math.round(tLimit/2)
+	avgLeg = math.round(dX-xX)/4
+	[bcN,bcF,xaN,xaF] = t.harmonic_xabcd_prz(type,xY,aY,bY,cY)
+    bcN := bcN < 0 ? 0 : bcN
+    bcF := bcF < 0 ? 0 : bcF
+    xaN := xaN < 0 ? 0 : xaN
+    xaF := xaF < 0 ? 0 : xaF
+	[highest,lowest] = t.harmonic_xabcd_przRange(bcN,bcF,xaN,xaF)
+	[lower,higher] = t.harmonic_xabcd_przClosest(bcN,bcF,xaN,xaF)
+	pH = highest-lowest
+
+// Draw potential reversal zone
+	// BC retracement projections
+	line l_bcN = na, line l_bcF = na, line l_xaN = na, line l_xaF = na
+	line przH = na, line przL = na
+	if not na(bcN)
+		l_bcN := line.new(dX,bcN,dX+tLimit,bcN,color=red,width=5)
+		array.push(fullIpLn,l_bcN)
+		array.push(fullIpLn,line.new(bX,bY,dX,bcN,style=line.style_dotted,color=ccol))
+		array.push(fullIpL,label.new(dX+midX,bcN,str.tostring(bcN,"#.#####"),style=label.style_label_center,color=clbkg,textcolor=cltxt,size=size.tiny))
+		if bcN == higher
+			przH := l_bcN
+		else if bcN == lower
+			przL := l_bcN
+	if not na(bcF)
+		l_bcF := line.new(dX,bcF,dX+tLimit,bcF,color=red,width=5)
+		array.push(fullIpLn,l_bcF)
+		array.push(fullIpLn,line.new(bX,bY,dX,bcF,style=line.style_dotted,color=ccol))
+		array.push(fullIpL,label.new(dX+midX,bcF,str.tostring(bcF,"#.#####"),style=label.style_label_center,color=clbkg,textcolor=cltxt,size=size.tiny))
+		if bcF == higher
+			przH := l_bcF
+		else if bcF == lower
+			przL := l_bcF
+	// XA retracement projections
+	if not na(xaN)
+		l_xaN := line.new(dX,xaN,dX+tLimit,xaN,color=red,width=6)
+		array.push(fullIpLn,l_xaN)
+		array.push(fullIpLn,line.new(xX,xY,dX,xaN,style=line.style_dotted,color=ccol))
+		array.push(fullIpL,label.new(dX+int(midX/2),xaN,str.tostring(xaN,"#.#####"),style=label.style_label_center,color=clbkg,textcolor=cltxt,size=size.tiny))
+		if xaN == higher
+			przH := l_xaN
+		else if xaN == lower
+			przL := l_xaN
+	if not na(xaF)
+		l_xaF := line.new(dX,xaF,dX+tLimit,xaF,color=red,width=6)
+		array.push(fullIpLn,l_xaF)
+		array.push(fullIpLn,line.new(xX,xY,dX,xaF,style=line.style_dotted,color=ccol))
+		array.push(fullIpL,label.new(dX+int(midX/2),xaF,str.tostring(xaF,"#.#####"),style=label.style_label_center,color=clbkg,textcolor=cltxt,size=size.tiny))
+		if xaF == higher
+			przH := l_xaF
+		else if xaF == lower
+			przL := l_xaF
+	if przL != przH
+		array.push(fullIpLf,linefill.new(przL,przH,przFill))
+
+	if stop > 0
+		array.push(fullIpLn,line.new(dX,stop,dX+tLimit,stop,color=red,width=6))
+		array.push(fullIpL,label.new(dX+midX,stop,"Stop:  "+str.tostring(stop,"#.#####"),style=label.style_label_center,color=clbkg,textcolor=cltxt,size=size.tiny))
+
+	// entry	
+	array.push(fullIpLn,line.new(dX,entry,dX+tLimit,entry,color=grn,width=3,style=line.style_dotted))
+
+// Reversal projections (XA retracement/extension)
+	fromD = false
+	// if entry is decided, draw projections based on that
+	if not na(entry)
+		if (bull==true and entry > dY) or (bull==false and entry < dY)
+			array.push(fullIpLn,line.new(dX,dY,dX+avgLeg,t1,color=cproj,style=line.style_arrow_right,width=2))
+			fromD := true
+		else
+			distX = distX(dY,pH,entry,avgLeg)
+			x1_2 = dX+int(distX/2)
+			x2_2 = x1_2+distX
+			if distX != 0
+				array.push(fullIpLn,line.new(dX,dY,x1_2,entry,color=cproj2,width=2))
+				array.push(fullIpLn,line.new(x1_2,entry,x2_2,t1,color=cproj2,style=line.style_arrow_right,width=2))
+	// else, draw projections based on PRZ levels
+	else
+		if not na(bcN)
+			if (bull==true and bcN > dY) or (bull==false and bcN < dY)
+				array.push(fullIpLn,line.new(dX,dY,dX+avgLeg,t1,color=cproj,style=line.style_arrow_right,width=2))
+				fromD := true
+			else
+				distX = distX(dY,pH,bcN,avgLeg)
+				x1_2 = dX+int(distX/2)
+				x2_2 = x1_2+distX
+				if distX != 0
+					array.push(fullIpLn,line.new(dX,dY,x1_2,bcN,color=cproj2,width=2))
+					array.push(fullIpLn,line.new(x1_2,bcN,x2_2,bcNt,color=cproj2,style=line.style_arrow_right,width=2))
+
+		if not na(bcF)
+			if (bull==true and bcF > dY) or (bull==false and bcF < dY)
+				if fromD==false
+					array.push(fullIpLn,line.new(dX,dY,dX+avgLeg,t1,color=cproj,style=line.style_arrow_right,width=2))
+					fromD := true
+			else
+				distX = distX(dY,pH,bcF,avgLeg)                
+				x1_2 = dX+int(distX/2)
+				x2_2 = x1_2+distX
+				if distX != 0
+					array.push(fullIpLn,line.new(dX,dY,x1_2,bcF,color=cproj2,width=2))
+					array.push(fullIpLn,line.new(x1_2,bcF,x2_2,bcFt,color=cproj2,style=line.style_arrow_right,width=2))
+
+		if not na(xaN)
+			if (bull==true and xaN > dY) or (bull==false and xaN < dY)
+				if fromD==false
+					array.push(fullIpLn,line.new(dX,dY,dX+avgLeg,t1,color=cproj,style=line.style_arrow_right,width=2))
+					fromD := true
+			else
+				distX = distX(dY,pH,xaN,avgLeg)                
+				x1_2 = dX+int(distX/2)
+				x2_2 = x1_2+distX
+				if distX != 0
+					array.push(fullIpLn,line.new(dX,dY,x1_2,xaN,color=cproj2,width=2))
+					array.push(fullIpLn,line.new(x1_2,xaN,x2_2,xaNt,color=cproj2,style=line.style_arrow_right,width=2))
+
+		if not na(xaF)
+			if (bull==true and xaF > dY) or (bull==false and xaF < dY)
+				if fromD==false
+					if not na(xaF)
+						array.push(fullIpLn,line.new(dX,dY,dX+avgLeg,t1,color=cproj,style=line.style_arrow_right,width=2))
+						fromD := true
+			else
+				distX = distX(dY,pH,xaF,avgLeg)
+				x1_2 = dX+int(distX/2)
+				x2_2 = x1_2+distX
+				if distX != 0
+					array.push(fullIpLn,line.new(dX,dY,x1_2,xaF,color=cproj2,width=2))
+					array.push(fullIpLn,line.new(x1_2,xaF,x2_2,xaFt,color=cproj2,style=line.style_arrow_right,width=2))
+	if fromD == false
+		array.push(fullIpLn,line.new(dX,dY,dX+avgLeg,t1,color=cproj,style=line.style_arrow_right,width=2))
+
+// Targets
+	l_t1 = line.new(dX,t1,dX+tLimit,t1,color=grn,width=5)
+	array.push(fullIpLn,l_t1)
+	array.push(fullIpL,label.new(dX+midX,t1,"T1:  " + str.tostring(t1,"#.#####"),style=label.style_label_center,color=clbkg,textcolor=cltxt,size=size.tiny))
+	l_t2 = line.new(dX,t2,dX+tLimit,t2,color=grn,width=5)
+	array.push(fullIpLn,l_t2)
+	array.push(fullIpL,label.new(dX+midX,t2,"T2:  " + str.tostring(t2,"#.#####"),style=label.style_label_center,color=clbkg,textcolor=cltxt,size=size.tiny))
+	array.push(fullIpLf,linefill.new(l_t1,l_t2,tgtFill))
+
+	[fullIpLn,fullIpL,fullIpLf]
+
+incDistX(dY,pH,p,avgLeg) =>
+    halfLeg = math.round(avgLeg/2)
+    qLeg = math.round(avgLeg/4)
+    eLeg = math.round(avgLeg/8)
+    dist = math.abs(p-dY)/pH
+    if dist>.75
+        avgLeg + qLeg + eLeg
+    else if dist > .5
+        avgLeg + qLeg
+    else if dist > .25
+        avgLeg + eLeg
+    else
+        avgLeg
+
+export xabcd_incInProgress(bool bull, int type, int tLimit, float entry,
+					       int xX, float xY, float aY, int bX, float bY, int cX, float cY, float dY,
+					       color cBu, color cBe, color lTxt) =>
+	line[] incLn = array.new_line(0)
+	label[] incL = array.new_label(0)
+	linefill[] incLf = array.new_linefill(0)
+	[ccol,red,grn,ccl,cltxt,clbkg,cproj,cproj2,przFill,tgtFill] = pat_colors(bull,cBu,cBe,lTxt)
+	midX = math.round(tLimit/2)
+	avgLeg = math.round(cX-xX)/3
+	dX = cX + avgLeg
+	[bcN,bcF,xaN,xaF] = t.harmonic_xabcd_prz(type,xY,aY,bY,cY)
+    bcN := bcN < 0 ? 0 : bcN
+    bcF := bcF < 0 ? 0 : bcF
+    xaN := xaN < 0 ? 0 : xaN
+    xaF := xaF < 0 ? 0 : xaF
+	[highest,lowest] = t.harmonic_xabcd_przRange(bcN,bcF,xaN,xaF)
+	[lower,higher] = t.harmonic_xabcd_przClosest(bcN,bcF,xaN,xaF)
+	pH = highest-lowest
+// Draw potential reversal zone
+	// BC retracement projections
+	line l_bcN = na, line l_bcF = na, line l_xaN = na, line l_xaF = na
+	line przH = na, line przL = na
+	if not na(bcN)
+		l_bcN := line.new(dX,bcN,dX+tLimit,bcN,color=red,width=5)
+		array.push(incLn,l_bcN)
+		array.push(incLn,line.new(bX,bY,dX,bcN,style=line.style_dotted,color=ccol))
+		array.push(incL,label.new(dX+midX,bcN,str.tostring(bcN,"#.#####"),style=label.style_label_center,color=clbkg,textcolor=cltxt,size=size.tiny))
+		if bcN == higher
+			przH := l_bcN
+		else if bcN == lower
+			przL := l_bcN
+	if not na(bcF)
+		l_bcF := line.new(dX,bcF,dX+tLimit,bcF,color=red,width=5)
+		array.push(incLn,l_bcF)
+		array.push(incLn,line.new(bX,bY,dX,bcF,style=line.style_dotted,color=ccol))
+		array.push(incL,label.new(dX+midX,bcF,str.tostring(bcF,"#.#####"),style=label.style_label_center,color=clbkg,textcolor=cltxt,size=size.tiny))
+		if bcF == higher
+			przH := l_bcF
+		else if bcF == lower
+			przL := l_bcF
+	// XA retracement projections
+	if not na(xaN)
+		l_xaN := line.new(dX,xaN,dX+tLimit,xaN,color=red,width=6)
+		array.push(incLn,l_xaN)
+		array.push(incLn,line.new(xX,xY,dX,xaN,style=line.style_dotted,color=ccol))
+		array.push(incL,label.new(dX+int(midX/2),xaN,str.tostring(xaN,"#.#####"),style=label.style_label_center,color=clbkg,textcolor=cltxt,size=size.tiny))
+		if xaN == higher
+			przH := l_xaN
+		else if xaN == lower
+			przL := l_xaN
+	if not na(xaF)
+		l_xaF := line.new(dX,xaF,dX+tLimit,xaF,color=red,width=6)
+		array.push(incLn,l_xaF)
+		array.push(incLn,line.new(xX,xY,dX,xaF,style=line.style_dotted,color=ccol))
+		array.push(incL,label.new(dX+int(midX/2),xaF,str.tostring(xaF,"#.#####"),style=label.style_label_center,color=clbkg,textcolor=cltxt,size=size.tiny))
+		if xaF == higher
+			przH := l_xaF
+		else if xaF == lower
+			przL := l_xaF
+	if przL != przH
+		array.push(incLf,linefill.new(przL,przH,przFill))
+
+	// entry
+	array.push(incLn,line.new(dX,entry,dX+tLimit,entry,color=grn,width=3,style=line.style_dotted))
+
+// Reversal projections (XA retracement/extension)
+	if not na(bcN)
+		distX = incDistX(dY,pH,bcN,avgLeg)
+		x1_2 = dX+int(distX/2)
+		array.push(incLn,line.new(cX,cY,x1_2,bcN,color=cproj2,width=2,style=line.style_arrow_right))
+
+	if not na(bcF)
+		distX = incDistX(dY,pH,bcF,avgLeg)                
+		x1_2 = dX+int(distX/2)
+		array.push(incLn,line.new(cX,cY,x1_2,bcF,color=cproj2,width=2,style=line.style_arrow_right))
+
+	if not na(xaN)
+		distX = incDistX(dY,pH,xaN,avgLeg)                
+		x1_2 = dX+int(distX/2)
+		array.push(incLn,line.new(cX,cY,x1_2,xaN,color=cproj2,width=2,style=line.style_arrow_right))
+
+	if not na(xaF)
+		distX = incDistX(dY,pH,xaF,avgLeg)
+		x1_2 = dX+int(distX/2)
+		array.push(incLn,line.new(cX,cY,x1_2,xaF,color=cproj2,width=2,style=line.style_arrow_right))
+
+    [incLn,incL,incLf]
+
+distX2(dY,pH,p,avgLeg) =>
+    halfLeg = math.round(avgLeg/2)
+    qLeg = math.round(avgLeg/4)
+    eLeg = math.round(avgLeg/8)
+    dist = math.abs(p-dY)/pH
+    if dist>.75
+        avgLeg + qLeg + eLeg
+    else if dist > .5
+        avgLeg + qLeg
+    else if dist > .25
+        avgLeg + eLeg
+    else if dist > .1
+        avgLeg
+    else
+        0
+
+// @function draw PRZ, entry, stop, targets, and projected reversal paths for XABCD pattern
+export xabcd_inProgress2(bool bull, int tLimit, float entry, float stop,
+                 		 float t1, float t2, float xadl, float bcdl, float xcdl,
+                 		 int xX, float xY, int bX, float bY, int dX, float dY,
+                 		 color cBu, color cBe, color lTxt) =>
+	[ccol,red,grn,ccl,cltxt,clbkg,cproj,cproj2,przFill,tgtFill] = pat_colors(bull,cBu,cBe,lTxt)
+	midX = math.round(tLimit/2)
+	avgLeg = math.round(dX-xX)/4
+	[highest,lowest] = t.harmonic_xabcd_przRange(xadl,bcdl,xcdl)
+	[lower,higher] = t.harmonic_xabcd_przClosest(xadl,bcdl,xcdl)
+	pH = highest-lowest
+    e = na(entry) ? (bull?higher:lower) : entry
+	line[] fullIpLn = array.new_line(0)
+	label[] fullIpL = array.new_label(0)
+	linefill[] fullIpLf = array.new_linefill(0)
+
+// Draw potential reversal zone
+	// BC retracement projections
+	line l_bcdl = na, line l_bcF = na, line l_xadl = na, line l_xcdl = na
+	line przH = na, line przL = na
+	if not na(bcdl)
+		l_bcdl := line.new(dX,bcdl,dX+tLimit,bcdl,color=red,width=5)
+		array.push(fullIpLn,l_bcdl)
+		array.push(fullIpLn,line.new(bX,bY,dX,bcdl,style=line.style_dotted,color=ccol))
+		array.push(fullIpL,label.new(dX+midX,bcdl,str.tostring(bcdl,"#.#####"),style=label.style_label_center,color=clbkg,textcolor=cltxt,size=size.tiny))
+		if bcdl == higher
+			przH := l_bcdl
+		else if bcdl == lower
+			przL := l_bcdl
+	if not na(xadl)
+		l_xadl := line.new(dX,xadl,dX+tLimit,xadl,color=red,width=6)
+		array.push(fullIpLn,l_xadl)
+		array.push(fullIpLn,line.new(xX,xY,dX,xadl,style=line.style_dotted,color=ccol))
+		array.push(fullIpL,label.new(dX+int(midX/2),xadl,str.tostring(xadl,"#.#####"),style=label.style_label_center,color=clbkg,textcolor=cltxt,size=size.tiny))
+		if xadl == higher
+			przH := l_xadl
+		else if xadl == lower
+			przL := l_xadl
+	if not na(xcdl)
+		l_xcdl := line.new(dX,xcdl,dX+tLimit,xcdl,color=red,width=6)
+		array.push(fullIpLn,l_xcdl)
+		array.push(fullIpLn,line.new(xX,xY,dX,xcdl,style=line.style_dotted,color=ccol))
+		array.push(fullIpL,label.new(dX+int(midX/2),xcdl,str.tostring(xcdl,"#.#####"),style=label.style_label_center,color=clbkg,textcolor=cltxt,size=size.tiny))
+		if xcdl == higher
+			przH := l_xcdl
+		else if xcdl == lower
+			przL := l_xcdl
+	if przL != przH
+		array.push(fullIpLf,linefill.new(przL,przH,przFill))
+
+	if stop > 0
+		array.push(fullIpLn,line.new(dX,stop,dX+tLimit,stop,color=red,width=6))
+		array.push(fullIpL,label.new(dX+midX,stop,"Stop:  "+str.tostring(stop,"#.#####"),style=label.style_label_center,color=clbkg,textcolor=cltxt,size=size.tiny))
+
+	// entry	
+	array.push(fullIpLn,line.new(dX,entry,dX+tLimit,entry,color=grn,width=3,style=line.style_dotted))
+
+// Reversal projection
+    if (bull and entry > dY) or (bull==false and entry < dY)
+        array.push(fullIpLn,line.new(dX,dY,dX+avgLeg,t1,color=cproj,style=line.style_arrow_right,width=2))
+    else
+        distX = distX2(dY,pH,bcdl,avgLeg)
+        x1_2 = dX+int(distX/2)
+        x2_2 = x1_2+distX
+        array.push(fullIpLn,line.new(dX,dY,x1_2,entry,color=cproj2,width=2))
+        array.push(fullIpLn,line.new(x1_2,entry,x2_2,t1,color=cproj2,style=line.style_arrow_right,width=2))
+
+// Targets
+	l_t1 = line.new(dX,t1,dX+tLimit,t1,color=grn,width=5)
+	array.push(fullIpLn,l_t1)
+	array.push(fullIpL,label.new(dX+midX,t1,"T1:  " + str.tostring(t1,"#.#####"),style=label.style_label_center,color=clbkg,textcolor=cltxt,size=size.tiny))
+	l_t2 = line.new(dX,t2,dX+tLimit,t2,color=grn,width=5)
+	array.push(fullIpLn,l_t2)
+	array.push(fullIpL,label.new(dX+midX,t2,"T2:  " + str.tostring(t2,"#.#####"),style=label.style_label_center,color=clbkg,textcolor=cltxt,size=size.tiny))
+	array.push(fullIpLf,linefill.new(l_t1,l_t2,tgtFill))
+// Return drawings
+    [fullIpLn,fullIpL]
+
+//----------------------------------------------------------
+// Labels
+//----------------------------------------------------------
+
+// @function Draw entry hit label
+export eHitLbl(int x, float e, int dX, float dY, bool bull, bool lOnly=false) =>
+    if lOnly==false
+        tt = "Entry @ " + str.tostring(e,"#.#####")
+        label.new(x,e,"🚪",size=size.small,style=label.style_none,color=color.new(color.white,100),tooltip=tt)
+    line.new(dX,dY,x,e,style=line.style_dotted,color=(bull==true ? color.new(color.green,30) : color.new(color.red,30)))
+
+// @function Draw target hit label
+export tHitLbl(int x, float tgt, int eX, float eY, bool bull) =>
+    tt = "Hit target @ " + str.tostring(tgt,"#.#####")
+    label.new(x,tgt,"✅",size=size.tiny,style=label.style_none,color=color.new(color.white,100),tooltip=tt)
+    line.new(eX,eY,x,tgt,style=line.style_dotted,color=(bull==true ? color.new(color.green,30) : color.new(color.red,30)))
+
+// @function Draw stop hit label
+export sHitLbl(int x, float s, int eX, float eY, bool bull) =>
+    tt = "Hit stop @ " + str.tostring(s,"#.#####")
+    label.new(x,s,"❌",size=size.tiny,style=label.style_none,color=color.new(color.white,100),tooltip=tt)
+    line.new(eX,eY,x,s,style=line.style_dotted,color=(bull==true ? color.new(color.green,30) : color.new(color.red,30)))
+
+//----------------------------------------------------------
+// Levels
+//----------------------------------------------------------
+
+level_colors(type=0) =>
+    switch type
+        0 => [color.new(#7e8085,80),color.new(#b2ebf2,70),color.new(color.white,20)]
+
+txtLoc(x,length,loc) =>
+    switch loc
+        "left" => x
+        "right" => x+length
+        => int(x+length/2)
+
+txtStyle(loc) =>
+    switch loc
+        "left" => label.style_label_right
+        "right" => label.style_label_left
+        => label.style_label_center
+
+// @function Draw a level (box)
+export level(float y, int x=bar_index, int type=0, int length=50, string extend=extend.none, float padding=1, string b_style=line.style_solid,
+      color colr=#ffffff, color txt_color=#ffffff, string txt=na, string txt_loc=na, string txt_size=size.tiny) =>
+    [bg,bord,txtc] = level_colors(type)
+    box = box.new(x, y*(1+padding/100), x+length, y*(1-padding/100), colr!=#ffffff ? color.new(colr,40) : bord, 
+                  bgcolor = colr!=#ffffff ? color.new(colr,70) : bg, border_style=b_style, extend=extend)
+    txtLoc = na(txt_loc) ? int(x+length/2) : txtLoc(x,length,txt_loc)
+    lbl = label.new(txtLoc,y,na(txt) ? str.tostring(y,"#.#####") : txt,
+                   style=txtStyle(txt_loc), color=color.new(color.black,100),size=txt_size,
+                   textalign=text.align_center, textcolor = txt_color!=#ffffff ? txt_color : txtc)
+    [box,lbl]
+
+//----------------------------------------------------------
+// Misc
+//----------------------------------------------------------
+
+// Incomplete pattern tooltip. Not really useful, just needed to make space in Harmonics script.
+export incTtTxt(int tp, string name, float xbr, float xbre, float acr, float acre, float bcN, float bcF, float xaN, float xaF, float score, float e) =>  
+    [rb,rc,rd1,rd2] = t.harmonic_xabcd_fibDispTxt(tp)
+    l1 = "Potential " + name + " (" + str.tostring(score*100,"#.##") + "%)\n\n"
+    l2 = "    Potential Reversal Zone:\n"
+    l21 = "     Entry:  " + str.tostring(e,"#.#####") + "\n"
+    l211 = "        BC retracement (" + rd1 + ")\n"
+    l3 = "            Near:   " + (bcN<0 ? "<0" : str.tostring(bcN, "#.#####")) + "\n"
+    l4 = "            Far:     " + (bcF<0? "<0" : str.tostring(bcF, "#.#####")) + "\n"
+    l41 = "        XA retracement (" + rd2 + ")\n"
+    l42 = "            Near:   " + (xaN<0 ? "<0" : str.tostring(xaN, "#.#####")) + "\n"
+    l43 = "            Far:     " + (not na(xaF) ? (xaF<0 ? "<0" : str.tostring(xaF, "#.#####")) : "N/A") + "\n"
+    l5 = "\n              Actual     % Err       Theoretical\n"
+    l6 = "AB/XA     " + str.tostring(xbr, "0.000") + "      " + (tp==5 ? "NA    " : (str.tostring(xbre*100, "00.0")+"%")) + "      " + rb + "\n"
+    l7 = "BC/AB     " + str.tostring(acr, "0.000") + "      " + str.tostring(acre*100, "00.0") + "%      " + rc + "\n"
+    l8 = "CD/BC      " + "TBD " + "         -          " + rd1 + "\n"
+    l9 = (tp==6 ? "CD/XC      " : "AD/XA      ") + "TBD " + "         -          " + rd2 + "\n"
+
+    l1 + l2 + (na(e)?"":l21) + l211 + l3 + l4 + l41 + l42 + l43 + l5 + l6 + l7 + l8 + l9

@@ -1,0 +1,212 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © reees
+
+//@version=5
+
+// @description General technical analysis functions
+library("TA",overlay=true)
+import reees/Algebra/3 as alg
+import reees/Trig/2 as trig
+
+//--------------------------------------------------------------
+//                      Private
+//--------------------------------------------------------------
+
+// Divergence strength of a change in series values
+deltaStrength(y1,y2,std) =>
+    // Ideally want Δy in terms of standard deviation
+    if not na(std)
+        math.abs(y2-y1)/(std*2)
+    // If we don't yet have a standard deviation, use the percent change in values
+    else if math.abs(y1) > math.abs(y2) and y1 != 0
+        1 - math.abs(y2/y1)
+    else if math.abs(y2) > math.abs(y1) and y2 != 0
+        1 - math.abs(y1/y2)
+    else if y1 == y2    // should never be true if we've already detected divergence
+        0.0
+    else
+        .5
+
+//--------------------------------------------------------------
+//                      Public
+//--------------------------------------------------------------
+
+// ------------ Divergence ------------
+
+// @function Test for bullish divergence
+// @param pS Price series (float)
+// @param iS Indicator series (float)
+// @param cp_length_after Bars after current (divergent) pivot low to be considered a valid pivot (optional int)
+// @param cp_length_before Bars before current (divergent) pivot low to be considered a valid pivot (optional int)
+// @param pivot_length Bars before and after prior pivot low to be considered valid pivot (optional int)
+// @param lookback Bars back to search for prior pivot low (optional int)
+// @param lookback_pivs Pivots back to search for prior pivot low (optional int)
+// @param no_broken Flag to only consider divergence valid if the pivot-to-pivot trendline is unbroken (optional bool)
+// @param pW Weight of change in price, used in degree of divergence calculation (optional float)
+// @param iW Weight of change in indicator, used in degree of divergence calculation (optional float)
+// @param hidW Weight of hidden divergence, used in degree of divergence calculation (optional float)
+// @param regW Weight of regular divergence, used in degree of divergence calculation (optional float)
+// @returns [flag,degree,type,lx1,ly1,lx2,ly2]
+//      flag = true if divergence exists (bool)
+//      degree = degree (strength) of divergence (float)
+//      type = 1 = regular, 2 = hidden (int)
+//      lx1 = x coordinate 1 (int)
+//      ly1 = y coordinate 1 (float)
+//      lx2 = x coordinate 2 (int)
+//      ly2 = y coordinate 2 (float)
+//
+export div_bull(float pS, float iS, simple int cp_length_after=2, simple int cp_length_before=4, simple int pivot_length=4, simple int lookback=50, simple int lookback_pivs=5, simple bool no_broken=true, simple float pW=1.0, simple float iW=1.0, simple float hidW=.8, simple float regW = 1.2) =>
+    p = ta.pivotlow(pS,pivot_length,pivot_length)
+    cpp = ta.pivotlow(pS,cp_length_before,cp_length_after)
+    ip = ta.pivotlow(iS,pivot_length,pivot_length)
+    ix1 = ta.lowestbars(iS,cp_length_after+2) // current indicator pivot is lowest bar between current bar and two bars prior to the price pivot
+    ix1 := int(math.sign(ix1) * ix1)
+    pStd = ta.stdev(pS, bar_index<100 ? bar_index + 1 : 100)
+    iStd = ta.stdev(iS,bar_index<100 ? bar_index + 1 : 100)
+    flag = false
+    degree = 0.0
+    type = 0
+    lx1 = 0
+    ly1 = 0.0
+    lx2 = 0
+    ly2 = 0.0
+    j = 0   // pivot count
+    // if price is pivoting low
+    if not na(cpp)
+        // check last <#> bars before current pivot low for any previous pivot low
+        for i=cp_length_after to lookback+cp_length_after
+            if j == lookback_pivs
+                break
+            // Found a prior price pivot low, AND the indicator also pivoted low on the same bar, the previous bar, or the next bar
+            if not na(p[i]) and (not na(ip[i]) or not na(ip[i+1]) or not na(ip[i-1]))
+                j+=1
+                // prior indicator pivot:
+                //  if indicator pivoted on the bar before or after the price pivot, use that value
+                //  else the pivot occurred on the same bar as the price pivot
+                ix2 = if not na(ip[i+1])
+                    i + pivot_length + 1
+                else if not na(ip[i-1])
+                    i + pivot_length - 1
+                else
+                    i + pivot_length
+                // test for divergence
+                if p[i] > pS[cp_length_after] and iS[ix2] < iS[ix1]
+                    flag := true
+                    // degree = Δprice strength + Δindicator strength (multiplied by specified weights)
+                    degree := (deltaStrength(p[i],pS[cp_length_after],pStd)*pW + deltaStrength(iS[ix1],iS[ix2],iStd)*iW)*regW
+                    type := 1
+                else if p[i] < pS[cp_length_after] and iS[ix2] > iS[ix1]
+                    flag := true
+                    // degree = Δprice strength + Δindicator strength (multiplied by specified weights)
+                    degree := (deltaStrength(p[i],pS[cp_length_after],pStd)*pW + deltaStrength(iS[ix1],iS[ix2],iStd)*iW)*hidW
+                    type := 2
+                // if divergence exists, get line
+                if flag == true
+                    lx1 := bar_index-i-pivot_length
+                    ly1 := p[i]
+                    lx2 := bar_index-cp_length_after
+                    ly2 := pS[cp_length_after]
+                    [slope,yInt] = alg.line_fromXy(lx1,ly1,lx2,ly2)
+                    if no_broken == true
+                        // invalidate divergence if an intermediate low breaks divergence trendline
+                        for k=lx1 to lx2
+                            if pS[bar_index-k] < (alg.line_getPrice(k,slope,yInt)*.99)
+                                flag := false
+                                degree := 0.0
+                                type := 0
+                                lx1 := 0
+                                ly1 := 0.0
+                                lx2 := 0
+                                ly2 := 0.0
+                                break
+                    break
+    [flag,degree,type,lx1,ly1,lx2,ly2]
+
+// @function Test for bearish divergence
+// @param pS Price series (float)
+// @param iS Indicator series (float)
+// @param cp_length_after Bars after current (divergent) pivot high to be considered a valid pivot (optional int)
+// @param cp_length_before Bars before current (divergent) pivot highto be considered a valid pivot (optional int)
+// @param pivot_length Bars before and after prior pivot high to be considered valid pivot (optional int)
+// @param lookback Bars back to search for prior pivot high (optional int)
+// @param lookback_pivs Pivots back to search for prior pivot high (optional int)
+// @param no_broken Flag to only consider divergence valid if the pivot-to-pivot trendline is unbroken (optional bool)
+// @param pW Weight of change in price, used in degree of divergence calculation (optional float)
+// @param iW Weight of change in indicator, used in degree of divergence calculation (optional float)
+// @param hidW Weight of hidden divergence, used in degree of divergence calculation (optional float)
+// @param regW Weight of regular divergence, used in degree of divergence calculation (optional float)
+// @returns [flag,degree,type,lx1,ly1,lx2,ly2]
+//      flag = true if divergence exists (bool)
+//      degree = degree (strength) of divergence (float)
+//      type = 1 = regular, 2 = hidden (int)
+//      lx1 = x coordinate 1 (int)
+//      ly1 = y coordinate 1 (float)
+//      lx2 = x coordinate 2 (int)
+//      ly2 = y coordinate 2 (float)
+//  
+export div_bear(float pS, float iS, simple int cp_length_after=2, simple int cp_length_before=4, simple int pivot_length=4, simple int lookback=50, simple int lookback_pivs=5, simple bool no_broken=true, simple float pW=1.0, simple float iW=1.0, simple float hidW=.8, simple float regW = 1.2) =>
+    p = ta.pivothigh(pS,pivot_length,pivot_length)
+    cpp = ta.pivothigh(pS,cp_length_before,cp_length_after)
+    ip = ta.pivothigh(iS,pivot_length,pivot_length)
+    ix1 = ta.highestbars(iS,cp_length_after+2) // current indicator pivot is highest bar between current bar and two bars prior to the price pivot
+    ix1 := int(math.sign(ix1) * ix1)
+    pStd = ta.stdev(pS, bar_index<100 ? bar_index + 1 : 100)
+    iStd = ta.stdev(iS,bar_index<100 ? bar_index + 1 : 100)
+    flag = false
+    degree = 0.0
+    type = 0
+    lx1 = 0
+    ly1 = 0.0
+    lx2 = 0
+    ly2 = 0.0
+    j = 0   // pivot count
+    // if price is pivoting high
+    if not na(cpp)
+        // check last <#> bars before current pivot high for any previous pivot high
+        for i=cp_length_after to lookback+cp_length_after
+            if j == lookback_pivs
+                break
+            // Found a prior price pivot high, AND the indicator also pivoted high on the same bar, the previous bar, or the next bar
+            if not na(p[i]) and (not na(ip[i]) or not na(ip[i+1]) or not na(ip[i-1]))
+                j+=1
+                // prior indicator pivot:
+                //  if indicator pivoted on the bar before or after the price pivot, use that value
+                //  else the pivot occurred on the same bar as the price pivot
+                ix2 = if not na(ip[i+1])
+                    i + pivot_length + 1
+                else if not na(ip[i-1])
+                    i + pivot_length - 1
+                else
+                    i + pivot_length
+                // test for divergence
+                if p[i] > pS[cp_length_after] and iS[ix2] < iS[ix1]
+                    flag := true
+                    // degree = Δprice strength + Δindicator strength (multiplied by specified weights)
+                    degree := (deltaStrength(p[i],pS[cp_length_after],pStd)*pW + deltaStrength(iS[ix1],iS[ix2],iStd)*iW)*hidW
+                    type := 2
+                else if p[i] < pS[cp_length_after] and iS[ix2] > iS[ix1]
+                    flag := true
+                    // degree = Δprice strength + Δindicator strength (multiplied by specified weights)
+                    degree := (deltaStrength(p[i],pS[cp_length_after],pStd)*pW + deltaStrength(iS[ix1],iS[ix2],iStd)*iW)*regW
+                    type := 1
+                // if divergence exists, get line
+                if flag == true
+                    lx1 := bar_index-i-pivot_length
+                    ly1 := p[i]
+                    lx2 := bar_index-cp_length_after
+                    ly2 := pS[cp_length_after]
+                    [slope,yInt] = alg.line_fromXy(lx1,ly1,lx2,ly2)
+                    if no_broken == true
+                        // invalidate divergence if an intermediate low breaks divergence trendline
+                        for k=lx1 to lx2
+                            if pS[bar_index-k] > (alg.line_getPrice(k,slope,yInt)*1.01)
+                                flag := false
+                                degree := 0.0
+                                type := 0
+                                lx1 := 0
+                                ly1 := 0.0
+                                lx2 := 0
+                                ly2 := 0.0
+                                break
+                    break
+    [flag,degree,type,lx1,ly1,lx2,ly2]

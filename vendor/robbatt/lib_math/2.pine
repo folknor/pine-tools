@@ -1,0 +1,176 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © robbatt
+
+// version history
+
+//@version=6
+library("lib_math", overlay=true)
+
+//@function checks if a given value is within a range (max, min)
+export in_range(float value, float max, float min = 0) => min <= value and value <= max
+//@function checks if a given value is within a range (max, min)
+export in_range(int   value, int   max, int   min = 0) => min <= value and value <= max
+
+//@function checks if a given range (max1, min1) is within another range (max2, min2)
+export in_range(float max1, float min1, float max2, float min2) => min2 <= min1 and min1 <= max2 and min2 <= max1 and max1 <= max2
+//@function checks if a given range (max1, min1) is within another range (max2, min2)
+export in_range(int   max1, int   min1, int   max2, int   min2) => min2 <= min1 and min1 <= max2 and min2 <= max1 and max1 <= max2
+
+//@function checks if a given range (max1, min1) overlaps another range (max2, min2)
+export range_overlap(float max1, float min1, float max2, float min2) => min1 < max2 and max1 > min2
+//@function checks if a given range (max1, min1) overlaps another range (max2, min2)
+export range_overlap(int   max1, int   min1, int   max2, int   min2) => min1 < max2 and max1 > min2
+
+
+//@description Calculates a mean value over time, with option to reset, this is not using the history operator, so won't trigger max_bars_back errors
+//@param value series to track
+//@param reset flag to reset tracking
+//@return returns average/mean of value since last reset
+export mean(float value, bool reset = false) =>
+    var sum = 0.0
+    var len = 0
+    var last = 0.0
+
+    if reset
+        sum := last
+        len := 1
+    
+    len := len + 1
+    sum := sum + value
+    last := value
+    sum / len
+
+//@description calculates the vwap manually, this is not using the history operator, so won't trigger max_bars_back errors
+//@param value series to track
+//@param reset flag to reset tracking
+//@return returns vwap of value and volume since last reset
+export vwap(float value, bool reset) =>
+    // Initialize cumulative price and volume
+    var cum_price_volume = 0.0
+    var cum_volume = 0.0
+
+    if reset
+        cum_price_volume := 0.0    
+        cum_volume := 0.0
+
+    // Calculate conditional VWAP only when the session is active
+    cum_price_volume    := cum_price_volume + (value * volume)
+    cum_volume          := cum_volume + volume
+    
+    vwap = cum_price_volume / cum_volume
+    vwap
+
+//@description Calculates the variance of a value over time, with option to reset, this is not using the history operator, so won't trigger max_bars_back errors
+//@param value series to track
+//@param reset flag to reset tracking
+//@return returns variance of value since last reset
+export variance(float value, bool reset) =>
+    var avg = 0.0
+    var sum = 0.0
+    var len = 0
+    var last = 0.0
+
+    if reset
+        avg := last
+        sum := last
+        len := 1
+    
+    last := value
+    len := len + 1
+    avg := mean(value, reset)
+    sum := sum + math.pow(value - avg, 2)
+    sum / len
+
+
+//Get trendline coordinates
+
+//@description Calculates the trend correlation, deviation and start and end coordinates of a trendline, this is not using the history operator, so won't trigger max_bars_back errors
+//@param value series to track
+//@param reset flag to reset tracking
+//@return [slope, correlation, stddev, y1 , y2] where slope is the trend direction, correlation is a measurement for how well the values fit to the trendline (positive means ), stddev is how far the values deviate from the trend, x1 would be the time where reset is true and x2 would be the current time
+export trend(float value, bool reset)=>
+    var len = 1
+    var last = value // modification, so we consider the session open as well
+    var float sum_wma  = na
+    var float sum_sma  = na
+    var float sum_sma2 = na
+
+    if reset
+        len   := 1
+        sum_wma  := last
+        sum_sma  := last
+        sum_sma2 := last * last
+    last := value    
+
+    len   += 1    
+    half_len = (len+1)/2
+    sum_sma  += value
+    sum_sma2 += value * value
+    sum_wma  += value * len // weighted MA => increased significance of recent price data => regression line slope
+
+    sma = sum_sma / len // simle moving average
+    sma2 = sum_sma2 / len
+    wma = sum_wma / len / half_len // weighted moving average, weight is time/bar_index, centered via division by half_len
+
+    cov   = (wma - sma) * half_len // covariance (how well the averages align)
+    stddev = math.sqrt(sma2 - sma * sma) // stddev = root of [avg of (squared)value - (squared)avg of value]
+    
+    // squared pearson correlation coefficient (r²) (adapted to bars as time representation)
+    // => correlation coefficient => indicates how well line fits the values 0-1, however 1 might be overfitting
+    correlation = cov / (stddev * (math.sqrt(len*len - 1) / (2 * math.sqrt(3))))
+
+    y1 = 4 * sma - 3 * wma
+    y2 = 3 * wma - 2 * sma
+    slope = (y2 - y1) / len
+
+    [slope, correlation, stddev, y1 , y2]
+
+new_day = timeframe.change('D')
+var last_start = bar_index
+var day_start = bar_index
+var last_y1 = open
+var day_y1 = open
+if new_day
+    last_y1 := day_y1
+    day_y1 := open
+    last_start := day_start
+    day_start := bar_index
+
+mean = mean(close, new_day)
+vwap = vwap(close, new_day)
+variance = variance(close, new_day)
+[slope, correlation, stddev, y1 , y2] = trend(close, new_day)
+
+bars = day_start - last_start + 1
+tv_stddev = ta.stdev(close, bars)
+tv_mean = ta.sma(close, bars)
+tv_vwap = ta.vwap(close, new_day)
+tv_correlation = ta.correlation(close, bar_index, bars)
+tv_y2 = ta.linreg(close, bars, 0)
+tv_y1 = tv_mean + (tv_mean - tv_y2)
+tv_slope = (tv_y2 - tv_y1) / bars
+
+if new_day and bar_index > bars
+    line.new(bar_index, 0, bar_index, 1, extend = extend.both, style = line.style_dotted)
+
+    line.new(last_start, mean[1], day_start, mean[1])
+    // label.new(day_start, y2[1], str.format('mean: {0} | {6}\nslope: {1} | {8}\ncorrelation: {2} | {7}\nstddev: {3} | {4} | {5}', mean[1], slope[1], correlation[1], stddev[1], tv_stddev[1], tv_stddev_unbiased[1], tv_mean[1], tv_correlation[1], tv_slope[1]), textcolor = color.white, style = label.style_label_left)
+    label.new(day_start, y2[1], str.format('mean: {0} | {6}\nslope: {1} | {8}\ncorrelation: {2} | {7}\nstddev: {3} | {4} | {5}', mean[1], slope[1], correlation[1], stddev[1], tv_stddev[1], tv_stddev[1], tv_mean[1], tv_correlation[1], tv_slope[1]), textcolor = color.white, style = label.style_label_left)
+
+var tv_trendline = line.new(na,na,na,na)
+var trendline = line.new(na,na,na,na)
+var x1 = bar_index
+
+if not barstate.isfirst
+    if new_day
+        tv_trendline.copy()
+        trendline.copy()
+        x1 := bar_index
+
+    trendline.set_xy1(x1, y1)
+    trendline.set_xy2(bar_index, y2)
+    trendline.set_xy1(x1, tv_y1)
+    trendline.set_xy2(bar_index, tv_y2)
+
+plot(tv_vwap, 'tv_vwap', color.blue, linewidth = 2, style = plot.style_linebr)
+plot(vwap, 'vwap',       color.red,  linewidth = 2, style = plot.style_linebr)

@@ -1,0 +1,148 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © PineCoders
+//@version=5
+
+// @description This library is a Pine programmer’s tool containing functions that build an array of values meeting specific conditions.
+library("getSeries", true)
+
+// getSeries Library
+// v1, 2022.06.23
+
+// This code was written using the recommendations from the Pine Script™ User Manual's Style Guide:
+//   https://www.tradingview.com/pine-script-docs/en/v5/writing/Style_guide.html
+
+
+
+// Import the library containing the `allTimeHigh()` function we use in example #8.
+import TradingView/ta/2 as TVta
+// Import the library containing the `formattedDay()` function we use in example #5.
+import PineCoders/Time/3 as PCtime
+
+
+
+// ———————————————————— Library functions {
+
+
+// @function        Creates an array containing the `length` last `src` values where `whenCond` is true, since the last occurence of `sinceCond`.
+// @param src       (series int/float) The source of the values to be included. 
+// @param whenCond  (series bool) The condition determining which values are included. Optional. The default is `true`.
+// @param sinceCond (series bool) The condition determining when the accumulated series resets. Optional. The default is false, which will not reset. 
+// @param length    (simple int) The number of last values to return. Optional. The default is all values.
+// @returns         (float[]) The array ID of the accumulated `src` values.
+export whenSince(series float src, series bool whenCond = true, series bool sinceCond = false, simple int length = na) =>
+    var float[] values = array.new_float(0)
+    int cappedLen = math.max(1, length)
+    if sinceCond
+        array.clear(values)
+    if whenCond
+        array.push(values, src)
+    if not na(cappedLen) and array.size(values) > cappedLen
+        array.shift(values)
+    float[] result = values
+
+
+// @function            Creates an array of `src` values where `cond` is true, over a moving window of length `timeWindow` milliseconds.
+// @param src           (series int/float) The source of the values to be included. 
+// @param timeWindow    (simple int) The time duration in milliseconds defining the size of the moving window.
+// @param cond          (series bool) The condition determining which values are included. Optional. The default is `true`.
+// @param minBars       (simple int) The minimum number of values to maintain in the moving window. Optional. The default is 1.
+// @returns             (float[]) The array ID of the accumulated `src` values.
+export rollOnTimeWhen(series float src, simple int timeWindow, series bool cond = true, simple int minBars = 1) =>
+    var float[] sources = array.new_float(0)
+    var int[]   times   = array.new_int(0)
+    if cond
+        array.push(sources, src)
+        array.push(times,   time)
+    if array.size(sources) > 0
+        while time - array.get(times, 0) >= timeWindow and array.size(sources) > minBars
+            array.shift(sources)
+            array.shift(times)
+    float[] result = sources
+// }
+
+
+
+// ———————————————————— Example Code {
+
+
+int MS_IN_1M   = 1000 * 60 * 60 * 24 * 30
+
+
+// ————— 1. Get the sum of pre-market volume for the day.
+float volPreMarket = nz(array.sum(whenSince(volume, session.ispremarket, timeframe.change("D"))))
+plotchar(volPreMarket, "1. Total Pre-market Vol.", "", location.top, color.orange, size = size.tiny)
+
+
+// ————— 2. Find the two highest volumes values in the last 30 days.
+// Create an array from the volume values for the 30-day rolling window.
+float[] volumes30days = rollOnTimeWhen(volume, MS_IN_1M)
+// Get the highest.
+float highestVol = array.max(volumes30days)
+plotchar(highestVol, "2. 30 Day Highest Vol.", "", location.top, color.aqua, size = size.tiny)
+// When the array has at least two values, use the `nth` optional parameter of `array.max()` to get the second highest value.
+float secondHighestVol = array.size(volumes30days) > 1 ? array.max(volumes30days, 1) : na
+plotchar(secondHighestVol, "2. 30 Day 2nd Highest Vol.", "", location.top, color.aqua, size = size.tiny)
+
+
+// ————— 3. Get the average of the pivot highs of the last 30-day rolling window.
+int PIVOT_LEGS = 5
+// Calculate pivot highs. 
+float pivHi = ta.pivothigh(high, PIVOT_LEGS, PIVOT_LEGS)
+// Create an array from the volume values for the 30-day rolling window.
+float[] hiPivotsInLastMonth = rollOnTimeWhen(pivHi, MS_IN_1M, not na(pivHi))
+// Calculate its average value.
+float avgHiPivots = array.avg(hiPivotsInLastMonth)
+plot(avgHiPivots, "3. avgHiPivots")
+plotchar(pivHi, "3. pivHi", "•", location.absolute, size = size.tiny)
+
+
+// ————— 4. Average volume of low pivots for the whole chart.
+float avgVolOfLowPivots = array.avg(whenSince(volume[PIVOT_LEGS], ta.pivotlow(low, PIVOT_LEGS, PIVOT_LEGS)))
+plotchar(avgVolOfLowPivots, "4. Avg. Vol. of Pivot Lows", "", location.top, color.maroon, size = size.tiny)
+
+
+// ————— 5. Find the time of the last 4 golden crosses.
+// Calculate MA's and create cross condition.
+float ma50        = ta.sma(close,  50)
+float ma200       = ta.sma(close,  200)
+bool  goldenCross = ta.cross(ma50, ma200)
+// Plot the MA's. Create unique color at the cross point.
+plot(ma50,  "5. 50 MA",  goldenCross or goldenCross[1] ? #f3ff00 : color.new(color.gray, 50))
+plot(ma200, "5. 200 MA", goldenCross or goldenCross[1] ? #f3ff00 : color.new(color.gray, 50))
+// Highlight cross area. 
+if goldenCross
+    label.new(time, (ma50 + ma200) / 2, xloc = xloc.bar_time, color = color.new(#ff0000, 65), style = label.style_circle, size = size.tiny)
+// Get an array containing the last 4 golden cross times. 
+float[] goldenCrossesTimes = whenSince(time_close, goldenCross, length = 4)
+// Display the date and time of the last crosses (executes only once on the last historical bar).
+if barstate.islastconfirmedhistory
+    // Declare empty table  
+    var table t = table.new(position.top_right, 2, 6, color.new(color.black, 100), color.gray, 1, color.gray, 1)
+    // Create title for table and merge cells. 
+    table.cell(t, 0, 0, "5. Golden Cross Times", text_color = color.black, bgcolor = #FFD700)
+    table.merge_cells(t, 0, 0, 1, 0)
+    // Loop array writing cells containing the cross time for each element. Number each element in the left row.  
+    for [i, timeValue] in goldenCrossesTimes
+        table.cell(t, 0, i + 1, str.tostring(i + 1), text_color = #FFD700)
+        table.cell(t, 1, i + 1, PCtime.formattedDay(timeValue, "yyyy.MM.dd 'at' HH:mm:ss z"), text_color = color.gray)
+
+
+// ————— 6. Get average closes in a specific session. 
+string sessionInput    = input.session("0900-1000")
+bool   inSession       = not na(time("D", sessionInput))
+float  sessionAvgClose = array.avg(whenSince(close, inSession, timeframe.change("D")))
+plot(sessionAvgClose, "6. Avg. Close Within Session", color.olive, 2, style = plot.style_linebr)
+
+
+// ————— 7. Create a Session VWAP anchored to market open. 
+float vwap = array.sum(whenSince(close * volume, session.ismarket, session.isfirstbar_regular)) / array.sum(whenSince(volume, session.ismarket, session.isfirstbar_regular))
+plot(session.ismarket ? vwap : na, "7. Session VWAP", color.purple, style = plot.style_linebr)
+
+
+// ————— 8. Get the bar indices where RSI makes a new all-time high.
+float myRsi = ta.rsi(close, 20)
+float[] barIndicesOfHiRSIs = whenSince(bar_index, myRsi == TVta.allTimeHigh(myRsi))
+if barstate.islastconfirmedhistory
+    var table t = table.new(position.bottom_left, 1, 1, color.new(color.black, 100), color.gray, 1, color.gray, 1)
+    table.cell(t, 0, 0, "8. Bar indices of RSI ATHs\n" + str.tostring(barIndicesOfHiRSIs))
+// }

@@ -1,0 +1,181 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © RicardoSantos
+
+//@version=5
+
+// @description ZigZag Multiple Methods.
+library(title='FunctionZigZagMultipleMethods')
+
+string m_000 = '(MANUAL) Percent price move over X * Y'
+string m_001 = 'Percent price move over atr(X) * Y'
+string m_002 = 'Percent price move over max(tr) * Y'
+string m_003 = 'high or low pivot(X, Y)'
+string m_004 = 'Price Action'
+
+// @function Helper methods enumeration.
+// @param idx int, index of method, range 0 to 4.
+// @returns string
+export method (int idx) => //{
+    switch (idx)
+        (0) => m_000
+        (1) => m_001
+        (2) => m_002
+        (3) => m_003
+        (4) => m_004
+        => m_000
+//}
+
+// @function Multiple method ZigZag.
+// @param method string, default='(MANUAL) Percent price move over X * Y', method for zigzag.
+// @param value_x float, x value in method.
+// @param value_y float, y value in method.
+// @returns tuple with:
+//      zigzag float
+//      direction
+//      reverse_line float
+//      realtimeofpivot int
+export function (string method, float value_x, float value_y) => //{
+    var float _percent = na
+    if method == m_001
+        _percent := ta.sma(ta.tr(true), int(value_x)) / open * value_y
+        //ta.atr() requires simple int input..
+    else if method == m_002
+        float _tr = (ta.tr / open) * value_y
+        if na(_percent)
+            _percent := _tr
+        if _tr > _percent
+            _percent := _tr
+    else
+        _percent := value_x * value_y
+
+
+    //  direction after last pivot
+    var bool _direction = na
+    //  track highest price since last lower pivot
+    var float _hprice = na
+    //  track lowest price since last higher pivot
+    var float _lprice = na
+    //  zigzag variable for ploting
+    var float _zz = na
+    //  real pivot time
+    var int _tz = na
+    var int _htime = na
+    var int _ltime = na
+    //  reverse line
+    var float _reverse_line = 0.0
+
+
+    //  range needed for reaching reversal threshold
+    float _reverse_range = 0.0
+    //  pivots high / low for method m_003
+    // string m_003 = 'high or low pivot(X, Y)'
+    _pivot_h = ta.pivothigh(value_x, value_y)
+    _pivot_l = ta.pivotlow(value_x, value_y)
+
+    if bar_index >= 1
+        
+        if na(_direction)
+            _direction := true
+        
+        _reverse_range := nz(_zz[1]) * _percent
+        
+        if _direction
+            _lprice := na
+            _ltime := time
+            
+            if na(_hprice)
+                if high < high[1]
+                    _hprice := high[1]
+                    _htime := time[1]
+                else
+                    _hprice := high
+                    _htime := time
+            else
+                if high >= _hprice
+                    _hprice := high
+                    _htime := time
+
+            if method == m_003
+                _reverse_line := _hprice
+                if _pivot_h
+                    _zz := _hprice
+                    _tz := _htime
+                    _direction := false
+
+            else if method == m_004
+                _reverse_line := _hprice
+                if high < high[1] and (low < low[1] or (close-low < (high-low) * 0.5)) //down or engulfing closing low
+                    if low < low[1]
+                        _lprice := low
+                        _ltime := time
+                    else
+                        _lprice := low[1]
+                        _ltime := time[1]
+                    _zz := _hprice
+                    _tz := _htime
+                    _direction := false
+            else
+                _reverse_line := (_hprice - _reverse_range)
+                if close < _reverse_line
+                    _zz := _hprice
+                    _tz := _htime
+                    _direction := false
+
+        else//if not _direction
+            _hprice := na
+            _htime := na
+            
+            if na(_lprice)
+                if low > low[1]
+                    _lprice := low[1]
+                    _ltime := time[1]
+                else
+                    _lprice := low
+                    _ltime := time
+            else
+                if low <= _lprice
+                    _lprice := low
+                    _ltime := time
+                
+            if method == m_003
+                _reverse_line := _lprice
+                if _pivot_l
+                    _zz := _lprice
+                    _tz := _ltime
+                    _direction := true
+
+            else if method == m_004
+                _reverse_line := _lprice
+                if high > high[1] and (low > low[1] or (close-low > (high-low) * 0.5))//up or engulfing closing high
+                    if high > high[1]
+                        _hprice := high
+                        _htime := time
+                    else
+                        _hprice := high[1]
+                        _htime := time[1]
+                    _zz := _lprice
+                    _tz := _ltime
+                    _direction := true
+            else
+                _reverse_line := (_lprice + _reverse_range)
+                if close > _reverse_line
+                    _zz := _lprice
+                    _tz := _ltime
+                    _direction := true
+
+    [_zz, _direction, _reverse_line, _tz]
+//{ usage:
+string zigzag_method = input.string(
+         defval=m_000, 
+         title="Method to use for the zigzag:", 
+         options=[m_000, m_001, m_002, m_003, m_004], 
+         group='ZigZag Options:'
+         )
+float param_x = input.float(defval=1.0, title='parameter X', group='ZigZag Options:')
+float param_y = input.float(defval=1.0, title='parameter Y', group='ZigZag Options:')
+[price_a, is_up, reverse, _rl_time] = function(zigzag_method, param_x, param_y)
+plot(ta.change(price_a)!=0?price_a:na)
+//{ remarks:
+//}}}
+
+

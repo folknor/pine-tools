@@ -1,0 +1,647 @@
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © toodegrees
+
+//@version=5
+
+// @description Supporting Utility Library for the Live Economic Calendar by toodegrees Indicator; responsible for data handling, and plotting news event data.
+library("forex_factory_utility")
+
+ 
+//#region[Global]
+// @function Finds if it's currently a leap year or not.
+// @returns Returns True if the current year is a leap year.
+export isLeapYear() =>
+	Y = year(time,"America/New_York")
+	Y==1980 or Y==1984 or Y==1988 or Y==1992 or Y==1996 or Y==2000 or Y==2004 or Y==2008 or Y==2012 
+	 or Y==2016 or Y==2020 or Y==2024 or Y==2028 or Y==2032 or Y==2036 or Y==2040 or Y==2044 or Y==2048 or Y==2052
+	 or Y==2056 or Y==2060 or Y==2064 or Y==2068 or Y==2072 or Y==2076 or Y==2080 or Y==2084 or Y==2088 or Y==2092
+
+
+// @function Provides the days in a given month of the year, adjusted during leap years.
+// @param M Month in numerical integer format (i.e. Jan=1).
+// @returns Days in the provided month.
+export daysMonth(int M) =>
+	D = switch M
+		1  => 31
+		2  => isLeapYear()?29:28
+		3  => 31
+		4  => 30
+		5  => 31
+		6  => 30
+		7  => 31
+		8  => 31
+		9  => 30
+		10 => 31
+		11 => 30
+		12 => 31
+	D
+
+// @function Converts a month from a numerical integer format to a MMM format (i.e. 'Jan').
+// @param M Month in numerical integer format (i.e. Jan=1).
+// @returns Month in MMM format (i.e. 'Jan').
+export MMM(int M) =>
+	mmm = switch M
+		1  => "Jan"
+		2  => "Feb"
+		3  => "Mar"
+		4  => "Apr"
+		5  => "May"
+		6  => "Jun"
+		7  => "Jul"
+		8  => "Aug"
+		9  => "Sep"
+		10 => "Oct"
+		11 => "Nov"
+		12 => "Dec"
+	mmm
+
+
+// @function Converts a numbered day of the week string in format to 'DDD' format (i.e. "1" = Sun).
+// @param D Numbered day of the week from 1 to 7, starting on Sunday.
+// @returns Returns the day of the week in 'DDD' format (i.e. "Fri").
+export dow(string D) =>
+	DOW = switch D
+		"1" => "Sun"
+		"2" => "Mon"
+		"3" => "Tue"
+		"4" => "Wed"
+		"5" => "Thu"
+		"6" => "Fri"
+		"7" => "Sat"
+	DOW
+//#endregion
+
+
+//#region[Types]
+// @type Custom News type which contains informatino about a Forex Factory News Event.
+// @field dow Day of the week, in DDD format (i.e. 'Mon').
+// @field dat Date, in MMM D format (i.e. 'Jan 1').
+// @field tod Time of the day, in hh:mm 24-Hour format (i.e 17:10).
+// @field cur Currency, in CCC format (i.e. "USD").
+// @field imp Impact, the respective impact color for Forex Factory News Events.
+// @field ttl Title, encoded in a custom number mapping (see the toodegrees/toodegrees_forex_factory library to learn more).
+export type News
+	string dow
+	string dat
+    int    _t
+	string tod
+	string cur
+	color  imp
+	string ttl
+    int    tmst
+    line   ln
+//#endregion
+
+
+//#region[Utility]
+// @function Converts a size string into the corresponding Pine Script v5 format, or N times smaller/bigger.
+// @param S Size string: "Tiny", "Small", "Normal", "Large", or "Huge".
+// @param N Size variation, can be positive (larger than S), or negative (smaller than S).
+// @returns Size string in Pine Script v5 format.
+export size(string S, int N=na) =>
+    sizes = array.new_string()
+    sizes.push(size.tiny), sizes.push(size.small), sizes.push(size.normal), sizes.push(size.large), sizes.push(size.huge)
+    size = switch S
+        "Tiny"   => 0
+        "Small"  => 1
+        "Normal" => 2
+        "Large"  => 3
+        "Huge"   => 4
+    if not na(N)
+        size += N
+        if size > 4
+            size:=4
+        else if size < 0
+            size:=0
+            
+    sizes.get(size)
+
+
+// @function Converts a line style string into the corresponding Pine Script v5 format.
+// @param S Line style string: "Dashed", "Dotted" or "Solid".
+// @returns Line style string in Pine Script v5 format.
+export lineStyle(string S) =>
+    style = switch S
+        "Dashed" => line.style_dashed
+        "Dotted" => line.style_dotted
+        "Solid"  => line.style_solid
+    style
+
+
+// @function Converts a transparency style string into the corresponding integer value.
+// @param S Line style string: "Light", "Medium" or "Heavy".
+// @returns Transparency integer.
+export lineTrnsp(string S) =>
+    transp = switch S
+        "Light"  => 80
+        "Medium" => 50
+        "Heavy"  => 0
+    transp
+
+
+// @function Converts position strings of X and Y into a table position in Pine Script v5 format.
+// @param X X-axis string: "Left", "Center", or "Right".
+// @param Y Y-axis string: "Top", "Middle", or "Bottom".
+// @returns Table location string in Pine Script v5 format.
+export boxLoc(string X, string Y) =>
+    loc = switch Y+X
+        "TopLeft"      => position.top_left
+        "TopCenter"    => position.top_center
+        "TopRight"     => position.top_right
+        "MiddleLeft"   => position.middle_left
+        "MiddleCenter" => position.middle_center
+        "MiddleRight"  => position.middle_right
+        "BottomLeft"   => position.bottom_left
+        "BottomCenter" => position.bottom_center
+        "BottomRight"  => position.bottom_right
+    loc
+
+
+// @function Performs bubble sort on a Forex Factory News array of all news from the same date, ordering them in ascending order based on the time of the day.
+// @param N Forex Factory News array.
+// @returns void
+export method bubbleSort_NewsTOD(News[] N) =>
+    if N.size()>2
+        for i=0 to N.size()-2
+            for j=0 to N.size()-i-2
+                if N.get(j)._t > N.get(j+1)._t
+                    temp=N.get(j)
+                    N.set(j,N.get(j+1))
+                    N.set(j+1,temp)
+
+
+// @function Performs bubble sort on a Forex Factory News array, ordering them in ascending order based on the time of the day, and date.
+// @param N Forex Factory News array.
+// @returns Sorted Forex Factory News array.
+export bubbleSort_News(News[] N) =>
+    sorted = array.new<News>()
+    temp   = array.new<News>()
+
+    date = ""
+    if N.size() > 0
+        for i=0 to N.size()-1
+            n=N.get(i)
+            if i==0
+                date:=n.dat
+                temp.push(n)
+            else
+                if date==n.dat
+                    temp.push(n)
+                else
+                    date:=n.dat
+                    temp.bubbleSort_NewsTOD()
+                    for j=0 to temp.size()-1
+                        sorted.push(temp.get(j))
+                    temp.clear()
+                    temp.push(n)
+
+    if temp.size()>0
+        temp.bubbleSort_NewsTOD()
+        for j=0 to temp.size()-1
+            sorted.push(temp.get(j))
+    sorted
+
+
+// @function Creates a Forex Factory News array containing the current week's Forex Factory News.
+// @param N Forex Factory News array containing this week's unfiltered Forex Factory News.
+// @param C Currency filter array (string array).
+// @param I Impact filter array (color array).
+// @returns Forex Factory News array containing the current week's Forex Factory News.
+export weekNews(News[] N, string[] C, color[] I) =>
+    W = array.new<News>()
+    if N.size()>0
+        for i=N.size()-1 to 0
+            n=N.get(i)
+            if C.indexof(n.cur)!=-1 and I.indexof(n.imp)!=-1
+                W.unshift(n)
+    W
+
+
+// @function Creates a Forex Factory News array containing the current day's Forex Factory News.
+// @param W Forex Factory News array containing this week's Forex Factory News.
+// @param D Forex Factory News array for the current day's Forex Factory News.
+// @param M Boolean that marks whether the current chart has a Day candle-switch at Midnight New York Time.
+// @returns Forex Factory News array containing the current day's Forex Factory News.
+export todayNews(News[] W, News[] D, bool M) =>
+    if W.size()>0
+        for i=0 to W.size()-1
+            n=W.get(i)
+            date=str.split(n.dat,"")
+            if date.size()>1
+                tmp=date.slice(3, date.size())
+                day=tmp.join()
+                if dayofmonth(time, "America/New_York")+(M?0:1)==str.tonumber(day)
+                    D.push(n)
+    D
+
+
+// @function Transposes the Time of the Day, and Date, in the Forex Factory News Table to a custom Timezone.
+// @param N Forex Factory News array.
+// @param TZH Custom Timezone hour.
+// @param TZM Custom Timezone minute.
+// @returns Reformatted Forex Factory News array.
+export adjustTimezone(News[] N, int TZH, int TZM) =>
+    tz = "UTC"+(TZH>0?"+":"-")+str.tostring(math.abs(TZH))+(TZM!=0?str.tostring(TZM):"")
+    if N.size()>0
+        for i=0 to N.size()-1
+            n=N.get(i)
+            tmstmp = n.tmst
+            tz_h   = str.tostring(hour(tmstmp,tz))
+            tz_m   = str.tostring(minute(tmstmp,tz))
+            n.dow := dow(str.tostring(dayofweek(tmstmp,tz)))
+            n.dat := MMM(month(tmstmp,tz))+" "+str.tostring(dayofmonth(tmstmp,tz))
+            n.tod := tz_h+":"+(tz_m=="0"?"00":tz_m)
+    N
+
+
+// @function Reformats the Time of the Day in the Forex Factory News Table to AM/PM format.
+// @param N Forex Factory News array.
+// @returns Reformatted Forex Factory News array.
+export NewsAMPM_TOD(News[] N) =>
+    if N.size()>0
+        for i=0 to N.size()-1
+            n=N.get(i)
+            tod = str.split(n.tod,":")
+            if tod.size()>1
+                h = int(str.tonumber(tod.get(0)))
+                if h < 12
+                    n.tod := n.tod+"am"
+                else
+                    n.tod := str.tostring(h-12==0?12:h-12)+":"+tod.get(1)+"pm"
+    N
+//#endregion
+
+
+//#region[User Input Filters]
+// @function Creates a filter array from the User's desired Forex Facory News to be shown based on Impact.
+// @param X Boolean - if True Holidays listed on Forex Factory will be shown.
+// @param L Boolean - if True Low Impact listed on Forex Factory News will be shown.
+// @param M Boolean - if True Medium Impact listed on Forex Factory News will be shown.
+// @param H Boolean - if True High Impact listed on Forex Factory News will be shown.
+// @returns Color array with the colors corresponding to the Forex Factory News to be shown.
+export impFilter(bool X, bool L, bool M, bool H) =>
+    I = array.new_color()
+    if X
+        I.push(color.white)
+    if L
+        I.push(color.yellow)
+    if M
+        I.push(color.orange)
+    if H
+        I.push(color.red)
+    I
+
+
+// @function Creates a filter array from the User's desired Forex Facory News to be shown based on Currency.
+// @param A Boolean - if True News related to the current Chart's symbol listed on Forex Factory will be shown.
+// @param C1 Boolean - if True News related to the Australian Dollar listed on Forex Factory will be shown.
+// @param C2 Boolean - if True News related to the Canadian Dollar listed on Forex Factory will be shown.
+// @param C3 Boolean - if True News related to the Swiss Franc listed on Forex Factory will be shown.
+// @param C4 Boolean - if True News related to the Chinese Yuan listed on Forex Factory will be shown.
+// @param C5 Boolean - if True News related to the Euro listed on Forex Factory will be shown.
+// @param C6 Boolean - if True News related to the British Pound listed on Forex Factory will be shown.
+// @param C7 Boolean - if True News related to the Japanese Yen listed on Forex Factory will be shown.
+// @param C8 Boolean - if True News related to the New Zealand Dollar listed on Forex Factory will be shown.
+// @param C9 Boolean - if True News related to the US Dollar listed on Forex Factory will be shown.
+// @returns String array with the currencies corresponding to the Forex Factory News to be shown.
+export curFilter(bool A, bool C1, bool C2, bool C3, bool C4, bool C5, bool C6, bool C7, bool C8, bool C9) =>
+    C = array.new_string()
+    if A
+        if not na(syminfo.basecurrency)
+            C.push(syminfo.basecurrency)
+        if not na(syminfo.currency)
+            C.push(syminfo.currency)
+    else
+        if C1
+            C.push("AUD")
+        if C2
+            C.push("CAD")
+        if C3
+            C.push("CHF")
+        if C4
+            C.push("CNY")
+        if C5
+            C.push("EUR")
+        if C6
+            C.push("GBP")
+        if C7
+            C.push("JPY")
+        if C8
+            C.push("NZD")
+        if C9
+            C.push("USD")
+    C
+//#endregion
+
+
+//#region[Forex Factory News On Chart]
+// @function Plots vertical lines where a Forex Factory News event will occur, or has already occurred.
+// @param N News-type array containing all the Forex Factory News.
+// @param T Transparency integer value (0-100) for the lines.
+// @param S Line style in Pine Script v5 format.
+// @returns void
+export FF_OnChartLine(News[] N, int T, string S) =>
+    tfms = timeframe.in_seconds(timeframe.period)*1000
+    lineColor = map.new<int, color>()
+    colors = array.new_color()
+    colors.push(color.white), colors.push(color.yellow), colors.push(color.orange), colors.push(color.red)
+    if N.size()>0
+        for i=N.size()-1 to 0
+            n=N.get(i)
+            adj = (n.tmst-time)%tfms!=0?n.tmst-tfms:n.tmst
+            if lineColor.contains(adj)
+                if colors.indexof(lineColor.get(adj))<colors.indexof(n.imp)
+                    lineColor.put(adj, n.imp)
+            else
+                lineColor.put(adj, n.imp)
+        for i=N.size()-1 to 0
+            n=N.get(i)
+            adj = (n.tmst-time)%tfms!=0?n.tmst-tfms:n.tmst
+            n.ln := line.new(adj, low, adj, high, xloc.bar_time, extend.both, color.new(lineColor.get(adj), T), style=S)
+
+
+// @function Updates a string Matrix containing the tooltips for Forex Factory News Event information for a given candle.
+// @param M String matrix.
+// @param P Position (row) of the Matrix to update based on the impact.
+// @param V information to push to the Matrix.
+// @returns void
+export method updateStringMatrix(matrix<string> M, int P, string V) =>
+    if M.rows()>P
+        _r = M.row(P)
+        for i=0 to _r.size()-1
+            if na(_r.get(i))
+                M.set(P, i, V)
+                break
+
+
+// @function Plots labels where a Forex Factory News has already occurred based on its/their impact.
+// @param N News-type array containing all the Forex Factory News.
+// @param Y String that gives direction on where to plot the label (options= "Above", "Below", "Auto").
+// @param S Label size in Pine Script v5 format.
+// @param O Show outline of labels?
+// @returns void
+export FF_OnChartLabel(News[] N, string Y, string S, bool O) =>
+    checked = array.new_int()
+    if N.size()>0
+        for i=0 to N.size()-1
+            n=N.get(i)
+            if n.tmst >= time and n.tmst < time_close
+                matrix<string> events = matrix.new<string>(4, 45, na)
+                draw = false
+                for k=0 to N.size()-1
+                    b=N.get(k)
+                    if checked.indexof(k)==-1 and (b.tmst >= time and b.tmst < time_close)
+                        draw := true
+                        checked.push(k)
+                        [imp, pos] = switch b.imp
+                            color.white  => ["⚪ ", 0]
+                            color.yellow => ["🟡 ", 1]
+                            color.orange => ["🟠 ", 2]
+                            color.red    => ["🔴 ", 3]
+                        if pos==0
+                            events.updateStringMatrix(0, imp+b.ttl+" ("+b.cur+")")
+                        if pos==1
+                            events.updateStringMatrix(1, imp+b.ttl+" ("+b.cur+")")
+                        if pos==2
+                            events.updateStringMatrix(2, imp+b.ttl+" ("+b.cur+")")
+                        if pos==3
+                            events.updateStringMatrix(3, imp+b.ttl+" ("+b.cur+")")
+                if draw
+                    txt="", _W=0, _Y=0, _O=0, _R=0
+                    for r=0 to events.rows()-1 
+                        a = events.row(r)
+                        if a.size()>0
+                            for e=0 to a.size()-1
+                                if na(a.get(e))
+                                    break
+                                else
+                                    _W := r==0 and _W==0 ? 1 : _W
+                                    _Y := r==1 and _Y==0 ? 1 : _Y
+                                    _O := r==2 and _O==0 ? 1 : _O
+                                    _R := r==3 and _R==0 ? 1 : _R
+                                    txt := a.get(e)+"\n"+txt
+                    L=_W+_Y+_O+_R
+                    side=Y=="Above"?false:Y=="Below"?true:open<close
+                    if L==0
+                        label.new(time, side?low:high, "●", xloc.bar_time, color=color.new(#000000, 100), size=S, style=side?label.style_label_up:label.style_label_down, textcolor=color.white, text_font_family=font.family_monospace, tooltip=O?na:txt)
+                        O?label.new(time, side?low:high, "◯", xloc.bar_time, color=color.new(#000000, 100), size=S, style=side?label.style_label_up:label.style_label_down, textcolor=color.new(chart.fg_color, 30), text_font_family=font.family_monospace, tooltip=txt):na
+                    else if L==1
+                        c = _W==1 ? color.white : _Y==1 ? color.yellow : _O==1 ? color.orange : color.red
+                        label.new(time, side?low:high, "●", xloc.bar_time, color=color.new(#000000, 100), size=S, style=side?label.style_label_up:label.style_label_down, textcolor=c, text_font_family=font.family_monospace, tooltip=O?na:txt)
+                        O?label.new(time, side?low:high, "◯", xloc.bar_time, color=color.new(#000000, 100), size=S, style=side?label.style_label_up:label.style_label_down, textcolor=color.new(chart.fg_color, 30), text_font_family=font.family_monospace, tooltip=txt):na
+                    else if L==2
+                        c1 = _W==1 ? color.white : _Y==1 ? color.yellow : _O==1 ? color.orange : color.red
+                        c2 = _W==1 and c1!=color.white ? color.white : _Y==1 and c1!=color.yellow ? color.yellow : _O==1 and c1!=color.orange ? color.orange : color.red
+                        label.new(time, side?low:high, "◐", xloc.bar_time, color=color.new(#000000, 100), size=S, style=side?label.style_label_up:label.style_label_down, textcolor=c1, text_font_family=font.family_monospace)
+                        label.new(time, side?low:high, "◑", xloc.bar_time, color=color.new(#000000, 100), size=S, style=side?label.style_label_up:label.style_label_down, textcolor=c2, text_font_family=font.family_monospace, tooltip=O?na:txt)
+                        O?label.new(time, side?low:high, "◯", xloc.bar_time, color=color.new(#000000, 100), size=S, style=side?label.style_label_up:label.style_label_down, textcolor=color.new(chart.fg_color, 30), text_font_family=font.family_monospace, tooltip=txt):na
+                    else if L==3
+                        c1 = _W==1 ? color.white : _Y==1 ? color.yellow : _O==1 ? color.orange : color.red
+                        c2 = _W==1 and c1!=color.white ? color.white : _Y==1 and c1!=color.yellow ? color.yellow : _O==1 and c1!=color.orange ? color.orange : color.red
+                        c3 = _W==1 and c1!=color.white and c2!=color.white ? color.white : _Y==1 and c1!=color.yellow and c2!=color.yellow ? color.yellow : _O==1 and c1!=color.orange and c2!=color.orange ? color.orange : color.red
+                        label.new(time, side?low:high, "◐", xloc.bar_time, color=color.new(#000000, 100), size=S, style=side?label.style_label_up:label.style_label_down, textcolor=color.yellow, text_font_family=font.family_monospace)
+                        label.new(time, side?low:high, "◑", xloc.bar_time, color=color.new(#000000, 100), size=S, style=side?label.style_label_up:label.style_label_down, textcolor=color.orange, text_font_family=font.family_monospace)
+                        label.new(time, side?low:high, "◓", xloc.bar_time, color=color.new(#000000, 100), size=S, style=side?label.style_label_up:label.style_label_down, textcolor=color.red   , text_font_family=font.family_monospace, tooltip=O?na:txt)
+                        O?label.new(time, side?low:high, "◯", xloc.bar_time, color=color.new(#000000, 100), size=S, style=side?label.style_label_up:label.style_label_down, textcolor=color.new(chart.fg_color, 30), text_font_family=font.family_monospace, tooltip=txt):na
+                    else if L==4
+                        label.new(time, side?low:high, "◐", xloc.bar_time, color=color.new(#000000, 100), size=S, style=side?label.style_label_up:label.style_label_down, textcolor=color.white , text_font_family=font.family_monospace)
+                        label.new(time, side?low:high, "◑", xloc.bar_time, color=color.new(#000000, 100), size=S, style=side?label.style_label_up:label.style_label_down, textcolor=color.yellow, text_font_family=font.family_monospace)
+                        label.new(time, side?low:high, "◓", xloc.bar_time, color=color.new(#000000, 100), size=S, style=side?label.style_label_up:label.style_label_down, textcolor=color.orange, text_font_family=font.family_monospace)
+                        label.new(time, side?low:high, "◔", xloc.bar_time, color=color.new(#000000, 100), size=S, style=side?label.style_label_up:label.style_label_down, textcolor=color.red   , text_font_family=font.family_monospace, tooltip=O?na:txt)
+                        O?label.new(time, side?low:high, "◯", xloc.bar_time, color=color.new(#000000, 100), size=S, style=side?label.style_label_up:label.style_label_down, textcolor=color.new(chart.fg_color, 30), text_font_family=font.family_monospace, tooltip=txt):na
+
+
+
+// @function Deletes Forex Factory News drawings which are ourside a specific Time window.
+// @param T Number of days input used for Forex Factory News drawings' history.
+// @param D Boolean that when true will only display Forex Factory News drawings of the current day.
+// @param W Boolean that when true will only display Forex Factory News drawings of the current week.
+// @param X String that gives direction on what lines to plot based on Time (options= "Future", "Both").
+// @returns void
+export historical(int T, bool D, bool W, string X) =>
+    var int daysLB    = na
+    var int newDay    = na
+    var int newWeek   = na
+    var int delimiter = na
+    daysLB    := time-(T*timeframe.in_seconds("D")*1000)
+    newDay    := timeframe.change("D") ? time : newDay
+    newWeek   := timeframe.change("W") ? time : newWeek
+    delimiter := if D
+        newDay
+    else if W
+        newWeek
+    else
+        daysLB
+
+    if not na(delimiter)
+        lines=line.all
+        if lines.size()>0
+            for i=0 to lines.size()-1
+                l=lines.get(i)
+                if l.get_x1()<delimiter
+                    l.delete()
+                if X=="Future"
+                    if l.get_x1()<=time
+                        l.delete()
+        labels=label.all
+        if labels.size()>0
+            for i=0 to labels.size()-1
+                l=labels.get(i)
+                if l.get_x()<delimiter
+                    l.delete()
+//#endregion
+
+
+//#region[Forex Factory News Table]
+// @function Creates a new Table object with parameters tailored to the Forex Factory News Table.
+// @param P Position string for the Table, in Pine Script v5 format.
+// @param B Border and frame color for the News Table.
+// @returns Empty Forex Factory News Table.
+export newTable(string P, color B=chart.fg_color) =>
+	table.new(P, 5, 1000, chart.bg_color, B, 1, B, 1)
+
+
+// @function Resets a Table object with parameters and headers tailored to the Forex Factory News Table.
+// @param P Position string for the Table, in Pine Script v5 format.
+// @param S Size string for the Table's text, in Pine Script v5 format.
+// @param B Border and frame color for the News Table.
+// @returns Empty Forex Factory News Table.
+export resetTable(string P, string S, color headTextC, color headBgC, color B) =>
+	_table = newTable(P, B)
+    _table.cell(0, 0, "Date"              , text_color=headTextC, text_size=size(S), bgcolor=headBgC, text_font_family=font.family_monospace)
+    _table.cell(1, 0, "Time"              , text_color=headTextC, text_size=size(S), bgcolor=headBgC, text_font_family=font.family_monospace)
+    _table.cell(2, 0, "Currency"          , text_color=headTextC, text_size=size(S), bgcolor=headBgC, text_font_family=font.family_monospace)
+    _table.cell(3, 0, "Impact"            , text_color=headTextC, text_size=size(S), bgcolor=headBgC, text_font_family=font.family_monospace)
+    _table.cell(4, 0, "Forex Factory News", text_color=headTextC, text_size=size(S), bgcolor=headBgC, text_font_family=font.family_monospace)
+	_table
+
+
+// @function Adds an event to the Forex Factory News Table.
+// @param N News-type object.
+// @param TBL Forex Factory News Table object to add the News to.
+// @param R Row to add the event to in the Forex Factory News Table.
+// @param S Size string for the event's text, in Pine Script v5 format.
+// @returns void
+export logNews(News N, table TBL, int R, string S, color rowTextC, color rowBgC) =>
+	TBL.cell(0, R, N.dow+" "+N.dat, text_color=rowTextC, bgcolor=rowBgC, text_size=size(S), text_font_family=font.family_monospace)
+    TBL.cell(1, R, N.tod          , text_color=rowTextC, bgcolor=rowBgC, text_size=size(S), text_font_family=font.family_monospace)
+    TBL.cell(2, R, N.cur          , text_color=rowTextC, bgcolor=rowBgC, text_size=size(S), text_font_family=font.family_monospace)
+    TBL.cell(3, R, "⬤"           , text_color=N.imp   , bgcolor=rowBgC, text_size=size(S), text_font_family=font.family_monospace)
+    TBL.cell(4, R, N.ttl          , text_color=rowTextC, bgcolor=rowBgC, text_size=size(S), text_font_family=font.family_monospace)
+
+
+// @function Creates the Forex Factory News Table.
+// @param N News-type array containing all the Forex Factory News.
+// @param C Currency filter array (string array).
+// @param I Impact filter array (color array).
+// @param P Position string for the Table, in Pine Script v5 format.
+// @param S Size string for the Table's text, in Pine Script v5 format.
+// @param B Border and frame color for the News Table.
+// @returns Forex Factory News Table.
+export FF_Table(News[] N, string P, string S, color headTextC, color headBgC, color rowTextC, color rowBgC, color B=chart.fg_color) =>
+	table _table = na
+	rows = 1
+    _table := resetTable(P, S, headTextC, headBgC, B)
+    if N.size()>0
+        start_d = 1
+        end_d   = 1
+        pDate = ""
+        start_t = 1
+        end_t   = 1
+        pTime = ""
+        for i=0 to N.size()-1
+            n=N.get(i)
+            logNews(n, _table, rows, S, rowTextC, rowBgC)
+            if i==0
+                pDate := n.dat
+                pTime := n.tod
+            else
+                if pDate==n.dat
+                    n.dow := ""
+                    n.dat := ""
+                    end_d   := rows
+                else
+                    pDate := n.dat
+                    if start_d!=end_d
+                        _table.merge_cells(0, start_d, 0, end_d)
+                    start_d := rows
+                    end_d   := rows
+                    if start_t!=end_t
+                        _table.merge_cells(1, start_t, 1, end_t)
+                    start_t := rows
+                    end_t   := rows
+                if pTime==n.tod
+                    n.tod := ""
+                    end_t   := rows
+                else
+                    pTime := n.tod
+                    if start_t!=end_t
+                        _table.merge_cells(1, start_t, 1, end_t)
+                    start_t := rows
+                    end_t   := rows
+            rows += 1
+        if not (start_d >= end_d)
+            _table.merge_cells(0, start_d, 0, end_d)
+        if not (start_t >= end_t)
+            _table.merge_cells(1, start_t, 1, end_t)
+            
+    if rows==1
+        _table.cell(0, rows, "No News", text_color=rowTextC, text_size=size(S), bgcolor=rowBgC, text_font_family=font.family_monospace)
+        _table.cell(1, rows, ""       , text_color=rowTextC, text_size=size(S), bgcolor=rowBgC, text_font_family=font.family_monospace)
+        _table.cell(2, rows, ""       , text_color=rowTextC, text_size=size(S), bgcolor=rowBgC, text_font_family=font.family_monospace)
+        _table.cell(3, rows, ""       , text_color=rowTextC, text_size=size(S), bgcolor=rowBgC, text_font_family=font.family_monospace)
+        _table.cell(4, rows, ""       , text_color=rowTextC, text_size=size(S), bgcolor=rowBgC, text_font_family=font.family_monospace)
+        _table.merge_cells(0, rows, 4, rows)
+        rows+=1
+
+    _table.cell(0, rows, "@toodegrees", text_color=headTextC, text_size=size(S), bgcolor=headBgC, text_font_family=font.family_monospace)
+    _table.cell(1, rows, ""           , text_color=headTextC, text_size=size(S), bgcolor=headBgC, text_font_family=font.family_monospace)
+    _table.cell(2, rows, ""           , text_color=headTextC, text_size=size(S), bgcolor=headBgC, text_font_family=font.family_monospace)
+    _table.cell(3, rows, ""           , text_color=headTextC, text_size=size(S), bgcolor=headBgC, text_font_family=font.family_monospace)
+    _table.cell(4, rows, ""           , text_color=headTextC, text_size=size(S), bgcolor=headBgC, text_font_family=font.family_monospace)
+    _table.merge_cells(0, rows, 4, rows)
+    _table
+
+
+// @function Shades Forex Factory News events in the Forex Factory News Table after they occur.
+// @param N News-type array containing all the Forex Factory News.
+// @param T Forex Facory News table object.
+// @param F Color used as shading once the Forex Factory News has occurred.
+// @param TZH Custom Timezone hour, if any.
+// @param TZM Custom Timezone minute, if any.
+// @param D Daily Forex Factory News flag.
+// @returns Forex Factory News Table.
+export timeline(News[] N, table T, color F, int TZH=na, int TZM=na, bool D=false) =>
+    events = array.new<News>()
+    tz = "America/New_York"
+    if not na(TZH)
+        tz := "UTC"+(TZH>0?"+":"-")+str.tostring(math.abs(TZH))+(TZM!=0?str.tostring(TZM):"")
+    tfms = timeframe.in_seconds(timeframe.period)*1000
+    if not D
+        if N.size()>0
+            for i=0 to N.size()-1
+                n=N.get(i)
+                events.push(n)
+    else
+        events := N.copy()
+    
+    if events.size()>0
+        dat = 1
+        for i=0 to events.size()-1
+            n=events.get(i)
+            if timenow>=n.tmst
+                T.cell_set_text_color(1, i+1, F)
+                T.cell_set_text_color(2, i+1, F)
+                T.cell_set_text_color(4, i+1, F)
+
+                if i!=events.size()-1 and not D
+                    p=events.get(i+1)
+                    if dayofmonth(n.tmst, tz)!=dayofmonth(p.tmst, tz)
+                        T.cell_set_text_color(0, dat, F)
+                        dat := i+2
+
+                if i==events.size()-1
+                    T.cell_set_text_color(0, dat, F)
+                    dat := i+1
+                    T.cell_set_text_color(0, dat, F)
+//#endregion

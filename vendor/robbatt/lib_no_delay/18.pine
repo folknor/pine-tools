@@ -1,0 +1,643 @@
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © robbatt
+
+//@version=6
+
+// @description This library contains modifications standard functions that return na before reaching the bar of their 'length' parameter. That is because they do not compromise speed at current time for correct results in the past. This is good for live trading in short timeframes but killing applications on Monthly / Weekly timeframes if instruments, like in crypto, do not have extensive history (why would you even trade the monthly on a meme coin ... not my decision). Anyway, for sake of giving you a perfect backtest ... there you go.
+library("lib_no_delay")
+import TradingView/ta/9
+
+//@description This function is for use during intrabar / live signal processing. It will return true only once (one tick) per bar, so alerts can be triggered accordingly and excessive signals and therefore shutdown of alerts are avoided. Be aware that bar realtime bars are processed tick by tick, wheres history bars only consider the closed state when the chart is plotted. Signals detected in realtime might disappear once the chart is reloaded. Same goes for Backtests, where bars have at least opening and closing tick data, but are still not comparable with realtime bars. Therefore backtesting strategies that are using this function is useless. Deep backtesting is better, but still data is missing, therefore don't expect results to be comparable with realtime performance.
+//@param condition a condition that should only return true once per bar, (e.g. ta.crossover(ema7, ema200))
+//@returns a tuple of [bool triggered_this_bar, bool triggered_this_tick], to allow for accurate plotting (triggered this bar) as well as alert triggering (triggered this tick).
+export get_signal_once_per_bar(bool condition) =>
+    varip signal_triggered = false
+    if barstate.isnew
+        signal_triggered := false
+    if not signal_triggered and condition
+        signal_triggered := true
+        [signal_triggered, true] // return signal
+    else
+        [signal_triggered, false] // return signal
+
+
+//@description The SMA function returns the moving average, that is the sum of last y values of x, divided by y. This adapted version extends ta.sma to start without delay at first bar and deliver usable data instead of na. 
+//@param source Series of values to process.
+//@param length Number of bars (length).
+//@returns Simple moving average of source for length bars back.
+export sma(float source, simple int length) =>
+	sma = ta.sma(source, length)
+	var sum = source
+	if bar_index+1 < length
+		sum += source
+		sma := sum / (bar_index+2)
+	sma
+	
+//@description The SMA function returns the moving average, that is the sum of last y values of x, divided by y. This adapted version extends ta.ema to start without delay at first bar and deliver usable data instead of na (replaced by official ta.ema2()). 
+//@param source Series of values to process.
+//@param length Number of bars (length).
+//@returns (float) The exponentially weighted moving average of the source.
+export ema(float source, float length) =>
+	ta.ema2(source, length)
+
+
+//@description Moving average used in RSI. It is the exponentially weighted moving average with alpha = 1 / length. This adapted version extends ta.rma to start without delay at first bar and deliver usable data instead of na (below length it is a SMA). 
+//@param source Series of values to process.
+//@param length Number of bars (length).
+//@returns Exponential moving average of source with alpha = 1 / length.
+export rma(float source, simple int length) =>
+	rma = ta.rma(source, length)
+	if bar_index < length
+		rma := sma(source, length)
+	rma
+
+//@function The wma function returns weighted moving average of source for length bars back. In wma weighting factors decrease in arithmetical progression. This adapted version extends ta.wma to start without delay at first bar and deliver usable data instead of na. 
+//@param source Series of values to process.
+//@param length Number of bars (length).
+//@returns Weighted moving average of source for length bars back.
+export wma(float source, simple int length) =>
+	wma = ta.wma(source, math.max(1,length))
+	if bar_index < length
+		idx = bar_index + 1
+		weightSum = idx * (idx + 1) / 2
+		var float wma_recursive = source
+		wma_recursive := ((source * idx) + (wma_recursive * (weightSum - idx))) / weightSum
+		wma := wma_recursive
+	wma
+
+//@function The vwma function returns volume-weighted moving average of source for length bars back. It is the same as: sma(source * volume, length) / sma(volume, length). This adapted version extends ta.wma to start without delay at first bar and deliver usable data instead of na. 
+//@param source Series of values to process.
+//@param length Number of bars (length).
+//@returns Volume-weighted moving average of source for length bars back.
+export vwma(float source, simple int length) =>
+	vwma = ta.vwma(source, length)
+	if bar_index < length
+		vwma := sma(source * volume, length) / sma(volume, length)
+	vwma
+
+//@function Function atr (average true range) returns the RMA of true range. True range is max(high - low, abs(high - close[1]), abs(low - close[1])). This adapted version extends ta.atr to start without delay at first bar and deliver usable data instead of na by averaging ta.tr(true) via manual SMA. 
+//@param length Number of bars back (length).
+//@returns Average true range.
+export atr(simple int length) =>
+	float atr = ta.atr(length)
+	var sum = 0.0
+	if bar_index < length // or na(atr)
+		sum += ta.tr(true)
+		atr := sum / (bar_index+1) // using SMA instead of RMA for the first 'length' bars until RMA can be formed
+	atr
+
+//@function The hma function returns the Hull Moving Average.
+//@param source Series of values to process.
+//@param length Number of bars back (length).
+export hma(float source, simple int length) =>
+	float hma = ta.hma(source, length)
+	if bar_index < length
+		hma := wma(2 * wma(source, length / 2) - wma(source, length), math.round(math.sqrt(length)))
+		if na(hma)
+			hma := sma(source,length)
+	hma
+
+//@function The ehma function returns the Exponential Hull Moving Average.
+//@param source Series of values to process.
+//@param length Number of bars back (length).
+export ehma(float source, simple int length) =>
+	float ehma = ta.ema(2 * ta.ema(source, math.max(1,length/2)) - ta.ema(source, length), math.round(math.sqrt(length)))
+	if bar_index < length
+		ehma := ema(2 * ema(source, math.max(1,length / 2)) - ema(source, length), math.round(math.sqrt(length)))
+		if na(ehma)
+			ehma := hma(source,length)
+	ehma
+
+//@function The thma function returns the Triple Exponential Hull Moving Average.
+//@param source Series of values to process.
+//@param length Number of bars back (length).
+export thma(float source, simple int length) =>
+	float thma = ta.wma(ta.wma(source, math.max(1,length / 6)) * 3 - ta.wma(source, math.max(1,length / 4)) - ta.wma(source, math.max(1,length / 2)), math.max(1,length / 2))
+	if bar_index < length
+		thma := wma(wma(source, length / 6) * 3 - wma(source, length / 4) - wma(source, length / 2), length / 2)
+		if na(thma)
+			thma := ehma(source, length)
+	thma
+
+
+//@function Relative strength index. It is calculated using the ta.rma() of upward and downward changes of source over the last length bars. This adapted version extends ta.rsi to start without delay at first bar and deliver usable data instead of na. 
+//@param source Series of values to process.
+//@param length Number of bars back (length).
+//@returns Relative Strength Index.
+export rsi(float source, simple int length) =>
+	float rsi = ta.rsi(source, length)
+	if bar_index < length
+		u = math.max(source - nz(source[1], source), 0) // upward ta.change
+    	d = math.max(nz(source[1], source) - source, 0) // downward ta.change
+		rs = rma(u, length) / rma(d, length)
+    	rsi := 100 - 100 / (1 + rs)
+	rsi
+
+		
+//@function Standard deviation. It is calculated using the ta.stdev(). This adapted version extends ta.stdev to start without delay at first bar and deliver usable data instead of na. This fast version is avoiding internal loops with an iterative algorithm. It yields the same results as stdev
+//@param source Series of values to process.
+//@param length Number of bars back (length).
+//@returns Standard deviation
+export stdev_fast(float src, simple int length) =>
+
+	var float rolling_sum = 0.0
+	var float rolling_sum_squares = 0.0
+	var float mean = na
+	var float variance = na
+	var float stdev = na
+
+	// Manage rolling window
+	if bar_index >= length
+		// Get the oldest value in the window
+		old_value = src[length]
+		
+		// Update rolling sums
+		rolling_sum 		+= src 				- old_value
+		rolling_sum_squares += math.pow(src, 2) - math.pow(old_value, 2)
+		
+		// Compute mean and variance
+		mean 	 := rolling_sum / length
+		variance := (rolling_sum_squares / length) - math.pow(mean, 2)
+
+		// Avoid small numerical issues
+		stdev := variance > 0 ? math.sqrt(variance) : 0
+	else
+		// Initialize on the first `length` bars
+		rolling_sum 		+= src
+		rolling_sum_squares += math.pow(src, 2)
+
+		mean 	 := rolling_sum / (bar_index + 1)
+		variance := (rolling_sum_squares / (bar_index + 1)) - math.pow(mean, 2)
+
+		// Avoid small numerical issues
+		stdev := variance > 0 ? math.sqrt(variance) : 0
+
+	stdev
+
+//@function Standard deviation. It is calculated using the ta.stdev(). This adapted version extends ta.stdev to start without delay at first bar and deliver usable data instead of na. 
+//@param source Series of values to process.
+//@param length Number of bars back (length).
+//@returns Standard deviation
+export stdev(float source, simple int length) =>
+	float stdev = ta.stdev(source, length)
+	if bar_index < length
+		stdev := stdev_fast(source, length)
+	stdev
+
+export enum MovingAverage
+	SMA = 'SMA (Simple)'
+	EMA = 'EMA (Exponential)'
+	RMA = 'RMA (Exponentially weighed)'
+	WMA = 'WMA (Weighed)'
+	VWMA = 'VWMA (Volume weighed)'
+	HMA = 'HMA (Hull)'
+	EHMA = 'EHMA (Exponential Hull)'
+	THMA = 'THMA (Triple Exponential Hull)'
+	
+//@function Common Moving Average Selection. This function uses only adapted no-delay versions that start without delay at first bar and deliver usable data instead of na. 
+//@param select_ma function selector, one of SMA/EMA/RMA/WMA/VWMA/HMA/EHMA/THMA
+//@param source Series of values to process.
+//@param length Number of bars back (length).
+//@returns selected Moving Average of source
+export get_ma(simple MovingAverage select_ma = MovingAverage.SMA, float source, simple int length) =>
+	switch select_ma
+		MovingAverage.EMA  => ema(source, length)
+		MovingAverage.RMA  => rma(source, length)
+		MovingAverage.WMA  => wma(source, length)
+		MovingAverage.VWMA => vwma(source, length)
+		MovingAverage.HMA  => hma(source, length)
+		MovingAverage.EHMA => ehma(source, length)
+		MovingAverage.THMA => thma(source, length)
+		=> sma(source, length)
+
+//@function Bollinger Bands. A Bollinger Band is a technical analysis tool defined by a set of lines plotted two standard deviations (positively and negatively) away from a simple moving average (SMA) of the security's price, but can be adjusted to user preferences. This adapted version extends ta.stdev to start without delay at first bar and deliver usable data instead of na. 
+//@param source Series of values to process.
+//@param length Number of bars back (length).
+//@param mult Standard deviation factor.
+//@param select_ma custom Moving Average selector for BB base, one of SMA/EMA/RMA/WMA/VWMA
+//@returns Standard deviation
+export bb(float source, simple int length, float mult, simple MovingAverage select_ma) =>
+	base = get_ma(select_ma, source, length)
+	dev = mult * stdev_fast(source, length)
+	[base, base + dev, base - dev]
+
+//@function Bollinger Bands. A Bollinger Band is a technical analysis tool defined by a set of lines plotted two standard deviations (positively and negatively) away from a simple moving average (SMA) of the security's price, but can be adjusted to user preferences. This adapted version extends ta.stdev to start without delay at first bar and deliver usable data instead of na. 
+//@param source Series of values to process.
+//@param length Number of bars back (length).
+//@param mult Standard deviation factor.
+//@returns Standard deviation
+export bb(float source, simple int length, float mult) =>
+	[bb, upper, lower] = ta.bb(source, length, mult)
+	if bar_index < length
+		bb := sma(source, length)
+		dev = mult * stdev_fast(source, length)
+		upper := bb + dev
+		lower := bb - dev
+
+    [bb, upper, lower]
+
+//@function MACD (moving average convergence/divergence). It is supposed to reveal changes in the strength, direction, momentum, and duration of a trend in a stock's price.\n\nReturns\nTuple of three MACD series: MACD line, signal line and histogram line. This adapted version extends ta.macd to start without delay at first bar and deliver usable data instead of na. It also allows to use custom moving average algorithms
+//@param source	(simple int) optional
+//@param fast	(simple int) optional
+//@param slow	(simple int) optional
+//@param signal	(simple int) optional
+//@param osc_ma	(simple MovingAverage) optional select a custom function for the MACD calculation
+//@param sig_ma	(simple MovingAverage) optional select a custom function for the MACD signal calculation
+export macd_custom(series float source = close, simple int fast = 12, simple int slow = 26, simple int signal = 9, simple MovingAverage osc_ma = MovingAverage.EMA, simple MovingAverage sig_ma = MovingAverage.EMA) =>
+	fast_ma = get_ma(osc_ma, source, fast)
+	slow_ma = get_ma(osc_ma, source, slow)
+	macd = fast_ma - slow_ma
+	sig = get_ma(sig_ma, macd, signal)
+	hist = macd - sig
+	[macd, sig, hist]
+
+// fixed ema, saves 3 switch blocks for the default macd()
+macd_custom_ema(series float source = close, simple int fast = 12, simple int slow = 26, simple int signal = 9) =>
+	fast_ma = ema(source, fast) 
+	slow_ma = ema(source, slow)
+	macd = fast_ma - slow_ma
+	sig = ema(macd, signal)
+	hist = macd - sig
+	[macd, sig, hist]
+
+//@function MACD (moving average convergence/divergence). It is supposed to reveal changes in the strength, direction, momentum, and duration of a trend in a stock's price.\n\nReturns\nTuple of three MACD series: MACD line, signal line and histogram line. This adapted version extends ta.macd to start without delay at first bar and deliver usable data instead of na. 
+//@param source	(simple int) optional
+//@param fast	(simple int) optional
+//@param slow	(simple int) optional
+//@param signal	(simple int) optional
+//@param osc_ma	(simple MovingAverage) optional select a custom function for the MACD calculation
+//@param sig_ma	(simple MovingAverage) optional select a custom function for the MACD signal calculation
+export macd(series float source = close, simple int fast = 12, simple int slow = 26, simple int signal = 9) =>
+	[macd, sig, hist] = ta.macd(source, fast, slow, signal)
+	var need_custom = true
+	if need_custom and bar_index < math.max(fast, slow, signal)		
+		[macd_alt, sig_alt, hist_alt] = macd_custom_ema(source, fast, slow, signal)
+	else
+		if need_custom
+			need_custom := false // avoid math.max calculation on following executions (if condition left to right evaluation shortcut)
+		[macd, sig, hist]
+
+
+//@function Stochastic. It is calculated by a formula: 100 * (close - lowest(low, length)) / (highest(high, length) - lowest(low, length)). This adapted version extends ta.stoch to start without delay at first bar and deliver usable data instead of na. 
+export stoch(float source, float h, float l, int length) =>
+	stoch = ta.stoch(source, h, l, length)
+	if bar_index < length
+		var lowest = l
+		var highest = h
+		if l < lowest
+			lowest := l
+		if h > highest
+			highest := h
+
+		stoch := nz(100 * (source - lowest) / (highest - lowest) , 1)
+	stoch
+
+// @function      Calculates the value of the Schaff Trend Cycle indicator. This adapted version extends ta.stc to start without delay at first bar and deliver usable data instead of na. 
+// @param source  (series int/float) optional Series of values to process. (default: close)
+// @param fast    (simple int) optional Length for the MACD fast smoothing parameter calculation. (default: 26)
+// @param slow    (simple int) optional Length for the MACD slow smoothing parameter calculation. (default: 50)
+// @param cycle   (simple int) optional Number of bars for the Stochastic values (length). (default: 12)
+// @param d1      (simple int) optional Length for the initial %D smoothing parameter calculation. (default: 3)
+// @param d2      (simple int) optional Length for the final %D smoothing parameter calculation. (default: 3)
+// @returns       (float) The oscillator value. 
+export stc(float source = close, simple int fast = 26, simple int slow = 50, simple int cycle = 12, simple int d1 = 3, simple int d2 = 3) => 
+    float macd   = ema(source, fast) - ema(source, slow)
+    float k      = stoch(macd, macd, macd, cycle)
+    float d      = ema(k, d1)
+    float kd     = stoch(d, d, d, cycle)
+    float stc    = ema(kd, d2)
+    stc
+
+// STC
+//@function
+//Returns the Schaff Trend Cycle (STC) (similar to MACD, but faster). This adapted version extends ta.stc to start without delay at first bar and deliver usable data instead of na. 
+//@param source (series int/float) optional allows to calculate STC for another symbol or timeframe by passing its close series (obtain with request.security) (default: close)
+//@param fast	(simple int) optional fast moving average length (default: 23)
+//@param slow	(simple int) optional slow moving average length (default: 50)
+//@param cycle	(simple int) optional stochastic length (default: 10)
+//@param scale  (simple float) optional if you want to tweak the speed the trend changes. (default: 0.5)
+//@returns float stc
+export stc_fast(float source = close, simple int fast = 23, simple int slow = 50, simple int cycle = 10, simple float scale = 0.5) => 
+    
+	float macd    = ema(source, fast) - ema(source, slow)    
+    float K       = stoch(macd, macd, macd, cycle) // due to ND.ema, macd will never be na and does not have to run through nz(fixnan(K))
+
+    var float D1  = K
+    D1 		 	 := D1 + scale * (K - D1)  // simplified instead of using another ema(K, 2) (with custom scaling)
+
+    float D2      = stoch(D1, D1, D1, cycle)
+	
+    var float STC = D2
+    STC 		 := STC + scale * (D2 - STC)  // simplified instead of using another ema(D2, 2) (with custom scaling)
+    STC
+
+//@function The dmi function returns the directional movement index (DMI). This adapted version extends ta.dmi to start without delay at first bar and deliver usable data instead of na (will converge with builtin version at difference of max 0.1 amongst all values).  
+//@param di_length lookback period for the average true range (ATR) for comparison with the current true range (TR) to calculate the directional index (DI)
+//@param adx_smoothing smoothing distance for the average directional index (ADX)
+//@returns Tuple of three DMI series: Positive Directional Movement (+DI), Negative Directional Movement (-DI) and Average Directional Movement Index (ADX).
+export dmi(simple int di_length = 17, simple int adx_smoothing = 14) =>
+	[plus, minus, adx] = ta.dmi(di_length, adx_smoothing)
+	var converged = false
+	
+	if not converged
+		up 		     =  ta.change(high)
+		down  	     = -ta.change(low) 
+		plusDM 	     = na(up)	? (high - hl2)/2 : up > down and up   > 0 ? up   : 0
+		minusDM      = na(down)	? (hl2  - low)/2 : down > up and down > 0 ? down : 0
+		atr		     = atr(di_length)
+		plus_alt     = 100 * rma(plusDM, di_length) / atr
+		minus_alt    = 100 * rma(minusDM, di_length) / atr
+   
+		sum 	     = plus_alt + minus_alt
+		adx_alt 	 = 100 * rma(math.abs(plus_alt - minus_alt) / (sum == 0 ? 1 : sum), adx_smoothing)
+		converged 	:= math.abs(plus_alt - plus) < 0.1 and math.abs(minus_alt - minus) < 0.1 and math.abs(adx_alt - adx) < 0.1
+
+		[plus_alt, minus_alt, adx_alt]
+	else
+		[plus, minus, adx]
+
+
+//@function The dvi function returns the directional volume index (DVI). This adapted version uses volume as base of the directional index (DI), unlike the Directional Movement Index (DMI) which uses price.
+//@param di_length lookback period for the average volume for comparison with the directional volume (DV) to calculate the directional volume index (DVI)
+//@param advx_smoothing smoothing distance for the average directional volume index (ADVX)
+//@returns Tuple of three DVI series: Positive Directional Movement (+DVI), Negative Directional Movement (-DVI) and Average Directional Movement Index (ADVX).
+export dvi(simple int di_length = 14, simple int advx_smoothing = 14) =>
+
+	var float last_up   = 0 // volume of last bullish candle
+	var float last_down = 0 // volume of last bearish candle
+
+	green = close >= open
+	up    = green ? volume - last_up : 0
+	down  = green ? 0 : volume - last_down
+
+	if green
+		last_up := volume
+	else
+		last_down := volume
+
+	plusDV  = na(up)   ? na : (up   > 0 ? up   : 0)
+	minusDV = na(down) ? na : (down > 0 ? down : 0)
+
+	avg     = sma(volume, di_length)
+	plus    = 100 * sma(plusDV , di_length) / avg
+	minus   = 100 * sma(minusDV, di_length) / avg
+	sum     = plus + minus
+	advx    = 100 * sma(math.abs(plus - minus) / (sum == 0 ? 1 : sum), advx_smoothing)
+
+	[plus, minus, advx]
+
+
+
+//@function Measure of difference (averaged) between the series and it's ta.sma. This adapted version extends ta.dev to start without delay at first bar and deliver usable data instead of na. 
+//@param source Series of values to process.
+//@param length Number of bars back (length).
+//@returns Deviation of source for length bars back.
+export dev(float source, simple int length) =>
+	dev = ta.dev(source, length)
+	if na(dev) // bar_index < length
+		mean       = sma(source, length)
+		local_dev  = math.abs(source - mean)
+		dev 	  := sma(local_dev, length)
+	dev
+
+//@function Linear regression curve. A line that best fits the prices specified over a user-defined time period. It is calculated using the least squares method. The result of this function is calculated using the formula: linreg = intercept + slope * (length - 1 - offset), where intercept and slope are the values calculated with the least squares method on source series. This adapted version extends ta.linreg to start without delay at first bar and deliver usable data instead of na. 
+//@param source Series of values to process.
+//@param length Number of bars back (length)
+//@param offset Offset.
+//@returns a tuple of [regression_line, slope, intercept] (for a straight regression line over a measured amount of data (bars) use x1: bar_index[length+offset] y1: intercept + slope * bar_index[length+offset] x2: bar_index[offset] y2: regression_line)
+export linreg_values(float source, simple int length, simple int offset = 0) =>
+	// Persistent variables for rolling sums
+	var float sum_x = 0
+	var float sum_y = 0
+	var float sum_xy = 0
+	var float sum_xx = 0
+	var int count = 0
+
+	prod_xy = bar_index * source
+	prod_xx = bar_index * bar_index
+
+	if count >= length
+		// after length amount of candles are available, start deleting old values
+		sum_x  += bar_index - bar_index[length]
+		sum_y  += source 	- source[length]
+		sum_xy += prod_xy 	- prod_xy[length]
+		sum_xx += prod_xx 	- prod_xx[length]
+		count  := length
+	else
+		// before length amount of candles just use available data
+		sum_x  += bar_index
+		sum_y  += source
+		sum_xy += prod_xy
+		sum_xx += prod_xx
+		count  += 1
+
+	// Calculate slope, intercept and regression_line
+	var float slope 		  = 0
+	var float intercept 	  = sum_y / count
+	var float regression_line = intercept
+	if count >= 2
+		slope 			:= (count * sum_xy - sum_x * sum_y) / (count * sum_xx - sum_x * sum_x)
+		intercept 		:= (sum_y - slope * sum_x) / count
+		regression_line := slope * bar_index + intercept
+	
+	[regression_line[offset], slope[offset], intercept[offset]]
+
+//@function Linear regression curve. A line that best fits the prices specified over a user-defined time period. It is calculated using the least squares method. The result of this function is calculated using the formula: linreg = intercept + slope * (length - 1 - offset), where intercept and slope are the values calculated with the least squares method on source series. This adapted version extends ta.linreg to start without delay at first bar and deliver usable data instead of na. 
+//@param source Series of values to process.
+//@param length Number of bars back (length).
+//@param offset Offset. (according to default implementation this using offset bar_indexes for current value calculation ... not sure that's intended, expected behavior would be an x shift so I can use it to calculate a regression line for a past range of candles -> use linreg_values for that)
+//@returns The regression line (to receive slope and intercept values as well, call linreg_values)
+export linreg(float source, simple int length, simple int offset) =>
+	linreg = ta.linreg(source, length, offset)
+
+	if bar_index < length
+		// Persistent variables for rolling sums
+		var float sum_x = 0
+		var float sum_y = 0
+		var float sum_xy = 0
+		var float sum_xx = 0
+		
+		// before length amount of candles just use available data
+		sum_x  += bar_index
+		sum_y  += source
+		sum_xy += bar_index * source
+		sum_xx += bar_index * bar_index
+		count   = bar_index + 1
+
+		// Calculate slope, intercept and regression_line
+		var float slope 		  = 0
+		var float intercept 	  = sum_y / count
+		var float regression_line = intercept
+		if count >= 2
+			slope 			:= (count * sum_xy - sum_x * sum_y) / (count * sum_xx - sum_x * sum_x)
+			intercept 		:= (sum_y - slope * sum_x) / count
+			regression_line := slope * nz(bar_index[offset], -1/(offset - bar_index + 1)) + intercept
+			
+		linreg := regression_line
+		
+	linreg
+
+///////////////////////////////////////////////////////////////////
+//								DEMO
+///////////////////////////////////////////////////////////////////
+var int length = input.int(50, 'length (common)')
+
+bool show_sma = input.bool(true, 'show SMA')
+plot(not show_sma ? na : sma(close, length), 'SMA 50 (no delay)', force_overlay = true)
+plot(not show_sma ? na : ta.sma(close, length), 'SMA 50 (default)', color.white, force_overlay = true)
+
+bool show_ema = input.bool(false, 'show EMA')
+plot(not show_ema ? na : ema(close, length), 'EMA 50 (no delay)', force_overlay = true)
+plot(not show_ema ? na : ta.ema(close, length), 'EMA 50 (default)', color.red, force_overlay = true)
+plot(not show_ema ? na : ta.ema2(close, length), 'EMA2 50 (default)', color.orange, force_overlay = true)
+
+bool show_rma = input.bool(false, 'show RMA')
+plot(not show_rma ? na : rma(close, length), 'RMA 50 (no delay)', color.maroon, force_overlay = true)
+plot(not show_rma ? na : ta.rma(close, length), 'RMA 50 (default)', color.fuchsia, force_overlay = true)
+
+bool show_wma = input.bool(false, 'show WMA')
+plot(not show_wma ? na : wma(close, length), 'WMA 50 (no delay)', color.blue, force_overlay = true)
+plot(not show_wma ? na : ta.wma(close, length), 'WMA 50 (default)', color.teal, force_overlay = true)
+
+bool show_vwma = input.bool(false, 'show VWMA')
+plot(not show_vwma ? na : vwma(close, length), 'VWMA 50 (no delay)', #061994, force_overlay = true)
+plot(not show_vwma ? na : ta.vwma(close, length), 'VWMA 50 (default)', #0df2b9, force_overlay = true)
+
+bool show_hma = input.bool(false, 'show HMA')
+plot(not show_hma ? na : hma(close, length), 'HMA 50 (no delay)', #f60896, force_overlay = true)
+plot(not show_hma ? na : ta.hma(close, length), 'HMA 50 (default)', #69038b, force_overlay = true)
+
+bool show_ehma = input.bool(false, 'show EHMA')
+plot(not show_ehma ? na : ehma(close, length), 'EHMA 50 (no delay)', #b905fb, force_overlay = true)
+
+bool show_thma = input.bool(false, 'show THMA')
+plot(not show_thma ? na : thma(close, length), 'THMA 50 (no delay)', #f805fc, force_overlay = true)
+
+bool show_atr = input.bool(false, 'show ATR')
+// plot(not show_atr ? na : ta.tr(true), 'TR (true) (no delay)', color.blue)
+// plot(not show_atr ? na : ta.tr(false), 'TR (false) (no delay)', color.aqua)
+plot(not show_atr ? na : atr(length), 'ATR 50 (no delay)', color.red)
+plot(not show_atr ? na : ta.atr(length), 'ATR 50 (default)', color.yellow)
+
+bool show_rsi = input.bool(true, 'show RSI')
+plot(not show_rsi ? na : rsi(close, length), 'RSI (close) (no delay)', color.purple)
+plot(not show_rsi ? na : ta.rsi(close, length), 'RSI (close) (default)', color.olive)
+
+bool show_dev = input.bool(false, 'show dev')
+plot(not show_dev ? na : dev(close, length), 'DEV (close) (no delay)', #287513)
+plot(not show_dev ? na : ta.dev(close, length), 'DEV (close) (default)', #19d919)
+
+bool show_stdev = input.bool(false, 'show stdev')
+plot(not show_stdev ? na : stdev(close, length), 'STDEV (close) (no delay)', color.navy)
+plot(not show_stdev ? na : stdev_fast(close, length), 'STDEV fast (close) (no delay)', color.blue)
+plot(not show_stdev ? na : ta.stdev(close, length), 'STDEV (close) (default)', color.aqua)
+
+bool show_bb = input.bool(false, 'show BB')
+[bb ,upper ,lower ] = bb(close, length, 2)
+plot(not show_bb ? na : bb   , 'BB (bb) (no delay)', #227825, force_overlay = true)
+plot(not show_bb ? na : upper, 'BB (upper) (no delay)', #227825, force_overlay = true)
+plot(not show_bb ? na : lower, 'BB (lower) (no delay)', #227825, force_overlay = true)
+
+[bbd,upperd,lowerd] = ta.bb(close, length, 2)
+plot(not show_bb ? na : bbd   , 'BB (bb) (default)', color.lime, force_overlay = true)
+plot(not show_bb ? na : upperd, 'BB (upper) (default)', color.lime, force_overlay = true)
+plot(not show_bb ? na : lowerd, 'BB (lower) (default)', color.lime, force_overlay = true)
+
+bool show_bb_ema = input.bool(false, 'show BB (custom MA)', inline = 'bb')
+MovingAverage custom_bb_ma = input.enum(MovingAverage.EMA, 'MovingAverage', inline = 'bb', display = display.none)
+[bbe,uppere,lowere] = bb(close, length, 2, custom_bb_ma)
+plot(not show_bb_ema ? na : bbe   , 'BB-EMA (bb) (no delay)', #c0cc11, force_overlay = true)
+plot(not show_bb_ema ? na : uppere, 'BB-EMA (upper) (no delay)', #c0cc11, force_overlay = true)
+plot(not show_bb_ema ? na : lowere, 'BB-EMA (lower) (no delay)', #c0cc11, force_overlay = true)
+
+bool show_macd = input.bool(false, 'show MACD')
+[macd,macd_signal,macd_hist] = ta.macd(close, length / 2, length, 9)
+plot(not show_macd ? na : macd       , 'MACD (macd) (default)', #4028aa)
+plot(not show_macd ? na : macd_signal, 'MACD (signal) (default)', #ce800c)
+plot(not show_macd ? na : macd_hist  , 'MACD (hist) (default)', #838383, style = plot.style_histogram)
+[macd_nd,macd_nd_signal,macd_nd_hist] = macd_custom(close, length / 2, length, 9)
+plot(not show_macd ? na : macd_nd       , 'MACD (macd) (no delay)', color.blue)
+plot(not show_macd ? na : macd_nd_signal, 'MACD (signal) (no delay)', color.orange)
+plot(not show_macd ? na : macd_nd_hist  , 'MACD (hist) (no delay)', color.white, style = plot.style_histogram)
+
+bool show_macd_custom = input.bool(false, 'show MACD (custom MA)', inline = 'macd')
+MovingAverage macd_osc_ma = input.enum(MovingAverage.EMA, 'Oscillator MA', inline = 'macd', display = display.none)
+MovingAverage macd_signal_ma = input.enum(MovingAverage.EMA, 'Signal MA', inline = 'macd', display = display.none)
+int macd_signal_smooth = input.int(9, 'Smooth', minval = 1, inline = 'macd', display = display.none)
+[macd_c,macd_c_signal,macd_c_hist] = macd_custom(close, length / 2, length, macd_signal_smooth, macd_osc_ma, macd_signal_ma)
+plot(not show_macd_custom ? na : macd_c       , 'MACD (macd) (custom MA)', color.aqua)
+plot(not show_macd_custom ? na : macd_c_signal, 'MACD (signal) (custom MA)', color.yellow)
+plot(not show_macd_custom ? na : macd_c_hist  , 'MACD (hist) (custom MA)', #98fc8b, style = plot.style_histogram)
+
+bool show_stc = input.bool(false, 'show STC')
+stc_stochLen=input.int(12,"Stoch", inline = 'stc', display = display.none)
+stc_multiplicator=input.float(0.5, "Multipl. (fast)", step = 0.1, inline = 'stc', display = display.none) 
+stc_d1=input.int(3, "D1 len (default)", inline = 'stc', display = display.none) 
+stc_d2=input.int(3, "D2 len (default)", inline = 'stc', display = display.none) 
+stc_default = ta.stc(close, length / 2, length, stc_stochLen, stc_d1, stc_d2)
+stc_fast = stc_fast(close, length / 2, length, stc_stochLen, stc_multiplicator)
+stc = stc(close, length / 2, length, stc_stochLen, stc_d1, stc_d2)
+plot(not show_stc ? na : stc_default, 'STC (default)' , color.blue)
+plot(not show_stc ? na : stc        , 'STC (no delay)', color.red)
+plot(not show_stc ? na : stc_fast   , 'STC (fast)'    , color.green)
+
+bool show_dmi = input.bool(false, 'show ADX/DI+/DI-')
+[di_plus_nd, di_minus_nd, adx_nd] = dmi(length, length)
+plot(show_dmi ? adx_nd	 	: na , "ADX (no delay)", #ae2f2f)
+plot(show_dmi ? di_plus_nd 	: na , "DI+ (no delay)", #104978)
+plot(show_dmi ? di_minus_nd	: na , "DI- (no delay)", #9c6716)
+[di_plus, di_minus, adx] = ta.dmi(length, length)
+plot(show_dmi ? adx	 		: na , "ADX"		   , color.red   )
+plot(show_dmi ? di_plus 	: na , "DI+"		   , color.blue  )
+plot(show_dmi ? di_minus	: na , "DI-"		   , color.orange)
+
+bool show_dvi = input.bool(false, 'show ADVX/DVI+/DVI-')
+[dvi_plus, dvi_minus, advx] = dvi(length, length)
+plot(show_dvi ? advx 		: na , "ADVX (no delay)", #6a18ac)
+plot(show_dvi ? dvi_plus 	: na , "DVI+ (no delay)", #1b65ba)
+plot(show_dvi ? dvi_minus 	: na , "DVI- (no delay)", #be411b)
+
+/////// linear regression example ////////
+bool show_linreg = input.bool(false, 'show linear regression')
+[regression_line , slope , intercept ] = linreg_values(close, length, 0)
+[regression_line5, slope5, intercept5] = linreg_values(close, length, 5)
+regression_line3 = linreg(close, length, 3)
+linreg = ta.linreg(close, length, 0)
+linreg3 = ta.linreg(close, length, 3)
+plot(show_linreg ? regression_line	 : na , "linreg (no delay)"			    		 , #6a18ac, force_overlay = true)
+plot(show_linreg ? regression_line5	 : na , "linreg (no delay) (offset: 5)" 		 , #1b65ba, force_overlay = true)
+plot(show_linreg ? regression_line3  : na , "linreg (no delay) (offset: 3) (simple)" , #468bd9, force_overlay = true)
+plot(show_linreg ? linreg			 : na , "linreg (default)"			    		 , #be411b, force_overlay = true)
+plot(show_linreg ? linreg3			 : na , "linreg (default) (offset: 3)"			 , #5d1a05, force_overlay = true)
+var line l_regression_line  = line.new(chart.point.now(close), chart.point.now(close), color = #6a18ac, force_overlay = true)
+var line l_regression_line5 = line.new(chart.point.now(close), chart.point.now(close), color = #1b65ba, force_overlay = true)
+l_regression_line.set_xy1(bar_index[length], intercept + slope * bar_index[length])
+l_regression_line5.set_xy1(bar_index[length+5], intercept5 + slope5 * bar_index[length+5])
+l_regression_line.set_xy2 (bar_index   , regression_line)
+l_regression_line5.set_xy2(bar_index[5], regression_line5)
+
+//////// Signal once per bar example ////////
+// bool show_sopb = input.bool(false, 'show Signal once per bar Test (test in Replay on Weekly timeframe)')
+// ema_fast = ema(close, 4)
+// sma_slow = sma(close, 52)
+// SIGNAL_EMA_CO_SMA_DEFAULT = ta.crossover(ema_fast, sma_slow)
+// SIGNAL_EMA_CU_SMA_DEFAULT = ta.crossunder(ema_fast, sma_slow)
+// [SIGNAL_EMA_CO_SMA_BAR, SIGNAL_EMA_CO_SMA_TICK] = get_signal_once_per_bar(SIGNAL_EMA_CO_SMA_DEFAULT)
+// [SIGNAL_EMA_CU_SMA_BAR, SIGNAL_EMA_CU_SMA_TICK] = get_signal_once_per_bar(SIGNAL_EMA_CU_SMA_DEFAULT)
+// plot(show_sopb ? ema_fast : na, 'EMA7'  , color.aqua, force_overlay = true)
+// plot(show_sopb ? sma_slow : na, 'SMA200', color.aqua, force_overlay = true)
+// plotshape(show_sopb and SIGNAL_EMA_CO_SMA_DEFAULT	? sma_slow : na, 'EMA7 co SMA200 default', shape.triangleup  , location.absolute, color.green  , text = 'default'	, force_overlay = true)
+// plotshape(show_sopb and SIGNAL_EMA_CO_SMA_BAR		? sma_slow : na, 'EMA7 co SMA200 on bar' , shape.triangleup  , location.absolute, color.lime   , text = 'bar'		, force_overlay = true)
+// plotshape(show_sopb and SIGNAL_EMA_CO_SMA_TICK		? sma_slow : na, 'EMA7 co SMA200 on tick', shape.triangleup  , location.absolute, color.lime   , text = 'tick'		, force_overlay = true)
+// plotshape(show_sopb and SIGNAL_EMA_CU_SMA_DEFAULT	? sma_slow : na, 'EMA7 co SMA200 default', shape.triangledown, location.absolute, color.red    , text = 'default'	, force_overlay = true)
+// plotshape(show_sopb and SIGNAL_EMA_CU_SMA_BAR		? sma_slow : na, 'EMA7 co SMA200 on bar' , shape.triangledown, location.absolute, color.orange , text = 'bar'		, force_overlay = true)
+// plotshape(show_sopb and SIGNAL_EMA_CU_SMA_TICK		? sma_slow : na, 'EMA7 co SMA200 on tick', shape.triangledown, location.absolute, color.orange , text = 'tick'		, force_overlay = true)
+
+
+var show_htf = input.bool(false, 'HTF', inline = 'htf', display = display.none)
+var htf = input.timeframe('1D', '', inline = 'htf', display = display.none)
+var htf_ma_select = input.enum(MovingAverage.EMA, '', inline = 'htf', display = display.none)
+htf_ma_base = get_ma(htf_ma_select, close, length)
+htf_ma = request.security(syminfo.tickerid, htf, htf_ma_base)
+plot(show_htf ? htf_ma : na,  'HTF EMA', color.red, 2, force_overlay = true)
+

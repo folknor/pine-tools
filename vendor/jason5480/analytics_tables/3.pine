@@ -1,0 +1,908 @@
+//#region SETUP
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © jason5480
+
+//@version=6
+
+// @description Calculate various analytics about the strategy performance and create tables to present the data.
+// Credits about the monthly performance table goes to @QuantNomad and @ZenAndTheArtOfTrading.
+library(title = 'analytics_tables')
+
+//#endregion ===========================================================================================================
+//#region GENERIC TABLE
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+
+// @function Get table position compatible string
+// @param ypos The position on y axise
+// @param xpos The position on x axise
+// @returns The position to be passed to the table
+export getTablePos(simple string ypos, simple string xpos) =>
+    str.lower(ypos) + '_' + str.lower(xpos)
+
+// @type Object that represents the strategy statistics data of one side win or lose
+// @param numOf The number of wins/losses
+// @param avgFreeProfit The average free profit of wins/losses
+// @param freeProfitStDev The standard deviation of the free profit
+export type SideStats
+    int numOf = 0
+    int maxStreak = 0
+    float sumProfit = 0.0
+    float profitStDev = 0.0
+    float sumGain = 0.0
+    float gainStDev = 0.0
+    float avgQuantityPerc = 0.0
+    float avgCapitalRiskPerc = 0.0
+    float avgTPExecutedCount = 0.0
+    float avgRiskRewardRatio = 0.0
+    float sumFreeProfit = 0.0
+    float freeProfitStDev = 0.0
+
+// @function Calculate the average free profit
+// @param this The one side strategy statistics object
+method getAvgFreeProfit(SideStats this) =>
+    nz(this.sumFreeProfit / this.numOf)
+
+// @function Calculate the average profit
+// @param this The one side strategy statistics object
+method getAvgProfit(SideStats this) =>
+    nz(this.sumProfit / this.numOf)
+
+// @function Calculate the average gain
+// @param this The one side strategy statistics object
+method getAvgGain(SideStats this) =>
+    nz(this.sumGain / this.numOf)
+
+//#endregion ===========================================================================================================
+//#region STATS TABLE
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+
+// @type Object that represents the stats table
+// @field table The actual table
+// @field rows The number of rows of the table
+// @field columns The number of columns of the table
+export type StatsTable
+    table table
+    int rows
+    int columns
+
+// @function Initialize the stats table object with the given colors in the given position
+// @param this The stats table object
+// @param pos The table position string
+// @param height The height of the table as a percentage of the charts height. By default, 0 auto-adjusts the height based on the text inside the cells
+// @param width The width of the table as a percentage of the charts height. By default, 0 auto-adjusts the width based on the text inside the cells
+// @param positiveTxtColor The text color when positive
+// @param negativeTxtColor The text color when negative
+// @param neutralTxtColor The text color when neutral
+// @param positiveBgColor The background color with transparency when positive
+// @param negativeBgColor The background color with transparency when negative
+// @param neutralBgColor The background color with transparency when neutral
+export method init(StatsTable this, simple string pos, simple float height = 0., simple float width = 0., simple color positiveTxtColor = #00D26A, simple color negativeTxtColor = #ED2F2D, simple color neutralTxtColor = chart.fg_color, simple color positiveBgColor = #00897b0c, simple color negativeBgColor = #880e4f0c, simple color neutralBgColor = #363a450c) =>
+    // Sizes
+    const float HEAD_RATIO = 1.5
+    const int HEAD_ROWS = 1
+    const int BODY_ROWS = 13
+    const int ROWS = HEAD_ROWS + BODY_ROWS
+    float cellHeight = height / ((HEAD_ROWS * HEAD_RATIO + BODY_ROWS) * 1.045)
+    float headHeight = cellHeight * HEAD_RATIO
+    string cellTextSize = height == 0 ? size.small : size.auto
+    string headTextSize = height == 0 ? size.normal : size.auto
+    const int HEAD_COLUMNS = 1
+    const int BODY_COLUMNS = 3
+    const int COLUMNS = HEAD_COLUMNS + BODY_COLUMNS
+    float cellWidth = width / ((HEAD_COLUMNS * HEAD_RATIO + BODY_COLUMNS) * 1.045)
+    float headWidth = cellWidth * HEAD_RATIO
+    this.rows := ROWS
+    this.columns := COLUMNS
+
+    this.table := table.new(position = pos, rows = ROWS, columns = COLUMNS, frame_color = neutralBgColor, frame_width = 2, border_color = neutralBgColor, border_width = 1, force_overlay = true)
+
+    // Table Description
+    this.table.cell(row = 0, column = 0, text = '❓', height = headHeight, width = headWidth, text_color = neutralTxtColor, text_halign = text.align_right, text_valign = text.align_bottom, bgcolor = neutralBgColor, tooltip = 'This table summarizes the overall statistics of all/winning/losing trades of the strategy. In contrast to the TV backtest engine, a trade is considered to be complete when the entire entry position was exited and not when an order is executed (e.g. a take profit price target is reached).')
+    // Horizontal headers
+    var const array<string> vTooltips = array.from('All trades (winning and losing).', 'The winning trades.', 'The losing trades.')
+    for [j, title] in array.from('All', 'Wins', 'Losses')
+        this.table.cell(row = 0, column = j + 1, text = title, height = headHeight, width = cellWidth, text_valign = text.align_bottom, text_size = headTextSize, tooltip = vTooltips.get(j))
+    
+    this.table.cell_set_text_color(row = 0, column = 1, text_color = neutralTxtColor)
+    this.table.cell_set_bgcolor(row = 0, column = 1, bgcolor = neutralBgColor)
+
+    this.table.cell_set_text_color(row = 0, column = 2, text_color = positiveTxtColor)
+    this.table.cell_set_bgcolor(row = 0, column = 2, bgcolor = positiveBgColor)
+
+    this.table.cell_set_text_color(row = 0, column = 3, text_color = negativeTxtColor)
+    this.table.cell_set_bgcolor(row = 0, column = 3, bgcolor = negativeBgColor)
+
+    // Vertical headers
+    var const array<string> hTooltips = array.from('The total number of trades and those that had a winning/losing outcome.',
+                                                   'The maximum consecutive number of wins/losses in a row.',
+                                                   'The percent of the wins/losses.',
+                                                   'The average profit (percentagewise) per trade of all/winning/losing trades.',
+                                                   'The standard deviation of all/winning/losing trade profits.',
+                                                   'The average gain on account (percentagewise) per trade of all/winning/losing trades weighted by the entry quantity percentage. Thus the result is non-compounding.',
+                                                   'The standard deviation of all/winning/losing trade gains.',
+                                                   'The average quantity percent of all/winning/losing trades.',
+                                                   'The average capital at risk of all/winning/losing trades.',
+                                                   'The average number of take profit targets executed during all/winning/losing trades.',
+                                                   'The average risk to reward ratio when entered all/winning/losing trades.',
+                                                   'The free average profit (percentagewise) per trade of all/winning/losing trades. This is the profit you would have if you exited the entire amount at the last exit.',
+                                                   'The standard deviation of all/winning/losing trade free profits.')
+    for [i, title] in array.from('Trades', 'Streak', 'Rate', 'Avg Profit', 'Profit Dev', 'Avg Gain', 'Gain Dev', 'Quantity', 'Capital Risk', 'TP Exec #', 'Risk Reward', 'Avg Free Profit', 'Free Profit Dev')
+        int r = i + 1
+        this.table.cell(row = r, column = 0, text = title, height = cellHeight, width = headWidth, text_color = neutralTxtColor, text_halign = text.align_right, text_size = cellTextSize, bgcolor = neutralBgColor, tooltip = hTooltips.get(i))
+        
+        // Regular Cells
+        for j = 1 to COLUMNS - 1
+            this.table.cell(row = r, column = j, height = cellHeight, width = cellWidth, text_size = cellTextSize)
+        
+        this.table.cell_set_text_color(row = r, column = 1, text_color = neutralTxtColor)
+        this.table.cell_set_bgcolor(row = r, column = 1, bgcolor = neutralBgColor)
+
+        this.table.cell_set_text_color(row = r, column = 2, text_color = positiveTxtColor)
+        this.table.cell_set_bgcolor(row = r, column = 2, bgcolor = positiveBgColor)
+
+        this.table.cell_set_text_color(row = r, column = 3, text_color = negativeTxtColor)
+        this.table.cell_set_bgcolor(row = r, column = 3, bgcolor = negativeBgColor)
+    // Return the object
+    this    
+
+// @type Object that represents the statistics data of the strategy
+// @param wins The stats of the winning trades
+// @params losses The stats of the losing trades
+// @param numOfInconclusiveExits The number of inconclusive and dubius trades
+// @param avgFreeProfitStr Formated string of the average free profit
+// @param freeProfitStDevStr Formated string of the average free profit standard deviation
+// @param lossFreeProfitStDevStr Formated string of the average losing free profit standard deviation
+// @param avgProfitStr Formated string of the average profit
+// @param profitStDevStr Formated string of the average profit standard deviation
+// @param lossProfitStDevStr Formated string of the average losing profit standard deviation
+export type StatsData
+    SideStats wins
+    SideStats losses
+    int numOfInconclusiveExits
+    string avgProfitStr
+    string profitStDevStr
+    string lossProfitStDevStr
+    string avgFreeProfitStr
+    string freeProfitStDevStr
+    string lossFreeProfitStDevStr
+
+// @function Calculate the total number of trades
+// @param this The strategy statistics object
+method getNumOfTrades(StatsData this) =>
+    this.wins.numOf + this.losses.numOf
+
+// @function Calculate the win rate
+// @param this The strategy statistics object
+method getWinRate(StatsData this) =>
+    this.wins.numOf / this.getNumOfTrades()
+
+// @function Calculate the loss rate
+// @param this The strategy statistics object
+method getLossRate(StatsData this) =>
+    this.losses.numOf / this.getNumOfTrades()
+
+// @function Calculate the average free profit
+// @param this The strategy statistics object
+method getAvgFreeProfit(StatsData this) =>
+    this.wins.getAvgFreeProfit() * this.getWinRate() + this.losses.getAvgFreeProfit() * this.getLossRate()
+
+// @function Calculate the average free profit standard deviation
+// @param this The strategy statistics object
+method getFreeProfitStDev(StatsData this) =>
+    this.wins.freeProfitStDev * this.getWinRate() + this.losses.freeProfitStDev * this.getLossRate()
+
+// @function Calculate the average profit
+// @param this The strategy statistics object
+method getAvgProfit(StatsData this) =>
+    this.wins.getAvgProfit() * this.getWinRate() + this.losses.getAvgProfit() * this.getLossRate()
+
+// @function Calculate the average profit standard deviation
+// @param this The strategy statistics object
+method getProfitStDev(StatsData this) =>
+    this.wins.profitStDev * this.getWinRate() + this.losses.profitStDev * this.getLossRate()
+
+// @function Calculate the average gain
+// @param this The strategy statistics object
+method getAvgGain(StatsData this) =>
+    this.wins.getAvgGain() * this.getWinRate() + this.losses.getAvgGain() * this.getLossRate()
+
+// @function Calculate the average gain standard deviation
+// @param this The strategy statistics object
+method getGainStDev(StatsData this) =>
+    this.wins.gainStDev * this.getWinRate() + this.losses.gainStDev * this.getLossRate()
+
+// @function Calculate the average quantity percentage
+// @param this The strategy statistics object
+method getAvgQuantityPerc(StatsData this) =>
+    this.wins.avgQuantityPerc * this.getWinRate() + this.losses.avgQuantityPerc * this.getLossRate()
+
+// @function Calculate the average capital at risk percentage
+// @param this The strategy statistics object
+method getAvgCapitalRiskPerc(StatsData this) =>
+    this.wins.avgCapitalRiskPerc * this.getWinRate() + this.losses.avgCapitalRiskPerc * this.getLossRate()
+
+// @function Calculate the average take profits reached
+// @param this The strategy statistics object
+method getAvgTPExecutedCount(StatsData this) =>
+    this.wins.avgTPExecutedCount * this.getWinRate() + this.losses.avgTPExecutedCount * this.getLossRate()
+
+// @function Calculate the average free profit standard deviation
+// @param this The strategy statistics object
+method getAvgRiskRewardRatio(StatsData this) =>
+    this.wins.avgRiskRewardRatio * this.getWinRate() + this.losses.avgRiskRewardRatio * this.getLossRate()
+
+// @function Update the strategy info data of the strategy
+// @param this The strategy statistics object
+// @param numOfInconclusiveExits The number of inconclusive trades
+export method update(StatsData this, SideStats wins, SideStats losses, int numOfInconclusiveExits) =>
+    this.wins := wins
+    this.losses := losses
+    this.numOfInconclusiveExits := numOfInconclusiveExits
+    // Stat Strings
+    float avgProfit = this.getAvgProfit()
+    this.avgProfitStr := (avgProfit >= 0.0 ? '+' : '') + str.tostring(avgProfit, format.percent)
+    this.profitStDevStr := '±' + str.tostring(this.getProfitStDev(), format.percent)
+    this.lossProfitStDevStr := '±' + str.tostring(this.losses.profitStDev, format.percent)
+    float avgFreeProfit = this.getAvgFreeProfit()
+    this.avgFreeProfitStr := (avgFreeProfit >= 0.0 ? '+' : '') + str.tostring(avgFreeProfit, format.percent)
+    this.freeProfitStDevStr := '±' + str.tostring(this.getFreeProfitStDev(), format.percent)
+    this.lossFreeProfitStDevStr := '±' + str.tostring(this.losses.freeProfitStDev, format.percent)
+    this
+
+// @function Update the stats table object with the given data
+// @param this The stats table object
+// @param stats The stats data to update the table
+// @param positiveTxtColor The text color when positive
+// @param negativeTxtColor The text color when negative
+// @param negativeBgColor The background color with transparency when negative
+// @param neutralBgColor The background color with transparency when neutral
+export method update(StatsTable this, StatsData stats, simple color positiveTxtColor = #00D26A, simple color negativeTxtColor = #ED2F2D, simple color negativeBgColor = #880e4f0c, simple color neutralBgColor = #363a450c) =>
+    // Inconclusive Trades
+    this.table.cell_set_bgcolor(row = 2, column = 1, bgcolor = stats.numOfInconclusiveExits > 0 ? negativeBgColor : neutralBgColor)
+    this.table.cell_set_tooltip(row = 2, column = 1, tooltip = str.format('WARNING! {0,number,integer} inconclusive exit order(s) were detected this is the {1} of all the trades. This means that orders exist were both take profit and stop loss could be reached at the same bar and exit the trade, but due to the "loss of information" in that timeframe a random exit were chosen. Please use a lower timeframe or the bar magnifier feature to have more accurate results.', stats.numOfInconclusiveExits, str.tostring(100.0 * stats.numOfInconclusiveExits / stats.getNumOfTrades(), format.percent)))
+    // Avg Profit
+    this.table.cell_set_text_color(row = 4, column = 1, text_color = stats.getAvgProfit() > 0.0 ? positiveTxtColor : negativeTxtColor)
+    // Avg Gain
+    this.table.cell_set_text_color(row = 6, column = 1, text_color = stats.getAvgGain() > 0.0 ? positiveTxtColor : negativeTxtColor)
+    // Free Avg Profit
+    this.table.cell_set_text_color(row = 12, column = 1, text_color = stats.getAvgFreeProfit() > 0.0 ? positiveTxtColor : negativeTxtColor)
+    // Cell Texts
+    this.table.cell_set_text(row = 1, column = 1, text = str.tostring(stats.getNumOfTrades()))
+    this.table.cell_set_text(row = 1, column = 2, text = str.tostring(stats.wins.numOf))
+    this.table.cell_set_text(row = 1, column = 3, text = str.tostring(stats.losses.numOf))
+    this.table.cell_set_text(row = 2, column = 1, text = stats.numOfInconclusiveExits > 0 ? '🚨' : '')
+    this.table.cell_set_text(row = 2, column = 2, text = str.tostring(stats.wins.maxStreak))
+    this.table.cell_set_text(row = 2, column = 3, text = str.tostring(stats.losses.maxStreak))
+    this.table.cell_set_text(row = 3, column = 1, text = str.tostring(100.0 * (stats.getWinRate() + stats.getLossRate()), format.percent))
+    this.table.cell_set_text(row = 3, column = 2, text = str.tostring(100.0 * stats.getWinRate(), format.percent))
+    this.table.cell_set_text(row = 3, column = 3, text = str.tostring(100.0 * stats.getLossRate(), format.percent))
+    this.table.cell_set_text(row = 4, column = 1, text = stats.avgProfitStr)
+    this.table.cell_set_text(row = 4, column = 2, text = '+' + str.tostring(stats.wins.getAvgProfit(), format.percent))
+    this.table.cell_set_text(row = 4, column = 3, text = str.tostring(stats.losses.getAvgProfit(), format.percent))
+    this.table.cell_set_text(row = 5, column = 1, text = stats.profitStDevStr)
+    this.table.cell_set_text(row = 5, column = 2, text = '±' + str.tostring(stats.wins.profitStDev, format.percent))
+    this.table.cell_set_text(row = 5, column = 3, text = stats.lossProfitStDevStr)
+    float avgGain = stats.getAvgGain()
+    this.table.cell_set_text(row = 6, column = 1, text = (avgGain >= 0.0 ? '+' : '') + str.tostring(avgGain, format.percent))
+    this.table.cell_set_text(row = 6, column = 2, text = '+' + str.tostring(stats.wins.getAvgGain(), format.percent))
+    this.table.cell_set_text(row = 6, column = 3, text = str.tostring(stats.losses.getAvgGain(), format.percent))
+    this.table.cell_set_text(row = 7, column = 1, text = '±' + str.tostring(stats.getGainStDev(), format.percent))
+    this.table.cell_set_text(row = 7, column = 2, text = '±' + str.tostring(stats.wins.gainStDev, format.percent))
+    this.table.cell_set_text(row = 7, column = 3, text = '±' + str.tostring(stats.losses.gainStDev, format.percent))
+    this.table.cell_set_text(row = 8, column = 1, text = str.tostring(stats.getAvgQuantityPerc(), format.percent))
+    this.table.cell_set_text(row = 8, column = 2, text = str.tostring(stats.wins.avgQuantityPerc, format.percent))
+    this.table.cell_set_text(row = 8, column = 3, text = str.tostring(stats.losses.avgQuantityPerc, format.percent))
+    this.table.cell_set_text(row = 9, column = 1, text = str.tostring(stats.getAvgCapitalRiskPerc(), format.percent))
+    this.table.cell_set_text(row = 9, column = 2, text = str.tostring(stats.wins.avgCapitalRiskPerc, format.percent))
+    this.table.cell_set_text(row = 9, column = 3, text = str.tostring(stats.losses.avgCapitalRiskPerc, format.percent))
+    this.table.cell_set_text(row = 10, column = 1, text = str.tostring(stats.getAvgTPExecutedCount(), '#.##'))
+    this.table.cell_set_text(row = 10, column = 2, text = str.tostring(stats.wins.avgTPExecutedCount, '#.##'))
+    this.table.cell_set_text(row = 10, column = 3, text = str.tostring(stats.losses.avgTPExecutedCount, '#.##'))
+    this.table.cell_set_text(row = 11, column = 1, text = str.tostring(stats.getAvgRiskRewardRatio(), '#.##'))
+    this.table.cell_set_text(row = 11, column = 2, text = str.tostring(stats.wins.avgRiskRewardRatio, '#.##'))
+    this.table.cell_set_text(row = 11, column = 3, text = str.tostring(stats.losses.avgRiskRewardRatio, '#.##'))
+    this.table.cell_set_text(row = 12, column = 1, text = stats.avgFreeProfitStr)
+    this.table.cell_set_text(row = 12, column = 2, text = '+' + str.tostring(stats.wins.getAvgFreeProfit(), format.percent))
+    this.table.cell_set_text(row = 12, column = 3, text = str.tostring(stats.losses.getAvgFreeProfit(), format.percent))
+    this.table.cell_set_text(row = 13, column = 1, text = stats.freeProfitStDevStr)
+    this.table.cell_set_text(row = 13, column = 2, text = '±' + str.tostring(stats.wins.freeProfitStDev, format.percent))
+    this.table.cell_set_text(row = 13, column = 3, text = stats.lossFreeProfitStDevStr)
+
+//#endregion ===========================================================================================================
+//#region METRICS TABLE
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+
+// @type Object that represents the metrics table
+// @field table The actual table
+// @field rows The number of rows of the table
+// @field columns The number of columns of the table
+export type MetricsTable
+    table table
+    int rows
+    int columns
+
+// @function Initialize the metrics table object with the given colors in the given position
+// @param this The metrics table object
+// @param pos The table position string
+// @param height The height of the table as a percentage of the charts height. By default, 0 auto-adjusts the height based on the text inside the cells
+// @param width The width of the table as a percentage of the charts width. By default, 0 auto-adjusts the width based on the text inside the cells
+// @param neutralBgColor The background color with transparency when neutral
+export method init(MetricsTable this, simple string pos, simple float height = 0., simple float width = 0., simple color neutralBgColor = chart.bg_color) =>
+    // Sizes
+    const int ROWS = 2
+    const int COLUMNS = 3
+    float cellHeight = height / (ROWS * 1.045)
+    float cellWidth = width / (COLUMNS * 1.045)
+    string cellTextSize = height == 0 ? size.normal : size.auto
+    this.rows := ROWS
+    this.columns := COLUMNS
+
+    this.table := table.new(position = pos, rows = ROWS, columns = COLUMNS, frame_color = neutralBgColor, frame_width = 2, border_color = neutralBgColor, border_width = 1, force_overlay = true)
+
+    // Cells
+    for i = 0 to ROWS - 1
+        for j = 0 to COLUMNS - 1
+            this.table.cell(row = i, column = j, height = cellHeight, width = cellWidth, text_size = cellTextSize)
+    // Return the object
+    this
+ 
+// @function Update the metrics table object with the given data
+// @param this The metrics table object
+// @param stats The stats data to update the table
+// @param buyAndHoldPerc The buy and hold percetage
+// @param positiveTxtColor The text color when positive
+// @param negativeTxtColor The text color when negative
+// @param positiveBgColor The background color with transparency when positive
+// @param negativeBgColor The background color with transparency when negative
+export method update(MetricsTable this, StatsData stats, float buyAndHoldPerc, simple color positiveTxtColor = #00D26A, simple color negativeTxtColor = #ED2F2D, simple color positiveBgColor = #00897b0c, simple color negativeBgColor = #880e4f0c) =>
+    // Metrics Alpha - Beta - Gamma
+    float sumProfit = stats.wins.sumProfit + stats.losses.sumProfit
+    float alpha = 1.0 + nz((sumProfit - buyAndHoldPerc) / math.abs(buyAndHoldPerc))
+    bool alphaAcceptance = alpha >= 1.0
+    float netProfitPerc = 100.0 * strategy.netprofit / strategy.initial_capital
+    float beta = 1.0 + nz((netProfitPerc - buyAndHoldPerc) / math.abs(buyAndHoldPerc))
+    bool betaAcceptance = beta >= 1.0
+    float kellyRatioPerc = 100.0 * (stats.getWinRate() * stats.getAvgRiskRewardRatio() - stats.getLossRate()) / stats.getAvgRiskRewardRatio()
+    float maxCapitalLossPerc = stats.getAvgCapitalRiskPerc() * stats.losses.maxStreak
+    float gamma = 1.0 + nz((kellyRatioPerc - maxCapitalLossPerc) / maxCapitalLossPerc)
+    bool gammaAcceptance = gamma >= 1.0
+    string buyAndHoldPercStr = str.tostring(buyAndHoldPerc, format.percent)
+    // Metrics Chi - Psi - Zeta
+    float avgFreeProfit = stats.getAvgFreeProfit()
+    float chi = 1.0 + nz((stats.getAvgProfit() - avgFreeProfit) / math.abs(avgFreeProfit))
+    bool chiAcceptance = chi >= 1.0
+    float freeProfitStDev = stats.getFreeProfitStDev()
+    float profitStDevInc = 1.0 + nz((stats.getProfitStDev() - freeProfitStDev) / math.abs(freeProfitStDev))
+    float psi = chi / profitStDevInc
+    bool psiAcceptance = psi >= 1.0
+    float lossFreeProfitStDev = stats.losses.freeProfitStDev
+    float lossProfitStDevInc = 1.0 + nz((stats.losses.profitStDev - lossFreeProfitStDev) / math.abs(lossFreeProfitStDev))
+    float zeta = chi / lossProfitStDevInc
+    bool zetaAcceptance = zeta >= 1.0    
+    
+    this.table.cell_set_text(row = 0, column = 0, text = str.format('α: {0}', str.tostring(100.0 * alpha, format.percent)))
+    this.table.cell_set_text(row = 0, column = 1, text = str.format('β: {0}', str.tostring(100.0 * beta, format.percent)))
+    this.table.cell_set_text(row = 0, column = 2, text = str.format('γ: {0}', str.tostring(100.0 * gamma, format.percent)))
+    this.table.cell_set_text(row = 1, column = 0, text = str.format('χ: {0}', str.tostring(100.0 * chi, format.percent)))
+    this.table.cell_set_text(row = 1, column = 1, text = str.format('ψ: {0}', str.tostring(100.0 * psi, format.percent)))
+    this.table.cell_set_text(row = 1, column = 2, text = str.format('ζ: {0}', str.tostring(100.0 * zeta, format.percent)))
+    this.table.cell_set_text_color(row = 0, column = 0, text_color = alphaAcceptance ? positiveTxtColor : negativeTxtColor)
+    this.table.cell_set_text_color(row = 0, column = 1, text_color = betaAcceptance ? positiveTxtColor : negativeTxtColor)
+    this.table.cell_set_text_color(row = 0, column = 2, text_color = gammaAcceptance ? positiveTxtColor : negativeTxtColor)
+    this.table.cell_set_text_color(row = 1, column = 0, text_color = chiAcceptance ? positiveTxtColor : negativeTxtColor)
+    this.table.cell_set_text_color(row = 1, column = 1, text_color = psiAcceptance ? positiveTxtColor : negativeTxtColor)
+    this.table.cell_set_text_color(row = 1, column = 2, text_color = zetaAcceptance ? positiveTxtColor : negativeTxtColor)
+    this.table.cell_set_bgcolor(row = 0, column = 0, bgcolor = alphaAcceptance ? positiveBgColor : negativeBgColor)
+    this.table.cell_set_bgcolor(row = 0, column = 1, bgcolor = betaAcceptance ? positiveBgColor : negativeBgColor)
+    this.table.cell_set_bgcolor(row = 0, column = 2, bgcolor = gammaAcceptance ? positiveBgColor : negativeBgColor)
+    this.table.cell_set_bgcolor(row = 1, column = 0, bgcolor = chiAcceptance ? positiveBgColor : negativeBgColor)
+    this.table.cell_set_bgcolor(row = 1, column = 1, bgcolor = psiAcceptance ? positiveBgColor : negativeBgColor)
+    this.table.cell_set_bgcolor(row = 1, column = 2, bgcolor = zetaAcceptance ? positiveBgColor : negativeBgColor)
+    this.table.cell_set_tooltip(row = 0, column = 0, tooltip = str.format('This alpha metric shows how better or worst the sum of the profits/losses is ({0}) as a percentage compared to the buy and hold return ({1}). If the alpha value is less than 100% this means that the strategy performed worse than the buy and hold for the period of the backtesting.', str.tostring(sumProfit, format.percent), buyAndHoldPercStr))
+    this.table.cell_set_tooltip(row = 0, column = 1, tooltip = str.format('This beta metric shows how better or worst the net profit is ({0}) as a percentage compared to the buy and hold return ({1}). If the beta value is less than 100% this means that the strategy performed worse than the buy and hold for the period of the backtesting.', str.tostring(netProfitPerc, format.percent), buyAndHoldPercStr))
+    this.table.cell_set_tooltip(row = 0, column = 2, tooltip = str.format('This gamma metric shows how better or worst the maximum capital loss percent was ({0}) as a percentage compared to the Kelly ratio ({1}). If the gamma value is less than 100% and the kelly ratio is possitive this means you take too much risk on every trade for the period of the backtesting and you have to decrease the entry quantity and thus the capital at risk of each trade. An other alternative is to try to increase the kelly ratio by increasing the win rate and/or the risk to reward ratio.', str.tostring(maxCapitalLossPerc, format.percent), str.tostring(kellyRatioPerc, format.percent)))
+    this.table.cell_set_tooltip(row = 1, column = 0, tooltip = str.format('This chi metric shows how better or worst the average profit is ({0}) as a percentage compared to the free profit ({1}). If the chi value is less than 100% this means that the strategy would have more profits without the take profit targets for the period of the backtesting.', stats.avgProfitStr, stats.avgFreeProfitStr))
+    this.table.cell_set_tooltip(row = 1, column = 1, tooltip = str.format('This psi metric shows the ratio of the chi with the standard deviation percentage increase ({0}). That shows how better or worst the standard deviation is ({1}) as a percentage compared to the free standard deviation ({2}). If the psi value is less than 100% this means that the strategy increases the standard deviation way too much for the additional profits that returns on top of the free profit for the period of the backtesting.', str.tostring(100.0 * profitStDevInc, format.percent), stats.profitStDevStr, stats.freeProfitStDevStr))
+    this.table.cell_set_tooltip(row = 1, column = 2, tooltip = str.format('The zeta metric shows the ratio of the chi with the downside deviation percentage increase ({0}). That shows how better or worst the downwards deviation is ({1}) as a percentage compared to the free downwards deviation ({2}). If the zeta value is less than 100% this means that the strategy increases the downwards deviation way too much for the additional profits that returns on top of the free profit for the period of the backtesting.', str.tostring(100.0 * lossProfitStDevInc, format.percent), stats.lossProfitStDevStr, stats.lossFreeProfitStDevStr))
+
+//#endregion ===========================================================================================================
+//#region SEASONAL TABLE
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+
+// @enum The supported season and eon combinations
+// @field monthOfYear Month is one season and year is an eon
+// @field weekOfYear Week is one season and year is an eon
+// @field dayOfMonth Day is one season and week is an eon
+export enum Seasonality
+    monthOfYear = 'M/Y'
+    weekOfYear = 'W/Y'
+    dayOfMonth = 'D/M'
+
+// @type Object that represents the seasonal table dynamic data
+// @param seasonality The seasonality type of the matrix data
+// @param eonToMatrixRow Map with the corresponding rows to each eon
+// @param numOfEons The number of eon rows in the map and the matrixes
+// @param mostRecentMatrixRow The most recently used eon matrix row
+// @param balances Matrix with all the balances of all the seasons in eons
+// @param returnPercs Matrix with all the returns of all the seasons in eons
+// @param maxDDs Matrix with all the max drawdowns of all the seasons in eons
+// @param eonReturnPercs Array with the returns of all eons
+// @param eonCAGRs Array with the Compound Annual Growth Rate (CAGR) of all eons
+// @param eonMaxDDs Array with the max drawdown of all eons
+export type SeasonalData
+    Seasonality seasonality
+    map<int, int> eonToMatrixRow
+    int numOfEons
+    int mostRecentMatrixRow
+    matrix<float> balances
+    matrix<float> returnPercs
+    matrix<float> maxDDs
+    array<float> eonReturnPercs
+    array<float> eonCAGRs
+    array<float> eonMaxDDs
+
+// @function Get the name of the eon
+// @param this The seasonal data object
+// @param eon The eon ID number
+// @returns The string of the eon name
+method getEonName(SeasonalData this, int eon) =>
+    if this.seasonality == Seasonality.dayOfMonth
+        var const array<string> monthNames = array.from('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec')
+        monthNames.get(eon - 1)
+    else
+        str.tostring(eon)
+
+// @function Get the name of the season
+// @param this The seasonal data object
+// @param mCol The season ID number
+// @returns The string of the season name
+method getSeasonName(SeasonalData this, int mCol) =>
+    if this.seasonality == Seasonality.monthOfYear
+        var const array<string> monthNames = array.from('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec')
+        monthNames.get(mCol)
+    else
+        string seasonTimeframe = this.seasonality == Seasonality.weekOfYear ? 'W' : 'D'
+        str.tostring(mCol + 1) + seasonTimeframe
+
+// @function Returns the corresponding matrix row of the eon 
+// @param this The seasonal data object
+// @param eon The eon to be selected
+method getEonToMatrixRow(SeasonalData this, int eon) =>
+    // New non-existing eon is comming, add row in the matrixes and arrays
+    if not this.eonToMatrixRow.contains(eon)
+        this.eonToMatrixRow.put(eon, this.numOfEons)
+        this.balances.add_row()
+        this.returnPercs.add_row()
+        this.maxDDs.add_row()
+        this.eonReturnPercs.push(0.0)
+        this.eonCAGRs.push(0.0)
+        this.eonMaxDDs.push(0.0)
+        this.numOfEons += 1
+    this.mostRecentMatrixRow := this.eonToMatrixRow.get(eon)
+
+// @function Returns the corresponding matrix column of the season
+// @param season The season to be selected
+method getSeasonToMatrixRow(int season) =>
+    season - 1
+
+// @function Initialize the seasonal data
+// @param this The seasonal data object
+// @param seas The seasonality of the matrix data
+export method init(SeasonalData this, simple Seasonality seas) =>
+    this.seasonality := seas
+    int seasonColumns = switch this.seasonality
+        Seasonality.monthOfYear => 12
+        Seasonality.weekOfYear => 53
+        Seasonality.dayOfMonth => 31
+    this.eonToMatrixRow := map.new<int, int>()
+    this.numOfEons := 0
+    this.balances := matrix.new<float>(0, seasonColumns)
+    this.returnPercs := matrix.new<float>(0, seasonColumns)
+    this.maxDDs := matrix.new<float>(0, seasonColumns)
+    this.eonReturnPercs := array.new<float>()
+    this.eonCAGRs := array.new<float>()
+    this.eonMaxDDs := array.new<float>()
+    if this.seasonality == Seasonality.dayOfMonth
+        // Dummy calls to populate the map with all months in a sequence
+        for e = 1 to 12
+            this.getEonToMatrixRow(e)
+    this
+
+// @function Returns the eon of the given time
+// @param this The seasonal data object
+// @returns The eon of that time
+method getEonWhen(SeasonalData this, int t) =>
+    switch this.seasonality
+        Seasonality.monthOfYear => year(t)
+        Seasonality.weekOfYear => year(t)
+        Seasonality.dayOfMonth => month(t)
+        =>
+            runtime.error('Invalid seasonality for eon')
+            0
+
+// @function Returns the season of the given time
+// @param this The seasonal data object
+// @returns The season of that time
+method getSeasonWhen(SeasonalData this, int t) =>
+    switch this.seasonality
+        Seasonality.monthOfYear => month(t)
+        Seasonality.weekOfYear => weekofyear(t)
+        Seasonality.dayOfMonth => dayofmonth(t)
+        =>
+            runtime.error('Invalid seasonality for season')
+            0
+
+// @function Update the seasonal data based on the season and eon timeframe
+// @param this The seasonal data object
+export method update(SeasonalData this) =>
+    // Get eon and season of this bar
+    int eon = this.getEonWhen(time)
+    int season = this.getSeasonWhen(time)
+    // Get eon and season of the next bar
+    int nextEon = this.getEonWhen(time(timeframe = '', bars_back = -1))
+    int nextSeason = this.getSeasonWhen(time(timeframe = '', bars_back = -1))
+    
+    // Check for new Eon/Season
+    bool newEonAhead = eon != nextEon
+    bool newSeasonAhead = season != nextSeason
+    // Keep track of previous values
+    var float prevEonBalance = strategy.initial_capital
+    var float prevSeasonBalance = strategy.initial_capital
+    // Keep track of the maxDD for eons and seasons
+    var float eonMaxBalance = 0.0
+    var float eonMaxDD = 0.0
+    var float seasonMaxBalance = 0.0
+    var float seasonMaxDD = 0.0
+    // Current realized balance
+    float currentBalance = strategy.initial_capital + strategy.netprofit
+        
+    // Keep the max balance and drawdown of the eons and seasons
+    if ta.rising(strategy.closedtrades, 1)
+        eonMaxBalance := math.max(currentBalance, eonMaxBalance)
+        eonMaxDD := math.max(100.0 * (eonMaxBalance - currentBalance) / eonMaxBalance, eonMaxDD)
+        seasonMaxBalance := math.max(currentBalance, seasonMaxBalance)
+        seasonMaxDD := math.max(100.0 * (seasonMaxBalance - currentBalance) / seasonMaxBalance, seasonMaxDD)
+        // Matrix row to update
+        int mRow = this.getEonToMatrixRow(eon)
+        // Update eon related arrays
+        this.eonReturnPercs.set(index = mRow, value = 100.0 * (currentBalance - prevEonBalance) / prevEonBalance)
+        this.eonCAGRs.set(index = mRow, value = 100.0 * (math.pow(currentBalance / prevEonBalance, 1 / this.balances.columns()) - 1))
+        this.eonMaxDDs.set(index = mRow, value = eonMaxDD)
+        // Matrix column to update
+        int mCol = getSeasonToMatrixRow(season)
+        // Update season related matrixes
+        this.balances.set(row = mRow, column = mCol, value = currentBalance)
+        this.returnPercs.set(row = mRow, column = mCol, value = 100.0 * (currentBalance - prevSeasonBalance) / prevSeasonBalance)
+        this.maxDDs.set(row = mRow, column = mCol, value = seasonMaxDD)
+    
+    bool strategyStarted = strategy.opentrades != 0 or strategy.closedtrades > 0
+    // Initialize rows of the matrixes and arrays
+    if newEonAhead and strategyStarted
+        // Matrix row to update
+        int mRow = this.getEonToMatrixRow(eon)
+        // Update eon related arrays
+        this.eonReturnPercs.set(index = mRow, value = 100.0 * (currentBalance - prevEonBalance) / prevEonBalance)
+        this.eonCAGRs.set(index = mRow, value = 100.0 * (math.pow((currentBalance) / prevEonBalance, 1 / this.balances.columns()) - 1))
+        this.eonMaxDDs.set(index = mRow, value = eonMaxDD)
+        
+        // Initialize the new eon row
+        int mNextRow = this.getEonToMatrixRow(nextEon)
+        for mCol = 0 to this.balances.columns() - 1
+            this.balances.set(row = mNextRow, column = mCol, value = currentBalance)
+            this.returnPercs.set(row = mNextRow, column = mCol, value = 0.0)
+            this.maxDDs.set(row = mNextRow, column = mCol, value = 0.0)
+        this.eonReturnPercs.set(mNextRow, 0.0)
+        this.eonCAGRs.set(mNextRow, 0.0)
+        this.eonMaxDDs.set(mNextRow, 0.0)
+
+        // Keep the previous balance for the next eon
+        prevEonBalance := currentBalance
+        // Reset eon related variables
+        eonMaxBalance := currentBalance
+        eonMaxDD := 0.0
+
+    // Update season related data
+    if newSeasonAhead and strategyStarted
+        // Matrix row to update
+        int mRow = this.getEonToMatrixRow(eon)
+        // Matrix column to update
+        int mCol = getSeasonToMatrixRow(season)
+        // Update season related matrixes
+        this.balances.set(row = mRow, column = mCol, value = currentBalance)
+        this.returnPercs.set(row = mRow, column = mCol, value = 100.0 * (currentBalance - prevSeasonBalance) / prevSeasonBalance)
+        this.maxDDs.set(row = mRow, column = mCol, value = seasonMaxDD)
+        
+        // Keep the previous balance for the next season
+        prevSeasonBalance := currentBalance
+        // Reset season related variables
+        seasonMaxBalance := currentBalance
+        seasonMaxDD := 0.0
+
+// @type Object that represents the seasonal table
+// @field table The actual table
+// @field headRows The number of head rows of the table
+// @field headColumns The number of head columns of the table
+// @field eonRows The number of eon rows of the table
+// @field seasonColumns The number of season columns of the table
+// @field statsColumns The number of stats columns of the table
+// @field rows The number of rows of the table
+// @field columns The number of columns of the table
+// @field extended Whether the table has additional performance statistics
+export type SeasonalTable
+    table table
+    int headRows
+    int headColumns
+    int eonRows
+    int seasonColumns
+    int statsRows
+    int statsColumns
+    int rows
+    int columns
+    bool extended
+
+// @function Initialize the seasonal table object with the given colors in the given position
+// @param this The seasonal table object
+// @param matrixRows The size of the matrix rows
+// @param mRow The matrix row to be converted
+// @returns The table row ID
+method matrixToTableRow(SeasonalTable this, int matrixRows, int mRow) =>
+    this.headRows + this.eonRows - matrixRows + mRow
+
+// @function Initialize the seasonal table object with the given colors in the given position
+// @param this The seasonal table object
+// @param mCol The matrix column to be converted
+// @returns The table column ID
+method matrixToTableColumn(SeasonalTable this, int mCol) =>
+    mCol + this.headColumns
+
+// @function Initialize the seasonal table object with the given colors in the given position
+// @param this The seasonal table object
+// @param data The seasonality data of the table
+// @param pos The table position string
+// @param maxNumOfYears The maximum number of years that fit into the table
+// @param height The height of the table as a percentage of the charts height. By default, 0 auto-adjusts the height based on the text inside the cells
+// @param width The width of the table as a percentage of the charts width. By default, 0 auto-adjusts the width based on the text inside the cells
+// @param extended The seasonal table with extended columns for performance
+// @param neutralTxtColor The text color when neutral
+// @param neutralBgColor The background color with transparency when neutral
+export method init(SeasonalTable this, SeasonalData data, simple string pos, simple int maxNumOfYears = 5, simple float height = 0., simple float width = 0., simple bool extended = false, simple color neutralTxtColor = chart.fg_color, simple color neutralBgColor = #363a450c) =>
+    // Sizes
+    const float HEAD_RATIO = 1.5
+    this.extended := extended
+    this.headRows := 1
+    this.statsRows := this.extended ? 3 : 0
+    this.eonRows := maxNumOfYears <= 0 or data.seasonality == Seasonality.dayOfMonth ? data.numOfEons : math.min(data.numOfEons, maxNumOfYears)
+    this.rows := this.headRows + this.eonRows + this.statsRows
+    float cellHeight = height / ((this.headRows * HEAD_RATIO + this.eonRows + this.statsRows) * 1.045)
+    float headHeight = cellHeight * HEAD_RATIO
+    string cellTextSize = height == 0 ? size.small : size.auto
+    string headTextSize = height == 0 ? size.normal : size.auto
+    this.headColumns := 1
+    this.seasonColumns := switch data.seasonality
+        Seasonality.monthOfYear => 12
+        Seasonality.weekOfYear => 53
+        Seasonality.dayOfMonth => 31
+    this.statsColumns := this.extended ? 3 : 1
+    this.columns := this.headColumns + this.seasonColumns + this.statsColumns
+    float cellWidth = width / ((this.headColumns * HEAD_RATIO + this.seasonColumns + this.statsColumns) * 1.045)
+    float headWidth = cellWidth * HEAD_RATIO
+
+    this.table := table.new(position = pos, rows = this.rows, columns = this.columns, frame_color = neutralBgColor, frame_width = 2, border_color = neutralBgColor, border_width = 1)
+
+    // Table Description
+    this.table.cell(row = 0, column = 0, text = '❓', height = headHeight, width = headWidth, text_color = neutralTxtColor, text_halign = text.align_right, text_valign = text.align_bottom, bgcolor = neutralBgColor, tooltip = 'This table summarizes the seasonal (monthly/weekly/daily) realized performance of the strategy that occured on each eon (year/month/week).')
+    // Horizontal headers
+    for mCol = 0 to this.seasonColumns - 1
+        this.table.cell(row = 0, column = this.matrixToTableColumn(mCol), text = data.getSeasonName(mCol), height = headHeight, width = cellWidth, text_color = neutralTxtColor, text_valign = text.align_bottom, text_size = headTextSize, bgcolor = neutralBgColor)
+    if this.extended
+        for [j, title] in array.from('P&L', 'CAGR', 'MaxDD')
+            this.table.cell(row = 0, column = j + this.headColumns + this.seasonColumns, text = title, height = headHeight, width = cellWidth, text_color = neutralTxtColor, text_valign = text.align_bottom, text_size = headTextSize, bgcolor = neutralBgColor)
+    else
+        for [j, title] in array.from('P&L')
+            this.table.cell(row = 0, column = j + this.headColumns + this.seasonColumns, text = title, height = headHeight, width = cellWidth, text_color = neutralTxtColor, text_valign = text.align_bottom, text_size = headTextSize, bgcolor = neutralBgColor)
+
+    // Vertical headers
+    int totalRows = this.rows - 1
+    for i = this.headRows to totalRows >= 0 ? totalRows : na
+        this.table.cell(row = i, column = 0, height = cellHeight, width = headWidth, text_color = neutralTxtColor, text_halign = text.align_right, text_size = cellTextSize, bgcolor = neutralBgColor)
+        for j = this.headColumns to this.columns - 1
+            this.table.cell(row = i, column = j, height = cellHeight, width = cellWidth, text_color = neutralTxtColor, text_size = cellTextSize, bgcolor = neutralBgColor)
+    // Vertical headers for the current eons
+    for [eon, mRow] in data.eonToMatrixRow
+        int tRow = this.matrixToTableRow(data.numOfEons, mRow)
+        if tRow < this.headRows
+            continue
+        this.table.cell_set_text(row = tRow, column = 0, text = data.getEonName(eon))
+    
+    // Vertical headers for the stats
+    if this.extended
+        this.table.cell_set_text(row = this.rows - 3, column = 0, text = 'Avg')
+        this.table.cell_set_text(row = this.rows - 2, column = 0, text = 'StDev')
+        this.table.cell_set_text(row = this.rows - 1, column = 0, text = 'Pos%')
+    // Return the object
+    this
+
+// @function Returns the number of non-na values in `this` array
+// @param this The array to find the non-na values
+method nonNA(array<float> this) =>
+    int result = 0
+    for item in this
+        if not na(item)
+            result += 1
+    result
+
+// @function Returns the number of non-zero non-na values in `this` array
+// @param this The array to find the non-zero non-na values
+method nonZero(array<float> this) =>
+    int result = 0
+    for item in this
+        if not na(item) and item != 0.0
+            result += 1
+    result
+
+// @function Returns the number of non-zero non-na values in `this` matrix
+// @param this The matrix to find the non-zero non-na values
+// @param fromRow The row to start counting from
+method nonZero(matrix<float> this, int fromRow = 0) =>
+    int result = 0
+    int totalRows = this.rows() - 1
+    for r = fromRow to totalRows > 0 ? totalRows : na
+        result += this.row(r).nonZero()
+    result
+
+// @function Returns the percentage of positive non-na values in `this` array
+// @param this The array with the values
+// @returns The percentage of positive values
+method percentPositive(array<float> this) =>
+    int nonNA = 0
+    int pos = 0
+    for item in this
+        if not na(item)
+            nonNA += 1
+            if item > 0
+                pos += 1
+    100.0 * pos / nonNA
+
+// @function Update the seasonal table object with the given data
+// @param this The seasonal table object
+// @param data The seasonal cell data to update the table
+// @param positiveTxtColor The text color when positive
+// @param negativeTxtColor The text color when negative
+// @param neutralTxtColor The text color when neutral
+// @param positiveBgColor The background color with transparency when positive
+// @param negativeBgColor The background color with transparency when negative
+// @param neutralBgColor The background color with transparency when neutral
+// @param timeBgColor The background color of the time gradient
+export method update(SeasonalTable this, SeasonalData data, simple color positiveTxtColor = #00D26A, simple color negativeTxtColor = #ED2F2D, simple color neutralTxtColor = chart.fg_color, simple color positiveBgColor = #00897b0c, simple color negativeBgColor = #880e4f0c, simple color neutralBgColor = #363a450c, simple color timeBgColor = #2D3864) =>
+    // Cell Texts, BG Colors and tooltips
+    for [eon, mRow] in data.eonToMatrixRow
+        int tRow = this.matrixToTableRow(data.numOfEons, mRow)
+        if tRow < this.headRows
+            continue
+        this.table.cell_set_text(row = tRow, column = 0, text = data.getEonName(eon))
+        int mostRecentEonScore = ((mRow - data.mostRecentMatrixRow) + this.eonRows - 1) % this.eonRows
+        int totalNonZeroSeasonsInEon = data.returnPercs.row(mRow).nonZero()
+        int nonZeroSeasonsInEonCount = 0
+        for mCol = 0 to data.returnPercs.columns() - 1
+            float ret = data.returnPercs.get(row = mRow, column = mCol)
+            int tCol = this.matrixToTableColumn(mCol)
+            this.table.cell_set_tooltip(row = tRow, column = tCol, tooltip = str.format('Season/Eon: {0}/{1}\nBalance: {2}\nMaxDD: {3}', data.getSeasonName(mCol), data.getEonName(eon), str.tostring(data.balances.get(row = mRow, column = mCol), format.volume), str.tostring(data.maxDDs.get(row = mRow, column = mCol), format.percent)))
+            if ret != 0.0
+                this.table.cell_set_text(row = tRow, column = tCol, text = (ret >= 0.0 ? '+' : '') + str.tostring(ret, format.percent))
+                this.table.cell_set_text_color(row = tRow, column = tCol, text_color = ret >= 0.0 ? positiveTxtColor : negativeTxtColor)
+                this.table.cell_set_bgcolor(row = tRow, column = tCol, bgcolor = color.new(timeBgColor, 100.0 * (data.numOfEons - mostRecentEonScore - (totalNonZeroSeasonsInEon > 1 ? nonZeroSeasonsInEonCount / (totalNonZeroSeasonsInEon - 1) : 0)) / data.numOfEons))
+                nonZeroSeasonsInEonCount += 1
+            else
+                this.table.cell_set_text(row = tRow, column = tCol, text = '')
+                this.table.cell_set_text_color(row = tRow, column = tCol, text_color = neutralTxtColor)
+                this.table.cell_set_bgcolor(row = tRow, column = tCol, bgcolor = neutralBgColor)
+        // Compute P&L
+        float ret = data.eonReturnPercs.get(mRow)
+        int tCol = this.headColumns + this.seasonColumns
+        if ret != 0.0
+            this.table.cell_set_text(row = tRow, column = tCol, text = (ret >= 0.0 ? '+' : '') + str.tostring(ret, format.percent))
+            this.table.cell_set_text_color(row = tRow, column = tCol, text_color = ret >= 0.0 ? positiveTxtColor : negativeTxtColor)
+            this.table.cell_set_bgcolor(row = tRow, column = tCol, bgcolor = ret >= 0.0 ? positiveBgColor : negativeBgColor)
+        else
+            this.table.cell_set_text(row = tRow, column = tCol, text = '')
+            this.table.cell_set_text_color(row = tRow, column = tCol, text_color = neutralTxtColor)
+            this.table.cell_set_bgcolor(row = tRow, column = tCol, bgcolor = neutralBgColor)
+        // Compute CAGR and MaxDD
+        if this.extended
+            tCol += 1
+            float cagr = data.eonCAGRs.get(mRow)
+            this.table.cell_set_text(row = tRow, column = tCol, text = (cagr >= 0.0 ? '+' : '') + str.tostring(cagr, format.percent))
+            this.table.cell_set_text_color(row = tRow, column = tCol, text_color = cagr >= 0.0 ? positiveTxtColor : negativeTxtColor)
+            this.table.cell_set_bgcolor(row = tRow, column = tCol, bgcolor = cagr >= 0.0 ? positiveBgColor : negativeBgColor)
+            tCol += 1
+            this.table.cell_set_text(row = tRow, column = tCol, text = str.tostring(data.eonMaxDDs.get(mRow), format.percent))
+            this.table.cell_set_text_color(row = tRow, column = tCol, text_color = negativeTxtColor)
+            this.table.cell_set_bgcolor(row = tRow, column = tCol, bgcolor = negativeBgColor)
+
+    // Update the seasonal stats
+    if this.extended
+        for tCol = this.headColumns to this.headColumns + this.seasonColumns - 1
+            array<float> seasonReturnPercs = data.returnPercs.col(tCol - this.headColumns)
+            float ret = seasonReturnPercs.avg()
+            float posPerc = seasonReturnPercs.percentPositive()
+            this.table.cell_set_text(row = this.rows - 3, column = tCol, text = (ret >= 0.0 ? '+' : '') + str.tostring(ret, format.percent))
+            this.table.cell_set_text_color(row = this.rows - 3, column = tCol, text_color = ret >= 0.0 ? positiveTxtColor : negativeTxtColor)
+            this.table.cell_set_bgcolor(row = this.rows - 3, column = tCol, bgcolor = ret >= 0.0 ? positiveBgColor : negativeBgColor)
+            this.table.cell_set_text(row = this.rows - 2, column = tCol, text = '±' + str.tostring(seasonReturnPercs.stdev(false), '##.##'))
+            this.table.cell_set_text(row = this.rows - 1, column = tCol, text = str.tostring(posPerc, '##.#') + '%')
+            this.table.cell_set_text_color(row = this.rows - 1, column = tCol, text_color = posPerc > 50.0 ? positiveTxtColor : posPerc < 50.0 ? negativeTxtColor : neutralTxtColor)
+            this.table.cell_set_bgcolor(row = this.rows - 1, column = tCol, bgcolor = posPerc > 50.0 ? positiveBgColor : posPerc < 50.0 ? negativeBgColor : neutralBgColor)
+
+//#endregion ===========================================================================================================
+//#region EXAMPLE
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+
+// INPUT ===============================================================================================================
+const string TT_COMPUTATIONAL_HEAVY_WARNING = ' WARNING! Computational heavy operation. If you get a timeout error please adjust the datetime window filter or disable other computational heavy operations.'
+showSeasonalTable = input.bool(defval = true, title = 'Show Seasonal Table⚠️🐌  ', inline = 'Seasonal Table', group = 'Analytics', display = display.data_window)
+seasonalTableExtend = input.bool(defval = true, title = 'Extended', tooltip = 'Show the table with the seasonal performance. Extend the seasonal table with additional rows and colums with statistics for each season like Avg, StDev and for each eon like CAGR and MaxDD.' + TT_COMPUTATIONAL_HEAVY_WARNING, inline = 'Seasonal Table', group = 'Analytics', display = display.data_window, active = showSeasonalTable)
+seasonalTableSeasonality = input.enum(defval = Seasonality.monthOfYear, title = '  Season/Eon       ', tooltip = 'The season and eon of the seasonal performance table.', group = 'Analytics', display = display.data_window, active = showSeasonalTable)
+seasonalTableMaxNumOfYears = input.int(defval = 5, title = '  Max Num of Years     ', minval = 0, tooltip = 'The maximum number of eons to show in the seasonal performance table.', group = 'Analytics', display = display.data_window, active = showSeasonalTable)
+showStatsTable = input.bool(defval = true, title = 'Show Stats Table⚠️🐌   ', inline = 'Stats Table', group = 'Analytics', display = display.data_window)
+statsTablePosY = input.string(defval = 'TOP', title = '​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​', options = ['TOP', 'MIDDLE', 'BOTTOM'], inline = 'Stats Table', group = 'Analytics', display = display.data_window, active = showStatsTable)
+statsTablePosX = input.string(defval = 'RIGHT', title = '​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​', options = ['LEFT', 'RIGHT'], tooltip = 'Show the table with the overall trade statistics on the selected corner.' + TT_COMPUTATIONAL_HEAVY_WARNING, inline = 'Stats Table', group = 'Analytics', display = display.data_window, active = showStatsTable)
+showMetricsTable = input.bool(defval = true, title = 'Show Metrics Table⚠️🐌  ', inline = 'Metrics Table', group = 'Analytics', display = display.data_window)
+metricsTablePosY = input.string(defval = 'BOTTOM', title = '​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​', options = ['TOP', 'MIDDLE', 'BOTTOM'], inline = 'Metrics Table', group = 'Analytics', display = display.data_window, active = showMetricsTable)
+metricsTablePosX = input.string(defval = 'RIGHT', title = '​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​', options = ['LEFT', 'RIGHT'], tooltip = 'Show the table with the trade metrics on the selected corner.' + TT_COMPUTATIONAL_HEAVY_WARNING, inline = 'Metrics Table', group = 'Analytics', display = display.data_window, active = showMetricsTable)
+
+// LOGIC ===============================================================================================================
+float fastMA = ta.sma(close, 21)
+float slowMA = ta.sma(close, 49)
+
+bool longStartCondition = ta.crossover(fastMA, slowMA)
+if longStartCondition
+    strategy.entry(id = 'Long', direction = strategy.long)
+
+bool longEndCondition = ta.crossunder(fastMA, slowMA)
+if longEndCondition
+    strategy.close(id = 'Long')
+
+// Buy&Hold
+var float firstEntry = 0.0
+var bool firstBuyInit = false
+var float buyAndHoldPerc = 0.0
+
+if showMetricsTable and not firstBuyInit and strategy.opentrades > 0
+    firstEntry := strategy.opentrades.entry_price(0)
+    firstBuyInit := true
+
+if showMetricsTable and strategy.opentrades > 0
+    buyAndHoldPerc := 100.0 * (strategy.closedtrades.exit_price(strategy.closedtrades - 1) - firstEntry) / firstEntry
+
+bool SHOW_TABLE = showStatsTable or showMetricsTable or showSeasonalTable
+
+if SHOW_TABLE
+    var StatsData statsData = StatsData.new(wins = SideStats.new(numOf = strategy.wintrades, avgQuantityPerc = strategy.avg_winning_trade), losses = SideStats.new(numOf = strategy.losstrades, avgQuantityPerc = strategy.avg_losing_trade)) // TODO Compute and pass the actual results here!
+    statsData.update(SideStats.new(), SideStats.new(), 0)
+    var SeasonalData seasonalData = SeasonalData.new().init(seasonalTableSeasonality)
+    
+    if showSeasonalTable
+        seasonalData.update()
+
+    if barstate.islastconfirmedhistory or (barstate.isrealtime and barstate.isconfirmed)
+        if showStatsTable
+            var statsTable = StatsTable.new().init(getTablePos(statsTablePosY, statsTablePosX))
+            statsTable.update(statsData)
+
+        if showMetricsTable
+            var metricsTable = MetricsTable.new().init(getTablePos(metricsTablePosY, metricsTablePosX))
+            metricsTable.update(statsData, buyAndHoldPerc)
+
+        if showSeasonalTable
+            var seasonalTable = SeasonalTable.new().init(seasonalData, getTablePos('MIDDLE', 'CENTER'), seasonalTableMaxNumOfYears, 100.0, 100.0, seasonalTableExtend)
+            seasonalTable.update(seasonalData)
+
+if barstate.islastconfirmedhistory
+    log.info('the position is: {0} -> {1} -> {2} -> {3}', position.bottom_center, getTablePos(statsTablePosY, statsTablePosX), getTablePos(metricsTablePosY, metricsTablePosX), getTablePos('MIDDLE', 'CENTER'))
+
+// PLOT ================================================================================================================
+plot(series = fastMA, title = 'Fast MA', color = color.yellow, linewidth = 1, style = plot.style_line, force_overlay = true)
+plot(series = slowMA, title = 'Slow MA', color = color.orange, linewidth = 1, style = plot.style_line, force_overlay = true)
+
+//#endregion ===========================================================================================================

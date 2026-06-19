@@ -1,0 +1,740 @@
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © TFlab
+
+//@version=5
+
+library("Dark_Light_Theme_TradingFinder_Switching_Colors_Library", overlay = true)
+
+export SwitchingColorMode(color Color, string Mode) =>
+	//Type rgb
+	var string Type = ''
+	var string rS  = '' 
+	var string gS  = ''
+	var string bS  = ''
+	// Adjustment Coefficient
+	var float rC  = 0.0 
+	var float gC  = 0.0
+	var float bC  = 0.0
+	//Adjusted Color
+	var float  rNew = 0
+	var float  gNew = 0
+	var float  bNew = 0
+
+	//rgbt Color
+	r = color.r(Color)
+	g = color.g(Color)
+	b = color.b(Color)
+	t = color.t(Color)
+
+
+
+
+
+
+
+	// Brightness Detection
+
+	rS := if b <= 51
+		'r0'
+	else if b > 51 and b <= 102
+		'r1'
+	else if b > 102 and b <= 153
+		'r2'
+	else if b > 153 and b <= 204
+		'r3'
+	else if b > 204 and b <= 255
+		'r4'
+
+
+	gS := if g <= 85
+		'g0'
+	else if g > 85 and g <= 170
+		'g1'
+	else if g > 170 and g <= 255
+		'g2'
+
+
+	bS := if b <= 32
+		'b0'
+	else if b > 32 and b <= 64
+		'b1'
+	else if b > 64 and b <= 96
+		'b2'
+	else if b > 96 and b <= 128
+		'b3'
+	else if b > 128 and b <= 160
+		'b4'
+	else if b > 160 and b <= 196
+		'b5'
+	else if b > 196 and b <= 224
+		'b6'
+	else if b > 224 
+		'b7'
+
+
+
+
+	if r < 30 and g < 30 and b < 30
+		Type:= 'HardDark'		
+
+	else if r > 220 and g > 220 and b > 220
+		Type:= 'HardLight'
+
+	else if rS == 'r0' and gS == 'g0' and bS == 'b0'
+		Type:= 'Dark'
+		rC  := 7
+		gC  := 7
+		bC  := 7
+
+	else if rS == 'r0' and gS == 'g0' and bS == 'b1'
+		Type:= 'Dark'
+		rC  := 2.5 
+		gC  := 2.3
+		bC  := 2.1
+	else if rS == 'r0' and gS == 'g0' and bS == 'b2'
+		Type:= 'Dark'
+		rC  := 2.2 
+		gC  := 2.2
+		bC  := 2.2
+	else if rS == 'r0' and gS == 'g0' and bS == 'b3'
+		Type:= 'Dark'
+		rC  := 3 
+		gC  := 2.1
+		bC  := 2.2
+	else if rS == 'r0' and gS == 'g0' and bS == 'b4'
+		Type:= 'Dark'
+		rC  := 2.5 
+		gC  := 2
+		bC  := 1.75
+	else if rS == 'r0' and gS == 'g0' and bS == 'b5'
+		Type:= 'Dark'
+		rC  := 3.1 
+		gC  := 2.1
+		bC  := 1.7
+	else if rS == 'r0' and gS == 'g0' and bS == 'b6'
+		Type:= 'Dark'
+		rC  := 3.5 
+		gC  := 2.2
+		bC  := 1.25
+	else if rS == 'r0' and gS == 'g0' and bS == 'b7'
+		Type:= 'Dark'
+		rC  := 4 
+		gC  := 2.5
+		bC  := 1.5
+
+	else if rS == 'r0' and gS == 'g1' and bS == 'b0'
+		Type:= 'Dark'
+		rC  := 5
+		gC  := 5
+		bC  := 8
+	else if rS == 'r0' and gS == 'g1' and bS == 'b1'
+		Type:= 'Dark'
+		rC  := 3 
+		gC  := 1.75
+		bC  := 2.5
+	else if rS == 'r0' and gS == 'g1' and bS == 'b2'
+		Type:= 'Dark'
+		rC  := 3.5 
+		gC  := 1.75
+		bC  := 2.2
+	else if rS == 'r0' and gS == 'g1' and bS == 'b3'
+		Type:= 'Dark'
+		rC  := 3 
+		gC  := 1.8
+		bC  := 1.8
+	else if rS == 'r0' and gS == 'g1' and bS == 'b4'
+		Type:= 'Dark'
+		rC  := 2.5 
+		gC  := 1.5
+		bC  := 1.3
+	else if rS == 'r0' and gS == 'g1' and bS == 'b5'
+		Type:= 'Dark'
+		rC  := 3
+		gC  := 1.3
+		bC  := 1.3
+	else if rS == 'r0' and gS == 'g1' and bS == 'b6'
+		Type:= 'Dark'
+		rC  := 3 
+		gC  := 1.3
+		bC  := 1.15
+	else if rS == 'r0' and gS == 'g1' and bS == 'b7'
+		Type:= 'Dark'
+		rC  := 4 
+		gC  := 1.3
+		bC  := 1
+
+	else if rS == 'r0' and gS == 'g2' and bS == 'b0'
+		Type:= 'N'
+		rC  := 1 
+		gC  := 1
+		bC  := 1
+	else if rS == 'r0' and gS == 'g2' and bS == 'b1'
+		Type:= 'N'
+		rC  := 1 
+		gC  := 1
+		bC  := 1
+	else if rS == 'r0' and gS == 'g2' and bS == 'b2'
+		Type:= 'N'
+		rC  := 1 
+		gC  := 1
+		bC  := 1
+	else if rS == 'r0' and gS == 'g2' and bS == 'b3'
+		Type:= 'N'
+		rC  := 1 
+		gC  := 1
+		bC  := 1
+	else if rS == 'r0' and gS == 'g2' and bS == 'b4'
+		Type:= 'N'
+		rC  := 1 
+		gC  := 1
+		bC  := 1
+	else if rS == 'r0' and gS == 'g2' and bS == 'b5'
+		Type:= 'N'
+		rC  := 1 
+		gC  := 1
+		bC  := 1
+	else if rS == 'r0' and gS == 'g2' and bS == 'b6'
+		Type:= 'N'
+		rC  := 1 
+		gC  := 1
+		bC  := 1
+	else if rS == 'r0' and gS == 'g2' and bS == 'b7'
+		Type:= 'Dark'
+		rC  := 1 
+		gC  := 1
+		bC  := 1
+
+	//////////////////////////////////////////
+
+	else if rS == 'r1' and gS == 'g0' and bS == 'b0'
+		Type:= 'Dark'
+		rC  := 2.5 
+		gC  := 3
+		bC  := 4
+	else if rS == 'r1' and gS == 'g0' and bS == 'b1'
+		Type:= 'Dark'
+		rC  := 3 
+		gC  := 3
+		bC  := 3
+	else if rS == 'r1' and gS == 'g0' and bS == 'b2'
+		Type:= 'Dark'
+		rC  := 2.75
+		gC  := 2.75
+		bC  := 2.75
+	else if rS == 'r1' and gS == 'g0' and bS == 'b3'
+		Type:= 'Dark'
+		rC  := 2.2 
+		gC  := 2.2
+		bC  := 2
+	else if rS == 'r1' and gS == 'g0' and bS == 'b4'
+		Type:= 'Dark'
+		rC  := 2 
+		gC  := 2
+		bC  := 1.5
+	else if rS == 'r1' and gS == 'g0' and bS == 'b5'
+		Type:= 'Dark'
+		rC  := 2 
+		gC  := 2
+		bC  := 1.5
+	else if rS == 'r1' and gS == 'g0' and bS == 'b6'
+		Type:= 'Dark'
+		rC  := 1.5 
+		gC  := 2
+		bC  := 1.2
+	else if rS == 'r1' and gS == 'g0' and bS == 'b7'
+		Type:= 'N'
+		rC  := 1 
+		gC  := 1
+		bC  := 1
+
+	else if rS == 'r1' and gS == 'g1' and bS == 'b0'
+		Type:= 'N'
+		rC  := 1 
+		gC  := 1
+		bC  := 1
+	else if rS == 'r1' and gS == 'g1' and bS == 'b1'
+		Type:= 'N'
+		rC  := 1 
+		gC  := 1
+		bC  := 1
+	else if rS == 'r1' and gS == 'g1' and bS == 'b2'
+		Type:= 'N'
+		rC  := 1 
+		gC  := 1
+		bC  := 1
+	else if rS == 'r1' and gS == 'g1' and bS == 'b3'
+		Type:= 'Dark'
+		rC  := 1.5 
+		gC  := 1.75
+		bC  := 1.5
+	else if rS == 'r1' and gS == 'g1' and bS == 'b4'
+		Type:= 'Dark'
+		rC  := 1 
+		gC  := 1.35
+		bC  := 1.35
+	else if rS == 'r1' and gS == 'g1' and bS == 'b5'
+		Type:= 'N'
+		rC  := 1 
+		gC  := 1
+		bC  := 1
+	else if rS == 'r1' and gS == 'g1' and bS == 'b6'
+		Type:= 'N'
+		rC  := 1 
+		gC  := 1
+		bC  := 1
+	else if rS == 'r1' and gS == 'g1' and bS == 'b7'
+		Type:= 'N'
+		rC  := 1 
+		gC  := 1
+		bC  := 1
+
+	else if rS == 'r1' and gS == 'g2' and bS == 'b0'
+		Type:= 'N'
+		rC  := 1 
+		gC  := 1
+		bC  := 1
+	else if rS == 'r1' and gS == 'g2' and bS == 'b1'
+		Type:= 'N'
+		rC  := 1 
+		gC  := 1
+		bC  := 1
+	else if rS == 'r1' and gS == 'g2' and bS == 'b2'
+		Type:= 'N'
+		rC  := 1 
+		gC  := 1
+		bC  := 1
+	else if rS == 'r1' and gS == 'g2' and bS == 'b3'
+		Type:= 'N'
+		rC  := 1 
+		gC  := 1
+		bC  := 1
+	else if rS == 'r1' and gS == 'g2' and bS == 'b4'
+		Type:= 'N'
+		rC  := 1 
+		gC  := 1
+		bC  := 1
+	else if rS == 'r1' and gS == 'g2' and bS == 'b5'
+		Type:= 'Light'
+		rC  := 0.9
+		gC  := 0.85
+		bC  := 0.85
+	else if rS == 'r1' and gS == 'g2' and bS == 'b6'
+		Type:= 'Light'
+		rC  := 0.9
+		gC  := 0.85
+		bC  := 0.9
+	else if rS == 'r1' and gS == 'g2' and bS == 'b7'
+		Type:= 'Light'
+		rC  := 0.9 
+		gC  := 0.85
+		bC  := 0.8
+
+	//////////////////////////////////////////
+
+	else if rS == 'r2' and gS == 'g0' and bS == 'b0'
+		Type:= 'Dark'
+		rC  := 1.45 
+		gC  := 1.75
+		bC  := 3
+	else if rS == 'r2' and gS == 'g0' and bS == 'b1'
+		Type:= 'Dark'
+		rC  := 2 
+		gC  := 1.25
+		bC  := 1.25
+	else if rS == 'r2' and gS == 'g0' and bS == 'b2'
+		Type:= 'Dark'
+		rC  := 1.75
+		gC  := 2
+		bC  := 2
+	else if rS == 'r2' and gS == 'g0' and bS == 'b3'
+		Type:= 'Dark'
+		rC  := 2 
+		gC  := 1.5
+		bC  := 1.75
+	else if rS == 'r2' and gS == 'g0' and bS == 'b4'
+		Type:= 'Dark'
+		rC  := 1.5 
+		gC  := 2
+		bC  := 1.5
+	else if rS == 'r2' and gS == 'g0' and bS == 'b5'
+		Type:= 'Dark'
+		rC  := 1.25 
+		gC  := 1.5
+		bC  := 1.3
+	else if rS == 'r2' and gS == 'g0' and bS == 'b6'
+		Type:= 'Dark'
+		rC  := 1.3 
+		gC  := 2
+		bC  := 1.2
+	else if rS == 'r2' and gS == 'g0' and bS == 'b7'
+		Type:= 'Dark'
+		rC  := 1.5
+		gC  := 3
+		bC  := 1.2
+
+	else if rS == 'r2' and gS == 'g1' and bS == 'b0'
+		Type:= 'Dark'
+		rC  := 1.25 
+		gC  := 1.25
+		bC  := 1
+	else if rS == 'r2' and gS == 'g1' and bS == 'b1'
+		Type:= 'Dark'
+		rC  := 1.75 
+		gC  := 1.75
+		bC  := 1.5
+	else if rS == 'r2' and gS == 'g1' and bS == 'b2'
+		Type:= 'Dark'
+		rC  := 1.5 
+		gC  := 1.5
+		bC  := 1
+	else if rS == 'r2' and gS == 'g1' and bS == 'b3'
+		Type:= 'Light'
+		rC  := 0.33 
+		gC  := 0.33
+		bC  := 0.33
+	else if rS == 'r2' and gS == 'g1' and bS == 'b4'
+		Type:= 'Light'
+		rC  := 0.5
+		gC  := 0.5
+		bC  := 0.65
+	else if rS == 'r2' and gS == 'g1' and bS == 'b5'
+		Type:= 'Light'
+		rC  := 0.75 
+		gC  := 0.75
+		bC  := 0.65
+	else if rS == 'r2' and gS == 'g1' and bS == 'b6'
+		Type:= 'Light'
+		rC  := 0.5 
+		gC  := 0.75
+		bC  := 0.85
+	else if rS == 'r2' and gS == 'g1' and bS == 'b7'
+		Type:= 'Light'
+		rC  := 0.75 
+		gC  := 0.75
+		bC  := 1.15
+
+	else if rS == 'r2' and gS == 'g2' and bS == 'b0'
+		Type:= 'Light'
+		rC  := 0.9
+		gC  := 0.8
+		bC  := 0.85
+	else if rS == 'r2' and gS == 'g2' and bS == 'b1'
+		Type:= 'Light'
+		rC  := 0.8
+		gC  := 0.7
+		bC  := 0.6
+	else if rS == 'r2' and gS == 'g2' and bS == 'b2'
+		Type:= 'Light'
+		rC  := 0.7
+		gC  := 0.7
+		bC  := 0.6
+	else if rS == 'r2' and gS == 'g2' and bS == 'b3'
+		Type:= 'Light'
+		rC  := 0.75 
+		gC  := 0.75
+		bC  := 0.8
+	else if rS == 'r2' and gS == 'g2' and bS == 'b4'
+		Type:= 'Light'
+		rC  := 0.8
+		gC  := 0.8
+		bC  := 0.8
+	else if rS == 'r2' and gS == 'g2' and bS == 'b5'
+		Type:= 'Light'
+		rC  := 0.6
+		gC  := 0.8
+		bC  := 0.7
+	else if rS == 'r2' and gS == 'g2' and bS == 'b6'
+		Type:= 'Light'
+		rC  := 0.8 
+		gC  := 0.8
+		bC  := 0.8
+	else if rS == 'r2' and gS == 'g2' and bS == 'b7'
+		Type:= 'Light'
+		rC  := 0.6 
+		gC  := 0.8
+		bC  := 0.8
+
+	/////////////////////////////////////////
+
+	else if rS == 'r3' and gS == 'g0' and bS == 'b0'
+		Type:= 'Dark'
+		rC  := 1.3 
+		gC  := 1.2
+		bC  := 1.7
+	else if rS == 'r3' and gS == 'g0' and bS == 'b1'
+		Type:= 'Dark'
+		rC  := 1.3 
+		gC  := 1.1
+		bC  := 1.1
+	else if rS == 'r3' and gS == 'g0' and bS == 'b2'
+		Type:= 'Dark'
+		rC  := 1.3 
+		gC  := 1.8
+		bC  := 1.3
+	else if rS == 'r3' and gS == 'g0' and bS == 'b3'
+		Type:= 'Dark'
+		rC  := 1.4
+		gC  := 1.9
+		bC  := 1.4
+	else if rS == 'r3' and gS == 'g0' and bS == 'b4'
+		Type:= 'Dark'
+		rC  := 1.3 
+		gC  := 1.5
+		bC  := 1.2
+	else if rS == 'r3' and gS == 'g0' and bS == 'b5'
+		Type:= 'Dark'
+		rC  := 1.25 
+		gC  := 1.75
+		bC  := 1.25
+	else if rS == 'r3' and gS == 'g0' and bS == 'b6'
+		Type:= 'Dark'
+		rC  := 1.3 
+		gC  := 1.75
+		bC  := 1.1
+	else if rS == 'r3' and gS == 'g0' and bS == 'b7'
+		Type:= 'Dark'
+		rC  := 1.75
+		gC  := 2.5
+		bC  := 1.1
+
+	else if rS == 'r3' and gS == 'g1' and bS == 'b0'
+		Type:= 'Dark'
+		rC  := 1.75
+		gC  := 1.75
+		bC  := 2.5
+	else if rS == 'r3' and gS == 'g1' and bS == 'b1'
+		Type:= 'Dark'
+		rC  := 1.55 
+		gC  := 1.55
+		bC  := 1.1
+	else if rS == 'r3' and gS == 'g1' and bS == 'b2'
+		Type:= 'Dark'
+		rC  := 1.75 
+		gC  := 1.75
+		bC  := 1.4
+	else if rS == 'r3' and gS == 'g1' and bS == 'b3'
+		Type:= 'Dark'
+		rC  := 1.75
+		gC  := 1.75
+		bC  := 1.75
+	else if rS == 'r3' and gS == 'g1' and bS == 'b4'
+		Type:= 'Dark'
+		rC  := 1.3
+		gC  := 1.3
+		bC  := 1.5
+	else if rS == 'r3' and gS == 'g1' and bS == 'b5'
+		Type:= 'Dark'
+		rC  := 1.3 
+		gC  := 1.3
+		bC  := 1.4
+	else if rS == 'r3' and gS == 'g1' and bS == 'b6'
+		Type:= 'Dark'
+		rC  := 1.5
+		gC  := 1.5
+		bC  := 1.2
+	else if rS == 'r3' and gS == 'g1' and bS == 'b7'
+		Type:= 'Dark'
+		rC  := 1.2 
+		gC  := 1.2
+		bC  := 1
+
+	else if rS == 'r3' and gS == 'g2' and bS == 'b0'
+		Type:= 'Light'
+		rC  := 0.95 
+		gC  := 0.95
+		bC  := 0.95
+	else if rS == 'r3' and gS == 'g2' and bS == 'b1'
+		Type:= 'Light'
+		rC  := 0.85
+		gC  := 0.85
+		bC  := 0.85
+	else if rS == 'r3' and gS == 'g2' and bS == 'b2'
+		Type:= 'Light'
+		rC  := 0.8 
+		gC  := 0.8
+		bC  := 0.9
+	else if rS == 'r3' and gS == 'g2' and bS == 'b3'
+		Type:= 'Light'
+		rC  := 0.7 
+		gC  := 0.7
+		bC  := 0.8
+	else if rS == 'r3' and gS == 'g2' and bS == 'b4'
+		Type:= 'Light'
+		rC  := 0.8 
+		gC  := 0.8
+		bC  := 0.65
+	else if rS == 'r3' and gS == 'g2' and bS == 'b5'
+		Type:= 'Light'
+		rC  := 0.75 
+		gC  := 0.8
+		bC  := 0.8
+	else if rS == 'r3' and gS == 'g2' and bS == 'b6'
+		Type:= 'Light'
+		rC  := 0.65 
+		gC  := 0.75
+		bC  := 0.75
+	else if rS == 'r3' and gS == 'g2' and bS == 'b7'
+		Type:= 'Light'
+		rC  := 0.65 
+		gC  := 0.75
+		bC  := 0.75
+
+	/////////////////////////////////////////
+
+	else if rS == 'r4' and gS == 'g0' and bS == 'b0'
+		Type:= 'N'
+		rC  := 1 
+		gC  := 1
+		bC  := 1
+	else if rS == 'r4' and gS == 'g0' and bS == 'b1'
+		Type:= 'N'
+		rC  := 1
+		gC  := 1
+		bC  := 1
+	else if rS == 'r4' and gS == 'g0' and bS == 'b2'
+		Type:= 'N'
+		rC  := 1 
+		gC  := 1
+		bC  := 1
+	else if rS == 'r4' and gS == 'g0' and bS == 'b3'
+		Type:= 'N'
+		rC  := 1 
+		gC  := 1
+		bC  := 1
+	else if rS == 'r4' and gS == 'g0' and bS == 'b4'
+		Type:= 'N'
+		rC  := 1 
+		gC  := 1
+		bC  := 1
+	else if rS == 'r4' and gS == 'g0' and bS == 'b5'
+		Type:= 'N'
+		rC  := 1
+		gC  := 1
+		bC  := 1
+	else if rS == 'r4' and gS == 'g0' and bS == 'b6'
+		Type:= 'Light'
+		rC  := 0.7
+		gC  := 0.6
+		bC  := 0.7
+	else if rS == 'r4' and gS == 'g0' and bS == 'b7'
+		Type:= 'Light'
+		rC  := 0.7 
+		gC  := 0.6
+		bC  := 0.7
+
+	else if rS == 'r4' and gS == 'g1' and bS == 'b0'
+		Type:= 'N'
+		rC  := 1 
+		gC  := 1
+		bC  := 1
+	else if rS == 'r4' and gS == 'g1' and bS == 'b1'
+		Type:= 'N'
+		rC  := 1 
+		gC  := 1
+		bC  := 1
+	else if rS == 'r4' and gS == 'g1' and bS == 'b2'
+		Type:= 'N'
+		rC  := 1 
+		gC  := 1
+		bC  := 1
+	else if rS == 'r4' and gS == 'g1' and bS == 'b3'
+		Type:= 'Light'
+		rC  := 0.9 
+		gC  := 0.9
+		bC  := 0.9
+	else if rS == 'r4' and gS == 'g1' and bS == 'b4'
+		Type:= 'Light'
+		rC  := 0.85 
+		gC  := 0.85
+		bC  := 0.85
+	else if rS == 'r4' and gS == 'g1' and bS == 'b5'
+		Type:= 'Light'
+		rC  := 0.65 
+		gC  := 0.65
+		bC  := 0.8
+	else if rS == 'r4' and gS == 'g1' and bS == 'b6'
+		Type:= 'Light'
+		rC  := 0.6
+		gC  := 0.5
+		bC  := 0.7
+	else if rS == 'r4' and gS == 'g1' and bS == 'b7'
+		Type:= 'Light'
+		rC  := 0.7 
+		gC  := 0.4
+		bC  := 0.7
+	else if rS == 'r4' and gS == 'g2' and bS == 'b0'
+		Type:= 'N'
+		rC  := 1 
+		gC  := 1
+		bC  := 1
+	else if rS == 'r4' and gS == 'g2' and bS == 'b1'
+		Type:= 'Light'
+		rC  := 0.95
+		gC  := 0.95
+		bC  := 0.25
+	else if rS == 'r4' and gS == 'g2' and bS == 'b2'
+		Type:= 'Light'
+		rC  := 0.8 
+		gC  := 0.7
+		bC  := 0.25
+	else if rS == 'r4' and gS == 'g2' and bS == 'b3'
+		Type:= 'Light'
+		rC  := 0.7 
+		gC  := 0.7
+		bC  := 0.5
+	else if rS == 'r4' and gS == 'g2' and bS == 'b4'
+		Type:= 'Light'
+		rC  := 0.9 
+		gC  := 0.8
+		bC  := 0.5
+	else if rS == 'r4' and gS == 'g2' and bS == 'b5'
+		Type:= 'Light'
+		rC  := 0.9 
+		gC  := 0.8
+		bC  := 0.45
+	else if rS == 'r4' and gS == 'g2' and bS == 'b6'
+		Type:= 'Light'
+		rC  := 0.5 
+		gC  := 0.4
+		bC  := 0.4
+	else if rS == 'r4' and gS == 'g2' and bS == 'b7'
+		Type:= 'Light'
+		rC  := 0.4 
+		gC  := 0.35
+		bC  := 0.45
+	else 
+		rC  := 1 
+		gC  := 1
+		bC  := 1
+	/////////////////////////////////////////
+	// Adjusted rgb 
+	if Type == 'HardDark' and Mode == 'Dark'
+		rNew := 220
+		gNew := 220
+		bNew := 220
+	else if Type == 'HardLight' and Mode == 'Light'
+		rNew := 30
+		gNew := 30
+		bNew := 30
+	else if Type == 'Dark' and Mode == 'Dark'
+		rNew := math.max(0, math.min(255, r * rC)) >= 250 ? math.max(0, math.min(255, r * rC)) - 10 :  math.max(0, math.min(255, r * rC))
+		gNew := math.max(0, math.min(255, g * gC)) >= 250 ? math.max(0, math.min(255, g * gC)) - 10 :  math.max(0, math.min(255, g * gC))
+		bNew := math.max(0, math.min(255, b * bC)) >= 250 ? math.max(0, math.min(255, b * bC)) - 10 :  math.max(0, math.min(255, b * bC))
+	else if Type == 'Light' and Mode == 'Light'
+		rNew := math.max(0, math.min(255, r * rC)) < 15 ?  math.max(0, math.min(255, r * rC)) + 10 : math.max(0, math.min(255, r * rC))
+		gNew := math.max(0, math.min(255, g * gC)) < 15 ?  math.max(0, math.min(255, g * gC)) + 10 : math.max(0, math.min(255, g * gC)) 
+		bNew := math.max(0, math.min(255, b * bC)) < 15 ?  math.max(0, math.min(255, b * bC)) + 10 : math.max(0, math.min(255, b * bC)) 
+	else
+		rNew := r
+		gNew := g
+		bNew := b	
+		
+	[color.rgb(rNew, gNew, bNew, t)]
+	
+
+
+
+
+
+
+

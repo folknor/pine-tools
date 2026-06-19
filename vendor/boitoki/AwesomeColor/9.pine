@@ -1,0 +1,445 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © boitoki
+
+//@version=5
+
+// @description The following functions all provide different sets of colors.
+library("AwesomeColor", overlay=false)
+
+
+// The name of the function indicates the color scheme.
+// The usage of arguments for all functions is the same.
+// @function {Color group name}
+// @param _color The name of the color group.
+// @returns Returns a color code.
+
+
+// monokai
+// https://kolormark.com/brands/monokai
+export monokai (string _color) =>
+    switch _color
+        'purple'            => #AE81FF
+        'blue'              => #66D9EF
+        'green'             => #A6E22E
+        'yellow'            => #E6DB74
+        'orange'            => #FD971F
+        'black'             => #272822
+        'red'               => #F92472 // Originally pink, but changed to red to add another pink
+        'pink'              => #FB71A3 // added 
+        'white'             => #ffffff // added
+        'gray'              => #74756F // added
+        'up'                => #A6E22E
+        'down'              => #F92472
+        => na
+
+
+// monokai pro
+// https://kolormark.com/brands/monokai
+export monokaipro (string _color) =>
+    switch _color
+        'purple'            => #AB9DF2
+        'blue'              => #78DCE8
+        'green'             => #A9DC76
+        'yellow'            => #FFD866
+        'orange'            => #FC9867
+        'red'               => #FE6188 // Originally pink, but changed to red to add another pink
+        'pink'              => #FFADC2 // added
+        'black'             => #2D2A2E
+        'white'             => #ffffff // added
+        'gray'              => #7A7A7A // added
+        'up'                => #A9DC76
+        'down'              => #FE6188
+        => na
+
+// Panda
+// http://panda.siamak.me/
+export panda (string _color) => 
+    switch _color
+        'verylightgray'     => #E6E6E6
+        'lightergray'       => #cdcdcd
+        'lightgray'         => #757575
+        'gray'              => #373b41
+        'darkgray'          => #2e2f30
+        'verydarkgray'      => #292A2B
+        'black'             => #292A2B
+        'white'             => #f3f3f3
+        'lightmidnight'     => #676B79
+        'blue'              => #45A9F9
+        'bluelight'         => #6FC1FF
+        'purple'            => #B084EB
+        'green'             => #19f9d8
+        'red'               => #FF2C6D
+        'orange'            => #FFB86C
+        'lightorange'       => #ffcc95
+        'pink'              => #FF75B5
+        'lightpink'         => #FF9AC1
+        'yellow'            => #FFF145 // added
+        'up'                => #19f9d8
+        'down'              => #FF2C6D
+        => na
+
+// TradingView
+export tradingview (string _color) =>
+    switch _color
+        'blue'              => #2962ff
+        'red'               => #f23645  // #f23645  // #f44336
+        'green'             => #22ab94  // #22ab94  // #089981
+        'orange'            => #ff9800  // #FF9850  // #F57C00
+        'yellow'            => #FFCA3B
+        'purple'            => #673ab7
+        'lightgray'         => #9598a1
+        'gray'              => #5d606b
+        'black'             => #131722
+        'white'             => #b2b5be
+        'pink'              => #F47F89 // added
+        'buy'               => #1f44ff
+        'sell'              => #e21e34
+        'up'                => #22ab94
+        'down'              => #f23645
+        => #131722
+
+// TradingView flag
+export tradingview_flag (string _color) =>
+    switch _color
+        'red'               => #ff5252
+        'blue'              => #2979ff
+        'green'             => #4caf50
+        'orange'            => #ff9100
+        'purple'            => #ab47bc
+        'cyan'              => #00e5ff
+        'pink'              => #ff80ab
+        'black'             => #131722
+        'white'             => #b2b5be
+        'up'                => #4caf50
+        'down'              => #ff5252
+        => na
+
+// Van Gogh
+// Van Gogh’s "The Painter on the Road to Tarascon" (1888)
+// https://commons.wikimedia.org/wiki/File:Vincent_Van_Gogh_0013.jpg
+export gogh_tarascon (string _color) => 
+    switch _color
+        'lightgreen'        => #75b27f
+        'green'             => #4c7b3d
+        'yellow'            => #d39e2e
+        'blue'              => #27749a
+        'black'             => #2e3428
+        'up'                => #4c7b3d
+        'down'              => #d39e2e
+        => na
+
+// Van Gogh’s "Wheatfield with Crows" (1890)
+// https://commons.wikimedia.org/wiki/File:Vincent_Van_Gogh_-_Wheatfield_with_Crows.jpg
+export gogh_crows (string _color) =>
+    switch _color
+        'navy'              => #072945
+        'blue'              => #2e68b1
+        'maroon'            => #5f292a
+        'yellow'            => #e7bb3c
+        'green'             => #4e683d
+        'up'                => #e7bb3c
+        'down'              => #2e68b1
+        => na
+
+// Van Gogh’s "Café Terrace on the Place du Forum, Arles" (1888)
+// https://commons.wikimedia.org/wiki/File:Van_Gogh_-_Terrasse_des_Caf%C3%A9s_an_der_Place_du_Forum_in_Arles_am_Abend1.jpeg
+export gogh_cafeterrace (string _color) =>
+    switch _color
+        'blue'              => #1f3fa0
+        'lightblue'         => #5581c6
+        'orange'            => #dd862e
+        'yellow'            => #f7da44
+        'black'             => #172128
+        'up'                => #dd862e
+        'down'              => #5581c6
+        => na
+
+// Helen Frankenthaler
+// Helen Frankenthaler’s "Flood" (1967)
+// https://whitney.org/collection/works/2879
+export frankenthaler_flood (string _color) =>
+    switch _color
+        'maroon'            => #2c0f0c
+        'red'               => #88231a
+        'green'             => #2b371f
+        'yellow'            => #f59009
+        'blue'              => #0a1467
+        'up'                => #0a1467
+        'down'              => #88231a
+        => na
+
+// Helen Frankenthaler’s "The Bay" (1963)
+// https://www.khanacademy.org/humanities/ap-art-history/later-europe-and-americas/modernity-ap/a/frankenthaler-the-bay
+export frankenthaler_thebay (string _color) =>
+    switch _color
+        'lilac'             => #949bcd
+        'green'             => #5f7660
+        'purple'            => #443d8e
+        'white'             => #fef8cb
+        'black'             => #03000e
+        'up'                => #5f7660
+        'down'              => #443d8e
+        => na
+
+
+// Georgia O’Keeffe
+// Georgia O’Keeffe’s "Music, Pink and Blue, №2" (1918)
+// https://prints.okeeffemuseum.org/detail/461218/okeeffe-music-pink-and-blue-ii-1919
+export okeeffe_music (string _color) =>
+    switch _color
+        'green'             => #9ec6be
+        'icegreen'          => #9ec6be
+        'cyan'              => #359bc9
+        'blue'              => #0e6ca5
+        'pink'              => #d890cc
+        'peach'             => #fdc7ae
+        'down'              => #359bc9
+        'up'                => #d890cc
+        => na
+
+// Georgia O’Keeffe’s "Lake George (formerly Reflection Seascape)" (1922)
+// https://prints.okeeffemuseum.org/detail/493483/okeeffe-lake-george-formerly-reflection-seascape-1922
+export okeeffe_lake (string _color) =>
+    switch _color
+        'skyblue'           => #99b6d0
+        'horizonblue'       => #6d8bac
+        'jayblue'           => #41628a
+        'smalt'             => #203e62
+        'indigo'            => #10214c
+        'up'                => #203e62
+        'down'              => #6d8bac
+        => na
+
+// Georgia O’Keeffe’s "Lake George Reflection" (1921–1922)
+// https://commons.wikimedia.org/wiki/File:Georgia_O%27Keeffe_-_Lake_George_Reflection.jpg
+export okeeffe_reflection (string _color) =>
+    switch _color
+        'black'             => #060c09
+        'red'               => #8f0a11
+        'cyan'              => #4086c5
+        'lightblue'         => #d0f1e4
+        'blue'              => #2415c1
+        'up'                => #8f0a11
+        'down'              => #2415c1
+        => na
+
+// Georgia O’Keeffe’s "Sun Water Maine" (1922)
+// http://www.artnet.com/artists/georgia-okeeffe/sun-water-maine-lXkLXUE90Y-4KwWQdW2L7A2
+export okeeffe_sun (string _color) =>
+    switch _color
+        'yellow'            => #e5d67c
+        'blue'              => #94c4d1
+        'lightgreen'        => #8bb48f
+        'green'             => #1a413a
+        'pink'              => #fce7d9
+        'up'                => #e5d67c
+        'down'              => #94c4d1
+        => na
+
+// https://github.com/nashamri/spacemacs-theme/blob/master/spacemacs-common.el
+export spacemacs_dark (string _color) =>
+    switch _color
+        'aqua'              => #2d9574
+        'aqua-bg'           => #293235
+        'green'             => #67b11d
+        'green-bg'          => #293235
+        'green-bg-s'        => #29422d
+        'cyan'              => #28def0
+        'red'               => #f2241f
+        'red-bg'            => #3c2a2c
+        'red-bg-s'          => #512e31
+        'blue'              => #4f97d7
+        'blue-bg'           => #293239
+        'blue-bg-s'         => #2d4252
+        'magenta'           => #a31db1
+        'purple'            => #a31db1 // copied magenta
+        'yellow'            => #b1951d
+        'yellow-bg'         => #32322c
+        'black'             => #1e2023
+        'gray'              => #808777 // added
+        'pink'              => #EF74C3 // added
+        'orange'            => #F2692C // added
+        'white'             => #dcd6d5
+        'up'                => #67b11d
+        'down'              => #f2241f
+        => na
+
+export spacemacs_light (string _color) =>
+    switch _color
+        'aqua'              => #2d9574
+        'aqua-bg'           => #edf2e9
+        'green'             => #67b11d
+        'green-bg'          => #edf2e9
+        'green-bg-s'        => #dae6d0
+        'cyan'              => #21b8c7
+        'red'               => #f2241f
+        'red-bg'            => #faede4
+        'red-bg-s'          => #eed9d2
+        'blue'              => #3a81c3
+        'blue-bg'           => #edf1ed
+        'blue-bg-s'         => #d1dcdf
+        'magenta'           => #a31db1
+        'purple'            => #a31db1 // added
+        'yellow'            => #b1951d
+        'yellow-bg'         => #f6f1e1
+        'black'             => #0e0a10
+        'white'             => #f9f7fb
+        'gray'              => #796384 // added
+        'orange'            => #F95B14 // added
+        'pink'              => #F46B69 // added
+        'up'                => #2d9574
+        'down'              => #f2241f
+        => na
+
+// https://github.com/morhetz/gruvbox/blob/master/colors/gruvbox.vim
+export gruvbox (string _color) =>
+    switch _color
+        'bright_red'        => #fb4934
+        'bright_green'      => #b8bb26
+        'bright_yellow'     => #fabd2f
+        'bright_blue'       => #83a598
+        'bright_purple'     => #d3869b
+        'bright_aqua'       => #8ec07c
+        'bright_orange'     => #fe8019
+        'neutral_red'       => #cc241d
+        'neutral_green'     => #98971a
+        'neutral_yellow'    => #d79921
+        'neutral_blue'      => #458588
+        'neutral_purple'    => #b16286
+        'neutral_aqua'      => #689d6a
+        'neutral_orange'    => #d65d0e
+        'faded_red'         => #9d0006
+        'faded_green'       => #79740e
+        'faded_yellow'      => #b57614
+        'faded_blue'        => #076678
+        'faded_purple'      => #8f3f71
+        'faded_aqua'        => #427b58
+        'faded_orange'      => #af3a03
+
+        'red'               => #cc241d
+        'pink'              => #D5615E // added
+        'green'             => #98971a
+        'yellow'            => #d79921
+        'blue'              => #458588
+        'purple'            => #b16286
+        'aqua'              => #689d6a
+        'orange'            => #d65d0e
+        'black'             => #1D2021
+        'verydarkgray'      => #282828
+        'darkgray'          => #32302F
+        'gray'              => #928374
+        'white'             => #f9f5d7
+        'veryrightgray'     => #FBF1C7
+        'lightergray'       => #f2e5bc
+        'lightgray'         => #ebdbb2
+        'up'                => #98971a
+        'down'              => #cc241d
+        => na
+
+// https://jakesheadwarning.tumblr.com/image/87096028457
+// https://diariesofanessexgirl.com/guardians-of-the-galaxy-color-palette/
+export guardians (string _color) =>
+    switch _color
+        'green'             => #41802A
+        'red'               => #75091e
+        'purple'            => #8C5094 // #a35fd1
+        'orange'            => #E17431 // added
+        'blue'              => #385A99 // #2061c8
+        'yellow'            => #dac23a
+        'black'             => #000000
+        'white'             => #ffffff
+        'pink'              => #C7207A // added
+        'gray'              => #493D52 // added
+        'up'                => #385A99
+        'down'              => #75091e
+        => na
+
+// https://i.pinimg.com/originals/b8/36/6e/b8366e9f276a9fc63055f3187945247a.png
+export st3 (string _color) =>
+    switch _color
+        'black'             => #090922 
+        'white'             => #E0DFE5
+        'navy'              => #080247 
+        'blue'              => #096EBF //#0f0085 
+        'darkpurple'        => #382895 
+        'purple'            => #8768e0 
+        'cyan'              => #30bae3
+        'green'             => #12B083
+        'pink'              => #C70A95 
+        'red'               => #b1002a
+        'yellow'            => #B0A612
+        'orange'            => #E34417
+        'brown'             => #694e2b 
+        'darkbrown'         => #51363b 
+        'gray'              => #5A595E
+        'up'                => #12B083
+        'down'              => #b1002a
+        => na
+
+export st4 (string _color) =>
+    switch _color
+        'black'             => #0D0D0D
+        'white'             => #E0DFE5
+        'blue'              => #0578A6
+        'purple'            => #9632A6 //#BA07AB
+        'green'             => #0DA667
+        'pink'              => #F25093
+        'red'               => #D93611
+        'yellow'            => #F2A341
+        'orange'            => #FC5E35
+        'gray'              => #5C504D
+        'up'                => #0DA667
+        'down'              => #D93611
+        => na
+
+// 
+// red green blue orange yellow purple black white
+export package (string _name, string _color, color _fallback = na) =>
+    switch str.lower(_name)
+        'monokai'           => monokai(_color)
+        'monokaipro'        => monokaipro(_color)
+        'panda'             => panda(_color)
+        'tradingview'       => tradingview(_color)
+        'spacemacs_dark'    => spacemacs_dark(_color)
+        'spacemacs_light'   => spacemacs_light(_color)
+        'gruvbox'           => gruvbox(_color)
+        'guardians'         => guardians(_color)
+        'st3'               => st3(_color)
+        'st4'               => st4(_color)
+
+        'okeeffe_sun'           => okeeffe_sun(_color)
+        'okeeffe_reflection'    => okeeffe_reflection(_color)
+        'okeeffe_lake'          => okeeffe_lake(_color)
+        'okeeffe_music'         => okeeffe_music(_color)
+
+        'frankenthaler_thebay'  => frankenthaler_thebay(_color)
+        'frankenthaler_flood'   => frankenthaler_flood(_color)
+        'gogh_cafeterrace'      => gogh_cafeterrace(_color)
+        'gogh_crows'            => gogh_crows(_color)
+        'gogh_tarascon'         => gogh_tarascon(_color)
+        => _fallback
+
+
+//////////
+// TEST //
+i_color     = input.string('Guardians', 'Color', options=['TradingView', 'monokai', 'monokaipro', 'panda', 'Gruvbox', 'Spacemacs_light', 'Spacemacs_dark', 'Guardians', 'st3', 'st4'])
+i_bar_color = input.string('TradingView', options=[
+  'TradingView', 'monokai', 'monokaipro', 'panda', 'Gruvbox', 'Spacemacs_light', 'Spacemacs_dark', 'Guardians', 'st3', 'st4', 
+  'gogh_tarascon', 'gogh_crows', 'gogh_cafeterrace',
+  'frankenthaler_flood', 'frankenthaler_thebay',
+  'okeeffe_sun', 'okeeffe_reflection', 'okeeffe_lake', 'okeeffe_music'
+  ])
+
+if barstate.islast
+    a_colors    = array.from('red', 'pink', 'orange', 'yellow', 'green', 'blue', 'purple', 'gray', 'black', 'white')
+    for i = 0 to array.size(a_colors) - 1
+        line.new(bar_index, i * -10, bar_index + 10, i * -10, extend=extend.both, color=package(i_color, array.get(a_colors, i)), width=10)
+    
+
+barcolor(close > open ? package(str.lower(i_bar_color), 'up') : package(str.lower(i_bar_color), 'down'))
+
+// (ColorLisa)[http://colorlisa.com/]
+// (ColorSnap)[http://snapyourcolors.com/]
+// (Coolors)[https://coolors.co/image-picker]
+// (unDraw)[https://undraw.co/]
+// (References)[https://uxplanet.org/the-4-master-artists-who-used-nature-inspired-color-palettes-c10441c1c7d2]

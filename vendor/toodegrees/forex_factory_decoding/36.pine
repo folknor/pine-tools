@@ -1,0 +1,243 @@
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © toodegrees 
+import toodegrees/forex_factory_utility/16 as ffUtil
+import toodegrees/forex_factory_events_id_A/11 as ffEventA
+import toodegrees/forex_factory_events_id_B/27 as ffEventB
+//@version=5
+ 
+// @description Supporting Utility Library for the Live Economic Calendar by toodegrees Indicator; responsible for formatting and saving Forex Factory News events.
+library("forex_factory_decoding") 
+
+ 
+//#region[Global]
+// @function Finds if it's currently a leap year or not.
+// @returns Returns True if the current year is a leap year.
+export isLeapYear() =>
+	Y = year(time,"America/New_York")
+	Y==1980 or Y==1984 or Y==1988 or Y==1992 or Y==1996 or Y==2000 or Y==2004 or Y==2008 or Y==2012 
+	 or Y==2016 or Y==2020 or Y==2024 or Y==2028 or Y==2032 or Y==2036 or Y==2040 or Y==2044 or Y==2048 or Y==2052
+	 or Y==2056 or Y==2060 or Y==2064 or Y==2068 or Y==2072 or Y==2076 or Y==2080 or Y==2084 or Y==2088 or Y==2092
+
+
+// @function Provides the days in a given month of the year, adjusted during leap years.
+// @param M Month in numerical integer format (i.e. Jan=1).
+// @returns Days in the provided month.
+export daysMonth(int M) =>
+	D = switch M
+		1  => 31
+		2  => isLeapYear()?29:28
+		3  => 31
+		4  => 30
+		5  => 31
+		6  => 30
+		7  => 31
+		8  => 31
+		9  => 30
+		10 => 31
+		11 => 30
+		12 => 31
+	D
+//#endregion
+
+
+//#region[Utility]
+// @function Converts a month from a numerical integer format to a MMM format (i.e. 'Jan').
+// @param M Month in numerical integer format (i.e. Jan=1).
+// @returns Month in MMM format (i.e. 'Jan').
+export MMM(int M) =>
+	mmm = switch M
+		1  => "Jan"
+		2  => "Feb"
+		3  => "Mar"
+		4  => "Apr"
+		5  => "May"
+		6  => "Jun"
+		7  => "Jul"
+		8  => "Aug"
+		9  => "Sep"
+		10 => "Oct"
+		11 => "Nov"
+		12 => "Dec"
+	mmm
+
+
+// @function Converts a string array to a simple string, concatenating its elements.
+// @param S String array, or string array slice, to turn into a simple string.
+// @param FWD Boolean defaulted to True. If True the array will be concatenated from head to tail, reversed order if False.
+// @returns Returns the simple string equivalent of the provided string array.
+export array2string(string[] S, bool FWD=true) =>
+    string s = ""
+    if S.size()>0
+		if FWD
+			for i=0 to S.size()-1
+				s += S.get(i)
+		else
+			for i=S.size()-1 to 0
+				s += S.get(i)
+    s
+
+
+// @function Converts a month string in 'MMM' format to its integer equivalent.
+// @param M Month string, in 'MMM' format.
+// @returns Returns the integer equivalent of the provided Month string in 'MMM' format.
+export month2number(string M) =>
+    m = switch M
+        "Jan" => 1
+        "Feb" => 2
+        "Mar" => 3
+        "Apr" => 4
+        "May" => 5
+        "Jun" => 6
+        "Jul" => 7
+        "Aug" => 8
+        "Sep" => 9
+        "Oct" => 10
+        "Nov" => 11
+        "Dec" => 12
+    m
+//#endregion
+
+
+//#region[Decoding]
+// @function Shifts forward the current Date by N days.
+// @param D Number of days to forward-shift, default is 7.
+// @returns Returns the forward-shifted date in 'MMM %D' format (i.e. Jan 8, Sep 12).
+export shiftFWD_Days(int D=7) =>
+    _day   = dayofmonth(time+(86400000*(D+1)), "America/New_York")
+    _month = month(time+(86400000*(D+1)), "America/New_York")
+    MMM(_month)+" "+str.tostring(_day)
+
+
+// @function Converts a numbered day of the week string in format to 'DDD' format (i.e. "1" = Sun).
+// @param D Numbered day of the week from 1 to 7, starting on Sunday.
+// @returns Returns the day of the week in 'DDD' format (i.e. "Fri").
+export ff_dow(string D) =>
+	DOW = switch D
+		"1" => "Sun"
+		"2" => "Mon"
+		"3" => "Tue"
+		"4" => "Wed"
+		"5" => "Thu"
+		"6" => "Fri"
+		"7" => "Sat"
+	DOW
+
+
+// @function Converts a numbered currency string in format to 'CCC' format (i.e. "1" = AUD).
+// @param C Numbered currency, where "1" = "AUD", "2" = "CAD", "3" = "CHF", "4" = "CNY", "5" = "EUR", "6" = "GBP", "7" = "JPY", "8" = "NZD", "9" = "USD".
+// @returns Returns the currency in 'CCC' format (i.e. "USD").
+export ff_currency(string C) =>
+	CURRENCY = switch C
+		"1" => "AUD"
+		"2" => "CAD"
+		"3" => "CHF"
+		"4" => "CNY"
+		"5" => "EUR"
+		"6" => "GBP"
+		"7" => "JPY"
+		"8" => "NZD"
+		"9" => "USD"
+	CURRENCY
+
+
+// @function Converts a time of the day in 'hhmm' format into an intger.
+// @param T Time of the day string in 'hhmm' format.
+// @returns Returns the time of the day integer in 'hhmm' format, or -1 if all day.
+export ff_t(string T) =>
+	if T=="9999"
+		-1
+	else
+		string[] _tod = str.split(T, "")
+		TOD = ""
+		if _tod.size()>0
+			for i=0 to _tod.size()-1
+				TOD += _tod.get(i)
+			int(str.tonumber(TOD))
+
+
+// @function Converts a time of the day from an integer 'hhmm' format into 'hh:mm' format.
+// @param N Forex Factory News array.
+// @returns Returns the N Forex Factory News array with time of the day string in 'hh:mm' format, or 'All Day'.
+export ff_tod(int T) =>
+	if T==-1
+		"All Day"
+	else
+		string[] _tod = str.split(str.tostring(T), "")
+		while _tod.size()!=4
+			_tod.unshift("0")
+		TOD = ""
+		for j=0 to _tod.size()-1
+			if j==2
+				TOD += ":"
+			TOD += _tod.get(j)
+		TOD
+
+
+// @function Converts a number from 1 to 4 to a relative color based on Forex Factory Impact types.
+// @param I Impact number string from 1 to 4, where "1" = Holiday, "2" = Low Impact, "3" = Medium Impact, "4" = High Impact.
+// @returns Returns the color associated to the impact number based on Forex Factory Impact types.
+export ff_impact(string I) =>
+	IMPACT = switch I
+		"1" => color.white
+		"2" => color.yellow
+		"3" => color.orange
+		"4" => color.red
+
+
+export ff_tmst(string D, string T) =>
+	_date = str.split(D, " ")
+	_time = str.split(T, ":")
+	_M=month2number(_date.get(0))
+	_d=int(str.tonumber(_date.get(1)))
+	_h=_time.size()==1?0:int(str.tonumber(_time.get(0)))
+	_m=_time.size()==1?0:int(str.tonumber(_time.get(1)))
+	curr_y = year(time, "America/New_York")
+	curr_m = month(time, "America/New_York")
+	_Y=_M==1?curr_m==1?curr_y:curr_y+1:curr_y
+	timestamp("America/New_York", _Y, _M, _d, _h, _m, 0)
+
+
+// @function Decodes TOODEGREES_FOREX_FACTORY_SLOT_n Symbols' Pine Seeds data into Forex Factory News Events.
+// @param ID Identifier of the Forex Factory News Event, in "DCHHMMI%T" format (D = day of the week from 1 to 7, C = currency from 1 to 9, HHMM = hour:minute in 24h, I = impact from 1 to 4, %T = event title ID) [See library for more information].
+// @returns Returns the Forex Factory News Event.
+export decode(int ID) =>
+	if na(ID)
+		na
+	else
+		string[] D = str.split(str.tostring(ID), "")
+		if D.size()>0
+			decoded_dow      = ff_dow(D.get(0))
+			decoded_date     = D.get(0)!=str.tostring(dayofweek(time+(86400000*(8)), "America/New_York"))?shiftFWD_Days(6):shiftFWD_Days()
+			decoded_currency = ff_currency(D.get(1))
+			decoded_t        = ff_t(array2string(D.slice(2,6)))
+			decoded_tod      = ff_tod(decoded_t)
+			decoded_impact   = ff_impact(array2string(D.slice(6,7)))
+			title            = array2string(D.slice(7,D.size()))
+			decoded_title    = str.tonumber(title)<500?ffEventA.ff_titleA(title):ffEventB.ff_titleB(title)
+			decoded_tmst     = ff_tmst(decoded_date, decoded_tod)
+
+			ffUtil.News.new(decoded_dow, decoded_date, decoded_t, decoded_tod, decoded_currency, decoded_impact, decoded_title, decoded_tmst)
+		else
+			na
+ 
+
+// @function Decodes the Forex Factory News Event and adds it to the Forex Factory News array.
+// @param N Forex Factory News array.
+// @param n imported data from custom feed.
+// @returns void
+export method pullNews(ffUtil.News[] N, float n) =>
+    if not na(n)
+        if int(n)!=999
+            N.push(decode(int(n)))
+
+
+// @function Pulls the individual Forex Factory News Event from the custom data feed format (joint News string), decodes them and adds them to the Forex Factory News array.
+// @param N Forex Factory News array.
+// @param S joint string of the imported data from custom feed.
+// @returns void
+export method readNews(ffUtil.News[] N, string S) =>
+    news = str.split(S,",")
+    if news.size()>0
+        for i=0 to news.size()-1
+            N.pullNews(str.tonumber(news.get(i)))
+//#endregion

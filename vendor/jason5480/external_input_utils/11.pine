@@ -1,0 +1,135 @@
+//#region SETUP
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © jason5480
+
+//@version=6
+
+// @description Collection of external input utilities for conversion and other hacky functions
+library(title = 'external_input_utils')
+
+//#endregion ===========================================================================================================
+//#region CONVERSION
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+
+// @enum Only the "internal" sources used to limit the source choices provided to the end user
+// @field open Use the open series
+// @field high Use the high series
+// @field low Use the low series
+// @field close Use the close series
+// @field hl2 Use the hl2 series
+// @field hlc3 Use the hlc3 series
+// @field ohlc4 Use the ohlc4 series
+// @field hlcc4 Use the hlcc4 series
+export enum InternalSource
+    open
+    high
+    low
+    close
+    hl2
+    hlc3
+    ohlc4
+    hlcc4
+
+// @function Convert the enum value to the corresponding source series. It can be used to limit the "input.source" choices provided to the end user.
+// The most interesting part is that it can be used to overcome the "one input.source call limitation" for external inputs to your script
+// @param intSrc The enum equivalent to the source to be converted
+// @returns series of the corresponding source
+export enumToSrc(simple InternalSource intSrc) =>
+    switch intSrc
+        InternalSource.open => open
+        InternalSource.high => high
+        InternalSource.low => low
+        InternalSource.close => close
+        InternalSource.hl2 => hl2
+        InternalSource.hlc3 => hlc3
+        InternalSource.ohlc4 => ohlc4
+        InternalSource.hlcc4 => hlcc4
+        =>
+            runtime.error(str.tostring(intSrc) + 'is not a supported source series. The supported series are [open, high, low, close, hl2, hlc3, ohlc4, hlcc4]')
+            na
+
+//#endregion ===========================================================================================================
+//#region CONDITION
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+
+// @enum The supporded operations for evaluating conditions
+// @field eq Equal to operation
+// @field l Less that operation
+// @field g Greater that operation
+// @field ge Greater or equal to operation
+// @field ne Not equal to operation
+// @field crossover Crossover operation
+// @field crossunder Crossunder operation
+// @field rising Rising operation
+// @field falling Falling operation
+// @filed na Is na operation
+// @field barssince Barssince operation
+// @field nna Is not-na operation
+// @field no No operation
+export enum Operator
+    eq = '=='
+    l = '<'
+    g = '>'
+    le = '<='
+    ge = '>='
+    ne = '!='
+    crossover = 'crossover'
+    crossunder = 'crossunder'
+    rising = 'rising'
+    falling = 'falling'
+    barssince = 'barssince'
+    na = 'na'
+    nna = 'not na'
+    noop = 'noop'
+    
+// @function Evaluate the condition given an operator
+// @param inp The input to be compared with. It can be an external input or a regular one
+// @param operator The enum operator that describe the evaluation operation
+// @param val The value to compare with the input. This can be a serries or a constant
+// @param defval The boolean value to return when 'noop' is selected
+// @returns series of bool the result of the operation evaluation
+export evalCond(float inp, simple Operator operator, float val, simple bool defval = false) =>
+    switch operator
+        Operator.eq => inp == val
+        Operator.l => inp < val
+        Operator.g => inp > val
+        Operator.le => inp <= val
+        Operator.ge => inp >= val
+        Operator.ne => inp != val
+        Operator.crossover => ta.crossover(inp, val)
+        Operator.crossunder => ta.crossunder(inp, val)
+        Operator.rising => ta.rising(inp, int(val))
+        Operator.falling => ta.falling(inp, int(val))
+        Operator.na => na(inp)
+        Operator.barssince => ta.barssince(inp != 0.0) == int(val)
+        Operator.nna => not na(inp)
+        Operator.noop => defval
+        =>
+            runtime.error(str.tostring(operator) + 'is not a supported condition operator. The supported operators are [==, <, >, <=, >=, !=, crossover, crossunder, rising, falling, barssince, na, not na, noop]')
+            false
+
+//#endregion ===========================================================================================================
+//#region EXAMPLE
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+
+// INPUT ===============================================================================================================
+// use input.enum and convert it with enumToSrc instead of using input.source so that does not block the externalInput input.source combobox populating with all external options
+src = enumToSrc(input.enum(defval = InternalSource.close, title = 'Source', tooltip = 'Source for the EMA.', group = 'EMA'))
+externalInput = input.source(defval = close, title = 'External Input', tooltip = 'Select input from an external indicator. The indicator should be added to the same chart with this strategy and the desired value that will take part in the condition should be ploted in the chart.', group = 'EMA')
+startLongDealOperator = input.enum(defval = Operator.crossover, title = 'Start Long Deal when input', tooltip = 'Define the condition between extranal input and EMA for setting the start long deal signal.', inline = 'Start Long Deal', group = 'External')
+startShortDealOperator = input.enum(defval = Operator.crossunder, title = 'Start Short Deal when input', tooltip = 'Define the condition between extranal input and EMA for setting the start short deal signal.', inline = 'Start Short Deal', group = 'External')
+
+// LOGIC ===============================================================================================================
+ema = ta.ema(src, 200)
+
+startLongDeal = evalCond(externalInput, startLongDealOperator, ema)
+startShortDeal = evalCond(externalInput, startShortDealOperator, ema)
+
+// PLOT ================================================================================================================
+plot(series = ema, title = 'EMA', color = color.orange, linewidth = 1, style = plot.style_line, force_overlay = true)
+
+plotshape(series = startLongDeal, title = 'Start Long', style = shape.triangleup, location = location.abovebar, color = color.new(#2962ff, 0), size = size.tiny, force_overlay = true)
+plotshape(series = startShortDeal, title = 'Start Short', style = shape.triangledown, location = location.belowbar, color = color.new(#ff1744, 0), size = size.tiny, force_overlay = true)
+
+//#endregion ===========================================================================================================

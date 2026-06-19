@@ -1,0 +1,1141 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © robbatt
+
+//@version=6
+
+// @description library wrapping basic builtin object constructors, to be able to do calculations with points/lines/boxes/triangles/polygons via libraries and on securities. inspired by Trendoscope's (https://www.tradingview.com/script/63c8VXSa-DrawingTypes/ and https://www.tradingview.com/script/eNM7BFaR-DrawingMethods/) with added update mechanism to not have to recreate objects on every iteration for continously drawn items, automated xloc selection for coordinates, compatibility check for chart.points, added Triangle and Polygon types, object reflection via tostring to valid json (logging via webhook)
+library("lib_plot_objects", overlay = true)
+
+///////////////////////////////////////////////////////
+//#region BUILTIN OBJECT WRAPPERS structures
+///////////////////////////////////////////////////////
+
+//@description candle data
+//@field bar_time time based x coordinate
+//@field bar_time_close time based x coordinate for closing time
+//@field bar_idx bar index based x coordinate
+//@field o candle open price
+//@field h candle highest price
+//@field l candle lowest price
+//@field c candle close price
+//@field v candle volume
+export type Candle
+	varip int bar_time = time
+	varip int bar_time_close = time_close
+	varip int bar_idx = bar_index
+	varip float o = open
+	varip float h = high
+	varip float l = low
+	varip float c = close
+	varip float v = volume
+
+//@description Reusable arguments for label.new()
+//@field text_font_family The font family of the text. Optional. The default value is font.family_default. Possible values: font.family_default, font.family_monospace.
+//@field xloc See description of x argument. Possible values: xloc.bar_index and xloc.bar_time. Default is xloc.bar_index.
+//@field yloc Possible values are yloc.price, yloc.abovebar, yloc.belowbar. If yloc=yloc.price, y argument specifies the price of the label position. If yloc=yloc.abovebar, label is located above bar. If yloc=yloc.belowbar, label is located below bar. Default is yloc.price.
+//@field bg_color Color of the label border and arrow.
+//@field style Label style. Possible values: label.style_none, label.style_xcross, label.style_cross, label.style_triangleup, label.style_triangledown, label.style_flag, label.style_circle, label.style_arrowup, label.style_arrowdown, label.style_label_up, label.style_label_down, label.style_label_left, label.style_label_right, label.style_label_lower_left, label.style_label_lower_right, label.style_label_upper_left, label.style_label_upper_right, label.style_label_center, label.style_square, label.style_diamond, label.style_text_outline. Default is label.style_label_down.
+//@field text_color Text color.
+//@field size Label size. Possible values: size.auto, size.tiny, size.small, size.normal, size.large, size.huge. Default value is size.normal.
+//@field text_align Label text alignment. Possible values: text.align_left, text.align_center, text.align_right. Default value is text.align_center.
+export type LabelArgs
+	varip color text_color = color.gray
+	varip color bg_color = #00000000
+	string text_font_family = font.family_default
+	string xloc = xloc.bar_index
+	string yloc = yloc.price
+	string style = label.style_label_down
+	string size = size.normal
+	string text_align = text.align_center
+
+//@description Wrapper for builtin label
+//@field point The Label coordinates
+//@field txt Label text. Default is empty string.
+//@field tooltip Hover to see tooltip label.
+//@field plot The label object to be added and plotted via draw()
+export type Label
+	varip chart.point point
+	varip string txt = ''
+	varip string tooltip = na
+	bool hidden = false
+	label plot = na
+
+
+//@description Reusable arguments for line.new()
+//@field line_color Line color.
+//@field style Line style. Possible values: line.style_solid, line.style_dotted, line.style_dashed, line.style_arrow_left, line.style_arrow_right, line.style_arrow_both.
+//@field width Line width in pixels.
+//@field xloc Possible values: xloc.bar_index and xloc.bar_time. Default is xloc.bar_index.
+//@field extend f extend=extend.none, draws segment starting at point (x1, y1) and ending at point (x2, y2). If extend is equal to extend.right or extend.left, draws a ray starting at point (x1, y1) or (x2, y2), respectively. If extend=extend.both, draws a straight line that goes through these points. Default value is extend.none.
+export type LineArgs
+	varip color line_color = color.gray
+	string style = line.style_solid
+	int width = 1
+	string xloc = xloc.bar_index
+	string extend = extend.none
+
+//@description Wrapper for builtin line
+//@field start starting point of the line
+//@field start end point of the line
+//@field plot The line object to be added and plotted via draw()
+export type Line
+	varip chart.point start
+	varip chart.point end
+	bool hidden = false
+	line plot = na
+
+
+//@description Creates a new linefill object and displays it on the chart, filling the space between a and b with the color specified in fill_color.
+//@field a The first Line object
+//@field b The second Line object
+//@field fill_color The color used to fill the space between the lines.
+//@field flip_support An additional Line that holds a flipped b support line (linefills are always drawn between line starts and line ends)
+//@field plot The linefill object to be added and plotted via draw()
+export type LineFill
+	Line a
+	Line b 
+	varip color fill_color = #dededede
+	Line flip_support = na
+	linefill plot = na
+
+//@description Reusable arguments for polyline.new()
+//@field line_color The color of the line segments. Optional. The default is color.gray.
+//@field fill_color The fill color of the polyline. Optional. The default is na.
+//@field style The style of the polyline. Possible values: line.style_solid, line.style_dotted, line.style_dashed, line.style_arrow_left, line.style_arrow_right, line.style_arrow_both. Optional. The default is line.style_solid.
+//@field width The width of the line segments, expressed in pixels. Optional. The default is 1.
+//@field xloc Determines the field of the chart.point objects in the points array that the polyline will use for its x-coordinates. If xloc.bar_index, the polyline will use the index field from each point. If xloc.bar_time, it will use the time field. Optional. The default is xloc.bar_index.
+//@field extend f extend=extend.none, draws segment starting at point (x1, y1) and ending at point (x2, y2). If extend is equal to extend.right or extend.left, draws a ray starting at point (x1, y1) or (x2, y2), respectively. If extend=extend.both, draws a straight line that goes through these points. Default value is extend.none.
+export type PolyLineArgs
+	varip color line_color = color.gray
+	varip color fill_color = na
+	string style = line.style_solid
+	int width = 1
+	string xloc = xloc.bar_index
+
+//@description Wrapper for builtin polyline
+//@field points point array data of the polyline
+//@field curved Line color. If true, the drawing will connect all points from the points array using curved line segments. Optional. The default is false.
+//@field closed Line color. If true, the drawing will also connect the first point to the last point from the points array, resulting in a closed polyline. Optional. The default is false.
+//@field args Wrapper for reusable arguments for line.new()
+//@field plot The polyline object to be added and plotted via draw()
+export type PolyLine
+	chart.point[] points
+	bool curved = false
+	bool closed = false
+	bool hidden = false
+	polyline plot = na
+	
+//@description Wrapper for Label centered between an array of chart.points
+//@field points The coordinates around the center
+//@field center_label The generated, centered Label
+export type CenterLabel
+	Label center_label
+	Line source_line = na
+	PolyLine source_polyline = na
+
+//@description Reusable arguments for box.new()
+//@field border_color Color of the four borders. Optional. The default is color.blue.
+//@field border_width Width of the four borders, in pixels. Optional. The default is 1 pixel.
+//@field border_style Style of the four borders. Possible values: line.style_solid, line.style_dotted, line.style_dashed. Optional. The default value is line.style_solid.
+//@field bg_color Background color of the box. Optional. The default is color.blue.
+//@field xloc Determines whether the arguments to 'left' and 'right' are a bar index or a time value. If xloc = xloc.bar_index, the arguments must be a bar index. If xloc = xloc.bar_time, the arguments must be a UNIX time. Possible values: xloc.bar_index and xloc.bar_time. Optional. The default is xloc.bar_index.
+//@field extend When extend.none is used, the horizontal borders start at the left border and end at the right border. With extend.left or extend.right, the horizontal borders are extended indefinitely to the left or right of the box, respectively. With extend.both, the horizontal borders are extended on both sides. Optional. The default value is extend.none.
+export type BoxArgs
+	varip color border_color = color.gray
+	int border_width = 1
+	string border_style = line.style_solid
+	varip color bg_color = #dededede
+	string xloc = xloc.bar_index
+	string extend = extend.none
+
+
+//@description Reusable text arguments for box.new()
+//@field text_size The size of the text. An optional parameter, the default value is size.auto. Possible values: size.auto, size.tiny, size.small, size.normal, size.large, size.huge.
+//@field text_font_family The font family of the text. Optional. The default value is font.family_default. Possible values: font.family_default, font.family_monospace.
+//@field text_color The color of the text. Optional. The default is color.black.
+//@field text_halign The horizontal alignment of the box's text. Optional. The default value is text.align_center. Possible values: text.align_left, text.align_center, text.align_right.
+//@field text_valign The vertical alignment of the box's text. Optional. The default value is text.align_center. Possible values: text.align_top, text.align_center, text.align_bottom.
+//@field text_wrap Defines whether the text is presented in a single line, extending past the width of the box if necessary, or wrapped so every line is no wider than the box itself (and clipped by the bottom border of the box if the height of the resulting wrapped text is higher than the height of the box). Optional. The default value is text.wrap_none. Possible values: text.wrap_none, text.wrap_auto.
+export type BoxTextArgs
+	varip color text_color = color.gray
+	string text_size = size.normal
+	string text_halign = text.align_center
+	string text_valign = text.align_center
+	string text_wrap = text.wrap_none
+	string text_font_family = font.family_default
+
+
+//@description Wrapper for builtin box
+//@field left_top top-left corner of the box 
+//@field right_bottom bottom-right corner of the box
+//@field txt The text to be displayed inside the box. Optional. The default is empty string.
+//@field args Wrapper for reusable arguments for box.new()
+//@field plot The box object to be added and plotted via draw()
+export type Box
+	varip chart.point left_top
+	varip chart.point right_bottom
+	varip string txt = ''
+	bool hidden = false
+	box plot = na
+
+///////////////////////////////////////////////////////
+//#endregion BUILTIN OBJECT WRAPPERS
+///////////////////////////////////////////////////////
+
+
+///////////////////////////////////////////////////////
+//#region SETTERS
+///////////////////////////////////////////////////////
+
+export method extend_to(Line this, int end_time, int end_idx, float end_price = na) =>
+	if not na(this)
+		this.end.time := end_time
+		this.end.index := end_idx
+		if not na(end_price)
+			this.end.price := end_price
+	this
+
+///////////////////////////////////////////////////////
+//#endregion SETTERS
+///////////////////////////////////////////////////////
+
+
+///////////////////////////////////////////////////////
+//#region HELPER METHODS
+///////////////////////////////////////////////////////
+
+//@function checks args oject for being na, if so, provide a default instead
+export method or_default(LineArgs args) => 
+	var default = LineArgs.new()
+	na(args) ? default : args
+
+//@function checks args oject for being na, if so, provide a default instead
+export method or_default(PolyLineArgs args) => 
+	var default = PolyLineArgs.new()
+	na(args) ? default : args
+
+//@function checks args oject for being na, if so, provide a default instead
+export method or_default(LabelArgs args) => 
+	var default = LabelArgs.new()
+	na(args) ? default : args
+
+//@function checks args oject for being na, if so, provide a default instead
+export method or_default(BoxArgs args) => 
+	var default = BoxArgs.new()
+	na(args) ? default : args
+
+//@function checks args oject for being na, if so, provide a default instead
+export method or_default(BoxTextArgs args) => 
+	var default = BoxTextArgs.new()
+	na(args) ? default : args
+
+
+export method direction(Candle this) =>
+	this.o <= this.c ? 1 : -1
+export method is_green(Candle this) =>
+	this.direction() == 1
+export method is_red(Candle this) =>
+	this.direction() == -1
+export method is_bullish(Candle this) =>
+	this.direction() == 1
+export method is_bearish(Candle this) =>
+	this.direction() == -1
+export method total_size(Candle this) =>
+	this.h - this.l
+export method body_size(Candle this) =>
+	math.abs(this.o - this.c)
+export method body_top(Candle this) =>
+	math.max(this.o, this.c)	
+export method body_bottom(Candle this) =>
+	math.min(this.o, this.c)
+export method wick_size_top(Candle this) =>
+	this.h - this.body_top()	
+export method wick_size_bottom(Candle this) =>
+	this.body_bottom() - this.l
+export method body_total_ratio(Candle this) =>
+	this.body_size() / this.total_size()
+export method duration(Candle this) =>
+	this.bar_time_close - this.bar_time
+
+
+
+
+///////////////////////////////////////////////////////
+//#endregion HELPER METHODS
+///////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////
+//#region OBJECT CREATION / FACTORY METHODS create
+///////////////////////////////////////////////////////
+
+// Candle
+// @function Creates Candle with ohlc and index data
+// @param t bar time of this candle
+// @param tc bar close time of this candle
+// @param idx bar index of this candle
+// @param o open price of this candle
+// @param h highest price of this candle
+// @param l lowest price of this candle
+// @param c close price of this candle
+// @returns new Candle
+export create_candle(int t = time, int tc = time_close, int idx = bar_index, float o = open, float h = high, float l = low, float c = close, float v = volume) =>
+	Candle.new(t, tc, idx, o, h, l, c, v)
+
+//@function Creates a new chart.point based on xloc switch
+export create_point(int x, float price, string xloc) =>
+	if xloc == xloc.bar_time
+		chart.point.from_time(x, price)
+	else
+		chart.point.from_index(x, price)
+	
+
+// @function Creates center chart.point between two chart.points
+// @param indexA coordinates of point A (using just index, because time will not work properly in session based instruments)
+// @param priceA coordinates of point A
+// @param indexB coordinates of point B (using just index, because time will not work properly in session based instruments)
+// @param priceB coordinates of point B
+// @returns center coordinates [int time, int index, float price]
+export method calculate_center(int indexA, float priceA, int indexB, float priceB) =>
+	if na(indexA) or na(priceA) or na(indexB) or na(priceB)
+		[time, bar_index, close]
+	else
+		indexC = int(math.avg(indexA, indexB))
+		timeC  = time[bar_index - indexC]
+		priceC = priceB + (priceA - priceB) * (indexC - indexB) / (indexA - indexB) 
+		[timeC, indexC, priceC]	
+
+// @function Creates center chart.point between an array of given chart.points
+// @param points array of chart.points for calculation of the center
+// @returns center coordinates [int time, int index, float price]
+export method calculate_center(chart.point this, chart.point other) =>
+	calculate_center(this.index, this.price, other.index, other.price)
+
+// @function Creates center chart.point between an array of given chart.points
+// @param points array of chart.points for calculation of the center
+// @returns center chart.point
+export method calculate_center(chart.point[] points) =>
+	count = points.size()
+	bar_sum = 0
+	price_sum = 0.0
+	center_xloc = xloc.bar_index
+	chart.point center_point = na
+
+	if count == 2
+		calculate_center(points.get(0), points.get(1)) // [timeC, indexC, priceC]
+	else
+		for point in points
+			if not na(point)
+				bar_sum += point.index
+				price_sum += point.price
+
+		center_bar_idx = int(bar_sum/count)
+		center_bar_time = time[bar_index - center_bar_idx]
+		center_price = price_sum / count
+		[center_bar_time, center_bar_idx, center_price]	
+
+// @function Creates center chart.point between two chart.points
+// @param this chart.point
+// @param other chart.point
+// @returns center chart.point
+export method create_center(chart.point this, chart.point other) =>
+	[timeC, indexC, priceC]	= calculate_center(this, other)
+	chart.point.new(timeC, indexC, priceC)
+
+
+// @function Creates center chart.point between an array of given chart.points
+// @param points array of chart.points for calculation of the center
+// @returns center chart.point
+export method create_center(chart.point[] points) =>
+	[timeC, indexC, priceC]	= calculate_center(points)
+	chart.point.new(timeC, indexC, priceC)
+
+export method calculate_center(Line this) =>
+	this.start.calculate_center(this.end)
+
+export method calculate_center(PolyLine this) =>
+	this.points.calculate_center()
+
+export method create_center(Line this) =>
+	this.start.create_center(this.end)
+
+export method create_center(PolyLine this) =>
+	this.points.create_center()
+
+// Labels
+//@function Creates a new Label object.
+export create_label(int x, float y, string xloc, string txt = na, string tooltip = na) =>
+	point = xloc == xloc.bar_time ? chart.point.from_time(x, y) : chart.point.from_index(x, y)
+	Label.new(point, txt, tooltip)
+
+//@function Creates a new Label object.
+export method create_label(chart.point this, string txt = na, string tooltip = na) =>
+	na(this) ? na : Label.new(this, txt, tooltip)
+	
+//@function Creates a new Label object.
+export method create_label(string txt = na, string tooltip = na) =>
+	create_label(chart.point.now(close), txt, tooltip)
+
+//@function Creates a new Label object.
+export method create_label(Line this, string txt = na, string tooltip = na) =>
+	create_label(this.start.create_center(this.end), txt, tooltip)
+
+//@function Creates a new Label object.
+export method create_label(Box this, string txt = na, string tooltip = na) =>
+	create_label(this.left_top.create_center(this.right_bottom), txt, tooltip)
+
+//@function Creates a new Label object.
+export method create_center_label(Line this, string txt = na, string tooltip = na) =>
+	center_label = this.create_center().create_label(txt, tooltip)
+	CenterLabel.new(center_label, source_line = this)
+
+//@function Creates a new Label object.
+export method create_center_label(PolyLine this, string txt = na, string tooltip = na) =>
+	center_label = this.points.create_center().create_label(txt, tooltip)
+	CenterLabel.new(center_label, source_polyline = this)
+
+
+_nz(this, default) =>
+	na(this) ? default : this
+
+export method nz(chart.point this,  chart.point default = na) 		=>	not na(default) ? _nz(this, default) : _nz(this, chart.point.now())
+export method nz(Candle this, 		Candle default = na) 			=>	not na(default) ? _nz(this, default) : _nz(this, Candle.new())
+export method nz(LabelArgs this, 	LabelArgs default = na) 		=>	not na(default) ? _nz(this, default) : _nz(this, LabelArgs.new())
+export method nz(Label this, 		Label default = na)		 		=>	not na(default) ? _nz(this, default) : _nz(this, Label.new(chart.point.now()))
+export method nz(LineArgs this, 	LineArgs default = na) 			=>	not na(default) ? _nz(this, default) : _nz(this, LineArgs.new())
+export method nz(Line this, 		Line default = na)	 			=>	not na(default) ? _nz(this, default) : _nz(this, Line.new(chart.point.now(), chart.point.now()))
+export method nz(PolyLineArgs this, PolyLineArgs default = na) 		=>	not na(default) ? _nz(this, default) : _nz(this, PolyLineArgs.new())
+export method nz(PolyLine this, 	PolyLine default = na)	 		=>	not na(default) ? _nz(this, default) : _nz(this, PolyLine.new(array.from(chart.point.now(), chart.point.now())))
+export method nz(CenterLabel this, 	CenterLabel default = na)		=>	not na(default) ? _nz(this, default) : _nz(this, Line.new(chart.point.now(), chart.point.now()).create_center_label(''))
+export method nz(LineFill this, 	LineFill default = na) 			=>	not na(default) ? _nz(this, default) : _nz(this, LineFill.new(Line.new(chart.point.now(1), chart.point.now(2)),Line.new(chart.point.now(3), chart.point.now(4))))
+export method nz(BoxArgs this, 		BoxArgs default = na) 			=>	not na(default) ? _nz(this, default) : _nz(this, BoxArgs.new())
+export method nz(BoxTextArgs this, 	BoxTextArgs default = na) 		=>	not na(default) ? _nz(this, default) : _nz(this, BoxTextArgs.new())
+export method nz(Box this, 			Box default = na)	 			=>	not na(default) ? _nz(this, default) : _nz(this, Box.new(chart.point.now(3), chart.point.now(3), ''))
+
+
+export create_line(int start_time, int start_idx, float start_price, int end_time, int end_idx, float end_price) =>
+	Line.new(chart.point.new(start_time, start_idx, start_price), chart.point.new(end_time, end_idx, end_price))
+
+export create_line(int x1, float y1, int x2, float y2, string xloc) =>
+	start = xloc == xloc.bar_time ? chart.point.from_time(x1, y1) : chart.point.from_index(x1, y1)
+	end   = xloc == xloc.bar_time ? chart.point.from_time(x2, y2) : chart.point.from_index(x2, y2)
+	Line.new(start, end)
+
+export create_line() =>
+	Line.new(chart.point.now(close), chart.point.now(close))
+
+export create_box(int left_time, int left_idx, float top, int right_time, int right_idx, float bottom, string txt = na) =>
+	left_top = chart.point.new(left_time, left_idx, top)
+	right_bottom = chart.point.new(right_time, right_idx, bottom)
+	Box.new(left_top, right_bottom, txt)
+
+export create_box(int left, float top, int right, float bottom, string xloc, string txt = na) =>
+	left_top	 = xloc == xloc.bar_time ? chart.point.from_time(left , top   ) : chart.point.from_index(left , top   )
+	right_bottom = xloc == xloc.bar_time ? chart.point.from_time(right, bottom) : chart.point.from_index(right, bottom)
+	Box.new(left_top, right_bottom, txt)
+
+export create_box(string txt = na) =>
+	Box.new(chart.point.now(close), chart.point.now(close), txt)
+
+// LineFill
+//@function Creates a new LineFill object.
+//@field this The first Line object
+//@field other The second Line object
+//@field fill_color The color used to fill the space between the lines.
+//@field flip Optional if true, a new support line is created, drawn over other but with flipped start and end point
+export method create_fill(Line this, Line other, color fill_color = #dededede, bool flip = false) =>
+	if flip
+		LineFill.new(this, other, fill_color, Line.new(other.end, other.start))
+	else
+		LineFill.new(this, other, fill_color)
+	
+///////////////////////////////////////////////////////
+//#endregion OBJECT CREATION / FACTORY METHODS
+///////////////////////////////////////////////////////
+
+_enqueue(id, item, int max = 0) =>
+	if not na(id)
+    	id.unshift(item)
+		if max > 0 and id.size() > max
+			id.pop()
+    id
+
+export method enqueue(Candle[] id, Candle item, int max = 0) => _enqueue(id, item, max)
+export method enqueue(chart.point[] id, chart.point item, int max = 0) => _enqueue(id, item, max)
+export method enqueue(Label[] id, Label item, int max = 0) => _enqueue(id, item, max)
+export method enqueue(CenterLabel[] id, CenterLabel item, int max = 0) => _enqueue(id, item, max)
+export method enqueue(Line[] id, Line item, int max = 0) => _enqueue(id, item, max)
+export method enqueue(LineFill[] id, LineFill item, int max = 0) => _enqueue(id, item, max)
+export method enqueue(PolyLine[] id, PolyLine item, int max = 0) => _enqueue(id, item, max)
+
+
+
+///////////////////////////////////////////////////////
+//#region OBJECT UPDATE update
+///////////////////////////////////////////////////////
+
+
+//@function Updates a Candle object with new data.
+export method update(Candle this, int bar_time = time, int bar_time_close = time, int bar_idx = bar_index, float o = open, float h = high, float l = low, float c = close, float v = volume) =>
+	this.bar_time := bar_time
+	this.bar_time_close := bar_time_close
+	this.bar_idx := bar_idx
+	this.o := o
+	this.h := h
+	this.l := l
+	this.c := c
+	this.v := v
+	this
+
+//@function Updates a chart.point object with new data.
+//@returns true if changed, false otherwise
+export method update(chart.point this, int bar_time, int bar_idx, float price) =>
+	if not na(this) and 
+	 (  this.time != bar_time
+	 or this.index != bar_idx
+	 or this.price != price
+	 )
+		this.time := bar_time
+		this.index := bar_idx
+		this.price := price
+		true
+	else
+		false
+
+//@function Updates a chart.point object with new data.
+//@returns true if changed, false otherwise
+export method update(chart.point this, int x, float price, string xloc) =>
+	if xloc == xloc.bar_time
+		this.update(x, na, price)
+	else
+		this.update(na, x, price)
+
+//@function Updates a chart.point object with new data from another chart.point.
+//@returns true if changed, false otherwise
+export method update(chart.point this, chart.point update) =>
+	if na(update)
+		this.update(na, na, na)
+	else
+		this.update(update.time, update.index, update.price)
+
+
+//@function Updates a Label's chart.point object with new data from another chart.point, or sets it if the Label's chart.point is na. If txt parameter is not given, it's not updated.
+export method update(Label this, int bar_time, int bar_idx, float price, string txt = '', string tooltip = '') =>
+	// native plot objects cannot be varips and will therefore be rolled back on every iteration 
+	// -> optimization approach: 
+	// -> data updated lazy as varip
+	this.point.update(bar_time, bar_idx, price)
+
+	// -> + drawing by setting coordinates every tick (do this in draw(), this may be called inside nested structure, draw must be called every tick)
+	// if not na(this.plot)
+	// 	this.plot.set_point(this.point)		
+	// this
+
+	if txt != '' and this.txt != txt
+		this.txt := txt
+	if tooltip != '' and this.tooltip != tooltip
+		this.tooltip := tooltip
+	this
+
+//@function Updates a Label's chart.point object with new data from another chart.point, or sets it if the Label's chart.point is na. If txt parameter is not given, it's not updated.
+export method update(Label this, chart.point point, string txt = '', string tooltip = '') =>
+	na(point) ? this.update(na, na, na, txt, tooltip) : this.update(point.time, point.index, point.price, txt, tooltip)
+
+
+//@function Updates a Label's chart.point object with new data from another chart.point, or sets it if the Label's chart.point is na. If txt parameter is not given, it's not updated.
+export method update(CenterLabel this, chart.point[] points, string txt = '', string tooltip = '', bool condition = true) =>
+	if condition
+		[timeC, indexC, priceC]	= points.calculate_center()	
+		this.center_label.update(timeC, indexC, priceC, txt, tooltip)
+	this
+
+//@function Updates a Label's chart.point object with new data from another chart.point, or sets it if the Label's chart.point is na. If txt parameter is not given, it's not updated.
+export method update(CenterLabel this, string txt = '', string tooltip = '') =>
+	if not na(this.source_line)
+		[timeC, indexC, priceC]	= this.source_line.calculate_center()	
+		this.center_label.update(timeC, indexC, priceC, txt, tooltip)		
+	else if not na(this.source_polyline)
+		[timeC, indexC, priceC]	= this.source_polyline.calculate_center()	
+		this.center_label.update(timeC, indexC, priceC, txt, tooltip)		
+	this
+
+//@function Updates this Line's chart.point objects with new data from other chart.points.
+export method update(Line this, chart.point start, chart.point end) =>
+	this.start.update(start)
+	this.end.update(end)
+	this
+
+//@function Updates this PolyLine's chart.point objects with new data from other chart.points. As the plot polyline has no options to be updated, it will be deleted before being redrawn in draw()
+export method update(PolyLine this, chart.point[] points) =>
+	this.points := points
+	this
+
+//@function Updates a Box's chart.point objects with new data from other chart.points.
+export method update(Box this, chart.point left_top, chart.point right_bottom) =>
+	this.left_top.update(left_top)
+	this.right_bottom.update(right_bottom)
+	this
+
+
+///////////////////////////////////////////////////////
+//#endregion OBJECT UPDATE
+///////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////
+//#region OBJECT REMOVAL delete
+///////////////////////////////////////////////////////
+
+safe_delete(this) =>
+	if not na(this)
+		this.plot.delete()
+		this.plot := na
+	this
+
+//@function Removes an objects representation from the chart.
+export method delete(Line this) => safe_delete(this)
+//@function Removes an objects representation from the chart.
+export method delete(PolyLine this) => safe_delete(this)
+//@function Removes an objects representation from the chart.
+export method delete(Label this) => safe_delete(this)
+//@function Removes an objects representation from the chart.
+export method delete(CenterLabel this) => safe_delete(this.center_label)
+//@function Removes an objects representation from the chart.
+export method delete(Box this) => safe_delete(this)
+//@function Removes an objects representation from the chart.
+export method delete(LineFill this) => 
+	safe_delete(this)
+	this.flip_support.delete()
+	this.flip_support := na
+
+safe_delete_all(this) =>
+	if not na(this)
+		for item in this
+			item.delete()
+	this
+
+//@function Removes the representations of an array of objects from the chart.
+export method delete (line[] this) => safe_delete_all(this)
+//@function Removes the representations of an array of objects from the chart.
+export method delete (polyline[] this) => safe_delete_all(this)
+//@function Removes the representations of an array of objects from the chart.
+export method delete (label[] this) => safe_delete_all(this)
+//@function Removes the representations of an array of objects from the chart.
+export method delete (box[] this) => safe_delete_all(this)
+//@function Removes the representations of an array of objects from the chart.
+export method delete (linefill[] this) => safe_delete_all(this)
+//@function Removes the representations of an array of objects from the chart.
+export method delete(Line[] this) => safe_delete_all(this)
+//@function Removes the representations of an array of objects from the chart.
+export method delete(PolyLine[] this) => safe_delete_all(this)
+//@function Removes the representations of an array of objects from the chart.
+export method delete(Label[] this) => safe_delete_all(this)
+//@function Removes the representations of an array of objects from the chart.
+export method delete(CenterLabel[] this) => safe_delete_all(this)
+//@function Removes the representations of an array of objects from the chart.
+export method delete(LineFill[] this) => safe_delete_all(this)
+//@function Removes the representations of an array of objects from the chart.
+export method delete(Box[] this) => safe_delete_all(this)
+//@function Removes the representations of an array of objects from the chart.
+
+
+///////////////////////////////////////////////////////
+//#endregion OBJECT REMOVAL
+///////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////
+//#region OBJECT TO BUILTIN draw
+///////////////////////////////////////////////////////
+
+method x(chart.point this, string xloc = xloc.bar_index) =>
+	if na(this)
+		na
+	else if xloc == xloc.bar_time
+		this.time
+	else
+		this.index
+
+//@function Adds/Updates the representations of an object to the chart (only point coordinates).
+//@param extend_only this will omit redrawing x1 of the line, thereby prevent adressing bar_indexes too far in the past which causes max_bars_back errors. (default: true, set to false if you want x1 updated on drawing)
+export method draw(line this, chart.point a, chart.point b, LineArgs args, bool extend_only = true, simple bool force_overlay = false) =>
+	if na(this)
+		if force_overlay
+			line.new(a, b, args.xloc, args.extend, args.line_color, args.style, args.width, force_overlay = true)
+		else
+			line.new(a, b, args.xloc, args.extend, args.line_color, args.style, args.width, force_overlay = false)
+	else
+		if extend_only
+			this.set_y1(a.price)
+		else
+			this.set_first_point(a)
+		this.set_second_point(b)
+		this
+
+//@function Adds/Updates the representations of an object to the chart (only point coordinates and text).
+export method draw(Label this, LabelArgs args = na, simple bool force_overlay = false) =>
+	// native plot objects cannot be varips and will therefore be rolled back on every iteration 
+	// -> optimization approach: 
+	// -> data updated lazy as varip (update function)
+
+	// -> + drawing by setting coordinates every tick
+	if not na(this)
+		config = args.or_default()
+		if na(this.plot)
+			if force_overlay
+				this.plot := label.new(this.point, this.txt, config.xloc, config.yloc, config.bg_color, config.style, config.text_color, config.size, config.text_align, this.tooltip, force_overlay = true)
+			else
+				this.plot := label.new(this.point, this.txt, config.xloc, config.yloc, config.bg_color, config.style, config.text_color, config.size, config.text_align, this.tooltip, force_overlay = false)
+				
+		else // pre initialized with init_plot or updated (possibly intrabar, member of varip Line)
+			this.plot.set_point(this.point)
+
+			if this.plot.get_text() != this.txt
+				this.plot.set_text(this.txt)
+		this.hidden := false
+	this
+
+//@function Adds/Updates the representations of an object to the chart (only point coordinates and text).
+export method draw(CenterLabel this, LabelArgs args = na, simple bool force_overlay = false) =>
+	if not na(this)
+		this.center_label.draw(args, force_overlay)
+	this
+
+//@function Adds/Updates the representations of an object to the chart (only point coordinates).
+//@param extend_only this will omit redrawing x1 of the line, thereby prevent adressing bar_indexes too far in the past which causes max_bars_back errors. (default: true, set to false if you want x1 updated on drawing)
+export method draw(Line this, LineArgs args = na, bool extend_only = true, simple bool force_overlay = false) =>
+	if not na(this)
+		config = args.or_default()
+		if na(this.plot)
+			if force_overlay
+				this.plot := line.new(this.start, this.end, config.xloc, config.extend, config.line_color, config.style, config.width, force_overlay = true)
+			else
+				this.plot := line.new(this.start, this.end, config.xloc, config.extend, config.line_color, config.style, config.width, force_overlay = false)
+		else
+			if extend_only
+				this.plot.set_y1(this.start.price)
+			else
+				this.plot.set_first_point(this.start)
+			this.plot.set_second_point(this.end)
+		this.hidden := false
+	this
+
+//@function Adds/Updates the representations of an object to the chart.
+export method draw(PolyLine this, PolyLineArgs args = na, simple bool force_overlay = false) =>
+	if not na(this)
+		this.plot.delete()
+		config = args.or_default()
+		if not na(this.points)
+			if force_overlay
+				this.plot := polyline.new(this.points, this.curved, this.closed, config.xloc, config.line_color, config.fill_color, config.style, config.width, force_overlay = true)
+			else
+				this.plot := polyline.new(this.points, this.curved, this.closed, config.xloc, config.line_color, config.fill_color, config.style, config.width, force_overlay = false)
+
+			this.hidden := false
+	this
+
+//@function Adds/Updates the representations of an object to the chart (only point coordinates).
+//@param extend_only this will omit redrawing the left side of the box, thereby prevent adressing bar_indexes too far in the past which causes max_bars_back errors. (default: true, set to false if you want x1 updated on drawing)
+export method draw(Box this, BoxArgs args = na, BoxTextArgs text_args = na, bool extend_only = true, simple bool force_overlay = false) =>
+	if na(this.plot)
+		config = args.or_default()
+		config_txt = text_args.or_default()
+		if force_overlay
+			this.plot := box.new(this.left_top, this.right_bottom,  config.border_color, config.border_width, config.border_style, config.extend, config.xloc, config.bg_color, this.txt, config_txt.text_size, config_txt.text_color, config_txt.text_halign, config_txt.text_valign, config_txt.text_wrap, config_txt.text_font_family, force_overlay = true )
+		else
+			this.plot := box.new(this.left_top, this.right_bottom,  config.border_color, config.border_width, config.border_style, config.extend, config.xloc, config.bg_color, this.txt, config_txt.text_size, config_txt.text_color, config_txt.text_halign, config_txt.text_valign, config_txt.text_wrap, config_txt.text_font_family, force_overlay = false )
+	else
+		if extend_only
+			this.plot.set_top(this.left_top.price)
+		else
+			this.plot.set_top_left_point(this.left_top)
+		this.plot.set_bottom_right_point(this.right_bottom)
+	this.hidden := false	
+	this
+
+
+//@function Adds/Replaces the representations of the object on the chart.
+export method draw(LineFill this, LineArgs flip_support_args = na, simple bool force_overlay = false)=>
+	// no init, doesn't have args
+	if na(this) ? false : not na(this.a) and not na(this.b)
+		flipped = not na(this.flip_support)
+		lineB = flipped ? this.flip_support : this.b
+
+		if na(this.plot) // new draw
+			if flipped and not na(this.b.plot)
+				this.flip_support.draw(flip_support_args, extend_only = false, force_overlay = force_overlay)
+			this.plot := linefill.new(this.a.plot, lineB.plot, this.fill_color)
+
+		else
+			// drawing of lines this.a and this.b should have happened before
+			
+			if flipped
+				this.flip_support.update(this.b.end, this.b.start).draw(flip_support_args, extend_only = false, force_overlay = force_overlay)
+
+	this
+
+draw_all(id, args, force_overlay) =>
+	for item in id
+		item.draw(args, force_overlay)
+	id
+draw_all(id, args, extend_only, force_overlay) =>
+	for item in id
+		item.draw(args, extend_only, force_overlay)
+	id
+
+//@function converts this object into a builtin plot object, drawing it on the chart, unless drawn once before, this will either use the passed or default config for all objects
+export method draw(Label[] this, LabelArgs args = na, simple bool force_overlay = false) => draw_all(this, args, force_overlay)
+//@function converts this object into a builtin plot object, drawing it on the chart, unless drawn once before, this will either use the passed or default config for all objects
+export method draw(CenterLabel[] this, LabelArgs args = na, simple bool force_overlay = false) => draw_all(this, args, force_overlay)
+//@function converts this object into a builtin plot object, drawing it on the chart, unless drawn once before, this will either use the passed or default config for all objects
+export method draw(PolyLine[] this, PolyLineArgs args = na, simple bool force_overlay = false) => draw_all(this, args, force_overlay)
+//@function converts this object into a builtin plot object, drawing it on the chart, unless drawn once before, this will either use the passed or default config for all objects
+export method draw(Line[] this, LineArgs args = na, bool extend_only = true, simple bool force_overlay = false) => draw_all(this, args, extend_only, force_overlay)
+//@function converts this object into a builtin plot object, drawing it on the chart, unless drawn once before, this will either use the passed or default config for all objects
+export method draw(LineFill[] this, LineArgs flip_support_args = na, simple bool force_overlay = false) => draw_all(this, flip_support_args, force_overlay)
+//@function converts this object into a builtin plot object, drawing it on the chart, unless drawn once before, this will either use the passed or default config for all objects
+export method draw(Box[] this, BoxArgs args = na, BoxTextArgs txt_args = na, bool extend_only = true, simple bool force_overlay = false) =>
+	for item in this
+		item.draw(args, txt_args, extend_only, force_overlay)
+	this
+
+
+export method hide(label this) =>
+	if not na(this)
+		this.set_y(na)
+		this.set_y(na)
+		this.set_text(na)
+	this
+
+export method hide(line this) =>
+	if not na(this)
+		this.set_y2(na)
+	this
+
+export method hide(polyline this) =>
+	if not na(this)
+		this.delete()
+	this
+
+export method hide(box this) =>
+	if not na(this)
+		this.set_bottom(na)
+	this
+
+export method hide(chart.point this) =>
+	if not na(this)
+		this.price := na
+	this
+
+
+_hide(drawable) =>
+	if na(drawable) ? false : not drawable.hidden
+		drawable.plot.hide()
+		drawable.hidden := true
+
+//@function hides an object by setting it's coordinates na, to unhide just update coordinates and call draw() again
+export method hide(Label this) =>  _hide(this)
+//@function hides an object by setting it's coordinates na, to unhide just update coordinates and call draw() again
+export method hide(CenterLabel this) => _hide(this.center_label)
+//@function hides an object by setting it's coordinates na, to unhide just update coordinates and call draw() again
+export method hide(Line this) => _hide(this)
+//@function hides an object by setting it's coordinates na, to unhide just update coordinates and call draw() again
+export method hide(PolyLine this) => 
+	_hide(this)
+	this.plot := na
+	this
+
+//@function hides an object by setting it's coordinates na, to unhide just update coordinates and call draw() again
+export method hide(Box this) => _hide(this)
+
+export method apply_style(line this, LineArgs args) =>
+	if not na(this) and not na(args)
+		this.set_color(args.line_color)
+		this.set_style(args.style)
+
+export method apply_style(label this, LabelArgs args) =>
+	if not na(this) and not na(args)
+		this.set_textcolor(args.text_color)
+		this.set_color(args.bg_color)
+		this.set_style(args.style)
+		
+export method apply_style(box this, BoxArgs args, BoxTextArgs text_args) =>
+	if not na(this)
+		if not na(args)
+			this.set_border_color(args.border_color)
+			this.set_border_style(args.border_style)
+			this.set_bgcolor(args.bg_color)
+		if not na(text_args)
+			this.set_text_color(text_args.text_color)
+	
+_apply_style(this, args) =>
+	if not na(this)
+		this.plot.apply_style(args)
+	this
+
+//@function updates styles on this objects plot
+export method apply_style(Label this, LabelArgs args) => _apply_style(this, args)
+export method apply_style(CenterLabel this, LabelArgs args) => _apply_style(this.center_label, args)
+export method apply_style(Line this, LineArgs args) => _apply_style(this, args)
+
+//@function updates styles on this objects plot
+export method apply_style(Box this, BoxArgs args, BoxTextArgs text_args) => 
+	if not na(this)
+		this.plot.apply_style(args, text_args)
+	this
+
+_apply_style_all(this, args) =>
+	if not na(this)
+		for i in this
+			i.apply_style(args)
+	this
+
+//@function updates styles on these objects' plots
+export method apply_style(label[] this, LabelArgs args) => _apply_style_all(this, args)
+//@function updates styles on these objects' plots
+export method apply_style(Label[] this, LabelArgs args) => _apply_style_all(this, args)
+//@function updates styles on these objects' plots
+export method apply_style(CenterLabel[] this, LabelArgs args) => _apply_style_all(this, args)
+//@function updates styles on these objects' plots
+export method apply_style(line[] this, LineArgs args) => _apply_style_all(this, args)
+//@function updates styles on these objects' plots
+export method apply_style(Line[] this, LineArgs args) => _apply_style_all(this, args)
+//@function updates styles on these objects' plots
+export method apply_style(Box[] this, BoxArgs args, BoxTextArgs text_args) =>
+	if not na(this)
+		for i in this
+			i.apply_style(args, text_args)
+	this
+
+
+//@function clones the whole object including points and plots
+export method deep_copy(Label this) => na(this) ? na : Label.new(this.point.copy(), this.txt, this.tooltip, this.hidden, this.plot.copy())	
+//@function clones the whole object including points and plots
+export method deep_copy(Line this) => na(this) ? na : Line.new(this.start.copy(), this.end.copy(), this.hidden, this.plot.copy())
+//@function clones the whole object including points and plots
+export method deep_copy(Box this) => na(this) ? na : Box.new(this.left_top.copy(), this.right_bottom.copy(), this.txt, this.hidden, this.plot.copy())
+		
+//@function clones the whole object including points and plots
+export method deep_copy(CenterLabel this, bool copy_references = false) => 
+	na(this) ? na : CenterLabel.new(
+	 this.center_label.deep_copy(), 
+	 copy_references and not na(this.source_line) ? this.source_line.copy() : this.source_line,
+	 copy_references and not na(this.source_polyline) ? this.source_polyline.copy() : this.source_polyline
+	 )	
+
+//@function clones the whole object including points and plots
+export method deep_copy(LineFill this, bool copy_references = false) =>
+	if na(this)
+		na
+	else
+		a = copy_references ? this.a.deep_copy() : this.a
+		b = copy_references ? this.b.deep_copy() : this.b
+		f = na(this.flip_support) ? na : this.flip_support.deep_copy()
+		b2 = na(this.flip_support) ? b : f
+		LineFill.new(a, b, this.fill_color, f, na(this.plot) ? na : linefill.new(a.plot, b2.plot, this.fill_color))
+
+
+///////////////////////////////////////////////////////
+//#endregion OBJECT TO BUILTIN
+///////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////	
+//					  	 DEMO	
+/////////////////////////////////////////////////////////	
+
+chart.point now = chart.point.now()
+plot(now.time, 'point time', display = display.data_window)
+plot(now.index, 'point bar index', display = display.data_window)
+plot(now.price, 'point price', display = display.data_window)
+
+float hhp = ta.highest(high, 30)
+float llp = ta.lowest(low, 30)
+int hhi = ta.highestbars(high, 30)
+int lli = ta.lowestbars(low, 30)
+
+// HACK via differing price, otherwise function returns same instance for all points
+var chart.point p1   = chart.point.now(2)
+var chart.point p2   = chart.point.now(3)
+var chart.point p3   = chart.point.now(4)
+var chart.point p4   = chart.point.now(5)
+varip chart.point hh   = chart.point.now(6)
+varip chart.point hhe  = chart.point.now(7)
+varip chart.point ll   = chart.point.now(8)
+varip chart.point lle  = chart.point.now(9)
+
+varip Label l_hh = hh.create_label('hh')
+var Label l_ll = ll.create_label('ll')
+var Label l_p1 = p1.create_label('p1')
+var Label l_p2 = p2.create_label('p2')
+var Label l_p3 = p3.create_label('p3')
+var Label l_p4 = p4.create_label('p4')
+
+var Line line_hh = Line.new(hh, hhe)
+var Line line_ll = Line.new(ll, lle)
+var Line l2 = na // (p3, p2)
+var Line l3 = na // (hh, ll)
+
+// // single point update
+// var chart.point latest_point = now.copy()
+// var Label latest = latest_point.create_label('latest').draw()
+// latest_point.update()
+// latest.draw()
+
+h = ta.highest(high, 200)
+l = ta.lowest(low, 200)
+d = h-l
+c = l+d/2
+
+var Box b3 = Box.new(chart.point.now(close), p3, 'box ext').draw(BoxArgs.new(bg_color = #00000000, xloc = xloc.bar_index),  text_args = BoxTextArgs.new(text_color = color.yellow), extend_only = true) // expanding box, with one fix point p3 and one updating point p1
+
+if barstate.islast
+
+	p1.update(time[0], bar_index[0], high[0])
+	p2.update(time[20], bar_index[20], high[20])
+	p3.update(time[30], bar_index[30], high[30])
+	p4.update(time[40], bar_index[40], high[40])
+
+	hh_updated = hh.update(time[-hhi], bar_index[-hhi], hhp)
+	ll_updated = ll.update(time[-lli], bar_index[-lli], llp)
+	hhe_updated = hhe.update(time, bar_index, hhp)
+	lle_updated = lle.update(time, bar_index, llp)
+
+ 	// label update indirect, still same point, but point was updated, due to points_updated this now needs a force_redraw call OR an update(with new point)
+	l_hh.draw()
+	l_ll.draw(LabelArgs.new(style = label.style_label_up))
+	l_p1.draw()
+	l_p2.draw()
+	
+	// label update with new point
+	l_p3.draw() // point updated directly, just draw if we know about it, no need to update again
+	l_p4.draw()
+
+	// updating center label positions 
+	var Label line_hh_label = line_hh.create_label('hh line\ncenter')
+	var CenterLabel line_ll_label = line_ll.create_center_label('ll line\ncenter')
+
+	// line update manual
+	if hh_updated or hhe_updated
+		[timeC, indexC, priceC] = line_hh.calculate_center()
+		line_hh_label.update(timeC, indexC, priceC) // line center label needs update, since center is a separate point // this calculates always, optimizing this via points_updated
+	line_hh_label.draw()
+
+	line_hh.draw(LineArgs.new(color.red), extend_only = false) // based on updated point instances hh and hhe
+	line_ll.draw(LineArgs.new(color.green), extend_only = false) // based on updated point instances ll and lle
+
+	// label update manual (calculating center point from line points, after their update)
+	line_ll_label.update().draw(LabelArgs.new(style = label.style_label_up))
+
+
+	// //////////////// LINE AND FILL 1 //////////////// 
+
+	// test delayed init/plot
+	if na(l2)
+		l2 := Line.new(p3, p2)
+	// else
+		// points are updated externally, draw (set points has to happen in any case on each tick, otherwise rollback happens between ticks)
+	l2.draw(LineArgs.new(color.fuchsia, width = 3), extend_only = false)
+
+	var CenterLabel l_l2 = na
+	if na(l_l2)
+		l_l2 := l2.create_center_label('🏂\n')
+	else
+		l_l2.update()
+
+	// draw after update so points_updated is not reset before updating center label
+	l_l2.draw(LabelArgs.new(size = size.large, style = label.style_label_center))
+
+	// line fill test between dynamic lines	
+	var LineFill lf12 = line_ll.create_fill(l2,color.new(color.gray, 70))
+	lf12.draw()
+
+	// //////////////// LINE AND FILL 2 //////////////// 
+	if na(l3)
+		l3 := Line.new(hh, ll)
+	// else
+		// points are updated externally, draw (set points has to happen in any case on each tick, otherwise rollback happens between ticks)
+	
+	l3.draw(LineArgs.new(color.yellow, width = 2), extend_only = false)
+
+	// line fill test between dynamic lines	
+	var LineFill lf3 = l3.create_fill(line_ll,color.new(color.gray, 70), flip = true)
+	lf3.draw()
+
+	// //////////////// LINE AND FILL 2 //////////////// 
+
+	// test nested scope
+	var chart.point fix3 = p3.copy()
+	var chart.point fix4 = p4.copy()
+	var Label l_fixp3 = fix3.create_label('fix 3').draw() // draw once
+	var Label l_fixp4 = fix4.create_label('fix 4').draw() // draw once
+
+	// extend only
+	var chart.point p_dyn = chart.point.now(1)
+	var Line l_dyn = Line.new(fix4, p_dyn)
+
+	p_dyn.update(time, bar_index, close)
+
+	var CenterLabel cl_dyn = l_dyn.create_center_label('cl_dyn')
+	cl_dyn.update().draw() // update center point automatically from creating Line
+
+	if bar_index % 2 == 0 
+		l_dyn.hide()
+	else
+		l_dyn.draw()
+
+	// //////////////// BOXES //////////////// 
+	var Box b1 = Box.new(p4, p3, 'box') // expanding box, with one fix point p3 and one updating point p1
+	b1.draw(BoxArgs.new(bg_color = #00000000), extend_only = false)
+
+	var Box b2 = Box.new(p4, p3, 'boxt')
+
+
+	if bar_index % 2 == 0
+		b2.hide()
+	else 
+		b2.draw(BoxArgs.new(bg_color = #00000000, xloc = xloc.bar_time), extend_only = true)
+
+	if bar_index % 2 == 0
+		b3.hide()
+	else if bar_index > 300 // test plotting of initially plotted, then hidden object after it's data should have run out of buffer (284 bars)
+		b3.draw(extend_only = true)
+
+	// //////////////// POLYLINE //////////////// 
+	var PolyLineArgs plargs = PolyLineArgs.new(color.aqua, color.new(color.navy, 70), line.style_solid, 2, xloc.bar_index )
+	var plPoints1 = array.from(
+	 chart.point.from_index(bar_index +  20, l),
+	 chart.point.from_index(bar_index +  40, h),
+	 chart.point.from_index(bar_index +  60, c)
+	 )
+	var plPoints2 = array.from(
+	 chart.point.from_index(bar_index +  60, c),
+	 chart.point.from_index(bar_index +  80, h),
+	 chart.point.from_index(bar_index + 100, l)
+	 )
+	 
+	var PolyLine pl1 = PolyLine.new(plPoints1, curved = false, closed = false)
+	var PolyLine pl2 = PolyLine.new(plPoints2, curved = false, closed = false)
+	
+	if bar_index % 2 == 0
+		pl1.hide()
+	else
+		pl1.draw(plargs)
+	pl2.draw(plargs)
+
+//\\\\\\\\// test live data updates //\\\\\\\\//
+// v775 with separate start/end varip chart.points
+// v776 with allinone varip
+// v777 with varip start/end and var Line
+// v796 with minimal setup create_line without coordinates
+// v824 fixed label style not applied, because if label.bg_color is na, styles will not be applied
+var Line  intrabar_test  = create_line ()
+var Label intrabar_label = create_label('ftc', tooltip = 'first tick close')
+
+// setting data only on certain ticks, requires varip variables to protect changes from rollback between ticks
+if barstate.isnew
+	intrabar_test.start.update(intrabar_test.end.time, intrabar_test.end.index, intrabar_test.end.price)
+	intrabar_test.end.update(time, bar_index, close) // set to close of first bar tick
+	intrabar_label.update(intrabar_test.end)
+		
+// but updating plots and drawings (set points) on every tick is necessary, else they will be rolled back between ticks
+// plot(intrabar_test.end.price, 'first tick close', color.blue, linewidth = 2)
+intrabar_test.draw(LineArgs.new(color.aqua, xloc = xloc.bar_time, width = 2), extend_only = false)
+intrabar_label.draw(LabelArgs.new(color.aqua, #00000000, xloc = xloc.bar_index, style = label.style_label_left))

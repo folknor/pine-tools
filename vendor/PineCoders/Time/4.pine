@@ -1,0 +1,263 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © PineCoders
+
+//@version=5
+library("Time", true)
+
+// Time Library
+// v4, 2023.03.10 
+
+// This code was written using the recommendations from the Pine Script™ User Manual's Style Guide:
+//   https://www.tradingview.com/pine-script-docs/en/v5/writing/Style_guide.html
+
+
+
+//#region ———————————————————— Library functions 
+
+
+// @function            Converts a UNIX timestamp (in milliseconds) to a formatted time string.
+// @param timeInMs      (series float) Timestamp to be formatted. 
+// @param format        (series string) Format for the time. Optional. The default value is "HH:mm:ss".
+// @returns             (string) A string containing the formatted time.
+export formattedTime(series float timeInMs, series string format = "HH:mm:ss") =>
+    string result = str.format("{0,time," + format + "}", int(timeInMs))
+    // EXAMPLES                                                 RESULT
+    // formattedTime(timenow)                           >>>     00:40:35
+    // formattedTime(timenow, "short")                  >>>     12:40 AM
+    // formattedTime(timenow, "full")                   >>>     12:40:35 AM UTC
+    // formattedTime(1000 * 60 * 60 * 3.5, "HH:mm")     >>>     "03:30"
+
+
+// @function            Converts a UNIX timestamp (in milliseconds) to a formatted date string.
+// @param timeInMs      (series float) Timestamp to be formatted. 
+// @param format        (series string) Format for the date. Optional. The default value is "yyyy-MM-dd".
+// @returns             (string) A string containing the formatted date.
+export formattedDate(series float timeInMs, series string format = "yyyy-MM-dd") =>
+    string result = str.format("{0,date," + format + "}", int(timeInMs))
+    // EXAMPLES                                     RESULT
+    // formattedDate(timenow, "short")      >>>     4/5/22
+    // formattedDate(timenow, "medium")     >>>     Apr 5, 2022
+    // formattedDate(timenow, "full")       >>>     Tuesday, April 5, 2022
+
+
+// @function            Converts a UNIX timestamp (in milliseconds) to the name of the day of the week.
+// @param timeInMs      (series float) Timestamp to be formatted. 
+// @param format        (series string) Format for the day of the week. Optional. The default value is "EEEE" (complete day name).
+// @returns             (string) A string containing the day of the week.
+export formattedDay(series float timeInMs, series string format = "EEEE") =>
+    string result = str.format("{0,time," + format + "}", int(timeInMs))
+    // EXAMPLES                                                 RESULT
+    // formattedDay(timenow, "E")                               >>>     Tue
+    // formattedDay(timenow, "dd.MM.yy")                        >>>     05.04.22
+    // formattedDay(timenow, "yyyy.MM.dd G 'at' hh:mm:ss z")    >>>     2022.04.05 AD at 12:40:35 UTC
+
+
+// @function        The duration in seconds that a condition has been true.  
+// @param cond      (series bool) Condition to time.       
+// @param resetCond (series bool) When `true`, the duration resets. Optional. Default is `barstate.isnew`. 
+// @returns         (int) The duration in seconds for which `cond` is continuously true.
+export secondsSince(series bool cond, series bool resetCond = barstate.isnew) =>
+    varip int timeBegin = na
+    varip bool lastCond = false
+    if resetCond
+        timeBegin := cond ? timenow : na
+    else if cond
+        if not lastCond
+            timeBegin := timenow
+    else
+        timeBegin := na
+    lastCond := cond
+    int result = (timenow - timeBegin) / 1000
+
+
+// @function        Calculates a +/- time offset in variable units from the current bar's time or from the current time.
+// @param from      (series string) Starting time from where the offset is calculated: "bar" to start from the bar's starting time, "close" to start from the bar's closing time, "now" to start from the current time.
+// @param qty       (series int) The +/- qty of units of offset required. A "series float" can be used but it will be cast to a "series int".
+// @param units     (series string) String containing one of the seven allowed time units: "chart" (chart's timeframe), "seconds", "minutes", "hours", "days", "months", "years".
+// @returns         (int) The resultant time offset `from` the `qty` of time in the specified `units`.  
+export timeFrom(series string from = "bar", series int qty, series string units) =>
+    int result = na
+    string unit = str.match(units, ".*[^s]")
+    int t = from == "bar" ? time : from == "close" ? time_close : timenow
+    if units == "chart"
+        result := int(t + (timeframe.in_seconds() * 1000 * qty))
+    else
+        int y    = year(t)       + (unit == "year"   ? qty : 0)
+        int m    = month(t)      + (unit == "month"  ? qty : 0)
+        int d    = dayofmonth(t) + (unit == "day"    ? qty : 0)
+        int hr   = hour(t)       + (unit == "hour"   ? qty : 0)
+        int min  = minute(t)     + (unit == "minute" ? qty : 0)
+        int sec  = second(t)     + (unit == "second" ? qty : 0)
+        result  := timestamp(y, m, d, hr, min, sec)
+    result
+
+
+// @function        Converts a time value in ms to a quantity of time units. 
+// @param ms        (series int) Value of time to be formatted. 
+// @param unit      (series string) The target unit of time measurement. Options are "seconds", "minutes", "hours", "days", "weeks", "months". If not used one will be automatically assigned. 
+// @returns         (string) A formatted string from the number of `ms` in the specified `unit` of time measurement
+export formattedNoOfPeriods(series int ms, series string unit = na) =>
+    [tf, denominator] = if na(unit)
+        switch
+            ms < 60000      => ["seconds", 1000      ]
+            ms < 3600000    => ["minutes", 60000     ]
+            ms < 86400000   => ["hours",   3600000   ]
+            ms < 604800000  => ["days",    86400000  ]
+            ms < 2628003000 => ["weeks",   604800000 ]
+            =>                 ["months",  2628003000]
+    else
+        switch unit
+            "seconds" => [unit, 1000      ]
+            "minutes" => [unit, 60000     ]
+            "hours"   => [unit, 3600000   ]
+            "days"    => [unit, 86400000  ]
+            "weeks"   => [unit, 604800000 ]
+            =>           [unit, 2628003000]
+    float  qty = math.round(ms / denominator, 2)
+    string unitString = qty >= 2 ? tf : str.match(tf, ".*[^s]")
+    string result = str.tostring(qty) + " " + unitString
+
+
+// @function            Convert an input time in seconds to target string TF in `timeframe.period` string format.
+// @param tfInSeconds   (simple int) a timeframe in seconds to convert to a string.       
+// @param mult          (simple float) Multiple of `tfInSeconds` to be calculated. Optional. 1 (no multiplier) is default. 
+// @returns             (string) The `tfInSeconds` in `timeframe.period` format usable with `request.security()`.
+export secondsToTfString(simple int tfInSeconds, simple float mult = 1.0) => 
+    float tfInMin = tfInSeconds / 60 * math.max(mult, 1)
+    string result = switch
+        tfInMin <= 0.017 => "1S"  
+        tfInMin <= 0.084 => "5S"  
+        tfInMin <= 0.167 => "10S"  
+        tfInMin <= 0.251 => "15S" 
+        tfInMin <= 0.501 => "30S" 
+        tfInMin <  1440  => str.tostring(math.round(tfInMin)) 
+        tfInMin %  10080 == 0 => str.tostring(tfInMin / 10080) + "W"
+        tfInMin %  43800 == 0 => str.tostring(tfInMin / 43800) + "M"
+        tfInMin <= 43800 => str.tostring(math.round(math.min(tfInMin / 1440, 365))) + "D" 
+        => str.tostring(math.round(math.min(tfInMin / 43800, 12))) + "M"
+//#endregion
+
+
+
+//#region ———————————————————— Example Code 
+
+
+// —————————— Constants 
+
+string SI1      = "tiny",    string TP1 = "top"
+string SI2      = "small",   string TP2 = "middle" 
+string SI3      = "normal",  string TP3 = "bottom" 
+string SI4      = "large",   string TP4 = "left"
+string SI5      = "huge",    string TP5 = "center" 
+string SI6      = "auto",    string TP6 = "right"
+string TU1      = "chart",   string OF1 = "Bar's Open Time"          
+string TU2      = "seconds", string OF2 = "Bar's Close Time" 
+string TU3      = "minutes", string OF3 = "Current Time"        
+string TU4      = "hours",   string TU5 = "days"             
+string TU6      = "weeks",   string TU7 = "months"  
+string TU8      = "years",   
+
+string N_TT     = "Number of time units to calculate the line offset. Example: 20 hours."
+string UNITS_TT = "Unit of time to calculate the offset for lines in."
+string FROM_TT  = "Starting time from where the offset for lines is calculated."
+
+string TICKS_TT = "The number of ticks between the open and the high to trigger the alert. Once the value is exceeded the timer will start."
+string SEC_TT   = "Seconds for which the condition must be continuously true before the alert triggers."
+string RESET_TT = "When checked, the duration will reset every time a new realtime bar begins."
+
+string INPUT_TT = "When checked, will measure the length of the lines in the following units of time, otherwise will select a unit of time automatically."
+string TIME_TT  = "Units to measure the length of the lines in."
+
+string MULT_TT  = "Multiplier for the chart timeframe string. \nExample: 1 will display the current time, 2 will display 2 times the chart time, etc."
+string SIZE_TT  = "Changes the size of the display table."
+string POS_TT   = "Changes the position of the display table on the screen."
+
+int LEFT_BARS   = 20
+int RIGHT_BARS  = 20
+
+
+// ——————————  Inputs
+
+string GRP1           = "══════════ Seconds since ══════════"
+int    ticksInput     = input.int(0,            "Number Of Ticks From Open",    group = GRP1, tooltip = TICKS_TT)
+float  secondsInput   = input.int(20,           "Seconds condition must last",  group = GRP1, tooltip = SEC_TT,   minval = 1)
+bool   resetInput     = input.bool(true,        "Reset timing on new bar",      group = GRP1, tooltip = RESET_TT)
+
+string GRP2           = "═══════════   Time from   ═══════════"
+int    nInput         = input.int(20,           "Lines End At Offset n (+/-)", group = GRP2, tooltip = N_TT)
+string unitsInput     = input.string(TU1,       "Offset Units",                group = GRP2, tooltip = UNITS_TT, options = [TU1, TU2, TU3, TU4, TU5, TU7, TU8])
+string fromInput      = input.string(OF1,       "Calculated from",             group = GRP2, tooltip = FROM_TT,  options = [OF1, OF2, OF3])
+
+string GRP3           = "══════ Formatted number of periods ══════"
+bool   useTimeInput   = input.bool(false,       "Use Input Time",               group = GRP3, tooltip = INPUT_TT)
+string timeInput      = input.string("seconds", "Unit of Time",                 group = GRP3, tooltip = TIME_TT,  options = [TU2, TU3, TU4, TU5, TU6, TU7])
+
+string GRP4           = "═════════   Seconds to string   ═════════"
+float  tfMultInput    = input.float(1.0,        "Timeframe Multiplier",         group = GRP4, tooltip = MULT_TT)
+string textSizeInput  = input.string("large",   "Text size",                    group = GRP4, tooltip = SIZE_TT,  options = [SI1, SI2, SI3, SI4, SI5, SI6])
+string tableYposInput = input.string("bottom",  "Position  ",                   group = GRP4, tooltip = POS_TT,   options = [TP1, TP2, TP3], inline = "41")
+string tableXposInput = input.string("right",   "",                             group = GRP4,                     options = [TP4, TP5, TP6], inline = "41")
+
+
+// ——————————  Conditions and Display
+
+// Condition triggering the display of lines.
+float pivotHi = ta.pivothigh(LEFT_BARS, RIGHT_BARS)
+float pivotLo = ta.pivotlow(LEFT_BARS,  RIGHT_BARS)
+
+// Base to calculate offset from.
+string from = switch fromInput  
+    OF1 => "bar" 
+    OF2 => "close" 
+    =>     "now"
+
+// Calculate offset.
+int timeTo = timeFrom(from, nInput, unitsInput)
+
+int pivotTime  = time[RIGHT_BARS]
+int offsetTime = timeTo[RIGHT_BARS]
+
+// Set time unit for `formattedNoOfPeriods()` time measurement.
+string timeUnit = useTimeInput ? timeInput : na
+
+// Check for new pivots and draw labels and lines when found.
+if not na(pivotHi)
+    line.new(pivotTime,  pivotHi, offsetTime, pivotHi, xloc.bar_time, color = color.fuchsia, style = line.style_arrow_right, width = 2)
+    label.new(pivotTime, pivotHi, formattedDate(pivotTime, "full"), xloc.bar_time, color = color.new(color.gray, 85), style = label.style_label_down, textcolor = color.lime)
+    label.new(time, pivotHi, formattedNoOfPeriods(offsetTime - pivotTime, timeUnit), xloc.bar_time, color = color(na), style = label.style_label_up, textcolor = color.fuchsia, size = size.small)
+
+if not na(pivotLo)
+    line.new(pivotTime,  pivotLo,  offsetTime, pivotLo,  xloc.bar_time, color = color.gray, style = line.style_arrow_right, width = 2)
+    label.new(pivotTime, pivotLo, formattedDay(pivotTime, "yyyy.MM.dd G 'at' hh:mm:ss z"), xloc.bar_time, color = color.new(color.gray, 85), style = label.style_label_up, textcolor = color.fuchsia)
+    label.new(time, pivotLo, formattedNoOfPeriods(offsetTime - pivotTime, timeUnit), xloc.bar_time, color = color(na), style = label.style_label_down, textcolor = color.gray, size = size.small)
+
+// Condition to check for the difference in ticks from the high and the open.
+bool cond = math.abs(high - open) > syminfo.mintick * ticksInput
+// Time the duration the condition has been true.
+int secFromOpen = secondsSince(cond, resetInput and barstate.isnew)
+// Condition to check if the duration is greater than the input timer.
+bool timeAlert = secFromOpen > secondsInput
+// Format a time string for the timer label. 
+string alertTime = formattedTime(secFromOpen * 1000, "mm:ss")
+
+// Set the contents for the label depending on the stage of the alert timer. 
+string alertString = switch
+    timeAlert => "Timed Alert Triggered\n\n" + alertTime
+    cond      => "Condition Detected...\n\nTimer count\n" + alertTime
+    =>           "Waiting for condition..."
+
+// Display examples using a table and a label. Update values on the last bar for efficiency. 
+if barstate.islast
+    // Declare a basic label once.
+    var label condTime  = label.new(na, na, yloc = yloc.abovebar, style = label.style_label_lower_left, textcolor = color.white)
+    // Update label for changes to location, color, and text.
+    label.set_x(condTime, bar_index)
+    label.set_text(condTime, alertString)
+    label.set_color(condTime, timeAlert ? color.new(color.green, 50) : cond ? color.new(color.orange, 0) : color.new(color.red, 50))
+
+if barstate.islastconfirmedhistory
+    // Declare a basic table once.
+    var table tfDisplay = table.new(tableYposInput + "_" + tableXposInput, 1, 1)
+    // Set table to show tf on last historical bar.
+    table.cell(tfDisplay, 0, 0, secondsToTfString(timeframe.in_seconds(), tfMultInput), bgcolor = color.yellow, text_color = color.black, text_size = textSizeInput)
+//#endregion

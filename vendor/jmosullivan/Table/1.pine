@@ -1,0 +1,282 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © jmosullivan
+
+//@version=5
+
+// @description This library provides an easy way to convert arrays and matrixes of data into tables. There are 
+// a few different implementations of each function so you can get more or less control over the appearance of 
+// the tables. The basic rule of thumb is that all matrix rows must have the same number of columns, and if you 
+// are providing multiple arrays/matrixes to specify additional colors (background/text), they must have the 
+// same number of rows/columns as the data array. Finally, you do have the option of spanning cells across rows
+// or columns with some special syntax in the data cell. Look at the examples to see how the arrays and matrixes 
+// need to be built before they can be used by the functions. 
+library("Table", true)
+
+import jmosullivan/Utils/1
+
+// Constants used in the tables (as defaults, they can be overridden by custom scripts)
+color COLOR_HOT = #e500a4
+color COLOR_COOL = #2962ff
+color COLOR_TEXT = color.white
+
+// @type Type for each cell's content and appearance
+export type Cell
+	string content
+	color bgColor = color.blue
+	color textColor = color.white
+	string align = text.align_center
+	int colspan = 1
+	int rowspan = 1
+
+// @function Helper function that converts a float array to a Cell array so it can be rendered with the fromArray function
+// @param floatArray (array<float>) the float array to convert to a Cell array.
+// @returns array<Cell> The Cell array to return.
+export floatArrayToCellArray(array<float> floatArray) => 
+    cellArray = array.new<Cell>()
+	for item in floatArray
+        array.push(cellArray, Cell.new(str.tostring(item)))
+
+    cellArray
+
+// @function Helper function that converts a string array to a Cell array so it can be rendered with the fromArray function
+// @param stringArray (array<string>) the array to convert to a Cell array.
+// @returns array<Cell> The Cell array to return.
+export stringArrayToCellArray(array<string> stringArray) => 
+    cellArray = array.new<Cell>()
+	for item in stringArray
+        array.push(cellArray, Cell.new(item))
+
+    cellArray
+
+// @function Helper function that converts a float matrix to a Cell matrix so it can be rendered with the fromMatrix function
+// @param floatMatrix (matrix<float>) the float matrix to convert to a string matrix.
+// @returns matrix<Cell> The Cell matrix to render.
+export floatMatrixToCellMatrix(matrix<float> floatMatrix) => 
+    rows = matrix.rows(floatMatrix)
+    cols = matrix.columns(floatMatrix)
+    cellMatrix = matrix.new<Cell>(rows, cols)
+    if rows > 0 and cols > 0
+        for a = 0 to rows - 1
+            for b = 0 to cols - 1
+                matrix.set(cellMatrix, a, b, Cell.new(str.tostring(matrix.get(floatMatrix, a, b))))
+
+    cellMatrix
+
+// @function Helper function that converts a string matrix to a Cell matrix so it can be rendered with the fromMatrix function
+// @param stringMatrix (matrix<string>) the string matrix to convert to a Cell matrix.
+// @returns matrix<Cell> The Cell matrix to return.
+export stringMatrixToCellMatrix(matrix<string> stringMatrix) => 
+    rows = matrix.rows(stringMatrix)
+    cols = matrix.columns(stringMatrix)
+    cellMatrix = matrix.new<Cell>(rows, cols)
+    if rows > 0 and cols > 0
+        for a = 0 to rows - 1
+            for b = 0 to cols - 1
+                matrix.set(cellMatrix, a, b, Cell.new(matrix.get(stringMatrix, a, b)))
+
+    cellMatrix
+
+// @function Takes a CellMatrix and renders it as a table.
+// @param CellMatrix (matrix<Cell>) The Cells to be rendered in a table
+// @param position (string) Optional. The position of the table. Defaults to position.top_right
+// @param verticalOffset (int) Optional. The vertical offset of the table from the top or bottom of the chart. Defaults to 0.
+// @param transposeTable (bool) Optional. Will transpose all of the data in the matrices before rendering. Defaults to false. 
+// @param textSize (string) Optional. The size of text to render in the table. Defaults to size.small.
+// @param borderWidth (int) Optional. The width of the border between table cells. Defaults to 2.
+// @param tableNumRows (int) Optional. The number of rows in the table. Not required, defaults to the number of rows in the provided matrix. If your matrix will have a variable number of rows, you must provide the max number of rows or the function will error when it attempts to set a cell value on a row that the table hadn't accounted for when it was defined.
+// @param blankCellText (string) Optional. Text to use cells when adding blank rows for vertical offsetting.
+export fromMatrix(matrix<Cell> CellMatrix, string position = position.top_right, int verticalOffset = 0, bool transposeTable = false, string textSize = size.small, int borderWidth = 2, int tableNumRows = -1, string blankCellText = "") => 
+	if barstate.islast
+		matrix<Cell> _cellMatrix = CellMatrix
+		int rows = matrix.rows(CellMatrix)
+		int columns = matrix.columns(CellMatrix)
+
+		// Perform some validation to make sure we have all the things we need
+		if transposeTable
+			_cellMatrix := matrix.transpose(_cellMatrix)
+
+		rows := matrix.rows(_cellMatrix)
+		columns := matrix.columns(_cellMatrix)
+		
+		// If the table is supposed to be offset from it's top or bottom, add rows to create the displacement
+		_position = Utils.getPositionFromString(position)
+		bool isBottom = _position == position.bottom_left or _position == position.bottom_center or _position == position.bottom_right
+		bool isTop = _position == position.top_left or _position == position.top_center or _position == position.top_right
+		if (verticalOffset > 0)
+			transparentColor = color.rgb(255,255,255,100)
+			blankCell = Cell.new(blankCellText, transparentColor, transparentColor)
+			matrix<Cell> blankRows = matrix.new<Cell>(verticalOffset, columns, blankCell)
+			if (isTop)
+				_cellMatrix := matrix.concat(blankRows, _cellMatrix)
+			else if (isBottom)
+				_cellMatrix := matrix.concat(_cellMatrix, blankRows)
+
+		Cell cell = na
+		mergeArray = array.new_string()
+		int matrixRows = matrix.rows(_cellMatrix)
+        int tableRows = matrixRows > tableNumRows ? matrixRows : tableNumRows
+
+		table matrixTable = table.new(position = _position, columns = columns, rows = tableRows, border_width = borderWidth)
+		for i = 0 to matrixRows - 1
+			for j = 0 to columns - 1
+				// Check the data for row & colspan specs
+				cell := matrix.get(_cellMatrix, i, j)
+				// Just insert blank cells if the matrix is missing something...
+				if na(cell)
+					cell := Cell.new("")
+
+				// Build a merge array to be merged after table is complete
+				if (cell.rowspan > 1 or cell.colspan > 1)
+					array.push(mergeArray, str.tostring(j) + ":" + str.tostring(i) + ":" + str.tostring(j+cell.colspan-1) + ":" + str.tostring(i+cell.rowspan-1))
+
+				table.cell(
+				  matrixTable, 
+				  j, 
+				  i, 
+				  cell.content,
+				  text_color=cell.textColor, 
+				  text_size=textSize, 
+				  text_halign=cell.align,
+				  bgcolor=cell.bgColor
+				  )
+
+		mergeArraySize = array.size(mergeArray)
+		if mergeArraySize > 0
+			for i = 0 to mergeArraySize - 1
+				mergeParts = str.split(array.get(mergeArray, i), ":")
+				if array.size(mergeParts) == 4
+					table.merge_cells(
+					  matrixTable, 
+					  math.round(str.tonumber(array.get(mergeParts, 0))), 
+					  math.round(str.tonumber(array.get(mergeParts, 1))), 
+					  math.round(str.tonumber(array.get(mergeParts, 2))), 
+					  math.round(str.tonumber(array.get(mergeParts, 3)))
+					  )
+
+// @function Renders a float matrix as a table.
+// @param dataMatrix (matrix_float) The data to be rendered in a table
+// @param position (string) Optional. The position of the table. Defaults to position.top_right
+// @param verticalOffset (int) Optional. The vertical offset of the table from the top or bottom of the chart. Defaults to 0.
+// @param transposeTable (bool) Optional. Will transpose all of the data in the matrices before rendering. Defaults to false. 
+// @param textSize (string) Optional. The size of text to render in the table. Defaults to size.small.
+// @param borderWidth (int) Optional. The width of the border between table cells. Defaults to 2.
+// @param tableNumRows (int) Optional. The number of rows in the table. Not required, defaults to the number of rows in the provided matrix. If your matrix will have a variable number of rows, you must provide the max number of rows or the function will error when it attempts to set a cell value on a row that the table hadn't accounted for when it was defined.
+// @param blankCellText (string) Optional. Text to use cells when adding blank rows for vertical offsetting.
+export fromMatrix(matrix<float> dataMatrix, string position = position.top_right, int verticalOffset = 0, bool transposeTable = false, string textSize = size.small, int borderWidth = 2, int tableNumRows = -1, string blankCellText = "") => 
+	fromMatrix(floatMatrixToCellMatrix(dataMatrix), position, verticalOffset, transposeTable, textSize, borderWidth, tableNumRows, blankCellText)
+
+// @function Renders a string matrix as a table.
+// @param dataMatrix (matrix_string) The data to be rendered in a table
+// @param position (string) Optional. The position of the table. Defaults to position.top_right
+// @param verticalOffset (int) Optional. The vertical offset of the table from the top or bottom of the chart. Defaults to 0.
+// @param transposeTable (bool) Optional. Will transpose all of the data in the matrices before rendering. Defaults to false. 
+// @param textSize (string) Optional. The size of text to render in the table. Defaults to size.small.
+// @param borderWidth (int) Optional. The width of the border between table cells. Defaults to 2.
+// @param tableNumRows (int) Optional. The number of rows in the table. Not required, defaults to the number of rows in the provided matrix. If your matrix will have a variable number of rows, you must provide the max number of rows or the function will error when it attempts to set a cell value on a row that the table hadn't accounted for when it was defined.
+// @param blankCellText (string) Optional. Text to use cells when adding blank rows for vertical offsetting.
+export fromMatrix(matrix<string> dataMatrix, string position = position.top_right, int verticalOffset = 0, bool transposeTable = false, string textSize = size.small, int borderWidth = 2, int tableNumRows = -1, string blankCellText = "") => 
+	fromMatrix(stringMatrixToCellMatrix(dataMatrix), position, verticalOffset, transposeTable, textSize, borderWidth, tableNumRows, blankCellText)
+
+// @function Renders a Cell array as a table.
+// @param dataArray (array<Cell>) The data to be rendered in a table
+// @param position (string) Optional. The position of the table. Defaults to position.top_right
+// @param verticalOffset (int) Optional. The vertical offset of the table from the top or bottom of the chart. Defaults to 0.
+// @param transposeTable (bool) Optional. Will transpose all of the data in the matrices before rendering. Defaults to false. 
+// @param textSize (string) Optional. The size of text to render in the table. Defaults to size.small.
+// @param borderWidth (int) Optional. The width of the border between table cells. Defaults to 2.
+// @param blankCellText (string) Optional. Text to use cells when adding blank rows for vertical offsetting.
+export fromArray(array<Cell> dataArray, string position = position.top_right, int verticalOffset = 0, bool transposeTable = false, string textSize = size.small, int borderWidth = 2, string blankCellText = "") => 
+	dataMatrix = matrix.new<Cell>()
+	matrix.add_row(dataMatrix, 0, dataArray)
+	fromMatrix(dataMatrix, position, verticalOffset, transposeTable, textSize, borderWidth, blankCellText=blankCellText)
+
+// @function Renders a string array as a table.
+// @param dataArray (array_string) The data to be rendered in a table
+// @param position (string) Optional. The position of the table. Defaults to position.top_right
+// @param verticalOffset (int) Optional. The vertical offset of the table from the top or bottom of the chart. Defaults to 0.
+// @param transposeTable (bool) Optional. Will transpose all of the data in the matrices before rendering. Defaults to false. 
+// @param textSize (string) Optional. The size of text to render in the table. Defaults to size.small.
+// @param borderWidth (int) Optional. The width of the border between table cells. Defaults to 2.
+// @param blankCellText (string) Optional. Text to use cells when adding blank rows for vertical offsetting.
+export fromArray(array<string> dataArray, string position = position.top_right, int verticalOffset = 0, bool transposeTable = false, string textSize = size.small, int borderWidth = 2, string blankCellText = "") => 
+	fromArray(stringArrayToCellArray(dataArray), position, verticalOffset, transposeTable, textSize, borderWidth, blankCellText=blankCellText)
+
+// @function Renders a float array as a table.
+// @param dataArray (array_float) The data to be rendered in a table
+// @param position (string) Optional. The position of the table. Defaults to position.top_right
+// @param verticalOffset (int) Optional. The vertical offset of the table from the top or bottom of the chart. Defaults to 0.
+// @param transposeTable (bool) Optional. Will transpose all of the data in the matrices before rendering. Defaults to false. 
+// @param textSize (string) Optional. The size of text to render in the table. Defaults to size.small.
+// @param borderWidth (int) Optional. The width of the border between table cells. Defaults to 2.
+// @param blankCellText (string) Optional. Text to use cells when adding blank rows for vertical offsetting.
+export fromArray(array<float> dataArray, string position = position.top_right, int verticalOffset = 0, bool transposeTable = false, string textSize = size.small, int borderWidth = 2, string blankCellText = "") => 
+	fromArray(floatArrayToCellArray(dataArray), position, verticalOffset, transposeTable, textSize, borderWidth, blankCellText=blankCellText)
+
+// @function Renders a debug message in a table at the desired location on screen.
+// @param message (string) The message to render.
+// @param position (string) Optional. The position of the debug message. Defaults to position.middle_right.
+export debug(string message, string position = position.middle_right) =>
+	debugArray = array.new_string()
+	array.push(debugArray, message)
+	fromArray(debugArray, position=position)
+
+// Experiment #1, build a table of RSI values, changing colors when the rsi is extreme
+
+// Convenience function for adding to the matrices
+getRsiCells(length) =>
+	rsi = math.round(ta.rsi(close, length))
+	rsiColor = rsi >= 70 or rsi <= 30 ? COLOR_HOT : COLOR_COOL
+	array.from(
+	   Cell.new(str.format("{0}P", length), rsiColor), 
+	   Cell.new(str.format("{0,number,#}", rsi), rsiColor)
+	   )
+
+// Build up the matrix to be rendered
+dataMatrix = matrix.new<Cell>()
+matrix.add_row(dataMatrix, 0, getRsiCells(2))
+matrix.add_row(dataMatrix, 1, getRsiCells(14))
+
+fromMatrix(dataMatrix, position=position.bottom_right)
+
+// Experiment #2, build the multitimeframe rsi table
+rsi = ta.rsi(close, 2)
+rsi1 = request.security(symbol=syminfo.tickerid, timeframe="5", expression=rsi, lookahead=barmerge.lookahead_on)
+rsi2 = request.security(symbol=syminfo.tickerid, timeframe="15", expression=rsi, lookahead=barmerge.lookahead_on)
+rsi3 = request.security(symbol=syminfo.tickerid, timeframe="60", expression=rsi, lookahead=barmerge.lookahead_on)
+
+// Build up the matrix to be rendered
+mtfDataMatrix = matrix.new<Cell>()
+matrix.add_row(mtfDataMatrix, 0, array.from(Cell.new(" RSI ", COLOR_HOT)))
+
+// Convenience function for adding to the matrices
+addTimeframe(dataMatrix, timeframe, rsi) =>
+	cellArray = array.from(Cell.new(
+	   str.format(" {0} \n {1,number,#} ", Utils.timeframeToString(timeframe), rsi),
+	   rsi >= 70 or rsi <= 30 ? COLOR_HOT : COLOR_COOL
+	   ))
+	matrix.add_row(dataMatrix, matrix.rows(dataMatrix), cellArray)
+
+addTimeframe(mtfDataMatrix, "5", rsi1)
+addTimeframe(mtfDataMatrix, "15", rsi2)
+addTimeframe(mtfDataMatrix, "60", rsi3)
+
+// Add a row that spans all columns
+spanData = Cell.new("This is a single cell of data")
+blankData = Cell.new("")
+spanData.colspan := 4
+matrix.add_col(mtfDataMatrix, matrix.columns(mtfDataMatrix), array.from(spanData, blankData, blankData, blankData))
+fromMatrix(mtfDataMatrix, position=position.top_right, verticalOffset=1, transposeTable=true)
+
+// Experiment #3. Writing a collection of debug messages to the screen, illustrate text alignment
+rightCell = Cell.new("Right aligned")
+rightCell.align := text.align_right
+fromArray(array.from(
+   Cell.new("Center aligned table cell"),
+   rightCell
+   ), 
+   position=position.top_left, 
+   transposeTable=true,
+   verticalOffset=2)
+
+// Experiment #4. Writing a single debug message to another location on the screen
+debug("This is the last test", position.bottom_left)
