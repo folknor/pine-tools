@@ -570,3 +570,8 @@ contradiction means re-measure, not "the earlier author was wrong."
   already malformed ternary line without adding a second parser error. Surfaced
   by the remaining `Syntax error at input ":"`, `algopoint`, and one
   `Syntax error at input "new line"` local-only rows.
+- [INV081](INV081-recovered-call-mangled-arg/notes.md) - recovered-call
+  cleanup for mangled adjacent identifiers inside argument lists (`bar index`):
+  emit TV-style `Syntax error at input "index"` at the second identifier. Also
+  audits the remaining `operator ?:` and trailing-wrap local-only buckets as
+  real or unsafe-to-relax diagnostics.

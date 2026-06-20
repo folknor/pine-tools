@@ -429,7 +429,10 @@ export class ExpressionParser {
 					if (t.type === TokenType.DOT) return true;
 					if (t.type !== TokenType.LPAREN) return false;
 					if (expr.type === "MemberExpression") return true;
-					return expr.type === "Identifier" && (expr as AST.Identifier).name.includes(".");
+					return (
+						expr.type === "Identifier" &&
+						(expr as AST.Identifier).name.includes(".")
+					);
 				});
 
 				// A wrapped continuation line must NOT be indented by a
@@ -803,8 +806,9 @@ export class ExpressionParser {
 					prev?.type === TokenType.IDENTIFIER &&
 					current.type === TokenType.IDENTIFIER
 				) {
-					// Two identifiers in a row (e.g. "bar index" for "bar_index")
-					message = `Unexpected identifier '${current.value}' - did you mean '${prev.value}_${current.value}'? At line ${current.line}`;
+					// Two identifiers in a row inside a call (`bar index`) are TV's
+					// CE10156 at the second identifier. see INV081
+					message = `Syntax error at input "${current.value}"`;
 				} else {
 					message = `Unexpected token: ${current.value}`;
 				}

@@ -1,0 +1,10 @@
+// @test regression/INV081-recovered-call-mangled-arg
+// @description A mangled in-call adjacent identifier (`bar index`) should get TV's syntax wording at the second identifier. See INV081.
+// @expects parse: fail
+// @expects errors: 1
+// @expects error: line=3, column=15, message=/Syntax error at input "index"/
+
+//@version=6
+indicator("INV081")
+label.new(bar index, high, text="x")
+plot(close)
