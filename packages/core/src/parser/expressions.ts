@@ -807,8 +807,18 @@ export class ExpressionParser {
 					current.type === TokenType.IDENTIFIER
 				) {
 					// Two identifiers in a row inside a call (`bar index`) are TV's
-					// CE10156 at the second identifier. see INV081
+					// CE10156 at the second identifier. The prefix identifier is only a
+					// recovery stub, not a value expression. see INV081 / INV082
 					message = `Syntax error at input "${current.value}"`;
+					const lastArg = args.at(-1);
+					if (
+						lastArg?.value.type === "Identifier" &&
+						lastArg.value.name === prev.value &&
+						lastArg.value.line === prev.line &&
+						lastArg.value.column === prev.column
+					) {
+						lastArg.skipSemanticValidation = true;
+					}
 				} else {
 					message = `Unexpected token: ${current.value}`;
 				}

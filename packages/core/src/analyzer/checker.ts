@@ -2153,9 +2153,12 @@ export class UnifiedPineValidator {
 		// member calls, and method calls completely unvalidated - no
 		// undefined-variable check, nothing. Found by the first #48 mutation
 		// run (delete-decl survivor: TV CE10272 on an input variable deleted
-		// out from under a library call). see INV062
+		// out from under a library call). see INV062. A parser-marked torn
+		// argument prefix is skipped because the syntax diagnostic already owns it.
+		// see INV082
 		for (const arg of call.arguments) {
-			this.validateExpression(arg.value, version);
+			if (!arg.skipSemanticValidation)
+				this.validateExpression(arg.value, version);
 		}
 
 		// NOTE: Complex callee expressions (e.g., chained calls like `foo().bar()`,

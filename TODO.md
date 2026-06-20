@@ -456,14 +456,18 @@ restricting if-expression condition parsing to the if header line found
 **44 / 3 / 32**: the `if cond` / newline / negative-literal branch shape no
 longer produces the two false `Mismatched input "-"` records in
 `d40d7b...`. After rendering ternary branch mismatches with TV's CE10123
-operator diagnostic, the refreshed window is **47 / 0 / 32**: the prior 3
-TV-only records from `35a58bb9...` are gone, and the deliberate ternary
-fixture now matches TV at the same positions/messages. The local-only count
-rose by 3 because the same stricter diagnostic now appears pre-stop in
-mangled ternary-wrap cascades; those remain parser-recovery residue, not a
-detection gap. INV065, INV067, INV068, INV069, and these parser/type
-diagnostic fixes add catches or remove FPs without changing the
-already-explained residue.
+operator diagnostic, the refreshed window was **47 / 0 / 32**: the prior 3
+TV-only records from `35a58bb9...` disappeared, and the deliberate ternary
+fixture matched TV at the same positions/messages.
+
+After the parser-recovery cleanup through INV082, the latest refreshed
+window dropped the 8 duplicate `bar` undefined-variable rows from
+**37 / 0 / 32** to **29 / 0 / 32**. The removed local-only rows were recovery
+noise: restricted condition leading-binary wraps (INV079), residual
+license/source prose and malformed ternary tails (INV080), `bar index` in-call
+wording alignment (INV081), and recovered argument semantic suppression
+(INV082). The remaining rows are still the already-explained mangled-source
+residue or probe-backed stricter diagnostics; zero tv-only remain.
 
 Earlier measurements live in git history (this section, prior
 revisions) - each is a dated point-in-time record per G001.
@@ -480,8 +484,8 @@ counts:
 
 | count | files | category |
 |---|---|---|
-| 14 | 2 | `Syntax error at input "end of line without line continuation"` *(probe-backed TPs - INV042's wrap rule, surfaced pre-stop in the two mangle carriers)* |
-| 8+8 | 1 | `bar` undefined + `index` did-you-mean *(TP pairs - `bar index` mangle sites, probed INV047 p04; TV anchors one CE10156 at `index`)* |
+| 20 | 2 | `Syntax error at input "end of line without line continuation"` *(probe-backed TPs - INV042's wrap rule, surfaced pre-stop in the two mangle carriers; INV081 re-probed colon-wrap accept/reject cases and kept this strict)* |
+| 8 | 1 | `Syntax error at input "index"` *(TPs - `bar index` mangle sites, probed INV081; TV anchors one CE10156 at `index`; INV082 suppresses the duplicate recovered-prefix `bar` semantic noise)* |
 | 3 | 3 | `Undefined variable '*'. Did you mean '*'?` |
 | 3 | 3 | `Undefined variable '*'` |
 | 2-1 | - | long tail: `:` `==` |

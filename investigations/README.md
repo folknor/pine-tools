@@ -575,3 +575,7 @@ contradiction means re-measure, not "the earlier author was wrong."
   emit TV-style `Syntax error at input "index"` at the second identifier. Also
   audits the remaining `operator ?:` and trailing-wrap local-only buckets as
   real or unsafe-to-relax diagnostics.
+- [INV082](INV082-recovered-call-arg-semantic-skip/notes.md) - recovered-call
+  cleanup for mangled adjacent identifiers inside argument lists: mark only the
+  torn prefix argument as semantically invalid so the checker does not add a
+  duplicate undefined-variable error while still validating other call args.

@@ -243,6 +243,9 @@ export interface CallArgument {
 	nameLine?: number;
 	nameColumn?: number;
 	value: Expression;
+	// Parser recovery proved this argument is only a torn prefix of a syntax
+	// error, so semantic validation would be duplicate noise. see INV082
+	skipSemanticValidation?: boolean;
 }
 
 export interface MemberExpression extends ASTNode {
