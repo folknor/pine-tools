@@ -89,14 +89,18 @@ IDs so the two stay in sync.
   `functions.json` (`flags.*`, param `required`) as they already do.
   Whether the facts then live as a data file under `pine-data/` or stay
   as annotated TS maps is taste, not the payload.
-- **#22 - `--only <names>` / `--only-overloaded` scrape flag.** The only
-  remaining scrape-load reduction: a flag for a targeted re-scrape of just
-  the named entries, instead of hand-deleting their `.cache/function-details/`
-  files and running plain `scrape`. Lower priority now that both type-logic
-  and DOM-extraction iteration are fully offline via the `.cache/dom` mirror
-  + `reextract:dom` (see CLAUDE.md "Re-running type logic WITHOUT scraping"),
-  so full `--force` re-scrapes should be rare - only when TV's DOM *structure*
-  changes.
+- **#22 - targeted scrape flags.** DONE 2026-06-20. `pnpm run scrape --
+  --only <names>` re-scrapes a comma-separated list of reference entries
+  (functions, variables, constants, types, annotations, operators, or
+  keywords), merging the refreshed entries into the existing
+  `complete-v6-details.json` instead of rebuilding the whole catalog.
+  `pnpm run scrape -- --only-overloaded` re-scrapes the functions whose
+  existing details contain overload data, for focused overload-widget refreshes.
+  In targeted mode the named entries are fetched even when their details cache
+  is still fresh, so this replaces hand-deleting `.cache/function-details/`
+  files. `--dry-run` writes `complete-v6-details.dryrun.json` and leaves the
+  real output untouched; verified with `--only alert --dry-run` and
+  `--only-overloaded --dry-run`.
 - **#30 - consider rich (MarkupContent) diagnostic messages.** LSP 3.18
   (vscode-languageserver 10) widened `Diagnostic.message` to
   `string | MarkupContent`. Our language-service diagnostics are plain

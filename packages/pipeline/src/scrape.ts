@@ -9,6 +9,8 @@
  * Uses Puppeteer for lightweight browser automation.
  *
  * Usage: node --experimental-strip-types packages/pipeline/src/scrape.ts [input-file] [output-file]
+ *        node --experimental-strip-types packages/pipeline/src/scrape.ts --only ta.sma,plot
+ *        node --experimental-strip-types packages/pipeline/src/scrape.ts --only-overloaded
  * Default input: pine-data/raw/v6/v6-language-constructs.json
  * Default output: pine-data/raw/v6/complete-v6-details.json
  */
@@ -30,20 +32,63 @@ const PROJECT_ROOT = __dirname.includes("/dist/")
 	? path.resolve(__dirname, "../../../..")
 	: path.resolve(__dirname, "../../..");
 
-// Parse arguments, filtering out flags
-const positionalArgs = process.argv
-	.slice(2)
-	.filter((arg) => !arg.startsWith("-"));
+interface CliOptions {
+	positionalArgs: string[];
+	dryRun: boolean;
+	onlyNames: Set<string>;
+	onlyOverloaded: boolean;
+}
 
-const DRY_RUN =
-	process.argv.includes("--dry-run") || process.argv.includes("-n");
+function parseCliOptions(argv: string[]): CliOptions {
+	const positionalArgs: string[] = [];
+	const onlyNames = new Set<string>();
+	let dryRun = false;
+	let onlyOverloaded = false;
+
+	for (let i = 0; i < argv.length; i++) {
+		const arg = argv[i];
+		if (arg === "--dry-run" || arg === "-n") {
+			dryRun = true;
+			continue;
+		}
+		if (arg === "--only-overloaded") {
+			onlyOverloaded = true;
+			continue;
+		}
+		if (arg === "--only") {
+			const value = argv[++i];
+			if (!value) {
+				throw new Error("--only requires a comma-separated name list");
+			}
+			for (const name of value.split(",")) {
+				if (name.trim()) onlyNames.add(name.trim());
+			}
+			continue;
+		}
+		if (arg.startsWith("--only=")) {
+			for (const name of arg.slice("--only=".length).split(",")) {
+				if (name.trim()) onlyNames.add(name.trim());
+			}
+			continue;
+		}
+		if (arg.startsWith("-")) {
+			continue;
+		}
+		positionalArgs.push(arg);
+	}
+
+	return { positionalArgs, dryRun, onlyNames, onlyOverloaded };
+}
+
+const CLI_OPTIONS = parseCliOptions(process.argv.slice(2));
+const DRY_RUN = CLI_OPTIONS.dryRun;
 const DRY_RUN_LIMIT = 5;
 
 const INPUT_FILE =
-	positionalArgs[0] ||
+	CLI_OPTIONS.positionalArgs[0] ||
 	path.join(PROJECT_ROOT, "pine-data/raw/v6/v6-language-constructs.json");
 const OUTPUT_FILE =
-	positionalArgs[1] ||
+	CLI_OPTIONS.positionalArgs[1] ||
 	path.join(PROJECT_ROOT, "pine-data/raw/v6/complete-v6-details.json");
 const CACHE_DIR = path.join(PROJECT_ROOT, ".cache/function-details");
 const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
@@ -1214,6 +1259,49 @@ export async function scrapeKeywordDetails(
 	}
 }
 
+function filterNames<T extends string>(names: T[]): T[] {
+	if (CLI_OPTIONS.onlyNames.size === 0) {
+		return names;
+	}
+	return names.filter((name) => CLI_OPTIONS.onlyNames.has(name));
+}
+
+function readExistingDetails(): ScrapeResult | null {
+	if (!fs.existsSync(OUTPUT_FILE)) {
+		return null;
+	}
+	try {
+		return JSON.parse(fs.readFileSync(OUTPUT_FILE, "utf8"));
+	} catch (error) {
+		console.warn(
+			`Unable to read existing output for targeted scrape: ${(error as Error).message}`,
+		);
+		return null;
+	}
+}
+
+function mergeExistingDetails(
+	target: ScrapeResult,
+	existing: ScrapeResult,
+): void {
+	target.functions = { ...existing.functions, ...target.functions };
+	target.variables = { ...existing.variables, ...target.variables };
+	target.constants = { ...existing.constants, ...target.constants };
+	target.types = { ...(existing.types || {}), ...(target.types || {}) };
+	target.annotations = {
+		...(existing.annotations || {}),
+		...(target.annotations || {}),
+	};
+	target.operators = {
+		...(existing.operators || {}),
+		...(target.operators || {}),
+	};
+	target.keywords = {
+		...(existing.keywords || {}),
+		...(target.keywords || {}),
+	};
+}
+
 export async function scrapeAllFunctions(
 	forceRefresh = false,
 ): Promise<ScrapeResult> {
@@ -1231,6 +1319,17 @@ export async function scrapeAllFunctions(
 	}
 
 	const inputData = JSON.parse(fs.readFileSync(INPUT_FILE, "utf8"));
+	const targetedScrape =
+		CLI_OPTIONS.onlyNames.size > 0 || CLI_OPTIONS.onlyOverloaded;
+	const existingDetails = targetedScrape ? readExistingDetails() : null;
+	if (CLI_OPTIONS.onlyNames.size > 0) {
+		console.log(
+			`Only scraping requested names: ${[...CLI_OPTIONS.onlyNames].join(", ")}`,
+		);
+	}
+	if (CLI_OPTIONS.onlyOverloaded) {
+		console.log("Only scraping functions with existing overload data");
+	}
 
 	// Build function list from byNamespace structure
 	let functionNames: string[] = [];
@@ -1256,6 +1355,15 @@ export async function scrapeAllFunctions(
 	}
 
 	functionNames.sort();
+	if (CLI_OPTIONS.onlyOverloaded) {
+		const overloadedNames = new Set(
+			Object.entries(existingDetails?.functions || {})
+				.filter(([, details]) => (details.overloads?.length || 0) > 0)
+				.map(([name]) => name),
+		);
+		functionNames = functionNames.filter((name) => overloadedNames.has(name));
+	}
+	functionNames = filterNames(functionNames);
 
 	console.log(`Found ${functionNames.length} functions to process`);
 
@@ -1263,7 +1371,7 @@ export async function scrapeAllFunctions(
 	const functionsToScrape: string[] = [];
 	const functionsFromCache: string[] = [];
 
-	if (!forceRefresh) {
+	if (!forceRefresh && !targetedScrape) {
 		for (const funcName of functionNames) {
 			const cacheFilePath = getCacheFilePath(funcName);
 			if (isCacheValid(cacheFilePath)) {
@@ -1303,12 +1411,15 @@ export async function scrapeAllFunctions(
 		variableNames.push(name);
 	}
 	variableNames.sort();
-	console.log(`Found ${variableNames.length} variables to process`);
+	const selectedVariableNames = CLI_OPTIONS.onlyOverloaded
+		? []
+		: filterNames(variableNames);
+	console.log(`Found ${selectedVariableNames.length} variables to process`);
 
 	const variablesToScrape: string[] = [];
 	const variablesFromCache: string[] = [];
 	if (!forceRefresh) {
-		for (const name of variableNames) {
+		for (const name of selectedVariableNames) {
 			// Re-scrape when the details cache is stale OR the DOM mirror is absent
 			// (members were not mirrored before reextract-sections existed).
 			if (
@@ -1321,7 +1432,7 @@ export async function scrapeAllFunctions(
 			}
 		}
 	} else {
-		variablesToScrape.push(...variableNames);
+		variablesToScrape.push(...selectedVariableNames);
 	}
 	if (DRY_RUN && variablesToScrape.length > DRY_RUN_LIMIT) {
 		variablesToScrape.splice(DRY_RUN_LIMIT);
@@ -1342,12 +1453,15 @@ export async function scrapeAllFunctions(
 		}
 	}
 	constantNames.sort();
-	console.log(`Found ${constantNames.length} constants to process`);
+	const selectedConstantNames = CLI_OPTIONS.onlyOverloaded
+		? []
+		: filterNames(constantNames);
+	console.log(`Found ${selectedConstantNames.length} constants to process`);
 
 	const constantsToScrape: string[] = [];
 	const constantsFromCache: string[] = [];
 	if (!forceRefresh) {
-		for (const name of constantNames) {
+		for (const name of selectedConstantNames) {
 			if (
 				isCacheValid(getCacheFilePath(name, "const__")) &&
 				hasMirror(name, "const__")
@@ -1358,7 +1472,7 @@ export async function scrapeAllFunctions(
 			}
 		}
 	} else {
-		constantsToScrape.push(...constantNames);
+		constantsToScrape.push(...selectedConstantNames);
 	}
 	if (DRY_RUN && constantsToScrape.length > DRY_RUN_LIMIT) {
 		constantsToScrape.splice(DRY_RUN_LIMIT);
@@ -1367,7 +1481,9 @@ export async function scrapeAllFunctions(
 	console.log(`   Constants to scrape: ${constantsToScrape.length}`);
 
 	// Build built-in type list from the crawl (its own reference section).
-	const typeNames: string[] = [...(inputData.types?.items || [])].sort();
+	const typeNames: string[] = CLI_OPTIONS.onlyOverloaded
+		? []
+		: filterNames([...(inputData.types?.items || [])].sort());
 	console.log(`Found ${typeNames.length} types to process`);
 
 	const typesToScrape: string[] = [];
@@ -1390,7 +1506,9 @@ export async function scrapeAllFunctions(
 	console.log(`   Types to scrape: ${typesToScrape.length}`);
 
 	// Build annotation list from the crawl (its own reference section).
-	const annotationNames: string[] = [...(inputData.annotations?.items || [])];
+	const annotationNames: string[] = CLI_OPTIONS.onlyOverloaded
+		? []
+		: filterNames([...(inputData.annotations?.items || [])]);
 	console.log(`Found ${annotationNames.length} annotations to process`);
 
 	const annotationsToScrape: string[] = [];
@@ -1414,9 +1532,11 @@ export async function scrapeAllFunctions(
 
 	// Build operator list from the crawl (its own reference section - the bare
 	// symbols documented under `#op_`).
-	const operatorNames: string[] = [
-		...((inputData.operators?.items as string[] | undefined) || []),
-	];
+	const operatorNames: string[] = CLI_OPTIONS.onlyOverloaded
+		? []
+		: filterNames([
+				...((inputData.operators?.items as string[] | undefined) || []),
+			]);
 	console.log(`Found ${operatorNames.length} operators to process`);
 
 	const operatorsToScrape: string[] = [];
@@ -1443,9 +1563,11 @@ export async function scrapeAllFunctions(
 	console.log(`   Operators to scrape: ${operatorsToScrape.length}`);
 
 	// Build keyword list from the crawl (the bare names documented under `#kw_`).
-	const keywordNames: string[] = [
-		...((inputData.keywords?.items as string[] | undefined) || []),
-	].sort();
+	const keywordNames: string[] = CLI_OPTIONS.onlyOverloaded
+		? []
+		: filterNames(
+				[...((inputData.keywords?.items as string[] | undefined) || [])].sort(),
+			);
 	console.log(`Found ${keywordNames.length} keywords to process`);
 
 	const keywordsToScrape: string[] = [];
@@ -1479,9 +1601,9 @@ export async function scrapeAllFunctions(
 			failedScrapes: 0,
 			cachedResults: functionsFromCache.length,
 			forceRefresh,
-			method: "Puppeteer",
-			totalVariables: variableNames.length,
-			totalConstants: constantNames.length,
+			method: targetedScrape ? "Puppeteer targeted" : "Puppeteer",
+			totalVariables: selectedVariableNames.length,
+			totalConstants: selectedConstantNames.length,
 			totalTypes: typeNames.length,
 			totalAnnotations: annotationNames.length,
 			totalOperators: operatorNames.length,
@@ -1495,6 +1617,24 @@ export async function scrapeAllFunctions(
 		operators: {},
 		keywords: {},
 	};
+
+	if (targetedScrape && existingDetails) {
+		mergeExistingDetails(allDetails, existingDetails);
+	}
+
+	const unknownOnlyNames = [...CLI_OPTIONS.onlyNames].filter(
+		(name) =>
+			!functionNames.includes(name) &&
+			!selectedVariableNames.includes(name) &&
+			!selectedConstantNames.includes(name) &&
+			!typeNames.includes(name) &&
+			!annotationNames.includes(name) &&
+			!operatorNames.includes(name) &&
+			!keywordNames.includes(name),
+	);
+	if (unknownOnlyNames.length > 0) {
+		console.warn(`Requested names not found: ${unknownOnlyNames.join(", ")}`);
+	}
 
 	// Load cached data first
 	console.log("Loading cached data...");
@@ -1560,7 +1700,10 @@ export async function scrapeAllFunctions(
 			);
 
 			for (const funcName of batch) {
-				const details = await scrapeFunctionDetails(funcName, !forceRefresh);
+				const details = await scrapeFunctionDetails(
+					funcName,
+					!forceRefresh && !targetedScrape,
+				);
 				if (details) {
 					allDetails.functions[funcName] = details;
 					allDetails.metadata.successfulScrapes++;
@@ -1721,6 +1864,33 @@ export async function scrapeAllFunctions(
 		keywordsToScrape.length > 0
 	) {
 		await closeSharedBrowser();
+	}
+
+	if (targetedScrape && existingDetails) {
+		allDetails.metadata.totalFunctions = Object.keys(
+			allDetails.functions,
+		).length;
+		allDetails.metadata.totalVariables = Object.keys(
+			allDetails.variables,
+		).length;
+		allDetails.metadata.totalConstants = Object.keys(
+			allDetails.constants,
+		).length;
+		allDetails.metadata.totalTypes = Object.keys(allDetails.types || {}).length;
+		allDetails.metadata.totalAnnotations = Object.keys(
+			allDetails.annotations || {},
+		).length;
+		allDetails.metadata.totalOperators = Object.keys(
+			allDetails.operators || {},
+		).length;
+		allDetails.metadata.totalKeywords = Object.keys(
+			allDetails.keywords || {},
+		).length;
+		allDetails.metadata.successfulScrapes = Object.keys(
+			allDetails.functions,
+		).length;
+		allDetails.metadata.cachedResults =
+			Object.keys(allDetails.functions).length - functionsToScrape.length;
 	}
 
 	const serialized = JSON.stringify(allDetails, null, 2);
