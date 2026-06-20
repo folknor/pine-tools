@@ -47,12 +47,21 @@ export class ExpressionParser {
 		});
 	}
 
-	private skipWrapNewlines(matches: (t: Token) => boolean): boolean {
-		if (!this.p.check(TokenType.NEWLINE)) return false;
+	private leadingWrapTokenAfterNewlines(
+		matches: (t: Token) => boolean,
+	): Token | null {
+		if (!this.p.check(TokenType.NEWLINE)) return null;
 		let i = this.p.current;
 		while (this.p.tokens[i]?.type === TokenType.NEWLINE) i++;
 		const tok = this.p.tokens[i];
-		if (!tok || !matches(tok)) return false;
+		return tok && matches(tok) ? tok : null;
+	}
+
+	private skipWrapNewlines(matches: (t: Token) => boolean): boolean {
+		const tok = this.leadingWrapTokenAfterNewlines(matches);
+		if (!tok) return false;
+		let i = this.p.current;
+		while (this.p.tokens[i]?.type === TokenType.NEWLINE) i++;
 		const newlines = i - this.p.current;
 		if ((tok.indent ?? 0) === 0) return false;
 		if (newlines > 1 && (tok.indent ?? 0) % 4 === 0) return false;
@@ -416,6 +425,12 @@ export class ExpressionParser {
 			if (this.p.check(TokenType.NEWLINE)) {
 				// Check if the next token after newline suggests continuation
 				const nextToken = this.p.peekNext();
+				const postfixWrapToken = this.leadingWrapTokenAfterNewlines((t) => {
+					if (t.type === TokenType.DOT) return true;
+					if (t.type !== TokenType.LPAREN) return false;
+					if (expr.type === "MemberExpression") return true;
+					return expr.type === "Identifier" && (expr as AST.Identifier).name.includes(".");
+				});
 
 				// A wrapped continuation line must NOT be indented by a
 				// multiple of 4 - that is Pine's own line-wrapping rule
@@ -442,6 +457,9 @@ export class ExpressionParser {
 						nextToken.type === TokenType.DOT)
 				) {
 					// Skip the newline and continue
+					this.p.advance();
+				} else if (postfixWrapToken) {
+					this.leadingWrapError(postfixWrapToken);
 					this.p.advance();
 				} else if (this.p.parenDepth === 0 && this.p.bracketDepth === 0) {
 					// Not in parentheses/brackets and doesn't look like continuation - break

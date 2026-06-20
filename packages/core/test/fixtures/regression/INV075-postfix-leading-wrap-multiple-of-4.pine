@@ -1,0 +1,16 @@
+// @test regression/INV075-postfix-leading-wrap-multiple-of-4
+// @description Postfix continuations that start with a dot or call paren at multiple-of-4 indent are TV's CE10013 mismatched-input diagnostics anchored at the leading token, not generic parser errors. Non-multiple-of-4 postfix wraps still join. See TODO #45.
+// @expects parse: fail
+// @expects error: line=6, message=/Mismatched input "\." expecting "end of line without line continuation"/
+// @expects error: line=10, message=/Mismatched input "\(" expecting "end of line without line continuation"/
+//@version=6
+indicator("INV075 postfix leading wrap")
+good = str
+ .length("abc")
+badDot = str
+    .length("abc")
+f = math.max
+ (1, 2)
+badCall = math.max
+    (1, 2)
+plot(good + f + badDot + badCall)

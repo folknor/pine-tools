@@ -287,9 +287,13 @@ IDs so the two stay in sync.
   pinned by
   `packages/core/test/fixtures/regression/INV073-switch-arm-leading-operator-continuation.pine`,
   which un-quarantines `vendor/TFlab/FVGDetectorLibrary/1.pine` for #53.
-  Remaining, if worth pursuing: audit other specialized leading-wrap
-  joiners for the same CE10013 wording/anchor behavior; no inventory rows
-  currently hit them.
+  The postfix leading-wrap path is also covered: dot and callable-member
+  paren continuations at multiple-of-4 indent now emit the same CE10013
+  wording/anchor while non-multiple-of-4 postfix wraps still join. Pinned by
+  `packages/core/test/fixtures/regression/INV075-postfix-leading-wrap-multiple-of-4.pine`.
+  Remaining, if worth pursuing: continue auditing any future specialized
+  leading-wrap joiners for the same CE10013 wording/anchor behavior; no
+  inventory rows currently hit them.
 - **Minor data residue (record-only, low value):** `ta.vwap.anchor`'s default
   and the "X by default" phrasing are deliberately unparsed (see
   `parse-default.ts`). Skip unless a consumer needs them.
