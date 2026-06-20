@@ -557,3 +557,9 @@ contradiction means re-measure, not "the earlier author was wrong."
   The parser now rejects these before expression parsing, while preserving
   valid unary `+`, unary `-`, and `not` expression tails. Surfaced by the
   remaining `8439...` `Unexpected token: ?` local-only row.
+- [INV079](INV079-restricted-condition-leading-binary-wrap/notes.md) - parser
+  false positive in restricted `if` condition parsing: postfix parsing could
+  consume the NEWLINE before a valid non-multiple-of-4 leading `and` wrap,
+  leaving the same-line climber to stop before the operator and reparse it as
+  an invalid statement. Re-anchor already-consumed valid leading wraps;
+  multiple-of-4 wraps still error. Surfaced by four `d40d7...` local-only rows.

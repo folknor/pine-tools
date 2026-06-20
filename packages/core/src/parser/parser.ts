@@ -2341,7 +2341,21 @@ export class Parser {
 				this.sameLineAnchor = wrappedLine;
 			}
 			const currentToken = this.peek();
-			if (currentToken.line !== this.sameLineAnchor || !matches(currentToken)) {
+			if (currentToken.line !== this.sameLineAnchor) {
+				// Postfix parsing may already have consumed the NEWLINE before a
+				// valid operator-leading wrap. Re-anchor here so restricted
+				// expression contexts (`if`, `switch`) do not mistake the wrapped
+				// operator for a block statement. see INV079.
+				if (
+					!matches(currentToken) ||
+					(currentToken.indent ?? 0) === 0 ||
+					(currentToken.indent ?? 0) % 4 === 0
+				) {
+					break;
+				}
+				this.sameLineAnchor = currentToken.line;
+			}
+			if (!matches(currentToken)) {
 				break;
 			}
 			this.advance();

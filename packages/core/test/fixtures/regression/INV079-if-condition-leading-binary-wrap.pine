@@ -1,0 +1,15 @@
+// @test regression/INV079-if-condition-leading-binary-wrap
+// @description Restricted if-condition parsing must keep valid operator-leading wraps when postfix parsing already consumed the newline before the operator. Multiple-of-4 wraps still fail with TV's newline syntax error. See INV079.
+// @expects parse: fail
+// @expects error: line=7, column=5, message=/new line/
+// @expects ast: body.1.condition.operator = "and"
+
+//@version=6
+indicator("INV079")
+if close > open
+   and high > low
+    ok = close
+if close > open
+    and high > low
+    bad = close
+plot(close)
