@@ -191,12 +191,22 @@ pnpm run debug:internals -- analyze --cli-errors       # CLI error summary
 pnpm run debug:internals -- analyze --filter "token"   # Filter by message
 pnpm run debug:internals -- corpus --summary           # v6 parse error stats
 pnpm run debug:internals -- corpus --errors            # Files with parse errors
+pnpm run debug:compare -- fixtures/<hash>.pine         # Compare local vs TV for one file
+pnpm run debug:repro -- fixtures/<hash>.pine --line <N> # Minimize a diagnostic repro
 
 # Convenience aliases
 pnpm run debug:tokens 'code'                 # Shortcut for tokens command
 pnpm run debug:corpus --summary              # Shortcut for corpus analysis
 pnpm run debug:diff -- --count 10            # Differential test vs TradingView
 pnpm run debug:diff -- --count 5 --verbose   # Show generated scripts
+pnpm run debug:compare -- fixtures/<hash>.pine
+pnpm run debug:repro -- <file.pine> --line <N> --source parser --no-candidate
+
+# Lint report loop
+pnpm run lint:snapshot                        # Save local fixture baseline
+pnpm run lint:regression                      # Compare local lint to baseline
+pnpm run lint:failures                        # Refresh TV-vs-local inventory
+pnpm run lint:categorize                      # Group refreshed inventory
 ```
 
 **Use the dev tools above instead of complex shell commands.** These tools are pre-approved and avoid permission prompts:
@@ -205,9 +215,11 @@ pnpm run debug:diff -- --count 5 --verbose   # Show generated scripts
 |---------------|----------|
 | `cat > /tmp/test.js << 'EOF' ... EOF && node /tmp/test.js` | `pnpm run debug:internals -- validate 'code'` |
 | `echo 'code' > /tmp/test.pine && node dist/.../cli.js /tmp/test.pine` | `pnpm run test:snippet -- 'code'` |
-| `for f in plan/pine-lint-vs-cli-differences/*.json; do jq ... $f; done` | `pnpm run debug:internals -- analyze --filter "..."` |
+| `for f in ...; do jq ...; done` on lint reports | `pnpm run debug:internals -- analyze --filter "..."` |
 | Grepping for function definitions in pine-data | `pnpm run debug:internals -- lookup <name>` |
 | Creating temp files to test Parser/Validator | `pnpm run debug:internals -- parse 'code'` or `validate 'code'` |
+| Manually slicing large parser repros | `pnpm run debug:repro -- <file.pine> --line <N> --source parser` |
+| One-file local-vs-TV comparisons | `pnpm run debug:compare -- <file.pine>` |
 | Debugging lexer tokens and indentation | `pnpm run debug:tokens 'code'` |
 | Scanning pinescripts for v6 parse errors | `pnpm run debug:corpus --summary` or `--errors` |
 | `for f in ...; do pine-lint $f; done` loops | `node scripts/lint-batch.mjs <files\|dirs\|globs>` (also `--diff` for per-file TV diffs) |
@@ -267,7 +279,7 @@ All API data is scraped from TradingView docs and generated:
 | `reextract:dom` | re-derives `overloadArgs` from the mirror, **offline** - run after every `scrape` (see below) |
 | `reextract:sections` | re-derives `returnsDescription`/`remarks`/`seeAlso` from the mirror, **offline** - run after every `scrape` (see below) |
 | `generate` | `pine-data/v6/*.ts` + `*.json` (vendor-friendly snapshot for downstream Rust/non-node consumers) |
-| `generate:libraries` | `pine-data/v6/libraries.{ts,json}` - the `export` surface of each vendored Pine library under `vendor/<Author>/<Lib>/<Version>.pine`, keyed by `Author/Lib/Version`. The checker validates imported-library member calls against this (CE10271 on unknown exports). Offline, parses with the COMPILED core parser so it needs a prior `build`. SKIPS libraries that don't parse cleanly (incomplete export set -> would cause FPs; left lenient). Re-run after vendoring/updating a library. Only MPL-2.0 sources may be vendored - CC-BY-NC/unlicensed libs are excluded and stay lenient (see README Acknowledgements). See INV067. |
+| `generate:libraries` | `pine-data/v6/libraries.{ts,json}` - the `export` surface of each vendored Pine library under `vendor/<Author>/<Lib>/<Version>.pine`, keyed by `Author/Lib/Version`. The checker validates imported-library member calls against this (CE10271 on unknown exports). Offline, parses with the COMPILED core parser so it needs a prior `build`. SKIPS libraries that don't parse cleanly (incomplete export set -> would cause FPs; left lenient). Re-run after vendoring/updating a library...
 | `fetch:library` | Downloads a published library's source from TV pine-facade into `vendor/<Author>/<Lib>/<Major>.pine` (the only network step in this feature; public `open_no_auth` libs only). `--from <file>` reads a newline-separated ref list. Port of piners' `pine_facade.rs`. See INV067. |
 | `generate:syntax` | `syntaxes/pine.tmLanguage.json` |
 | `scrape:manual` | `pine-data/raw/v6/manual-pages.json` (page inventory) + `.cache/manual/v6/*.html` mirror |
@@ -477,7 +489,7 @@ pine-lint --tv <file.pine>                    # TradingView's verdict (the autho
 pine-lint --tv --full-response <file.pine>    # keep the verbose "scopes" block (stripped by default)
 ```
 
-`scripts/compare-tv.mjs <file.pine>` runs both at once and prints the
+`pnpm run debug:compare -- <file.pine>` runs both at once and prints the
 local-only / tv-only error diff - the everyday repro tool.
 
 ---
@@ -496,13 +508,3 @@ pnpm run debug:diff -- --count 20 --save    # Save discrepancies to JSON
 - **Only in TradingView** - Errors we're missing (false negatives)
 - **Only in Internal** - Errors we report that TV doesn't (false positives)
 - **Different messages** - Same error, different wording
-
----
-
-## Comparison Tool
-
-Compare CLI output against TradingView's pine-lint:
-
-```bash
-node dev-tools/compare-validation-results.js
-```

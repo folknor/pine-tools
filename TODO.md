@@ -381,7 +381,8 @@ count.
 | `scripts/snapshot-local-lint.mjs` | Runs `pine-lint` (local) on every fixture and writes `lint-reports/local-baseline.json` - sorted per-file error lists. The regression contract. Re-run after every intentional change. |
 | `scripts/regression-check.mjs` | Reruns local lint over the corpus and diffs against the baseline. **No network.** Annotates disappeared errors against `real-failures.json` to distinguish "fixed a known FP" from "stopped catching a real error". Exits non-zero on any new error appearance. |
 | `scripts/summarize-regression.mjs` | Groups `regression-report.json`'s appeared/disappeared records into message templates so a 1000-record diff reads as a dozen categories; `--files <substring>` lists per-file counts for matching categories. Run right after `regression-check.mjs`. |
-| `scripts/slice-lines.mjs` | Extracts 1-based line ranges (`"1-2,1041-1051"`) from a file into a new file - the bisection helper for narrowing parser-state repros out of large fixtures (see INV047). |
+| `pnpm run debug:repro -- <file> --line <N>` | Preferred parser-recovery repro tool. Runs local validation, finds a target diagnostic, slices and minimizes a candidate while preserving that diagnostic class/source, and prints token context plus AST path. Use this before falling back to manual slicing. |
+| `scripts/slice-lines.mjs` | Low-level fallback that extracts 1-based line ranges (`"1-2,1041-1051"`) from a file into a new file. Mostly superseded by `debug:repro`, but still useful for exact manual bisection. |
 | `scripts/check-changed-files-broken-string.mjs` | INV047 safety check: verifies every regression-changed fixture carries a broken-string record (i.e. is a file TV rejects at the lexer stage), flagging any possibly-TV-clean file whose behavior changed. |
 | `scripts/audit-fixtures.mjs` | Scans every `.pine` fixture under `packages/core/test/fixtures/` without running vitest. Flags fixtures with malformed `@expects` directives and fixtures whose only assertion is a total `errors: N` count (no per-error coverage), printing suggested `// @expects error: line=N, message="..."` directives ready to paste. Exits non-zero on malformed directives. Wrapper: `pnpm run audit:fixtures` (also rebuilds the compiled helpers it imports). |
 | `scripts/fixture-coverage.mjs` | Coverage census behind #52. Parses every corpus + test fixture with our own parser and cross-references the JSON catalog to surface BLIND SPOTS: catalog entries referenced in zero fixtures, behavioral flags whose rule is never exercised (esp. `topLevelOnly` functions never called in a violating local scope - the INV054 class), and a structural-shape census (member-chain depth, switch/forIn/tuple/enum) per set. Deterministic, offline, ~2s. `--json` for machine output. It finds gaps, it does not judge correctness - the uncovered-function list is #52's fixture-building target list. |
@@ -392,7 +393,7 @@ count.
 Repro for any fixture:
 
 ```bash
-node scripts/compare-tv.mjs fixtures/<hash>.pine
+pnpm run debug:compare -- fixtures/<hash>.pine
 ```
 
 ---
@@ -402,13 +403,13 @@ node scripts/compare-tv.mjs fixtures/<hash>.pine
 Before touching the parser, lexer, or type checker, snapshot the baseline:
 
 ```bash
-node scripts/snapshot-local-lint.mjs    # ~12s, no network
+pnpm run lint:snapshot    # ~12s, no network
 ```
 
 After every change, run the check:
 
 ```bash
-node scripts/regression-check.mjs       # ~13s, no network
+pnpm run lint:regression  # ~13s, no network
 ```
 
 Interpreting the output:
@@ -428,7 +429,7 @@ When the check is clean and the changes look right, re-snapshot to lock in
 the new baseline:
 
 ```bash
-node scripts/snapshot-local-lint.mjs    # overwrites lint-reports/local-baseline.json
+pnpm run lint:snapshot    # overwrites lint-reports/local-baseline.json
 ```
 
 ### Periodic re-baseline against TradingView
@@ -438,8 +439,8 @@ canonical FP/FN inventory and the category breakdown (after a substantial
 change, or before opening a new round of work):
 
 ```bash
-node scripts/find-real-failures.mjs --concurrency 4    # ~2 min, 750 TV calls
-node scripts/categorize-failures.mjs                   # reads JSON, no network
+pnpm run lint:failures -- --concurrency 4    # ~2 min, 750 TV calls
+pnpm run lint:categorize                      # reads JSON, no network
 ```
 
 This refreshes `lint-reports/real-failures.json` and

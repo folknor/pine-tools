@@ -15,7 +15,7 @@ import { spawn } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { remapTvDiagnostics } from "./lib/tv-positions.mjs";
 
-const args = process.argv.slice(2);
+const args = process.argv.slice(2).filter((a) => a !== "--");
 const jsonMode = args.includes("--json");
 const file = args.find((a) => !a.startsWith("--"));
 if (!file) {

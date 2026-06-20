@@ -289,10 +289,115 @@ function cmdSymbolTable(code) {
 	}
 }
 
-function cmdAnalyze(args) {
-	const DIFF_DIR = path.join(__dirname, "../plan/pine-lint-vs-cli-differences");
+function printAnalyzeResults({
+	results,
+	messageCounts,
+	fileMatches,
+	showCliErrors,
+	summaryOnly,
+	showFiles,
+	limit,
+}) {
+	if (summaryOnly) {
+		const sorted = [...messageCounts.entries()].sort((a, b) => b[1] - a[1]);
+		console.log(
+			`Found ${results.length} matching ${showCliErrors ? "CLI errors" : "discrepancies"} across ${fileMatches.size} files:\n`,
+		);
+		for (const [msg, count] of sorted.slice(0, limit)) {
+			console.log(
+				`  [${count.toString().padStart(4)}] ${msg.slice(0, 80)}${msg.length > 80 ? "..." : ""}`,
+			);
+		}
+		if (sorted.length > limit) {
+			console.log(`  ... and ${sorted.length - limit} more unique messages`);
+		}
+	} else if (showFiles) {
+		console.log(
+			`Files with matching ${showCliErrors ? "CLI errors" : "discrepancies"}:\n`,
+		);
+		const sorted = [...fileMatches.entries()].sort(
+			(a, b) => b[1].length - a[1].length,
+		);
+		for (const [file, msgs] of sorted.slice(0, limit)) {
+			console.log(`  ${file}: ${msgs.length} match(es)`);
+		}
+		if (sorted.length > limit) {
+			console.log(`  ... and ${sorted.length - limit} more files`);
+		}
+	} else {
+		console.log(
+			`Found ${results.length} matching ${showCliErrors ? "CLI errors" : "discrepancies"}:\n`,
+		);
+		for (const r of results.slice(0, limit)) {
+			const loc = r.line ? `:${r.line}` : "";
+			console.log(`  [${r.file}${loc}] ${r.message}`);
+		}
+		if (results.length > limit) {
+			console.log(
+				`\n  ... and ${results.length - limit} more (use --limit to see more)`,
+			);
+		}
+	}
 
-	// Parse options
+	console.log(
+		`\nTotal: ${results.length} result(s) in ${fileMatches.size} file(s)`,
+	);
+}
+
+function cmdAnalyzeRealFailures(reportPath, options) {
+	const data = JSON.parse(fs.readFileSync(reportPath, "utf8"));
+	const results = [];
+	const messageCounts = new Map();
+	const fileMatches = new Map();
+	const addResult = (file, line, message, type) => {
+		const msg = message || "";
+		if (
+			options.filter &&
+			!msg.toLowerCase().includes(options.filter.toLowerCase())
+		)
+			return;
+		results.push({ file, line, message: msg, type });
+		messageCounts.set(msg, (messageCounts.get(msg) || 0) + 1);
+		if (!fileMatches.has(file)) fileMatches.set(file, []);
+		fileMatches.get(file).push(msg);
+	};
+
+	for (const record of data.files ?? []) {
+		const file = record.fixture || record.file || record.path || "<unknown>";
+		if (options.showCliErrors) {
+			for (const err of record.localErrors ?? record.cliErrors ?? []) {
+				addResult(file, err.start?.line ?? err.line, err.message, "local");
+			}
+		} else {
+			for (const err of record.localOnly ?? []) {
+				addResult(file, err.start?.line ?? err.line, err.message, "local-only");
+			}
+			for (const err of record.tvOnly ?? []) {
+				addResult(file, err.start?.line ?? err.line, err.message, "tv-only");
+			}
+			for (const err of record.samePositionDifferentMessage ??
+				record.samePosDifferentMessage ??
+				record.messageDiffs ??
+				[]) {
+				addResult(
+					file,
+					err.start?.line ?? err.line,
+					err.local?.message ||
+						err.tv?.message ||
+						err.localMessage ||
+						err.tvMessage ||
+						err.message,
+					"message-diff",
+				);
+			}
+		}
+	}
+
+	printAnalyzeResults({ results, messageCounts, fileMatches, ...options });
+}
+
+function cmdAnalyze(args) {
+	const reportPath = path.join(__dirname, "../lint-reports/real-failures.json");
 	let filter = null;
 	let showCliErrors = false;
 	let summaryOnly = false;
@@ -314,116 +419,19 @@ function cmdAnalyze(args) {
 		}
 	}
 
-	// Check if directory exists
-	if (!fs.existsSync(DIFF_DIR)) {
-		console.error(`Differences directory not found: ${DIFF_DIR}`);
-		console.error("Run 'node dev-tools/compare-validation-results.js' first.");
+	if (!fs.existsSync(reportPath)) {
+		console.error(`Lint report not found: ${reportPath}`);
+		console.error("Run 'pnpm run lint:failures' to generate it.");
 		process.exit(1);
 	}
 
-	// Read all JSON files
-	const files = fs
-		.readdirSync(DIFF_DIR)
-		.filter((f) => f.endsWith(".json") && !f.startsWith("_"))
-		.map((f) => path.join(DIFF_DIR, f));
-
-	if (files.length === 0) {
-		console.error("No comparison result files found.");
-		process.exit(1);
-	}
-
-	// Collect errors/discrepancies
-	const results = [];
-	const messageCounts = new Map();
-	const fileMatches = new Map();
-
-	for (const file of files) {
-		try {
-			const data = JSON.parse(fs.readFileSync(file, "utf8"));
-			const basename = path.basename(file);
-
-			if (showCliErrors) {
-				// Show CLI errors from raw.cliErrors
-				const errors = data.raw?.cliErrors || [];
-				for (const err of errors) {
-					const msg = err.message || "";
-					if (!filter || msg.toLowerCase().includes(filter.toLowerCase())) {
-						results.push({
-							file: basename,
-							line: err.start?.line,
-							message: msg,
-						});
-						messageCounts.set(msg, (messageCounts.get(msg) || 0) + 1);
-						if (!fileMatches.has(basename)) fileMatches.set(basename, []);
-						fileMatches.get(basename).push(msg);
-					}
-				}
-			} else {
-				// Show discrepancies
-				const discrepancies = data.discrepancies || [];
-				for (const disc of discrepancies) {
-					const msg = disc.message || "";
-					if (!filter || msg.toLowerCase().includes(filter.toLowerCase())) {
-						results.push({ file: basename, type: disc.type, message: msg });
-						messageCounts.set(msg, (messageCounts.get(msg) || 0) + 1);
-						if (!fileMatches.has(basename)) fileMatches.set(basename, []);
-						fileMatches.get(basename).push(msg);
-					}
-				}
-			}
-		} catch (_e) {
-			// Skip invalid JSON files
-		}
-	}
-
-	// Output
-	if (summaryOnly) {
-		// Group by message and show counts
-		const sorted = [...messageCounts.entries()].sort((a, b) => b[1] - a[1]);
-		console.log(
-			`Found ${results.length} matching ${showCliErrors ? "CLI errors" : "discrepancies"} across ${fileMatches.size} files:\n`,
-		);
-		for (const [msg, count] of sorted.slice(0, limit)) {
-			console.log(
-				`  [${count.toString().padStart(4)}] ${msg.slice(0, 80)}${msg.length > 80 ? "..." : ""}`,
-			);
-		}
-		if (sorted.length > limit) {
-			console.log(`  ... and ${sorted.length - limit} more unique messages`);
-		}
-	} else if (showFiles) {
-		// Show files with matches
-		console.log(
-			`Files with matching ${showCliErrors ? "CLI errors" : "discrepancies"}:\n`,
-		);
-		const sorted = [...fileMatches.entries()].sort(
-			(a, b) => b[1].length - a[1].length,
-		);
-		for (const [file, msgs] of sorted.slice(0, limit)) {
-			console.log(`  ${file}: ${msgs.length} match(es)`);
-		}
-		if (sorted.length > limit) {
-			console.log(`  ... and ${sorted.length - limit} more files`);
-		}
-	} else {
-		// Show individual results
-		console.log(
-			`Found ${results.length} matching ${showCliErrors ? "CLI errors" : "discrepancies"}:\n`,
-		);
-		for (const r of results.slice(0, limit)) {
-			const loc = r.line ? `:${r.line}` : "";
-			console.log(`  [${r.file}${loc}] ${r.message}`);
-		}
-		if (results.length > limit) {
-			console.log(
-				`\n  ... and ${results.length - limit} more (use --limit to see more)`,
-			);
-		}
-	}
-
-	console.log(
-		`\nTotal: ${results.length} result(s) in ${fileMatches.size} file(s)`,
-	);
+	cmdAnalyzeRealFailures(reportPath, {
+		filter,
+		showCliErrors,
+		summaryOnly,
+		showFiles,
+		limit,
+	});
 }
 
 function cmdCorpus(args) {
@@ -473,7 +481,7 @@ function cmdCorpus(args) {
 			// Check version if v6Only
 			if (v6Only) {
 				const versionMatch = content.match(/@version=(\d+)/);
-				if (!versionMatch || versionMatch[1] !== "6") continue;
+				if (versionMatch?.[1] !== "6") continue;
 			}
 
 			results.total++;
@@ -566,6 +574,7 @@ function cmdCorpus(args) {
 
 function main() {
 	const args = process.argv.slice(2);
+	if (args[0] === "--") args.shift();
 	const command = args[0];
 
 	if (!command) {
