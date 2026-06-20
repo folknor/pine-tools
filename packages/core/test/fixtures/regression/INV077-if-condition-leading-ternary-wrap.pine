@@ -1,0 +1,24 @@
+// @test regression/INV077-if-condition-leading-ternary-wrap
+// @description If-statement conditions can continue with leading ternary and logical operators across blank lines when the continuation indent satisfies Pine's wrap rule. This shape appears in the TV-clean 6874e636 corpus fixture and previously left phantom `and`, `?`, and `:` diagnostics.
+// @expects parse: success
+// @expects no-errors
+// @expects warnings: 0
+//@version=6
+indicator("x")
+cond = close > open
+ok = high > low
+result = 0.0
+if cond and barstate.isconfirmed
+
+ and (
+
+ cond and ok
+
+ )
+    if cond
+
+     ? ok
+
+     : cond
+        result := close
+plot(result)

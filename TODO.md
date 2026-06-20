@@ -191,6 +191,33 @@ IDs so the two stay in sync.
   beyond these data-backed collection receiver methods. Surfaced by the
   #52 census (deep chains under-tested: readChainDepth 3+ 1776 corpus / 4
   tests).
+- **#56 - parser-state tracing for targeted lines.** Add a trace mode to the
+  parser/debug internals that explains how a specific source line was reached:
+  statement kind, parser method stack, `current` token before/after, line,
+  column, indent, `parenDepth`, `bracketDepth`, and block state such as
+  `baseIndent`/`bodyIndent` where applicable. Desired command shape:
+  `pnpm run debug:internals parse --trace-line <N> <file>` or a sibling
+  `debug:trace` script. It should be concise by default and filter to events
+  touching the requested line or its enclosing statement, so it does not dump
+  the entire parse. This would make parser-recovery bugs observable instead
+  of requiring manual inference from final AST and diagnostics.
+- **#57 - AST-shape assertions for parser regression fixtures.** Diagnostics
+  alone are not enough for parser fixes: a fixture can pass because the same
+  error count survives while the AST shape is wrong. Add a lightweight way for
+  regression fixtures or tests to assert structural facts such as UDT field
+  names/types, nested ternary shape, wrapped if-condition shape, method
+  declarations with keyword field names, and deep member/call-chain structure.
+  Keep it targeted, not snapshot-everything: assertions should name semantic
+  paths or predicates so harmless AST formatting changes do not churn tests.
+- **#58 - refresh the local lint baseline after accepted diagnostic-policy
+  changes.** Recent intentional changes altered diagnostic wording/anchors
+  (for example, ternary branch mismatches now use TV's CE10123 `operator ?:`
+  form). The old local baseline makes `regression-check.mjs` noisy, mixing
+  accepted policy churn with real regressions. After the current discrepancy
+  inventory is refreshed and reviewed, run `scripts/snapshot-local-lint.mjs`
+  and commit the updated baseline in a dedicated baseline-refresh commit.
+  Done means a subsequent `regression-check.mjs` reports no changes from the
+  just-accepted state, making future parser/type work easier to audit.
 - **#48 - mutation-testing pass (negative corpus).** INV050 exposed a
   structural blind spot: every verification layer samples valid code.
   The corpus is published working scripts, so a false-negative class

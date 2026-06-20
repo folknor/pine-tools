@@ -1944,7 +1944,10 @@ export class Parser {
 			i = scanned.next;
 		} else if (start.type === TokenType.IDENTIFIER) {
 			const next = this.tokens[i + 1];
-			if (next?.type === TokenType.IDENTIFIER || next?.type === TokenType.KEYWORD) {
+			if (
+				next?.type === TokenType.IDENTIFIER ||
+				next?.type === TokenType.KEYWORD
+			) {
 				typeName = start.value;
 				i++;
 			} else if (
@@ -1959,7 +1962,11 @@ export class Parser {
 		}
 
 		const fieldToken = this.tokens[i];
-		if (!typeName || fieldToken?.type !== TokenType.IDENTIFIER && fieldToken?.type !== TokenType.KEYWORD) {
+		if (
+			!typeName ||
+			(fieldToken?.type !== TokenType.IDENTIFIER &&
+				fieldToken?.type !== TokenType.KEYWORD)
+		) {
 			return null;
 		}
 		return {
@@ -2296,6 +2303,22 @@ export class Parser {
 		});
 	}
 
+	private skipSameLineLeadingWrap(
+		matches: (tok: Token) => boolean,
+	): number | null {
+		if (!this.check(TokenType.NEWLINE)) return null;
+		let i = this.current;
+		while (this.tokens[i]?.type === TokenType.NEWLINE) i++;
+		const next = this.tokens[i];
+		if (!next || next.type === TokenType.EOF || !matches(next)) return null;
+		if ((next.indent ?? 0) === 0) return null;
+		if ((next.indent ?? 0) % 4 === 0) return null;
+		while (this.check(TokenType.NEWLINE)) {
+			this.advance();
+		}
+		return next.line;
+	}
+
 	private parseSameLineBinary(level: number): AST.Expression {
 		if (level >= Parser.SAME_LINE_PRECEDENCE.length) {
 			return this.unary();
@@ -2306,14 +2329,12 @@ export class Parser {
 
 		while (!this.isAtEnd()) {
 			if (this.check(TokenType.NEWLINE)) {
-				// Operator-leading wrap: `expr\n  + more`
-				const next = this.peekNext();
-				if (next && (next.indent ?? 0) % 4 !== 0 && matches(next)) {
-					this.advance(); // consume the newline
-					this.sameLineAnchor = next.line;
-				} else {
-					break;
-				}
+				// Operator-leading wrap: `expr\n  + more`. Blank lines can sit
+				// between the expression and wrapped operator, so scan past all
+				// NEWLINEs before deciding whether the expression continues.
+				const wrappedLine = this.skipSameLineLeadingWrap(matches);
+				if (wrappedLine === null) break;
+				this.sameLineAnchor = wrappedLine;
 			}
 			const currentToken = this.peek();
 			if (currentToken.line !== this.sameLineAnchor || !matches(currentToken)) {
@@ -2345,14 +2366,16 @@ export class Parser {
 		// First parse using the discriminant parser (which handles binary ops on same line)
 		let expr = this.parseSwitchDiscriminant(line);
 
-		// Also handle ternary operator on the same line. The branches may
-		// wrap onto continuation lines when their indent satisfies Pine's
-		// wrap rule (not a multiple of 4 - INV017); TV accepts a trailing-`?`
-		// arm whose branches sit on the next lines (probed INV047 p06, SW
-		// typed const string). Each join re-anchors the restricted parser to
-		// the continuation line.
+		// Also handle ternary operator on the same line or as a leading wrapped
+		// operator. The branches may wrap onto continuation lines when their
+		// indent satisfies Pine's wrap rule (not a multiple of 4 - INV017); TV
+		// accepts both trailing-`?` arms and leading-`?` if conditions in real
+		// scripts. Each join re-anchors the restricted parser to the continuation
+		// line so it still stops before the statement body.
+		if (this.check(TokenType.NEWLINE)) {
+			line = this.skipRestrictedLeadingWrap(TokenType.TERNARY, line);
+		}
 		if (
-			!this.check(TokenType.NEWLINE) &&
 			!this.isAtEnd() &&
 			this.peek().line === line &&
 			this.match(TokenType.TERNARY)
@@ -2363,11 +2386,7 @@ export class Parser {
 			// indentation is still an error, but we join for recovery like the
 			// expression parser's leading-operator path. see TODO #45.
 			if (this.check(TokenType.NEWLINE)) {
-				const next = this.peekNext();
-				if (next && next.type === TokenType.COLON) {
-					this.leadingSwitchArmWrapError(next);
-					this.advance();
-				}
+				this.skipRestrictedLeadingWrap(TokenType.COLON, consequentLine);
 			}
 			this.consume(TokenType.COLON, 'Expected ":" in ternary expression');
 			const alternateLine = this.skipArmWrapNewline(consequentLine);
@@ -2427,6 +2446,21 @@ export class Parser {
 	// not a multiple of 4 - INV017). Returns the line the expression
 	// continues on, so the restricted same-line parser re-anchors there.
 	// see INV047 p06 / TODO #46(c)
+	private skipRestrictedLeadingWrap(type: TokenType, line: number): number {
+		if (!this.check(TokenType.NEWLINE)) return line;
+		let i = this.current;
+		while (this.tokens[i]?.type === TokenType.NEWLINE) i++;
+		const next = this.tokens[i];
+		if (!next || next.type !== type || next.type === TokenType.EOF) return line;
+		if ((next.indent ?? 0) === 0) return line;
+		if (i - this.current > 1 && (next.indent ?? 0) % 4 === 0) return line;
+		this.leadingSwitchArmWrapError(next);
+		while (this.check(TokenType.NEWLINE)) {
+			this.advance();
+		}
+		return next.line;
+	}
+
 	private skipArmWrapNewline(line: number): number {
 		if (this.check(TokenType.NEWLINE)) {
 			const next = this.peekNext();

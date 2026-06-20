@@ -131,6 +131,7 @@
     "debug:corpus": "node dev-tools/debug-internals.js corpus",
     "debug:diff": "node dev-tools/differential-test.js",
     "debug:internals": "node dev-tools/debug-internals.js",
+    "debug:repro": "node dev-tools/debug-repro.js",
     "debug:tokens": "node dev-tools/debug-internals.js tokens",
     "fetch:library": "node --experimental-strip-types packages/pipeline/src/fetch-library.ts",
     "generate": "node --experimental-strip-types packages/pipeline/src/generate.ts",
