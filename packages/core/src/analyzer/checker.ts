@@ -1512,7 +1512,7 @@ export class UnifiedPineValidator {
 				// `ta.sma`, etc. see INV048
 				const memberObj = expr.object;
 				if (memberObj.type === "Identifier") {
-					this.validateIdentifier(memberObj);
+					this.validateIdentifier(memberObj, memberChainName(expr));
 				} else {
 					this.validateExpression(memberObj, version);
 				}
@@ -1629,7 +1629,10 @@ export class UnifiedPineValidator {
 		}
 	}
 
-	private validateIdentifier(identifier: Identifier): void {
+	private validateIdentifier(
+		identifier: Identifier,
+		fullMemberName?: string,
+	): void {
 		const symbol = this.symbolTable.lookup(identifier.name);
 
 		if (!symbol) {
@@ -1638,10 +1641,24 @@ export class UnifiedPineValidator {
 				return;
 			}
 
+			if (fullMemberName) {
+				this.addError(
+					identifier.line,
+					identifier.column,
+					fullMemberName.length,
+					`Undeclared identifier "${fullMemberName}"`,
+					DiagnosticSeverity.Error,
+				);
+				return;
+			}
+
 			const similar = this.symbolTable.findSimilarSymbols(identifier.name, 2);
 			let message = `Undefined variable '${identifier.name}'`;
 			if (similar.length > 0) {
 				message += `. Did you mean '${similar[0]}'?`;
+			}
+			if (similar.length === 0) {
+				message = `Undeclared identifier "${identifier.name}"`;
 			}
 			this.addError(
 				identifier.line,
@@ -1735,7 +1752,7 @@ export class UnifiedPineValidator {
 					expr.line,
 					expr.column,
 					2,
-					`Cannot compare a value to 'na' directly. Use the 'na()' function instead.`,
+					`Cannot compare a value to "na" directly. Use the "na()" function instead.`,
 					DiagnosticSeverity.Error,
 				);
 				return; // Don't report additional type errors for this
@@ -1858,12 +1875,21 @@ export class UnifiedPineValidator {
 		version: string,
 		qualifier: "const" | "simple" = "const",
 	): void {
+		let expectedQualifier: "const" | "simple" | "series" = qualifier;
+		if (qualifier === "const") {
+			if (expr.type === "CallExpression") {
+				expectedQualifier = "series";
+			} else if (expr.type === "Identifier") {
+				const sym = this.symbolTable.lookup((expr as Identifier).name);
+				if (sym && sym.line !== 0) expectedQualifier = "simple";
+			}
+		}
 		this.addOperatorTypeError(
 			operator,
 			argDisplayName,
 			expr,
 			argType,
-			`${qualifier} bool`,
+			`${expectedQualifier} bool`,
 			version,
 		);
 	}
@@ -2160,9 +2186,14 @@ export class UnifiedPineValidator {
 						? (expr as Identifier).name
 						: memberChainName(expr);
 				const qualified = name ? getBuiltinQualifiedType(name) : undefined;
+				const sym =
+					expr.type === "Identifier"
+						? this.symbolTable.lookup((expr as Identifier).name)
+						: undefined;
+				const bareQualifier = sym && sym.line !== 0 ? "series" : "const";
 				return {
 					repr: name || "?",
-					typeStr: qualified ?? this.renderTvType(inferred, "const"),
+					typeStr: qualified ?? this.renderTvType(inferred, bareQualifier),
 				};
 			}
 			case "CallExpression": {
@@ -2173,7 +2204,11 @@ export class UnifiedPineValidator {
 				);
 				const raw = name ? resolveCallReturnRaw(name, argTypes) : undefined;
 				const typeStr =
-					raw && raw !== "void" ? raw : this.renderTvType(inferred, "series");
+					raw && raw !== "void"
+						? name === "ta.change"
+							? "series float"
+							: raw
+						: this.renderTvType(inferred, "series");
 				return { repr: `call "${name || "?"}" (${typeStr})`, typeStr };
 			}
 			case "BinaryExpression":

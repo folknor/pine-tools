@@ -801,7 +801,7 @@ export class ExpressionParser {
 					next?.type === TokenType.ASSIGN
 				) {
 					// Looks like another argument (missing comma)
-					message = `Missing comma before '${current.value}' argument at line ${current.line}`;
+					message = `Syntax error at input "${current.value}"`;
 				} else if (
 					prev?.type === TokenType.IDENTIFIER &&
 					current.type === TokenType.IDENTIFIER

@@ -464,14 +464,21 @@ After the parser-recovery cleanup through INV082, the refreshed window
 dropped the 8 duplicate `bar` undefined-variable rows from **37 / 0 / 32** to
 **29 / 0 / 32**. INV083, INV084, and INV085 then aligned bool-context,
 numeric-operator, and union-argument diagnostics with TV's CE10123 templates,
-reducing same-position message disagreements to **29 / 0 / 16**. The removed
-local-only rows were
-recovery noise: restricted condition leading-binary wraps (INV079), residual
-license/source prose and malformed ternary tails (INV080), `bar index` in-call
-wording alignment (INV081), and recovered argument semantic suppression
-(INV082). The remaining local-only rows are still the already-explained
-mangled-source residue or probe-backed stricter diagnostics; zero tv-only
-remain.
+reducing same-position message disagreements to **29 / 0 / 16**. A later
+message-alignment pass kept the same **29 / 0** error split and reduced
+same-position message disagreements to **1** by matching TV's `na` comparison
+quotes, CE10123 bool-context qualifiers / argument type displays, `ta.change`
+return display, undefined-member / bare-identifier wording, and in-call
+missing-argument syntax wording. The lone remaining message disagreement is
+`a1177295...:17:5`: our enum field type diagnostic is the useful CE10125-style
+message, while TV returns its internal `Cannot read properties of undefined
+(reading 'pinePos')`; do not align to that crash payload. The removed
+local-only rows were recovery noise: restricted condition leading-binary wraps
+(INV079), residual license/source prose and malformed ternary tails (INV080),
+`bar index` in-call wording alignment (INV081), and recovered argument semantic
+suppression (INV082). The remaining local-only rows are still the
+already-explained mangled-source residue or probe-backed stricter diagnostics;
+zero tv-only remain.
 
 Earlier measurements live in git history (this section, prior
 revisions) - each is a dated point-in-time record per G001.
