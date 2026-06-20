@@ -173,15 +173,20 @@ IDs so the two stay in sync.
   now records typed fields on `TypeDeclaration`, the checker indexes them,
   infers `T.new()` as `T`, resolves member chains such as `o.inner.x`,
   emits `Object has no field <name>` only when the receiver resolves to a
-  known user type, and derives element returns from collection receiver
+  known user type; derives element returns from collection receiver
   methods such as `arr.first()`, `array.get()`, `matrix.get()`, and
-  `map.get()`. Pinned by
+  `map.get()`; and preserves concrete collection type arguments through
+  self-returning receiver methods such as `array.copy/slice/concat`,
+  `map.copy`, and `matrix.copy/submatrix` plus `matrix.row/col` array
+  returns. Pinned by
   `packages/core/test/fixtures/regression/INV072-udt-field-validation.pine`
+  and
+  `packages/core/test/fixtures/regression/INV072-collection-copy-chain-types.pine`,
   and clean against `regression-check.mjs` (0 corpus changes). Remaining
   INV072 follow-up, if needed: broaden method/call chain return typing
-  beyond the data-backed collection element-return methods. Surfaced by
-  the #52 census (deep chains under-tested: readChainDepth 3+ 1776 corpus
-  / 4 tests).
+  beyond these data-backed collection receiver methods. Surfaced by the
+  #52 census (deep chains under-tested: readChainDepth 3+ 1776 corpus / 4
+  tests).
 - **#48 - mutation-testing pass (negative corpus).** INV050 exposed a
   structural blind spot: every verification layer samples valid code.
   The corpus is published working scripts, so a false-negative class

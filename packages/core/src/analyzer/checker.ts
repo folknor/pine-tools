@@ -76,6 +76,10 @@ const ARRAY_ELEMENT_RETURN_METHODS = new Set([
 	"remove",
 	"shift",
 ]);
+const ARRAY_SELF_RETURN_METHODS = new Set(["concat", "copy", "slice"]);
+const MAP_SELF_RETURN_METHODS = new Set(["copy"]);
+const MATRIX_SELF_RETURN_METHODS = new Set(["copy", "submatrix"]);
+const MATRIX_ARRAY_RETURN_METHODS = new Set(["col", "row"]);
 
 // Flatten a member-call callee into its dotted name (`strategy.risk.max_drawdown`).
 // Walks `.object` recursively so two-level builtin namespaces resolve, not just
@@ -1454,18 +1458,36 @@ export class UnifiedPineValidator {
 		);
 
 		const arrayMatch = receiverType.match(/^array<(.+)>$/);
-		if (arrayMatch && ARRAY_ELEMENT_RETURN_METHODS.has(method)) {
-			return arrayMatch[1] as PineType;
+		if (arrayMatch) {
+			if (ARRAY_ELEMENT_RETURN_METHODS.has(method)) {
+				return arrayMatch[1] as PineType;
+			}
+			if (ARRAY_SELF_RETURN_METHODS.has(method)) {
+				return receiverType as PineType;
+			}
 		}
 
 		const matrixMatch = receiverType.match(/^matrix<(.+)>$/);
-		if (matrixMatch && method === "get") {
-			return matrixMatch[1] as PineType;
+		if (matrixMatch) {
+			if (method === "get") {
+				return matrixMatch[1] as PineType;
+			}
+			if (MATRIX_SELF_RETURN_METHODS.has(method)) {
+				return receiverType as PineType;
+			}
+			if (MATRIX_ARRAY_RETURN_METHODS.has(method)) {
+				return `array<${matrixMatch[1]}>` as PineType;
+			}
 		}
 
 		const mapMatch = receiverType.match(/^map<\s*[^,]+,\s*(.+)>$/);
-		if (mapMatch && method === "get") {
-			return mapMatch[1].trim() as PineType;
+		if (mapMatch) {
+			if (method === "get") {
+				return mapMatch[1].trim() as PineType;
+			}
+			if (MAP_SELF_RETURN_METHODS.has(method)) {
+				return receiverType as PineType;
+			}
 		}
 
 		return null;

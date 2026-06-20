@@ -1,0 +1,23 @@
+// @test regression/INV072-collection-copy-chain-types
+// @description Collection receiver methods returning the receiver collection shape should preserve concrete type arguments through chains. Before this, a.copy()/slice()/concat(), m.copy(), and mx.copy()/submatrix() inferred unknown, so mismatched typed declarations were missed. See INV072.
+// @expects parse: success
+// @expects errors: 5
+// @expects error: line=4, message=/Cannot assign a value of the "array<float>" type to the "badCopy" variable/
+// @expects error: line=5, message=/Cannot assign a value of the "array<float>" type to the "badSlice" variable/
+// @expects error: line=6, message=/Cannot assign a value of the "array<float>" type to the "badConcat" variable/
+// @expects error: line=9, message=/Cannot assign a value of the "map<string, float>" type to the "badMap" variable/
+// @expects error: line=12, message=/Cannot assign a value of the "matrix<float>" type to the "badMatrix" variable/
+//@version=6
+indicator("INV072 collection copy chain types")
+array<float> af = array.from(1.0, 2.0)
+array<int> badCopy = af.copy()
+array<int> badSlice = af.slice(0, 1)
+array<int> badConcat = af.copy().concat(array.from(3.0))
+useAf = array.size(af)
+map<string, float> mf = map.new<string, float>()
+map<string, int> badMap = mf.copy()
+useMf = map.size(mf)
+matrix<float> mx = matrix.new<float>(1, 1, 1.0)
+matrix<int> badMatrix = mx.copy().submatrix(0, 1, 0, 1)
+useMx = matrix.rows(mx)
+plot(useAf + useMf + useMx + array.size(badCopy) + array.size(badSlice) + array.size(badConcat) + map.size(badMap) + matrix.rows(badMatrix))
