@@ -1,0 +1,7 @@
+//@version=6
+// @expects parse: fail
+// @expects error: line=3, column=9, message=/Syntax error at input ":"/
+// @expects error: line=4, column=9, message=/Syntax error at input "end of line without line continuation"/
+indicator("INV076")
+at https://mozilla.org/MPL/2.0/
+at https

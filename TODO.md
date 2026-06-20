@@ -497,8 +497,10 @@ Every other row this table once held is cleared (INV028, INV032-INV041).
 ## Symbols - undefined-variable clusters
 
 The giant clusters are all resolved (INV025, INV030, INV031, INV047 -
-see the investigations index and git history). What remains (3 + 3
-hits) is residual noise on still-mangled lines.
+see the investigations index and git history). 2026-06-20: INV076 removed
+the 2 `at`/`https` malformed-license-header undefined-variable carriers by
+emitting the TV-style syntax error before semantic validation. What remains
+is residual noise on still-mangled lines.
 
 Per-file root causes are almost always one of:
 

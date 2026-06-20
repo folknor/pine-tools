@@ -31,7 +31,9 @@ export class Parser {
 
 	constructor(
 		source: string,
-		private readonly sourcePathResolver?: (importLine: number) => string | undefined,
+		private readonly sourcePathResolver?: (
+			importLine: number,
+		) => string | undefined,
 	) {
 		const lexer = new Lexer(source);
 		// ANNOTATION tokens (//@version, //@function, //@param doc comments)
@@ -505,6 +507,31 @@ export class Parser {
 
 			// Not a variable declaration, backtrack
 			this.current = checkpoint;
+		}
+
+		// `at https://...` from malformed license headers must be one syntax
+		// error, not two undefined identifier diagnostics. TV anchors the full URL
+		// form at `:` and the `at https` form at EOL. see INV076
+		if (
+			this.check(TokenType.IDENTIFIER) &&
+			this.peek().value === "at" &&
+			this.peekNext()?.type === TokenType.IDENTIFIER &&
+			this.peekNext()?.value === "https" &&
+			this.peekNext()?.line === this.peek().line
+		) {
+			for (let i = this.current + 2; i < this.tokens.length; i++) {
+				const token = this.tokens[i];
+				if (token.type === TokenType.COLON) {
+					this.current = i;
+					throw new Error(`Syntax error at input "${token.value}"`);
+				}
+				if (token.type === TokenType.NEWLINE || token.type === TokenType.EOF) {
+					this.current = i;
+					throw new Error(
+						`Syntax error at input "end of line without line continuation"`,
+					);
+				}
+			}
 		}
 
 		// Check for function definition: name(params) =>
@@ -1849,7 +1876,11 @@ export class Parser {
 					) {
 						break;
 					}
-					if (kind === "type" && isLineStart && currentToken.indent === bodyIndent) {
+					if (
+						kind === "type" &&
+						isLineStart &&
+						currentToken.indent === bodyIndent
+					) {
 						const field = this.scanTypeFieldAtCurrent();
 						if (field) fields.push(field);
 					}
@@ -1944,10 +1975,16 @@ export class Parser {
 		);
 	}
 
-	private scanGenericTypeSuffixAt(index: number): { suffix: string; next: number } {
+	private scanGenericTypeSuffixAt(index: number): {
+		suffix: string;
+		next: number;
+	} {
 		let i = index;
 		let suffix = "";
-		if (this.tokens[i]?.type === TokenType.COMPARE && this.tokens[i].value === "<") {
+		if (
+			this.tokens[i]?.type === TokenType.COMPARE &&
+			this.tokens[i].value === "<"
+		) {
 			let depth = 0;
 			while (this.tokens[i] && this.tokens[i].type !== TokenType.EOF) {
 				const token = this.tokens[i];
@@ -2360,7 +2397,10 @@ export class Parser {
 			) {
 				break;
 			}
-			if ((op.indent ?? 0) % 4 === 0 && (op.value === "-" || op.value === "+")) {
+			if (
+				(op.indent ?? 0) % 4 === 0 &&
+				(op.value === "-" || op.value === "+")
+			) {
 				break;
 			}
 			this.leadingSwitchArmWrapError(op);

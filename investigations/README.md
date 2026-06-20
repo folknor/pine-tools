@@ -543,3 +543,11 @@ contradiction means re-measure, not "the earlier author was wrong."
   check (bigger than one INV; the parser already has the field data).
   Deferred. Surfaced by the #52 census (deep chains under-tested). 4
   probes.
+- [INV076](INV076-malformed-expression-statement-recovery/notes.md) - local-only
+  undefined-variable noise on malformed prose license lines: `at https://...`
+  was parsed as expression identifiers `at` and `https`, while TV reports a
+  single CE10156 syntax error at `:` (or EOL for `at https`). The parser now
+  recognizes this exact malformed-header shape before expression-statement
+  parsing and emits the syntax error instead. Narrow lexical guard because a
+  broader adjacent-identifier rule breaks valid UDF tail expressions and UDT
+  fields. 2 corpus carriers for the `at`/`https` undefined-variable pair.
