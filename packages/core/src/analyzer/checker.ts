@@ -1868,13 +1868,31 @@ export class UnifiedPineValidator {
 		}
 
 		if (!this.areTernaryBranchTypesCompatible(conseqType, altType)) {
-			this.addError(
-				expr.line,
-				expr.column,
-				1,
-				`Ternary branches must have compatible types. Got '${TypeChecker.displayType(conseqType)}' and '${TypeChecker.displayType(altType)}'`,
-				DiagnosticSeverity.Error,
+			const expectedFromConseq = TypeChecker.isColorType(conseqType);
+			const offendingExpr = expectedFromConseq ? expr.alternate : expr.consequent;
+			const offendingType = expectedFromConseq ? altType : conseqType;
+			const expectedType = expectedFromConseq ? conseqType : altType;
+			const desc = this.describeArgForTemplate(
+				offendingExpr,
+				offendingType,
+				version,
 			);
+			this.addTemplateError({
+				line: offendingExpr.line || expr.line,
+				column: offendingExpr.column || expr.column,
+				length: 0,
+				message: UnifiedPineValidator.CE10123_TEMPLATE,
+				severity: DiagnosticSeverity.Error,
+				code: "CE10123",
+				ctx: {
+					argDisplayName: expectedFromConseq ? "expr2" : "expr1",
+					argUserFriendlyRepresentation: desc.repr,
+					argumentType: desc.typeStr,
+					currentTypeDocStr: this.renderTvType(expectedType, "const"),
+					funId: "operator ?:",
+					typePostfix: "",
+				},
+			});
 		}
 	}
 

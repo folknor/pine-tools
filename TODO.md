@@ -447,8 +447,15 @@ type`. Fixed the same day in `scanTypeFieldAtCurrent`; the carrier
 restricting if-expression condition parsing to the if header line found
 **44 / 3 / 32**: the `if cond` / newline / negative-literal branch shape no
 longer produces the two false `Mismatched input "-"` records in
-`d40d7b...`. INV065, INV067, INV068, INV069, and these parser fixes add
-catches or remove FPs without changing the already-explained residue.
+`d40d7b...`. After rendering ternary branch mismatches with TV's CE10123
+operator diagnostic, the refreshed window is **47 / 0 / 32**: the prior 3
+TV-only records from `35a58bb9...` are gone, and the deliberate ternary
+fixture now matches TV at the same positions/messages. The local-only count
+rose by 3 because the same stricter diagnostic now appears pre-stop in
+mangled ternary-wrap cascades; those remain parser-recovery residue, not a
+detection gap. INV065, INV067, INV068, INV069, and these parser/type
+diagnostic fixes add catches or remove FPs without changing the
+already-explained residue.
 
 Earlier measurements live in git history (this section, prior
 revisions) - each is a dated point-in-time record per G001.
@@ -482,7 +489,7 @@ remains:
 
 | count | files | category |
 |---|---|---|
-| 3 | 1 | `Ternary branches must have compatible types. Got '*' and '*'` (our own synthetic fixture's deliberate true positives - TV flags them too, at the argument position; see INV026) |
+| 1 | 1 | `Cannot call "operator ?:" with argument ...` (`8439b236...` mangled ternary-wrap recovery residue; the clean synthetic INV026 trio now matches TV at the branch argument positions)  |
 
 **Right approach**: pick a specific FP, trace through `inferExpressionType`
 in `checker.ts` to see why we produce e.g. `series<float>` for what
@@ -492,7 +499,7 @@ should be `series<bool>`. Don't relax the bool checks - they're correct.
 
 | count | files | category |
 |---|---|---|
-| 3 | 1 | `Cannot call "operator ?:" with argument ...` (`35a58bb9…`'s ternary trio - never a detection gap, just anchor mismatch: TV anchors at one branch by undecoded type-priority rules, we detect all three at the ternary; see INV028) |
+| 0 | 0 | No current TV-only error categories in the refreshed 2026-06-20 sweep. The old `35a58bb9...` ternary trio now uses TV's CE10123 operator diagnostic at the branch argument positions. |
 
 Every other row this table once held is cleared (INV028, INV032-INV041).
 

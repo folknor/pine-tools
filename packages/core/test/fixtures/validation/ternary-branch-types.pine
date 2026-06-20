@@ -1,10 +1,10 @@
 // @test validation/ternary-branch-types
-// @description Ternary expression branches must have compatible types. See investigations/INV001-ternary-branch-compat/notes.md for why we stay stricter than pine-lint here.
+// @description Ternary expression branches must have compatible types. The diagnostic now uses TV's CE10123 operator form. See investigations/INV001-ternary-branch-compat/notes.md.
 // @expects parse: success
 // @expects errors: 3
-// @expects error: line=5, message="Ternary branches must have compatible types. Got 'int' and 'color'"
-// @expects error: line=8, message="Ternary branches must have compatible types. Got 'string' and 'bool'"
-// @expects error: line=11, message="Ternary branches must have compatible types. Got 'color' and 'string'"
+// @expects error: line=5, message=/Cannot call "operator \?:" with argument "expr1"="123"/
+// @expects error: line=8, message=/Cannot call "operator \?:" with argument "expr1"="hello"/
+// @expects error: line=11, message=/Cannot call "operator \?:" with argument "expr2"="blue"/
 
 //@version=6
 indicator("Ternary Branch Type Errors")

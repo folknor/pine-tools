@@ -1,11 +1,11 @@
 // @test regression/INV001-ternary-cross-type-branches
-// @description Cross-type ternary branches yield nonsense values (e.g. int|color, string|float). We flag them as errors even though pine-lint --tv is silent on them. See investigations/INV001-ternary-branch-compat/notes.md.
+// @description Cross-type ternary branches yield nonsense values (e.g. int|color, string|float). We flag them as errors using TV's CE10123 operator diagnostic form. See investigations/INV001-ternary-branch-compat/notes.md.
 // @expects parse: success
-// @expects error: line=4, message="Ternary branches must have compatible types"
-// @expects error: line=5, message="Ternary branches must have compatible types"
-// @expects error: line=6, message="Ternary branches must have compatible types"
+// @expects error: line=4, message=/Cannot call "operator \?:"/
+// @expects error: line=5, message=/Cannot call "operator \?:"/
+// @expects error: line=6, message=/Cannot call "operator \?:"/
 //@version=6
-indicator("INV001 — cross-type ternary branches")
+indicator("INV001 - cross-type ternary branches")
 cond = close > open
 a = cond ? 1 : color.red
 b = cond ? "hello" : 3.14
