@@ -194,20 +194,11 @@ IDs so the two stay in sync.
 - **#56 - parser-state tracing for targeted lines.** Implemented as
   `pnpm run debug:internals -- trace <file|code> --line <N> [--context <N>]`.
   It reports the parser method stack, `current` token before/after, line,
-  column, indent, `parenDepth`, `bracketDepth`, and parse errors for events
-  touching the requested line or nearby context. Use `--verbose` to include
-  low-level same-line binary/wrap events and no-op method calls, or
-  `--methods a,b` to trace a targeted method set. If this needs more depth,
-  extend it with explicit block-state fields such as `baseIndent`/`bodyIndent`.
-- **#58 - refresh the local lint baseline after accepted diagnostic-policy
-  changes.** Recent intentional changes altered diagnostic wording/anchors
-  (for example, ternary branch mismatches now use TV's CE10123 `operator ?:`
-  form). The old local baseline makes `regression-check.mjs` noisy, mixing
-  accepted policy churn with real regressions. After the current discrepancy
-  inventory is refreshed and reviewed, run `scripts/snapshot-local-lint.mjs`
-  and commit the updated baseline in a dedicated baseline-refresh commit.
-  Done means a subsequent `regression-check.mjs` reports no changes from the
-  just-accepted state, making future parser/type work easier to audit.
+  column, indent, `parenDepth`, `bracketDepth`, active block state such as
+  function name and `baseIndent`, and parse errors for events touching the
+  requested line or nearby context. Use `--verbose` to include low-level
+  same-line binary/wrap events and no-op method calls, or `--methods a,b` to
+  trace a targeted method set.
 - **#48 - mutation-testing pass (negative corpus).** INV050 exposed a
   structural blind spot: every verification layer samples valid code.
   The corpus is published working scripts, so a false-negative class

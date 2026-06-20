@@ -1,0 +1,20 @@
+// @test regression/INV078-invalid-operator-statement
+// @description A statement cannot start with a binary/ternary/colon operator. TV reports CE10156 "new line" at the operator line, while unary +/- and not expression tails remain valid. Probed 2026-06-20; see investigations/INV078-invalid-operator-statement/notes.md.
+// @expects parse: fail
+// @expects errors: 3
+// @expects error: line=4, column=1, message=/Syntax error at input "new line"/
+// @expects error: line=6, column=5, message=/Syntax error at input "new line"/
+// @expects error: line=8, column=5, message=/Syntax error at input "new line"/
+//@version=6
+indicator("INV078")
+x = close
+? high : low
+f() =>
+    and high
+badColon() =>
+    : high
+validUnary() =>
+    -high
+validNot() =>
+    not close
+plot(close)

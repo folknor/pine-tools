@@ -186,7 +186,7 @@ pnpm run test:snippet -- --filter text 'code'  # Filter errors
 
 pnpm run debug:internals -- lookup hour      # Check symbol in pine-data
 pnpm run debug:internals -- parse 'x = 1'    # Show AST
-pnpm run debug:internals -- trace <file> --line <N> [--context <N>] [--verbose] # Trace parser state around a line
+pnpm run debug:internals -- trace <file> --line <N> [--context <N>] [--verbose] # Trace parser state/block context around a line
 pnpm run debug:internals -- validate 'code'  # Full validation details
 pnpm run debug:internals -- tokens 'code'    # Show lexer tokens with line/indent
 pnpm run debug:internals -- symbols hour     # List matching symbols

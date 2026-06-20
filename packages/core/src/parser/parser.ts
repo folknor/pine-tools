@@ -144,6 +144,10 @@ export class Parser {
 		// NOTE: ANNOTATION tokens never reach this point - they are filtered
 		// out with comments in the constructor (see there for why).
 
+		if (this.startsInvalidOperatorStatement()) {
+			throw new Error('Syntax error at input "new line"');
+		}
+
 		// Import statement: import User/Library/Version [as alias]
 		if (this.match([TokenType.KEYWORD, ["import"]])) {
 			return this.importStatement();
@@ -3112,6 +3116,22 @@ export class Parser {
 
 	private primary(): AST.Expression {
 		return this.exprs.primary();
+	}
+
+	private startsInvalidOperatorStatement(): boolean {
+		if (this.peek().indent === undefined) return false;
+		const tok = this.peek();
+		if (
+			tok.type === TokenType.TERNARY ||
+			tok.type === TokenType.COLON ||
+			tok.type === TokenType.MULTIPLY ||
+			tok.type === TokenType.DIVIDE ||
+			tok.type === TokenType.MODULO ||
+			tok.type === TokenType.COMPARE
+		) {
+			return true;
+		}
+		return tok.type === TokenType.KEYWORD && ["and", "or"].includes(tok.value);
 	}
 
 	// Utility methods

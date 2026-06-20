@@ -551,3 +551,9 @@ contradiction means re-measure, not "the earlier author was wrong."
   parsing and emits the syntax error instead. Narrow lexical guard because a
   broader adjacent-identifier rule breaks valid UDF tail expressions and UDT
   fields. 2 corpus carriers for the `at`/`https` undefined-variable pair.
+- [INV078](INV078-invalid-operator-statement/notes.md) - parser diagnostic
+  alignment for statements that start with binary/ternary/colon operators:
+  TV reports CE10156 `Syntax error at input "new line"` at the operator line.
+  The parser now rejects these before expression parsing, while preserving
+  valid unary `+`, unary `-`, and `not` expression tails. Surfaced by the
+  remaining `8439...` `Unexpected token: ?` local-only row.

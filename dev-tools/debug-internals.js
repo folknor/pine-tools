@@ -161,6 +161,12 @@ function describeToken(token) {
 	return `${token.line}:${token.column} ${token.type} ${JSON.stringify(token.value)} indent=${indent}`;
 }
 
+function describeParserState(parser) {
+	const block = parser.__traceBlockState?.();
+	const base = `paren=${parser.parenDepth} bracket=${parser.bracketDepth}`;
+	return block ? `${base} ${block}` : base;
+}
+
 function nodeContainsLine(node, line) {
 	if (!node || typeof node !== "object" || typeof node.line !== "number")
 		return false;
@@ -269,9 +275,21 @@ function cmdTrace(args) {
 		: verbose
 			? verboseMethods
 			: defaultMethods;
+	const traceBlockState = {
+		parseIndentedBlock: (args) =>
+			`block=indented baseIndent=${args[1]} startLine=${args[0]}`,
+		functionDeclaration: (args) =>
+			`block=function baseIndent=${args[4] ?? 0} name=${args[0]}`,
+		methodDeclaration: (args) => `block=method baseIndent=${args[1] ?? 0}`,
+		typeOrEnumDeclaration: (args) => `block=${args[0]}`,
+		parseSwitchCaseBody: (args) => `block=switchCase caseIndent=${args[0]}`,
+		parseInlineSwitchCaseBody: () => "block=inlineSwitchCase",
+		parseInlineArrowBody: () => "block=inlineArrow",
+	};
 	const originals = new Map();
 	const events = [];
 	const stack = [];
+	const blockStack = [];
 	for (const name of methods) {
 		const original = Parser.prototype[name];
 		if (typeof original !== "function") continue;
@@ -279,7 +297,10 @@ function cmdTrace(args) {
 		Parser.prototype[name] = function tracedMethod(...methodArgs) {
 			const beforeIndex = this.current;
 			const before = this.peek?.();
+			const blockState = traceBlockState[name]?.(methodArgs);
 			stack.push(name);
+			if (blockState) blockStack.push(blockState);
+			this.__traceBlockState = () => blockStack[blockStack.length - 1] || "";
 			let result;
 			let thrown;
 			try {
@@ -304,7 +325,8 @@ function cmdTrace(args) {
 						before: describeToken(before),
 						after: describeToken(after),
 						current: `${beforeIndex}->${this.current}`,
-						depths: `paren=${this.parenDepth} bracket=${this.bracketDepth}`,
+						state: describeParserState(this),
+
 						result: result?.type
 							? `${result.type} @ ${result.line}:${result.column}`
 							: "",
@@ -312,6 +334,8 @@ function cmdTrace(args) {
 					});
 				}
 				stack.pop();
+				if (blockState) blockStack.pop();
+				if (blockStack.length === 0) delete this.__traceBlockState;
 			}
 		};
 	}
@@ -328,7 +352,7 @@ function cmdTrace(args) {
 					? ` -> ${event.result}`
 					: "";
 			console.log(
-				`${indent}${event.name}(${event.args}) ${event.current} ${event.depths}${suffix}`,
+				`${indent}${event.name}(${event.args}) ${event.current} ${event.state}${suffix}`,
 			);
 			console.log(`${indent}  before ${event.before}`);
 			console.log(`${indent}  after  ${event.after}`);
