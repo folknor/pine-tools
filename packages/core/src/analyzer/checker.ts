@@ -56,6 +56,7 @@ import {
 	positionalConstParam,
 	positionalParamUnionMembers,
 	resolveCallReturnRaw,
+	unionParamInfo,
 } from "./builtins";
 import { type Symbol as SymbolInfo, SymbolTable } from "./symbols";
 import { type PineType, TypeChecker } from "./types";
@@ -2745,19 +2746,20 @@ export class UnifiedPineValidator {
 		let sawNamed = false;
 		for (const arg of call.arguments) {
 			let members: string[] | null;
-			let where: string;
+			let paramInfo: { name: string; docType: string } | null;
 			if (arg.name) {
 				sawNamed = true;
 				members = namedParamUnionMembers(functionName, arg.name);
-				where = `parameter '${arg.name}'`;
+				paramInfo = unionParamInfo(functionName, -1, arg.name);
 			} else {
 				positionalNum++;
 				// A positional arg after a named one is malformed ordering (TV's
 				// own error); positional->param indices are unreliable, so don't
 				// emit a misleading type mismatch on top. see INV016
 				if (sawNamed || functionHasOverloads) continue;
-				members = positionalParamUnionMembers(functionName, positionalNum - 1);
-				where = `argument ${positionalNum}`;
+				const index = positionalNum - 1;
+				members = positionalParamUnionMembers(functionName, index);
+				paramInfo = unionParamInfo(functionName, index);
 			}
 			if (!members) continue;
 			// Only trust the arg's type when it comes from a reliable source.
@@ -2774,13 +2776,23 @@ export class UnifiedPineValidator {
 				members.includes(argBase) ||
 				(numeric && (members.includes("int") || members.includes("float")));
 			if (!ok) {
-				this.addError(
-					arg.value.line,
-					arg.value.column,
-					0,
-					`Type mismatch for ${where}: expected ${members.join("/")}, got ${argType}`,
-					DiagnosticSeverity.Error,
-				);
+				const desc = this.describeArgForTemplate(arg.value, argType, version);
+				this.addTemplateError({
+					line: arg.value.line,
+					column: arg.value.column,
+					length: 0,
+					message: UnifiedPineValidator.CE10123_TEMPLATE,
+					severity: DiagnosticSeverity.Error,
+					code: "CE10123",
+					ctx: {
+						argDisplayName: paramInfo?.name ?? arg.name ?? String(positionalNum),
+						argUserFriendlyRepresentation: desc.repr,
+						argumentType: desc.typeStr,
+						currentTypeDocStr: `simple ${members[0]}`,
+						funId: functionName,
+						typePostfix: "",
+					},
+				});
 			}
 		}
 	}

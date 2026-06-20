@@ -462,9 +462,10 @@ fixture matched TV at the same positions/messages.
 
 After the parser-recovery cleanup through INV082, the refreshed window
 dropped the 8 duplicate `bar` undefined-variable rows from **37 / 0 / 32** to
-**29 / 0 / 32**. INV083 and INV084 then aligned bool-context and numeric
-operator diagnostics with TV's CE10123 templates, reducing same-position
-message disagreements to **29 / 0 / 18**. The removed local-only rows were
+**29 / 0 / 32**. INV083, INV084, and INV085 then aligned bool-context,
+numeric-operator, and union-argument diagnostics with TV's CE10123 templates,
+reducing same-position message disagreements to **29 / 0 / 16**. The removed
+local-only rows were
 recovery noise: restricted condition leading-binary wraps (INV079), residual
 license/source prose and malformed ternary tails (INV080), `bar index` in-call
 wording alignment (INV081), and recovered argument semantic suppression

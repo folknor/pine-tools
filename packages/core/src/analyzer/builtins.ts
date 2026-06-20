@@ -754,6 +754,27 @@ export function positionalParamUnionMembers(
 	return p ? getScalarUnionMembers(p.type) : null;
 }
 
+export function unionParamInfo(
+	functionName: string,
+	index: number,
+	name?: string,
+): { name: string; docType: string } | null {
+	const func = FUNCTIONS_BY_NAME.get(functionName);
+	if (!func) return null;
+	let fallback: { name: string; docType: string } | null = null;
+	for (const ov of overloadViews(func)) {
+		const p = name
+			? ov.parameters.find((x) => x.name === name)
+			: ov.parameters[index];
+		if (!p || !getScalarUnionMembers(p.type)) continue;
+		const info = { name: p.name, docType: p.type };
+		const base = baseOfRawType(p.type);
+		if (!fallback) fallback = info;
+		if (base === "int/float" || base === "int/float/color") return info;
+	}
+	return fallback;
+}
+
 // Qualifier + base of a built-in VARIABLE (close -> series/float,
 // syminfo.tickerid -> simple/string). Used to decide whether a bare/member
 // reference is a non-const argument. Undefined for non-builtins.

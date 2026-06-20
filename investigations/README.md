@@ -587,3 +587,6 @@ contradiction means re-measure, not "the earlier author was wrong."
   diagnostic wording alignment: invalid numeric arithmetic/comparison operands
   now use TV's CE10123 `operator ...` templates while preserving the existing
   offending-operand anchors.
+- [INV085](INV085-union-arg-ce10123-template/notes.md) - checker diagnostic
+  wording alignment: union-parameter rejects (`nz(<bool>)`, `int(true)`) now use
+  TV's CE10123 call template instead of custom type-mismatch prose.
