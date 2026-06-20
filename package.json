@@ -138,7 +138,6 @@
     "generate": "node --experimental-strip-types packages/pipeline/src/generate.ts",
     "generate:libraries": "node --experimental-strip-types packages/pipeline/src/generate-libraries.ts",
     "generate:manual": "node --experimental-strip-types packages/pipeline/src/generate-manual.ts",
-    "generate:markdown": "node --experimental-strip-types packages/pipeline/src/generate-markdown.ts",
     "generate:syntax": "node --experimental-strip-types packages/pipeline/src/generate-syntax.ts",
     "generate:tests": "node --experimental-strip-types packages/pipeline/src/generate-function-tests.ts",
     "install:cli": "node scripts/install-cli.js",
