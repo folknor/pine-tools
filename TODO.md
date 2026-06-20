@@ -460,14 +460,16 @@ operator diagnostic, the refreshed window was **47 / 0 / 32**: the prior 3
 TV-only records from `35a58bb9...` disappeared, and the deliberate ternary
 fixture matched TV at the same positions/messages.
 
-After the parser-recovery cleanup through INV082, the latest refreshed
-window dropped the 8 duplicate `bar` undefined-variable rows from
-**37 / 0 / 32** to **29 / 0 / 32**. The removed local-only rows were recovery
-noise: restricted condition leading-binary wraps (INV079), residual
-license/source prose and malformed ternary tails (INV080), `bar index` in-call
-wording alignment (INV081), and recovered argument semantic suppression
-(INV082). The remaining rows are still the already-explained mangled-source
-residue or probe-backed stricter diagnostics; zero tv-only remain.
+After the parser-recovery cleanup through INV082, the refreshed window
+dropped the 8 duplicate `bar` undefined-variable rows from **37 / 0 / 32** to
+**29 / 0 / 32**. INV083 then aligned bool-context operator diagnostics with
+TV's CE10123 templates, reducing same-position message disagreements to
+**29 / 0 / 24**. The removed local-only rows were recovery noise: restricted
+condition leading-binary wraps (INV079), residual license/source prose and
+malformed ternary tails (INV080), `bar index` in-call wording alignment
+(INV081), and recovered argument semantic suppression (INV082). The remaining
+local-only rows are still the already-explained mangled-source residue or
+probe-backed stricter diagnostics; zero tv-only remain.
 
 Earlier measurements live in git history (this section, prior
 revisions) - each is a dated point-in-time record per G001.

@@ -1751,21 +1751,21 @@ export class UnifiedPineValidator {
 		// anchors keeps the position-keyed TV diff clean. see INV028
 		if (expr.operator === "and" || expr.operator === "or") {
 			if (!this.boolContextOk(leftType, version)) {
-				this.addError(
-					expr.left.line || expr.line,
-					expr.left.column || expr.column,
-					1,
-					`Operator '${expr.operator}' requires bool operands, but left operand is ${TypeChecker.displayType(leftType)}`,
-					DiagnosticSeverity.Error,
+				this.addBoolOperatorError(
+					expr.operator,
+					"expr0",
+					expr.left,
+					leftType,
+					version,
 				);
 			}
 			if (!this.boolContextOk(rightType, version)) {
-				this.addError(
-					expr.right.line || expr.line,
-					expr.right.column || expr.column,
-					1,
-					`Operator '${expr.operator}' requires bool operands, but right operand is ${TypeChecker.displayType(rightType)}`,
-					DiagnosticSeverity.Error,
+				this.addBoolOperatorError(
+					expr.operator,
+					"expr1",
+					expr.right,
+					rightType,
+					version,
 				);
 			}
 			// The per-operand check IS the complete check for logical
@@ -1817,6 +1817,33 @@ export class UnifiedPineValidator {
 		}
 	}
 
+	private addBoolOperatorError(
+		operator: string,
+		argDisplayName: string,
+		expr: Expression,
+		argType: PineType,
+		version: string,
+		qualifier: "const" | "simple" = "const",
+	): void {
+		const desc = this.describeArgForTemplate(expr, argType, version);
+		this.addTemplateError({
+			line: expr.line,
+			column: expr.column,
+			length: 0,
+			message: UnifiedPineValidator.CE10123_TEMPLATE,
+			severity: DiagnosticSeverity.Error,
+			code: "CE10123",
+			ctx: {
+				argDisplayName,
+				argUserFriendlyRepresentation: desc.repr,
+				argumentType: desc.typeStr,
+				currentTypeDocStr: `${qualifier} bool`,
+				funId: `operator ${operator}`,
+				typePostfix: "",
+			},
+		});
+	}
+
 	private validateUnaryExpression(
 		expr: UnaryExpression,
 		version: string = "6",
@@ -1824,12 +1851,13 @@ export class UnifiedPineValidator {
 		if (expr.operator === "not") {
 			const argType = this.inferExpressionType(expr.argument, version);
 			if (!this.boolContextOk(argType, version)) {
-				this.addError(
-					expr.line,
-					expr.column,
-					3, // length of "not"
-					`Type mismatch: 'not' operator requires bool, got ${TypeChecker.displayType(argType)}`,
-					DiagnosticSeverity.Error,
+				this.addBoolOperatorError(
+					"not",
+					"expr0",
+					expr.argument,
+					argType,
+					version,
+					"simple",
 				);
 			}
 		}
@@ -1841,13 +1869,7 @@ export class UnifiedPineValidator {
 	): void {
 		const condType = this.inferExpressionType(expr.condition, version);
 		if (!this.boolContextOk(condType, version)) {
-			this.addError(
-				expr.condition.line || expr.line,
-				expr.condition.column || expr.column,
-				1,
-				`Ternary condition must be bool, got ${TypeChecker.displayType(condType)}`,
-				DiagnosticSeverity.Error,
-			);
+			this.addBoolOperatorError("?:", "expr0", expr.condition, condType, version);
 		}
 
 		// Check that both branches have compatible types - stricter than

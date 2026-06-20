@@ -1,11 +1,11 @@
 // @test validation/logical-operators-errors
-// @description Error messages for invalid logical operator operands
+// @description Error messages for invalid logical operator operands. TV uses CE10123 operator templates for bool-context failures; see INV083.
 // @expects parse: success
 // @expects errors: 4
-// @expects error: line=5, message="Operator 'or' requires bool operands, but left operand is int"
-// @expects error: line=8, message="Operator 'and' requires bool operands, but right operand is string"
-// @expects error: line=11, message="Operator 'or' requires bool operands, but left operand is color"
-// @expects error: line=14, message="Operator 'and' requires bool operands, but right operand is float"
+// @expects error: line=5, message=/Cannot call "operator or" with argument "expr0"="123"/
+// @expects error: line=8, message=/Cannot call "operator and" with argument "expr1"="hello"/
+// @expects error: line=11, message=/Cannot call "operator or" with argument "expr0"="color.red"/
+// @expects error: line=14, message=/Cannot call "operator and" with argument "expr1"="3.14"/
 
 //@version=6
 indicator("Logical Operator Errors")

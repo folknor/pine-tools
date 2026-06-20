@@ -1,11 +1,11 @@
 // @test validation/type-errors-operators
-// @description Type errors for operators (ternary, logical, arithmetic, comparison)
+// @description Type errors for operators (ternary, logical, arithmetic, comparison). Bool-context operator failures use TV's CE10123 operator template; see INV083.
 // @expects parse: success
 // @expects errors: 10
-// @expects error: line=5, message="Ternary condition must be bool, got int"
-// @expects error: line=8, message="Operator 'and' requires bool operands, but left operand is int"
-// @expects error: line=9, message="Operator 'or' requires bool operands, but right operand is int"
-// @expects error: line=10, message="Type mismatch: 'not' operator requires bool, got int"
+// @expects error: line=5, message=/Cannot call "operator \?:" with argument "expr0"="5"/
+// @expects error: line=8, message=/Cannot call "operator and" with argument "expr0"="1"/
+// @expects error: line=9, message=/Cannot call "operator or" with argument "expr1"="2"/
+// @expects error: line=10, message=/Cannot call "operator not" with argument "expr0"="5"/
 // @expects error: line=13, message="Type mismatch: cannot apply '+' to bool and int"
 // @expects error: line=14, message="Type mismatch: cannot apply '-' to int and bool"
 // @expects error: line=17, message="Type mismatch: cannot apply '+' to color and int"

@@ -579,3 +579,7 @@ contradiction means re-measure, not "the earlier author was wrong."
   cleanup for mangled adjacent identifiers inside argument lists: mark only the
   torn prefix argument as semantically invalid so the checker does not add a
   duplicate undefined-variable error while still validating other call args.
+- [INV083](INV083-bool-operator-ce10123-templates/notes.md) - checker diagnostic
+  wording alignment: invalid bool-context operands for `and`, `or`, `not`, and
+  ternary conditions now use TV's CE10123 `operator ...` templates while keeping
+  the existing operand anchors.
