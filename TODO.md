@@ -191,16 +191,14 @@ IDs so the two stay in sync.
   beyond these data-backed collection receiver methods. Surfaced by the
   #52 census (deep chains under-tested: readChainDepth 3+ 1776 corpus / 4
   tests).
-- **#56 - parser-state tracing for targeted lines.** Add a trace mode to the
-  parser/debug internals that explains how a specific source line was reached:
-  statement kind, parser method stack, `current` token before/after, line,
-  column, indent, `parenDepth`, `bracketDepth`, and block state such as
-  `baseIndent`/`bodyIndent` where applicable. Desired command shape:
-  `pnpm run debug:internals parse --trace-line <N> <file>` or a sibling
-  `debug:trace` script. It should be concise by default and filter to events
-  touching the requested line or its enclosing statement, so it does not dump
-  the entire parse. This would make parser-recovery bugs observable instead
-  of requiring manual inference from final AST and diagnostics.
+- **#56 - parser-state tracing for targeted lines.** Implemented as
+  `pnpm run debug:internals -- trace <file|code> --line <N> [--context <N>]`.
+  It reports the parser method stack, `current` token before/after, line,
+  column, indent, `parenDepth`, `bracketDepth`, and parse errors for events
+  touching the requested line or nearby context. Use `--verbose` to include
+  low-level same-line binary/wrap events and no-op method calls, or
+  `--methods a,b` to trace a targeted method set. If this needs more depth,
+  extend it with explicit block-state fields such as `baseIndent`/`bodyIndent`.
 - **#57 - AST-shape assertions for parser regression fixtures.** Diagnostics
   alone are not enough for parser fixes: a fixture can pass because the same
   error count survives while the AST shape is wrong. Add a lightweight way for

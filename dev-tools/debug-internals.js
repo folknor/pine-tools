@@ -7,6 +7,7 @@
  *   node dev-tools/debug-internals.js parse 'code'        # Parse and show AST
  *   node dev-tools/debug-internals.js validate 'code'     # Validate with full details
  *   node dev-tools/debug-internals.js tokens 'code'       # Show lexer tokens
+ *   node dev-tools/debug-internals.js trace <file|code> --line N # Trace parser state
  *   node dev-tools/debug-internals.js symbols [filter]    # List built-in symbols
  *   node dev-tools/debug-internals.js symbol-table 'code' # Show symbol table after parsing
  *   node dev-tools/debug-internals.js analyze [options]   # Analyze comparison results
@@ -152,6 +153,197 @@ function cmdTokens(code) {
 	}
 
 	console.log(`\nTotal: ${idx} tokens (excluding whitespace)`);
+}
+
+function describeToken(token) {
+	if (!token) return "<none>";
+	const indent = token.indent === undefined ? "-" : token.indent;
+	return `${token.line}:${token.column} ${token.type} ${JSON.stringify(token.value)} indent=${indent}`;
+}
+
+function nodeContainsLine(node, line) {
+	if (!node || typeof node !== "object" || typeof node.line !== "number")
+		return false;
+	let start = node.line;
+	let end = typeof node.endLine === "number" ? node.endLine : node.line;
+	for (const child of Object.values(node)) {
+		if (Array.isArray(child)) {
+			for (const item of child) {
+				if (item && typeof item === "object" && typeof item.line === "number") {
+					start = Math.min(start, item.line);
+					end = Math.max(end, item.endLine ?? item.line);
+				}
+			}
+		} else if (
+			child &&
+			typeof child === "object" &&
+			typeof child.line === "number"
+		) {
+			start = Math.min(start, child.line);
+			end = Math.max(end, child.endLine ?? child.line);
+		}
+	}
+	return start <= line && line <= end;
+}
+
+function traceRelevant(before, after, args, result, targetLine, context) {
+	const close = (token) =>
+		token &&
+		typeof token.line === "number" &&
+		Math.abs(token.line - targetLine) <= context;
+	if (close(before) || close(after)) return true;
+	if (
+		args.some(
+			(arg) => typeof arg === "number" && Math.abs(arg - targetLine) <= context,
+		)
+	)
+		return true;
+	return nodeContainsLine(result, targetLine);
+}
+
+function cmdTrace(args) {
+	const { Parser } = loadModule("packages/core/src/parser/parser.js");
+	let targetLine = null;
+	let context = 2;
+	let sourceArg = null;
+	let verbose = false;
+	let methodFilter = null;
+	for (let i = 0; i < args.length; i++) {
+		const arg = args[i];
+		if (arg === "--line") targetLine = Number(args[++i]);
+		else if (arg === "--context") context = Number(args[++i]);
+		else if (arg === "--verbose") verbose = true;
+		else if (arg === "--methods") {
+			methodFilter = new Set(
+				(args[++i] || "")
+					.split(",")
+					.map((name) => name.trim())
+					.filter(Boolean),
+			);
+		} else if (!sourceArg) sourceArg = arg;
+	}
+	if (!sourceArg || !Number.isInteger(targetLine) || targetLine < 1) {
+		console.error(
+			"Usage: trace <file|code> --line <N> [--context <N>] [--verbose] [--methods a,b]",
+		);
+		process.exit(1);
+	}
+
+	let code = sourceArg;
+	let label = "<code>";
+	if (fs.existsSync(sourceArg)) {
+		label = sourceArg;
+		code = fs.readFileSync(sourceArg, "utf8");
+	} else if (!code.includes("@version")) {
+		code = `//@version=6\nindicator("test")\n${code}`;
+		targetLine += 2;
+	}
+
+	const defaultMethods = [
+		"parse",
+		"statement",
+		"parseIndentedBlock",
+		"ifStatement",
+		"parseSingleLineExpression",
+		"parseSwitchDiscriminant",
+		"skipRestrictedLeadingWrap",
+		"skipArmWrapNewline",
+		"expressionStatement",
+		"variableDeclaration",
+		"functionDeclaration",
+		"switchExpression",
+		"parseSwitchCaseBody",
+		"parseInlineSwitchCaseBody",
+		"methodDeclaration",
+		"typeOrEnumDeclaration",
+		"forStatement",
+		"whileStatement",
+	];
+	const verboseMethods = [
+		...defaultMethods,
+		"parseSameLineBinary",
+		"skipSameLineLeadingWrap",
+	];
+	const methods = methodFilter
+		? [...methodFilter]
+		: verbose
+			? verboseMethods
+			: defaultMethods;
+	const originals = new Map();
+	const events = [];
+	const stack = [];
+	for (const name of methods) {
+		const original = Parser.prototype[name];
+		if (typeof original !== "function") continue;
+		originals.set(name, original);
+		Parser.prototype[name] = function tracedMethod(...methodArgs) {
+			const beforeIndex = this.current;
+			const before = this.peek?.();
+			stack.push(name);
+			let result;
+			let thrown;
+			try {
+				result = original.apply(this, methodArgs);
+				return result;
+			} catch (e) {
+				thrown = e;
+				throw e;
+			} finally {
+				const after = this.peek?.();
+				const changed = beforeIndex !== this.current;
+				const hasResult = Boolean(result?.type);
+				const includeNoop = verbose || thrown || changed || hasResult;
+				if (
+					includeNoop &&
+					traceRelevant(before, after, methodArgs, result, targetLine, context)
+				) {
+					events.push({
+						depth: stack.length - 1,
+						name,
+						args: methodArgs.map((arg) => JSON.stringify(arg)).join(", "),
+						before: describeToken(before),
+						after: describeToken(after),
+						current: `${beforeIndex}->${this.current}`,
+						depths: `paren=${this.parenDepth} bracket=${this.bracketDepth}`,
+						result: result?.type
+							? `${result.type} @ ${result.line}:${result.column}`
+							: "",
+						thrown: thrown ? thrown.message || String(thrown) : "",
+					});
+				}
+				stack.pop();
+			}
+		};
+	}
+
+	try {
+		const parser = new Parser(code);
+		parser.parse();
+		console.log(`# Parser trace: ${label} line ${targetLine}`);
+		for (const event of events) {
+			const indent = "  ".repeat(event.depth);
+			const suffix = event.thrown
+				? ` THROW ${event.thrown}`
+				: event.result
+					? ` -> ${event.result}`
+					: "";
+			console.log(
+				`${indent}${event.name}(${event.args}) ${event.current} ${event.depths}${suffix}`,
+			);
+			console.log(`${indent}  before ${event.before}`);
+			console.log(`${indent}  after  ${event.after}`);
+		}
+		if (events.length === 0)
+			console.log("No parser events touched the requested line/context.");
+		const errors = parser.getParserErrors();
+		if (errors.length > 0) {
+			console.log("\nParse errors:");
+			for (const err of errors)
+				console.log(`  ${err.line}:${err.column} ${err.message}`);
+		}
+	} finally {
+		for (const [name, original] of originals) Parser.prototype[name] = original;
+	}
 }
 
 function cmdValidate(code) {
@@ -587,6 +779,7 @@ function main() {
 		console.log(
 			"  tokens 'code'        Show lexer tokens with type/line/indent",
 		);
+		console.log("  trace <file|code>   Trace parser state around --line <N>");
 		console.log(
 			"  symbols [filter]     List built-in symbols (optionally filtered)",
 		);
@@ -637,6 +830,10 @@ function main() {
 				process.exit(1);
 			}
 			cmdTokens(args[1]);
+			break;
+
+		case "trace":
+			cmdTrace(args.slice(1));
 			break;
 
 		case "validate":
