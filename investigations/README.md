@@ -583,3 +583,7 @@ contradiction means re-measure, not "the earlier author was wrong."
   wording alignment: invalid bool-context operands for `and`, `or`, `not`, and
   ternary conditions now use TV's CE10123 `operator ...` templates while keeping
   the existing operand anchors.
+- [INV084](INV084-numeric-operator-ce10123-templates/notes.md) - checker
+  diagnostic wording alignment: invalid numeric arithmetic/comparison operands
+  now use TV's CE10123 `operator ...` templates while preserving the existing
+  offending-operand anchors.

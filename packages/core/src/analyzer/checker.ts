@@ -1789,20 +1789,42 @@ export class UnifiedPineValidator {
 			// operands - `2 * color.blue` errors at the color, `color.red >
 			// color.blue` at both); fall back to the whole expression for
 			// mutual incompatibilities. see INV028
-			const ARITH_OR_COMPARE = ["-", "*", "/", "%", "<", ">", "<=", ">="];
-			const offenders: Expression[] = [];
+			const ARITH_OR_COMPARE = [
+				"+",
+				"-",
+				"*",
+				"/",
+				"%",
+				"<",
+				">",
+				"<=",
+				">=",
+			];
+			const offenders: Array<{
+				expr: Expression;
+				type: PineType;
+				argName: "expr0" | "expr1";
+			}> = [];
 			if (ARITH_OR_COMPARE.includes(expr.operator)) {
-				if (!TypeChecker.isNumericType(leftType)) offenders.push(expr.left);
-				if (!TypeChecker.isNumericType(rightType)) offenders.push(expr.right);
+				if (!TypeChecker.isNumericType(leftType)) {
+					offenders.push({ expr: expr.left, type: leftType, argName: "expr0" });
+				}
+				if (!TypeChecker.isNumericType(rightType)) {
+					offenders.push({ expr: expr.right, type: rightType, argName: "expr1" });
+				}
 			}
 			if (offenders.length > 0) {
-				for (const operand of offenders) {
-					this.addError(
-						operand.line || expr.line,
-						operand.column || expr.column,
-						1,
-						`Type mismatch: cannot apply '${expr.operator}' to ${TypeChecker.displayType(leftType)} and ${TypeChecker.displayType(rightType)}`,
-						DiagnosticSeverity.Error,
+				const expected = ["<", ">", "<=", ">="].includes(expr.operator)
+					? "simple float"
+					: this.expectedArithmeticOperandType(leftType, rightType);
+				for (const offender of offenders) {
+					this.addOperatorTypeError(
+						expr.operator,
+						offender.argName,
+						offender.expr,
+						offender.type,
+						expected,
+						version,
 					);
 				}
 			} else {
@@ -1817,6 +1839,16 @@ export class UnifiedPineValidator {
 		}
 	}
 
+	private expectedArithmeticOperandType(
+		leftType: PineType,
+		rightType: PineType,
+	): string {
+		const otherNumeric = TypeChecker.isNumericType(leftType) ? leftType : rightType;
+		return TypeChecker.baseTypeName(otherNumeric) === "float"
+			? "const float"
+			: "const int";
+	}
+
 	private addBoolOperatorError(
 		operator: string,
 		argDisplayName: string,
@@ -1824,6 +1856,24 @@ export class UnifiedPineValidator {
 		argType: PineType,
 		version: string,
 		qualifier: "const" | "simple" = "const",
+	): void {
+		this.addOperatorTypeError(
+			operator,
+			argDisplayName,
+			expr,
+			argType,
+			`${qualifier} bool`,
+			version,
+		);
+	}
+
+	private addOperatorTypeError(
+		operator: string,
+		argDisplayName: string,
+		expr: Expression,
+		argType: PineType,
+		expectedType: string,
+		version: string,
 	): void {
 		const desc = this.describeArgForTemplate(expr, argType, version);
 		this.addTemplateError({
@@ -1837,7 +1887,7 @@ export class UnifiedPineValidator {
 				argDisplayName,
 				argUserFriendlyRepresentation: desc.repr,
 				argumentType: desc.typeStr,
-				currentTypeDocStr: `${qualifier} bool`,
+				currentTypeDocStr: expectedType,
 				funId: `operator ${operator}`,
 				typePostfix: "",
 			},
