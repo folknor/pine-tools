@@ -26,7 +26,10 @@ export function getDiagnostics(doc: ParsedDocument): Diagnostic[] {
 
 	// 2. Validation errors from UnifiedPineValidator
 	try {
-		const validator = new UnifiedPineValidator();
+		const validator = new UnifiedPineValidator(
+			new Map(),
+			doc.parseErrors.length === 0,
+		);
 		const validationErrors = validator.validate(doc.ast, doc.detectedVersion);
 
 		for (const error of validationErrors) {
@@ -50,9 +53,8 @@ export function getDiagnostics(doc: ParsedDocument): Diagnostic[] {
 				});
 			}
 		}
-	} catch (e) {
-		// If validation fails, add a generic error
-		console.error("[Pine Validator] Validation error:", e);
+	} catch {
+		// Keep diagnostics best-effort in the editor; parse errors are already reported.
 	}
 
 	// 3. Pattern-based warnings (moved from extension.ts)

@@ -158,6 +158,7 @@ export class UnifiedPineValidator {
 
 	constructor(
 		private readonly localLibraryExportsBySourcePath: Map<string, Set<string>> = new Map(),
+		private readonly parserClean = true,
 	) {
 		this.symbolTable = new SymbolTable();
 		this.functionSignatures = buildFunctionSignatures();
@@ -2346,6 +2347,32 @@ export class UnifiedPineValidator {
 				call.callee.type === "MemberExpression" &&
 				functionName.includes(".")
 			) {
+				const rootName = functionName.slice(0, functionName.indexOf("."));
+				const nsPath = functionName.slice(0, functionName.lastIndexOf("."));
+				const memberName = functionName.slice(
+					functionName.lastIndexOf(".") + 1,
+				);
+				const objSym = this.symbolTable.lookup(rootName);
+				const userShadowed = !!objSym && objSym.line !== 0;
+				if (
+					this.parserClean &&
+					!objSym &&
+					!this.importedNamespaces.has(rootName) &&
+					!KNOWN_NAMESPACES.includes(rootName) &&
+					!TYPE_NAMES.has(rootName) &&
+					!this.declaredTypeNames.has(rootName) &&
+					!(functionName in NAMESPACE_PROPERTIES) &&
+					!GENERIC_FUNCTION_BASES.has(functionName)
+				) {
+					this.addError(
+						call.line,
+						call.column,
+						functionName.length,
+						`Could not find method or method reference '${functionName}'`,
+						DiagnosticSeverity.Error,
+					);
+				}
+
 				// `ns.member(...)` where `ns` is a built-in namespace PATH and
 				// `member` is unknown there - same CE10271 (probed `ta.bogus`,
 				// `math.notreal`; see INV053). `functionName` is the flattened
@@ -2367,24 +2394,6 @@ export class UnifiedPineValidator {
 				// `color.red(...)` IS a TV error but the const-vs-variable split
 				// is murky, so we conservatively skip all known members - we never
 				// want a false positive on a real member.
-				const rootName = functionName.slice(0, functionName.indexOf("."));
-				const nsPath = functionName.slice(0, functionName.lastIndexOf("."));
-				const memberName = functionName.slice(
-					functionName.lastIndexOf(".") + 1,
-				);
-				const objSym = this.symbolTable.lookup(rootName);
-				const userShadowed = !!objSym && objSym.line !== 0;
-				// A user symbol shadowing the namespace name normally suppresses
-				// this check (an `import ... as ns` alias / user var whose members
-				// we cannot resolve - #41). But when that symbol is a SCALAR
-				// (int/float/bool/string/color), `ns.member(...)` is a METHOD call
-				// on the value, and scalars carry no builtin methods (probed p06/
-				// p07). So it is valid only as the namespace function (already ruled
-				// out by !signature here) or a user-defined method named `member`;
-				// with neither, TV still reports CE10271 - phrased "method or method
-				// reference" for the shadowed (value) form (probed p01/p05; INV065).
-				// Collections (array/matrix/map) and UDTs DO carry methods we cannot
-				// fully resolve, so a non-scalar shadow keeps suppressing (p03/p04).
 				const scalarShadow =
 					userShadowed &&
 					!!objSym &&

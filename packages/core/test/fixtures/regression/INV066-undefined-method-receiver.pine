@@ -1,0 +1,9 @@
+// @test regression/INV066-undefined-method-receiver
+// @description A method call on an unresolved receiver is TV's CE10271 method-reference error. The mutation harness delete-decl survivors all hit this class.
+// @expects parse: success
+// @expects error: line=3, column=1, message="Could not find method or method reference 'missing.push'"
+// @expects error: line=4, column=1, message="Could not find method or method reference 'missingChain.replace_all'"
+//@version=6
+indicator("INV066")
+missing.push(close)
+missingChain.replace_all("a", "b")

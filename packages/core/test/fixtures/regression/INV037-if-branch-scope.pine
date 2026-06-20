@@ -2,8 +2,8 @@
 // @description v6 if branches are real scopes: branch-local declarations are not visible outside (TV "Undeclared identifier", confirmed on the corpus carrier). Pre-declared vars reassigned with := inside branches keep working. See INV037.
 // @expects parse: success
 // @expects errors: 2
-// @expects error: line=10, message=/Undefined variable .branchOnly./
-// @expects error: line=11, message=/Undefined variable .elseOnly./
+// @expects error: line=10, message=/Undeclared identifier "branchOnly"/
+// @expects error: line=11, message=/Undeclared identifier "elseOnly"/
 
 //@version=6
 indicator("INV037")

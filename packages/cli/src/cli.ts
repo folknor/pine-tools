@@ -339,7 +339,10 @@ async function main() {
 
 		// Run validation to get errors (version-aware)
 		const localLibraryExports = collectLocalLibraryExports(code, baseDir);
-		const validator = new UnifiedPineValidator(localLibraryExports);
+		const validator = new UnifiedPineValidator(
+			localLibraryExports,
+			lexerErrors.length === 0 && parserErrors.length === 0,
+		);
 		const validationErrors = validator.validate(ast, detectedVersion);
 
 		// Run semantic analysis to get warnings (only for v6)
