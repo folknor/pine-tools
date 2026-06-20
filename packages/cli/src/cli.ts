@@ -93,6 +93,47 @@ function parseArgs(argv: string[]): ParsedArgs {
 	return parsed;
 }
 
+function parseSourceDirective(lines: string[], importLine: number): string | undefined {
+	const line = lines[importLine - 2];
+	if (!line) return undefined;
+	return line.match(/^\s*\/\/\/\s*@source\s+(.+?)\s*$/)?.[1];
+}
+
+function collectLocalLibraryExports(
+	code: string,
+	baseDir: string,
+): Map<string, Set<string>> {
+	const exportsByPath = new Map<string, Set<string>>();
+	const lines = code.split(/\r\n|\r|\n/);
+	for (let i = 0; i < lines.length; i++) {
+		const sourcePath = parseSourceDirective(lines, i + 1);
+		if (!sourcePath || !/^\s*import\s+/.test(lines[i] ?? "")) continue;
+		const absolutePath = path.resolve(baseDir, sourcePath);
+		if (!fs.existsSync(absolutePath)) continue;
+		const libSource = fs.readFileSync(absolutePath, "utf-8");
+		const libParser = new Parser(libSource);
+		const libAst = libParser.parse();
+		if (
+			libParser.getLexerErrors().length > 0 ||
+			libParser.getParserErrors().length > 0
+		) {
+			continue;
+		}
+		const exports = new Set<string>();
+		for (const stmt of libAst.body) {
+			if (
+				(stmt.type === "FunctionDeclaration" ||
+					stmt.type === "MethodDeclaration") &&
+				stmt.isExport
+			) {
+				exports.add(stmt.name);
+			}
+		}
+		exportsByPath.set(sourcePath, exports);
+	}
+	return exportsByPath;
+}
+
 // POST the Pine source to TradingView's translate_light endpoint. Mirrors the
 // Python pinescript_checker.py: multipart "source" field, the same Referer /
 // User-Agent / DNT headers, 10s timeout. Returns the parsed JSON body.
@@ -214,6 +255,7 @@ async function main() {
 
 	let code: string;
 	let label = "<code>";
+	let baseDir = process.cwd();
 	if (parsed.code !== undefined) {
 		code = parsed.code;
 	} else if (parsed.stdin) {
@@ -222,6 +264,7 @@ async function main() {
 	} else {
 		const filePath = parsed.filePath as string;
 		const absolutePath = path.resolve(filePath);
+		baseDir = path.dirname(absolutePath);
 		if (!fs.existsSync(absolutePath)) {
 			const output: PineLintOutput = {
 				success: false,
@@ -273,7 +316,10 @@ async function main() {
 	}
 
 	try {
-		const parser = new Parser(code);
+		const sourceLines = code.split(/\r\n|\r|\n/);
+		const parser = new Parser(code, (importLine) =>
+			parseSourceDirective(sourceLines, importLine),
+		);
 		const ast = parser.parse();
 
 		// Get lexer errors first (string validation, etc.)
@@ -292,7 +338,8 @@ async function main() {
 		const result = extractor.extract(ast);
 
 		// Run validation to get errors (version-aware)
-		const validator = new UnifiedPineValidator();
+		const localLibraryExports = collectLocalLibraryExports(code, baseDir);
+		const validator = new UnifiedPineValidator(localLibraryExports);
 		const validationErrors = validator.validate(ast, detectedVersion);
 
 		// Run semantic analysis to get warnings (only for v6)

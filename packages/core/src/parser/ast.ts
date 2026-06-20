@@ -42,6 +42,7 @@ export interface ImportStatement extends ASTNode {
 	type: "ImportStatement";
 	libraryPath: string; // e.g., "TradingView/RelativeValue/3"
 	alias?: string; // e.g., "TVrv"
+	sourcePath?: string; // from immediately preceding /// @source directive
 }
 
 export interface MethodDeclaration extends ASTNode {

@@ -8,6 +8,8 @@
 import { describe, it, expect } from "vitest";
 import { readdirSync, readFileSync, statSync } from "fs";
 import { join, relative } from "path";
+import { DiagnosticSeverity, UnifiedPineValidator } from "../src/analyzer/checker";
+import { Parser } from "../src/parser/parser";
 import { parseTestFile, runTest } from "./helpers";
 
 const FIXTURES_DIR = join(__dirname, "fixtures");
@@ -66,6 +68,33 @@ describe("Pine Script Core", () => {
 			}
 		});
 	}
+});
+
+describe("Local @source library exports", () => {
+	it("validates imported members from local export sets", () => {
+		const code = `//@version=6
+/// @source ./lib.pine
+import User/MyLib/1 as myLib
+
+ok = myLib.good(close)
+bad = myLib.missing(close)
+`;
+		const parser = new Parser(code, (importLine) =>
+			importLine === 3 ? "./lib.pine" : undefined,
+		);
+		const ast = parser.parse();
+		const validator = new UnifiedPineValidator(
+			new Map([["./lib.pine", new Set(["good"])]])
+		);
+		const errors = validator
+			.validate(ast, parser.getDetectedVersion() || "6")
+			.filter((e) => e.severity === DiagnosticSeverity.Error);
+
+		expect(errors).toHaveLength(1);
+		expect(errors[0].message).toBe(
+			"Could not find function or function reference 'myLib.missing'",
+		);
+	});
 });
 
 // Also export for programmatic use

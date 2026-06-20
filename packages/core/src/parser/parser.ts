@@ -29,7 +29,10 @@ export class Parser {
 	private detectedVersion: string | null = null;
 	private exprs!: ExpressionParser;
 
-	constructor(source: string) {
+	constructor(
+		source: string,
+		private readonly sourcePathResolver?: (importLine: number) => string | undefined,
+	) {
 		const lexer = new Lexer(source);
 		// ANNOTATION tokens (//@version, //@function, //@param doc comments)
 		// are trivia to the parser, same as comments - //@version is already
@@ -1668,6 +1671,7 @@ export class Parser {
 			type: "ImportStatement",
 			libraryPath,
 			alias,
+			sourcePath: this.sourcePathResolver?.(startToken.line),
 			line: startToken.line,
 			column: startToken.column,
 		};

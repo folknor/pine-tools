@@ -161,11 +161,13 @@ IDs so the two stay in sync.
   run `pnpm run build:tsc` after a parser/source change before regenerating
   or the change won't take. `TFlab/FVGDetectorLibrary/1` is now covered in
   `pine-data/v6/libraries.json` after the #45 switch-arm parser fix.
+  The CLI now also parses immediately preceding `/// @source <path>`
+  directives and passes local-library export sets into the checker, so
+  local-file libraries validate against their exported function/method names.
   **Pending:** (a) vendor more published libs for broader member coverage
   (each is one `fetch:library` + `generate:libraries` + regression-check;
-  only MPL-2.0); (b) optionally wire the language-service `/// @source`
-  resolver into the core checker so local-file libraries validate too; (c)
-  per-version export drift is a non-issue (published majors are immutable).
+  only MPL-2.0); (b) per-version export drift is a non-issue (published
+  majors are immutable).
 - **#54 (residual) - method/call chain return types (INV072).**
   UDT field inference and field-existence validation landed: the parser
   now records typed fields on `TypeDeclaration`, the checker indexes them,

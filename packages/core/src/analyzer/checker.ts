@@ -151,7 +151,9 @@ export class UnifiedPineValidator {
 	// here (TV scopes them) and builtins never enter it. see INV035
 	private declScopes: Array<Set<string>> = [];
 
-	constructor() {
+	constructor(
+		private readonly localLibraryExportsBySourcePath: Map<string, Set<string>> = new Map(),
+	) {
 		this.symbolTable = new SymbolTable();
 		this.functionSignatures = buildFunctionSignatures();
 	}
@@ -182,7 +184,13 @@ export class UnifiedPineValidator {
 					// Record the path so the member-call check can validate
 					// members against the vendored export set (INV067). The last
 					// import wins on an ns collision, matching TV's single-binding.
-					if (LIBRARY_EXPORTS_BY_PATH.has(statement.libraryPath)) {
+					const localExports = statement.sourcePath
+						? this.localLibraryExportsBySourcePath.get(statement.sourcePath)
+						: undefined;
+					if (localExports) {
+						this.localLibraryExportsBySourcePath.set(statement.libraryPath, localExports);
+						this.importedLibraryPaths.set(ns, statement.libraryPath);
+					} else if (LIBRARY_EXPORTS_BY_PATH.has(statement.libraryPath)) {
 						this.importedLibraryPaths.set(ns, statement.libraryPath);
 					}
 				}
@@ -2263,9 +2271,11 @@ export class UnifiedPineValidator {
 				// Not gated on userShadowed: for an imported library the binding IS
 				// the shadow symbol. Libraries we don't vendor have no entry, so
 				// they stay lenient.
-				const libExports = LIBRARY_EXPORTS_BY_PATH.get(
-					this.importedLibraryPaths.get(rootName) ?? "",
-				);
+				const libExports =
+					LIBRARY_EXPORTS_BY_PATH.get(this.importedLibraryPaths.get(rootName) ?? "") ??
+					this.localLibraryExportsBySourcePath.get(
+						this.importedLibraryPaths.get(rootName) ?? "",
+					);
 				if (
 					libExports &&
 					functionName.indexOf(".") === functionName.lastIndexOf(".") &&
