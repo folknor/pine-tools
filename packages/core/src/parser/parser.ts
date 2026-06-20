@@ -1810,6 +1810,7 @@ export class Parser {
 		);
 
 		const startToken = this.previous();
+		const fields: AST.TypeField[] = [];
 
 		while (this.check(TokenType.NEWLINE)) {
 			this.advance();
@@ -1844,6 +1845,11 @@ export class Parser {
 					) {
 						break;
 					}
+					if (kind === "type" && isLineStart && currentToken.indent === bodyIndent) {
+						const field = this.scanTypeFieldAtCurrent();
+						if (field) fields.push(field);
+					}
+
 					// Enum field values must be STRING literals - TV's CE10125
 					// ('Incorrect field type "LINEAR" of enum "Scale". Unexpected
 					// type: "literal int". Expected type: "literal string"'),
@@ -1883,9 +1889,83 @@ export class Parser {
 		return {
 			type: kind === "type" ? "TypeDeclaration" : "EnumDeclaration",
 			name: nameToken.value,
+			fields: kind === "type" ? fields : undefined,
 			line: nameToken.line,
 			column: nameToken.column,
 		} as AST.TypeDeclaration | AST.EnumDeclaration;
+	}
+
+	private scanTypeFieldAtCurrent(): AST.TypeField | null {
+		let i = this.current;
+		let typeName: string | undefined;
+		const start = this.tokens[i];
+		if (!start) return null;
+
+		if (start.type === TokenType.KEYWORD && this.isTypeTokenAt(i)) {
+			typeName = start.value;
+			i++;
+			const scanned = this.scanGenericTypeSuffixAt(i);
+			typeName += scanned.suffix;
+			i = scanned.next;
+		} else if (start.type === TokenType.IDENTIFIER) {
+			const next = this.tokens[i + 1];
+			if (next?.type === TokenType.IDENTIFIER) {
+				typeName = start.value;
+				i++;
+			} else if (
+				next?.type === TokenType.DOT &&
+				this.tokens[i + 2]?.type === TokenType.IDENTIFIER &&
+				this.tokens[i + 3]?.type === TokenType.IDENTIFIER
+			) {
+				typeName = `${start.value}.${this.tokens[i + 2].value}`;
+				i += 3;
+			}
+		}
+
+		const fieldToken = this.tokens[i];
+		if (!typeName || fieldToken?.type !== TokenType.IDENTIFIER) return null;
+		return {
+			name: fieldToken.value,
+			typeAnnotation: { name: typeName },
+			line: fieldToken.line,
+			column: fieldToken.column,
+		};
+	}
+
+	private isTypeTokenAt(index: number): boolean {
+		const token = this.tokens[index];
+		return (
+			token?.type === TokenType.KEYWORD &&
+			(VAR_TYPE_KEYWORDS as readonly string[]).includes(token.value)
+		);
+	}
+
+	private scanGenericTypeSuffixAt(index: number): { suffix: string; next: number } {
+		let i = index;
+		let suffix = "";
+		if (this.tokens[i]?.type === TokenType.COMPARE && this.tokens[i].value === "<") {
+			let depth = 0;
+			while (this.tokens[i] && this.tokens[i].type !== TokenType.EOF) {
+				const token = this.tokens[i];
+				suffix += token.value;
+				if (token.type === TokenType.COMPARE && token.value === "<") depth++;
+				if (token.type === TokenType.COMPARE && token.value === ">") {
+					depth--;
+					if (depth === 0) {
+						i++;
+						break;
+					}
+				}
+				i++;
+			}
+		} else if (
+			this.tokens[i]?.type === TokenType.LBRACKET &&
+			this.tokens[i + 1]?.type === TokenType.RBRACKET
+		) {
+			suffix = "[]";
+			i += 2;
+		}
+		return { suffix, next: i };
 	}
 
 	/**

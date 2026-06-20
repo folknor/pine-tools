@@ -56,6 +56,14 @@ export interface MethodDeclaration extends ASTNode {
 export interface TypeDeclaration extends ASTNode {
 	type: "TypeDeclaration";
 	name: string;
+	fields?: TypeField[];
+}
+
+export interface TypeField {
+	name: string;
+	typeAnnotation?: TypeAnnotation;
+	line?: number;
+	column?: number;
 }
 
 export interface EnumDeclaration extends ASTNode {

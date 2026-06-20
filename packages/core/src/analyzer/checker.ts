@@ -120,6 +120,8 @@ export class UnifiedPineValidator {
 	// pre-collected over a global UDF (`float ema2 = ...` inside a body
 	// calling global `ema2()`) are all TV-legal calls. see INV036
 	private declaredFunctionNames: Set<string> = new Set();
+	private udtFieldTypes: Map<string, Map<string, PineType>> = new Map();
+	private reportedUdtFieldErrors: Set<string> = new Set();
 	// Namespaces bound by an `import` - the alias if present, else the
 	// library name (the path's middle segment: `import User/ta/8` binds the
 	// namespace `ta`). Members of these are library calls we cannot resolve,
@@ -155,6 +157,8 @@ export class UnifiedPineValidator {
 		this.declaredTypeNames.clear();
 		this.declaredEnumNames.clear();
 		this.declaredFunctionNames.clear();
+		this.udtFieldTypes.clear();
+		this.reportedUdtFieldErrors.clear();
 		this.importedNamespaces.clear();
 		this.importedLibraryPaths.clear();
 		this.declScopes = [new Set()];
@@ -191,6 +195,33 @@ export class UnifiedPineValidator {
 		return this.errors;
 	}
 
+	private annotationToSymbolType(name: string): PineType {
+		const mapped = mapToPineType(name);
+		if (mapped !== "unknown") return mapped;
+		const base = TypeChecker.baseTypeName(name);
+		return this.declaredTypeNames.has(base) ? (base as PineType) : "unknown";
+	}
+
+	private registerTypeDeclaration(statement: Statement): void {
+		if (statement.type !== "TypeDeclaration") return;
+		this.declaredTypeNames.add(statement.name);
+		const fields = new Map<string, PineType>();
+		for (const field of statement.fields ?? []) {
+			if (!field.typeAnnotation) continue;
+			const mapped = mapToPineType(field.typeAnnotation.name);
+			const base = TypeChecker.baseTypeName(field.typeAnnotation.name);
+			fields.set(
+				field.name,
+				mapped !== "unknown"
+					? mapped
+					: this.declaredTypeNames.has(base)
+						? (base as PineType)
+						: "unknown",
+			);
+		}
+		this.udtFieldTypes.set(statement.name, fields);
+	}
+
 	private collectDeclarations(
 		statement: Statement,
 		version: string = "6",
@@ -207,8 +238,9 @@ export class UnifiedPineValidator {
 			};
 
 			// Use type annotation if present, otherwise infer from initialization
-			if (statement.typeAnnotation) {
-				symbol.type = mapToPineType(statement.typeAnnotation.name);
+				if (statement.typeAnnotation) {
+					symbol.type = this.annotationToSymbolType(statement.typeAnnotation.name);
+
 			} else if (statement.init) {
 				const initType = this.inferExpressionType(statement.init, version);
 				// A bare-na initializer gives the variable NO type (TV's CE10097
@@ -237,8 +269,10 @@ export class UnifiedPineValidator {
 			statement.type === "TypeDeclaration" ||
 			statement.type === "EnumDeclaration"
 		) {
-			this.declaredTypeNames.add(statement.name); // see INV033
-			if (statement.type === "EnumDeclaration") {
+			if (statement.type === "TypeDeclaration") {
+				this.registerTypeDeclaration(statement);
+			} else {
+				this.declaredTypeNames.add(statement.name); // see INV033
 				this.declaredEnumNames.add(statement.name); // see INV048
 			}
 			const symbol: SymbolInfo = {
@@ -645,7 +679,7 @@ export class UnifiedPineValidator {
 
 				// Use type annotation if present, otherwise infer from initialization
 				if (statement.typeAnnotation) {
-					symbol.type = mapToPineType(statement.typeAnnotation.name);
+					symbol.type = this.annotationToSymbolType(statement.typeAnnotation.name);
 				} else if (statement.init) {
 					const initType = this.inferExpressionType(statement.init, version);
 					// Bare-na initializer: no type for the variable - the
@@ -1324,9 +1358,10 @@ export class UnifiedPineValidator {
 
 			case "EnumDeclaration":
 			case "TypeDeclaration": {
-				// Register enum/type as a symbol so it can be used as a namespace
-				this.declaredTypeNames.add(statement.name); // see INV033
-				if (statement.type === "EnumDeclaration") {
+				if (statement.type === "TypeDeclaration") {
+					this.registerTypeDeclaration(statement);
+				} else {
+					this.declaredTypeNames.add(statement.name); // see INV033
 					this.declaredEnumNames.add(statement.name); // see INV048
 				}
 				const symbol: SymbolInfo = {
@@ -1342,6 +1377,53 @@ export class UnifiedPineValidator {
 				break;
 			}
 		}
+	}
+
+	private resolveUdtExpressionType(expr: Expression): PineType | null {
+		if (expr.type === "Identifier") {
+			const symbol = this.symbolTable.lookup((expr as Identifier).name);
+			const type = symbol ? TypeChecker.baseTypeName(symbol.type as string) : "unknown";
+			return this.udtFieldTypes.has(type) ? (type as PineType) : null;
+		}
+		if (expr.type === "CallExpression") {
+			const call = expr as CallExpression;
+			const name =
+				call.callee.type === "Identifier"
+					? call.callee.name
+					: memberChainName(call.callee);
+			const ctor = name.match(/^(.+)\.new$/);
+			return ctor && this.udtFieldTypes.has(ctor[1]) ? (ctor[1] as PineType) : null;
+		}
+		if (expr.type === "MemberExpression") {
+			return this.resolveUdtFieldType(expr as MemberExpression);
+		}
+		return null;
+	}
+
+	private resolveUdtFieldType(expr: MemberExpression): PineType | null {
+		const receiverType = this.resolveUdtExpressionType(expr.object);
+		if (!receiverType) return null;
+		const fields = this.udtFieldTypes.get(TypeChecker.baseTypeName(receiverType));
+		if (!fields) return null;
+		return fields.get(expr.property.name) ?? null;
+	}
+
+	private checkUdtFieldAccess(expr: MemberExpression, version: string): void {
+		if (version !== "6") return;
+		const receiverType = this.resolveUdtExpressionType(expr.object);
+		if (!receiverType) return;
+		const fields = this.udtFieldTypes.get(TypeChecker.baseTypeName(receiverType));
+		if (!fields || fields.has(expr.property.name)) return;
+		const key = `${expr.property.line}:${expr.property.column}:${expr.property.name}`;
+		if (this.reportedUdtFieldErrors.has(key)) return;
+		this.reportedUdtFieldErrors.add(key);
+		this.addError(
+			expr.line || expr.property.line || 0,
+			expr.column || expr.property.column || 0,
+			expr.property.name.length,
+			`Object has no field ${expr.property.name}`,
+			DiagnosticSeverity.Error,
+		);
 	}
 
 	private validateExpression(expr: Expression, version: string = "6"): void {
@@ -1385,6 +1467,7 @@ export class UnifiedPineValidator {
 						);
 					}
 				}
+				this.checkUdtFieldAccess(expr, version);
 				break;
 			}
 
@@ -1995,6 +2078,9 @@ export class UnifiedPineValidator {
 		// because Pine Script rarely uses such patterns, and the type inference
 		// for these cases would require significant additional complexity.
 		if (!functionName) return;
+
+		const ctorMatch = functionName.match(/^(.+)\.new$/);
+		if (ctorMatch && this.declaredTypeNames.has(ctorMatch[1])) return;
 
 		// Get function signature
 		const signature = this.functionSignatures.get(functionName);
@@ -3318,6 +3404,12 @@ export class UnifiedPineValidator {
 						? callExpr.callee.name
 						: memberChainName(callExpr.callee);
 
+				const ctorMatch = funcName.match(/^(.+)\.new$/);
+				if (ctorMatch && this.declaredTypeNames.has(ctorMatch[1])) {
+					type = ctorMatch[1] as PineType;
+					break;
+				}
+
 				// Handle generic type arguments: array.new<float>() -> array<float>
 				if (callExpr.typeArguments && callExpr.typeArguments.length > 0) {
 					const typeArg = callExpr.typeArguments[0];
@@ -3610,6 +3702,12 @@ export class UnifiedPineValidator {
 
 			case "MemberExpression": {
 				const memberExpr = expr as MemberExpression;
+
+				const udtFieldType = this.resolveUdtFieldType(memberExpr);
+				if (udtFieldType) {
+					type = udtFieldType;
+					break;
+				}
 
 				// Try to get namespace.property full name
 				if (

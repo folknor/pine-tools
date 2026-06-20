@@ -166,22 +166,19 @@ IDs so the two stay in sync.
   fixed (see #45); (c) optionally wire the language-service `/// @source`
   resolver into the core checker so local-file libraries validate too; (d)
   per-version export drift is a non-issue (published majors are immutable).
-- **#54 - UDT field type inference + field validation (INV072, OPEN).**
-  Three related FN classes, all TV-confirmed (probes in
-  `investigations/INV072-udt-field-type-and-validation/`): (a) UDT field
-  TYPE inference - `o.x` / `o.inner.x` are untyped, so `str.length(o.x)`
-  misses CE10123 (even SHALLOW access, not a depth issue); (b)
-  undefined-field validation - `o.nope` is TV's "Object has no field
-  <name>", a check we don't have; (c) method/call chain return types -
-  `arr.first()` untyped. Needs a UDT field-set registry (name -> {field
-  -> type}; the parser already produces the typed fields, the checker
-  just doesn't index them), member-chain inference wired into
-  `inferExpressionType`'s MemberExpression case (then the existing
-  arg/operator checks fire for free, the INV070/INV071 pattern), and a
-  new field-existence error. FP-safe gate: only when the receiver
-  resolves to a known user type; unknown receivers stay lenient. Bigger
-  than one INV - deferred. Surfaced by the #52 census (deep chains
-  under-tested: readChainDepth 3+ 1776 corpus / 4 tests).
+- **#54 (residual) - method/call chain return types (INV072).**
+  UDT field inference and field-existence validation landed: the parser
+  now records typed fields on `TypeDeclaration`, the checker indexes them,
+  infers `T.new()` as `T`, resolves member chains such as `o.inner.x`,
+  and emits `Object has no field <name>` only when the receiver resolves
+  to a known user type. Pinned by
+  `packages/core/test/fixtures/regression/INV072-udt-field-validation.pine`
+  and clean against `regression-check.mjs` (0 corpus changes). Remaining
+  INV072 slice: method/call chain return types such as `arr.first()` are
+  still untyped, so downstream misuse like `str.length(arr.first())` can
+  still slip through. That overlaps with #41 member-call resolution and
+  collection method return typing. Surfaced by the #52 census (deep
+  chains under-tested: readChainDepth 3+ 1776 corpus / 4 tests).
 - **#48 - mutation-testing pass (negative corpus).** INV050 exposed a
   structural blind spot: every verification layer samples valid code.
   The corpus is published working scripts, so a false-negative class
