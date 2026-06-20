@@ -280,19 +280,18 @@ IDs so the two stay in sync.
   errors from the leading-wrap joins (ternary `?`/`:`, the binary
   operator loops, and parseSameLineBinary's leading path) while still
   joining for recovery, mirroring INV042.
-  **Related but OPPOSITE-direction sub-case (we are too STRICT, TV
-  accepts):** a `switch` ARM BODY whose expression wraps to a leading-
-  operator continuation line - `'Defensive' => (expr)` / `     and (expr)`
-  (continuation indented one past the arm). TV joins it; our switch-arm
-  body parser (`parseSwitchCaseBody` / its `expression()` call) stops at
-  the NEWLINE, so the next line is read as a new arm and errors
-  `Expected "=>" in switch case`. Concrete repro: the last INV067
-  parse-quarantined library `vendor/TFlab/FVGDetectorLibrary/1.pine`
-  (lines ~40-44; also `'Aggressive'`/`'Very Defensive'` arms). Fixing it
-  means the switch-arm body expression must consume leading-operator
-  continuation newlines (same machinery as the binary-op loops). Higher
-  risk (continuation handling is delicate); deferred with the rest of
-  #45. Un-quarantines that library for #53 when done.
+  **Related but OPPOSITE-direction sub-case (fixed):** a `switch` ARM
+  BODY whose expression wraps to a leading-operator continuation line -
+  `'Defensive' => (expr)` / `     and (expr)` (continuation indented one
+  past the arm). TV joins it; our switch-arm body parser used to stop at
+  the NEWLINE, so the next line was read as a new arm and errored
+  `Expected "=>" in switch case`. Fixed by letting inline switch arm
+  expressions consume valid leading-operator continuation newlines. Pinned
+  by
+  `packages/core/test/fixtures/regression/INV073-switch-arm-leading-operator-continuation.pine`;
+  this un-quarantines `vendor/TFlab/FVGDetectorLibrary/1.pine` for #53.
+  The remaining #45 work is the original too-lenient CE10013 direction for
+  leading operators at multiple-of-4 indent.
 - **Minor data residue (record-only, low value):** `ta.vwap.anchor`'s default
   and the "X by default" phrasing are deliberately unparsed (see
   `parse-default.ts`). Skip unless a consumer needs them.

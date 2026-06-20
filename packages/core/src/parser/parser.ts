@@ -2326,6 +2326,37 @@ export class Parser {
 		return expr;
 	}
 
+	private parseInlineSwitchArmExpression(line: number): AST.Expression {
+		let expr = this.parseSingleLineExpression(line);
+		while (true) {
+			let i = this.current;
+			if (this.check(TokenType.NEWLINE)) {
+				while (this.tokens[i]?.type === TokenType.NEWLINE) i++;
+			}
+			const op = this.tokens[i];
+			if (
+				!op ||
+				op.type === TokenType.EOF ||
+				(op.indent ?? 0) % 4 === 0 ||
+				!Parser.SAME_LINE_PRECEDENCE.some((matches) => matches(op))
+			) {
+				break;
+			}
+			this.current = i;
+			const opToken = this.advance();
+			const right = this.parseSingleLineExpression(opToken.line);
+			expr = {
+				type: "BinaryExpression",
+				operator: opToken.value,
+				left: expr,
+				right,
+				line: expr.line,
+				column: expr.column,
+			};
+		}
+		return expr;
+	}
+
 	// Consume a newline after a trailing operator inside a switch-arm
 	// expression when the next line is a valid wrap continuation (indent
 	// not a multiple of 4 - INV017). Returns the line the expression
@@ -2481,7 +2512,7 @@ export class Parser {
 		for (;;) {
 			statements.push(
 				this.parseInlineStatementUnit(() =>
-					this.parseSingleLineExpression(anchorLine),
+					this.parseInlineSwitchArmExpression(anchorLine),
 				),
 			);
 			if (!this.match(TokenType.COMMA)) {

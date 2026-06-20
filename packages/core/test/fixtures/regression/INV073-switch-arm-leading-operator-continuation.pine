@@ -1,0 +1,13 @@
+// @test regression/INV073-switch-arm-leading-operator-continuation
+// @description A same-line switch arm result may continue on a following leading-operator wrap line when the continuation indent is not a multiple of four. TV accepts this shape; it appears in vendor/TFlab/FVGDetectorLibrary/1.pine and previously produced a phantom Expected "=>" in switch case. See TODO #45.
+// @expects parse: success
+// @expects no-errors
+// @expects warnings: 0
+//@version=6
+indicator("x")
+f = input.string("Defensive")
+x = switch f
+    "Defensive" => (close > open)
+     and (high > low)
+    => true
+plot(x ? 1 : 0)
