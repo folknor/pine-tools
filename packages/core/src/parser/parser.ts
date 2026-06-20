@@ -1944,13 +1944,14 @@ export class Parser {
 			i = scanned.next;
 		} else if (start.type === TokenType.IDENTIFIER) {
 			const next = this.tokens[i + 1];
-			if (next?.type === TokenType.IDENTIFIER) {
+			if (next?.type === TokenType.IDENTIFIER || next?.type === TokenType.KEYWORD) {
 				typeName = start.value;
 				i++;
 			} else if (
 				next?.type === TokenType.DOT &&
 				this.tokens[i + 2]?.type === TokenType.IDENTIFIER &&
-				this.tokens[i + 3]?.type === TokenType.IDENTIFIER
+				(this.tokens[i + 3]?.type === TokenType.IDENTIFIER ||
+					this.tokens[i + 3]?.type === TokenType.KEYWORD)
 			) {
 				typeName = `${start.value}.${this.tokens[i + 2].value}`;
 				i += 3;
@@ -1958,11 +1959,7 @@ export class Parser {
 		}
 
 		const fieldToken = this.tokens[i];
-		if (
-			!typeName ||
-			(fieldToken?.type !== TokenType.IDENTIFIER &&
-				!(fieldToken?.type === TokenType.KEYWORD && fieldToken.value === "type"))
-		) {
+		if (!typeName || fieldToken?.type !== TokenType.IDENTIFIER && fieldToken?.type !== TokenType.KEYWORD) {
 			return null;
 		}
 		return {
