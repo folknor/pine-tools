@@ -1280,7 +1280,7 @@ export class Parser {
 	// (`int m = if cond` ...) with the same machinery. see INV031
 	public ifStatement(): AST.IfStatement {
 		const startToken = this.previous();
-		const condition = this.expression();
+		const condition = this.parseSingleLineExpression(startToken.line);
 
 		// Skip newlines after condition
 		while (this.check(TokenType.NEWLINE)) {

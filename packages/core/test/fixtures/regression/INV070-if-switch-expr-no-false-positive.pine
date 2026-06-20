@@ -13,7 +13,11 @@ b = if close > open
     close
 else
     na
+neg = if close > open
+    -2
+else
+    -1
 c = switch close > open
     true => close
     => sf
-plot(a + b + c)
+plot(a + b + c + neg)

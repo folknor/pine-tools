@@ -443,10 +443,12 @@ same-pos-different-message**. The +4 local-only records were one parser
 field-scan false positive: a UDT field named `type` lexed as a keyword, so
 `string type` was not recorded and `IS.type` became `Object has no field
 type`. Fixed the same day in `scanTypeFieldAtCurrent`; the carrier
-`db76cf...` now compares 0 local / 0 TV errors, returning the explained
-window to **46 / 3 / 32**. INV065, INV067, INV068, INV069, and this field
-fix add catches or remove FPs without changing the already-explained
-residue.
+`db76cf...` now compares 0 local / 0 TV errors. A follow-up sweep after
+restricting if-expression condition parsing to the if header line found
+**44 / 3 / 32**: the `if cond` / newline / negative-literal branch shape no
+longer produces the two false `Mismatched input "-"` records in
+`d40d7b...`. INV065, INV067, INV068, INV069, and these parser fixes add
+catches or remove FPs without changing the already-explained residue.
 
 Earlier measurements live in git history (this section, prior
 revisions) - each is a dated point-in-time record per G001.
