@@ -244,7 +244,16 @@ IDs so the two stay in sync.
   count). The 16 delete-decl local-accepts were TV-triaged: 14
   survivors (1 tv-accepts, 1 TV crash), all one class -> INV066
   (undefined method-call receiver, OPEN: the FP-safe fix needs receiver
-  resolution we don't have - see #41). **Remaining:** periodically
+  resolution we don't have - see #41). **2026-06-20 rerun:** after the
+  #41/#53/#45 follow-ups, the same full-pool dry-run still leaves only
+  16 `local-accepts`, all `delete-decl`; TV triage produced 15 survivors
+  and 1 `tv-accepts`, still the same undefined method-receiver class
+  already tracked by INV066 (the former TV-crash case now returns TV's
+  internal `TypeError: e.equals is not a function` as an error payload).
+  A narrower implementation attempt was reverted before commit: even with
+  root-name and function-body gates, parser-damaged corpus files produced
+  broad recovery churn, so this needs a parser-clean / reliable-scope guard
+  rather than just a smaller receiver predicate. **Remaining:** periodically
   re-run the dry-run as the corpus/operators grow and TV-verify any new
   `local-accepts`.
 - **#52 - fixture-coverage build-out (the census target list).**
@@ -270,12 +279,15 @@ IDs so the two stay in sync.
   list - #18's astExtractor class; the checker correctly infers
   unknown) and one real catch by our own checker (timeframe.from_seconds
   returns a timeframe STRING - the draft summed it numerically and the
-  checker rightly objected). **Remaining (softer) targets:** the
-  structural shapes the census lists as corpus-only or near-zero in
-  tests (forIn tuples x2, forIn singles x3, if-expressions x6, deep
-  member chains) - same method, lower urgency. This is plain
-  fixture-building, distinct from #48's mutation testing (you can't
-  mutate a construct that appears in zero files).
+  checker rightly objected). **2026-06-20:** added
+  `coverage-structural-shapes.pine` for the softer structural targets:
+  valid for-in single and tuple loops, a chained collection receiver call,
+  a deep UDT read chain, and nested if-expressions. TV accepted the fixture
+  (`success:true`, 0 errors), targeted vitest passed, and
+  `regression-check.mjs` stayed at 0 corpus changes. Remaining structural
+  coverage work is opportunistic fixture-building as new census rows look
+  under-tested, distinct from #48's mutation testing (you can't mutate a
+  construct that appears in zero files).
 - **#45 (residual) - leading-operator wraps at multiple-of-4 indent.**
   The probed INV042 residual is fixed for the covered parser paths:
   `float x = cond` / `    ? high` / `    : low` and `bool y = a` /

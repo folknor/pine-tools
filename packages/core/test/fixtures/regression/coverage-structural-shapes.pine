@@ -1,0 +1,43 @@
+// @test regression/coverage-structural-shapes
+// @description #52 structural coverage build-out: valid for-in single and tuple loops, a chained collection receiver call, a deep UDT read chain, and nested if-expressions. Local and TV both accept (probed 2026-06-20).
+// @expects parse: success
+// @expects no-errors
+
+//@version=6
+indicator("coverage structural shapes")
+
+float total = 0.0
+nums = array.from(1.0, 2.0, 3.0)
+for n in nums
+    total += n
+for [i, n] in nums
+    total += n + i
+
+more = nums.copy().slice(0, 2).concat(array.from(4.0))
+first = more.first()
+
+type Leaf
+    float value
+
+type Branch
+    Leaf leaf
+
+type Root
+    Branch branch
+
+leaf = Leaf.new(close)
+branch = Branch.new(leaf)
+root = Root.new(branch)
+float deep = root.branch.leaf.value
+float conditional = if close > open
+    if high > low
+        deep
+    else
+        total
+else
+    if barstate.islast
+        first
+    else
+        deep + 1.0
+
+plot(conditional)

@@ -28,8 +28,13 @@ position leaks.
 #48 run-4 full-pool dry-run. The 16 `delete-decl` `local-accepts` mutants
 (delete a top-level declaration whose name is used later) were TV-verified:
 **14 survivors, 1 tv-accepts, 1 TV crash** (`TypeError: e.equals is not a
-function` - a no-verdict, discarded). Every survivor deletes a declaration
-later used as a method receiver, so TV reports CE10271 on the orphaned call:
+function` - a no-verdict, discarded). Re-run 2026-06-20 after the
+#41/#53/#45 follow-ups again found only 16 `local-accepts`, all
+`delete-decl`; TV triage produced **15 survivors and 1 tv-accepts**, still
+this same undefined method-receiver class (the former crash case now returns
+TV's internal `TypeError: e.equals is not a function` as an error payload).
+Every survivor deletes a declaration later used as a method receiver, so TV
+reports CE10271 on the orphaned call:
 
 | mutant | deleted decl | later use | TV |
 |---|---|---|---|
@@ -91,6 +96,15 @@ incomplete for: function parameters inside nested scopes, import
 namespaces/aliases (the #41 export-set problem), and legacy versions. Same
 blocker as TODO #9 (robust UDF/scope inference) and #41 (import/UDT member
 resolution). Shipping the check now trades one FN class for a larger FP class.
+
+2026-06-20 re-attempted two narrower gates and reverted both before commit:
+(1) skip roots that are declared anywhere in the parsed source, and (2) skip
+receiver checks while inside function/method bodies. Both still produced broad
+corpus churn because many affected files already have parser recovery damage;
+adding even local receiver errors changes downstream recovery and exposes
+hundreds of unrelated cascades. A safe fix needs an additional guard that only
+runs on parser-clean sources or otherwise proves the receiver site is in a
+reliable scope, not just a narrower root-name predicate.
 
 ## To resume
 
