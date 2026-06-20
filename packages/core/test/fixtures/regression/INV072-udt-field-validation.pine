@@ -2,10 +2,10 @@
 // @description UDT fields are indexed by declared type, so field reads flow into existing argument checks and unknown fields are rejected only when the receiver resolves to a known user type. TV-probed 2026-06-19; see investigations/INV072-udt-field-type-and-validation/notes.md.
 // @expects parse: success
 // @expects errors: 4
-// @expects error: line=9, message=/Cannot call "str.length"/
-// @expects error: line=10, message=/Object has no field nope/
-// @expects error: line=11, message=/Object has no field nonexist/
-// @expects error: line=13, message=/Cannot call "str.length"/
+// @expects error: line=10, message=/Cannot call "str.length"/
+// @expects error: line=11, message=/Object has no field nope/
+// @expects error: line=12, message=/Object has no field nonexist/
+// @expects error: line=14, message=/Cannot call "str.length"/
 //@version=6
 indicator("t")
 type Inner
@@ -13,7 +13,8 @@ type Inner
 type Outer
     Inner inner
     float x
-o = Outer.new(Inner.new(1.0), 2.0)
+    string type
+o = Outer.new(Inner.new(1.0), 2.0, "outer")
 y = str.length(o.x)
 z = o.nope
 w = o.inner.nonexist

@@ -1958,7 +1958,13 @@ export class Parser {
 		}
 
 		const fieldToken = this.tokens[i];
-		if (!typeName || fieldToken?.type !== TokenType.IDENTIFIER) return null;
+		if (
+			!typeName ||
+			(fieldToken?.type !== TokenType.IDENTIFIER &&
+				!(fieldToken?.type === TokenType.KEYWORD && fieldToken.value === "type"))
+		) {
+			return null;
+		}
 		return {
 			name: fieldToken.value,
 			typeAnnotation: { name: typeName },

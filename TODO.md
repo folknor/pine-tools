@@ -438,13 +438,15 @@ tv-only are that same INV026 fixture seen from TV's side (CE10123 at
 the argument where we flag the ternary) - zero unexplained tv-only
 remain.
 
-The 2026-06-11 window still holds as of 2026-06-19: INV065, INV067,
-INV068, and INV069 were all **0-corpus-change** per `regression-check.mjs`
-(they add catches on broken/edited code and parse fixes that only affect
-quarantined libraries, not the published corpus). A fresh
-`find-real-failures` TV sweep isn't needed to trust the window, but would
-be the way to fold in the new imported-library / parser catches if a
-re-baseline is wanted.
+A 2026-06-20 fresh sweep found **50 local-only / 3 tv-only / 32
+same-pos-different-message**. The +4 local-only records were one parser
+field-scan false positive: a UDT field named `type` lexed as a keyword, so
+`string type` was not recorded and `IS.type` became `Object has no field
+type`. Fixed the same day in `scanTypeFieldAtCurrent`; the carrier
+`db76cf...` now compares 0 local / 0 TV errors, returning the explained
+window to **46 / 3 / 32**. INV065, INV067, INV068, INV069, and this field
+fix add catches or remove FPs without changing the already-explained
+residue.
 
 Earlier measurements live in git history (this section, prior
 revisions) - each is a dated point-in-time record per G001.
