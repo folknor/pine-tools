@@ -170,15 +170,16 @@ IDs so the two stay in sync.
   UDT field inference and field-existence validation landed: the parser
   now records typed fields on `TypeDeclaration`, the checker indexes them,
   infers `T.new()` as `T`, resolves member chains such as `o.inner.x`,
-  and emits `Object has no field <name>` only when the receiver resolves
-  to a known user type. Pinned by
+  emits `Object has no field <name>` only when the receiver resolves to a
+  known user type, and derives element returns from collection receiver
+  methods such as `arr.first()`, `array.get()`, `matrix.get()`, and
+  `map.get()`. Pinned by
   `packages/core/test/fixtures/regression/INV072-udt-field-validation.pine`
   and clean against `regression-check.mjs` (0 corpus changes). Remaining
-  INV072 slice: method/call chain return types such as `arr.first()` are
-  still untyped, so downstream misuse like `str.length(arr.first())` can
-  still slip through. That overlaps with #41 member-call resolution and
-  collection method return typing. Surfaced by the #52 census (deep
-  chains under-tested: readChainDepth 3+ 1776 corpus / 4 tests).
+  INV072 follow-up, if needed: broaden method/call chain return typing
+  beyond the data-backed collection element-return methods. Surfaced by
+  the #52 census (deep chains under-tested: readChainDepth 3+ 1776 corpus
+  / 4 tests).
 - **#48 - mutation-testing pass (negative corpus).** INV050 exposed a
   structural blind spot: every verification layer samples valid code.
   The corpus is published working scripts, so a false-negative class

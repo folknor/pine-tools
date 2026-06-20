@@ -68,6 +68,14 @@ export { DiagnosticSeverity, type ValidationError } from "../common/errors";
 // CE10271), so a method-call on a scalar can only resolve to a user-defined
 // method - never a builtin. Used by the shadowed-namespace member-call check.
 const SCALAR_BASE_TYPES = new Set(["int", "float", "bool", "string", "color"]);
+const ARRAY_ELEMENT_RETURN_METHODS = new Set([
+	"first",
+	"get",
+	"last",
+	"pop",
+	"remove",
+	"shift",
+]);
 
 // Flatten a member-call callee into its dotted name (`strategy.risk.max_drawdown`).
 // Walks `.object` recursively so two-level builtin namespaces resolve, not just
@@ -1424,6 +1432,35 @@ export class UnifiedPineValidator {
 			`Object has no field ${expr.property.name}`,
 			DiagnosticSeverity.Error,
 		);
+	}
+
+	private inferReceiverMethodReturn(
+		call: CallExpression,
+		version: string,
+	): PineType | null {
+		if (call.callee.type !== "MemberExpression") return null;
+		const member = call.callee as MemberExpression;
+		const method = member.property.name;
+		const receiverType = TypeChecker.baseTypeName(
+			this.inferExpressionType(member.object, version) as string,
+		);
+
+		const arrayMatch = receiverType.match(/^array<(.+)>$/);
+		if (arrayMatch && ARRAY_ELEMENT_RETURN_METHODS.has(method)) {
+			return arrayMatch[1] as PineType;
+		}
+
+		const matrixMatch = receiverType.match(/^matrix<(.+)>$/);
+		if (matrixMatch && method === "get") {
+			return matrixMatch[1] as PineType;
+		}
+
+		const mapMatch = receiverType.match(/^map<\s*[^,]+,\s*(.+)>$/);
+		if (mapMatch && method === "get") {
+			return mapMatch[1].trim() as PineType;
+		}
+
+		return null;
 	}
 
 	private validateExpression(expr: Expression, version: string = "6"): void {
@@ -3407,6 +3444,15 @@ export class UnifiedPineValidator {
 				const ctorMatch = funcName.match(/^(.+)\.new$/);
 				if (ctorMatch && this.declaredTypeNames.has(ctorMatch[1])) {
 					type = ctorMatch[1] as PineType;
+					break;
+				}
+
+				const receiverMethodReturn = this.inferReceiverMethodReturn(
+					callExpr,
+					version,
+				);
+				if (receiverMethodReturn) {
+					type = receiverMethodReturn;
 					break;
 				}
 
