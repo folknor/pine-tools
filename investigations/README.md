@@ -563,3 +563,10 @@ contradiction means re-measure, not "the earlier author was wrong."
   leaving the same-line climber to stop before the operator and reparse it as
   an invalid statement. Re-anchor already-consumed valid leading wraps;
   multiple-of-4 wraps still error. Surfaced by four `d40d7...` local-only rows.
+- [INV080](INV080-residual-prose-and-ternary-recovery/notes.md) - parser
+  recovery cleanup for residual local-only stop-point artifacts: skip bare
+  license/source prose continuation lines after `Mozilla` / `Public License` /
+  `available at` comments, and consume a column-1 leading `?` tail after an
+  already malformed ternary line without adding a second parser error. Surfaced
+  by the remaining `Syntax error at input ":"`, `algopoint`, and one
+  `Syntax error at input "new line"` local-only rows.

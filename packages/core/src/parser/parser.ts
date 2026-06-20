@@ -28,6 +28,7 @@ export class Parser {
 	public parserErrors: ParserError[] = [];
 	private detectedVersion: string | null = null;
 	private exprs!: ExpressionParser;
+	private readonly licenseHeaderContinuationLines = new Set<number>();
 
 	constructor(
 		source: string,
@@ -43,14 +44,14 @@ export class Parser {
 		// block loops read a null statement as end-of-block, so a
 		// `//@returns` line inside a function body leaked the rest of the
 		// body to top level.
-		this.tokens = lexer
-			.tokenize()
-			.filter(
-				(t) =>
-					t.type !== TokenType.WHITESPACE &&
-					t.type !== TokenType.COMMENT &&
-					t.type !== TokenType.ANNOTATION,
-			);
+		const rawTokens = lexer.tokenize();
+		this.markLicenseHeaderContinuations(rawTokens);
+		this.tokens = rawTokens.filter(
+			(t) =>
+				t.type !== TokenType.WHITESPACE &&
+				t.type !== TokenType.COMMENT &&
+				t.type !== TokenType.ANNOTATION,
+		);
 		this.lexerErrors = lexer.getErrors();
 		this.detectedVersion = lexer.getDetectedVersion();
 		this.exprs = new ExpressionParser(this);
@@ -58,6 +59,40 @@ export class Parser {
 
 	getLexerErrors(): LexerError[] {
 		return this.lexerErrors;
+	}
+
+	private markLicenseHeaderContinuations(rawTokens: Token[]): void {
+		let previousCommentMentionsLicense = false;
+		for (const token of rawTokens) {
+			if (
+				token.type === TokenType.WHITESPACE ||
+				token.type === TokenType.NEWLINE
+			) {
+				continue;
+			}
+			if (previousCommentMentionsLicense && token.indent === 0) {
+				this.licenseHeaderContinuationLines.add(token.line);
+			}
+			previousCommentMentionsLicense =
+				token.type === TokenType.COMMENT &&
+				token.indent === 0 &&
+				/\b(Mozilla|Public License|available at)\b/i.test(token.value);
+		}
+	}
+
+	private previousLineHasToken(
+		line: number,
+		type: TokenType,
+		value?: string,
+	): boolean {
+		for (let i = this.current - 1; i >= 0; i--) {
+			const token = this.tokens[i];
+			if (token.line < line - 1) return false;
+			if (token.line === line - 1 && token.type === type) {
+				return value === undefined || token.value === value;
+			}
+		}
+		return false;
 	}
 
 	getParserErrors(): ParserError[] {
@@ -145,7 +180,27 @@ export class Parser {
 		// out with comments in the constructor (see there for why).
 
 		if (this.startsInvalidOperatorStatement()) {
+			const token = this.peek();
+			if (
+				token.type === TokenType.TERNARY &&
+				this.previousLineHasToken(token.line, TokenType.TERNARY)
+			) {
+				while (!this.isAtEnd() && !this.check(TokenType.NEWLINE)) {
+					this.advance();
+				}
+				return null;
+			}
 			throw new Error('Syntax error at input "new line"');
+		}
+
+		// License headers copied without `//` on continuation lines are common in
+		// scraped scripts. TV can stop at a later structural error, so treat the
+		// marked prose continuation as trivia to avoid local-only cascades. see INV080.
+		if (this.licenseHeaderContinuationLines.has(this.peek().line)) {
+			while (!this.isAtEnd() && !this.check(TokenType.NEWLINE)) {
+				this.advance();
+			}
+			return null;
 		}
 
 		// Import statement: import User/Library/Version [as alias]

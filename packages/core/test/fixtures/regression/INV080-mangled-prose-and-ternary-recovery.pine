@@ -1,0 +1,15 @@
+// @test regression/INV080-mangled-prose-and-ternary-recovery
+// @description Recovery skips license-header prose continuations and a column-1 ternary continuation after an already malformed nested ternary, matching TV stop-point behavior for residual local-only buckets. See INV080.
+// @expects parse: success
+// @expects errors: 1
+// @expects error: line=7, message=/Cannot call "operator \?:"/
+
+//@version=6
+indicator("INV080")
+// This code is available at
+algopoint.co
+// Mozilla Public License
+at https://mozilla.org/MPL/2.0/
+x = close > open ? 1 : close < open ? 2 : close == open
+? 3 : 4
+plot(close)
