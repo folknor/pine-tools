@@ -805,10 +805,7 @@ export class Parser {
 		// TV-clean on this shape. see #46(c)
 		if (this.check(TokenType.NEWLINE)) {
 			const next = this.peekNext();
-			if (
-				next?.type === TokenType.ASSIGN &&
-				(next.indent ?? 0) % 4 !== 0
-			) {
+			if (next?.type === TokenType.ASSIGN && (next.indent ?? 0) % 4 !== 0) {
 				this.advance();
 			}
 		}
@@ -909,10 +906,7 @@ export class Parser {
 		// A type keyword directly followed by `=` is the variable NAME, not
 		// an annotation (`var color = na` declares `color`) - leave it for
 		// variableDeclaration, which accepts keyword names. see INV031
-		if (
-			this.isVarTypeKeyword() &&
-			this.peekNext()?.type !== TokenType.ASSIGN
-		) {
+		if (this.isVarTypeKeyword() && this.peekNext()?.type !== TokenType.ASSIGN) {
 			typeAnnotation = qualifier + this.advance().value;
 			typeAnnotation += this.parseGenericTypeSuffix();
 			if (qualifierToken && varKeyword === "const") {
@@ -1014,11 +1008,7 @@ export class Parser {
 		let i = this.current;
 		while (this.tokens[i]?.type === TokenType.NEWLINE) i++;
 		const next = this.tokens[i];
-		if (
-			next &&
-			next.type !== TokenType.EOF &&
-			(next.indent ?? 0) % 4 !== 0
-		) {
+		if (next && next.type !== TokenType.EOF && (next.indent ?? 0) % 4 !== 0) {
 			this.current = i;
 			return true;
 		}
@@ -1773,7 +1763,9 @@ export class Parser {
 			this.check(TokenType.IDENTIFIER) &&
 			this.peekNext()?.type !== TokenType.LPAREN
 		) {
-			return asExportVar(this.variableDeclaration(null, undefined, this.peek()));
+			return asExportVar(
+				this.variableDeclaration(null, undefined, this.peek()),
+			);
 		}
 
 		// `export method(...)` - a function named `method` (the method-decl
@@ -2068,10 +2060,7 @@ export class Parser {
 				// switch typed simple string). see TODO #46(d)
 				if (this.check(TokenType.NEWLINE)) {
 					const next = this.peekNext();
-					if (
-						next?.type === TokenType.ARROW &&
-						(next.indent ?? 0) % 4 !== 0
-					) {
+					if (next?.type === TokenType.ARROW && (next.indent ?? 0) % 4 !== 0) {
 						this.advance();
 					}
 				}
@@ -2265,11 +2254,7 @@ export class Parser {
 	private skipArmWrapNewline(line: number): number {
 		if (this.check(TokenType.NEWLINE)) {
 			const next = this.peekNext();
-			if (
-				next &&
-				next.type !== TokenType.EOF &&
-				(next.indent ?? 0) % 4 !== 0
-			) {
+			if (next && next.type !== TokenType.EOF && (next.indent ?? 0) % 4 !== 0) {
 				this.advance();
 				return next.line;
 			}

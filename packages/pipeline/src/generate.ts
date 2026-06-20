@@ -590,7 +590,7 @@ function buildOverloads(
 					// checker skips missing-arg enforcement on overloaded fns.
 					required: m
 						? isParamRequired(fnName, m)
-						: probedRequiredSet(fnName)?.has(name) ?? true,
+						: (probedRequiredSet(fnName)?.has(name) ?? true),
 					default: parseDefault(desc),
 					allowedValues: allowed,
 					min: range?.min,

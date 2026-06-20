@@ -24,7 +24,7 @@ import type {
 
 // TV's CW10001 wording, verbatim (probed 2026-06-04, see INV019).
 const MULTILINE_STRING_MESSAGE =
-	"Defining a string enclosed in a single pair of quotation marks (\") or apostrophes (') across multiple lines is deprecated. Split the string into smaller strings and concatenate them with the `+` operator instead (\"like \" + \"this\"). Alternatively, to create a multiline string, enclose the text in three pairs of apostrophes ('''like this''') or quotation marks (\"\"\"like this\"\"\").";
+	'Defining a string enclosed in a single pair of quotation marks (") or apostrophes (\') across multiple lines is deprecated. Split the string into smaller strings and concatenate them with the `+` operator instead ("like " + "this"). Alternatively, to create a multiline string, enclose the text in three pairs of apostrophes (\'\'\'like this\'\'\') or quotation marks ("""like this""").';
 
 export interface SemanticWarning {
 	line: number;
@@ -197,9 +197,7 @@ export class SemanticAnalyzer {
 			);
 		} else if (
 			this.scopeNames.length > 1 &&
-			this.scopeNames
-				.slice(0, -1)
-				.some((frame) => frame.has(name))
+			this.scopeNames.slice(0, -1).some((frame) => frame.has(name))
 		) {
 			this.addWarning(
 				line,
@@ -215,9 +213,9 @@ export class SemanticAnalyzer {
 		// loop body lives in a scope that may not run every bar - record
 		// it for the CW10018 history check (see INV021).
 		if (this.inConditionalScope) {
-			this.conditionalLocalFrames[
-				this.conditionalLocalFrames.length - 1
-			].add(name);
+			this.conditionalLocalFrames[this.conditionalLocalFrames.length - 1].add(
+				name,
+			);
 		}
 	}
 

@@ -75,14 +75,14 @@
   },
   "description": "Unofficial Pine Script v6 tools, including a language service, LSP, MCP, Visual Studio Code extension, CLI linter tool, and more.",
   "devDependencies": {
-    "@biomejs/biome": "^2.4.16",
-    "@types/node": "^25.9.1",
+    "@biomejs/biome": "^2.5.0",
+    "@types/node": "^26.0.0",
     "@types/turndown": "^5.0.6",
-    "@types/vscode": "^1.120.0",
-    "@vitest/ui": "^4.1.8",
+    "@types/vscode": "^1.125.0",
+    "@vitest/ui": "^4.1.9",
     "@vscode/vsce": "^3.9.2",
     "@vscode/vsce-sign": "^2.0.9",
-    "esbuild": "^0.28.0",
+    "esbuild": "^0.28.1",
     "fast-check": "^4.8.0",
     "husky": "^9.1.7",
     "keytar": "^7.9.0",
@@ -91,7 +91,7 @@
     "turndown": "^7.2.4",
     "turndown-plugin-gfm": "^1.0.2",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.8"
+    "vitest": "^4.1.9"
   },
   "displayName": "Pine Script Tools",
   "engines": {
@@ -113,7 +113,7 @@
   "license": "MIT",
   "main": "./dist/packages/vscode/src/extension.js",
   "name": "pine-tools",
-  "packageManager": "pnpm@10.28.0",
+  "packageManager": "pnpm@11.8.0",
   "publisher": "folknor",
   "repository": {
     "type": "git",
@@ -132,8 +132,8 @@
     "debug:diff": "node dev-tools/differential-test.js",
     "debug:internals": "node dev-tools/debug-internals.js",
     "debug:tokens": "node dev-tools/debug-internals.js tokens",
-    "generate": "node --experimental-strip-types packages/pipeline/src/generate.ts",
     "fetch:library": "node --experimental-strip-types packages/pipeline/src/fetch-library.ts",
+    "generate": "node --experimental-strip-types packages/pipeline/src/generate.ts",
     "generate:libraries": "node --experimental-strip-types packages/pipeline/src/generate-libraries.ts",
     "generate:manual": "node --experimental-strip-types packages/pipeline/src/generate-manual.ts",
     "generate:markdown": "node --experimental-strip-types packages/pipeline/src/generate-markdown.ts",

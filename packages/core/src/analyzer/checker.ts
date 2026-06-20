@@ -1,7 +1,9 @@
 // Pine Script Type Checker and Validator
 // Performs semantic analysis and type checking on the AST
 
+import { LIBRARY_EXPORTS_BY_PATH, TYPE_NAMES } from "../../../../pine-data/v6";
 import { DiagnosticSeverity, type ValidationError } from "../common/errors";
+import { TYPE_KEYWORDS } from "../constants/keywords";
 import type {
 	ArrayExpression,
 	BinaryExpression,
@@ -27,25 +29,25 @@ import type {
 import {
 	type ArgumentInfo,
 	buildFunctionSignatures,
+	builtinCallTupleness,
+	builtinTupleReturns,
 	type FunctionSignature,
+	GENERIC_FUNCTION_BASES,
 	getBuiltinQualifiedType,
 	getBuiltinVarInfo,
 	getConstParamDocType,
 	getMinArgsForVariadic,
-	builtinCallTupleness,
-	builtinTupleReturns,
+	getMinimalRequiredParams,
 	getPolymorphicReturnType,
 	getPolymorphicType,
-	getMinimalRequiredParams,
-	hasReturnTypeParam,
-	hasOverloads,
 	hasOverloadSignatures,
+	hasOverloads,
+	hasReturnTypeParam,
 	isBuiltinConstant,
-	GENERIC_FUNCTION_BASES,
 	isTopLevelOnly,
 	isVariadicFunction,
-	KNOWN_NAMESPACES,
 	KNOWN_NAMESPACE_PREFIXES,
+	KNOWN_NAMESPACES,
 	mapReturnTypeToPineType,
 	mapToPineType,
 	NAMESPACE_PROPERTIES,
@@ -55,8 +57,6 @@ import {
 	positionalParamUnionMembers,
 	resolveCallReturnRaw,
 } from "./builtins";
-import { TYPE_NAMES, LIBRARY_EXPORTS_BY_PATH } from "../../../../pine-data/v6";
-import { TYPE_KEYWORDS } from "../constants/keywords";
 import { type Symbol as SymbolInfo, SymbolTable } from "./symbols";
 import { type PineType, TypeChecker } from "./types";
 
@@ -330,7 +330,9 @@ export class UnifiedPineValidator {
 		if (nestedAnnotation) {
 			const outer = nestedAnnotation[1];
 			const templateRest = nestedAnnotation[2];
-			const innerCollection = templateRest.match(/\b(array|matrix|map)\s*</)?.[1];
+			const innerCollection = templateRest.match(
+				/\b(array|matrix|map)\s*</,
+			)?.[1];
 			if (innerCollection) {
 				const decl0 = statement as { startLine?: number; startColumn?: number };
 				const stmt = statement as { line: number; column: number };
@@ -400,7 +402,9 @@ export class UnifiedPineValidator {
 	// `g(Bar b)` for an undeclared UDT; earlier-declared UDT params accepted).
 	// see INV033
 	private checkParamTypeAnnotations(
-		params: Array<{ typeAnnotation?: { name: string; line?: number; column?: number } }>,
+		params: Array<{
+			typeAnnotation?: { name: string; line?: number; column?: number };
+		}>,
 		version: string,
 	): void {
 		if (version !== "6") return;
@@ -828,8 +832,7 @@ export class UnifiedPineValidator {
 					version,
 					statement.params,
 				);
-				if (tupleTypes)
-					this.recordUdfTupleReturn(statement.name, tupleTypes);
+				if (tupleTypes) this.recordUdfTupleReturn(statement.name, tupleTypes);
 
 				// Register the function in the symbol table at the outer scope
 				this.declaredFunctionNames.add(statement.name); // see INV036
@@ -950,7 +953,7 @@ export class UnifiedPineValidator {
 			}
 
 			case "ForStatement":
-			case "ForInStatement":
+			case "ForInStatement": {
 				// For loops create a new scope and define the iterator variable
 				this.symbolTable.enterScope();
 				this.blockDepth++;
@@ -1038,6 +1041,7 @@ export class UnifiedPineValidator {
 				this.symbolTable.exitScope();
 				this.blockDepth--;
 				break;
+			}
 
 			case "WhileStatement":
 				if ("condition" in statement) {
@@ -1045,7 +1049,10 @@ export class UnifiedPineValidator {
 					// Same rule and template as the if-condition check: TV's
 					// CE10101 with blockName "while", anchored at the CONDITION
 					// expression (probed `while close` / `while n`). see INV041
-					const whileCondType = this.inferExpressionType(statement.condition, version);
+					const whileCondType = this.inferExpressionType(
+						statement.condition,
+						version,
+					);
 					if (!this.boolContextOk(whileCondType, version)) {
 						this.addError(
 							statement.condition.line || statement.line,
@@ -1087,10 +1094,7 @@ export class UnifiedPineValidator {
 					if (existing && existing.line === 0) {
 						// Same na-initializer guard as collectDeclarations: a
 						// bare-na RHS gives the variable NO type. see INV032
-						const initType = this.inferExpressionType(
-							statement.value,
-							version,
-						);
+						const initType = this.inferExpressionType(statement.value, version);
 						this.symbolTable.define({
 							name: targetName,
 							type: TypeChecker.isNaType(initType) ? "unknown" : initType,
@@ -1225,8 +1229,7 @@ export class UnifiedPineValidator {
 					version,
 					statement.params,
 				);
-				if (tupleTypes)
-					this.recordUdfTupleReturn(statement.name, tupleTypes);
+				if (tupleTypes) this.recordUdfTupleReturn(statement.name, tupleTypes);
 
 				// Register the method in the symbol table. Use kind:"method"
 				// rather than "function" so it lives in the method namespace
@@ -1520,7 +1523,10 @@ export class UnifiedPineValidator {
 	// dispatch in validateExpression routes here - member objects and
 	// callees don't, so `ta.sma(...)` / `chart.bg_color` stay silent.
 	// see INV048
-	private checkNonValueReference(identifier: Identifier, version: string): void {
+	private checkNonValueReference(
+		identifier: Identifier,
+		version: string,
+	): void {
 		if (version !== "6") return;
 		const name = identifier.name;
 		const symbol = this.symbolTable.lookup(name);
@@ -1755,7 +1761,9 @@ export class UnifiedPineValidator {
 	}
 
 	private getBaseType(type: PineType): string {
-		const match = (type as string).match(/^(?:series|simple|input|const)<(.+)>$/);
+		const match = (type as string).match(
+			/^(?:series|simple|input|const)<(.+)>$/,
+		);
 		return match ? match[1] : (type as string);
 	}
 
@@ -2380,7 +2388,11 @@ export class UnifiedPineValidator {
 		// sound CE10165. Measured against that overload's own param order, so
 		// ta.highest(10) (the 1-arg form) is fine while matrix.sum(m) flags the
 		// missing id2. see INV056
-		if (checkArgTypes && !call.recovered && hasOverloadSignatures(functionName)) {
+		if (
+			checkArgTypes &&
+			!call.recovered &&
+			hasOverloadSignatures(functionName)
+		) {
 			const minReq = getMinimalRequiredParams(functionName);
 			for (let j = positionalArgs.length; j < minReq.length; j++) {
 				const name = minReq[j];
@@ -2837,9 +2849,7 @@ export class UnifiedPineValidator {
 					const named = call.arguments.find((a) => a.name === "expression");
 					const exprArg =
 						named?.value ??
-						(call.arguments.length >= 3
-							? call.arguments[2].value
-							: undefined);
+						(call.arguments.length >= 3 ? call.arguments[2].value : undefined);
 					if (exprArg) {
 						const inner = this.tupleInitElementTypes(
 							exprArg,
@@ -2850,9 +2860,7 @@ export class UnifiedPineValidator {
 							if (funcName === "request.security_lower_tf") {
 								const base = TypeChecker.baseTypeName(t as string);
 								elementTypes.push(
-									t === "unknown"
-										? "unknown"
-										: (`array<${base}>` as PineType),
+									t === "unknown" ? "unknown" : (`array<${base}>` as PineType),
 								);
 							} else {
 								elementTypes.push(t);
@@ -2948,7 +2956,10 @@ export class UnifiedPineValidator {
 	private tupleInitArity(
 		expr: Expression,
 		version: string,
-	): { kind: "tuple"; arities: number[] } | { kind: "scalar" } | { kind: "unknown" } {
+	):
+		| { kind: "tuple"; arities: number[] }
+		| { kind: "scalar" }
+		| { kind: "unknown" } {
 		switch (expr.type) {
 			case "ArrayExpression":
 				return {
@@ -2986,9 +2997,7 @@ export class UnifiedPineValidator {
 					const named = call.arguments.find((a) => a.name === "expression");
 					const exprArg =
 						named?.value ??
-						(call.arguments.length >= 3
-							? call.arguments[2].value
-							: undefined);
+						(call.arguments.length >= 3 ? call.arguments[2].value : undefined);
 					return exprArg
 						? this.tupleInitArity(exprArg, version)
 						: { kind: "unknown" };
@@ -3055,7 +3064,10 @@ export class UnifiedPineValidator {
 	private branchTailArity(
 		stmts: Statement[] | undefined,
 		version: string,
-	): { kind: "tuple"; arities: number[] } | { kind: "scalar" } | { kind: "unknown" } {
+	):
+		| { kind: "tuple"; arities: number[] }
+		| { kind: "scalar" }
+		| { kind: "unknown" } {
 		if (!stmts || stmts.length === 0) return { kind: "unknown" };
 		const last = stmts[stmts.length - 1];
 		if (last.type === "ExpressionStatement") {
@@ -3066,9 +3078,7 @@ export class UnifiedPineValidator {
 		}
 		if (last.type === "ReturnStatement") {
 			const value = (last as ReturnStatement).value;
-			return value
-				? this.tupleInitArity(value, version)
-				: { kind: "unknown" };
+			return value ? this.tupleInitArity(value, version) : { kind: "unknown" };
 		}
 		if (last.type === "IfStatement") {
 			const ifStmt = last as IfStatement;
@@ -3086,18 +3096,21 @@ export class UnifiedPineValidator {
 	// mixing scalar and tuple tails is unprobed - stay silent).
 	private mergeBranchArities(
 		branches: Array<
-			{ kind: "tuple"; arities: number[] } | { kind: "scalar" } | { kind: "unknown" }
+			| { kind: "tuple"; arities: number[] }
+			| { kind: "scalar" }
+			| { kind: "unknown" }
 		>,
-	): { kind: "tuple"; arities: number[] } | { kind: "scalar" } | { kind: "unknown" } {
+	):
+		| { kind: "tuple"; arities: number[] }
+		| { kind: "scalar" }
+		| { kind: "unknown" } {
 		if (branches.length === 0) return { kind: "unknown" };
 		if (branches.some((b) => b.kind === "unknown")) return { kind: "unknown" };
 		if (branches.every((b) => b.kind === "scalar")) return { kind: "scalar" };
 		if (branches.every((b) => b.kind === "tuple")) {
 			const arities = [
 				...new Set(
-					branches.flatMap((b) =>
-						b.kind === "tuple" ? b.arities : [],
-					),
+					branches.flatMap((b) => (b.kind === "tuple" ? b.arities : [])),
 				),
 			];
 			return { kind: "tuple", arities };
@@ -3431,7 +3444,9 @@ export class UnifiedPineValidator {
 							}
 						}
 						type = elem
-							? ((ret === "type" ? elem : ret.replace("type", elem)) as PineType)
+							? ((ret === "type"
+									? elem
+									: ret.replace("type", elem)) as PineType)
 							: "unknown";
 						break;
 					}

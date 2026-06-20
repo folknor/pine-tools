@@ -56,8 +56,15 @@ if (refs.length === 0) {
 const IDENT = /^[A-Za-z_][A-Za-z0-9_]*$/;
 function parseRef(ref: string): { user: string; lib: string; major: string } {
 	const parts = ref.split("/");
-	if (parts.length !== 3 || !IDENT.test(parts[0]) || !IDENT.test(parts[1]) || !/^\d+$/.test(parts[2])) {
-		throw new Error(`invalid library import path '${ref}' (expected User/Lib/Major)`);
+	if (
+		parts.length !== 3 ||
+		!IDENT.test(parts[0]) ||
+		!IDENT.test(parts[1]) ||
+		!/^\d+$/.test(parts[2])
+	) {
+		throw new Error(
+			`invalid library import path '${ref}' (expected User/Lib/Major)`,
+		);
 	}
 	return { user: parts[0], lib: parts[1], major: parts[2] };
 }
@@ -70,7 +77,9 @@ async function getJson(url: string): Promise<unknown> {
 }
 
 /** lib_list -> the exact-match row's PUB id + access string. */
-async function resolveRef(ref: string): Promise<{ pubId: string; access: string }> {
+async function resolveRef(
+	ref: string,
+): Promise<{ pubId: string; access: string }> {
 	const url = `${BASE}/lib_list/?lib_id_prefix=${encodeURIComponent(ref)}&ignore_case=true`;
 	const rows = (await getJson(url)) as Array<{
 		scriptIdPart?: string;
@@ -78,18 +87,28 @@ async function resolveRef(ref: string): Promise<{ pubId: string; access: string 
 		scriptAccess?: string;
 	}>;
 	const row = rows.find((r) => r.libId === ref);
-	if (!row?.scriptIdPart) throw new Error(`published library '${ref}' not found`);
-	return { pubId: row.scriptIdPart, access: row.scriptAccess ?? "open_no_auth" };
+	if (!row?.scriptIdPart)
+		throw new Error(`published library '${ref}' not found`);
+	return {
+		pubId: row.scriptIdPart,
+		access: row.scriptAccess ?? "open_no_auth",
+	};
 }
 
 /** get -> the full Pine source (CRLF), re-checking access. */
 async function fetchSource(pubId: string, major: string): Promise<string> {
 	const url = `${BASE}/get/${encodeURIComponent(pubId)}/${major}?no_4xx=true`;
-	const payload = (await getJson(url)) as { source?: string; scriptAccess?: string };
+	const payload = (await getJson(url)) as {
+		source?: string;
+		scriptAccess?: string;
+	};
 	if (payload.scriptAccess && payload.scriptAccess !== "open_no_auth") {
-		throw new Error(`'${pubId}' is not anonymously readable: ${payload.scriptAccess}`);
+		throw new Error(
+			`'${pubId}' is not anonymously readable: ${payload.scriptAccess}`,
+		);
 	}
-	if (typeof payload.source !== "string") throw new Error(`'${pubId}' returned no source`);
+	if (typeof payload.source !== "string")
+		throw new Error(`'${pubId}' returned no source`);
 	return payload.source;
 }
 
@@ -109,10 +128,14 @@ for (const ref of refs) {
 		const file = path.join(VENDOR_DIR, user, lib, `${major}.pine`);
 		fs.mkdirSync(path.dirname(file), { recursive: true });
 		fs.writeFileSync(file, source);
-		const deps = [...source.matchAll(/^\s*import\s+([\w]+\/[\w]+\/\d+)/gm)].map((m) => m[1]);
+		const deps = [...source.matchAll(/^\s*import\s+([\w]+\/[\w]+\/\d+)/gm)].map(
+			(m) => m[1],
+		);
 		console.log(
 			`OK   ${ref} -> ${path.relative(PROJECT_ROOT, file)} (${source.split("\n").length} lines, id ${pubId})` +
-				(deps.length ? `\n     imports: ${deps.join(", ")} - vendor any not already present` : ""),
+				(deps.length
+					? `\n     imports: ${deps.join(", ")} - vendor any not already present`
+					: ""),
 		);
 	} catch (err) {
 		console.error(`FAIL ${ref}: ${(err as Error).message}`);

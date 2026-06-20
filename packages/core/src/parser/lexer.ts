@@ -434,7 +434,10 @@ export class Lexer {
 				this.advance(); // /
 				break;
 			}
-			if (this.peek() === "\n" || (this.peek() === "\r" && this.peekNext() !== "\n")) {
+			if (
+				this.peek() === "\n" ||
+				(this.peek() === "\r" && this.peekNext() !== "\n")
+			) {
 				this.line++;
 				this.column = 0;
 			}
@@ -461,7 +464,10 @@ export class Lexer {
 				if (!this.isAtEnd()) {
 					this.advance(); // Skip escaped char
 				}
-			} else if (this.peek() === "\n" || (this.peek() === "\r" && this.peekNext() !== "\n")) {
+			} else if (
+				this.peek() === "\n" ||
+				(this.peek() === "\r" && this.peekNext() !== "\n")
+			) {
 				// Multiline strings are valid in Pine Script v6 (though deprecated)
 				// Each wrapped line adds exactly one space regardless of indentation
 				// We preserve the raw source; normalization happens at a higher level if needed

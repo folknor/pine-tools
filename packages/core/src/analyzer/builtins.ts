@@ -621,7 +621,10 @@ export function builtinCallTupleness(
 	functionName: string,
 	positionalCount: number,
 	namedArgs: string[],
-): { kind: "tuple"; arities: number[] } | { kind: "scalar" } | { kind: "unknown" } {
+):
+	| { kind: "tuple"; arities: number[] }
+	| { kind: "scalar" }
+	| { kind: "unknown" } {
 	const func = FUNCTIONS_BY_NAME.get(functionName);
 	if (!func) return { kind: "unknown" };
 	const views = overloadViews(func);

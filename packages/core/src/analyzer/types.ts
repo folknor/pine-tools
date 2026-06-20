@@ -293,20 +293,14 @@ export namespace TypeChecker {
 				return true;
 			if (from === "float" && (to === "color" || to === "series<color>"))
 				return true;
-			if (
-				from === "series<int>" &&
-				(to === "series<color>" || to === "color")
-			)
+			if (from === "series<int>" && (to === "series<color>" || to === "color"))
 				return true;
 			if (
 				from === "series<float>" &&
 				(to === "series<color>" || to === "color")
 			)
 				return true;
-			if (
-				from === "simple<int>" &&
-				(to === "color" || to === "series<color>")
-			)
+			if (from === "simple<int>" && (to === "color" || to === "series<color>"))
 				return true;
 			if (
 				from === "simple<float>" &&
@@ -385,10 +379,7 @@ export namespace TypeChecker {
 	// forms take TV's space form ("input<int>" -> "input int"), everything
 	// else is unchanged. see INV040
 	export function displayType(type: PineType | string): string {
-		return String(type).replace(
-			/^(series|simple|input|const)<(.+)>$/,
-			"$1 $2",
-		);
+		return String(type).replace(/^(series|simple|input|const)<(.+)>$/, "$1 $2");
 	}
 
 	// Render a type for TV's CE10173 template on the LENIENT assign paths
@@ -592,8 +583,7 @@ export namespace TypeChecker {
 
 			// Allow assignability in either direction
 			return (
-				isAssignable(left, right, legacy) ||
-				isAssignable(right, left, legacy)
+				isAssignable(left, right, legacy) || isAssignable(right, left, legacy)
 			);
 		}
 
