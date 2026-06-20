@@ -1026,6 +1026,9 @@ export const LIBRARY_EXPORTS: Record<string, string[]> = {
   "TFlab/Dark_Light_Theme_TradingFinder_Switching_Colors_Library/1": [
     "SwitchingColorMode"
   ],
+  "TFlab/FVGDetectorLibrary/1": [
+    "FVGDetector"
+  ],
   "TFlab/FVGDetectorLibrary/3": [
     "FVGDetector"
   ],

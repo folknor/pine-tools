@@ -159,12 +159,12 @@ IDs so the two stay in sync.
   `install:cli` rebuilds the BUNDLE but not the tsc `dist/` modules;
   `generate:libraries` and node-required parser tests use the tsc dist, so
   run `pnpm run build:tsc` after a parser/source change before regenerating
-  or the change won't take. **Pending:** (a) vendor more published libs for
-  broader member coverage (each is one `fetch:library` + `generate:libraries`
-  + regression-check; only MPL-2.0); (b) the 1 quarantined lib
-  (`TFlab/FVGDetectorLibrary/1`) becomes coverable once its parser gap is
-  fixed (see #45); (c) optionally wire the language-service `/// @source`
-  resolver into the core checker so local-file libraries validate too; (d)
+  or the change won't take. `TFlab/FVGDetectorLibrary/1` is now covered in
+  `pine-data/v6/libraries.json` after the #45 switch-arm parser fix.
+  **Pending:** (a) vendor more published libs for broader member coverage
+  (each is one `fetch:library` + `generate:libraries` + regression-check;
+  only MPL-2.0); (b) optionally wire the language-service `/// @source`
+  resolver into the core checker so local-file libraries validate too; (c)
   per-version export drift is a non-issue (published majors are immutable).
 - **#54 (residual) - method/call chain return types (INV072).**
   UDT field inference and field-existence validation landed: the parser
@@ -269,29 +269,20 @@ IDs so the two stay in sync.
   member chains) - same method, lower urgency. This is plain
   fixture-building, distinct from #48's mutation testing (you can't
   mutate a construct that appears in zero files).
-- **#45 - leading-operator wraps at multiple-of-4 indent (probed
-  residual of INV042).** `float x = cond` / `    ? high` / `    : low`
-  is TV's CE10013 `Mismatched input "?" expecting set "end of line
-  without line continuation"` anchored at the operator (probe p06 in
-  INV042, 2026-06-07) - a different code/wording/anchor from the
-  trailing case. Our `skipWrapNewlines` single-NEWLINE path keeps its
-  historical leniency and joins these silently. No inventory rows hit
-  this shape, so it waits; implementing means emitting CE10013-style
-  errors from the leading-wrap joins (ternary `?`/`:`, the binary
-  operator loops, and parseSameLineBinary's leading path) while still
-  joining for recovery, mirroring INV042.
-  **Related but OPPOSITE-direction sub-case (fixed):** a `switch` ARM
-  BODY whose expression wraps to a leading-operator continuation line -
-  `'Defensive' => (expr)` / `     and (expr)` (continuation indented one
-  past the arm). TV joins it; our switch-arm body parser used to stop at
-  the NEWLINE, so the next line was read as a new arm and errored
-  `Expected "=>" in switch case`. Fixed by letting inline switch arm
-  expressions consume valid leading-operator continuation newlines. Pinned
-  by
-  `packages/core/test/fixtures/regression/INV073-switch-arm-leading-operator-continuation.pine`;
-  this un-quarantines `vendor/TFlab/FVGDetectorLibrary/1.pine` for #53.
-  The remaining #45 work is the original too-lenient CE10013 direction for
-  leading operators at multiple-of-4 indent.
+- **#45 (residual) - leading-operator wraps at multiple-of-4 indent.**
+  The probed INV042 residual is fixed for the covered parser paths:
+  `float x = cond` / `    ? high` / `    : low` and `bool y = a` /
+  `    and b` now emit CE10013-style `Mismatched input ... expecting
+  "end of line without line continuation"` diagnostics at the leading
+  operator while still joining for recovery. Pinned by
+  `packages/core/test/fixtures/regression/INV074-leading-operator-multiple-of-4-indent.pine`.
+  The opposite-direction switch-arm continuation case is also fixed and
+  pinned by
+  `packages/core/test/fixtures/regression/INV073-switch-arm-leading-operator-continuation.pine`,
+  which un-quarantines `vendor/TFlab/FVGDetectorLibrary/1.pine` for #53.
+  Remaining, if worth pursuing: audit other specialized leading-wrap
+  joiners for the same CE10013 wording/anchor behavior; no inventory rows
+  currently hit them.
 - **Minor data residue (record-only, low value):** `ta.vwap.anchor`'s default
   and the "X by default" phrasing are deliberately unparsed (see
   `parse-default.ts`). Skip unless a consumer needs them.

@@ -2236,6 +2236,22 @@ export class Parser {
 	// the next ARM (multiple-of-4 indent) still terminates it.
 	private sameLineAnchor = 0;
 
+	private leadingSwitchArmWrapError(tok: Token): void {
+		if (
+			(tok.indent ?? 0) === 0 ||
+			(tok.indent ?? 0) % 4 !== 0 ||
+			this.parenDepth !== 0 ||
+			this.bracketDepth !== 0
+		) {
+			return;
+		}
+		this.parserErrors.push({
+			line: tok.line,
+			column: tok.column,
+			message: `Mismatched input "${tok.value}" expecting "end of line without line continuation"`,
+		});
+	}
+
 	private parseSameLineBinary(level: number): AST.Expression {
 		if (level >= Parser.SAME_LINE_PRECEDENCE.length) {
 			return this.unary();
@@ -2299,14 +2315,13 @@ export class Parser {
 		) {
 			const consequentLine = this.skipArmWrapNewline(line);
 			const consequent = this.parseSingleLineExpression(consequentLine);
-			// A leading `:` on a valid continuation line joins too
+			// A leading `:` on a continuation line joins too. Multiple-of-4
+			// indentation is still an error, but we join for recovery like the
+			// expression parser's leading-operator path. see TODO #45.
 			if (this.check(TokenType.NEWLINE)) {
 				const next = this.peekNext();
-				if (
-					next &&
-					next.type === TokenType.COLON &&
-					(next.indent ?? 0) % 4 !== 0
-				) {
+				if (next && next.type === TokenType.COLON) {
+					this.leadingSwitchArmWrapError(next);
 					this.advance();
 				}
 			}
@@ -2337,11 +2352,14 @@ export class Parser {
 			if (
 				!op ||
 				op.type === TokenType.EOF ||
-				(op.indent ?? 0) % 4 === 0 ||
 				!Parser.SAME_LINE_PRECEDENCE.some((matches) => matches(op))
 			) {
 				break;
 			}
+			if ((op.indent ?? 0) % 4 === 0 && (op.value === "-" || op.value === "+")) {
+				break;
+			}
+			this.leadingSwitchArmWrapError(op);
 			this.current = i;
 			const opToken = this.advance();
 			const right = this.parseSingleLineExpression(opToken.line);

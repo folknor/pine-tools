@@ -31,6 +31,22 @@ export class ExpressionParser {
 	// multiple of 4 - see INV017): without it, a switch arm like `    -1 =>`
 	// after a blank line reads as a `- 1` continuation of the previous
 	// arm's body. The single-NEWLINE path keeps its historical leniency.
+	private leadingWrapError(tok: Token): void {
+		if (
+			(tok.indent ?? 0) === 0 ||
+			(tok.indent ?? 0) % 4 !== 0 ||
+			this.p.parenDepth !== 0 ||
+			this.p.bracketDepth !== 0
+		) {
+			return;
+		}
+		this.p.parserErrors.push({
+			line: tok.line,
+			column: tok.column,
+			message: `Mismatched input "${tok.value}" expecting "end of line without line continuation"`,
+		});
+	}
+
 	private skipWrapNewlines(matches: (t: Token) => boolean): boolean {
 		if (!this.p.check(TokenType.NEWLINE)) return false;
 		let i = this.p.current;
@@ -38,11 +54,24 @@ export class ExpressionParser {
 		const tok = this.p.tokens[i];
 		if (!tok || !matches(tok)) return false;
 		const newlines = i - this.p.current;
+		if ((tok.indent ?? 0) === 0) return false;
 		if (newlines > 1 && (tok.indent ?? 0) % 4 === 0) return false;
+		this.leadingWrapError(tok);
 		while (this.p.check(TokenType.NEWLINE)) {
 			this.p.advance();
 		}
 		return true;
+	}
+
+	private skipPreTernaryColonNewlines(): void {
+		if (!this.p.check(TokenType.NEWLINE)) return;
+		let i = this.p.current;
+		while (this.p.tokens[i]?.type === TokenType.NEWLINE) i++;
+		const tok = this.p.tokens[i];
+		if (tok?.type === TokenType.COLON) this.leadingWrapError(tok);
+		while (this.p.check(TokenType.NEWLINE)) {
+			this.p.advance();
+		}
 	}
 
 	// Consume the newline(s) after a TRAILING operator (`x = cond ?`,
@@ -96,9 +125,7 @@ export class ExpressionParser {
 			this.skipPostOperatorNewlines();
 			const consequent = this.expression();
 			// Skip newlines before : for multi-line ternary (when consequent ends on previous line)
-			while (this.p.check(TokenType.NEWLINE)) {
-				this.p.advance();
-			}
+			this.skipPreTernaryColonNewlines();
 			this.p.consume(TokenType.COLON, 'Expected ":" in ternary expression');
 			// Skip newlines after : for multi-line ternary (flags
 			// multiple-of-4 continuation indents - see INV042)
