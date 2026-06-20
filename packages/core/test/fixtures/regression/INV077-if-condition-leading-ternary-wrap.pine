@@ -3,6 +3,14 @@
 // @expects parse: success
 // @expects no-errors
 // @expects warnings: 0
+// @expects ast: body.4.type = "IfStatement"
+// @expects ast: body.4.condition.type = "BinaryExpression"
+// @expects ast: body.4.condition.operator = "and"
+// @expects ast: body.4.consequent.0.type = "IfStatement"
+// @expects ast: body.4.consequent.0.condition.type = "TernaryExpression"
+// @expects ast: body.4.consequent.0.condition.condition.name = "cond"
+// @expects ast: body.4.consequent.0.condition.consequent.name = "ok"
+// @expects ast: body.4.consequent.0.condition.alternate.name = "cond"
 //@version=6
 indicator("x")
 cond = close > open

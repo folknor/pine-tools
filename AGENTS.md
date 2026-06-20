@@ -75,8 +75,11 @@ For every concrete TV-vs-us discrepancy we choose to act on:
    is just a paragraph with code in it. Prefer the
    `// @expects error: line=N, message="..."` directive form; the
    count forms `// @expects errors: N` / `warnings: N` are also
-   supported. Warnings assert the SemanticAnalyzer channel (same as
-   the CLI); validator warnings are stripped.
+   supported. Use `// @expects ast: body.0.type = "IfStatement"`
+   for targeted AST-shape locks when diagnostics alone could pass with the
+   wrong parse shape. AST directives support dot paths with numeric array
+   indexes, `=`, `~= /regex/`, and `exists`. Warnings assert the
+   SemanticAnalyzer channel (same as the CLI); validator warnings are stripped.
 2. **Open an investigation** under `investigations/INV###-name/` with
    `notes.md` and the repro file (or a pointer to the regression
    fixture). Sequential numbering, never reuse. Index entries live in

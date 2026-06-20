@@ -19,6 +19,13 @@ export interface ExpectedError {
 	message?: string | RegExp;
 }
 
+export interface ExpectedAstShape {
+	path: string;
+	value?: string | number | boolean | null;
+	matches?: RegExp;
+	exists?: boolean;
+}
+
 /**
  * Test expectations parsed from @expects directives
  */
@@ -27,6 +34,7 @@ export interface TestExpectations {
 	noErrors?: boolean;
 	errors?: ExpectedError[];
 	warnings?: ExpectedError[];
+	ast?: ExpectedAstShape[];
 	errorCount?: number;
 	warningCount?: number;
 	directiveErrors?: string[]; // malformed/unknown directives - fail the test
@@ -55,6 +63,9 @@ export interface ParsedTestFile {
  *   // @expects error: line=N, message="text"
  *   // @expects error: message=/regex/
  *   // @expects warning: line=N, message="text"
+ *   // @expects ast: body.0.type = "ExpressionStatement"
+ *   // @expects ast: body.0.expression.type ~= /CallExpression/
+ *   // @expects ast: body.0.expression exists
  *
  * Unknown directives fail the test rather than being silently ignored,
  * to surface typos like `errros: 4` or `expect error: ...`.
@@ -155,6 +166,15 @@ function parseExpectsDirective(
 		return;
 	}
 
+	if (value.startsWith("ast:")) {
+		const astShape = parseAstDirective(value.slice(4).trim(), expectations);
+		if (astShape) {
+			if (!expectations.ast) expectations.ast = [];
+			expectations.ast.push(astShape);
+		}
+		return;
+	}
+
 	recordDirectiveError(expectations, `Unknown @expects directive: '${value}'`);
 }
 
@@ -164,6 +184,40 @@ function recordDirectiveError(
 ): void {
 	if (!expectations.directiveErrors) expectations.directiveErrors = [];
 	expectations.directiveErrors.push(message);
+}
+
+function parseAstDirective(
+	value: string,
+	expectations: TestExpectations,
+): ExpectedAstShape | null {
+	const existsMatch = value.match(/^([A-Za-z0-9_.]+)\s+exists$/);
+	if (existsMatch) return { path: existsMatch[1], exists: true };
+
+	const regexMatch = value.match(/^([A-Za-z0-9_.]+)\s*~=\s*\/(.*)\/$/);
+	if (regexMatch) return { path: regexMatch[1], matches: new RegExp(regexMatch[2]) };
+
+	const valueMatch = value.match(/^([A-Za-z0-9_.]+)\s*=\s*(.+)$/);
+	if (valueMatch) {
+		return { path: valueMatch[1], value: parseAstExpectedValue(valueMatch[2]) };
+	}
+
+	recordDirectiveError(expectations, `Unknown ast directive: '${value}'`);
+	return null;
+}
+
+function parseAstExpectedValue(value: string): string | number | boolean | null {
+	const trimmed = value.trim();
+	if (trimmed === "true") return true;
+	if (trimmed === "false") return false;
+	if (trimmed === "null") return null;
+	if (/^-?\d+(\.\d+)?$/.test(trimmed)) return Number(trimmed);
+	if (
+		(trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+		(trimmed.startsWith("'") && trimmed.endsWith("'"))
+	) {
+		return trimmed.slice(1, -1);
+	}
+	return trimmed;
 }
 
 /**
@@ -200,9 +254,64 @@ function parseErrorDirective(value: string): ExpectedError {
 	return error;
 }
 
-/**
- * Result of running a test
- */
+function getAstPathValue(root: unknown, path: string): unknown {
+	let current = root;
+	for (const segment of path.split(".")) {
+		if (current === null || current === undefined) return undefined;
+		if (/^\d+$/.test(segment)) {
+			if (!Array.isArray(current)) return undefined;
+			current = current[Number(segment)];
+		} else if (typeof current === "object") {
+			current = (current as Record<string, unknown>)[segment];
+		} else {
+			return undefined;
+		}
+	}
+	return current;
+}
+
+function formatAstValue(value: unknown): string {
+	if (value === undefined) return "<missing>";
+	if (typeof value === "string") return JSON.stringify(value);
+	if (typeof value === "number" || typeof value === "boolean" || value === null)
+		return String(value);
+	if (Array.isArray(value)) return `[array length=${value.length}]`;
+	if (typeof value === "object") {
+		const type = (value as { type?: string }).type;
+		return type ? `{type=${type}}` : "{object}";
+	}
+	return String(value);
+}
+
+function checkAstShapes(
+	ast: Program,
+	expectations: ExpectedAstShape[],
+	failures: string[],
+): void {
+	for (const expected of expectations) {
+		const actual = getAstPathValue(ast, expected.path);
+		if (expected.exists) {
+			if (actual === undefined) {
+				failures.push(`Expected AST path to exist: ${expected.path}`);
+			}
+			continue;
+		}
+		if (expected.matches) {
+			if (!expected.matches.test(String(actual))) {
+				failures.push(
+					`Expected AST ${expected.path} to match ${expected.matches}, got ${formatAstValue(actual)}`,
+				);
+			}
+			continue;
+		}
+		if (actual !== expected.value) {
+			failures.push(
+				`Expected AST ${expected.path} = ${formatAstValue(expected.value)}, got ${formatAstValue(actual)}`,
+			);
+		}
+	}
+}
+
 export interface TestResult {
 	success: boolean;
 	ast?: Program;
@@ -267,6 +376,15 @@ export function runTest(
 	} else if (expectations.parse === "fail" && result.parseErrors.length === 0) {
 		result.success = false;
 		result.failures.push("Expected parse failure but parsing succeeded");
+	}
+
+	if (result.parseErrors.length === 0 && expectations.ast) {
+		const astFailures: string[] = [];
+		checkAstShapes(ast, expectations.ast, astFailures);
+		if (astFailures.length > 0) {
+			result.success = false;
+			result.failures.push(...astFailures);
+		}
 	}
 
 	// Run validation if parsing succeeded and we need to check for errors

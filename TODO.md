@@ -199,14 +199,6 @@ IDs so the two stay in sync.
   low-level same-line binary/wrap events and no-op method calls, or
   `--methods a,b` to trace a targeted method set. If this needs more depth,
   extend it with explicit block-state fields such as `baseIndent`/`bodyIndent`.
-- **#57 - AST-shape assertions for parser regression fixtures.** Diagnostics
-  alone are not enough for parser fixes: a fixture can pass because the same
-  error count survives while the AST shape is wrong. Add a lightweight way for
-  regression fixtures or tests to assert structural facts such as UDT field
-  names/types, nested ternary shape, wrapped if-condition shape, method
-  declarations with keyword field names, and deep member/call-chain structure.
-  Keep it targeted, not snapshot-everything: assertions should name semantic
-  paths or predicates so harmless AST formatting changes do not churn tests.
 - **#58 - refresh the local lint baseline after accepted diagnostic-policy
   changes.** Recent intentional changes altered diagnostic wording/anchors
   (for example, ternary branch mismatches now use TV's CE10123 `operator ?:`

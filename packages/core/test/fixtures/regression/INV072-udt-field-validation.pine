@@ -6,6 +6,15 @@
 // @expects error: line=14, message=/Object has no field nope/
 // @expects error: line=15, message=/Object has no field nonexist/
 // @expects error: line=17, message=/Cannot call "str.length"/
+// @expects ast: body.1.type = "TypeDeclaration"
+// @expects ast: body.1.name = "Inner"
+// @expects ast: body.1.fields.0.name = "x"
+// @expects ast: body.2.type = "TypeDeclaration"
+// @expects ast: body.2.fields.0.name = "inner"
+// @expects ast: body.2.fields.2.name = "type"
+// @expects ast: body.3.type = "TypeDeclaration"
+// @expects ast: body.3.fields.0.name = "line"
+// @expects ast: body.3.fields.1.name = "label"
 //@version=6
 indicator("t")
 type Inner
