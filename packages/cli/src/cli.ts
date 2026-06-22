@@ -93,6 +93,18 @@ function parseArgs(argv: string[]): ParsedArgs {
 	return parsed;
 }
 
+// Emit a final payload to stdout with a synchronous write to fd 1, then exit.
+// process.stdout.write to a PIPE (no tty) is asynchronous, and process.exit()
+// races that buffered write - it truncates, or drops, the output entirely.
+// That is why a headless caller (spawned piped, e.g. brokkr) previously saw
+// nothing and had to wrap us in `script -qfec`. fs.writeSync blocks until the
+// kernel has the bytes, so following it with process.exit() is safe and the
+// output always lands. Replaces the old write-callback dance.
+function emitAndExit(jsonText: string, exitCode: number): never {
+	fs.writeSync(1, `${jsonText}\n`);
+	process.exit(exitCode);
+}
+
 function parseSourceDirective(lines: string[], importLine: number): string | undefined {
 	const line = lines[importLine - 2];
 	if (!line) return undefined;
@@ -188,8 +200,10 @@ function fillTemplate(e: PineLintError): string {
 // summary. Returns the exit code: 0 clean, 1 when there are errors.
 function printHuman(payload: HumanPayload, label: string): number {
 	if (payload.success === false) {
-		console.error(
-			`${label}: ${payload.error ?? payload.reason ?? "validation failed"}`,
+		// fd 2: synchronous, never truncated by the following process.exit().
+		fs.writeSync(
+			2,
+			`${label}: ${payload.error ?? payload.reason ?? "validation failed"}\n`,
 		);
 		return 1;
 	}
@@ -198,10 +212,11 @@ function printHuman(payload: HumanPayload, label: string): number {
 	const warnings = payload.result?.warnings ?? [];
 	const line = (severity: string, e: PineLintError) =>
 		`${label}:${e.start.line}:${e.start.column}: ${severity}: ${fillTemplate(e)}`;
-	for (const e of errors) console.log(line("error", e));
-	for (const w of warnings) console.log(line("warning", w));
+	const out: string[] = [];
+	for (const e of errors) out.push(line("error", e));
+	for (const w of warnings) out.push(line("warning", w));
 	if (errors.length === 0 && warnings.length === 0) {
-		console.log(`${label}: clean`);
+		out.push(`${label}: clean`);
 	} else {
 		const counts: string[] = [];
 		if (errors.length > 0) {
@@ -212,8 +227,10 @@ function printHuman(payload: HumanPayload, label: string): number {
 				`${warnings.length} warning${warnings.length === 1 ? "" : "s"}`,
 			);
 		}
-		console.log(`${label}: ${counts.join(", ")}`);
+		out.push(`${label}: ${counts.join(", ")}`);
 	}
+	// fd 1: synchronous flush so a piped (non-tty) caller always gets the lines.
+	fs.writeSync(1, `${out.join("\n")}\n`);
 	return errors.length > 0 ? 1 : 0;
 }
 
@@ -270,8 +287,7 @@ async function main() {
 				success: false,
 				error: `File not found: ${filePath}`,
 			};
-			console.log(JSON.stringify(output, null, 2));
-			process.exit(1);
+			emitAndExit(JSON.stringify(output, null, 2), 1);
 		}
 		label = filePath;
 		code = fs.readFileSync(absolutePath, "utf-8");
@@ -289,15 +305,10 @@ async function main() {
 			if (parsed.human) {
 				process.exit(printHuman(tvResult as HumanPayload, label));
 			}
-			// Exit only after stdout flushes - process.exit() right after a
-			// large console.log TRUNCATES the output (TV responses with big
-			// imports metadata exceed the pipe buffer), and a truncated JSON
-			// reads as "no verdict" downstream. Same pattern as the local
-			// path below.
-			process.stdout.write(`${JSON.stringify(tvResult)}\n`, () => {
-				process.exit(tvResult.success === false ? 1 : 0);
-			});
-			return;
+			// Synchronous write to fd 1 so the (often large) TV response is never
+			// truncated by a racing process.exit() on a pipe - a truncated JSON
+			// reads as "no verdict" downstream. see emitAndExit.
+			emitAndExit(JSON.stringify(tvResult), tvResult.success === false ? 1 : 0);
 		} catch (e) {
 			// A failed TV probe must NOT print a result-shaped payload. The old
 			// code emitted `{success:false, errors:[]}` on stdout, which is
@@ -352,11 +363,13 @@ async function main() {
 			semanticWarnings.push(...semanticAnalyzer.analyze(ast));
 		}
 
-		// Convert lexer errors to pine-lint format
+		// Convert lexer errors to pine-lint format. Lexer/parser failures are the
+		// `syntax` stage - a syntax-only consumer filter keys on this exactly.
 		const lexerPineLintErrors: PineLintError[] = lexerErrors.map((e) => ({
 			start: { line: e.line, column: e.column },
 			end: { line: e.line, column: e.column + 1 },
 			message: e.message,
+			stage: "syntax",
 		}));
 
 		// Convert parser errors to pine-lint format
@@ -364,6 +377,7 @@ async function main() {
 			start: { line: e.line, column: e.column },
 			end: { line: e.line, column: e.column + 1 },
 			message: e.message,
+			stage: "syntax",
 		}));
 
 		// Convert validation errors to pine-lint format (only errors, not warnings).
@@ -375,19 +389,22 @@ async function main() {
 					start: { line: e.line, column: e.column },
 					end: { line: e.line, column: e.column + e.length },
 					message: e.message,
+					stage: "type",
 				};
 				if (e.code !== undefined) out.code = e.code;
 				if (e.ctx !== undefined) out.ctx = e.ctx;
 				return out;
 			});
 
-		// Convert semantic warnings to pine-lint format (warnings)
+		// Convert semantic warnings to pine-lint format (warnings). These come
+		// from the SemanticAnalyzer pass - the `analysis` stage.
 		const semanticPineLintWarnings: PineLintError[] = semanticWarnings
 			.filter((w) => w.severity === DiagnosticSeverity.Warning)
 			.map((w) => ({
 				start: { line: w.line, column: w.column },
 				end: { line: w.line, column: w.column + w.length },
 				message: w.message,
+				stage: "analysis",
 			}));
 
 		// Combine all errors (lexer errors first, then parser, then validation)
@@ -400,13 +417,12 @@ async function main() {
 		// Combine all warnings
 		const warnings: PineLintError[] = [...semanticPineLintWarnings];
 
-		if (errors.length > 0) {
-			result.errors = errors;
-		}
-
-		if (warnings.length > 0) {
-			result.warnings = warnings;
-		}
+		// One envelope, always: locally-produced diagnostics live under
+		// result.errors / result.warnings as arrays that are always present
+		// (empty when clean). Consumers key on result.{errors,warnings} with no
+		// top-level fallback.
+		result.errors = errors;
+		result.warnings = warnings;
 
 		const output: PineLintOutput = {
 			success: true,
@@ -415,11 +431,7 @@ async function main() {
 		if (parsed.human) {
 			process.exit(printHuman(output as HumanPayload, label));
 		}
-		// Write to stdout and wait for drain before exiting
-		const jsonOutput = JSON.stringify(output, null, 2);
-		process.stdout.write(`${jsonOutput}\n`, () => {
-			process.exit(0);
-		});
+		emitAndExit(JSON.stringify(output, null, 2), 0);
 	} catch (e: unknown) {
 		const error = e as { message?: string };
 		const output: PineLintOutput = {
@@ -429,8 +441,7 @@ async function main() {
 		if (parsed.human) {
 			process.exit(printHuman(output as HumanPayload, label));
 		}
-		console.log(JSON.stringify(output, null, 2));
-		process.exit(1);
+		emitAndExit(JSON.stringify(output, null, 2), 1);
 	}
 }
 

@@ -68,10 +68,19 @@ export interface PineLintEnum {
 	definition: PineLintDefinition;
 }
 
+// Which pipeline stage produced a diagnostic. "syntax" = lexer/parser errors,
+// "type" = the validator's type/semantic error pass, "analysis" = the
+// SemanticAnalyzer warning pass. Lets consumers filter exactly (e.g. a
+// syntax-only gate) instead of guessing from the message text.
+export type PineLintStage = "syntax" | "type" | "analysis";
+
 export interface PineLintError {
 	start: PineLintPosition;
 	end: PineLintPosition;
 	message: string;
+	// The producing stage. Always set on locally-produced diagnostics; absent on
+	// errors forwarded verbatim from TradingView (--tv).
+	stage?: PineLintStage;
 	// Optional pine-lint-compatible fields. When `code` is set, `message` is
 	// expected to be the unfilled template (e.g. `"... {funId} ..."`) and `ctx`
 	// holds the values that fill those placeholders.
