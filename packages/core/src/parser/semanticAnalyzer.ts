@@ -605,8 +605,20 @@ export class SemanticAnalyzer {
 			functionName = call.callee.name;
 		} else if (call.callee.type === "MemberExpression") {
 			const member = call.callee;
-			if (member.object.type === "Identifier") {
-				functionName = `${member.object.name}.${member.property.name}`;
+			const full =
+				member.object.type === "Identifier"
+					? `${member.object.name}.${member.property.name}`
+					: "";
+			// `obj.prop()` is a namespaced builtin (`ta.sma`) when the full name
+			// resolves; otherwise it is a user METHOD call (`PH.draw_trendLine`),
+			// which registers under the BARE method name with the receiver as
+			// the object - fall back to the property so a conditionally-called
+			// history-dependent method still warns. TV's message uses the bare
+			// method name. see INV116
+			if (full && this.isHistoryDependentFunction(full)) {
+				functionName = full;
+			} else if (this.historyDependentUdfs.has(member.property.name)) {
+				functionName = member.property.name;
 			}
 		}
 
@@ -812,10 +824,18 @@ export class SemanticAnalyzer {
 				// Record history-dependent user functions for the
 				// CONDITIONAL_SERIES check, seeding the scope with the params
 				// so `src[1]` qualifies but `close[1]` does not. see TODO #32.
+				// UNTYPED params are "undetermined" (INV114): a local reassigned
+				// under a branch they gate becomes undetermined, and indexing it
+				// must NOT count (draw_ob, INV116) - so pass them through.
 				if (
 					this.scanStatementsForHistoryDependence(
 						statement.body,
 						new Set(statement.params.map((p) => p.name).filter((n) => !!n)),
+						new Set(
+							statement.params
+								.filter((p) => p.name && !p.typeAnnotation)
+								.map((p) => p.name),
+						),
 					)
 				) {
 					this.historyDependentUdfs.add(statement.name);
@@ -872,24 +892,51 @@ export class SemanticAnalyzer {
 	private scanStatementsForHistoryDependence(
 		statements: Statement[],
 		scopeNames: Set<string>,
+		untypedParams: Set<string>,
+		underUndetermined = false,
 	): boolean {
 		for (const statement of statements) {
+			// A local assigned (declared OR reassigned) inside a branch gated by
+			// an UNDETERMINED condition - one that references an untyped param
+			// and is not otherwise series (INV114) - becomes undetermined, so
+			// indexing it does NOT count as own-scope history (draw_ob:
+			// `candle_ := close<open` under `if candle_type`, candle_type
+			// untyped -> silent). We model that by REMOVING it from the
+			// qualifying set; params indexed directly are unaffected. Outside an
+			// undetermined branch, a local declaration qualifies as before. see
+			// INV116
 			if (statement.type === "VariableDeclaration" && statement.name) {
-				scopeNames.add(statement.name);
+				if (underUndetermined) scopeNames.delete(statement.name);
+				else scopeNames.add(statement.name);
 			} else if (statement.type === "TupleDeclaration") {
 				for (const n of statement.names) {
-					scopeNames.add(n);
+					if (underUndetermined) scopeNames.delete(n);
+					else scopeNames.add(n);
 				}
+			} else if (
+				underUndetermined &&
+				statement.type === "AssignmentStatement" &&
+				statement.target.type === "Identifier"
+			) {
+				scopeNames.delete(statement.target.name);
 			}
 			for (const expr of this.statementExpressions(statement)) {
 				if (this.scanExpressionForHistoryDependence(expr, scopeNames)) {
 					return true;
 				}
 			}
+			const childUndetermined =
+				underUndetermined ||
+				((statement.type === "IfStatement" ||
+					statement.type === "WhileStatement") &&
+					this.expressionReferencesNames(statement.condition, untypedParams) &&
+					!this.isSeriesishExpression(statement.condition));
 			if (
 				this.scanStatementsForHistoryDependence(
 					this.childStatements(statement),
 					scopeNames,
+					untypedParams,
+					childUndetermined,
 				)
 			) {
 				return true;
@@ -1049,6 +1096,9 @@ export class SemanticAnalyzer {
 								? this.scanStatementsForHistoryDependence(
 										c.statements,
 										scopeNames,
+										// switch-arm statement blocks carry no param context
+										// here; no undetermined-gate tracking (conservative).
+										new Set(),
 									)
 								: this.scanExpressionForHistoryDependence(
 										c.result,

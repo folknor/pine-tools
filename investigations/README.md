@@ -724,3 +724,11 @@ contradiction means re-measure, not "the earlier author was wrong."
   the conditional scope, not `var`/the const value. The collector now threads
   series-conditional context through the if/while recursion. Warning tvOnly
   24->17 (7 FN fixes), 0 new FPs (consistency-on-clean stayed at 11).
+- [INV116](INV116-method-call-history-dependence/notes.md) - CW10003/4 for
+  METHOD calls. (1) A history-dependent method called conditionally
+  (`PH.draw_trendLine()`) registers under the BARE method name, so the lookup
+  now falls back to it (5 FN fixes: draw_trendLine, FindImbalance). (2) That
+  exposed a `draw_ob` FP: a local reassigned under an UNDETERMINED gate (an
+  untyped param, INV114) is undetermined, so indexing it is not own-scope
+  history - the scan now excludes it, while a directly-indexed param
+  (`prevVal(src)=>src[1]`) still counts. Warning tvOnly 17->12, 0 new FPs.

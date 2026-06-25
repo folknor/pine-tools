@@ -1,0 +1,26 @@
+// @test regression/method-call-history-dependence
+// @description CW10003/4 for METHOD calls (INV116, probed 2026-06-25). A history-dependent method called conditionally warns: `hist` indexes `s` (derived from its typed `float x` param), so `t.hist(close)` under a series `if` warns - the call is looked up by the BARE method name (it registers as `hist`, not `t.hist`). A method whose qualifying local is assigned under an UNDETERMINED gate is silent: `undet`'s `c` is reassigned inside `if flag` where `flag` is an UNTYPED param (undetermined per INV114), so `c[1]` does not count and `t.undet(true)` stays silent (the draw_ob idiom). Matches TV exactly.
+// @expects parse: success
+// @expects warning: line=19, message="The function 'hist' should be called on each calculation"
+// @expects warnings: 1
+
+//@version=6
+indicator("method-history-dependence")
+type T
+    float v
+method hist(T this, float x) =>
+    var float s = 0
+    s := x + this.v
+    s[1]
+method undet(T this, flag) =>
+    c = this.v
+    if flag
+        c := close
+    else
+        c := open
+    if barstate.isconfirmed
+        label.new(bar_index, c[1])
+t = T.new(0)
+if close > open
+    t.hist(close)
+    t.undet(true)

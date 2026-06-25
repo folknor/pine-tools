@@ -330,23 +330,27 @@ IDs so the two stay in sync.
   float` not `series string` (member-constant string types aren't resolved in the
   ternary branch inference), so the rendered argumentType would mismatch TV's
   `series string`. See INV112 residual.
-- **#61 (residual) - CW10003/4 consistency-warning precision (INV114, INV115).**
-  Three precision fixes landed: series contagious through call args -> the
+- **#61 (residual) - CW10003/4 consistency-warning precision (INV114-INV116).**
+  Four precision fixes landed: series contagious through call args -> the
   McGinley `na(mg[1]) ? ta.ema(...)` idiom now warns; an untyped UDF param is
   "undetermined", so `switch MAtype => ta.sma/ema` no longer FP-warns (~238
-  corpus FPs cleared); and a `:=` const reassignment under a series-gated branch
-  now marks its target series, so the block-state idiom (`tradeState := 1`
-  inside `if <series>` -> `else if tradeState == 1 => ta.crossunder(...)`) warns
-  (INV115, 7 more FN fixes, `5881e014`/`b3a052e4` now match TV). Warning tvOnly
-  26->17, localOnly 1627->1312; pinned by `consistency-warning-param-and-arg.pine`
-  and `conditional-reassign-series-state.pine`. **Remaining** (all pre-existing):
+  corpus FPs cleared); a `:=` const reassignment under a series-gated branch
+  marks its target series, so the block-state idiom (`tradeState := 1` inside
+  `if <series>` -> `else if tradeState == 1 => ta.crossunder(...)`) warns
+  (INV115); and history-dependent METHOD calls are now looked up by their bare
+  method name, with a matching undetermined-gate exclusion so `draw_ob` stays
+  silent (INV116). Warning tvOnly 26->12, localOnly 1627->1312; pinned by
+  `consistency-warning-param-and-arg.pine`, `conditional-reassign-series-state.pine`,
+  and `method-call-history-dependence.pine`. **Remaining** (all pre-existing):
   (a) ~11 consistency FPs still on TV-clean files - mostly TYPED-param UDFs
   called only with NON-series args (`draw_lbl`, a stray
   `ta.sma`/`ta.atr`/`math.sum`/`ta.highest`); TV monomorphizes per call site and
   we don't, so matching needs arg-qualifier propagation into params (same
-  blocker as #9); (b) the shadowing-variable CW10013 tail (3 tv-only); (c)
-  backward references (a var used as a condition before its series-gated
-  reassignment in source order) - none in the corpus. See INV114 / INV115.
+  blocker as #9); (b) 9 consistency tv-only FNs of a still-different cause
+  (`6293fd71` getStandardTrueRange/cust_series/ta.stdev, `71fb0ec4`
+  getTrendLineScore, `b369d637` scan, `db76cf79` FindST); (c) the
+  shadowing-variable CW10013 tail (3 tv-only); (d) backward references - none in
+  the corpus. See INV114 / INV115 / INV116.
 
 ## Gotchas
 
