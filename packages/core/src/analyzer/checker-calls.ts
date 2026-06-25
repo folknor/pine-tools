@@ -74,7 +74,7 @@ export function validateUserFunctionCall(
 	version: string,
 ): void {
 	const sigs = v.functionDeclSignatures.get(functionName);
-	if (!sigs || sigs.length !== 1) return; // unknown or overloaded -> lenient
+	if (sigs?.length !== 1) return; // unknown or overloaded -> lenient
 	if (v.methodDeclaredNames.has(functionName)) return; // also a method
 	const params = sigs[0];
 
@@ -491,7 +491,7 @@ export function isVoidCall(
 // INV107, so this never double-fires). see INV110
 function checkOverloadResolvedArgs(
 	v: UnifiedPineValidator,
-	call: CallExpression,
+	_call: CallExpression,
 	functionName: string,
 	signature: FunctionSignature,
 	positionalArgs: { arg: CallArgument; type: PineType }[],
@@ -592,7 +592,7 @@ function checkOverloadResolvedArgs(
 	// and only scalar / scalar-union params render a meaningful CE10123.
 	const mergedLossy = (name: string): boolean => {
 		const m = signature.parameters.find((p) => p.name === name);
-		return !m || !m.type || m.type === "unknown";
+		return !m?.type || m.type === "unknown";
 	};
 	const reportable = (param: ParameterInfo): boolean => {
 		const raw = param.rawType ? baseOf(String(param.rawType)) : "";
@@ -1038,7 +1038,7 @@ export function validateFunctionArguments(
 			const provided =
 				providedArgs.get(param.name) ??
 				(hasOverloadSignatures(functionName) ? undefined : positionalArgs[i]);
-			if (!provided || provided.arg.value.type !== "Literal") continue;
+			if (provided?.arg.value.type !== "Literal") continue;
 			if (TypeChecker.baseTypeName(String(provided.type)) !== "float") continue;
 			const desc = v.describeArgForTemplate(
 				provided.arg.value,
@@ -1099,7 +1099,7 @@ export function validateFunctionArguments(
 			const provided =
 				providedArgs.get(param.name) ??
 				(hasOverloadSignatures(functionName) ? undefined : positionalArgs[i]);
-			if (!provided || provided.arg.value.type !== "Literal") continue;
+			if (provided?.arg.value.type !== "Literal") continue;
 			v.addTemplateError({
 				line: provided.arg.value.line,
 				column: provided.arg.value.column,
@@ -1402,7 +1402,7 @@ export function checkConstArgs(
 	v: UnifiedPineValidator,
 	call: CallExpression,
 	functionName: string,
-	signature: FunctionSignature,
+	_signature: FunctionSignature,
 	version: string,
 ): void {
 	if (version !== "6") return; // arg-type checks are v6-only. see G004
@@ -1635,7 +1635,7 @@ export function describeNonConstArg(
  */
 export function validateSpecialCases(
 	v: UnifiedPineValidator,
-	call: CallExpression,
+	_call: CallExpression,
 	functionName: string,
 	args: CallArgument[],
 ): void {

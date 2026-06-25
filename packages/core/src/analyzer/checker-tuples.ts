@@ -36,7 +36,12 @@ export function inferTupleElementTypes(
 	tupleDecl: TupleDeclaration,
 	version: string = "6",
 ): PineType[] {
-	return tupleInitElementTypes(v, tupleDecl.init, version, tupleDecl.names.length);
+	return tupleInitElementTypes(
+		v,
+		tupleDecl.init,
+		version,
+		tupleDecl.names.length,
+	);
 }
 
 // Per-element types for a tuple-producing init expression. Beyond the
@@ -313,11 +318,7 @@ export function branchTailArity(
 	if (!stmts || stmts.length === 0) return { kind: "unknown" };
 	const last = stmts[stmts.length - 1];
 	if (last.type === "ExpressionStatement") {
-		return tupleInitArity(
-			v,
-			(last as ExpressionStatement).expression,
-			version,
-		);
+		return tupleInitArity(v, (last as ExpressionStatement).expression, version);
 	}
 	if (last.type === "ReturnStatement") {
 		const value = (last as ReturnStatement).value;
@@ -383,9 +384,7 @@ export function branchTailTupleTypes(
 	}
 	if (last.type === "ReturnStatement") {
 		const value = (last as ReturnStatement).value;
-		return value
-			? tupleInitElementTypes(v, value, version, expectedCount)
-			: [];
+		return value ? tupleInitElementTypes(v, value, version, expectedCount) : [];
 	}
 	if (last.type === "IfStatement") {
 		const ifStmt = last as IfStatement;

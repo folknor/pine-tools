@@ -307,8 +307,9 @@ export class SemanticAnalyzer {
 			}
 		});
 		if (statement.alternate) {
+			const alternate = statement.alternate;
 			this.withScopeFrame(() => {
-				for (const stmt of statement.alternate!) {
+				for (const stmt of alternate) {
 					this.analyzeStatement(stmt);
 				}
 			});
@@ -564,8 +565,9 @@ export class SemanticAnalyzer {
 			// `statements` INSTEAD of `result` when present (see SwitchCase).
 			if (conditional) this.enterConditionalScope();
 			if (switchCase.statements) {
+				const statements = switchCase.statements;
 				this.withScopeFrame(() => {
-					for (const stmt of switchCase.statements!) {
+					for (const stmt of statements) {
 						this.analyzeStatement(stmt);
 					}
 				});

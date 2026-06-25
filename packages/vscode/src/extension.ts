@@ -91,7 +91,7 @@ function registerCommands(context: vscode.ExtensionContext) {
 	context.subscriptions.push(
 		vscode.commands.registerCommand("pine.validate", async () => {
 			const editor = vscode.window.activeTextEditor;
-			if (!editor || editor.document.languageId !== "pine") {
+			if (editor?.document.languageId !== "pine") {
 				vscode.window.showInformationMessage(
 					"Open a Pine (.pine) file to validate.",
 				);
@@ -107,7 +107,7 @@ function registerCommands(context: vscode.ExtensionContext) {
 	context.subscriptions.push(
 		vscode.commands.registerCommand("pine.showDocs", async () => {
 			const editor = vscode.window.activeTextEditor;
-			if (!editor || editor.document.languageId !== "pine") {
+			if (editor?.document.languageId !== "pine") {
 				vscode.window.showInformationMessage(
 					"Open a Pine (.pine) file to show docs.",
 				);

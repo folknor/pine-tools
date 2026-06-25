@@ -114,9 +114,7 @@ export function checkTypeAnnotationName(
 	if (nestedAnnotation) {
 		const outer = nestedAnnotation[1];
 		const templateRest = nestedAnnotation[2];
-		const innerCollection = templateRest.match(
-			/\b(array|matrix|map)\s*</,
-		)?.[1];
+		const innerCollection = templateRest.match(/\b(array|matrix|map)\s*</)?.[1];
 		if (innerCollection) {
 			const decl0 = statement as { startLine?: number; startColumn?: number };
 			const stmt = statement as { line: number; column: number };

@@ -9,7 +9,13 @@ import { type PineType, TypeChecker } from "./types";
 // builtin methods (probed INV065 p06/p07: `x.abs()` / `s.length()` are both
 // CE10271), so a method-call on a scalar can only resolve to a user-defined
 // method - never a builtin. Used by the shadowed-namespace member-call check.
-export const SCALAR_BASE_TYPES = new Set(["int", "float", "bool", "string", "color"]);
+export const SCALAR_BASE_TYPES = new Set([
+	"int",
+	"float",
+	"bool",
+	"string",
+	"color",
+]);
 export const ARRAY_ELEMENT_RETURN_METHODS = new Set([
 	"first",
 	"get",
@@ -68,7 +74,10 @@ export function collectionElementTarget(
 // on numerics: a widening int -> float is fine, but a narrowing float -> int is
 // rejected (TV CE10123, probed 2026-06-25). na and unresolved args stay lenient.
 // see INV087
-export function elementArgAssignable(argType: PineType, target: string): boolean {
+export function elementArgAssignable(
+	argType: PineType,
+	target: string,
+): boolean {
 	if (argType === "unknown" || TypeChecker.isNaType(argType)) return true;
 	const ab = TypeChecker.baseTypeName(String(argType));
 	const tb = TypeChecker.baseTypeName(target);
@@ -82,7 +91,9 @@ export function elementArgAssignable(argType: PineType, target: string): boolean
 // expected", e.g. ta.ema length). Excludes union/combined forms - "simple
 // series int" is series, "simple int/float" is a union. see INV088
 export function isSimpleQualifiedParam(rawType?: string): boolean {
-	return /^simple\s+(int|float|bool|string|color)$/.test((rawType ?? "").trim());
+	return /^simple\s+(int|float|bool|string|color)$/.test(
+		(rawType ?? "").trim(),
+	);
 }
 
 export function isSeriesQualified(argType: PineType): boolean {
@@ -127,7 +138,10 @@ export function arrayFromExpectedType(arg0Base: string): string | null {
 	return null; // UDT / enum / na / unknown arg0 -> stay lenient
 }
 
-export function arrayFromArgMatches(argType: PineType, arg0Base: string): boolean {
+export function arrayFromArgMatches(
+	argType: PineType,
+	arg0Base: string,
+): boolean {
 	if (argType === "unknown" || TypeChecker.isNaType(argType)) return true;
 	const ab = TypeChecker.baseTypeName(String(argType));
 	if (arg0Base === "int" || arg0Base === "float") {

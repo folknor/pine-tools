@@ -107,7 +107,10 @@ function emitAndExit(jsonText: string, exitCode: number): never {
 	process.exit(exitCode);
 }
 
-function parseSourceDirective(lines: string[], importLine: number): string | undefined {
+function parseSourceDirective(
+	lines: string[],
+	importLine: number,
+): string | undefined {
 	const line = lines[importLine - 2];
 	if (!line) return undefined;
 	return line.match(/^\s*\/\/\/\s*@source\s+(.+?)\s*$/)?.[1];

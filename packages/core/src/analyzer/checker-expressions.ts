@@ -12,6 +12,8 @@ import type {
 	Expression,
 	ExpressionStatement,
 	Identifier,
+	IfExpression,
+	IfStatement,
 	SwitchExpression,
 	TernaryExpression,
 	UnaryExpression,
@@ -19,6 +21,10 @@ import type {
 import type { UnifiedPineValidator } from "./checker";
 import { CE10123_TEMPLATE, isOpaqueHandleType } from "./checker-helpers";
 import { type PineType, TypeChecker } from "./types";
+
+// The if/switch EXPRESSION nodes whose branches the CE10235 check walks. An
+// `else if` chain lowers to a nested IfStatement in the `alternate` block.
+type BranchNode = IfExpression | IfStatement | SwitchExpression;
 
 // A value is acceptable in a bool context (if/while/ternary condition,
 // and/or/not operand) when it IS bool, when we can't tell, or - on
@@ -117,17 +123,7 @@ export function validateBinaryExpression(
 		// operands - `2 * color.blue` errors at the color, `color.red >
 		// color.blue` at both); fall back to the whole expression for
 		// mutual incompatibilities. see INV028
-		const ARITH_OR_COMPARE = [
-			"+",
-			"-",
-			"*",
-			"/",
-			"%",
-			"<",
-			">",
-			"<=",
-			">=",
-		];
+		const ARITH_OR_COMPARE = ["+", "-", "*", "/", "%", "<", ">", "<=", ">="];
 		const offenders: Array<{
 			expr: Expression;
 			type: PineType;
@@ -172,7 +168,9 @@ export function expectedArithmeticOperandType(
 	leftType: PineType,
 	rightType: PineType,
 ): string {
-	const otherNumeric = TypeChecker.isNumericType(leftType) ? leftType : rightType;
+	const otherNumeric = TypeChecker.isNumericType(leftType)
+		? leftType
+		: rightType;
 	return TypeChecker.baseTypeName(otherNumeric) === "float"
 		? "const float"
 		: "const int";
@@ -352,8 +350,7 @@ export function areTernaryBranchTypesCompatible(
 // void call) is skipped conservatively (no type -> no false mismatch).
 export function collectBranchResultTypes(
 	v: UnifiedPineValidator,
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	node: any,
+	node: BranchNode,
 	version: string,
 	out: PineType[],
 ): void {
@@ -361,7 +358,7 @@ export function collectBranchResultTypes(
 		if (!block || block.length === 0) return;
 		const tail = block[block.length - 1];
 		if (tail.type === "IfStatement" || tail.type === "IfExpression") {
-			collectBranchResultTypes(v, tail, version, out);
+			collectBranchResultTypes(v, tail as unknown as BranchNode, version, out);
 		} else if (tail.type === "ExpressionStatement") {
 			out.push(
 				v.inferExpressionType(
@@ -374,8 +371,7 @@ export function collectBranchResultTypes(
 	if (node.type === "SwitchExpression") {
 		for (const c of (node as SwitchExpression).cases) {
 			if (c.statements) blockTail(c.statements as { type: string }[]);
-			else if (c.result)
-				out.push(v.inferExpressionType(c.result, version));
+			else if (c.result) out.push(v.inferExpressionType(c.result, version));
 		}
 	} else {
 		// IfExpression / IfStatement share { consequent, alternate } blocks.
@@ -395,8 +391,7 @@ export function collectBranchResultTypes(
 // at the if/switch keyword. see INV070.
 export function checkIfSwitchBranchTypes(
 	v: UnifiedPineValidator,
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	node: any,
+	node: BranchNode,
 	version: string,
 ): void {
 	if (version !== "6") return;

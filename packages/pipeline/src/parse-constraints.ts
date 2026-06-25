@@ -26,7 +26,7 @@ const TERMINATOR =
 function valueSpan(description: string): string | undefined {
 	const m = description.match(INTRO);
 	if (!m) return undefined;
-	let span = description.slice(m.index! + m[0].length);
+	let span = description.slice((m.index ?? 0) + m[0].length);
 	const cut = span.search(TERMINATOR);
 	if (cut >= 0) span = span.slice(0, cut);
 	return span;

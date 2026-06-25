@@ -23,7 +23,9 @@ export function resolveUdtExpressionType(
 ): PineType | null {
 	if (expr.type === "Identifier") {
 		const symbol = v.symbolTable.lookup((expr as Identifier).name);
-		const type = symbol ? TypeChecker.baseTypeName(symbol.type as string) : "unknown";
+		const type = symbol
+			? TypeChecker.baseTypeName(symbol.type as string)
+			: "unknown";
 		return v.udtFieldTypes.has(type) ? (type as PineType) : null;
 	}
 	if (expr.type === "CallExpression") {
@@ -60,9 +62,7 @@ export function checkUdtFieldAccess(
 	if (version !== "6") return;
 	const receiverType = resolveUdtExpressionType(v, expr.object);
 	if (receiverType) {
-		const fields = v.udtFieldTypes.get(
-			TypeChecker.baseTypeName(receiverType),
-		);
+		const fields = v.udtFieldTypes.get(TypeChecker.baseTypeName(receiverType));
 		if (!fields || fields.has(expr.property.name)) return;
 		emitNoField(v, expr);
 		return;
@@ -164,11 +164,7 @@ export function checkTypeFieldDefaults(
 		}
 		const defType = v.inferExpressionType(field.defaultValue, version);
 		if (elementArgAssignable(defType, fb)) continue;
-		const desc = v.describeArgForTemplate(
-			field.defaultValue,
-			defType,
-			version,
-		);
+		const desc = v.describeArgForTemplate(field.defaultValue, defType, version);
 		v.addTemplateError({
 			line: field.line ?? statement.line,
 			column: field.column ?? statement.column,
