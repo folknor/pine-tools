@@ -1,0 +1,21 @@
+// @test regression/udf-call-validation
+// @description The local checker validated builtin calls but not user-function calls. It now checks arg type (CE10123 on typed primitive params), too-many-args (CE10115), and missing required params (CE10165) against the captured signature - conservatively: non-overloaded UDFs only, count checks gated on a clean parse, typed-primitive params only, names that are also methods skipped. Default params, named args, and exact calls stay clean. Probed 2026-06-25 via pine-lint --tv, see INV095.
+// @expects parse: success
+// @expects error: line=7, message=/Cannot call "f" with argument "x"="hello".*literal string.*series int/
+// @expects error: line=8, message=/Too many arguments passed into the "f\(\)" function call.*Passed 2.*expected 1/
+// @expects error: line=9, message=/No value assigned to the "b" parameter in g\(\)/
+// @expects errors: 3
+
+//@version=6
+indicator("udf-call-validation")
+f(int x) =>
+    x + 1
+g(a, b) =>
+    a + b
+y = f("hello")
+z = f(1, 2)
+w = g(1)
+ok1 = f(5)
+ok2 = g(1, 2)
+ok3 = f(x = 7)
+plot(y + z + w + ok1 + ok2 + ok3)

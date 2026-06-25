@@ -274,6 +274,11 @@ export class UnifiedPineValidator {
 	// distinguishable by explicit type are TV's CE10110/CE10112/CE10113. see
 	// INV091
 	private functionDeclSignatures: Map<string, FunctionParam[][]> = new Map();
+	// Names declared as a METHOD. A method can share a name with a function
+	// (legal overload); UDF call-site validation skips such names since the
+	// captured function signature may not be the overload a plain call resolves
+	// to. see INV095
+	private methodDeclaredNames: Set<string> = new Set();
 	// Loop-nesting depth (for/for-in/while). `break`/`continue` outside any loop
 	// are TV's CE10135/CE10136. Distinct from blockDepth, which also counts
 	// if-blocks (where break IS allowed if a loop encloses them). see INV092
@@ -304,6 +309,7 @@ export class UnifiedPineValidator {
 		this.currentFunctionName = null;
 		this.overloadedFunctionNames.clear();
 		this.functionDeclSignatures.clear();
+		this.methodDeclaredNames.clear();
 		this.loopDepth = 0;
 
 		// Pre-pass: tally top-level function declarations so overloaded names
@@ -318,6 +324,14 @@ export class UnifiedPineValidator {
 						this.overloadedFunctionNames.add(statement.name);
 					}
 					seen.add(statement.name);
+				} else if (statement.type === "MethodDeclaration") {
+					// A name can be BOTH a function and a method (TV-legal
+					// overload). Methods parse as a separate node, so record them
+					// to keep UDF call-site validation from applying the function
+					// overload to a method call. see INV095
+					this.methodDeclaredNames.add(
+						(statement as { name: string }).name,
+					);
 				}
 			}
 		}
@@ -2488,6 +2502,111 @@ export class UnifiedPineValidator {
 		sigs.push(cur);
 	}
 
+	// User-function call-site validation (CE10115/CE10165/CE10123). The local
+	// checker validated builtin calls but not UDF calls. Uses the param
+	// signatures captured for the redefinition check. Conservative, to avoid
+	// FPs: only NON-overloaded UDFs (exactly one signature); count checks gated
+	// on a clean parse (a recovery-truncated call must not misfire); arg-type
+	// checks only on TYPED PRIMITIVE params (untyped/UDT/collection params accept
+	// anything we can't prove wrong); positional args only. v6 only (G004). see
+	// INV095
+	private validateUserFunctionCall(
+		call: CallExpression,
+		functionName: string,
+		version: string,
+	): void {
+		const sigs = this.functionDeclSignatures.get(functionName);
+		if (!sigs || sigs.length !== 1) return; // unknown or overloaded -> lenient
+		if (this.methodDeclaredNames.has(functionName)) return; // also a method
+		const params = sigs[0];
+
+		const posArgs: CallArgument[] = [];
+		const named = new Set<string>();
+		for (const arg of call.arguments) {
+			if (arg.name) named.add(arg.name);
+			else posArgs.push(arg);
+		}
+
+		// Too many positional args (CE10115), anchored at the first extra arg.
+		if (this.parserClean && posArgs.length > params.length) {
+			const anchor = posArgs[params.length]?.value ?? call;
+			this.addTemplateError({
+				line: anchor.line,
+				column: anchor.column,
+				length: 0,
+				message:
+					'Too many arguments passed into the "{funName}()" function call. Passed {passedArgsCount} arguments{expectMsg}{expectArgsCount}.',
+				severity: DiagnosticSeverity.Error,
+				code: "CE10115",
+				ctx: {
+					funName: functionName,
+					passedArgsCount: String(posArgs.length),
+					expectMsg: " but expected ",
+					expectArgsCount: String(params.length),
+				},
+			});
+			return; // an over-long call: don't also report missing/type
+		}
+
+		// Missing required params (CE10165) - a param with no default, supplied
+		// neither positionally nor by name.
+		if (this.parserClean) {
+			for (let i = 0; i < params.length; i++) {
+				const p = params[i];
+				if (p.defaultValue) continue; // optional
+				if (i < posArgs.length || named.has(p.name)) continue; // provided
+				this.addTemplateError({
+					line: call.line,
+					column: call.column,
+					length: functionName.length,
+					message:
+						'No value assigned to the "{name}" parameter in {functionName}()',
+					severity: DiagnosticSeverity.Error,
+					code: "CE10165",
+					ctx: { functionName, name: p.name },
+				});
+			}
+		}
+
+		// Arg TYPE (CE10123) for typed primitive params.
+		for (let i = 0; i < posArgs.length && i < params.length; i++) {
+			const ann = params[i].typeAnnotation?.name;
+			if (!ann) continue; // untyped param -> accepts anything
+			const base = TypeChecker.baseTypeName(ann);
+			if (
+				base !== "int" &&
+				base !== "float" &&
+				base !== "bool" &&
+				base !== "string" &&
+				base !== "color"
+			) {
+				continue; // UDT / collection / unknown param -> lenient
+			}
+			const argExpr = posArgs[i].value;
+			const argType = this.inferExpressionType(argExpr, version);
+			if (TypeChecker.isAssignable(argType, base as PineType)) continue;
+			const desc = this.describeArgForTemplate(argExpr, argType, version);
+			this.addTemplateError({
+				line: argExpr.line,
+				column: argExpr.column,
+				length: 0,
+				message: UnifiedPineValidator.CE10123_TEMPLATE,
+				severity: DiagnosticSeverity.Error,
+				code: "CE10123",
+				ctx: {
+					argDisplayName: params[i].name,
+					argUserFriendlyRepresentation: desc.repr,
+					argumentType: desc.typeStr,
+					// UDF params default to the series qualifier (TV renders
+					// `int x` as "series int"); keep an explicit qualifier as-is.
+					currentTypeDocStr: ann === base ? `series ${base}` : ann,
+					funId: functionName,
+					typePostfix: "",
+				},
+			});
+		}
+	}
+
 	// Render an internal PineType in TV's qualified display form ("series
 	// float"). Our lattice collapses const/input/simple to the bare base, so a
 	// bare type's qualifier is unrecoverable - `bareQualifier` supplies the
@@ -2823,6 +2942,17 @@ export class UnifiedPineValidator {
 						DiagnosticSeverity.Error,
 					);
 				}
+			}
+			// A valid UDF call (declared Identifier callee, not the self-call
+			// already flagged above): validate arg count and typed-param arg
+			// types against the captured signature. see INV095
+			if (
+				version === "6" &&
+				call.callee.type === "Identifier" &&
+				this.declaredFunctionNames.has(functionName) &&
+				functionName !== this.currentFunctionName
+			) {
+				this.validateUserFunctionCall(call, functionName, version);
 			}
 			return;
 		}

@@ -626,3 +626,8 @@ contradiction means re-measure, not "the earlier author was wrong."
   type (`int x = 1.5` -> CE10170); parser now captures literal defaults (was
   discarded), checker types them with the INV087 element rule. freedom FINDINGS
   L-002.
+- [INV095](INV095-udf-call-site-validation/notes.md) - user-function call sites
+  validated (CE10123 arg type / CE10115 too-many / CE10165 missing); reuses
+  INV091's captured signatures, conservative (non-overloaded, parserClean,
+  typed-primitive params, method-named functions skipped). freedom FINDINGS
+  L-001 / F-031.

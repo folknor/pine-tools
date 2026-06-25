@@ -1,0 +1,11 @@
+//@version=6
+// Probes (pine-lint --tv, 2026-06-25), UDF call sites:
+//   f("hello") for f(int x)  -> CE10123 @ 5:7 (literal string / series int)
+//   f(1, 2)    for f(int x)  -> CE10115 @ 5:8 (too many, passed 2 expected 1)
+//   g(1)       for g(a, b)   -> CE10165 @ 5:6 (No value assigned to "b" ...)
+// Clean: f(5), g(1,2), f(x=7), f() with a default.
+indicator("s")
+f(int x) =>
+    x + 1
+y = f("hello")
+plot(y)
