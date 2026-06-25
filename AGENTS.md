@@ -258,7 +258,6 @@ indexed manual). Output is always text.
   sections (one `<hash>  page / heading / subheading` line each), not the
   prose. Print a section with `po show <hash>...` (space-separated hashes for
   several at once).
-- Don't use `po validate`, use `pine-lint` instead.
 
 ---
 
