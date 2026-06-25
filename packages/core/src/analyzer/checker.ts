@@ -81,6 +81,22 @@ import {
 } from "./checker-helpers";
 import { isVoidCall, validateCallExpression } from "./checker-calls";
 import {
+	annotationToSymbolType,
+	checkBuiltinShadowDeclaration,
+	checkExportedParamsTypified,
+	checkFunctionRedefinition,
+	checkParamTypeAnnotations,
+	checkRedeclaration,
+	checkTypeAnnotationName,
+	recordEnumMembers,
+	registerTypeDeclaration,
+} from "./checker-declarations";
+import {
+	checkTypeFieldDefaults,
+	checkUdtFieldAccess,
+	resolveUdtFieldType,
+} from "./checker-udt";
+import {
 	defineTupleVariables,
 	inferTupleElementTypes,
 	inferUdfTupleReturnTypes,
@@ -116,7 +132,7 @@ export class UnifiedPineValidator {
 	// order. Declaring a variable with one of these names afterwards is
 	// TV's CE10190; without a prior use it is only the CW10011 warning
 	// (probed 2026-06-04, see INV023 / TODO #40).
-	private usedBuiltins: Set<string> = new Set();
+	public usedBuiltins: Set<string> = new Set();
 	// UDT / enum names declared so far, in source order. A declaration's
 	// type annotation must name one of these (or a built-in type) - and
 	// use-before-declaration is the same CE10149 (probed). see INV033
@@ -125,10 +141,10 @@ export class UnifiedPineValidator {
 	// name in value position is TV's CE10074 ("Cannot use the "E" as a
 	// value...") while a bare UDT name is accepted - so the value-position
 	// check needs to tell the two apart. see INV048
-	private declaredEnumNames: Set<string> = new Set();
+	public declaredEnumNames: Set<string> = new Set();
 	// Enum name -> its member names. `E.member` is typed as the enum (the name),
 	// so the operator checks reject `E.a == 1` / `E.a + 1` (CE10123). see INV096
-	private enumMemberNames: Map<string, Set<string>> = new Map();
+	public enumMemberNames: Map<string, Set<string>> = new Map();
 	// UDF / method names declared so far, in source order. The CE10271
 	// undefined-callable check consults this instead of the symbol table
 	// because variables SHARE the symbol namespace and hide functions:
@@ -136,8 +152,8 @@ export class UnifiedPineValidator {
 	// pre-collected over a global UDF (`float ema2 = ...` inside a body
 	// calling global `ema2()`) are all TV-legal calls. see INV036
 	public declaredFunctionNames: Set<string> = new Set();
-	private udtFieldTypes: Map<string, Map<string, PineType>> = new Map();
-	private reportedUdtFieldErrors: Set<string> = new Set();
+	public udtFieldTypes: Map<string, Map<string, PineType>> = new Map();
+	public reportedUdtFieldErrors: Set<string> = new Set();
 	// Namespaces bound by an `import` - the alias if present, else the
 	// library name (the path's middle segment: `import User/ta/8` binds the
 	// namespace `ta`). Members of these are library calls we cannot resolve,
@@ -157,7 +173,7 @@ export class UnifiedPineValidator {
 	// only the CW10011/CW10013 warning (INV020), hence a stack and not a
 	// single set. Unlike the symbol table, if-bodies get their own frame
 	// here (TV scopes them) and builtins never enter it. see INV035
-	private declScopes: Array<Set<string>> = [];
+	public declScopes: Array<Set<string>> = [];
 	// Name of the UDF / method whose body is currently being validated, or
 	// null at top level. Pine v6 forbids recursion: a direct self-call inside
 	// the body resolves to nothing (TV reports CE10271 "Could not find function
@@ -278,43 +294,6 @@ export class UnifiedPineValidator {
 		return this.errors;
 	}
 
-	private annotationToSymbolType(name: string): PineType {
-		const mapped = mapToPineType(name);
-		if (mapped !== "unknown") return mapped;
-		const base = TypeChecker.baseTypeName(name);
-		return this.declaredTypeNames.has(base) ? (base as PineType) : "unknown";
-	}
-
-	// Record an enum's member names so `E.member` can be typed as the enum.
-	// see INV096
-	private recordEnumMembers(statement: Statement): void {
-		if (statement.type !== "EnumDeclaration") return;
-		const members = statement.members;
-		if (members && members.length > 0) {
-			this.enumMemberNames.set(statement.name, new Set(members));
-		}
-	}
-
-	private registerTypeDeclaration(statement: Statement): void {
-		if (statement.type !== "TypeDeclaration") return;
-		this.declaredTypeNames.add(statement.name);
-		const fields = new Map<string, PineType>();
-		for (const field of statement.fields ?? []) {
-			if (!field.typeAnnotation) continue;
-			const mapped = mapToPineType(field.typeAnnotation.name);
-			const base = TypeChecker.baseTypeName(field.typeAnnotation.name);
-			fields.set(
-				field.name,
-				mapped !== "unknown"
-					? mapped
-					: this.declaredTypeNames.has(base)
-						? (base as PineType)
-						: "unknown",
-			);
-		}
-		this.udtFieldTypes.set(statement.name, fields);
-	}
-
 	public collectDeclarations(
 		statement: Statement,
 		version: string = "6",
@@ -332,7 +311,7 @@ export class UnifiedPineValidator {
 
 			// Use type annotation if present, otherwise infer from initialization
 				if (statement.typeAnnotation) {
-					symbol.type = this.annotationToSymbolType(statement.typeAnnotation.name);
+					symbol.type = annotationToSymbolType(this,statement.typeAnnotation.name);
 
 			} else if (statement.init) {
 				const initType = this.inferExpressionType(statement.init, version);
@@ -363,11 +342,11 @@ export class UnifiedPineValidator {
 			statement.type === "EnumDeclaration"
 		) {
 			if (statement.type === "TypeDeclaration") {
-				this.registerTypeDeclaration(statement);
+				registerTypeDeclaration(this,statement);
 			} else {
 				this.declaredTypeNames.add(statement.name); // see INV033
 				this.declaredEnumNames.add(statement.name); // see INV048
-				this.recordEnumMembers(statement); // see INV096
+				recordEnumMembers(this,statement); // see INV096
 			}
 			const symbol: SymbolInfo = {
 				name: statement.name,
@@ -403,179 +382,6 @@ export class UnifiedPineValidator {
 			for (const stmt of statement.statements) {
 				this.collectDeclarations(stmt, version);
 			}
-		}
-	}
-
-	// TV's CE10190 (probed 2026-06-04, see INV023 / TODO #40): declaring
-	// a variable named after a built-in VARIABLE errors when the built-in
-	// was referenced anywhere EARLIER in source - any scope, global
-	// redeclarations included. Without a prior use only the CW10011
-	// warning (SemanticAnalyzer channel) applies. v6-only, like the other
-	// shadow/unused machinery - legacy scripts stay lenient (G004).
-	private checkBuiltinShadowDeclaration(
-		name: string,
-		line: number,
-		column: number,
-		version: string,
-	): void {
-		if (version !== "6") return;
-		if (!this.usedBuiltins.has(name)) return;
-		this.addError(
-			line,
-			column,
-			name.length,
-			`Cannot shadow the built-in variable '${name}' because it has already been used as a built-in.`,
-			DiagnosticSeverity.Error,
-		);
-	}
-
-	// TV's CE10149: a declaration's type annotation must name a known type -
-	// a built-in type keyword, a built-in object type (linefill, polyline,
-	// chart.point, ... from the pine-data types catalog), or a UDT / enum
-	// declared EARLIER in source (use-before-declaration is the same
-	// CE10149; all probed 2026-06-05). Dotted names other than catalog
-	// entries (lib.Type via an import alias) are accepted unvalidated -
-	// import member sets are unknown. see INV033
-	private checkTypeAnnotationName(
-		statement: Statement & { typeAnnotation?: { name: string } },
-		version: string,
-	): void {
-		if (version !== "6" || !statement.typeAnnotation) return;
-		const raw = statement.typeAnnotation.name;
-		// Collection-in-template annotations, all anchored at the template
-		// span (probed 2026-06-05, see INV038):
-		// - `array<array<float>>` is CE10022 "Arrays of type {inner} are not
-		//   supported." ({inner} is the nested base - "map" for array<map<...>>),
-		// - `matrix<array<float>>` is CE10023 "Matrix of type {inner} are not
-		//   supported.",
-		// - `map<string, array<float>>` gets CE10025's constructor-call
-		//   wording instead (the nested collection sits in a template SLOT,
-		//   not as the sole element type).
-		// All distinct from the CE10025 constructor-call form on array.new<...>().
-		const nestedAnnotation = raw.match(
-			/^(?:(?:series|simple|input|const)\s+)?(array|matrix|map)\s*<(.*)$/,
-		);
-		if (nestedAnnotation) {
-			const outer = nestedAnnotation[1];
-			const templateRest = nestedAnnotation[2];
-			const innerCollection = templateRest.match(
-				/\b(array|matrix|map)\s*</,
-			)?.[1];
-			if (innerCollection) {
-				const decl0 = statement as { startLine?: number; startColumn?: number };
-				const stmt = statement as { line: number; column: number };
-				const startColumn = decl0.startColumn ?? stmt.column;
-				const lt = raw.indexOf("<");
-				const message =
-					outer === "map"
-						? "Cannot use a collection in a type template of another collection. Create a user-defined type with that collection as a field and use it instead."
-						: outer === "matrix"
-							? `Matrix of type ${innerCollection} are not supported.`
-							: `Arrays of type ${innerCollection} are not supported.`;
-				this.addError(
-					decl0.startLine ?? stmt.line,
-					startColumn + lt,
-					raw.length - lt,
-					message,
-					DiagnosticSeverity.Error,
-				);
-				return;
-			}
-		}
-		const base = this.invalidAnnotationBase(raw);
-		if (base === null) return;
-		const decl = statement as {
-			startLine?: number;
-			startColumn?: number;
-			line: number;
-			column: number;
-		};
-		// Only flag when the annotation and the variable name sit on the
-		// same physical line. Hard-wrapped corpus files glue prose / split
-		// identifiers into IDENT IDENT = shapes across lines, which parse
-		// as user-type declarations; those are wrap artifacts with no TV
-		// verdict, not type-keyword mistakes. see INV033
-		if (decl.startLine !== undefined && decl.startLine !== decl.line) return;
-		this.addError(
-			decl.startLine ?? decl.line,
-			decl.startColumn ?? decl.column,
-			base.length,
-			`"${base}" is not a valid type keyword.`,
-			DiagnosticSeverity.Error,
-		);
-	}
-
-	// Returns the annotation's base name when it does NOT name a known type
-	// (built-in keyword, pine-data object type, or an earlier UDT/enum),
-	// null when the annotation is acceptable. Shared by the declaration and
-	// UDF-parameter CE10149 paths. see INV033
-	private invalidAnnotationBase(raw: string): string | null {
-		// Strip qualifier prefix, generic suffix, and array suffix:
-		// "series float", "array<MyType>", "Foo[]" all reduce to a base name.
-		const base = raw
-			.replace(/^(series|simple|input|const)\s+/, "")
-			.replace(/<.*$/, "")
-			.replace(/\[\]$/, "")
-			.trim();
-		if (!base) return null;
-		if (TYPE_KEYWORDS.has(base)) return null;
-		if (TYPE_NAMES.has(base)) return null; // incl. dotted chart.point
-		if (base.includes(".")) return null; // import-alias types - unvalidated
-		if (this.declaredTypeNames.has(base)) return null;
-		return base;
-	}
-
-	// TV's CE10149 fires on UDF/method parameter annotations too, anchored
-	// at the annotation's first token (probed `f(source x)` at the keyword,
-	// `g(Bar b)` for an undeclared UDT; earlier-declared UDT params accepted).
-	// see INV033
-	private checkParamTypeAnnotations(
-		params: Array<{
-			typeAnnotation?: { name: string; line?: number; column?: number };
-		}>,
-		version: string,
-	): void {
-		if (version !== "6") return;
-		for (const param of params) {
-			const ann = param.typeAnnotation;
-			if (!ann || ann.line === undefined || ann.column === undefined) continue;
-			const base = this.invalidAnnotationBase(ann.name);
-			if (base === null) continue;
-			this.addError(
-				ann.line,
-				ann.column,
-				base.length,
-				`"${base}" is not a valid type keyword.`,
-				DiagnosticSeverity.Error,
-			);
-		}
-	}
-
-	// TV requires every parameter of an EXPORTED function or method in a
-	// library to carry an explicit type ("All exported functions args
-	// should be typified"), anchored at each untyped param. Non-exported
-	// UDFs infer param types and are exempt. see INV052
-	private checkExportedParamsTypified(
-		isExport: boolean | undefined,
-		params: Array<{
-			name: string;
-			typeAnnotation?: { name: string };
-			line?: number;
-			column?: number;
-		}>,
-		version: string,
-	): void {
-		if (version !== "6" || !isExport) return;
-		for (const param of params) {
-			if (param.typeAnnotation) continue;
-			if (param.line === undefined || param.column === undefined) continue;
-			this.addError(
-				param.line,
-				param.column,
-				param.name.length,
-				"All exported functions args should be typified",
-				DiagnosticSeverity.Error,
-			);
 		}
 	}
 
@@ -629,43 +435,6 @@ export class UnifiedPineValidator {
 		this.declScopes.pop();
 	}
 
-	// TV's CE10095: declaring a name that this same scope already declared
-	// (params count as declared by the function scope). v6-gated like the
-	// other declaration checks - legacy versions used `=` for
-	// reassignment. Anchored at the statement start. see INV035
-	private checkRedeclaration(
-		name: string,
-		statement: {
-			startLine?: number;
-			startColumn?: number;
-			line: number;
-			column: number;
-		},
-		version: string,
-	): void {
-		// `_` is a discard placeholder TV allows re-declaring freely
-		// (`_ = '--- SECTION ---'` separators; probed clean). see INV035
-		if (name === "_") return;
-		const frame = this.declScopes[this.declScopes.length - 1];
-		if (!frame) return;
-		if (version === "6" && frame.has(name)) {
-			const startLine = statement.startLine ?? statement.line;
-			const startColumn = statement.startColumn ?? statement.column;
-			const span =
-				statement.line === startLine
-					? statement.column - startColumn + name.length
-					: name.length;
-			this.addError(
-				startLine,
-				startColumn,
-				span,
-				`"${name}" is already defined`,
-				DiagnosticSeverity.Error,
-			);
-		}
-		frame.add(name);
-	}
-
 	private validateStatement(statement: Statement, version: string = "6"): void {
 		const _prevBlockDepth = this.blockDepth;
 		switch (statement.type) {
@@ -687,14 +456,14 @@ export class UnifiedPineValidator {
 						DiagnosticSeverity.Error,
 					);
 				}
-				this.checkBuiltinShadowDeclaration(
+				checkBuiltinShadowDeclaration(this,
 					statement.name,
 					statement.line,
 					statement.column,
 					version,
 				);
-				this.checkTypeAnnotationName(statement, version);
-				this.checkRedeclaration(statement.name, statement, version);
+				checkTypeAnnotationName(this,statement, version);
+				checkRedeclaration(this,statement.name, statement, version);
 				// TV emits CE10025 a SECOND time at the statement start when a
 				// nested-collection constructor is a declaration initializer
 				// (probed: `var x = array.new<array<float>>()` errors at the
@@ -773,7 +542,7 @@ export class UnifiedPineValidator {
 
 				// Use type annotation if present, otherwise infer from initialization
 				if (statement.typeAnnotation) {
-					symbol.type = this.annotationToSymbolType(statement.typeAnnotation.name);
+					symbol.type = annotationToSymbolType(this,statement.typeAnnotation.name);
 				} else if (statement.init) {
 					const initType = this.inferExpressionType(statement.init, version);
 					// Bare-na initializer: no type for the variable - the
@@ -879,7 +648,7 @@ export class UnifiedPineValidator {
 				// Handle tuple destructuring: [a, b, c] = expr
 				const tupleDecl = statement as TupleDeclaration;
 				for (const name of tupleDecl.names) {
-					this.checkBuiltinShadowDeclaration(
+					checkBuiltinShadowDeclaration(this,
 						name,
 						tupleDecl.line,
 						tupleDecl.column,
@@ -889,7 +658,7 @@ export class UnifiedPineValidator {
 					// declarations: a later `m = ...` is CE10095, and so is a
 					// duplicate name WITHIN one tuple (`[a, a] = ...`) - both
 					// anchored at the statement start (probed). see INV035
-					this.checkRedeclaration(name, tupleDecl, version);
+					checkRedeclaration(this,name, tupleDecl, version);
 				}
 				const elementTypes = inferTupleElementTypes(this, tupleDecl, version);
 				defineTupleVariables(this, tupleDecl, elementTypes);
@@ -984,7 +753,7 @@ export class UnifiedPineValidator {
 
 				// Redefinition: a same-arity declaration not distinguishable by
 				// explicit param types is illegal (CE10110/10112/10113). see INV091
-				this.checkFunctionRedefinition(statement, version);
+				checkFunctionRedefinition(this,statement, version);
 
 				// Register the function in the symbol table at the outer scope
 				this.declaredFunctionNames.add(statement.name); // see INV036
@@ -1001,8 +770,8 @@ export class UnifiedPineValidator {
 				this.symbolTable.enterScope();
 				this.blockDepth++;
 
-				this.checkParamTypeAnnotations(statement.params, version);
-				this.checkExportedParamsTypified(
+				checkParamTypeAnnotations(this,statement.params, version);
+				checkExportedParamsTypified(this,
 					statement.isExport,
 					statement.params,
 					version,
@@ -1422,8 +1191,8 @@ export class UnifiedPineValidator {
 				this.symbolTable.enterScope();
 				this.blockDepth++;
 
-				this.checkParamTypeAnnotations(statement.params, version);
-				this.checkExportedParamsTypified(
+				checkParamTypeAnnotations(this,statement.params, version);
+				checkExportedParamsTypified(this,
 					statement.isExport,
 					statement.params,
 					version,
@@ -1496,12 +1265,12 @@ export class UnifiedPineValidator {
 			case "EnumDeclaration":
 			case "TypeDeclaration": {
 				if (statement.type === "TypeDeclaration") {
-					this.registerTypeDeclaration(statement);
-					this.checkTypeFieldDefaults(statement, version);
+					registerTypeDeclaration(this,statement);
+					checkTypeFieldDefaults(this, statement, version);
 				} else {
 					this.declaredTypeNames.add(statement.name); // see INV033
 					this.declaredEnumNames.add(statement.name); // see INV048
-					this.recordEnumMembers(statement); // see INV096
+					recordEnumMembers(this,statement); // see INV096
 				}
 				const symbol: SymbolInfo = {
 					name: statement.name,
@@ -1515,133 +1284,6 @@ export class UnifiedPineValidator {
 				this.symbolTable.define(symbol);
 				break;
 			}
-		}
-	}
-
-	private resolveUdtExpressionType(expr: Expression): PineType | null {
-		if (expr.type === "Identifier") {
-			const symbol = this.symbolTable.lookup((expr as Identifier).name);
-			const type = symbol ? TypeChecker.baseTypeName(symbol.type as string) : "unknown";
-			return this.udtFieldTypes.has(type) ? (type as PineType) : null;
-		}
-		if (expr.type === "CallExpression") {
-			const call = expr as CallExpression;
-			const name =
-				call.callee.type === "Identifier"
-					? call.callee.name
-					: memberChainName(call.callee);
-			const ctor = name.match(/^(.+)\.new$/);
-			return ctor && this.udtFieldTypes.has(ctor[1]) ? (ctor[1] as PineType) : null;
-		}
-		if (expr.type === "MemberExpression") {
-			return this.resolveUdtFieldType(expr as MemberExpression);
-		}
-		return null;
-	}
-
-	private resolveUdtFieldType(expr: MemberExpression): PineType | null {
-		const receiverType = this.resolveUdtExpressionType(expr.object);
-		if (!receiverType) return null;
-		const fields = this.udtFieldTypes.get(TypeChecker.baseTypeName(receiverType));
-		if (!fields) return null;
-		return fields.get(expr.property.name) ?? null;
-	}
-
-	private checkUdtFieldAccess(expr: MemberExpression, version: string): void {
-		if (version !== "6") return;
-		const receiverType = this.resolveUdtExpressionType(expr.object);
-		if (receiverType) {
-			const fields = this.udtFieldTypes.get(
-				TypeChecker.baseTypeName(receiverType),
-			);
-			if (!fields || fields.has(expr.property.name)) return;
-			this.emitNoField(expr);
-			return;
-		}
-		// Field access on a scalar value (`close.foo`) - scalars have no fields,
-		// so any member read is TV's CE10198. Restricted to a plain IDENTIFIER
-		// receiver: inferring a deep-namespace member object (`strategy.commission`)
-		// would surface its own "Undeclared identifier" as a side effect, and a
-		// scalar sub-expression receiver is vanishingly rare. Guard against
-		// namespace/type/enum names (`color.red`, `math.pi`, `chart.point`),
-		// which are not scalar VALUES. see INV093
-		const obj = expr.object;
-		if (obj.type !== "Identifier") return;
-		const n = obj.name;
-		if (
-			KNOWN_NAMESPACES.includes(n) ||
-			TYPE_NAMES.has(n) ||
-			this.declaredTypeNames.has(n) ||
-			this.declaredEnumNames.has(n) ||
-			this.importedNamespaces.has(n)
-		) {
-			return;
-		}
-		const objBase = TypeChecker.baseTypeName(
-			this.inferExpressionType(obj, version) as string,
-		);
-		if (
-			objBase === "int" ||
-			objBase === "float" ||
-			objBase === "bool" ||
-			objBase === "string" ||
-			objBase === "color"
-		) {
-			this.emitNoField(expr);
-		}
-	}
-
-	// TV's CE10198 "Object has no field X", anchored at the member expression
-	// with the field name's length, deduped per property occurrence. see INV093
-	private emitNoField(expr: MemberExpression): void {
-		const key = `${expr.property.line}:${expr.property.column}:${expr.property.name}`;
-		if (this.reportedUdtFieldErrors.has(key)) return;
-		this.reportedUdtFieldErrors.add(key);
-		this.addError(
-			expr.line || expr.property.line || 0,
-			expr.column || expr.property.column || 0,
-			expr.property.name.length,
-			`Object has no field ${expr.property.name}`,
-			DiagnosticSeverity.Error,
-		);
-	}
-
-	// UDT field default value type check (CE10170): a literal default must be
-	// assignable to the field's declared type - int->float widening is fine, but
-	// float->int narrowing (and any base mismatch) is rejected (the INV087
-	// element rule). The parser captures only literal defaults; non-literals stay
-	// lenient. v6 only (G004). see INV094
-	private checkTypeFieldDefaults(
-		statement: TypeDeclaration,
-		version: string,
-	): void {
-		if (version !== "6" || !statement.fields) return;
-		for (const field of statement.fields) {
-			if (!field.defaultValue || !field.typeAnnotation) continue;
-			const fb = TypeChecker.baseTypeName(field.typeAnnotation.name);
-			if (fb !== "int" && fb !== "float" && fb !== "bool" && fb !== "string") {
-				continue; // color/array/map/UDT field defaults -> lenient
-			}
-			const defType = this.inferExpressionType(field.defaultValue, version);
-			if (elementArgAssignable(defType, fb)) continue;
-			const desc = this.describeArgForTemplate(
-				field.defaultValue,
-				defType,
-				version,
-			);
-			this.addTemplateError({
-				line: field.line ?? statement.line,
-				column: field.column ?? statement.column,
-				length: field.name.length,
-				message:
-					"Default value of type {defValTypeExpression} can not be assigned to an argument of type {explicitType}",
-				severity: DiagnosticSeverity.Error,
-				code: "CE10170",
-				ctx: {
-					defValTypeExpression: desc.typeStr,
-					explicitType: `series ${fb}`,
-				},
-			});
 		}
 	}
 
@@ -1733,7 +1375,7 @@ export class UnifiedPineValidator {
 						);
 					}
 				}
-				this.checkUdtFieldAccess(expr, version);
+				checkUdtFieldAccess(this, expr, version);
 				break;
 			}
 
@@ -2324,82 +1966,6 @@ export class UnifiedPineValidator {
 		);
 	}
 
-	// Function redefinition (CE10110/10112/10113). Two declarations of the same
-	// name with the same arity are illegal unless some parameter position is
-	// "distinct" - both typed with different types, or exactly one typed (an
-	// untyped param is "undetermined", distinct from any concrete type). Methods
-	// need no special-casing: their typed receiver distinguishes same-named
-	// methods on different types. v6 only (G004). see INV091
-	private checkFunctionRedefinition(
-		statement: FunctionDeclaration,
-		version: string,
-	): void {
-		if (version !== "6") return;
-		const name = statement.name;
-		let sigs = this.functionDeclSignatures.get(name);
-		if (!sigs) {
-			sigs = [];
-			this.functionDeclSignatures.set(name, sigs);
-		}
-		const cur = statement.params;
-		for (const prev of sigs) {
-			if (prev.length !== cur.length) continue; // different arity -> legal
-			let distinct = false;
-			for (let i = 0; i < cur.length; i++) {
-				const a = prev[i].typeAnnotation?.name;
-				const b = cur[i].typeAnnotation?.name;
-				const aTyped = a != null;
-				const bTyped = b != null;
-				if (aTyped !== bTyped || (aTyped && bTyped && a !== b)) {
-					distinct = true;
-					break;
-				}
-			}
-			if (distinct) continue; // a valid overload
-			// Redefinition. TV anchors at the '(' after the name; code by typing.
-			const column = statement.column + name.length;
-			if (cur.length === 0) {
-				this.addTemplateError({
-					line: statement.line,
-					column,
-					length: 1,
-					message:
-						'Function "{functionName}" already defined. Either the type or the number of required parameters in overloaded versions of functions must be different.',
-					severity: DiagnosticSeverity.Error,
-					code: "CE10112",
-					ctx: { functionName: name },
-				});
-			} else if (
-				cur.every((p) => p.typeAnnotation?.name != null) &&
-				prev.every((p) => p.typeAnnotation?.name != null)
-			) {
-				this.addTemplateError({
-					line: statement.line,
-					column,
-					length: 1,
-					message:
-						'The "{functionName}" function has overloads with the same parameters. The type of parameters must be different in overloaded versions of functions.',
-					severity: DiagnosticSeverity.Error,
-					code: "CE10110",
-					ctx: { functionName: name },
-				});
-			} else {
-				this.addTemplateError({
-					line: statement.line,
-					column,
-					length: 1,
-					message:
-						'Function "{functionName}" already defined. The "{functionName1}" function has overloads using the same number of required parameters without them having distinct types. Function overloads with the same number of required parameters must have explicit parameter types that are unique among overloads.',
-					severity: DiagnosticSeverity.Error,
-					code: "CE10113",
-					ctx: { functionName: name, functionName1: name },
-				});
-			}
-			break; // one error per redefinition
-		}
-		sigs.push(cur);
-	}
-
 	// Render an internal PineType in TV's qualified display form ("series
 	// float"). Our lattice collapses const/input/simple to the bare base, so a
 	// bare type's qualifier is unrecoverable - `bareQualifier` supplies the
@@ -2949,7 +2515,7 @@ export class UnifiedPineValidator {
 			case "MemberExpression": {
 				const memberExpr = expr as MemberExpression;
 
-				const udtFieldType = this.resolveUdtFieldType(memberExpr);
+				const udtFieldType = resolveUdtFieldType(this, memberExpr);
 				if (udtFieldType) {
 					type = udtFieldType;
 					break;
