@@ -330,35 +330,32 @@ IDs so the two stay in sync.
   float` not `series string` (member-constant string types aren't resolved in the
   ternary branch inference), so the rendered argumentType would mismatch TV's
   `series string`. See INV112 residual.
-- **#61 (residual) - CW10003/4 consistency-warning precision (INV114-INV116).**
-  Four precision fixes landed: series contagious through call args -> the
-  McGinley `na(mg[1]) ? ta.ema(...)` idiom now warns; an untyped UDF param is
-  "undetermined", so `switch MAtype => ta.sma/ema` no longer FP-warns (~238
-  corpus FPs cleared); a `:=` const reassignment under a series-gated branch
-  marks its target series, so the block-state idiom (`tradeState := 1` inside
-  `if <series>` -> `else if tradeState == 1 => ta.crossunder(...)`) warns
-  (INV115); and history-dependent METHOD calls are now looked up by their bare
-  method name, with a matching undetermined-gate exclusion so `draw_ob` stays
-  silent (INV116); and a `[..] = f()` destructure now series-types its members
-  from the UDF's returned tuple, so `if stClose > stOpen` is series and the
-  `ta.stdev` pair warns (INV117 Family 1); and CW10003 now crosses the IMPORT
-  boundary - generate-libraries derives per-export history-dependence (gated by
-  series-return), the analyzer resolves library member/typed-local calls plus
-  transitive method chains, and CC-BY-NC libs get the fact via a live-fetch
-  override without redistributing source, so `cust_series` and `scan` warn
-  (INV118, Family 2). Warning tvOnly 26->7, localOnly 1627->1312; pinned by
-  `consistency-warning-param-and-arg.pine`, `conditional-reassign-series-state.pine`,
-  `method-call-history-dependence.pine`, `tuple-return-series-condition.pine`,
-  and `library-history-dependence.pine`. **Remaining** (all pre-existing,
-  root-caused in INV117): (a) ~11 consistency FPs on TV-clean files - TYPED-param
-  UDFs called only with NON-series args (`draw_lbl` etc.); needs arg-qualifier
-  propagation into params (#9); (b) 4 consistency tv-only FNs: `getStandardTrueRange`
-  x2 (doubly-blocked - #9 tuple inference AND Family-3 user-global index),
-  `getTrendLineScore` (Family-3 user-global index, probe-correct one-liner but
-  cascades into an `array.size(untypedParam)` series FP needing #9), and
-  `FindST` (criterion still unreproducible by probe); (c) the shadowing-variable
-  CW10013 tail (3 tv-only); (d) backward references - none in the corpus. See
-  INV114 / INV115 / INV116 / INV117 / INV118.
+- **#61 (residual) - CW10003/4 consistency-warning precision.** A round of
+  precision work landed across [INV114](investigations/INV114-consistency-warning-precision/notes.md)
+  (series-contagion through call args; untyped-param "undetermined" gate),
+  [INV115](investigations/INV115-conditional-reassign-series-state/notes.md)
+  (conditional const-reassign = series state),
+  [INV116](investigations/INV116-method-call-history-dependence/notes.md)
+  (history-dependent METHOD calls by bare name + undetermined-gate exclusion),
+  [INV117](investigations/INV117-consistency-fn-tail-rootcauses/notes.md)
+  (the FN-tail root-cause map + the `[..] = f()` UDF tuple-return series
+  inference), and [INV118](investigations/INV118-library-history-dependence/notes.md)
+  (CW10003 across the import boundary - derived per-export history-dependence,
+  library member/typed-local resolution, a live-fetch override for CC-BY-NC
+  libs). Net: warning tvOnly 26 -> 7, localOnly 1627 -> 1312, ~238 switch-MA
+  FPs cleared, 0 new FPs; pinned by five `*.pine` regression fixtures. The
+  INV-docs hold the probes/measurements - do NOT re-inline them here.
+
+  **Pending** (each blocked, with its blocker):
+  - `getStandardTrueRange` x2, `getTrendLineScore`: fixable via the user-global
+    index rule but it over-fires (+4 corpus FPs) - needs a narrower predicate.
+    See [INV119](investigations/INV119-user-global-index-history/notes.md).
+  - `FindST`: TV warns it; the criterion is unreproducible by probe (its local
+    leaves only index builtins / mutate arrays, both probed silent). See INV117.
+  - ~11 consistency FPs on TV-clean files (TYPED-param UDFs called only with
+    NON-series args, `draw_lbl` etc.) and the CW10013 shadowing tail (3 tv-only):
+    both need per-call-site arg-qualifier propagation into params, the #9
+    umbrella. Backward-reference series tracking is a non-issue (none in corpus).
 
 ## Gotchas
 

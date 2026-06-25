@@ -732,6 +732,13 @@ contradiction means re-measure, not "the earlier author was wrong."
   untyped param, INV114) is undetermined, so indexing it is not own-scope
   history - the scan now excludes it, while a directly-indexed param
   (`prevVal(src)=>src[1]`) still counts. Warning tvOnly 17->12, 0 new FPs.
+- [INV119](INV119-user-global-index-history/notes.md) - ATTEMPT (reverted).
+  Indexing a USER-defined global series var is history-dependent (corrects
+  INV018 p4's over-broad "globals don't count" - only BUILTIN globals are
+  exempt; probed). With a cascade gate (`array.size(untypedParam)` is
+  undetermined) it warns `getStandardTrueRange` x2 + `getTrendLineScore`
+  correctly, but the rule is too broad: +4 corpus FPs on TV-clean files.
+  Net-negative, reverted; needs a narrower user-global predicate (#9-adjacent).
 - [INV118](INV118-library-history-dependence/notes.md) - CW10003 across the
   IMPORT boundary. generate-libraries derives per-export history-dependence
   (gated by series-return, exempting side-effect builders) into
