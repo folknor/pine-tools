@@ -717,3 +717,10 @@ contradiction means re-measure, not "the earlier author was wrong."
   even with a series arg, probed) so `switch MAtype => ta.sma/ema` must NOT warn
   (~238 corpus FP fixes; INV018's TYPED-param warning preserved). Warning
   tvOnly 26->24, localOnly 1627->1361. Residual tail in notes.
+- [INV115](INV115-conditional-reassign-series-state/notes.md) - CW10003/4 FN: a
+  `:=` reassignment to a const under a SERIES-gated branch makes its target
+  series (the block-state idiom `tradeState := 1` inside `if <series>`, so
+  `else if tradeState == 1 => ta.crossunder(...)` warns). Probed: the gate is
+  the conditional scope, not `var`/the const value. The collector now threads
+  series-conditional context through the if/while recursion. Warning tvOnly
+  24->17 (7 FN fixes), 0 new FPs (consistency-on-clean stayed at 11).

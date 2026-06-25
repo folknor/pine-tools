@@ -1,0 +1,17 @@
+// @test regression/conditional-reassign-series-state
+// @description A `:=` reassignment performed under a SERIES-gated branch makes its target series, so a later condition over it is series and gates the CW10003/4 consistency warning (INV115, probed 2026-06-25). `stateB` is assigned a const 1 inside `if close > open`, so `stateB == 1 ? ta.sma(...)` warns. Control: `stateA` is reassigned to a const UNCONDITIONALLY, so it stays const and `stateA == 1 ? ta.ema(...)` is silent - the gate is the conditional scope, not the const value or the `var` keyword. Matches TV exactly.
+// @expects parse: success
+// @expects warning: line=6, message="The function 'ta.sma' should be called on each calculation"
+// @expects warnings: 1
+
+//@version=6
+indicator("conditional-reassign-series-state")
+stateB = 0
+if close > open
+    stateB := 1
+warnB = stateB == 1 ? ta.sma(close, 20) : na
+var int stateA = 0
+stateA := 1
+okA = stateA == 1 ? ta.ema(close, 20) : na
+plot(warnB)
+plot(okA)

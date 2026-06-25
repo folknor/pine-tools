@@ -751,7 +751,10 @@ export class SemanticAnalyzer {
 		}
 	}
 
-	private collectDeclarationsInStatement(statement: Statement): void {
+	private collectDeclarationsInStatement(
+		statement: Statement,
+		inSeriesConditional = false,
+	): void {
 		switch (statement.type) {
 			case "VariableDeclaration":
 				if (statement.name) {
@@ -766,10 +769,17 @@ export class SemanticAnalyzer {
 				break;
 
 			case "AssignmentStatement":
-				// `v := <series expr>` makes v series-qualified
+				// `v := <series expr>` makes v series-qualified - and so does a
+				// `v := <const>` reassignment performed under a SERIES-gated
+				// branch: the value SELECTED depends on a per-bar condition, so
+				// v carries history. TV warns on a `state == 1` discriminant
+				// gating ta.* once `state` was set inside `if <series>` (probed
+				// 2026-06-25 - a `var` reassigned UNCONDITIONALLY to a const
+				// stays const and is silent, so the gate must be the conditional
+				// scope, not the `var` keyword). see INV115
 				if (
 					statement.target.type === "Identifier" &&
-					this.isSeriesishExpression(statement.value)
+					(inSeriesConditional || this.isSeriesishExpression(statement.value))
 				) {
 					this.seriesVars.add(statement.target.name);
 				}
@@ -828,8 +838,17 @@ export class SemanticAnalyzer {
 
 		// Recurse into child statements - shared across all block-carrying
 		// statement variants so a new variant can't silently go unwalked.
+		// Propagate series-conditional context so a `:=` under a series-gated
+		// if/else (incl. lowered `else if`) or while marks its target series.
+		// A for/for-in body is deterministic per bar, so it does NOT induce
+		// series on a const reassignment (only a series VALUE does). see INV115
+		const childConditional =
+			inSeriesConditional ||
+			((statement.type === "IfStatement" ||
+				statement.type === "WhileStatement") &&
+				this.isSeriesishExpression(statement.condition));
 		for (const child of this.childStatements(statement)) {
-			this.collectDeclarationsInStatement(child);
+			this.collectDeclarationsInStatement(child, childConditional);
 		}
 	}
 
