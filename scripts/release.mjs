@@ -72,11 +72,17 @@ const tag = `v${version}`;
 
 console.log(`Preparing release ${tag}${dryRun ? " (dry run)" : ""}`);
 
-// gh must be installed and authenticated.
+// gh must be installed and have a usable token. `gh auth token` exits 0 when
+// a token is available (including via the GITHUB_TOKEN env var); unlike
+// `gh auth status` it does not fail just because some OTHER configured account
+// (e.g. a stale keyring entry) is broken.
 if (!dryRun) {
-	const gh = spawnSync("gh", ["auth", "status"], { cwd: repoRoot });
+	const gh = spawnSync("gh", ["auth", "token"], {
+		cwd: repoRoot,
+		stdio: "ignore",
+	});
 	if (gh.status !== 0) {
-		die("`gh` is not installed or not authenticated. Run `gh auth login`.");
+		die("`gh` is not installed or has no usable token. Run `gh auth login`.");
 	}
 }
 
