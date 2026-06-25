@@ -25,8 +25,11 @@ release is assembled on the maintainer's machine.
    - What changed
    ```
 
-   The release notes are extracted from the `## <version>` heading down to the
-   next `## ` heading. If no section is found, a generic note is used.
+   The release body is this section (extracted from the `## <version>` heading
+   down to the next `## ` heading; a generic note is used if none is found),
+   followed by an auto-generated "Artifacts" section describing the uploaded
+   files. You only write the changelog; the artifact rundown is added by the
+   release script.
 
 3. Commit the version bump and changelog.
 

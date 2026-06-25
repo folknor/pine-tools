@@ -245,9 +245,25 @@ function changelogSection(ver) {
 	return lines.slice(start + 1, end).join("\n").trim() || null;
 }
 
-const notes =
+const changelog =
 	changelogSection(version) ??
 	`Release ${tag}. See CHANGELOG.md for details.`;
+
+// The release body is the changelog section followed by a description of the
+// uploaded artifacts. Filenames are versioned, so this is generated here
+// rather than kept in CHANGELOG.md.
+const artifactNotes = [
+	"## Artifacts",
+	"",
+	`- \`${vsixName}\` - VS Code extension bundle. Install with \`code --install-extension ${vsixName}\`, or via the Extensions view "Install from VSIX...".`,
+	"- `pine-lint` - Self-contained Node CLI linter (executable, bundles its own dependencies). Put it on your PATH and run `pine-lint <file.pine>`; `pine-lint --version` reports this build.",
+	`- \`pine-data-v6-${version}.zip\` - The generated Pine v6 reference data (\`pine-data/v6/*.json\`: functions, variables, constants, types, etc.) bundled with the Pine v6 Manual (\`pine-manual/v6\`) and a \`manifest.json\`.`,
+	`- \`pine-manual-v6-${version}.zip\` - The Pine v6 Manual (\`pine-manual/v6\`) on its own, plus a \`manifest.json\`.`,
+	"",
+	"Every artifact carries the same version stamp; the zips include a `manifest.json` with the version, tag, git SHA, and build time.",
+].join("\n");
+
+const notes = `${changelog}\n\n${artifactNotes}`;
 const notesPath = path.join(releaseDir, "release-notes.md");
 fs.writeFileSync(notesPath, `${notes}\n`);
 
@@ -259,7 +275,7 @@ if (dryRun) {
 	console.log(
 		`\nDry run complete. Would tag ${tag} and create a GitHub release.`,
 	);
-	console.log(`Release notes (from CHANGELOG):\n\n${notes}\n`);
+	console.log(`Release body:\n\n${notes}\n`);
 	process.exit(0);
 }
 

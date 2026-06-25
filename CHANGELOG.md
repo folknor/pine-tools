@@ -1,11 +1,11 @@
 # Changelog
 
-## 0.5.0
+## 0.5.0 - 2026-06-25
 
-Initial release.
+First release as pine-tools.
 
 - Pine Script v6 language support
-- IntelliSense with 457 functions, 80 variables, 237 constants
+- IntelliSense with 475 functions, 162 variables, 237 constants
 - Real-time diagnostics and validation
 - Go-to-definition and find references
 - Hover documentation
