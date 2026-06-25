@@ -1,0 +1,15 @@
+// @test regression/plot-hline-arithmetic
+// @description plot()/hline() return opaque handle types ("plot"/"hline") that carry no qualifier and cannot participate in arithmetic/comparison. They were typed "unknown" (so any operator was allowed); now mapped to real types and barred. Using a plot handle in fill() stays clean (its proper use). v6 only - legacy scripts stay lenient (see INV089 / the v4 gate). Probed 2026-06-25 via pine-lint --tv.
+// @expects parse: success
+// @expects error: line=7, message=/Cannot call "operator \+" with argument "expr0"="x".*"plot".*"const int"/
+// @expects error: line=8, message=/Cannot call "operator \*" with argument "expr0"="h".*"hline".*"const int"/
+// @expects errors: 2
+
+//@version=6
+indicator("plot-hline-arithmetic")
+x = plot(close)
+p2 = plot(open)
+fill(x, p2, color.new(color.blue, 90))
+h = hline(0)
+plot(x + 1)
+plot(h * 2)

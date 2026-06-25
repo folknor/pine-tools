@@ -1,0 +1,19 @@
+// @test regression/collection-element-type
+// @description Collection mutators (array.push/map.put/...) type their value/key param as "series <type of the array's/map's elements>" - a placeholder that maps to "unknown", so the generic arg loop skips it. We resolve the receiver's concrete element type and check the value/key directly. TV rejects a NARROWING (literal float into array<int>, CE10123) but accepts a WIDENING (int into <float>) and exact matches. Probed 2026-06-25 via pine-lint --tv, see INV087.
+// @expects parse: success
+// @expects error: line=4, message=/Cannot call "array.push" with argument "value"="1.5".*literal float.*series int/
+// @expects error: line=6, message=/Cannot call "map.put" with argument "value"="1.5".*literal float.*series int/
+// @expects errors: 2
+
+//@version=6
+indicator("collection-element-type")
+ai = array.new<int>()
+array.push(ai, 1.5)
+mi = map.new<string, int>()
+map.put(mi, "k", 1.5)
+// Widening (int -> float) and exact matches stay clean:
+af = array.new<float>()
+array.push(af, 10)
+array.push(ai, 7)
+map.put(mi, "k", 3)
+plot(array.size(ai) + map.size(mi))

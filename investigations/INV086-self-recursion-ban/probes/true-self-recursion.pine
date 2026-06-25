@@ -1,0 +1,7 @@
+//@version=6
+indicator("true-self-recursion")
+// A single (non-overloaded) function calling itself: real recursion,
+// which Pine forbids. Expect CE10271 at the self-call.
+f(n) =>
+    n <= 0 ? 0 : f(n - 1)
+plot(f(5))

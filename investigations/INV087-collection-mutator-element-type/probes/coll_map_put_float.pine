@@ -1,0 +1,8 @@
+//@version=6
+// Probe (pine-lint --tv, 2026-06-25): CE10123 @ 7:17 -
+// "Cannot call map.put with argument value=1.5. An argument of literal
+//  float type was used but a series int is expected."
+indicator("s")
+m = map.new<string, int>()
+map.put(m, "a", 1.5)
+plot(close)

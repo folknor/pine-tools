@@ -1,0 +1,7 @@
+//@version=6
+// Probe (pine-lint --tv, 2026-06-25): CE10122 @ 3:19 -
+// "Cannot call array.from with argument arg_1=two. An argument of literal
+//  string type was used but one from series int/float is expected"
+indicator("s")
+a = array.from(1, "two", 3.0)
+plot(array.size(a))

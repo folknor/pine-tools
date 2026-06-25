@@ -97,6 +97,104 @@ function memberChainName(expr: Expression): string {
 	return "";
 }
 
+// Resolve the concrete element type a collection mutator's value/key arg must
+// match, from the receiver's type. array<E> -> E; map<K,V> -> K for the `key`
+// param, V otherwise (map keys are primitives, so the first comma is always the
+// K/V split). Returns null when the element type is unresolved (unknown/`type`)
+// so the caller stays lenient. see INV087
+function collectionElementTarget(
+	receiverType: PineType,
+	kind: string,
+	paramName: string,
+): string | null {
+	const r = String(receiverType);
+	if (kind === "array") {
+		if (!r.startsWith("array<") || !r.endsWith(">")) return null;
+		const e = r.slice(6, -1).trim();
+		return e === "unknown" || e === "type" ? null : e;
+	}
+	if (!r.startsWith("map<") || !r.endsWith(">")) return null;
+	const inner = r.slice(4, -1);
+	const c = inner.indexOf(",");
+	if (c < 0) return null;
+	const pick = (
+		paramName === "key" ? inner.slice(0, c) : inner.slice(c + 1)
+	).trim();
+	return pick === "unknown" || pick === "type" ? null : pick;
+}
+
+// Element-type compatibility for collection mutators. Stricter than isAssignable
+// on numerics: a widening int -> float is fine, but a narrowing float -> int is
+// rejected (TV CE10123, probed 2026-06-25). na and unresolved args stay lenient.
+// see INV087
+function elementArgAssignable(argType: PineType, target: string): boolean {
+	if (argType === "unknown" || TypeChecker.isNaType(argType)) return true;
+	const ab = TypeChecker.baseTypeName(String(argType));
+	const tb = TypeChecker.baseTypeName(target);
+	if (ab === tb) return true;
+	if (tb === "float" && ab === "int") return true; // widening only
+	return false;
+}
+
+// A pure `simple`-qualified primitive param ("simple int", ...). A series value
+// is NOT allowed in such a slot (TV CE10123 "series int ... but simple int is
+// expected", e.g. ta.ema length). Excludes union/combined forms - "simple
+// series int" is series, "simple int/float" is a union. see INV088
+function isSimpleQualifiedParam(rawType?: string): boolean {
+	return /^simple\s+(int|float|bool|string|color)$/.test((rawType ?? "").trim());
+}
+
+function isSeriesQualified(argType: PineType): boolean {
+	const s = String(argType);
+	return s.startsWith("series<") || s.startsWith("series ");
+}
+
+// Opaque handle types returned by output/drawing builtins. They carry no
+// qualifier and never participate in arithmetic/comparison - but only v6
+// enforces that; TV v4/v5 are lenient (e.g. a v4 `plot()` handle compared
+// with `>` is accepted - probed 2026-06-25). see INV089
+function isOpaqueHandleType(t: PineType): boolean {
+	return (
+		t === "plot" ||
+		t === "hline" ||
+		t === "line" ||
+		t === "label" ||
+		t === "box" ||
+		t === "table"
+	);
+}
+
+// array.from is the variadic same-element constructor: arg0 fixes the element
+// type and every later arg must match it (numerics unify to int/float -
+// `array.from(1, 2.0)` is array<float>). TV reports the FIRST incompatible arg
+// as CE10122 with `expectedType` derived from arg0. The base set mirrors
+// array.from's per-arg0-type overloads (po lookup array.from). see INV090
+function arrayFromExpectedType(arg0Base: string): string | null {
+	if (arg0Base === "int" || arg0Base === "float") return "series int/float";
+	if (
+		arg0Base === "bool" ||
+		arg0Base === "string" ||
+		arg0Base === "color" ||
+		arg0Base === "line" ||
+		arg0Base === "label" ||
+		arg0Base === "box" ||
+		arg0Base === "table" ||
+		arg0Base === "linefill"
+	) {
+		return `series ${arg0Base}`;
+	}
+	return null; // UDT / enum / na / unknown arg0 -> stay lenient
+}
+
+function arrayFromArgMatches(argType: PineType, arg0Base: string): boolean {
+	if (argType === "unknown" || TypeChecker.isNaType(argType)) return true;
+	const ab = TypeChecker.baseTypeName(String(argType));
+	if (arg0Base === "int" || arg0Base === "float") {
+		return ab === "int" || ab === "float";
+	}
+	return ab === arg0Base;
+}
+
 export class UnifiedPineValidator {
 	private errors: ValidationError[] = [];
 	private symbolTable: SymbolTable;
@@ -155,6 +253,20 @@ export class UnifiedPineValidator {
 	// single set. Unlike the symbol table, if-bodies get their own frame
 	// here (TV scopes them) and builtins never enter it. see INV035
 	private declScopes: Array<Set<string>> = [];
+	// Name of the UDF / method whose body is currently being validated, or
+	// null at top level. Pine v6 forbids recursion: a direct self-call inside
+	// the body resolves to nothing (TV reports CE10271 "Could not find function
+	// ... 'f'", because the name is not yet bound while its own body compiles).
+	// Only DIRECT self-recursion needs this; mutual recursion is already caught
+	// by the source-order CE10271 rule (the callee is undefined at that point).
+	// see INV086
+	private currentFunctionName: string | null = null;
+	// UDF names declared more than once (overload sets). A call to an
+	// overloaded name from inside one overload's body dispatches to a SIBLING
+	// overload, not itself, so it is NOT recursion - TV accepts it (probed
+	// 2026-06-25, see INV086 overload-sibling-dispatch). The self-recursion
+	// check below therefore only fires for names declared exactly once.
+	private overloadedFunctionNames: Set<string> = new Set();
 
 	constructor(
 		private readonly localLibraryExportsBySourcePath: Map<string, Set<string>> = new Map(),
@@ -178,6 +290,24 @@ export class UnifiedPineValidator {
 		this.importedNamespaces.clear();
 		this.importedLibraryPaths.clear();
 		this.declScopes = [new Set()];
+		this.currentFunctionName = null;
+		this.overloadedFunctionNames.clear();
+
+		// Pre-pass: tally top-level function declarations so overloaded names
+		// (declared 2+ times) are known regardless of source order. The
+		// self-recursion check skips them - an overloaded self-named call is
+		// sibling dispatch, not recursion. see INV086
+		{
+			const seen = new Set<string>();
+			for (const statement of ast.body) {
+				if (statement.type === "FunctionDeclaration") {
+					if (seen.has(statement.name)) {
+						this.overloadedFunctionNames.add(statement.name);
+					}
+					seen.add(statement.name);
+				}
+			}
+		}
 
 		// Pre-scan imports so a member call on an imported namespace is
 		// recognised regardless of source order (the main pass below is
@@ -939,11 +1069,16 @@ export class UnifiedPineValidator {
 				// THEN validate function body (with all variables in scope).
 				// Params count as declared by the function scope (re-declaring
 				// one in the body is CE10095, probed). see INV035
+				// Track the enclosing function name so a direct self-call is
+				// flagged as CE10271 (Pine forbids recursion). see INV086
+				const prevFunctionName = this.currentFunctionName;
+				this.currentFunctionName = statement.name;
 				this.pushDeclScope(statement.params.map((p) => p.name));
 				for (const stmt of statement.body) {
 					this.validateStatement(stmt, version);
 				}
 				this.popDeclScope();
+				this.currentFunctionName = prevFunctionName;
 				this.symbolTable.exitScope();
 				this.blockDepth--;
 				break;
@@ -1044,9 +1179,18 @@ export class UnifiedPineValidator {
 				if ("iterator" in statement) {
 					const isForInValue =
 						statement.type === "ForInStatement" && !statement.iterator2;
+					// Counted-for counter is `series int` (TV types it so - a
+					// series value is then rejected in a simple-int slot, e.g.
+					// `ta.ema(close, i)`, CE10123). The for-in tuple INDEX stays
+					// `int` (INV071 residual). see INV088
+					const iterType: PineType = isForInValue
+						? elemType
+						: statement.type === "ForStatement"
+							? "series<int>"
+							: "int";
 					this.symbolTable.define({
 						name: statement.iterator,
-						type: isForInValue ? elemType : "int",
+						type: iterType,
 						line: statement.line,
 						column: statement.column,
 						used: false,
@@ -1795,6 +1939,15 @@ export class UnifiedPineValidator {
 			return;
 		}
 
+		// Legacy scripts are lenient on opaque handles (TV v4/v5 accept a
+		// plot/hline handle in a comparison; only v6 rejects it). see INV089
+		if (
+			version !== "6" &&
+			(isOpaqueHandleType(leftType) || isOpaqueHandleType(rightType))
+		) {
+			return;
+		}
+
 		if (
 			!TypeChecker.areTypesCompatible(
 				leftType,
@@ -2132,6 +2285,12 @@ export class UnifiedPineValidator {
 	private static readonly CE10123_TEMPLATE =
 		'Cannot call "{funId}" with argument "{argDisplayName}"="{argUserFriendlyRepresentation}". An argument of "{argumentType}" type was used but a "{currentTypeDocStr}" {typePostfix} is expected.';
 
+	// CE10122: a variadic same-element constructor (array.from) got an element
+	// incompatible with the one arg0 fixed. Note "one from" (vs CE10123's "a")
+	// and no trailing period - matched to TV's raw template. see INV090
+	private static readonly CE10122_TEMPLATE =
+		'Cannot call "{funId}" with argument "{argDisplayName}"="{argUserFriendlyRepresentation}". An argument of "{argumentType}" type was used but one from "{expectedType}" is expected';
+
 	// Render an internal PineType in TV's qualified display form ("series
 	// float"). Our lattice collapses const/input/simple to the bare base, so a
 	// bare type's qualifier is unrecoverable - `bareQualifier` supplies the
@@ -2144,6 +2303,14 @@ export class UnifiedPineValidator {
 			t === "unknown" ||
 			t === "na" ||
 			t === "void" ||
+			// Opaque handle types carry no series/const qualifier (TV renders
+			// `plot`, not `series plot`). see INV089
+			t === "plot" ||
+			t === "hline" ||
+			t === "line" ||
+			t === "label" ||
+			t === "box" ||
+			t === "table" ||
 			(t as string).includes("<")
 		) {
 			return t;
@@ -2333,8 +2500,16 @@ export class UnifiedPineValidator {
 			if (
 				version === "6" &&
 				call.callee.type === "Identifier" &&
-				!this.declaredFunctionNames.has(functionName)
+				(!this.declaredFunctionNames.has(functionName) ||
+					(functionName === this.currentFunctionName &&
+						!this.overloadedFunctionNames.has(functionName)))
 			) {
+				// Undefined callable, OR a direct self-call: Pine forbids
+				// recursion, so a non-overloaded function referencing itself
+				// inside its own body is the same CE10271 (its name is not yet
+				// bound while the body compiles). Overloaded names are excluded -
+				// a self-named call there dispatches to a sibling overload. see
+				// INV086
 				this.addError(
 					call.line,
 					call.column,
@@ -2548,6 +2723,49 @@ export class UnifiedPineValidator {
 					DiagnosticSeverity.Error,
 				);
 			}
+
+			// array.from element-type consistency: arg0 fixes the element type,
+			// later args must match it. Variadic, so the loop above never type-
+			// checks the args - do it here. First incompatible arg -> CE10122,
+			// matching TV (probed 2026-06-25). v6 only (G004). see INV090
+			if (
+				functionName === "array.from" &&
+				version === "6" &&
+				positionalArgs.length >= 1 &&
+				positionalArgs[0].type !== "unknown"
+			) {
+				const arg0Base = TypeChecker.baseTypeName(
+					String(positionalArgs[0].type),
+				);
+				const expected = arrayFromExpectedType(arg0Base);
+				if (expected) {
+					for (let i = 1; i < positionalArgs.length; i++) {
+						const provided = positionalArgs[i];
+						if (arrayFromArgMatches(provided.type, arg0Base)) continue;
+						const desc = this.describeArgForTemplate(
+							provided.arg.value,
+							provided.type,
+							version,
+						);
+						this.addTemplateError({
+							line: provided.arg.value.line,
+							column: provided.arg.value.column,
+							length: 0,
+							message: UnifiedPineValidator.CE10122_TEMPLATE,
+							severity: DiagnosticSeverity.Error,
+							code: "CE10122",
+							ctx: {
+								argDisplayName: `arg_${i}`,
+								argUserFriendlyRepresentation: desc.repr,
+								argumentType: desc.typeStr,
+								expectedType: expected,
+								funId: functionName,
+							},
+						});
+						break; // TV reports only the first incompatible element
+					}
+				}
+			}
 			return; // Skip further parameter validation for variadic functions
 		}
 
@@ -2565,6 +2783,95 @@ export class UnifiedPineValidator {
 		// separately (getPolymorphicReturnType).
 		const functionHasOverloads = hasOverloads(functionName);
 		const checkArgTypes = version === "6";
+
+		// Collection mutators (array.push/set/insert/unshift/fill, map.put, ...)
+		// type their value/key param as "series <type of the array's/map's
+		// elements>" - a placeholder mapToPineType collapses to "unknown", so the
+		// generic loop below skips it (and hasOverloads bypasses positional checks
+		// entirely). Resolve the receiver's concrete element type and check the
+		// value/key arg directly: TV rejects a narrowing (literal float into
+		// array<int>) but accepts a widening (int into <float>). see INV087
+		if (checkArgTypes) {
+			const receiverType =
+				providedArgs.get("id")?.type ?? positionalArgs[0]?.type;
+			if (receiverType) {
+				for (let i = 0; i < signature.parameters.length; i++) {
+					const param = signature.parameters[i];
+					const kindMatch = /type of the (array|map)'s elements/.exec(
+						String(param.rawType ?? param.type),
+					);
+					if (!kindMatch) continue;
+					const target = collectionElementTarget(
+						receiverType,
+						kindMatch[1],
+						param.name,
+					);
+					if (!target) continue; // element type unresolved -> stay lenient
+					const provided = providedArgs.get(param.name) ?? positionalArgs[i];
+					if (!provided) continue;
+					if (elementArgAssignable(provided.type, target)) continue;
+					const desc = this.describeArgForTemplate(
+						provided.arg.value,
+						provided.type,
+						version,
+					);
+					this.addTemplateError({
+						line: provided.arg.value.line,
+						column: provided.arg.value.column,
+						length: 0,
+						message: UnifiedPineValidator.CE10123_TEMPLATE,
+						severity: DiagnosticSeverity.Error,
+						code: "CE10123",
+						ctx: {
+							argDisplayName: param.name,
+							argUserFriendlyRepresentation: desc.repr,
+							argumentType: desc.typeStr,
+							currentTypeDocStr: `series ${target}`,
+							funId: functionName,
+							typePostfix: "",
+						},
+					});
+				}
+			}
+		}
+
+		// A `simple`-qualified param (e.g. ta.ema's `length: simple int`) rejects
+		// a series value. The param's qualifier is lost when mapToPineType
+		// collapses "simple int" -> "int", and these functions are often
+		// "overloaded" (a union param maps to unknown), so the generic loop never
+		// catches it. Read the qualifier off rawType and flag a series arg
+		// directly. Gate on isAssignable so a base-incompatible arg (handled
+		// elsewhere) is not double-reported here. see INV088
+		if (checkArgTypes) {
+			for (let i = 0; i < signature.parameters.length; i++) {
+				const param = signature.parameters[i];
+				if (!param.type || !isSimpleQualifiedParam(param.rawType)) continue;
+				const provided = providedArgs.get(param.name) ?? positionalArgs[i];
+				if (!provided || !isSeriesQualified(provided.type)) continue;
+				if (!TypeChecker.isAssignable(provided.type, param.type)) continue;
+				const desc = this.describeArgForTemplate(
+					provided.arg.value,
+					provided.type,
+					version,
+				);
+				this.addTemplateError({
+					line: provided.arg.value.line,
+					column: provided.arg.value.column,
+					length: 0,
+					message: UnifiedPineValidator.CE10123_TEMPLATE,
+					severity: DiagnosticSeverity.Error,
+					code: "CE10123",
+					ctx: {
+						argDisplayName: param.name,
+						argUserFriendlyRepresentation: desc.repr,
+						argumentType: desc.typeStr,
+						currentTypeDocStr: param.rawType ?? String(param.type),
+						funId: functionName,
+						typePostfix: "",
+					},
+				});
+			}
+		}
 
 		// Validate each parameter
 		for (let i = 0; i < signature.parameters.length; i++) {

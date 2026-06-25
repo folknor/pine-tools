@@ -1,0 +1,8 @@
+//@version=6
+// Probe (pine-lint --tv, 2026-06-25): CE10123 @ 7:5 -
+// "Cannot call operator + with argument expr0=x. An argument of plot type
+//  was used but a const int is expected."
+indicator("s")
+x = plot(close)
+y = x + 1
+plot(y)

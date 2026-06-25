@@ -1,0 +1,17 @@
+// @test regression/array-from-element-type
+// @description array.from is the variadic same-element constructor: arg0 fixes the element type and every later arg must match it (numerics unify to int/float). It is variadic, so the generic arg loop never type-checks the elements; a dedicated pass flags the FIRST incompatible one as CE10122 ("one from ..."). Numeric mixes, all-string, and series-float args stay clean. Probed 2026-06-25 via pine-lint --tv, see INV090.
+// @expects parse: success
+// @expects error: line=3, message=/Cannot call "array.from" with argument "arg_1"="two".*literal string.*series int.float/
+// @expects error: line=4, message=/Cannot call "array.from" with argument "arg_2"="1".*literal int.*series string/
+// @expects error: line=5, message=/Cannot call "array.from" with argument "arg_1"="1".*literal int.*series bool/
+// @expects errors: 3
+
+//@version=6
+indicator("array-from-element-type")
+a = array.from(1, "two", 3.0)
+b = array.from("a", "b", 1)
+c = array.from(true, 1)
+ok1 = array.from(1, 2.0, 3)
+ok2 = array.from("x", "y")
+ok3 = array.from(close, high)
+plot(array.size(a) + array.size(b) + array.size(c) + array.size(ok1) + array.size(ok2) + array.size(ok3))

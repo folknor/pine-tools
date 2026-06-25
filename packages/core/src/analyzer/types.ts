@@ -28,6 +28,8 @@ export type PineType =
 	| "label"
 	| "box"
 	| "table"
+	| "plot"
+	| "hline"
 	| "void"
 	| "na"
 	| "unknown";

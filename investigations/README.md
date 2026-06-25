@@ -590,3 +590,24 @@ contradiction means re-measure, not "the earlier author was wrong."
 - [INV085](INV085-union-arg-ce10123-template/notes.md) - checker diagnostic
   wording alignment: union-parameter rejects (`nz(<bool>)`, `int(true)`) now use
   TV's CE10123 call template instead of custom type-mismatch prose.
+- [INV086](INV086-self-recursion-ban/notes.md) - direct self-recursion is
+  CE10271 (Pine forbids recursion); `currentFunctionName` tracker, overload-aware
+  (a self-named call inside an overloaded fn dispatches to a sibling, not itself).
+  From freedom FINDINGS D-003; gap shared by piners + our LSP.
+- [INV087](INV087-collection-mutator-element-type/notes.md) - collection mutator
+  element type checked (`array.push(array.new<int>(), 1.5)` -> CE10123); resolves
+  the receiver's element type past the `unknown`/hasOverloads bypass, directional
+  numeric rule (float->int narrowing rejected, int->float widening OK). freedom
+  FINDINGS D-001.
+- [INV088](INV088-simple-int-length-qualifier/notes.md) - series value into a
+  `simple int` param (ta.ema length) rejected (CE10123); dedicated qualifier pass
+  off rawType + counted-`for` counter typed `series<int>` (TV does). Reverses
+  INV071's "revisit if a real case appears" residual. freedom FINDINGS D-002.
+- [INV089](INV089-plot-hline-arithmetic/notes.md) - arithmetic/comparison on a
+  plot/hline handle rejected (CE10123); plot/hline added to PineType + mapped
+  (safe vs INV063 - no UDF returns them), opaque handles render bare, v6-only
+  (v4 plot comparison stays lenient). freedom FINDINGS D-004.
+- [INV090](INV090-array-from-element-type/notes.md) - array.from element-type
+  consistency (`array.from(1, "two", 3.0)` -> CE10122); arg0 fixes the element
+  type, first incompatible later arg flagged in the variadic branch, numerics
+  unify, v6-only. freedom FINDINGS D-005.

@@ -1,0 +1,9 @@
+//@version=6
+// Probe (pine-lint --tv, 2026-06-25): CE10123 @ 9:24 -
+// "Cannot call ta.ema with argument length=i. An argument of series int
+//  type was used but a simple int is expected."
+indicator("s")
+s = 0.0
+for i = 1 to 5
+    s += ta.ema(close, i)
+plot(s)

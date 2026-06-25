@@ -1,0 +1,16 @@
+// @test regression/self-recursion-ban
+// @description Pine v6 forbids recursion: a direct self-call inside a function body is TV's CE10271 ("Could not find function or function reference 'f'") because the name is not yet bound while its own body compiles. A non-recursive call to an earlier UDF stays clean. Probed 2026-06-25 via pine-lint --tv, see INV086.
+// @expects parse: success
+// @expects error: line=5, message=/Could not find function or function reference 'f'/
+// @expects errors: 1
+
+//@version=6
+indicator("self-recursion-ban")
+
+f(n) =>
+    n <= 0 ? 0 : f(n - 1)
+
+g(x) => x * 2
+h(x) => g(x) + 1
+
+plot(f(5) + h(3))

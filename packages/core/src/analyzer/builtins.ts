@@ -184,6 +184,13 @@ export function mapToPineType(typeStr?: string): PineType {
 		// e.g. 50 FPs in one file on `lineN := udf(...)` reassignments. So
 		// `line l = 5` stays an FN until #9's robust UDF-return inference
 		// lands. see INV063
+		// plot/hline ARE mapped (unlike the drawing handles above): they are
+		// returned ONLY by the builtin plot()/hline(), never by a UDF (Pine bars
+		// plot()/hline() from function bodies), so the INV063 UDF-return
+		// mis-inference cannot arise. Typing them lets arithmetic on a plot
+		// handle (`x = plot(close)` then `x + 1`) be rejected. see INV089
+		plot: "plot",
+		hline: "hline",
 		"series int": "series<int>",
 		"series float": "series<float>",
 		"series bool": "series<bool>",

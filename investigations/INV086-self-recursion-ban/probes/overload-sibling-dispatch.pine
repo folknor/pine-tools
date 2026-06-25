@@ -1,0 +1,10 @@
+//@version=6
+indicator("overload-sibling-dispatch")
+// Two overloads of `toHex`. The 1-arg overload's body calls the 3-arg
+// overload (a SIBLING, not itself). This must be CLEAN - no CE10271.
+toHex(float r, float g, float b) =>
+    str.tostring(r + g + b)
+toHex(color src) =>
+    toHex(1.0, 2.0, 3.0)
+out = toHex(color.red)
+plot(str.length(out))

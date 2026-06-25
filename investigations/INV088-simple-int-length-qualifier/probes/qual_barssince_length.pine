@@ -1,0 +1,7 @@
+//@version=6
+// Probe (pine-lint --tv, 2026-06-25): CE10123 @ 7:20 -
+// "Cannot call ta.ema with argument length=l. An argument of series int
+//  type was used but a simple int is expected."
+indicator("s")
+l = ta.barssince(close > open)
+plot(ta.ema(close, l))

@@ -1,0 +1,18 @@
+// @test regression/simple-int-length-qualifier
+// @description A `simple int` param (e.g. ta.ema's `length`) rejects a series value. The qualifier is lost when mapToPineType collapses "simple int" -> "int", and ta.ema is "overloaded" (its union `source` param maps to unknown) so the generic loop bypasses it; a dedicated pass reads the qualifier off rawType. A counted-for counter is series int (TV types it so), as is ta.barssince's result - both rejected as a length. Const literals and input.int lengths stay clean. Probed 2026-06-25 via pine-lint --tv, see INV088.
+// @expects parse: success
+// @expects error: line=5, message=/Cannot call "ta.ema" with argument "length"="i".*series int.*simple int/
+// @expects error: line=7, message=/Cannot call "ta.ema" with argument "length"="l".*series int.*simple int/
+// @expects errors: 2
+
+//@version=6
+indicator("simple-int-length-qualifier")
+s = 0.0
+for i = 1 to 5
+    s := s + ta.ema(close, i)
+l = ta.barssince(close > open)
+e = ta.ema(close, l)
+ok1 = ta.ema(close, 14)
+len = input.int(20)
+ok2 = ta.ema(close, len)
+plot(s + e + ok1 + ok2)
