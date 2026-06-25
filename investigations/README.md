@@ -631,3 +631,7 @@ contradiction means re-measure, not "the earlier author was wrong."
   INV091's captured signatures, conservative (non-overloaded, parserClean,
   typed-primitive params, method-named functions skipped). freedom FINDINGS
   L-001 / F-031.
+- [INV096](INV096-enum-operand-type/notes.md) - enum member values typed as
+  their enum (parser now captures enum members); the operator checks then reject
+  `E.a == 1` / `E.a + 1` (CE10123). freedom FINDINGS F-036. Residual: ==/!= still
+  use our wording, not TV's CE10123 "const enum" template.

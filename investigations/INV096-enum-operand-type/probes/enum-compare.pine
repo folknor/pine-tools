@@ -1,0 +1,12 @@
+//@version=6
+// Probes (pine-lint --tv, 2026-06-25). TV types an enum value as `const E`:
+//   E.a == 1   -> CE10123 @ expr1 (literal int / const enum)
+//   E.a + 1    -> CE10123 @ expr0 (const E / const int)  [arithmetic rejected]
+//   v = E.a; v == 1 -> CE10123 (variable carries const E)
+//   E.a == E.b -> clean (const bool)
+indicator("s")
+enum E
+    a
+    b
+x = E.a == 1
+plot(close)

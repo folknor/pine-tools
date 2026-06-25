@@ -1,0 +1,24 @@
+// @test regression/enum-operand-type
+// @description Enum member access (E.a) is now typed as its enum, so the operator checks reject mixing an enum with a non-enum: `E.a == 1` and the variable form `v == 1` are caught, and `E.a + 1` is TV's CE10123 (const E used but const int expected). Valid enum comparisons (E.a == E.b, v == E.b) and a switch over an enum stay clean. Probed 2026-06-25 via pine-lint --tv, see INV096.
+// @expects parse: success
+// @expects error: line=6, message=/cannot apply .==. to E and int/
+// @expects error: line=7, message=/Cannot call "operator \+" with argument "expr0"="E.a".*const E.*const int/
+// @expects error: line=9, message=/cannot apply .==. to E and int/
+// @expects errors: 3
+
+//@version=6
+indicator("enum-operand-type")
+enum E
+    a
+    b
+e1 = E.a == 1
+e2 = E.a + 1
+v = E.a
+e3 = v == 1
+ok1 = E.a == E.b
+ok2 = v == E.b
+sw = switch v
+    E.a => 1
+    E.b => 2
+    => 0
+plot(sw)

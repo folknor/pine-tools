@@ -226,6 +226,9 @@ export class UnifiedPineValidator {
 	// value...") while a bare UDT name is accepted - so the value-position
 	// check needs to tell the two apart. see INV048
 	private declaredEnumNames: Set<string> = new Set();
+	// Enum name -> its member names. `E.member` is typed as the enum (the name),
+	// so the operator checks reject `E.a == 1` / `E.a + 1` (CE10123). see INV096
+	private enumMemberNames: Map<string, Set<string>> = new Map();
 	// UDF / method names declared so far, in source order. The CE10271
 	// undefined-callable check consults this instead of the symbol table
 	// because variables SHARE the symbol namespace and hide functions:
@@ -300,6 +303,7 @@ export class UnifiedPineValidator {
 		this.usedBuiltins.clear();
 		this.declaredTypeNames.clear();
 		this.declaredEnumNames.clear();
+		this.enumMemberNames.clear();
 		this.declaredFunctionNames.clear();
 		this.udtFieldTypes.clear();
 		this.reportedUdtFieldErrors.clear();
@@ -381,6 +385,16 @@ export class UnifiedPineValidator {
 		return this.declaredTypeNames.has(base) ? (base as PineType) : "unknown";
 	}
 
+	// Record an enum's member names so `E.member` can be typed as the enum.
+	// see INV096
+	private recordEnumMembers(statement: Statement): void {
+		if (statement.type !== "EnumDeclaration") return;
+		const members = statement.members;
+		if (members && members.length > 0) {
+			this.enumMemberNames.set(statement.name, new Set(members));
+		}
+	}
+
 	private registerTypeDeclaration(statement: Statement): void {
 		if (statement.type !== "TypeDeclaration") return;
 		this.declaredTypeNames.add(statement.name);
@@ -453,6 +467,7 @@ export class UnifiedPineValidator {
 			} else {
 				this.declaredTypeNames.add(statement.name); // see INV033
 				this.declaredEnumNames.add(statement.name); // see INV048
+				this.recordEnumMembers(statement); // see INV096
 			}
 			const symbol: SymbolInfo = {
 				name: statement.name,
@@ -1584,6 +1599,7 @@ export class UnifiedPineValidator {
 				} else {
 					this.declaredTypeNames.add(statement.name); // see INV033
 					this.declaredEnumNames.add(statement.name); // see INV048
+					this.recordEnumMembers(statement); // see INV096
 				}
 				const symbol: SymbolInfo = {
 					name: statement.name,
@@ -4577,6 +4593,15 @@ export class UnifiedPineValidator {
 				) {
 					const propertyName = `${memberExpr.object.name}.${memberExpr.property.name}`;
 					const namespaceName = memberExpr.object.name;
+
+					// `E.member` where E is a declared enum and member is real ->
+					// the value is typed as the enum (its name), so the operator
+					// checks reject `E.a == 1` / `E.a + 1`. see INV096
+					const enumMembers = this.enumMemberNames.get(namespaceName);
+					if (enumMembers?.has(memberExpr.property.name)) {
+						type = namespaceName as PineType;
+						break;
+					}
 
 					// Check if it's a known namespace property
 					if (propertyName in NAMESPACE_PROPERTIES) {

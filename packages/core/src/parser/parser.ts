@@ -1901,6 +1901,7 @@ export class Parser {
 
 		const startToken = this.previous();
 		const fields: AST.TypeField[] = [];
+		const enumMembers: string[] = []; // see INV096
 
 		while (this.check(TokenType.NEWLINE)) {
 			this.advance();
@@ -1954,6 +1955,7 @@ export class Parser {
 						isLineStart &&
 						currentToken.type === TokenType.IDENTIFIER
 					) {
+						enumMembers.push(currentToken.value); // member name. see INV096
 						const eq = this.tokens[this.current + 1];
 						const val = this.tokens[this.current + 2];
 						if (eq?.type === TokenType.ASSIGN && eq.value === "=" && val) {
@@ -1984,6 +1986,7 @@ export class Parser {
 			type: kind === "type" ? "TypeDeclaration" : "EnumDeclaration",
 			name: nameToken.value,
 			fields: kind === "type" ? fields : undefined,
+			members: kind === "enum" ? enumMembers : undefined,
 			line: nameToken.line,
 			column: nameToken.column,
 		} as AST.TypeDeclaration | AST.EnumDeclaration;

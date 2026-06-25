@@ -74,6 +74,9 @@ export interface TypeField {
 export interface EnumDeclaration extends ASTNode {
 	type: "EnumDeclaration";
 	name: string;
+	// Member names, captured so the checker can type `E.member` as the enum
+	// type and reject incompatible operations (CE10123). see INV096
+	members?: string[];
 }
 
 export interface AssignmentStatement extends ASTNode {
