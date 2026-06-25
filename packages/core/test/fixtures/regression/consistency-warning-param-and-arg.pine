@@ -1,0 +1,24 @@
+// @test regression/consistency-warning-param-and-arg
+// @description Two CW10003/4 precision fixes (INV114, probed 2026-06-25). Fix 1: series is contagious through call ARGUMENTS, so `na(mg[1])` is a series condition and the conditional `ta.ema` in the McGinley ternary warns (line 5). Fix 2: a bare UNTYPED param is "undetermined type" to TV, which is silent on conditionals gated by it even with a series call-site arg - so `switch MAtype => ta.sma/ema` inside `ma(source, len, MAtype)` must NOT warn (the dominant MA-selector idiom; was ~249 corpus FPs). A TYPED unqualified param (`int x`) stays series and still warns on both arms (INV018 preserved).
+// @expects parse: success
+// @expects warning: line=5, message="The function 'ta.ema' should be called on each calculation"
+// @expects warning: line=12, message="The function 'ta.sma' should be called on each calculation"
+// @expects warning: line=13, message="The function 'ta.ema' should be called on each calculation"
+// @expects warnings: 3
+
+//@version=6
+indicator("consistency-warning-param-and-arg")
+length = input.int(14)
+mg = 0.0
+mg := na(mg[1]) ? ta.ema(close, length) : mg[1]
+ma(source, len, MAtype) =>
+    switch MAtype
+        "SMA" => ta.sma(source, len)
+        => ta.ema(source, len)
+f(int x) =>
+    switch x
+        1 => ta.sma(close, 14)
+        => ta.ema(close, 14)
+plot(mg)
+plot(ma(close, length, "SMA"))
+plot(f(1))

@@ -261,10 +261,15 @@ export class SemanticAnalyzer {
 
 	/**
 	 * Run `fn` with the function's params temporarily marked as series
-	 * variables. UDF params are series-qualified by default - TV infers
-	 * `series int` for a bare `int direction` param and warns CW10003 on
-	 * conditional calls gated by it (probed 2026-06-04, INV018) - unless
-	 * the annotation carries a simple/const/input qualifier.
+	 * variables. A param is series-qualified only when it carries a TYPE
+	 * annotation lacking a simple/const/input qualifier - TV infers `series
+	 * int` for a typed `int direction` param and warns CW10003 on conditional
+	 * calls gated by it (probed 2026-06-04, INV018). A bare UNTYPED param
+	 * (`ma(source, length, MAtype)`) is "undetermined type" to TV, which is
+	 * silent on conditional calls gated by it even when the call site passes a
+	 * series argument (probed 2026-06-25, INV114) - so it must NOT be treated
+	 * as series here, or the dominant `switch MAtype => ta.sma/ema/...` MA-
+	 * selector idiom produces ~249 corpus false-positive CW10003 warnings.
 	 */
 	private withSeriesParams(
 		params: (FunctionDeclaration | MethodDeclaration)["params"],
@@ -275,6 +280,7 @@ export class SemanticAnalyzer {
 			const t = param.typeAnnotation?.name ?? "";
 			if (
 				param.name &&
+				t !== "" &&
 				!/\b(simple|const|input)\b/.test(t) &&
 				!this.seriesVars.has(param.name)
 			) {
@@ -674,9 +680,19 @@ export class SemanticAnalyzer {
 				}
 				if (!name) return false;
 				if (this.isHistoryDependentFunction(name)) return true;
-				return (FUNCTIONS_BY_NAME.get(name)?.returns ?? "").startsWith(
-					"series",
-				);
+				if ((FUNCTIONS_BY_NAME.get(name)?.returns ?? "").startsWith("series")) {
+					return true;
+				}
+				// Series is contagious through arguments. A function's MINIMAL
+				// documented overload often reads simple/const (`na(x) -> simple
+				// bool`, `nz`, `math.*`), but TV widens the result qualifier to
+				// the max of the argument qualifiers - so `na(mg[1])` is a series
+				// bool and governs a per-bar branch. Without this, the McGinley
+				// idiom `mg := na(mg[1]) ? ta.ema(...) : ...` looked
+				// input-conditioned and we skipped the CW10004 warning. A const/
+				// input/simple arg stays non-series, so the input-selector idiom
+				// the conservative gate protects is untouched. see INV114
+				return expr.arguments.some((a) => this.isSeriesishExpression(a.value));
 			}
 			case "BinaryExpression":
 				return (

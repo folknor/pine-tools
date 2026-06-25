@@ -330,6 +330,20 @@ IDs so the two stay in sync.
   float` not `series string` (member-constant string types aren't resolved in the
   ternary branch inference), so the rendered argumentType would mismatch TV's
   `series string`. See INV112 residual.
+- **#61 (residual) - CW10003/4 consistency-warning precision (INV114).** Two
+  precision fixes landed (series contagious through call args -> the McGinley
+  `na(mg[1]) ? ta.ema(...)` idiom now warns; an untyped UDF param is
+  "undetermined", so `switch MAtype => ta.sma/ema` no longer FP-warns - ~238
+  corpus FPs cleared). Warning tvOnly 26->24, localOnly 1627->1361, pinned by
+  `consistency-warning-param-and-arg.pine`. **Remaining** (all pre-existing,
+  surfaced by the sweep): (a) ~11 consistency FPs still on TV-clean files -
+  mostly TYPED-param UDFs called only with NON-series args (`draw_lbl`, a stray
+  `ta.sma`/`ta.atr`/`math.sum`/`ta.highest`); TV monomorphizes per call site and
+  we don't, so matching needs arg-qualifier propagation into params (same
+  blocker as #9); (b) the block-scope state-variable FN class - a `:=`-reassigned
+  int state var (`tradeState`) gating `if tradeState == 1 => ta.crossunder(...)`
+  is not tracked as series, so we miss TV's CW10003 there (`5881e014`,
+  `b3a052e4`); (c) the shadowing-variable CW10013 tail (3 tv-only). See INV114.
 
 ## Gotchas
 

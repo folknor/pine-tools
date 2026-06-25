@@ -710,3 +710,10 @@ contradiction means re-measure, not "the earlier author was wrong."
   `strategy_direction` are enforced, INV100). The INV100 `param.type ===
   "unknown"` gate is confirmed correct; adding CE10068 would be an FP. TODO #59
   closed.
+- [INV114](INV114-consistency-warning-precision/notes.md) - CW10003/4
+  "called on each calculation" precision. Two fixes: (1) series is contagious
+  through call ARGUMENTS so `na(mg[1]) ? ta.ema(...)` warns (the McGinley idiom,
+  5 FN fixes); (2) a bare UNTYPED UDF param is "undetermined type" to TV (silent
+  even with a series arg, probed) so `switch MAtype => ta.sma/ema` must NOT warn
+  (~238 corpus FP fixes; INV018's TYPED-param warning preserved). Warning
+  tvOnly 26->24, localOnly 1627->1361. Residual tail in notes.
