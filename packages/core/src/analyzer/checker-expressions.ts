@@ -152,16 +152,57 @@ export function validateBinaryExpression(
 					version,
 				);
 			}
-		} else {
-			v.addError(
-				expr.line,
-				expr.column,
-				1,
-				`Type mismatch: cannot apply '${expr.operator}' to ${leftType} and ${rightType}`,
-				DiagnosticSeverity.Error,
-			);
+			return;
 		}
+
+		// Align `==`/`!=` incompatibilities to TV's CE10123. When exactly one
+		// operand is a LITERAL, TV anchors the error at that literal (the
+		// offender) and reports the OTHER operand's type as expected -
+		// independent of left/right position (`close == "x"` and `"x" ==
+		// close` both flag the string and expect `series float`; `b == 1` and
+		// `1 == b` both flag the int and expect `const bool`). Probed
+		// 2026-06-25, see #57 / INV096. Exotic both-const shapes (color vs a
+		// numeric literal invert this - TV flags the color, expects float) are
+		// absent from the corpus; leave them to the generic fallback below.
+		if (expr.operator === "==" || expr.operator === "!=") {
+			const leftLit = expr.left.type === "Literal";
+			const rightLit = expr.right.type === "Literal";
+			if (leftLit !== rightLit) {
+				const offenderExpr = leftLit ? expr.left : expr.right;
+				const offenderType = leftLit ? leftType : rightType;
+				const expectedType = leftLit ? rightType : leftType;
+				if (!TypeChecker.isColorType(expectedType)) {
+					addOperatorTypeError(
+						v,
+						expr.operator,
+						leftLit ? "expr0" : "expr1",
+						offenderExpr,
+						offenderType,
+						renderEqExpectedType(v, expectedType),
+						version,
+					);
+					return;
+				}
+			}
+		}
+
+		v.addError(
+			expr.line,
+			expr.column,
+			1,
+			`Type mismatch: cannot apply '${expr.operator}' to ${leftType} and ${rightType}`,
+			DiagnosticSeverity.Error,
+		);
 	}
+}
+
+// The expected-type rendering for a CE10123 `==`/`!=` mismatch. TV renders
+// an enum-typed expected operand as the generic "const enum" (distinct from
+// arithmetic, which shows "const E" - so the rendering is operator-specific;
+// see #57). Everything else flows through the normal qualifier render.
+function renderEqExpectedType(v: UnifiedPineValidator, t: PineType): string {
+	if (v.enumMemberNames.has(t)) return "const enum";
+	return v.renderTvType(t, "const");
 }
 
 export function expectedArithmeticOperandType(

@@ -1,0 +1,25 @@
+// @test regression/eq-operator-type-mismatch
+// @description `==`/`!=` type mismatches render as TV's CE10123, not our old "cannot apply" wording. When one operand is a LITERAL, TV anchors the error at the literal (the offender) and reports the OTHER operand's type as expected, independent of left/right order: `cb == 1` and `close == "x"` flag the literal as expr1; `"x" == close` flags the left literal as expr0. The bool side renders with its real qualifier (const/series/input bool). Probed 2026-06-25 via pine-lint --tv, see #57 / INV096.
+// @expects parse: success
+// @expects error: line=4, message=/Cannot call "operator ==" with argument "expr1"="1".*"literal int".*"const bool"/
+// @expects error: line=5, message=/Cannot call "operator ==" with argument "expr1"="hi".*"literal string".*"const bool"/
+// @expects error: line=7, message=/Cannot call "operator ==" with argument "expr1"="1".*"literal int".*"series bool"/
+// @expects error: line=9, message=/Cannot call "operator !=" with argument "expr1"="2".*"literal int".*"input bool"/
+// @expects error: line=10, message=/Cannot call "operator ==" with argument "expr1"="x".*"literal string".*"series float"/
+// @expects error: line=11, message=/Cannot call "operator ==" with argument "expr0"="x".*"literal string".*"series float"/
+// @expects errors: 6
+
+//@version=6
+indicator("eq-operator-type-mismatch")
+bool cb = true
+e1 = cb == 1
+e2 = cb == "hi"
+series bool sb = close > open
+e3 = sb == 1
+ib = input.bool(true)
+e4 = ib != 2
+e5 = close == "x"
+e6 = "x" == close
+okFloat = close == 2
+okInt = 5 == 5
+plot(okFloat ? 1 : okInt ? 2 : 0)

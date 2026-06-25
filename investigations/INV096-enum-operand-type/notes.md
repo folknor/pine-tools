@@ -62,11 +62,14 @@ arithmetic path (matching TV's CE10123 "const E" exactly) and `E.a == 1` /
 
 ## Residual
 
-- The `==`/`!=` enum mismatch is reported with our own "Type mismatch: cannot
-  apply '==' to E and int" wording, not TV's CE10123 "const enum" template
-  (the `==`/`!=` operator path was never aligned to CE10123, unlike the
-  arithmetic/bool paths - INV083/INV084). Aligning `==`/`!=` generally is a
-  separate, broader change (it touches every `==` type error, e.g. the already
-  -caught `close == "x"`); tracked as the F-036 wording follow-up.
+- RESOLVED (2026-06-25, #57) for the literal-operand cases: `E.a == 1` now
+  emits TV's CE10123 ("literal int" used, "const enum" expected) instead of the
+  old "Type mismatch: cannot apply '==' to E and int" wording. The general
+  `==`/`!=` alignment landed in `validateBinaryExpression` - when one operand is
+  a literal, it is the offender and the other operand's type is expected
+  (probed: independent of operand order; the enum renders as the generic "const
+  enum" for `==`, distinct from arithmetic's "const E"). The fixture assertions
+  here were updated to the CE10123 wording. The both-non-literal / both-const
+  shapes still use the old fallback - see #57 residual.
 - An invalid enum member (`E.notReal`) is not typed as the enum (left as-is) -
   member-existence validation is out of scope here.

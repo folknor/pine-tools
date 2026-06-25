@@ -89,18 +89,6 @@ IDs so the two stay in sync.
   `functions.json` (`flags.*`, param `required`) as they already do.
   Whether the facts then live as a data file under `pine-data/` or stay
   as annotated TS maps is taste, not the payload.
-- **#22 - targeted scrape flags.** DONE 2026-06-20. `pnpm run scrape --
-  --only <names>` re-scrapes a comma-separated list of reference entries
-  (functions, variables, constants, types, annotations, operators, or
-  keywords), merging the refreshed entries into the existing
-  `complete-v6-details.json` instead of rebuilding the whole catalog.
-  `pnpm run scrape -- --only-overloaded` re-scrapes the functions whose
-  existing details contain overload data, for focused overload-widget refreshes.
-  In targeted mode the named entries are fetched even when their details cache
-  is still fresh, so this replaces hand-deleting `.cache/function-details/`
-  files. `--dry-run` writes `complete-v6-details.dryrun.json` and leaves the
-  real output untouched; verified with `--only alert --dry-run` and
-  `--only-overloaded --dry-run`.
 - **#30 - consider rich (MarkupContent) diagnostic messages.** LSP 3.18
   (vscode-languageserver 10) widened `Diagnostic.message` to
   `string | MarkupContent`. Our language-service diagnostics are plain
@@ -191,14 +179,6 @@ IDs so the two stay in sync.
   beyond these data-backed collection receiver methods. Surfaced by the
   #52 census (deep chains under-tested: readChainDepth 3+ 1776 corpus / 4
   tests).
-- **#56 - parser-state tracing for targeted lines.** Implemented as
-  `pnpm run debug:internals -- trace <file|code> --line <N> [--context <N>]`.
-  It reports the parser method stack, `current` token before/after, line,
-  column, indent, `parenDepth`, `bracketDepth`, active block state such as
-  function name and `baseIndent`, and parse errors for events touching the
-  requested line or nearby context. Use `--verbose` to include low-level
-  same-line binary/wrap events and no-op method calls, or `--methods a,b` to
-  trace a targeted method set.
 - **#48 - mutation-testing pass (negative corpus).** INV050 exposed a
   structural blind spot: every verification layer samples valid code.
   The corpus is published working scripts, so a false-negative class
@@ -318,22 +298,24 @@ IDs so the two stay in sync.
   Remaining, if worth pursuing: continue auditing any future specialized
   leading-wrap joiners for the same CE10013 wording/anchor behavior; no
   inventory rows currently hit them.
-- **#57 - align `==`/`!=` operator type-mismatch diagnostics to TV's
-  CE10123 template.** The arithmetic/comparison and bool operator paths
-  emit TV's CE10123 `Cannot call "operator X" ...` template (INV083 /
-  INV084), but `==`/`!=` incompatibilities still fall to the older
-  `Type mismatch: cannot apply '==' to A and B` wording (the
-  `validateBinaryExpression` else branch - `==`/`!=` are excluded from
-  `ARITH_OR_COMPARE`). TV uses CE10123 anchored at the second operand,
-  with the FIRST operand's type as the expected (`E.a == 1` ->
-  `expr1`="1", "literal int" but "const enum" expected; `close == "x"`
-  -> "literal string" but "series float" expected). Surfaced by
-  [INV096](investigations/INV096-enum-operand-type/notes.md) (enum
-  comparison now caught, but with our wording). Broad: touches every
-  `==`/`!=` type error in the corpus, so it needs its own regression
-  pass; note TV renders the enum expected as the generic "const enum"
-  for `==` yet "const E" for arithmetic, so the expected-type rendering
-  is operator-specific.
+- **#57 (residual) - `==`/`!=` operator type-mismatch diagnostics.** The
+  literal-operand cases now emit TV's CE10123 `Cannot call "operator X" ...`
+  template (`validateBinaryExpression`, see `eq-operator-type-mismatch.pine` +
+  the updated `enum-operand-type.pine`). TV's rule, probed 2026-06-25: when
+  exactly one operand is a LITERAL, it anchors the error at that literal (the
+  offender) and reports the OTHER operand's type as expected - independent of
+  left/right order (`close == "x"` and `"x" == close` both flag the string,
+  expect `series float`; `b == 1` and `1 == b` both flag the int, expect
+  `const bool`; the bool side renders with its real qualifier const/series/
+  input bool; an enum side renders as the generic "const enum" - distinct from
+  arithmetic's "const E"). This covers every `==`/`!=` mismatch in the corpus
+  (all carry a literal operand); the 100 corpus carriers re-worded clean (0
+  regression). **Remaining:** the both-non-literal / both-const shapes (e.g.
+  `boolVar == stringVar`, `color.red == 1`) keep the old `Type mismatch:
+  cannot apply ...` fallback. TV resolves those via a type-priority ordering
+  (float > enum > string > bool > int > color, with the int operand of a
+  numeric pair rendered as float) that is corpus-absent and not yet replicated.
+  Surfaced by [INV096](investigations/INV096-enum-operand-type/notes.md).
 - **Minor data residue (record-only, low value):** `ta.vwap.anchor`'s default
   and the "X by default" phrasing are deliberately unparsed (see
   `parse-default.ts`). Skip unless a consumer needs them.
