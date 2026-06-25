@@ -1,0 +1,17 @@
+// @test regression/tuple-return-series-condition
+// @description A tuple destructured from a UDF whose return is a tuple of series gets its members series-typed, so a later `if c > o` is recognized as series-conditional and the history-dependent `ta.stdev` call inside it warns (CW10004). Without the inference, `o`/`c` are untyped, the condition reads non-series, and we miss TV's warning. Probed 2026-06-25, see INV117. (The standard idiom is `[stOpen, stHigh, stLow, stClose] = getStandardOHLC()`.)
+// @expects parse: success
+// @expects warning: line=8, message="The function 'ta.stdev' should be called on each calculation"
+// @expects warnings: 1
+
+//@version=6
+indicator("tuple-return-series-condition")
+getOHLC() =>
+    [open, high, low, close]
+[o, h, l, c] = getOHLC()
+v = 0.0
+if c > o
+    v := ta.stdev(close, 5)
+plot(v)
+plot(h)
+plot(l)

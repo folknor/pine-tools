@@ -732,3 +732,11 @@ contradiction means re-measure, not "the earlier author was wrong."
   untyped param, INV114) is undetermined, so indexing it is not own-scope
   history - the scan now excludes it, while a directly-indexed param
   (`prevVal(src)=>src[1]`) still counts. Warning tvOnly 17->12, 0 new FPs.
+- [INV117](INV117-consistency-fn-tail-rootcauses/notes.md) - root-cause map of
+  the remaining 9 consistency FNs (3 families: #9 UDF/qualifier inference,
+  library-body analysis, user-global indexing - NOT one cause). Shipped the
+  Family-1 slice: a `[..] = f()` destructure now series-types its members from
+  the UDF's returned tuple (`tailTupleSeries`), so `if stClose > stOpen` is
+  series and the `ta.stdev` pair warns (tvOnly 12->10, 0 FPs). Records the
+  Family-3 criterion correction (indexing a USER global series var counts;
+  INV018 p4's "globals don't count" is too broad - it's BUILTIN globals).

@@ -339,18 +339,23 @@ IDs so the two stay in sync.
   `if <series>` -> `else if tradeState == 1 => ta.crossunder(...)`) warns
   (INV115); and history-dependent METHOD calls are now looked up by their bare
   method name, with a matching undetermined-gate exclusion so `draw_ob` stays
-  silent (INV116). Warning tvOnly 26->12, localOnly 1627->1312; pinned by
-  `consistency-warning-param-and-arg.pine`, `conditional-reassign-series-state.pine`,
-  and `method-call-history-dependence.pine`. **Remaining** (all pre-existing):
-  (a) ~11 consistency FPs still on TV-clean files - mostly TYPED-param UDFs
-  called only with NON-series args (`draw_lbl`, a stray
-  `ta.sma`/`ta.atr`/`math.sum`/`ta.highest`); TV monomorphizes per call site and
-  we don't, so matching needs arg-qualifier propagation into params (same
-  blocker as #9); (b) 9 consistency tv-only FNs of a still-different cause
-  (`6293fd71` getStandardTrueRange/cust_series/ta.stdev, `71fb0ec4`
-  getTrendLineScore, `b369d637` scan, `db76cf79` FindST); (c) the
+  silent (INV116); and a `[..] = f()` destructure now series-types its members
+  from the UDF's returned tuple, so `if stClose > stOpen` is series and the
+  `ta.stdev` pair warns (INV117 Family 1). Warning tvOnly 26->10, localOnly
+  1627->1312; pinned by `consistency-warning-param-and-arg.pine`,
+  `conditional-reassign-series-state.pine`, `method-call-history-dependence.pine`,
+  and `tuple-return-series-condition.pine`. **Remaining** (all pre-existing,
+  root-caused in INV117 - 3 distinct families, NOT one cause):
+  (a) ~11 consistency FPs on TV-clean files - TYPED-param UDFs called only with
+  NON-series args (`draw_lbl` etc.); needs arg-qualifier propagation into params
+  (#9); (b) 7 consistency tv-only FNs: Family-1 residual `getStandardTrueRange`
+  (doubly-blocked - needs #9 tuple inference AND Family-3 user-global index),
+  Family-2 library-body history (`cust_series`, `scan` via `zigzag.calculate`,
+  `FindST` via `helper.*` - need vendored-library body scanning), Family-3
+  user-global indexing (`getTrendLineScore` - probe-correct one-liner but
+  cascades into an `array.size(untypedParam)` series FP needing #9); (c) the
   shadowing-variable CW10013 tail (3 tv-only); (d) backward references - none in
-  the corpus. See INV114 / INV115 / INV116.
+  the corpus. See INV114 / INV115 / INV116 / INV117.
 
 ## Gotchas
 

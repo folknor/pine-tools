@@ -61,6 +61,12 @@ export class SemanticAnalyzer {
 	// collect pass in source order, so `b = close > open` then `if b`
 	// resolves. Drives the series-condition gate (see seriesish docs).
 	private seriesVars: Set<string> = new Set();
+	// UDF name -> per-position series-ness of its returned TUPLE, so a
+	// destructure `[a, b] = f()` can mark `a`/`b` series from f's return
+	// (TV types `[..] = getStandardOHLC()` elements as series; we otherwise
+	// leave them untyped and miss the series condition `if a > b`). Built in
+	// the collect pass in source order. see INV117
+	private udfReturnTupleSeries: Map<string, boolean[]> = new Map();
 	// Lexical scope stack for shadow detection (TV's CW10013/CW10011):
 	// each frame holds the names declared SO FAR in that scope, in source
 	// order - TV only warns when the parent declaration precedes the
@@ -82,6 +88,7 @@ export class SemanticAnalyzer {
 		this.historyDependentUdfs.clear();
 		this.conditionalScopeKinds = [];
 		this.seriesVars.clear();
+		this.udfReturnTupleSeries.clear();
 		this.scopeNames = [new Set()];
 		this.conditionalLocalFrames = [new Set()];
 
@@ -757,6 +764,33 @@ export class SemanticAnalyzer {
 		return this.historyDependentUdfs.has(functionName);
 	}
 
+	/**
+	 * The per-element series-ness of a function's returned TUPLE, or null if its
+	 * tail is not a tuple literal. The return value is the body's tail
+	 * statement: an expression/return statement yields its expression; an
+	 * expression-`if` recurses into the branch that produces a tuple. Only the
+	 * direct `[a, b, ...]` (ArrayExpression) shape is read - enough for the
+	 * `[..] = getStandardOHLC()` idiom. see INV117
+	 */
+	private tailTupleSeries(stmt: Statement | undefined): boolean[] | null {
+		if (!stmt) return null;
+		const fromArray = (e: Expression): boolean[] | null =>
+			e.type === "ArrayExpression"
+				? e.elements.map((el) => this.isSeriesishExpression(el))
+				: null;
+		if (stmt.type === "ExpressionStatement") return fromArray(stmt.expression);
+		if (stmt.type === "ReturnStatement") return fromArray(stmt.value);
+		if (stmt.type === "IfStatement") {
+			return (
+				this.tailTupleSeries(stmt.consequent[stmt.consequent.length - 1]) ??
+				(stmt.alternate
+					? this.tailTupleSeries(stmt.alternate[stmt.alternate.length - 1])
+					: null)
+			);
+		}
+		return null;
+	}
+
 	private collectVariableDeclarations(ast: Program): void {
 		for (const statement of ast.body) {
 			this.collectDeclarationsInStatement(statement);
@@ -797,7 +831,7 @@ export class SemanticAnalyzer {
 				}
 				break;
 
-			case "TupleDeclaration":
+			case "TupleDeclaration": {
 				// [a, b, c] = f(...) - every tuple member is a declaration
 				for (const name of statement.names) {
 					if (name) {
@@ -807,7 +841,23 @@ export class SemanticAnalyzer {
 						});
 					}
 				}
+				// Series-type the members from a UDF tuple return, so a later
+				// `if a > b` is seen as series-conditional. see INV117
+				const init = statement.init;
+				const calleeName =
+					init?.type === "CallExpression" && init.callee.type === "Identifier"
+						? init.callee.name
+						: undefined;
+				const elemSeries = calleeName
+					? this.udfReturnTupleSeries.get(calleeName)
+					: undefined;
+				if (elemSeries) {
+					statement.names.forEach((name, i) => {
+						if (name && elemSeries[i]) this.seriesVars.add(name);
+					});
+				}
 				break;
+			}
 
 			case "FunctionDeclaration":
 			case "MethodDeclaration":
@@ -819,6 +869,17 @@ export class SemanticAnalyzer {
 							line: statement.line,
 							column: statement.column,
 						});
+					}
+				}
+				// Record the series-ness of each element of a returned TUPLE, so
+				// a destructure of this function's result can series-type its
+				// members (the condition `if stClose > stOpen` case). see INV117
+				{
+					const elemSeries = this.tailTupleSeries(
+						statement.body[statement.body.length - 1],
+					);
+					if (elemSeries) {
+						this.udfReturnTupleSeries.set(statement.name, elemSeries);
 					}
 				}
 				// Record history-dependent user functions for the
