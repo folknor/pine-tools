@@ -60,148 +60,48 @@ import {
 	resolveCallReturnRaw,
 	unionParamInfo,
 } from "./builtins";
+import {
+	ARRAY_ELEMENT_RETURN_METHODS,
+	ARRAY_SELF_RETURN_METHODS,
+	arrayFromArgMatches,
+	arrayFromExpectedType,
+	CE10122_TEMPLATE,
+	CE10123_TEMPLATE,
+	collectionElementTarget,
+	elementArgAssignable,
+	isOpaqueHandleType,
+	isSeriesQualified,
+	isSimpleQualifiedParam,
+	MAP_SELF_RETURN_METHODS,
+	MATRIX_ARRAY_RETURN_METHODS,
+	MATRIX_SELF_RETURN_METHODS,
+	memberChainName,
+	NESTED_COLLECTION_MESSAGE,
+	SCALAR_BASE_TYPES,
+} from "./checker-helpers";
+import { isVoidCall, validateCallExpression } from "./checker-calls";
+import {
+	defineTupleVariables,
+	inferTupleElementTypes,
+	inferUdfTupleReturnTypes,
+	recordUdfTupleReturn,
+	tupleInitArity,
+} from "./checker-tuples";
 import { type Symbol as SymbolInfo, SymbolTable } from "./symbols";
 import { type PineType, TypeChecker } from "./types";
 
 // Re-export for backward compatibility
 export { DiagnosticSeverity, type ValidationError } from "../common/errors";
 
-// The five scalar primitives. A value of one of these types carries NO
-// builtin methods (probed INV065 p06/p07: `x.abs()` / `s.length()` are both
-// CE10271), so a method-call on a scalar can only resolve to a user-defined
-// method - never a builtin. Used by the shadowed-namespace member-call check.
-const SCALAR_BASE_TYPES = new Set(["int", "float", "bool", "string", "color"]);
-const ARRAY_ELEMENT_RETURN_METHODS = new Set([
-	"first",
-	"get",
-	"last",
-	"pop",
-	"remove",
-	"shift",
-]);
-const ARRAY_SELF_RETURN_METHODS = new Set(["concat", "copy", "slice"]);
-const MAP_SELF_RETURN_METHODS = new Set(["copy"]);
-const MATRIX_SELF_RETURN_METHODS = new Set(["copy", "submatrix"]);
-const MATRIX_ARRAY_RETURN_METHODS = new Set(["col", "row"]);
-
-// Flatten a member-call callee into its dotted name (`strategy.risk.max_drawdown`).
-// Walks `.object` recursively so two-level builtin namespaces resolve, not just
-// `ns.member`. Returns "" if any link in the chain isn't a plain identifier
-// property access (e.g. `foo().bar`, `arr[0].baz`). see INV054
-function memberChainName(expr: Expression): string {
-	if (expr.type === "Identifier") return (expr as Identifier).name;
-	if (expr.type === "MemberExpression") {
-		const m = expr as MemberExpression;
-		const base = memberChainName(m.object);
-		if (!base) return "";
-		return `${base}.${m.property.name}`;
-	}
-	return "";
-}
-
-// Resolve the concrete element type a collection mutator's value/key arg must
-// match, from the receiver's type. array<E> -> E; map<K,V> -> K for the `key`
-// param, V otherwise (map keys are primitives, so the first comma is always the
-// K/V split). Returns null when the element type is unresolved (unknown/`type`)
-// so the caller stays lenient. see INV087
-function collectionElementTarget(
-	receiverType: PineType,
-	kind: string,
-	paramName: string,
-): string | null {
-	const r = String(receiverType);
-	if (kind === "array") {
-		if (!r.startsWith("array<") || !r.endsWith(">")) return null;
-		const e = r.slice(6, -1).trim();
-		return e === "unknown" || e === "type" ? null : e;
-	}
-	if (!r.startsWith("map<") || !r.endsWith(">")) return null;
-	const inner = r.slice(4, -1);
-	const c = inner.indexOf(",");
-	if (c < 0) return null;
-	const pick = (
-		paramName === "key" ? inner.slice(0, c) : inner.slice(c + 1)
-	).trim();
-	return pick === "unknown" || pick === "type" ? null : pick;
-}
-
-// Element-type compatibility for collection mutators. Stricter than isAssignable
-// on numerics: a widening int -> float is fine, but a narrowing float -> int is
-// rejected (TV CE10123, probed 2026-06-25). na and unresolved args stay lenient.
-// see INV087
-function elementArgAssignable(argType: PineType, target: string): boolean {
-	if (argType === "unknown" || TypeChecker.isNaType(argType)) return true;
-	const ab = TypeChecker.baseTypeName(String(argType));
-	const tb = TypeChecker.baseTypeName(target);
-	if (ab === tb) return true;
-	if (tb === "float" && ab === "int") return true; // widening only
-	return false;
-}
-
-// A pure `simple`-qualified primitive param ("simple int", ...). A series value
-// is NOT allowed in such a slot (TV CE10123 "series int ... but simple int is
-// expected", e.g. ta.ema length). Excludes union/combined forms - "simple
-// series int" is series, "simple int/float" is a union. see INV088
-function isSimpleQualifiedParam(rawType?: string): boolean {
-	return /^simple\s+(int|float|bool|string|color)$/.test((rawType ?? "").trim());
-}
-
-function isSeriesQualified(argType: PineType): boolean {
-	const s = String(argType);
-	return s.startsWith("series<") || s.startsWith("series ");
-}
-
-// Opaque handle types returned by output/drawing builtins. They carry no
-// qualifier and never participate in arithmetic/comparison - but only v6
-// enforces that; TV v4/v5 are lenient (e.g. a v4 `plot()` handle compared
-// with `>` is accepted - probed 2026-06-25). see INV089
-function isOpaqueHandleType(t: PineType): boolean {
-	return (
-		t === "plot" ||
-		t === "hline" ||
-		t === "line" ||
-		t === "label" ||
-		t === "box" ||
-		t === "table"
-	);
-}
-
-// array.from is the variadic same-element constructor: arg0 fixes the element
-// type and every later arg must match it (numerics unify to int/float -
-// `array.from(1, 2.0)` is array<float>). TV reports the FIRST incompatible arg
-// as CE10122 with `expectedType` derived from arg0. The base set mirrors
-// array.from's per-arg0-type overloads (po lookup array.from). see INV090
-function arrayFromExpectedType(arg0Base: string): string | null {
-	if (arg0Base === "int" || arg0Base === "float") return "series int/float";
-	if (
-		arg0Base === "bool" ||
-		arg0Base === "string" ||
-		arg0Base === "color" ||
-		arg0Base === "line" ||
-		arg0Base === "label" ||
-		arg0Base === "box" ||
-		arg0Base === "table" ||
-		arg0Base === "linefill"
-	) {
-		return `series ${arg0Base}`;
-	}
-	return null; // UDT / enum / na / unknown arg0 -> stay lenient
-}
-
-function arrayFromArgMatches(argType: PineType, arg0Base: string): boolean {
-	if (argType === "unknown" || TypeChecker.isNaType(argType)) return true;
-	const ab = TypeChecker.baseTypeName(String(argType));
-	if (arg0Base === "int" || arg0Base === "float") {
-		return ab === "int" || ab === "float";
-	}
-	return ab === arg0Base;
-}
-
 export class UnifiedPineValidator {
 	private errors: ValidationError[] = [];
-	private symbolTable: SymbolTable;
-	private functionSignatures: Map<string, FunctionSignature>;
-	private expressionTypes: Map<Expression, PineType> = new Map();
+	// NOTE: several members below are `public` rather than `private` because the
+	// checker is split across checker-*.ts modules (tuples, calls, declarations,
+	// udt). Those modules are free functions taking this instance as `v` and need
+	// access to the shared state + spine. Treat them as module-internal.
+	public symbolTable: SymbolTable;
+	public functionSignatures: Map<string, FunctionSignature>;
+	public expressionTypes: Map<Expression, PineType> = new Map();
 	// Function-name → per-tuple-element return types, for user-defined
 	// functions / methods whose body's final expression is a tuple
 	// (ArrayExpression). Used by inferTupleElementTypes so destructuring
@@ -210,8 +110,8 @@ export class UnifiedPineValidator {
 	// Captured tuple-return shapes per UDF name. A name can carry several
 	// arities (e.g. a 2-tuple method and a 3-tuple function overload both
 	// named `valueAtTime`), so each entry is a list of shapes. see INV010.
-	private udfTupleReturnTypes: Map<string, PineType[][]> = new Map();
-	private blockDepth: number = 0;
+	public udfTupleReturnTypes: Map<string, PineType[][]> = new Map();
+	public blockDepth: number = 0;
 	// Built-in variables referenced (as built-ins) so far, in source
 	// order. Declaring a variable with one of these names afterwards is
 	// TV's CE10190; without a prior use it is only the CW10011 warning
@@ -220,7 +120,7 @@ export class UnifiedPineValidator {
 	// UDT / enum names declared so far, in source order. A declaration's
 	// type annotation must name one of these (or a built-in type) - and
 	// use-before-declaration is the same CE10149 (probed). see INV033
-	private declaredTypeNames: Set<string> = new Set();
+	public declaredTypeNames: Set<string> = new Set();
 	// Enum names specifically (subset of declaredTypeNames). A bare enum
 	// name in value position is TV's CE10074 ("Cannot use the "E" as a
 	// value...") while a bare UDT name is accepted - so the value-position
@@ -235,7 +135,7 @@ export class UnifiedPineValidator {
 	// `loss = loss(...)`, `[sto] = sto()`, and a later body-local
 	// pre-collected over a global UDF (`float ema2 = ...` inside a body
 	// calling global `ema2()`) are all TV-legal calls. see INV036
-	private declaredFunctionNames: Set<string> = new Set();
+	public declaredFunctionNames: Set<string> = new Set();
 	private udtFieldTypes: Map<string, Map<string, PineType>> = new Map();
 	private reportedUdtFieldErrors: Set<string> = new Set();
 	// Namespaces bound by an `import` - the alias if present, else the
@@ -243,13 +143,13 @@ export class UnifiedPineValidator {
 	// namespace `ta`). Members of these are library calls we cannot resolve,
 	// so the builtin-namespace member-call check skips them even when the
 	// name collides with a built-in namespace. see INV053
-	private importedNamespaces: Set<string> = new Set();
+	public importedNamespaces: Set<string> = new Set();
 	// Imported namespace -> its full "Author/Lib/Version" path, for the
 	// libraries whose export set we vendor (pine-data/v6/libraries). Lets the
 	// member-call check VALIDATE members of those libraries (CE10271 on an
 	// unknown export) instead of skipping them - the data-backed slice of #41.
 	// see INV067
-	private importedLibraryPaths: Map<string, string> = new Map();
+	public importedLibraryPaths: Map<string, string> = new Map();
 	// Lexical stack of names DECLARED in each scope, for TV's CE10095
 	// ("X" is already defined): re-declaring a name in the SAME scope is
 	// an error - typed or untyped, after var/varip, and a function param
@@ -265,31 +165,31 @@ export class UnifiedPineValidator {
 	// Only DIRECT self-recursion needs this; mutual recursion is already caught
 	// by the source-order CE10271 rule (the callee is undefined at that point).
 	// see INV086
-	private currentFunctionName: string | null = null;
+	public currentFunctionName: string | null = null;
 	// UDF names declared more than once (overload sets). A call to an
 	// overloaded name from inside one overload's body dispatches to a SIBLING
 	// overload, not itself, so it is NOT recursion - TV accepts it (probed
 	// 2026-06-25, see INV086 overload-sibling-dispatch). The self-recursion
 	// check below therefore only fires for names declared exactly once.
-	private overloadedFunctionNames: Set<string> = new Set();
+	public overloadedFunctionNames: Set<string> = new Set();
 	// Per-name list of the param signatures declared so far, for the
 	// redefinition check: two same-arity declarations whose params are not
 	// distinguishable by explicit type are TV's CE10110/CE10112/CE10113. see
 	// INV091
-	private functionDeclSignatures: Map<string, FunctionParam[][]> = new Map();
+	public functionDeclSignatures: Map<string, FunctionParam[][]> = new Map();
 	// Names declared as a METHOD. A method can share a name with a function
 	// (legal overload); UDF call-site validation skips such names since the
 	// captured function signature may not be the overload a plain call resolves
 	// to. see INV095
-	private methodDeclaredNames: Set<string> = new Set();
+	public methodDeclaredNames: Set<string> = new Set();
 	// Loop-nesting depth (for/for-in/while). `break`/`continue` outside any loop
 	// are TV's CE10135/CE10136. Distinct from blockDepth, which also counts
 	// if-blocks (where break IS allowed if a loop encloses them). see INV092
 	private loopDepth = 0;
 
 	constructor(
-		private readonly localLibraryExportsBySourcePath: Map<string, Set<string>> = new Map(),
-		private readonly parserClean = true,
+		public readonly localLibraryExportsBySourcePath: Map<string, Set<string>> = new Map(),
+		public readonly parserClean = true,
 	) {
 		this.symbolTable = new SymbolTable();
 		this.functionSignatures = buildFunctionSignatures();
@@ -415,7 +315,7 @@ export class UnifiedPineValidator {
 		this.udtFieldTypes.set(statement.name, fields);
 	}
 
-	private collectDeclarations(
+	public collectDeclarations(
 		statement: Statement,
 		version: string = "6",
 	): void {
@@ -447,8 +347,8 @@ export class UnifiedPineValidator {
 		} else if (statement.type === "TupleDeclaration") {
 			// Handle tuple destructuring: [a, b, c] = expr
 			const tupleDecl = statement as TupleDeclaration;
-			const elementTypes = this.inferTupleElementTypes(tupleDecl, version);
-			this.defineTupleVariables(tupleDecl, elementTypes);
+			const elementTypes = inferTupleElementTypes(this, tupleDecl, version);
+			defineTupleVariables(this, tupleDecl, elementTypes);
 		} else if (statement.type === "FunctionDeclaration") {
 			// NOTE: Function declarations are handled in validateStatement
 			// to ensure proper scope management. This method is only called
@@ -813,7 +713,7 @@ export class UnifiedPineValidator {
 						init.endLine === startLine && init.endColumn
 							? init.endColumn - startColumn
 							: statement.name.length,
-						UnifiedPineValidator.NESTED_COLLECTION_MESSAGE,
+						NESTED_COLLECTION_MESSAGE,
 						DiagnosticSeverity.Error,
 					);
 				}
@@ -827,7 +727,7 @@ export class UnifiedPineValidator {
 				if (
 					version === "6" &&
 					statement.init?.type === "CallExpression" &&
-					this.isVoidCall(statement.init as CallExpression, version)
+					isVoidCall(this, statement.init as CallExpression, version)
 				) {
 					const init = statement.init as CallExpression;
 					const startLine = statement.startLine ?? statement.line;
@@ -991,8 +891,8 @@ export class UnifiedPineValidator {
 					// anchored at the statement start (probed). see INV035
 					this.checkRedeclaration(name, tupleDecl, version);
 				}
-				const elementTypes = this.inferTupleElementTypes(tupleDecl, version);
-				this.defineTupleVariables(tupleDecl, elementTypes);
+				const elementTypes = inferTupleElementTypes(this, tupleDecl, version);
+				defineTupleVariables(this, tupleDecl, elementTypes);
 
 				// TV's two tuple-destructure errors, both anchored at the
 				// statement start (probes p01-p10): SHAPE when the RHS cannot
@@ -1004,7 +904,7 @@ export class UnifiedPineValidator {
 				// builtin returns data backing the classifier is v6 (G004).
 				// see INV058 / TODO #51.
 				if (version === "6" && tupleDecl.init.type !== "ArrayExpression") {
-					const arity = this.tupleInitArity(tupleDecl.init, version);
+					const arity = tupleInitArity(this, tupleDecl.init, version);
 					if (arity.kind === "scalar") {
 						this.addError(
 							tupleDecl.line,
@@ -1074,12 +974,13 @@ export class UnifiedPineValidator {
 				// If the body's final expression is a tuple, capture the
 				// element types so `[a, b, c] = f()` recovers them at the
 				// destructure site. see INV010.
-				const tupleTypes = this.inferUdfTupleReturnTypes(
+				const tupleTypes = inferUdfTupleReturnTypes(
+					this,
 					statement.body,
 					version,
 					statement.params,
 				);
-				if (tupleTypes) this.recordUdfTupleReturn(statement.name, tupleTypes);
+				if (tupleTypes) recordUdfTupleReturn(this, statement.name, tupleTypes);
 
 				// Redefinition: a same-arity declaration not distinguishable by
 				// explicit param types is illegal (CE10110/10112/10113). see INV091
@@ -1411,7 +1312,7 @@ export class UnifiedPineValidator {
 					statement.operator === ":=" &&
 					statement.target.type === "Identifier" &&
 					statement.value.type === "CallExpression" &&
-					this.isVoidCall(statement.value as CallExpression, version)
+					isVoidCall(this, statement.value as CallExpression, version)
 				) {
 					const targetType = this.inferExpressionType(
 						statement.target,
@@ -1493,12 +1394,13 @@ export class UnifiedPineValidator {
 				}
 
 				// see INV010 - same tuple-return capture as FunctionDeclaration.
-				const tupleTypes = this.inferUdfTupleReturnTypes(
+				const tupleTypes = inferUdfTupleReturnTypes(
+					this,
 					statement.body,
 					version,
 					statement.params,
 				);
-				if (tupleTypes) this.recordUdfTupleReturn(statement.name, tupleTypes);
+				if (tupleTypes) recordUdfTupleReturn(this, statement.name, tupleTypes);
 
 				// Register the method in the symbol table. Use kind:"method"
 				// rather than "function" so it lives in the method namespace
@@ -1790,7 +1692,7 @@ export class UnifiedPineValidator {
 		return null;
 	}
 
-	private validateExpression(expr: Expression, version: string = "6"): void {
+	public validateExpression(expr: Expression, version: string = "6"): void {
 		switch (expr.type) {
 			case "Identifier":
 				this.validateIdentifier(expr);
@@ -1798,7 +1700,7 @@ export class UnifiedPineValidator {
 				break;
 
 			case "CallExpression":
-				this.validateCallExpression(expr, version);
+				validateCallExpression(this, expr, version);
 				break;
 
 			case "MemberExpression": {
@@ -2212,7 +2114,7 @@ export class UnifiedPineValidator {
 			line: expr.line,
 			column: expr.column,
 			length: 0,
-			message: UnifiedPineValidator.CE10123_TEMPLATE,
+			message: CE10123_TEMPLATE,
 			severity: DiagnosticSeverity.Error,
 			code: "CE10123",
 			ctx: {
@@ -2285,7 +2187,7 @@ export class UnifiedPineValidator {
 				line: offendingExpr.line || expr.line,
 				column: offendingExpr.column || expr.column,
 				length: 0,
-				message: UnifiedPineValidator.CE10123_TEMPLATE,
+				message: CE10123_TEMPLATE,
 				severity: DiagnosticSeverity.Error,
 				code: "CE10123",
 				ctx: {
@@ -2332,7 +2234,7 @@ export class UnifiedPineValidator {
 		return false;
 	}
 
-	private getBaseType(type: PineType): string {
+	public getBaseType(type: PineType): string {
 		const match = (type as string).match(
 			/^(?:series|simple|input|const)<(.+)>$/,
 		);
@@ -2416,31 +2318,11 @@ export class UnifiedPineValidator {
 		}
 	}
 
-	// A collection type used as a type template argument of another
-	// collection (`array.new<array<float>>`, `map.new<string,
-	// array<float>>`) is TV's CE10025 - probed; TV emits the message
-	// TWICE, at the call and at the enclosing statement start (the
-	// declaration case adds the second). see INV038
-	private static readonly NESTED_COLLECTION_MESSAGE =
-		"Cannot use a collection in a type template of another collection. Create a user-defined type with that collection as a field and use it instead.";
-
-	private hasCollectionTemplateArg(call: CallExpression): boolean {
+	public hasCollectionTemplateArg(call: CallExpression): boolean {
 		return (call.typeArguments ?? []).some((t) =>
 			/^(array|matrix|map)\s*</.test(t.trim()),
 		);
 	}
-
-	// TV's CE10123 arg-type template, shared by every arg-type emit site. The
-	// {typePostfix} slot is empty in every probe, which is why TV's rendered
-	// message carries a double space before "is expected". see INV061
-	private static readonly CE10123_TEMPLATE =
-		'Cannot call "{funId}" with argument "{argDisplayName}"="{argUserFriendlyRepresentation}". An argument of "{argumentType}" type was used but a "{currentTypeDocStr}" {typePostfix} is expected.';
-
-	// CE10122: a variadic same-element constructor (array.from) got an element
-	// incompatible with the one arg0 fixed. Note "one from" (vs CE10123's "a")
-	// and no trailing period - matched to TV's raw template. see INV090
-	private static readonly CE10122_TEMPLATE =
-		'Cannot call "{funId}" with argument "{argDisplayName}"="{argUserFriendlyRepresentation}". An argument of "{argumentType}" type was used but one from "{expectedType}" is expected';
 
 	// Function redefinition (CE10110/10112/10113). Two declarations of the same
 	// name with the same arity are illegal unless some parameter position is
@@ -2518,111 +2400,6 @@ export class UnifiedPineValidator {
 		sigs.push(cur);
 	}
 
-	// User-function call-site validation (CE10115/CE10165/CE10123). The local
-	// checker validated builtin calls but not UDF calls. Uses the param
-	// signatures captured for the redefinition check. Conservative, to avoid
-	// FPs: only NON-overloaded UDFs (exactly one signature); count checks gated
-	// on a clean parse (a recovery-truncated call must not misfire); arg-type
-	// checks only on TYPED PRIMITIVE params (untyped/UDT/collection params accept
-	// anything we can't prove wrong); positional args only. v6 only (G004). see
-	// INV095
-	private validateUserFunctionCall(
-		call: CallExpression,
-		functionName: string,
-		version: string,
-	): void {
-		const sigs = this.functionDeclSignatures.get(functionName);
-		if (!sigs || sigs.length !== 1) return; // unknown or overloaded -> lenient
-		if (this.methodDeclaredNames.has(functionName)) return; // also a method
-		const params = sigs[0];
-
-		const posArgs: CallArgument[] = [];
-		const named = new Set<string>();
-		for (const arg of call.arguments) {
-			if (arg.name) named.add(arg.name);
-			else posArgs.push(arg);
-		}
-
-		// Too many positional args (CE10115), anchored at the first extra arg.
-		if (this.parserClean && posArgs.length > params.length) {
-			const anchor = posArgs[params.length]?.value ?? call;
-			this.addTemplateError({
-				line: anchor.line,
-				column: anchor.column,
-				length: 0,
-				message:
-					'Too many arguments passed into the "{funName}()" function call. Passed {passedArgsCount} arguments{expectMsg}{expectArgsCount}.',
-				severity: DiagnosticSeverity.Error,
-				code: "CE10115",
-				ctx: {
-					funName: functionName,
-					passedArgsCount: String(posArgs.length),
-					expectMsg: " but expected ",
-					expectArgsCount: String(params.length),
-				},
-			});
-			return; // an over-long call: don't also report missing/type
-		}
-
-		// Missing required params (CE10165) - a param with no default, supplied
-		// neither positionally nor by name.
-		if (this.parserClean) {
-			for (let i = 0; i < params.length; i++) {
-				const p = params[i];
-				if (p.defaultValue) continue; // optional
-				if (i < posArgs.length || named.has(p.name)) continue; // provided
-				this.addTemplateError({
-					line: call.line,
-					column: call.column,
-					length: functionName.length,
-					message:
-						'No value assigned to the "{name}" parameter in {functionName}()',
-					severity: DiagnosticSeverity.Error,
-					code: "CE10165",
-					ctx: { functionName, name: p.name },
-				});
-			}
-		}
-
-		// Arg TYPE (CE10123) for typed primitive params.
-		for (let i = 0; i < posArgs.length && i < params.length; i++) {
-			const ann = params[i].typeAnnotation?.name;
-			if (!ann) continue; // untyped param -> accepts anything
-			const base = TypeChecker.baseTypeName(ann);
-			if (
-				base !== "int" &&
-				base !== "float" &&
-				base !== "bool" &&
-				base !== "string" &&
-				base !== "color"
-			) {
-				continue; // UDT / collection / unknown param -> lenient
-			}
-			const argExpr = posArgs[i].value;
-			const argType = this.inferExpressionType(argExpr, version);
-			if (TypeChecker.isAssignable(argType, base as PineType)) continue;
-			const desc = this.describeArgForTemplate(argExpr, argType, version);
-			this.addTemplateError({
-				line: argExpr.line,
-				column: argExpr.column,
-				length: 0,
-				message: UnifiedPineValidator.CE10123_TEMPLATE,
-				severity: DiagnosticSeverity.Error,
-				code: "CE10123",
-				ctx: {
-					argDisplayName: params[i].name,
-					argUserFriendlyRepresentation: desc.repr,
-					argumentType: desc.typeStr,
-					// UDF params default to the series qualifier (TV renders
-					// `int x` as "series int"); keep an explicit qualifier as-is.
-					currentTypeDocStr: ann === base ? `series ${base}` : ann,
-					funId: functionName,
-					typePostfix: "",
-				},
-			});
-		}
-	}
-
 	// Render an internal PineType in TV's qualified display form ("series
 	// float"). Our lattice collapses const/input/simple to the bare base, so a
 	// bare type's qualifier is unrecoverable - `bareQualifier` supplies the
@@ -2656,7 +2433,7 @@ export class UnifiedPineValidator {
 	// source text with the catalog qualifier; operator expressions and calls
 	// render as `call "operator +" (series float)` / `call "ta.sma" (series
 	// float)`. Best-effort on shapes TV was not probed for. see INV061
-	private describeArgForTemplate(
+	public describeArgForTemplate(
 		expr: Expression,
 		inferred: PineType,
 		version: string,
@@ -2728,256 +2505,6 @@ export class UnifiedPineValidator {
 		}
 	}
 
-	private validateCallExpression(
-		call: CallExpression,
-		version: string = "6",
-	): void {
-		if (version === "6" && this.hasCollectionTemplateArg(call)) {
-			this.addError(
-				call.line,
-				call.column,
-				(call.endColumn ?? call.column + 1) - call.column,
-				UnifiedPineValidator.NESTED_COLLECTION_MESSAGE,
-				DiagnosticSeverity.Error,
-			);
-		}
-
-		// Get function name
-		let functionName = "";
-		if (call.callee.type === "Identifier") {
-			functionName = call.callee.name;
-		} else if (call.callee.type === "MemberExpression") {
-			// Flatten the whole chain, not just `ns.member`. Two-level builtin
-			// namespaces (strategy.risk.*, strategy.opentrades.*,
-			// strategy.closedtrades.*, chart.point.*) otherwise leave
-			// functionName empty and skip ALL validation - including the
-			// topLevelOnly local-scope check. see INV054
-			functionName = memberChainName(call.callee);
-		}
-
-		// Validate argument EXPRESSIONS for every call, resolvable or not.
-		// This used to run only for catalog functions (after the !signature
-		// early-return below), leaving the arguments of UDF calls, import-alias
-		// member calls, and method calls completely unvalidated - no
-		// undefined-variable check, nothing. Found by the first #48 mutation
-		// run (delete-decl survivor: TV CE10272 on an input variable deleted
-		// out from under a library call). see INV062. A parser-marked torn
-		// argument prefix is skipped because the syntax diagnostic already owns it.
-		// see INV082
-		for (const arg of call.arguments) {
-			if (!arg.skipSemanticValidation)
-				this.validateExpression(arg.value, version);
-		}
-
-		// NOTE: Complex callee expressions (e.g., chained calls like `foo().bar()`,
-		// indexed access like `arr[0]()`) are not validated. This is acceptable
-		// because Pine Script rarely uses such patterns, and the type inference
-		// for these cases would require significant additional complexity.
-		if (!functionName) return;
-
-		const ctorMatch = functionName.match(/^(.+)\.new$/);
-		if (ctorMatch && this.declaredTypeNames.has(ctorMatch[1])) return;
-
-		// Get function signature
-		const signature = this.functionSignatures.get(functionName);
-
-		// Check for top-level only functions in local scope
-		if (isTopLevelOnly(functionName) && this.blockDepth > 0) {
-			this.addError(
-				call.line,
-				call.column,
-				functionName.length,
-				`Function '${functionName}' cannot be called from a local scope. It must be called from the global scope.`,
-				DiagnosticSeverity.Error,
-			);
-		}
-
-		// str.tostring rejects map arguments (overload list lacks map<K,V>);
-		// pine-lint emits CE10123 here.
-		if (functionName === "str.tostring" && call.arguments.length > 0) {
-			const firstArg = call.arguments[0];
-			const argType = this.inferExpressionType(firstArg.value, version);
-			if (argType.startsWith("map<")) {
-				const repr =
-					firstArg.value.type === "Identifier"
-						? (firstArg.value as Identifier).name
-						: firstArg.value.type === "Literal"
-							? String((firstArg.value as Literal).raw ?? "")
-							: "";
-				this.addTemplateError({
-					line: firstArg.value.line,
-					column: firstArg.value.column,
-					length: 0,
-					message: UnifiedPineValidator.CE10123_TEMPLATE,
-					severity: DiagnosticSeverity.Error,
-					code: "CE10123",
-					ctx: {
-						argDisplayName: "value",
-						argUserFriendlyRepresentation: repr,
-						argumentType: argType,
-						currentTypeDocStr: "series float",
-						funId: "str.tostring",
-						typePostfix: "",
-					},
-				});
-			}
-		}
-
-		if (!signature) {
-			// No builtin signature: an Identifier callee must then be a UDF /
-			// method declared EARLIER in source - TV's CE10271 "Could not
-			// find function or function reference 'X'" (probed: undefined
-			// name, call-before-definition, and a plain VARIABLE used as a
-			// callee all error; see INV036).
-			if (
-				version === "6" &&
-				call.callee.type === "Identifier" &&
-				(!this.declaredFunctionNames.has(functionName) ||
-					(functionName === this.currentFunctionName &&
-						!this.overloadedFunctionNames.has(functionName)))
-			) {
-				// Undefined callable, OR a direct self-call: Pine forbids
-				// recursion, so a non-overloaded function referencing itself
-				// inside its own body is the same CE10271 (its name is not yet
-				// bound while the body compiles). Overloaded names are excluded -
-				// a self-named call there dispatches to a sibling overload. see
-				// INV086
-				this.addError(
-					call.line,
-					call.column,
-					functionName.length,
-					`Could not find function or function reference '${functionName}'`,
-					DiagnosticSeverity.Error,
-				);
-			} else if (
-				version === "6" &&
-				call.callee.type === "MemberExpression" &&
-				functionName.includes(".")
-			) {
-				const rootName = functionName.slice(0, functionName.indexOf("."));
-				const nsPath = functionName.slice(0, functionName.lastIndexOf("."));
-				const memberName = functionName.slice(
-					functionName.lastIndexOf(".") + 1,
-				);
-				const objSym = this.symbolTable.lookup(rootName);
-				const userShadowed = !!objSym && objSym.line !== 0;
-				if (
-					this.parserClean &&
-					!objSym &&
-					!this.importedNamespaces.has(rootName) &&
-					!KNOWN_NAMESPACES.includes(rootName) &&
-					!TYPE_NAMES.has(rootName) &&
-					!this.declaredTypeNames.has(rootName) &&
-					!(functionName in NAMESPACE_PROPERTIES) &&
-					!GENERIC_FUNCTION_BASES.has(functionName)
-				) {
-					this.addError(
-						call.line,
-						call.column,
-						functionName.length,
-						`Could not find method or method reference '${functionName}'`,
-						DiagnosticSeverity.Error,
-					);
-				}
-
-				// `ns.member(...)` where `ns` is a built-in namespace PATH and
-				// `member` is unknown there - same CE10271 (probed `ta.bogus`,
-				// `math.notreal`; see INV053). `functionName` is the flattened
-				// dotted callee (memberChainName, "" if any link is not a plain
-				// property access), so this covers both `ta.bogus` and deeper
-				// paths like `chart.point.newx` - the latter slipped through the
-				// old `callee.object.type === "Identifier"` guard, a CE10271 FN
-				// the #48 mutation harness surfaced (see INV064).
-				//
-				// Bounded to the data-backed subset of #41: the member's
-				// namespace PATH (everything up to the last dot) must be a real
-				// catalog namespace (KNOWN_NAMESPACE_PREFIXES), and the ROOT must
-				// NOT be user-shadowed (an `import ... as ns` alias / user var has
-				// a non-builtin symbol, line !== 0 - its members we cannot
-				// resolve). A member that IS a known builtin (function via the
-				// signature lookup above, or a const/variable in
-				// NAMESPACE_PROPERTIES) is left alone: calling a built-in variable
-				// like `ta.tr(...)` is TV-silent, and calling a const like
-				// `color.red(...)` IS a TV error but the const-vs-variable split
-				// is murky, so we conservatively skip all known members - we never
-				// want a false positive on a real member.
-				const scalarShadow =
-					userShadowed &&
-					!!objSym &&
-					SCALAR_BASE_TYPES.has(
-						TypeChecker.baseTypeName(objSym.type as string),
-					) &&
-					!this.declaredFunctionNames.has(memberName);
-				if (
-					(!userShadowed || scalarShadow) &&
-					!this.importedNamespaces.has(rootName) &&
-					KNOWN_NAMESPACE_PREFIXES.has(nsPath) &&
-					!(functionName in NAMESPACE_PROPERTIES) &&
-					!GENERIC_FUNCTION_BASES.has(functionName)
-				) {
-					this.addError(
-						call.line,
-						call.column,
-						functionName.length,
-						scalarShadow
-							? `Could not find method or method reference '${functionName}'`
-							: `Could not find function or function reference '${functionName}'`,
-						DiagnosticSeverity.Error,
-					);
-				}
-
-				// Imported-library member: `lib.export(...)` where `lib` is an
-				// imported namespace whose vendored export set we have
-				// (pine-data/v6/libraries). Valid iff `member` is one of the
-				// library's exports (probed p02 `ta.dema`), a builtin function of a
-				// colliding namespace (`ta.sma` - resolved by the signature lookup
-				// above, never reaches here; p03), or a builtin const/var
-				// (NAMESPACE_PROPERTIES). Otherwise CE10271 "function or function
-				// reference" (probed p01 `ta.emax`; INV067) - the data-backed import
-				// slice of #41. Single-dot callees only (library exports are flat).
-				// Not gated on userShadowed: for an imported library the binding IS
-				// the shadow symbol. Libraries we don't vendor have no entry, so
-				// they stay lenient.
-				const libExports =
-					LIBRARY_EXPORTS_BY_PATH.get(this.importedLibraryPaths.get(rootName) ?? "") ??
-					this.localLibraryExportsBySourcePath.get(
-						this.importedLibraryPaths.get(rootName) ?? "",
-					);
-				if (
-					libExports &&
-					functionName.indexOf(".") === functionName.lastIndexOf(".") &&
-					!libExports.has(memberName) &&
-					!(functionName in NAMESPACE_PROPERTIES) &&
-					!GENERIC_FUNCTION_BASES.has(functionName)
-				) {
-					this.addError(
-						call.line,
-						call.column,
-						functionName.length,
-						`Could not find function or function reference '${functionName}'`,
-						DiagnosticSeverity.Error,
-					);
-				}
-			}
-			// A valid UDF call (declared Identifier callee, not the self-call
-			// already flagged above): validate arg count and typed-param arg
-			// types against the captured signature. see INV095
-			if (
-				version === "6" &&
-				call.callee.type === "Identifier" &&
-				this.declaredFunctionNames.has(functionName) &&
-				functionName !== this.currentFunctionName
-			) {
-				this.validateUserFunctionCall(call, functionName, version);
-			}
-			return;
-		}
-
-		// Validate arguments against the signature (the argument EXPRESSIONS
-		// were already walked above, before signature resolution).
-		this.validateFunctionArguments(call, functionName, signature, version);
-	}
-
 	// A value is acceptable in a bool context (if/while/ternary condition,
 	// and/or/not operand) when it IS bool, when we can't tell, or - on
 	// legacy v4/v5 sources only - when it is numeric: those versions
@@ -2987,679 +2514,6 @@ export class UnifiedPineValidator {
 	private boolContextOk(t: PineType, version: string): boolean {
 		if (t === "unknown" || TypeChecker.isBoolType(t)) return true;
 		return version !== "6" && TypeChecker.isNumericType(t);
-	}
-
-	// A call to a builtin whose resolved return is exactly `void`. Used by
-	// the two void-assignment checks (declaration -> CE10098, reassignment ->
-	// type mismatch); we infer void calls as "unknown" elsewhere, so these
-	// must detect void directly. see INV055
-	private isVoidCall(call: CallExpression, version: string): boolean {
-		const fnName = memberChainName(call.callee);
-		if (!fnName) return false;
-		const argTypes = call.arguments.map((a) =>
-			this.inferExpressionType(a.value, version),
-		);
-		return resolveCallReturnRaw(fnName, argTypes) === "void";
-	}
-
-	private validateFunctionArguments(
-		call: CallExpression,
-		functionName: string,
-		signature: FunctionSignature,
-		version: string = "6",
-	): void {
-		const args = call.arguments;
-
-		// Build map of provided arguments
-		const providedArgs = new Map<
-			string,
-			{ arg: CallArgument; type: PineType }
-		>();
-		const positionalArgs: { arg: CallArgument; type: PineType }[] = [];
-
-		for (const arg of args) {
-			const argType = this.inferExpressionType(arg.value, version);
-			if (arg.name) {
-				providedArgs.set(arg.name, { arg, type: argType });
-			} else {
-				positionalArgs.push({ arg, type: argType });
-			}
-		}
-
-		// Check argument count
-		const totalCount = signature.parameters.length;
-
-		// Check if function is variadic
-		const isVariadic = isVariadicFunction(functionName);
-
-		// TV's CE10115, anchored across the argument list (start at the first
-		// argument - probed `ta.sma(close, 14, 99)`, INV061 p01). see INV061
-		if (!isVariadic && positionalArgs.length > totalCount) {
-			const anchor = args[0]?.value ?? call;
-			this.addTemplateError({
-				line: anchor.line,
-				column: anchor.column,
-				length: 0,
-				message:
-					'Too many arguments passed into the "{funName}()" function call. Passed {passedArgsCount} arguments{expectMsg}{expectArgsCount}.',
-				severity: DiagnosticSeverity.Error,
-				code: "CE10115",
-				ctx: {
-					funName: functionName,
-					passedArgsCount: String(positionalArgs.length),
-					expectMsg: " but expected ",
-					expectArgsCount: String(totalCount),
-				},
-			});
-		}
-
-		// For variadic functions, require at least minimum number of arguments.
-		// TV's wording (probed math.max(1), INV059 p04): terse arg count.
-		if (isVariadic) {
-			const minArgs = getMinArgsForVariadic(functionName);
-			if (positionalArgs.length < minArgs) {
-				this.addError(
-					call.line,
-					call.column,
-					functionName.length,
-					`Wrong number of args: ${positionalArgs.length}`,
-					DiagnosticSeverity.Error,
-				);
-			}
-
-			// array.from element-type consistency: arg0 fixes the element type,
-			// later args must match it. Variadic, so the loop above never type-
-			// checks the args - do it here. First incompatible arg -> CE10122,
-			// matching TV (probed 2026-06-25). v6 only (G004). see INV090
-			if (
-				functionName === "array.from" &&
-				version === "6" &&
-				positionalArgs.length >= 1 &&
-				positionalArgs[0].type !== "unknown"
-			) {
-				const arg0Base = TypeChecker.baseTypeName(
-					String(positionalArgs[0].type),
-				);
-				const expected = arrayFromExpectedType(arg0Base);
-				if (expected) {
-					for (let i = 1; i < positionalArgs.length; i++) {
-						const provided = positionalArgs[i];
-						if (arrayFromArgMatches(provided.type, arg0Base)) continue;
-						const desc = this.describeArgForTemplate(
-							provided.arg.value,
-							provided.type,
-							version,
-						);
-						this.addTemplateError({
-							line: provided.arg.value.line,
-							column: provided.arg.value.column,
-							length: 0,
-							message: UnifiedPineValidator.CE10122_TEMPLATE,
-							severity: DiagnosticSeverity.Error,
-							code: "CE10122",
-							ctx: {
-								argDisplayName: `arg_${i}`,
-								argUserFriendlyRepresentation: desc.repr,
-								argumentType: desc.typeStr,
-								expectedType: expected,
-								funId: functionName,
-							},
-						});
-						break; // TV reports only the first incompatible element
-					}
-				}
-			}
-			return; // Skip further parameter validation for variadic functions
-		}
-
-		// #17 landed: pine-data now emits union types for overloaded/polymorphic
-		// params, so the old polymorphic arg-validation bypass (INV009) is gone
-		// (#24). Safety nets: (1) union types (e.g. "series int/float", nz's
-		// widened "series int/float/bool/string/color") collapse to "unknown"
-		// via mapToPineType and are skipped by the `!== "unknown"` guard, so only
-		// CLEAN-typed params are checked (catches e.g. math.round(close, "x"));
-		// (2) arg-type checks are v6-only - pine-data ships v6 signatures, and
-		// validating v4/v5 calls against them is unsound (e.g. input's removed
-		// `type` param), so legacy scripts are left lenient. see G004 / #24.
-		// `functionHasOverloads` (any still-unknown param) still bypasses
-		// positional checks; return-type inference uses the polymorphic flag
-		// separately (getPolymorphicReturnType).
-		const functionHasOverloads = hasOverloads(functionName);
-		const checkArgTypes = version === "6";
-
-		// Collection mutators (array.push/set/insert/unshift/fill, map.put, ...)
-		// type their value/key param as "series <type of the array's/map's
-		// elements>" - a placeholder mapToPineType collapses to "unknown", so the
-		// generic loop below skips it (and hasOverloads bypasses positional checks
-		// entirely). Resolve the receiver's concrete element type and check the
-		// value/key arg directly: TV rejects a narrowing (literal float into
-		// array<int>) but accepts a widening (int into <float>). see INV087
-		if (checkArgTypes) {
-			const receiverType =
-				providedArgs.get("id")?.type ?? positionalArgs[0]?.type;
-			if (receiverType) {
-				for (let i = 0; i < signature.parameters.length; i++) {
-					const param = signature.parameters[i];
-					const kindMatch = /type of the (array|map)'s elements/.exec(
-						String(param.rawType ?? param.type),
-					);
-					if (!kindMatch) continue;
-					const target = collectionElementTarget(
-						receiverType,
-						kindMatch[1],
-						param.name,
-					);
-					if (!target) continue; // element type unresolved -> stay lenient
-					const provided = providedArgs.get(param.name) ?? positionalArgs[i];
-					if (!provided) continue;
-					if (elementArgAssignable(provided.type, target)) continue;
-					const desc = this.describeArgForTemplate(
-						provided.arg.value,
-						provided.type,
-						version,
-					);
-					this.addTemplateError({
-						line: provided.arg.value.line,
-						column: provided.arg.value.column,
-						length: 0,
-						message: UnifiedPineValidator.CE10123_TEMPLATE,
-						severity: DiagnosticSeverity.Error,
-						code: "CE10123",
-						ctx: {
-							argDisplayName: param.name,
-							argUserFriendlyRepresentation: desc.repr,
-							argumentType: desc.typeStr,
-							currentTypeDocStr: `series ${target}`,
-							funId: functionName,
-							typePostfix: "",
-						},
-					});
-				}
-			}
-		}
-
-		// A `simple`-qualified param (e.g. ta.ema's `length: simple int`) rejects
-		// a series value. The param's qualifier is lost when mapToPineType
-		// collapses "simple int" -> "int", and these functions are often
-		// "overloaded" (a union param maps to unknown), so the generic loop never
-		// catches it. Read the qualifier off rawType and flag a series arg
-		// directly. Gate on isAssignable so a base-incompatible arg (handled
-		// elsewhere) is not double-reported here. see INV088
-		if (checkArgTypes) {
-			for (let i = 0; i < signature.parameters.length; i++) {
-				const param = signature.parameters[i];
-				if (!param.type || !isSimpleQualifiedParam(param.rawType)) continue;
-				const provided = providedArgs.get(param.name) ?? positionalArgs[i];
-				if (!provided || !isSeriesQualified(provided.type)) continue;
-				if (!TypeChecker.isAssignable(provided.type, param.type)) continue;
-				const desc = this.describeArgForTemplate(
-					provided.arg.value,
-					provided.type,
-					version,
-				);
-				this.addTemplateError({
-					line: provided.arg.value.line,
-					column: provided.arg.value.column,
-					length: 0,
-					message: UnifiedPineValidator.CE10123_TEMPLATE,
-					severity: DiagnosticSeverity.Error,
-					code: "CE10123",
-					ctx: {
-						argDisplayName: param.name,
-						argUserFriendlyRepresentation: desc.repr,
-						argumentType: desc.typeStr,
-						currentTypeDocStr: param.rawType ?? String(param.type),
-						funId: functionName,
-						typePostfix: "",
-					},
-				});
-			}
-		}
-
-		// Validate each parameter
-		for (let i = 0; i < signature.parameters.length; i++) {
-			const param = signature.parameters[i];
-
-			// Check named argument
-			const namedArg = providedArgs.get(param.name);
-			if (namedArg) {
-				// Validate type (named args are unambiguous, so we can check them).
-				// Union/polymorphic params map to "unknown" and fall through here.
-				// TV's CE10123 template, anchored at the argument VALUE (probed
-				// INV059 p01-p03, INV061 p03-p09). see INV061
-				if (checkArgTypes && param.type && param.type !== "unknown") {
-					if (!TypeChecker.isAssignable(namedArg.type, param.type)) {
-						const desc = this.describeArgForTemplate(
-							namedArg.arg.value,
-							namedArg.type,
-							version,
-						);
-						this.addTemplateError({
-							line: namedArg.arg.value.line,
-							column: namedArg.arg.value.column,
-							length: 0,
-							message: UnifiedPineValidator.CE10123_TEMPLATE,
-							severity: DiagnosticSeverity.Error,
-							code: "CE10123",
-							ctx: {
-								argDisplayName: param.name,
-								argUserFriendlyRepresentation: desc.repr,
-								argumentType: desc.typeStr,
-								currentTypeDocStr: param.rawType ?? String(param.type),
-								funId: functionName,
-								typePostfix: "",
-							},
-						});
-					}
-				}
-				continue;
-			}
-
-			// Check positional argument. Functions with any still-unknown param
-			// (overloaded) skip positional checking - positions are ambiguous
-			// across overload forms. Cleanly-typed params (incl. ex-polymorphic
-			// ones) are validated on v6 scripts.
-			if (i < positionalArgs.length) {
-				if (functionHasOverloads) {
-					continue;
-				}
-				const posArg = positionalArgs[i];
-				// Positional args use the same CE10123 template - TV resolves the
-				// param name (probed `plot(close, 42)` names "title", INV061 p02).
-				if (checkArgTypes && param.type && param.type !== "unknown") {
-					if (!TypeChecker.isAssignable(posArg.type, param.type)) {
-						const desc = this.describeArgForTemplate(
-							posArg.arg.value,
-							posArg.type,
-							version,
-						);
-						this.addTemplateError({
-							line: posArg.arg.value.line,
-							column: posArg.arg.value.column,
-							length: 0,
-							message: UnifiedPineValidator.CE10123_TEMPLATE,
-							severity: DiagnosticSeverity.Error,
-							code: "CE10123",
-							ctx: {
-								argDisplayName: param.name,
-								argUserFriendlyRepresentation: desc.repr,
-								argumentType: desc.typeStr,
-								currentTypeDocStr: param.rawType ?? String(param.type),
-								funId: functionName,
-								typePostfix: "",
-							},
-						});
-					}
-				}
-				continue;
-			}
-
-			// Parameter not provided - TV's CE10165, one error per missing
-			// param, anchored at the callee (probed: ta.sma() enumerates both
-			// source and length; dual variable/function names like ta.tr()
-			// still require their args - the bare VARIABLE form is a separate
-			// symbol). Requiredness comes from the INV050 probe sweep: the
-			// reference prose under-documents optionality, so probe data is
-			// the only reliable source. Skipped for overloaded functions
-			// (both the unknown-typed-param heuristic and the overloads[]
-			// field - the probe covers TV's preferred overload only, and a
-			// call may satisfy another: label.new x/y vs point), for calls
-			// truncated by in-call error recovery (INV047 / #46(b) - the
-			// args are incomplete, not absent), and on non-v6 scripts (G004
-			// - pine-data ships v6 signatures only). see INV050
-			if (
-				!param.optional &&
-				checkArgTypes &&
-				!functionHasOverloads &&
-				!hasOverloadSignatures(functionName) &&
-				!call.recovered
-			) {
-				this.addError(
-					call.line,
-					call.column,
-					functionName.length,
-					`No value assigned to the "${param.name}" parameter in ${functionName}()`,
-					DiagnosticSeverity.Error,
-				);
-			}
-		}
-
-		// Overloaded functions: the blanket missing-arg check above skips them
-		// (a call may satisfy a DIFFERENT overload than the INV050 probe
-		// enumerated). But a call providing fewer positional args than the
-		// MINIMAL-arity overload's required count satisfies NO overload - a
-		// sound CE10165. Measured against that overload's own param order, so
-		// ta.highest(10) (the 1-arg form) is fine while matrix.sum(m) flags the
-		// missing id2. see INV056
-		if (
-			checkArgTypes &&
-			!call.recovered &&
-			hasOverloadSignatures(functionName)
-		) {
-			const minReq = getMinimalRequiredParams(functionName);
-			for (let j = positionalArgs.length; j < minReq.length; j++) {
-				const name = minReq[j];
-				if (providedArgs.has(name)) continue;
-				this.addError(
-					call.line,
-					call.column,
-					functionName.length,
-					`No value assigned to the "${name}" parameter in ${functionName}()`,
-					DiagnosticSeverity.Error,
-				);
-			}
-		}
-
-		// Check for invalid named parameters - TV's CE10120, anchored at the
-		// argument NAME (probed `plotshape(..., shape = ...)`, INV059 p05 /
-		// INV061 p06). see INV061
-		for (const [name, entry] of providedArgs.entries()) {
-			if (!signature.parameters.some((p) => p.name === name)) {
-				this.addTemplateError({
-					line: entry.arg.nameLine ?? call.line,
-					column: entry.arg.nameColumn ?? call.column,
-					length: name.length,
-					message:
-						'The "{signature}" function does not have an argument with the name "{name}"',
-					severity: DiagnosticSeverity.Error,
-					code: "CE10120",
-					ctx: { name, signature: functionName },
-				});
-			}
-		}
-
-		// Special case validations
-		this.validateSpecialCases(call, functionName, args);
-
-		// CE10123: const-required params receiving a non-const argument. see INV014
-		this.checkConstArgs(call, functionName, signature, version);
-
-		// Base-type check for union-typed params the main loop skips. see INV016
-		this.checkUnionArgs(call, functionName, version);
-	}
-
-	// Whether an expression's inferred type is trustworthy enough to flag an
-	// arg-type mismatch on. Literals and operator expressions have solid type
-	// rules; built-in vars/constants/calls carry types straight from pine-data.
-	// User identifiers and user-defined-function calls are excluded - our
-	// inference for those is the known-shaky path (UDF returns, etc.), and a
-	// wrong base there would surface as a false positive. see INV016.
-	private isReliablyTyped(expr: Expression): boolean {
-		switch (expr.type) {
-			case "Literal":
-			case "BinaryExpression":
-			case "UnaryExpression":
-				return true;
-			case "Identifier":
-				return getBuiltinVarInfo((expr as Identifier).name) !== undefined;
-			case "MemberExpression": {
-				const m = expr as MemberExpression;
-				if (m.object.type !== "Identifier") return false;
-				const name = `${(m.object as Identifier).name}.${m.property.name}`;
-				return isBuiltinConstant(name) || getBuiltinVarInfo(name) !== undefined;
-			}
-			case "CallExpression": {
-				const ce = expr as CallExpression;
-				let name = "";
-				if (ce.callee.type === "Identifier") {
-					name = (ce.callee as Identifier).name;
-				} else if (ce.callee.type === "MemberExpression") {
-					const mm = ce.callee as MemberExpression;
-					if (mm.object.type === "Identifier") {
-						name = `${(mm.object as Identifier).name}.${mm.property.name}`;
-					}
-				}
-				// Built-in call (return type from pine-data) - trust it; a UDF call
-				// is not in functionSignatures, so it's excluded.
-				return name !== "" && this.functionSignatures.has(name);
-			}
-			default:
-				return false;
-		}
-	}
-
-	// Validate arguments against UNION-typed params (e.g. nz's
-	// `series int/float/color`, int's `series int/float`). The main arg loop maps
-	// a union to "unknown" via mapToPineType and skips it (the INV013 safety net),
-	// so nz(<bool>)/int(true) - real CE10123 errors in TV - slipped through. The
-	// merged param type is already the cross-overload union (union-types.ts), so
-	// an arg whose base is outside it is rejected by every overload. Conservative:
-	// only flags a KNOWN scalar base that's absent from the union (int/float are
-	// interchangeable); unknown/na/non-scalar args are left alone, so no FPs.
-	// Positional checking is skipped for overloaded funcs (ambiguous positions),
-	// matching the main loop. see INV016.
-	private checkUnionArgs(
-		call: CallExpression,
-		functionName: string,
-		version: string,
-	): void {
-		if (version !== "6") return; // arg-type checks are v6-only. see G004
-		const SCALARS = new Set(["int", "float", "bool", "string", "color"]);
-		const functionHasOverloads = hasOverloads(functionName);
-		let positionalNum = 0;
-		let sawNamed = false;
-		for (const arg of call.arguments) {
-			let members: string[] | null;
-			let paramInfo: { name: string; docType: string } | null;
-			if (arg.name) {
-				sawNamed = true;
-				members = namedParamUnionMembers(functionName, arg.name);
-				paramInfo = unionParamInfo(functionName, -1, arg.name);
-			} else {
-				positionalNum++;
-				// A positional arg after a named one is malformed ordering (TV's
-				// own error); positional->param indices are unreliable, so don't
-				// emit a misleading type mismatch on top. see INV016
-				if (sawNamed || functionHasOverloads) continue;
-				const index = positionalNum - 1;
-				members = positionalParamUnionMembers(functionName, index);
-				paramInfo = unionParamInfo(functionName, index);
-			}
-			if (!members) continue;
-			// Only trust the arg's type when it comes from a reliable source.
-			// Broad union-checking otherwise amplifies every type-inference gap
-			// (UDF returns, user vars) into a false positive on valid code - e.g.
-			// `color.from_gradient(Vol, ...)` where `Vol = someUdf()` is a float we
-			// mis-infer as bool. Mirrors describeNonConstArg's conservatism. INV016
-			if (!this.isReliablyTyped(arg.value)) continue;
-			const argType = this.inferExpressionType(arg.value, version);
-			const argBase = this.getBaseType(argType);
-			if (!SCALARS.has(argBase)) continue; // unknown/na/non-scalar -> skip
-			const numeric = argBase === "int" || argBase === "float";
-			const ok =
-				members.includes(argBase) ||
-				(numeric && (members.includes("int") || members.includes("float")));
-			if (!ok) {
-				const desc = this.describeArgForTemplate(arg.value, argType, version);
-				this.addTemplateError({
-					line: arg.value.line,
-					column: arg.value.column,
-					length: 0,
-					message: UnifiedPineValidator.CE10123_TEMPLATE,
-					severity: DiagnosticSeverity.Error,
-					code: "CE10123",
-					ctx: {
-						argDisplayName: paramInfo?.name ?? arg.name ?? String(positionalNum),
-						argUserFriendlyRepresentation: desc.repr,
-						argumentType: desc.typeStr,
-						currentTypeDocStr: `simple ${members[0]}`,
-						funId: functionName,
-						typePostfix: "",
-					},
-				});
-			}
-		}
-	}
-
-	// CE10123: a parameter that requires a compile-time constant received a
-	// provably non-const argument. Our internal types drop the const/simple/input
-	// qualifier (mapToPineType collapses them), so this reads the raw qualifier
-	// from pine-data directly. Both the const-required set and the per-overload
-	// return qualifiers are data-driven (see builtins.ts) and were verified
-	// exhaustively against `pine-lint --tv`. see INV014.
-	private checkConstArgs(
-		call: CallExpression,
-		functionName: string,
-		signature: FunctionSignature,
-		version: string,
-	): void {
-		if (version !== "6") return; // arg-type checks are v6-only. see G004
-		const args = call.arguments;
-		const positionalCount = args.filter((a) => !a.name).length;
-		let positionalIndex = -1;
-		for (let i = 0; i < args.length; i++) {
-			const arg = args[i];
-			// Resolve which const-required param this argument targets. Named args
-			// are unambiguous (by name across overloads); positional args must be
-			// resolved arity-aware (overloads can reshuffle positions). see INV014
-			let paramName: string | undefined;
-			let docType: string | undefined;
-			if (arg.name) {
-				if (paramRequiresConst(functionName, arg.name)) {
-					paramName = arg.name;
-					docType = getConstParamDocType(functionName, arg.name) ?? "const";
-				}
-			} else {
-				positionalIndex++;
-				const hit = positionalConstParam(
-					functionName,
-					positionalIndex,
-					positionalCount,
-				);
-				if (hit) {
-					paramName = hit.name;
-					docType = hit.docType;
-				}
-			}
-			if (!paramName || !docType) continue;
-			const desc = this.describeNonConstArg(arg.value, version);
-			if (!desc) continue;
-			this.addTemplateError({
-				line: arg.value.line,
-				column: arg.value.column,
-				length: 0,
-				message: UnifiedPineValidator.CE10123_TEMPLATE,
-				severity: DiagnosticSeverity.Error,
-				code: "CE10123",
-				ctx: {
-					argDisplayName: paramName,
-					argUserFriendlyRepresentation: desc.repr,
-					argumentType: desc.typeStr,
-					currentTypeDocStr: docType,
-					funId: functionName,
-					typePostfix: "",
-				},
-			});
-		}
-	}
-
-	// Decide whether an argument expression is PROVABLY non-const, and if so
-	// describe it (argumentType + user-friendly repr) for the CE10123 message.
-	// Deliberately conservative: returns null whenever we can't be certain
-	// (user variables, composite expressions, user-defined functions), so we
-	// never flag something TV would accept. Catches the common cases: built-in
-	// calls whose resolved overload returns simple/series/input (e.g.
-	// timestamp("UTC", y, m, d, ...)) and non-const built-in variables. see INV014
-	private describeNonConstArg(
-		expr: Expression,
-		version: string,
-	): { typeStr: string; repr: string } | null {
-		switch (expr.type) {
-			case "CallExpression": {
-				const ce = expr as CallExpression;
-				let name = "";
-				if (ce.callee.type === "Identifier") {
-					name = (ce.callee as Identifier).name;
-				} else if (ce.callee.type === "MemberExpression") {
-					const m = ce.callee as MemberExpression;
-					if (m.object.type === "Identifier") {
-						name = `${(m.object as Identifier).name}.${m.property.name}`;
-					}
-				}
-				if (!name) return null;
-				const argTypes = ce.arguments.map((a) =>
-					this.inferExpressionType(a.value, version),
-				);
-				const raw = resolveCallReturnRaw(name, argTypes);
-				// Only a positively non-const (simple/series/input) resolved return
-				// is grounds to flag; const or unknown -> leave it alone.
-				if (raw && /^(simple|series|input)\b/.test(raw)) {
-					return { typeStr: raw, repr: `call "${name}" (${raw})` };
-				}
-				return null;
-			}
-			case "Identifier": {
-				const idName = (expr as Identifier).name;
-				const info = getBuiltinVarInfo(idName);
-				if (info && info.qualifier !== "const") {
-					return {
-						typeStr: `${info.qualifier} ${info.base}`,
-						repr: idName,
-					};
-				}
-				// A USER variable is provably non-const only when its inferred
-				// type is series- or input-QUALIFIED (`series<string>` from a
-				// switch over series conditions, `input<string>` from an
-				// input.bool-driven ternary/switch) - unqualified inferences
-				// stay on the conservative null path. TV-confirmed on
-				// plot(title=trend) for both qualifiers. see INV040
-				if (!info) {
-					const sym = this.symbolTable.lookup(idName);
-					const symType = sym?.type as string | undefined;
-					const m = symType?.match(/^(series|input)<(.+)>$/);
-					if (sym?.kind === "variable" && m) {
-						return { typeStr: `${m[1]} ${m[2]}`, repr: idName };
-					}
-				}
-				return null;
-			}
-			case "MemberExpression": {
-				const m = expr as MemberExpression;
-				if (m.object.type !== "Identifier") return null;
-				const name = `${(m.object as Identifier).name}.${m.property.name}`;
-				if (isBuiltinConstant(name)) return null;
-				const info = getBuiltinVarInfo(name);
-				if (info && info.qualifier !== "const") {
-					return { typeStr: `${info.qualifier} ${info.base}`, repr: name };
-				}
-				return null;
-			}
-			default:
-				return null;
-		}
-	}
-
-	/**
-	 * Special-case semantic validations that check parameter relationships.
-	 * These are intentionally hardcoded here (not in pine-data) because they're
-	 * behavioral checks rather than type/signature data.
-	 */
-	private validateSpecialCases(
-		call: CallExpression,
-		functionName: string,
-		args: CallArgument[],
-	): void {
-		// (The former plotshape shape->style suggestion was a pure duplicate:
-		// the generic invalid-parameter check already fires on `shape=` and TV
-		// emits exactly one error there. Removed - see INV059 p05.)
-
-		// indicator/strategy: timeframe_gaps requires timeframe. A TV ERROR,
-		// not a warning, anchored at the argument with TV's wording naming
-		// the call (probed - INV059 p06).
-		if (functionName === "indicator" || functionName === "strategy") {
-			const gapsArg = args.find((a) => a.name === "timeframe_gaps");
-			const hasTimeframe = args.some((a) => a.name === "timeframe");
-
-			if (gapsArg && !hasTimeframe) {
-				this.addError(
-					gapsArg.value.line,
-					gapsArg.value.column,
-					functionName.length,
-					`"timeframe_gaps" has no effect because the "${functionName}()" call has no "timeframe" argument`,
-					DiagnosticSeverity.Error,
-				);
-			}
-		}
 	}
 
 	/**
@@ -3740,492 +2594,7 @@ export class UnifiedPineValidator {
 		return returnType;
 	}
 
-	/**
-	 * Infer types for tuple elements from the init expression.
-	 * For request.security with array argument, extracts element types.
-	 */
-	private inferTupleElementTypes(
-		tupleDecl: TupleDeclaration,
-		version: string = "6",
-	): PineType[] {
-		return this.tupleInitElementTypes(
-			tupleDecl.init,
-			version,
-			tupleDecl.names.length,
-		);
-	}
-
-	// Per-element types for a tuple-producing init expression. Beyond the
-	// CallExpression shapes (request.security's tuple expression arg, UDF
-	// tuple returns - see INV010), the init can be an if/switch EXPRESSION
-	// whose branch tails are themselves tuple-producing; without descending
-	// into them every element defaulted to series<float> and a destructured
-	// bool drew "condition must be bool" FPs downstream. see INV049.
-	// (A BARE tuple literal init is itself invalid Pine - the parser emits
-	// TV's `Syntax error at input "["` - but we still type its elements
-	// for recovery.)
-	private tupleInitElementTypes(
-		expr: Expression,
-		version: string,
-		expectedCount?: number,
-	): PineType[] {
-		switch (expr.type) {
-			case "ArrayExpression": {
-				return (expr as ArrayExpression).elements.map((elem) =>
-					this.inferExpressionType(elem, version),
-				);
-			}
-
-			case "CallExpression": {
-				const elementTypes: PineType[] = [];
-				const call = expr as CallExpression;
-				let funcName = "";
-				if (call.callee.type === "Identifier") {
-					funcName = call.callee.name;
-				} else if (call.callee.type === "MemberExpression") {
-					const member = call.callee;
-					if (member.object.type === "Identifier") {
-						funcName = `${member.object.name}.${member.property.name}`;
-					}
-				}
-
-				// request.security / request.security_lower_tf pass the tuple
-				// shape of their expression arg through: a tuple literal, a
-				// tuple-returning call (UDF or builtin), or an if/switch
-				// expression all yield a tuple of that arity - recurse on the
-				// arg as if it were the init itself. For _lower_tf each
-				// element is an ARRAY of the expression's element type (one
-				// value per intrabar). see TODO #51.
-				if (
-					funcName === "request.security" ||
-					funcName === "request.security_lower_tf"
-				) {
-					const named = call.arguments.find((a) => a.name === "expression");
-					const exprArg =
-						named?.value ??
-						(call.arguments.length >= 3 ? call.arguments[2].value : undefined);
-					if (exprArg) {
-						const inner = this.tupleInitElementTypes(
-							exprArg,
-							version,
-							expectedCount,
-						);
-						for (const t of inner) {
-							if (funcName === "request.security_lower_tf") {
-								const base = TypeChecker.baseTypeName(t as string);
-								elementTypes.push(
-									t === "unknown" ? "unknown" : (`array<${base}>` as PineType),
-								);
-							} else {
-								elementTypes.push(t);
-							}
-						}
-					}
-				}
-
-				// User-defined function whose body evaluates to a tuple -
-				// recover the per-element types we captured when the
-				// function was validated. Without this every element defaults
-				// to `series<float>` and a destructured bool / int / color
-				// element gets wrongly typed downstream. see INV010. A name
-				// can carry several shapes (overloads); prefer the one whose
-				// arity matches the destructure.
-				if (elementTypes.length === 0 && funcName) {
-					const shapes =
-						this.udfTupleReturnTypes.get(funcName) ??
-						this.receiverMethodTupleShapes(call);
-					if (shapes) {
-						const byArity =
-							expectedCount === undefined
-								? undefined
-								: shapes.find((s) => s.length === expectedCount);
-						for (const t of byArity ?? shapes[0]) elementTypes.push(t);
-					}
-				}
-
-				// Builtin whose tuple shape lives in the catalog's overload
-				// returns (ta.macd/bb/kc/dmi/supertrend, and ta.vwap whose
-				// merged `returns` is frozen to its scalar overload). see
-				// TODO #51 blocker 3.
-				if (elementTypes.length === 0 && funcName) {
-					const shapes = builtinTupleReturns(funcName);
-					if (shapes.length > 0) {
-						const byArity =
-							expectedCount === undefined
-								? undefined
-								: shapes.find((s) => s.length === expectedCount);
-						for (const t of byArity ?? shapes[0])
-							elementTypes.push(mapToPineType(t));
-					}
-				}
-				return elementTypes;
-			}
-
-			case "IfExpression": {
-				const ifExpr = expr as IfExpression;
-				return this.mergeTupleBranchTypes([
-					this.branchTailTupleTypes(ifExpr.consequent, version, expectedCount),
-					this.branchTailTupleTypes(ifExpr.alternate, version, expectedCount),
-				]);
-			}
-
-			case "SwitchExpression": {
-				const switchExpr = expr as SwitchExpression;
-				return this.mergeTupleBranchTypes(
-					switchExpr.cases.map((c) =>
-						// When `statements` is present, `result` is the last
-						// statement's expression - visit statements INSTEAD of
-						// result (see SwitchCase in ast.ts / TODO #33).
-						c.statements
-							? this.branchTailTupleTypes(c.statements, version, expectedCount)
-							: this.tupleInitElementTypes(c.result, version, expectedCount),
-					),
-				);
-			}
-		}
-
-		return [];
-	}
-
-	// `[v, t] = data.valueAtTime(ts)` - a UDF method called on a receiver
-	// registers under its bare name, so the dotted lookup misses. Fall back
-	// to the property name, but never for a builtin namespace object
-	// (`ta.macd` must not hit a same-named user method).
-	private receiverMethodTupleShapes(
-		call: CallExpression,
-	): PineType[][] | undefined {
-		if (call.callee.type !== "MemberExpression") return undefined;
-		const member = call.callee;
-		if (member.object.type !== "Identifier") return undefined;
-		if (KNOWN_NAMESPACES.includes(member.object.name)) return undefined;
-		return this.udfTupleReturnTypes.get(member.property.name);
-	}
-
-	// Classify how many tuple elements an init expression can produce, for
-	// TV's two tuple-destructure errors (probes p01-p10, INV058): the SHAPE
-	// error (RHS cannot produce a tuple at all) and the COUNT error (tuple
-	// of the wrong arity). "unknown" disables both - anything we cannot
-	// positively classify must stay silent; the first draft of this check
-	// treated unclassifiable as scalar and shipped 51 FPs (TODO #51).
-	private tupleInitArity(
-		expr: Expression,
-		version: string,
-	):
-		| { kind: "tuple"; arities: number[] }
-		| { kind: "scalar" }
-		| { kind: "unknown" } {
-		switch (expr.type) {
-			case "ArrayExpression":
-				return {
-					kind: "tuple",
-					arities: [(expr as ArrayExpression).elements.length],
-				};
-
-			// None of these can produce a tuple in Pine - tuples only come
-			// from calls and block structures (TV's SHAPE wording). A bare
-			// identifier is scalar regardless of its type.
-			case "Literal":
-			case "Identifier":
-			case "BinaryExpression":
-			case "UnaryExpression":
-			case "TernaryExpression":
-			case "MemberExpression":
-			case "IndexExpression":
-				return { kind: "scalar" };
-
-			case "CallExpression": {
-				const call = expr as CallExpression;
-				// In-call recovery dropped arguments (INV047) - and the named
-				// args below would be incomplete.
-				if (call.recovered) return { kind: "unknown" };
-				const funcName = memberChainName(call.callee);
-				if (!funcName) return { kind: "unknown" };
-
-				// request.* passes its expression arg's shape through, scalar
-				// included (probe p08: scalar expr destructured is the SHAPE
-				// error).
-				if (
-					funcName === "request.security" ||
-					funcName === "request.security_lower_tf"
-				) {
-					const named = call.arguments.find((a) => a.name === "expression");
-					const exprArg =
-						named?.value ??
-						(call.arguments.length >= 3 ? call.arguments[2].value : undefined);
-					return exprArg
-						? this.tupleInitArity(exprArg, version)
-						: { kind: "unknown" };
-				}
-
-				// UDF / user-method tuple shapes captured by INV057.
-				const udfShapes =
-					this.udfTupleReturnTypes.get(funcName) ??
-					this.receiverMethodTupleShapes(call);
-				if (udfShapes)
-					return {
-						kind: "tuple",
-						arities: udfShapes.map((s) => s.length),
-					};
-
-				// A declared UDF with no captured tuple shape: scalar only when
-				// its inferred return type is concrete (capture and return
-				// inference share the same tail descent, so a tuple our capture
-				// missed would have left the return type unknown too).
-				if (this.declaredFunctionNames.has(funcName)) {
-					const sym = this.symbolTable.lookup(funcName);
-					if (
-						sym &&
-						(sym.kind === "function" || sym.kind === "method") &&
-						sym.type !== "unknown"
-					) {
-						return { kind: "scalar" };
-					}
-					return { kind: "unknown" };
-				}
-
-				// Builtin: catalog overload returns, args-aware for the mixed
-				// scalar/tuple case (ta.vwap). Void returns are scalar for the
-				// SHAPE question (probe p07).
-				return builtinCallTupleness(
-					funcName,
-					call.arguments.filter((a) => !a.name).length,
-					call.arguments.flatMap((a) => (a.name ? [a.name] : [])),
-				);
-			}
-
-			case "IfExpression": {
-				const ifExpr = expr as IfExpression;
-				return this.mergeBranchArities([
-					this.branchTailArity(ifExpr.consequent, version),
-					this.branchTailArity(ifExpr.alternate, version),
-				]);
-			}
-
-			case "SwitchExpression": {
-				const switchExpr = expr as SwitchExpression;
-				return this.mergeBranchArities(
-					switchExpr.cases.map((c) =>
-						c.statements
-							? this.branchTailArity(c.statements, version)
-							: this.tupleInitArity(c.result, version),
-					),
-				);
-			}
-		}
-		return { kind: "unknown" };
-	}
-
-	private branchTailArity(
-		stmts: Statement[] | undefined,
-		version: string,
-	):
-		| { kind: "tuple"; arities: number[] }
-		| { kind: "scalar" }
-		| { kind: "unknown" } {
-		if (!stmts || stmts.length === 0) return { kind: "unknown" };
-		const last = stmts[stmts.length - 1];
-		if (last.type === "ExpressionStatement") {
-			return this.tupleInitArity(
-				(last as ExpressionStatement).expression,
-				version,
-			);
-		}
-		if (last.type === "ReturnStatement") {
-			const value = (last as ReturnStatement).value;
-			return value ? this.tupleInitArity(value, version) : { kind: "unknown" };
-		}
-		if (last.type === "IfStatement") {
-			const ifStmt = last as IfStatement;
-			return this.mergeBranchArities([
-				this.branchTailArity(ifStmt.consequent, version),
-				this.branchTailArity(ifStmt.alternate, version),
-			]);
-		}
-		return { kind: "unknown" };
-	}
-
-	// All branches scalar -> scalar (probe p09: an if with scalar tails
-	// destructured is the SHAPE error). All tuple -> union of arities.
-	// Anything mixed or unknown -> unknown (TV's behavior for a structure
-	// mixing scalar and tuple tails is unprobed - stay silent).
-	private mergeBranchArities(
-		branches: Array<
-			| { kind: "tuple"; arities: number[] }
-			| { kind: "scalar" }
-			| { kind: "unknown" }
-		>,
-	):
-		| { kind: "tuple"; arities: number[] }
-		| { kind: "scalar" }
-		| { kind: "unknown" } {
-		if (branches.length === 0) return { kind: "unknown" };
-		if (branches.some((b) => b.kind === "unknown")) return { kind: "unknown" };
-		if (branches.every((b) => b.kind === "scalar")) return { kind: "scalar" };
-		if (branches.every((b) => b.kind === "tuple")) {
-			const arities = [
-				...new Set(
-					branches.flatMap((b) => (b.kind === "tuple" ? b.arities : [])),
-				),
-			];
-			return { kind: "tuple", arities };
-		}
-		return { kind: "unknown" };
-	}
-
-	// Tuple element types a statement block evaluates to: the tail
-	// statement's value expression, descending nested if tails (the same
-	// descent tailTupleExpr does for UDF bodies, but yielding types so
-	// branches can merge).
-	private branchTailTupleTypes(
-		stmts: Statement[] | undefined,
-		version: string,
-		expectedCount?: number,
-	): PineType[] {
-		if (!stmts || stmts.length === 0) return [];
-		const last = stmts[stmts.length - 1];
-		if (last.type === "ExpressionStatement") {
-			return this.tupleInitElementTypes(
-				(last as ExpressionStatement).expression,
-				version,
-				expectedCount,
-			);
-		}
-		if (last.type === "ReturnStatement") {
-			const value = (last as ReturnStatement).value;
-			return value
-				? this.tupleInitElementTypes(value, version, expectedCount)
-				: [];
-		}
-		if (last.type === "IfStatement") {
-			const ifStmt = last as IfStatement;
-			return this.mergeTupleBranchTypes([
-				this.branchTailTupleTypes(ifStmt.consequent, version, expectedCount),
-				this.branchTailTupleTypes(ifStmt.alternate, version, expectedCount),
-			]);
-		}
-		return [];
-	}
-
-	// Merge per-branch tuple element types. For each element prefer the
-	// first branch with a real type: a default branch is typically
-	// `[na, na, false]`, so an `na` element defers to a sibling branch
-	// that knows better (the same reasoning behind tailTupleExpr's
-	// consequent preference - see INV030).
-	private mergeTupleBranchTypes(branches: PineType[][]): PineType[] {
-		const candidates = branches.filter((types) => types.length > 0);
-		if (candidates.length === 0) return [];
-		const length = Math.max(...candidates.map((types) => types.length));
-		const merged: PineType[] = [];
-		for (let i = 0; i < length; i++) {
-			let pick: PineType | undefined;
-			for (const types of candidates) {
-				const t = types[i];
-				if (!t) continue;
-				if (t !== "na") {
-					pick = t;
-					break;
-				}
-				if (!pick) pick = t;
-			}
-			merged.push(pick ?? "series<float>");
-		}
-		return merged;
-	}
-
-	// Record a captured tuple-return shape under the UDF's name. Same-arity
-	// re-captures replace (idempotent across passes); a different arity is a
-	// genuine overload (function + method overloads share a name) and
-	// accumulates so the destructure site can pick by element count.
-	private recordUdfTupleReturn(name: string, types: PineType[]): void {
-		const existing = this.udfTupleReturnTypes.get(name);
-		if (!existing) {
-			this.udfTupleReturnTypes.set(name, [types]);
-			return;
-		}
-		const sameArity = existing.findIndex((t) => t.length === types.length);
-		if (sameArity >= 0) existing[sameArity] = types;
-		else existing.push(types);
-	}
-
-	/**
-	 * If the function body evaluates to a tuple, infer per-element types
-	 * under the same temp scope inferFunctionReturnType uses. The tail
-	 * descent (branchTailTupleTypes) covers trailing tuple literals,
-	 * `return`s, and if/switch tails whose arms produce tuples (the
-	 * hslToRGB shape - a trailing discriminantless switch with tuple
-	 * arms). Returns undefined when the body doesn't produce a tuple.
-	 * see INV010, INV030.
-	 */
-	private inferUdfTupleReturnTypes(
-		body: Statement[],
-		version: string,
-		params?: FunctionParam[],
-	): PineType[] | undefined {
-		if (body.length === 0) return undefined;
-
-		// Mirror inferFunctionReturnType's temp-scope setup so the
-		// element-type inference sees the parameters and any locals - and
-		// its cache isolation: this pass guesses series<float> for untyped
-		// params, and caching under that guess poisons the validation pass.
-		// see INV026.
-		const savedExpressionTypes = this.expressionTypes;
-		this.expressionTypes = new Map();
-		this.symbolTable.enterScope();
-		if (params) {
-			for (const param of params) {
-				const paramType: PineType = param.typeAnnotation
-					? mapToPineType(param.typeAnnotation.name)
-					: "series<float>";
-				this.symbolTable.define({
-					name: param.name,
-					type: paramType,
-					line: 0,
-					column: 0,
-					used: false,
-					kind: "variable",
-					declaredWith: null,
-				});
-			}
-		}
-		for (const stmt of body) {
-			this.collectDeclarations(stmt, version);
-		}
-
-		const types = this.branchTailTupleTypes(body, version);
-		this.symbolTable.exitScope();
-		this.expressionTypes = savedExpressionTypes;
-		return types.length > 0 ? types : undefined;
-	}
-
-	/**
-	 * Define tuple element variables in the symbol table.
-	 */
-	private defineTupleVariables(
-		tupleDecl: TupleDeclaration,
-		elementTypes: PineType[],
-	): void {
-		for (let i = 0; i < tupleDecl.names.length; i++) {
-			const name = tupleDecl.names[i];
-			// Use the inferred element type. When inference produced nothing
-			// (an import-alias call - #41's data gap - or any shape we can't
-			// classify), the element is UNKNOWN, not series<float>: guessing
-			// float made every destructured color/bool from a library call a
-			// type-mismatch FP downstream (INV049 residual, INV059).
-			const varType = elementTypes[i] || "unknown";
-
-			this.symbolTable.define({
-				name,
-				type: varType,
-				line: tupleDecl.line,
-				column: tupleDecl.column,
-				used: false,
-				kind: "variable",
-				declaredWith: null,
-			});
-		}
-	}
-
-	private inferExpressionType(
+	public inferExpressionType(
 		expr: Expression,
 		version: string = "6",
 	): PineType {
@@ -4715,7 +3084,7 @@ export class UnifiedPineValidator {
 	// NOTE: canPromoteType was removed as redundant with TypeChecker.isAssignable()
 	// All type coercion rules (simple->series, int->float, etc.) are in types.ts
 
-	private addError(
+	public addError(
 		line: number,
 		column: number,
 		length: number,
@@ -4729,7 +3098,7 @@ export class UnifiedPineValidator {
 	// A named method - not a bare this.errors.push - so that
 	// audit-error-reachability can enumerate and instrument these sites the
 	// same way it does addError/addWarning ones. see INV061
-	private addTemplateError(error: ValidationError): void {
+	public addTemplateError(error: ValidationError): void {
 		this.errors.push(error);
 	}
 }
