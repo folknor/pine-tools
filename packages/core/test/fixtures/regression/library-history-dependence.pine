@@ -1,0 +1,13 @@
+// @test regression/library-history-dependence
+// @description A conditional call to a history-dependent IMPORTED-LIBRARY function draws TV's CW10003. `col.cust_series` (jason5480/series_collection/4) computes a `ta.*`-based series, so calling it inside a series `if` warns - resolved via the library's derived history-dependent export set (generate-libraries runs the analyzer on the vendored body). TV's wording uses the BARE member name `cust_series`, not `col.cust_series`. Probed 2026-06-25, see INV118. (Couples to the vendored series_collection/4 export data.)
+// @expects parse: success
+// @expects warning: line=6, message="The function 'cust_series' should be called on each calculation"
+// @expects warnings: 1
+
+//@version=6
+indicator("library-history-dependence")
+import jason5480/series_collection/4 as col
+v = 0.0
+if close > open
+    v := col.cust_series(14, source = close)
+plot(v)

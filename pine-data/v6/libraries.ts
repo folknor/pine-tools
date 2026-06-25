@@ -76,14 +76,6 @@ export const LIBRARY_EXPORTS: Record<string, string[]> = {
     "ultimateOscillator",
     "wpr"
   ],
-  "andre_007/Utils/11": [
-    "dinamicZone",
-    "getPeriodicColor",
-    "round",
-    "setCurrentColorValue",
-    "setCustomLevels",
-    "setTheme"
-  ],
   "Bjorgum/BjCandlePatterns/2": [
     "abandonedBear",
     "abandonedBull",
@@ -1487,3 +1479,243 @@ export const LIBRARY_EXPORTS: Record<string, string[]> = {
 export const LIBRARY_EXPORTS_BY_PATH: Map<string, Set<string>> = new Map(
 	Object.entries(LIBRARY_EXPORTS).map(([k, v]) => [k, new Set(v)]),
 );
+
+/**
+ * "Author/Lib/Version" -> exported names whose bodies are HISTORY-DEPENDENT
+ * (call ta.* or index their own scope). The checker reads this so a conditional
+ * `lib.export()` call draws TV's CW10003 ("should be called on each
+ * calculation"). A derived fact about the public API, not the source. See INV118.
+ */
+export const LIBRARY_HISTORY_DEPENDENT: Record<string, string[]> = {
+  "andre_007/MomentumIndicators/6": [
+    "cci",
+    "fisher",
+    "iftCCI",
+    "iftCMF",
+    "iftFisher",
+    "iftMACD",
+    "iftMFI",
+    "iftROC",
+    "iftRSI",
+    "iftStoch",
+    "iftTSI",
+    "iftUO",
+    "iftVO",
+    "iftVROC",
+    "iftWPR",
+    "kst",
+    "roc",
+    "rsi",
+    "rsiMA",
+    "rsiVolume",
+    "smi",
+    "stoch",
+    "ultimateOscillator"
+  ],
+  "Bjorgum/BjCandlePatterns/2": [
+    "wrap"
+  ],
+  "boitoki/Utilities/11": [
+    "QQE"
+  ],
+  "HeWhoMustNotBeNamed/enhanced_ta/14": [
+    "atr",
+    "atrpercent",
+    "bbw",
+    "bpercentb",
+    "dc",
+    "dcw",
+    "dpercentd",
+    "kc",
+    "kcw",
+    "kpercentk",
+    "ma",
+    "oscillatorRange"
+  ],
+  "HeWhoMustNotBeNamed/mZigzag/12": [
+    "calculate",
+    "calculateplain",
+    "draw"
+  ],
+  "HeWhoMustNotBeNamed/ta/1": [
+    "atr",
+    "atrpercent",
+    "bbw",
+    "bpercentb",
+    "dc",
+    "dcw",
+    "dpercentd",
+    "kc",
+    "kcw",
+    "kpercentk",
+    "ma",
+    "oscillatorRange"
+  ],
+  "jason5480/external_input_utils/11": [
+    "evalCond"
+  ],
+  "jason5480/external_input_utils/6": [
+    "eval_cond"
+  ],
+  "jason5480/series_collection/4": [
+    "cust_series",
+    "cust_series_back",
+    "cust_series_front",
+    "vwma",
+    "vwma_back",
+    "vwma_front"
+  ],
+  "jdehorty/KernelFunctions/2": [
+    "gaussian",
+    "locallyPeriodic",
+    "periodic"
+  ],
+  "jdehorty/MLExtensions/2": [
+    "filter_adx",
+    "n_cci",
+    "n_rsi"
+  ],
+  "LonesomeTheBlue/DrawIndicatorOnTheChart/6": [
+    "drawIndicator"
+  ],
+  "loxx/loxxexpandedsourcetypes/4": [
+    "habavemedbody",
+    "habaverage",
+    "habhigh",
+    "hablow",
+    "habmedian",
+    "habtrendb",
+    "habtrendbext",
+    "habtypical",
+    "habweighted"
+  ],
+  "loxx/loxxmas/1": [
+    "adxvma",
+    "ahrma",
+    "alxma",
+    "decycler",
+    "dema",
+    "dsema",
+    "ema",
+    "fema",
+    "frama",
+    "hma",
+    "ie2",
+    "ilrs",
+    "laguerre",
+    "leader",
+    "lsma",
+    "lwma",
+    "mcNicholl",
+    "mcginley",
+    "nonlagma",
+    "pwma",
+    "rmta",
+    "slwma",
+    "sma",
+    "smma",
+    "smoother",
+    "super",
+    "swma",
+    "tema",
+    "threepolesss",
+    "tma",
+    "twopolebutter",
+    "twopoless",
+    "vwema",
+    "vwma",
+    "zlagdema",
+    "zlagma",
+    "zlagtema"
+  ],
+  "PineCoders/ConditionalAverages/2": [
+    "avgSince"
+  ],
+  "reees/TA/11": [
+    "div_bear"
+  ],
+  "reees/TA/85": [
+    "div_bear",
+    "pat_xabcd",
+    "pat_xabcdIncomplete"
+  ],
+  "reees/Utilities/5": [
+    "print_series"
+  ],
+  "robbatt/lib_no_delay/18": [
+    "dev",
+    "get_ma",
+    "linreg_values",
+    "macd",
+    "stdev"
+  ],
+  "robbatt/lib_profile/44": [
+    "history"
+  ],
+  "TFlab/LiquidityFinderLibrary/1": [
+    "LLF"
+  ],
+  "TradingView/ta/10": [
+    "stochFull",
+    "stochRsi",
+    "supertrend2",
+    "vStop2"
+  ],
+  "TradingView/ta/11": [
+    "chandelier",
+    "chandelier2",
+    "pmo",
+    "ppo",
+    "ppo2",
+    "specialK",
+    "stochFull",
+    "stochRsi",
+    "supertrend2",
+    "trix",
+    "vStop2"
+  ],
+  "TradingView/ta/12": [
+    "chandelier",
+    "chandelier2",
+    "pmo",
+    "ppo",
+    "ppo2",
+    "requestUpAndDownVolume",
+    "specialK",
+    "stochFull",
+    "stochRsi",
+    "supertrend2",
+    "trix",
+    "vStop2"
+  ],
+  "TradingView/ta/7": [
+    "stochFull",
+    "stochRsi",
+    "supertrend2",
+    "vStop2"
+  ],
+  "TradingView/ta/8": [
+    "stochFull",
+    "stochRsi",
+    "supertrend2",
+    "vStop2"
+  ],
+  "TradingView/ta/9": [
+    "stochFull",
+    "stochRsi",
+    "supertrend2",
+    "vStop2"
+  ],
+  "ZenAndTheArtOfTrading/ZenLibrary/9": [
+    "getMA",
+    "skipTradeMonteCarlo"
+  ],
+  "Trendoscope/ZigzagLite/3": [
+    "calculate"
+  ]
+};
+
+export const LIBRARY_HISTORY_DEPENDENT_BY_PATH: Map<string, Set<string>> =
+	new Map(
+		Object.entries(LIBRARY_HISTORY_DEPENDENT).map(([k, v]) => [k, new Set(v)]),
+	);

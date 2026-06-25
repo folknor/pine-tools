@@ -40,6 +40,11 @@ if (!fs.existsSync(parserModule)) {
 	process.exit(1);
 }
 const { Parser } = require(parserModule);
+const semanticModule = path.join(
+	PROJECT_ROOT,
+	"dist/packages/core/src/parser/semanticAnalyzer.js",
+);
+const { SemanticAnalyzer } = require(semanticModule);
 
 const VENDOR_DIR = path.join(PROJECT_ROOT, "vendor");
 const OUTPUT_DIR = path.join(PROJECT_ROOT, "pine-data/v6");
@@ -69,6 +74,11 @@ function collectLibraryFiles(): { libPath: string; file: string }[] {
 }
 
 const libraries: Record<string, string[]> = {};
+// "Author/Lib/Version" -> exported names whose bodies are HISTORY-DEPENDENT
+// (call ta.* / index own scope), so the checker can flag a conditional
+// `lib.export()` call (CW10003). Derived offline by running the SemanticAnalyzer
+// on the library body - a FACT about the public API, not the source. see INV118
+const historyDependent: Record<string, string[]> = {};
 const quarantined: string[] = [];
 
 for (const { libPath, file } of collectLibraryFiles().sort((a, b) =>
@@ -104,7 +114,44 @@ for (const { libPath, file } of collectLibraryFiles().sort((a, b) =>
 		),
 	].sort();
 	libraries[libPath] = exports;
-	console.log(`${libPath}: ${exports.length} exports`);
+
+	// Which exports are history-dependent: run the analyzer on the library body
+	// and intersect its history-dependent UDF set with the export surface.
+	try {
+		const analyzer = new SemanticAnalyzer();
+		analyzer.analyze(ast);
+		const hist: Set<string> = analyzer.getHistoryDependentNames();
+		const series: Set<string> = analyzer.getSeriesReturningNames();
+		// Flag only history-dependent exports that RETURN A SERIES. Side-effect
+		// builders (`StatsData.update` returns `this`, draws a table) are
+		// history-dependent internally but TV exempts them from CW10003. INV118
+		const histExports = exports.filter(
+			(n: string) => hist.has(n) && series.has(n),
+		);
+		if (histExports.length > 0) historyDependent[libPath] = histExports;
+		console.log(
+			`${libPath}: ${exports.length} exports (${histExports.length} history-dependent)`,
+		);
+	} catch (e) {
+		console.warn(`${libPath}: history-dependence scan failed (${e})`);
+	}
+}
+
+// Merge in history-dependence facts for libraries whose SOURCE cannot be
+// vendored (CC-BY-NC / unlicensed). These are derived once from a live fetch and
+// committed as a fact (no source) - see the override file's _comment. INV118
+const OVERRIDE_FILE = path.join(
+	PROJECT_ROOT,
+	"pine-data/raw/v6/library-history-overrides.json",
+);
+if (fs.existsSync(OVERRIDE_FILE)) {
+	const overrides = JSON.parse(fs.readFileSync(OVERRIDE_FILE, "utf8"));
+	for (const [libPath, names] of Object.entries(overrides)) {
+		if (libPath.startsWith("_") || !Array.isArray(names)) continue;
+		const merged = new Set([...(historyDependent[libPath] ?? []), ...names]);
+		historyDependent[libPath] = [...merged].sort();
+		console.log(`${libPath}: +${names.length} history-dependent (override)`);
+	}
 }
 
 const header = `/**
@@ -123,12 +170,29 @@ export const LIBRARY_EXPORTS: Record<string, string[]> = ${JSON.stringify(librar
 export const LIBRARY_EXPORTS_BY_PATH: Map<string, Set<string>> = new Map(
 	Object.entries(LIBRARY_EXPORTS).map(([k, v]) => [k, new Set(v)]),
 );
+
+/**
+ * "Author/Lib/Version" -> exported names whose bodies are HISTORY-DEPENDENT
+ * (call ta.* or index their own scope). The checker reads this so a conditional
+ * \`lib.export()\` call draws TV's CW10003 ("should be called on each
+ * calculation"). A derived fact about the public API, not the source. See INV118.
+ */
+export const LIBRARY_HISTORY_DEPENDENT: Record<string, string[]> = ${JSON.stringify(historyDependent, null, 2)};
+
+export const LIBRARY_HISTORY_DEPENDENT_BY_PATH: Map<string, Set<string>> =
+	new Map(
+		Object.entries(LIBRARY_HISTORY_DEPENDENT).map(([k, v]) => [k, new Set(v)]),
+	);
 `;
 
 fs.writeFileSync(path.join(OUTPUT_DIR, "libraries.ts"), ts);
 fs.writeFileSync(
 	path.join(OUTPUT_DIR, "libraries.json"),
 	`${JSON.stringify(libraries, null, 2)}\n`,
+);
+fs.writeFileSync(
+	path.join(OUTPUT_DIR, "libraries-history-dependent.json"),
+	`${JSON.stringify(historyDependent, null, 2)}\n`,
 );
 
 console.log(

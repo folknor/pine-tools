@@ -1,0 +1,4 @@
+{
+  "_comment": "History-dependent export sets for libraries whose SOURCE cannot be vendored (CC-BY-NC / unlicensed - see README Acknowledgements and TODO #41/#53 license exclusions). These are FACTS about the public API (which exports call ta.* / index own scope and return a series), derived once by live-fetching the library via `fetch:library`, running the SemanticAnalyzer's history-dependence scan, and discarding the source. generate-libraries.ts merges these into LIBRARY_HISTORY_DEPENDENT so a conditional `lib.export()` call still draws CW10003 without redistributing the source. Re-derive by re-fetching when a new major is imported. See INV118.",
+  "Trendoscope/ZigzagLite/3": ["calculate"]
+}

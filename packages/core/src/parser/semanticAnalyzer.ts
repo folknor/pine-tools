@@ -1,6 +1,10 @@
 // Semantic Analyzer for Pine Script - Detects code quality issues and best practices violations
 
-import { FUNCTIONS_BY_NAME, VARIABLES_BY_NAME } from "../../../../pine-data/v6";
+import {
+	FUNCTIONS_BY_NAME,
+	LIBRARY_HISTORY_DEPENDENT_BY_PATH,
+	VARIABLES_BY_NAME,
+} from "../../../../pine-data/v6";
 import { DiagnosticSeverity } from "../common/errors";
 import type {
 	AssignmentStatement,
@@ -53,6 +57,14 @@ export class SemanticAnalyzer {
 	// the collect pass, in source order, so declaration-before-use makes
 	// transitive UDF->UDF dependence resolve. see TODO #32.
 	private historyDependentUdfs: Set<string> = new Set();
+	// import alias -> library path (`import a/b/1 as lib` -> lib -> "a/b/1"),
+	// so a `lib.member()` call can be resolved against the vendored library's
+	// history-dependent export set. see INV118
+	private importAliasToPath: Map<string, string> = new Map();
+	// local var name -> import alias of its LIBRARY type (`var zg.Zigzag z` ->
+	// z -> "zg"), so a `z.calculate()` method call on a library-typed value
+	// resolves to that library's history-dependent export set. see INV118
+	private localLibraryVar: Map<string, string> = new Map();
 	// Innermost-first record of WHY we are in conditional scope - drives
 	// the context-specific CONDITIONAL_SERIES wording (TV's CW10002/3/4).
 	private conditionalScopeKinds: ConditionalScopeKind[] = [];
@@ -67,6 +79,11 @@ export class SemanticAnalyzer {
 	// leave them untyped and miss the series condition `if a > b`). Built in
 	// the collect pass in source order. see INV117
 	private udfReturnTupleSeries: Map<string, boolean[]> = new Map();
+	// UDF names whose body TAIL returns a series-ish value. Used to gate the
+	// library history-dependence flag: a history-dependent export warns CW10003
+	// only when it produces a SERIES (`cust_series`), not when it is a side-
+	// effect builder returning `this`/void (`StatsData.update`). see INV118
+	private udfReturnsSeries: Set<string> = new Set();
 	// Lexical scope stack for shadow detection (TV's CW10013/CW10011):
 	// each frame holds the names declared SO FAR in that scope, in source
 	// order - TV only warns when the parent declaration precedes the
@@ -89,8 +106,18 @@ export class SemanticAnalyzer {
 		this.conditionalScopeKinds = [];
 		this.seriesVars.clear();
 		this.udfReturnTupleSeries.clear();
+		this.udfReturnsSeries.clear();
+		this.importAliasToPath.clear();
+		this.localLibraryVar.clear();
 		this.scopeNames = [new Set()];
 		this.conditionalLocalFrames = [new Set()];
+
+		for (const statement of ast.body) {
+			if (statement.type === "ImportStatement" && statement.alias) {
+				this.importAliasToPath.set(statement.alias, statement.libraryPath);
+			}
+		}
+		this.collectLibraryTypedVars(ast.body);
 
 		// First pass: collect all variable declarations
 		this.collectVariableDeclarations(ast);
@@ -104,6 +131,54 @@ export class SemanticAnalyzer {
 		this.checkUnusedVariables();
 
 		return this.warnings;
+	}
+
+	/**
+	 * The set of user functions/methods this file defines whose bodies are
+	 * history-dependent (`[]` on own scope, or a call to a history-dependent
+	 * function). Valid after `analyze()`. Used offline by `generate-libraries`
+	 * to record which vendored-library EXPORTS are history-dependent, so the
+	 * checker can flag a conditional `lib.export()` call (CW10003). see INV118
+	 */
+	getHistoryDependentNames(): ReadonlySet<string> {
+		return this.historyDependentUdfs;
+	}
+
+	/** UDFs whose body tail returns a series value (after `analyze()`). */
+	getSeriesReturningNames(): ReadonlySet<string> {
+		return this.udfReturnsSeries;
+	}
+
+	/** Whether a function body's tail (return value) is series-ish. */
+	private tailIsSeries(stmt: Statement | undefined): boolean {
+		if (!stmt) return false;
+		if (stmt.type === "ExpressionStatement")
+			return this.isSeriesishExpression(stmt.expression);
+		if (stmt.type === "ReturnStatement")
+			return this.isSeriesishExpression(stmt.value);
+		if (stmt.type === "IfStatement") {
+			return (
+				this.tailIsSeries(stmt.consequent[stmt.consequent.length - 1]) ||
+				(stmt.alternate
+					? this.tailIsSeries(stmt.alternate[stmt.alternate.length - 1])
+					: false)
+			);
+		}
+		return false;
+	}
+
+	/** Map every `<alias>.<Type>`-annotated var (at any depth) to its alias. */
+	private collectLibraryTypedVars(statements: Statement[]): void {
+		for (const s of statements) {
+			if (s.type === "VariableDeclaration" && s.name && s.typeAnnotation) {
+				const t = s.typeAnnotation.name ?? "";
+				const dot = t.indexOf(".");
+				if (dot > 0 && this.importAliasToPath.has(t.slice(0, dot))) {
+					this.localLibraryVar.set(s.name, t.slice(0, dot));
+				}
+			}
+			this.collectLibraryTypedVars(this.childStatements(s));
+		}
 	}
 
 	private analyzeStatement(statement: Statement): void {
@@ -606,25 +681,34 @@ export class SemanticAnalyzer {
 	}
 
 	private checkConditionalSeriesCall(call: CallExpression): void {
+		// `functionName` is the DISPLAY name in the warning; `histDep` is the
+		// detection result. They differ for library/method calls: detection
+		// resolves the namespaced/typed receiver, but TV's wording uses the
+		// BARE member name (so re-checking the display name would fail to
+		// resolve - the receiver context is gone). see INV116 / INV118
 		let functionName = "";
+		let histDep = false;
 
 		if (call.callee.type === "Identifier") {
 			functionName = call.callee.name;
+			histDep = this.isHistoryDependentFunction(functionName);
 		} else if (call.callee.type === "MemberExpression") {
 			const member = call.callee;
 			const full =
 				member.object.type === "Identifier"
 					? `${member.object.name}.${member.property.name}`
 					: "";
-			// `obj.prop()` is a namespaced builtin (`ta.sma`) when the full name
-			// resolves; otherwise it is a user METHOD call (`PH.draw_trendLine`),
-			// which registers under the BARE method name with the receiver as
-			// the object - fall back to the property so a conditionally-called
-			// history-dependent method still warns. TV's message uses the bare
-			// method name. see INV116
+			// A namespaced BUILTIN call (`ta.sma`) keeps the full name; a user
+			// METHOD (`PH.draw_trendLine`) or LIBRARY member (`col.cust_series`)
+			// call uses the BARE member name - both register/resolve under the
+			// property, not `receiver.property`.
 			if (full && this.isHistoryDependentFunction(full)) {
-				functionName = full;
+				histDep = true;
+				functionName = FUNCTIONS_BY_NAME.get(full)?.flags?.historyDependent
+					? full
+					: member.property.name;
 			} else if (this.historyDependentUdfs.has(member.property.name)) {
+				histDep = true;
 				functionName = member.property.name;
 			}
 		}
@@ -635,7 +719,7 @@ export class SemanticAnalyzer {
 		// 2026-06-04, see INV018): CW10003 for local blocks, CW10004 for
 		// ternary branches, CW10002 for and/or operands.
 		// see plan/31 Finding 7 / TODO #32.
-		if (this.isHistoryDependentFunction(functionName)) {
+		if (histDep) {
 			const kind =
 				this.conditionalScopeKinds[this.conditionalScopeKinds.length - 1] ??
 				"block";
@@ -761,7 +845,26 @@ export class SemanticAnalyzer {
 		if (func?.flags?.historyDependent) {
 			return true;
 		}
-		return this.historyDependentUdfs.has(functionName);
+		if (this.historyDependentUdfs.has(functionName)) {
+			return true;
+		}
+		// `recv.member()` where `recv` is either an import alias (`col.cust_series`)
+		// or a LIBRARY-TYPED local (`zigzag.calculate`, zigzag a `zg.Zigzag`):
+		// resolve to the library's history-dependent export set. see INV118
+		const dot = functionName.indexOf(".");
+		if (dot > 0) {
+			const recv = functionName.slice(0, dot);
+			const member = functionName.slice(dot + 1);
+			const alias = this.localLibraryVar.get(recv) ?? recv;
+			const libPath = this.importAliasToPath.get(alias);
+			if (
+				libPath &&
+				LIBRARY_HISTORY_DEPENDENT_BY_PATH.get(libPath)?.has(member)
+			) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
@@ -875,11 +978,13 @@ export class SemanticAnalyzer {
 				// a destructure of this function's result can series-type its
 				// members (the condition `if stClose > stOpen` case). see INV117
 				{
-					const elemSeries = this.tailTupleSeries(
-						statement.body[statement.body.length - 1],
-					);
+					const tail = statement.body[statement.body.length - 1];
+					const elemSeries = this.tailTupleSeries(tail);
 					if (elemSeries) {
 						this.udfReturnTupleSeries.set(statement.name, elemSeries);
+					}
+					if (this.tailIsSeries(tail)) {
+						this.udfReturnsSeries.add(statement.name);
 					}
 				}
 				// Record history-dependent user functions for the
@@ -1106,6 +1211,16 @@ export class SemanticAnalyzer {
 					name = `${expr.callee.object.name}.${expr.callee.property.name}`;
 				}
 				if (name && this.isHistoryDependentFunction(name)) {
+					return true;
+				}
+				// A method call `recv.m()` registers under the BARE method name,
+				// so transitive history-dependence through a user method needs the
+				// bare-name lookup too (`scan` -> `this.getZigzagAndPattern(...)`).
+				// see INV118
+				if (
+					expr.callee.type === "MemberExpression" &&
+					this.historyDependentUdfs.has(expr.callee.property.name)
+				) {
 					return true;
 				}
 				return expr.arguments.some((a) =>

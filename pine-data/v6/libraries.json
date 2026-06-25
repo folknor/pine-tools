@@ -68,14 +68,6 @@
     "ultimateOscillator",
     "wpr"
   ],
-  "andre_007/Utils/11": [
-    "dinamicZone",
-    "getPeriodicColor",
-    "round",
-    "setCurrentColorValue",
-    "setCustomLevels",
-    "setTheme"
-  ],
   "Bjorgum/BjCandlePatterns/2": [
     "abandonedBear",
     "abandonedBull",

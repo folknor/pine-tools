@@ -341,21 +341,24 @@ IDs so the two stay in sync.
   method name, with a matching undetermined-gate exclusion so `draw_ob` stays
   silent (INV116); and a `[..] = f()` destructure now series-types its members
   from the UDF's returned tuple, so `if stClose > stOpen` is series and the
-  `ta.stdev` pair warns (INV117 Family 1). Warning tvOnly 26->10, localOnly
-  1627->1312; pinned by `consistency-warning-param-and-arg.pine`,
-  `conditional-reassign-series-state.pine`, `method-call-history-dependence.pine`,
-  and `tuple-return-series-condition.pine`. **Remaining** (all pre-existing,
-  root-caused in INV117 - 3 distinct families, NOT one cause):
-  (a) ~11 consistency FPs on TV-clean files - TYPED-param UDFs called only with
-  NON-series args (`draw_lbl` etc.); needs arg-qualifier propagation into params
-  (#9); (b) 7 consistency tv-only FNs: Family-1 residual `getStandardTrueRange`
-  (doubly-blocked - needs #9 tuple inference AND Family-3 user-global index),
-  Family-2 library-body history (`cust_series`, `scan` via `zigzag.calculate`,
-  `FindST` via `helper.*` - need vendored-library body scanning), Family-3
-  user-global indexing (`getTrendLineScore` - probe-correct one-liner but
-  cascades into an `array.size(untypedParam)` series FP needing #9); (c) the
-  shadowing-variable CW10013 tail (3 tv-only); (d) backward references - none in
-  the corpus. See INV114 / INV115 / INV116 / INV117.
+  `ta.stdev` pair warns (INV117 Family 1); and CW10003 now crosses the IMPORT
+  boundary - generate-libraries derives per-export history-dependence (gated by
+  series-return), the analyzer resolves library member/typed-local calls plus
+  transitive method chains, and CC-BY-NC libs get the fact via a live-fetch
+  override without redistributing source, so `cust_series` and `scan` warn
+  (INV118, Family 2). Warning tvOnly 26->7, localOnly 1627->1312; pinned by
+  `consistency-warning-param-and-arg.pine`, `conditional-reassign-series-state.pine`,
+  `method-call-history-dependence.pine`, `tuple-return-series-condition.pine`,
+  and `library-history-dependence.pine`. **Remaining** (all pre-existing,
+  root-caused in INV117): (a) ~11 consistency FPs on TV-clean files - TYPED-param
+  UDFs called only with NON-series args (`draw_lbl` etc.); needs arg-qualifier
+  propagation into params (#9); (b) 4 consistency tv-only FNs: `getStandardTrueRange`
+  x2 (doubly-blocked - #9 tuple inference AND Family-3 user-global index),
+  `getTrendLineScore` (Family-3 user-global index, probe-correct one-liner but
+  cascades into an `array.size(untypedParam)` series FP needing #9), and
+  `FindST` (criterion still unreproducible by probe); (c) the shadowing-variable
+  CW10013 tail (3 tv-only); (d) backward references - none in the corpus. See
+  INV114 / INV115 / INV116 / INV117 / INV118.
 
 ## Gotchas
 

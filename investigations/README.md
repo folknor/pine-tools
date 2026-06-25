@@ -732,6 +732,14 @@ contradiction means re-measure, not "the earlier author was wrong."
   untyped param, INV114) is undetermined, so indexing it is not own-scope
   history - the scan now excludes it, while a directly-indexed param
   (`prevVal(src)=>src[1]`) still counts. Warning tvOnly 17->12, 0 new FPs.
+- [INV118](INV118-library-history-dependence/notes.md) - CW10003 across the
+  IMPORT boundary. generate-libraries derives per-export history-dependence
+  (gated by series-return, exempting side-effect builders) into
+  `LIBRARY_HISTORY_DEPENDENT_BY_PATH`; the analyzer resolves `col.cust_series`
+  (alias) and `zigzag.calculate` (library-typed local) plus transitive
+  bare-method chains; CC-BY-NC libs (ZigzagLite) get the FACT via a live-fetch
+  override without redistributing source. Fixes cust_series x2 + scan (INV117
+  Family 2). Also: detection vs bare display name (TV names the member).
 - [INV117](INV117-consistency-fn-tail-rootcauses/notes.md) - root-cause map of
   the remaining 9 consistency FNs (3 families: #9 UDF/qualifier inference,
   library-body analysis, user-global indexing - NOT one cause). Shipped the
