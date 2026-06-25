@@ -318,9 +318,81 @@ IDs so the two stay in sync.
   Remaining, if worth pursuing: continue auditing any future specialized
   leading-wrap joiners for the same CE10013 wording/anchor behavior; no
   inventory rows currently hit them.
+- **#57 - align `==`/`!=` operator type-mismatch diagnostics to TV's
+  CE10123 template.** The arithmetic/comparison and bool operator paths
+  emit TV's CE10123 `Cannot call "operator X" ...` template (INV083 /
+  INV084), but `==`/`!=` incompatibilities still fall to the older
+  `Type mismatch: cannot apply '==' to A and B` wording (the
+  `validateBinaryExpression` else branch - `==`/`!=` are excluded from
+  `ARITH_OR_COMPARE`). TV uses CE10123 anchored at the second operand,
+  with the FIRST operand's type as the expected (`E.a == 1` ->
+  `expr1`="1", "literal int" but "const enum" expected; `close == "x"`
+  -> "literal string" but "series float" expected). Surfaced by
+  [INV096](investigations/INV096-enum-operand-type/notes.md) (enum
+  comparison now caught, but with our wording). Broad: touches every
+  `==`/`!=` type error in the corpus, so it needs its own regression
+  pass; note TV renders the enum expected as the generic "const enum"
+  for `==` yet "const E" for arithmetic, so the expected-type rendering
+  is operator-specific.
+- **#58 - split `packages/core/src/analyzer/checker.ts` (~4.7k lines).**
+  `UnifiedPineValidator` is one stateful class (~20 mutable `this`
+  fields, ~100 methods). A clean split means cooperating modules sharing
+  state, not a mechanical file cut. Lowest-risk first step: extract the
+  module-level free helpers (the type/element/enum predicates already at
+  the top) and a UDT/enum sub-checker. Do it as a dedicated
+  no-behavior-change pass, validated byte-identical against the full
+  corpus (`regression-check.mjs`) + the 359-fixture suite - never bundled
+  into a feature commit.
 - **Minor data residue (record-only, low value):** `ta.vwap.anchor`'s default
   and the "X by default" phrasing are deliberately unparsed (see
   `parse-default.ts`). Skip unless a consumer needs them.
+- **#63 - simple/const qualifier on special enum-typed params (freedom FINDINGS
+  F-050).** `request.security(lookahead = close>0 ? barmerge.lookahead_on :
+  barmerge.lookahead_off)` is TV CE10123 ("series barmerge_lookahead" but
+  "simple barmerge_lookahead" expected). The INV088 simple-qualifier check only
+  matches `simple (int|float|bool|string|color)`; lookahead is `simple
+  barmerge_lookahead`. The blocker is deeper: `barmerge.lookahead_on` has type
+  `barmerge_lookahead`, which mapToPineType collapses to `unknown`, so the
+  ternary infers as `unknown` and we cannot see it is series-qualified.
+  Requires modeling these special const types (barmerge_*, scale_type, ...) with
+  a qualifier and promoting the ternary qualifier from its series condition -
+  then extending isSimpleQualifiedParam to the special types. Type-system work,
+  not a quick arg check.
+- **#64 - builtin tuple-to-scalar assignment (freedom FINDINGS F-038 extension).**
+  INV105 flags a tuple-returning UDF bound to one variable but NOT builtins
+  (`x = ta.macd(close)`), because some builtins (`ta.vwap`) have BOTH a scalar
+  and a tuple overload and `tupleInitElementTypes` reports the tuple shape for
+  the scalar call. Needs arity-aware overload resolution to know which overload
+  a specific call selects before deciding it returns a tuple.
+- **#60 - const-ness on COMPOSITE decl args (freedom FINDINGS F-041).** The
+  INV014 const-required check (`checkConstArgs` / `describeNonConstArg`) already
+  flags a non-const builtin var/call in a const param (`indicator(syminfo.ticker)`
+  -> CE10123, EXACT vs TV). The residual is COMPOSITE args: a ternary
+  (`indicator(close>0 ? "a" : "b")`, TV repr `call "operator ?:" (series string)`)
+  and a comparison (`indicator("s", overlay = close>0)`). Needs (a) reliable
+  qualifier inference to prove non-const-ness (`true ? "a":"b"` IS const - must
+  not FP) and (b) the `call "operator X" (type)` repr rendering. Also covers
+  series `plotshape(style=)` and non-const `alertcondition(message=)`.
+- **#61 - drawing-object arg types on OVERLOADED builtins (freedom FINDINGS
+  L-007).** `line.new("a", close, bar_index, open)` (string where `x1` needs
+  series int) is TV CE10123, but `line.new` has 2 overloads (the point-pair form
+  + the legacy x1/y1/x2/y2 form whose params are typed `unknown`), so
+  `functionHasOverloads` bypasses positional arg checks entirely. Needs
+  per-overload arg resolution (pick the overload the call shape matches, then
+  type-check against it) - the same gap blocks label.new/box.new legacy forms.
+- **#62 - nested function definition (freedom FINDINGS L-006).** `f() => g() =>
+  1` (a function def inside a function body) is TV's CE10156 parse-stage error
+  ("Syntax error at input '=>'"). Our parser accepts it. Parser-level change:
+  reject a `=>` function-definition arrow in a local scope.
+- **#59 - extend CE10068 (INV100) to string-typed enum params.** INV100 flags a
+  bare literal in an enum param only when `param.type === "unknown"` (special
+  enum types). Genuine string-typed enums - `box.new(xloc=)`, `plotshape(style=)`,
+  `indicator(format=)`, all `input/series/const string` with all-dotted
+  `allowedValues` - are NOT checked, to dodge the scrape-corrupted
+  `strategy().close_entries_rule` (`const string`, real values "FIFO"/"ANY", but
+  `allowedValues` wrongly holds a stray `strategy.exit`). Tightening needs a way
+  to tell a genuine string enum from the corrupted scrape (candidate: the param
+  default being a dotted member vs a plain string). See INV100 residual.
 
 ## Gotchas
 

@@ -1,0 +1,16 @@
+// @test regression/INV104-switch-subject-case-type
+// @description A switch WITH a subject desugars each case to `subject == case`; a case value incomparable with the subject is TV's CE10123 for `operator ==` (subject `close` is series float, the case "a" is a literal string). A switch whose cases match the subject type (and a no-subject switch) stay clean. Probed 2026-06-25 via pine-lint --tv, see INV104.
+// @expects parse: success
+// @expects error: line=4, message=/Cannot call "operator ==" with argument "expr1"="a"/
+// @expects errors: 1
+
+//@version=6
+indicator("INV104-switch-subject-case-type")
+x = switch close
+    "a" => 1
+    => 2
+i = 3
+y = switch i
+    1 => 10
+    => 0
+plot(x + y)

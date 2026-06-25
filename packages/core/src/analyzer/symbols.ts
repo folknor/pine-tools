@@ -16,6 +16,9 @@ export interface Symbol {
 	used: boolean;
 	kind: "variable" | "function" | "parameter" | "method";
 	declaredWith?: "var" | "varip" | "const" | null; // for variables
+	// A `for` counter / `for...in` element. Pine makes these immutable: any
+	// reassignment is TV's CE10174 "cannot be mutable". see INV099
+	loopVar?: boolean;
 }
 
 export class Scope {

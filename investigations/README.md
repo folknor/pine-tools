@@ -635,3 +635,42 @@ contradiction means re-measure, not "the earlier author was wrong."
   their enum (parser now captures enum members); the operator checks then reject
   `E.a == 1` / `E.a + 1` (CE10123). freedom FINDINGS F-036. Residual: ==/!= still
   use our wording, not TV's CE10123 "const enum" template.
+- [INV097](INV097-duplicate-udt-field/notes.md) - duplicate field in a `type`
+  declaration now flagged (CE10186 at the second occurrence). freedom FINDINGS
+  L-004.
+- [INV098](INV098-forin-non-iterable/notes.md) - `for...in` over a scalar
+  (`for x in close`) now flagged as TV's `foreach` CE10123 ("array<type>"
+  expected). Gated to plain Identifier/MemberExpression collections so the
+  history-reference `arr[n]` (array type, mis-inferred as the element) does not
+  FP. freedom FINDINGS F-047.
+- [INV099](INV099-loop-var-mutation/notes.md) - mutating a `for` counter /
+  `for...in` element now flagged (CE10174 "cannot be mutable"); `Symbol.loopVar`
+  marks them. freedom FINDINGS F-052.
+- [INV100](INV100-strategy-direction-allowedvalues/notes.md) - a bare literal in
+  a namespaced-enum param (`strategy.entry("L", 5)`) now flagged against
+  `allowedValues` (CE10068). Gated to unknown-typed params with all-dotted
+  members, literal args, and overload-safe positions. freedom FINDINGS F-055.
+- [INV101](INV101-collection-receiver-noncollection/notes.md) - a scalar
+  receiver to a collection accessor (`array.get(close, 0)`) now flagged
+  (CE10123, "array<type>"/"map<type, type>"/"matrix<type>"). freedom FINDINGS
+  L-005.
+- [INV102](INV102-array-concat-element-type/notes.md) - `array.concat` element
+  mismatch now flagged at the element level (CE10123, id2). freedom FINDINGS
+  F-042.
+- [INV103](INV103-udt-method-not-found/notes.md) - a missing method on a local
+  UDT instance (`a.foo()`) now flagged (CE10271); built-in `.copy()` and
+  source-order forward-ref handling preserved. freedom FINDINGS F-045.
+- [INV104](INV104-switch-subject-case-type/notes.md) - a switch case value
+  incomparable with the subject (`switch close` / `"a"` case) now flagged
+  (CE10123 `operator ==`). freedom FINDINGS F-040 residual.
+- [INV105](INV105-tuple-call-to-scalar/notes.md) - a tuple-returning UDF bound
+  to a single variable (`a = f()`) now flagged (CE10092). UDF-only (builtin
+  mixed scalar/tuple overloads like ta.vwap would FP). freedom FINDINGS F-038.
+- [INV106](INV106-function-body-if-return-types/notes.md) - a function whose
+  implicit-return trailing if-statement has incompatible branch types now
+  flagged (CE10235), reusing the INV070 expression check. freedom FINDINGS F-024
+  residual.
+- [INV107](INV107-float-literal-int-param/notes.md) - a float literal in an int
+  param slot (`ta.sma(close, 14.5)`, `array.new<int>(2.5)`) now flagged
+  (CE10123); also resolves generic-constructor signatures so their args are
+  validated. freedom FINDINGS F-054.

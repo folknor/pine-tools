@@ -118,6 +118,33 @@ export function emitNoField(
 	);
 }
 
+// Duplicate UDT field (CE10186): two fields with the same name inside one
+// `type` declaration. TV anchors at the SECOND (duplicate) occurrence and
+// rejects it; the first field's type wins. v6 only (G004). see INV097
+export function checkDuplicateUdtFields(
+	v: UnifiedPineValidator,
+	statement: TypeDeclaration,
+	version: string,
+): void {
+	if (version !== "6" || !statement.fields) return;
+	const seen = new Set<string>();
+	for (const field of statement.fields) {
+		if (seen.has(field.name)) {
+			v.addTemplateError({
+				line: field.line ?? statement.line,
+				column: field.column ?? statement.column,
+				length: field.name.length,
+				message: "Duplicated field: '{fieldName}'.",
+				severity: DiagnosticSeverity.Error,
+				code: "CE10186",
+				ctx: { fieldName: field.name },
+			});
+			continue;
+		}
+		seen.add(field.name);
+	}
+}
+
 // UDT field default value type check (CE10170): a literal default must be
 // assignable to the field's declared type - int->float widening is fine, but
 // float->int narrowing (and any base mismatch) is rejected (the INV087

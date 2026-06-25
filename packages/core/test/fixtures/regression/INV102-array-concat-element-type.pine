@@ -1,0 +1,14 @@
+// @test regression/INV102-array-concat-element-type
+// @description array.concat's two arrays must share an element type; id1 fixes it and a mismatched id2 is TV's CE10123 (reported at the element level: "series string" used but "series int" expected). Concatenating two same-element arrays stays clean. Probed 2026-06-25 via pine-lint --tv, see INV102.
+// @expects parse: success
+// @expects error: line=5, message=/Cannot call "array.concat" with argument "id2"="b"/
+// @expects errors: 1
+
+//@version=6
+indicator("INV102-array-concat-element-type")
+a = array.new<int>()
+b = array.new<string>()
+c = array.concat(a, b)
+d = array.new<int>()
+e = array.concat(a, d)
+plot(array.size(c) + array.size(e))

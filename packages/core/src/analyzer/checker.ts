@@ -92,6 +92,7 @@ import {
 	registerTypeDeclaration,
 } from "./checker-declarations";
 import {
+	addOperatorTypeError,
 	boolContextOk,
 	checkIfSwitchBranchTypes,
 	validateBinaryExpression,
@@ -99,6 +100,7 @@ import {
 	validateUnaryExpression,
 } from "./checker-expressions";
 import {
+	checkDuplicateUdtFields,
 	checkTypeFieldDefaults,
 	checkUdtFieldAccess,
 	resolveUdtFieldType,
@@ -536,6 +538,37 @@ export class UnifiedPineValidator {
 					);
 				}
 
+				// A tuple-returning USER-FUNCTION call bound to a SINGLE variable is
+				// TV's CE10092 - a tuple can only be destructured (`[a, b] = f()`),
+				// never bound to one name. Restricted to UDFs: a UDF has one body
+				// hence one tuple shape, so every call returns the tuple. Builtins
+				// are NOT checked here - some (ta.vwap) have BOTH a scalar and a
+				// tuple overload, and `tupleInitElementTypes` would report the tuple
+				// shape for the scalar call `ta.vwap(hlc3)` (a corpus FP). Builtin
+				// tuple-to-scalar needs arity-aware overload resolution - see TODO.
+				// see INV105
+				if (
+					version === "6" &&
+					statement.init?.type === "CallExpression" &&
+					(statement.init as CallExpression).callee.type === "Identifier" &&
+					(
+						this.udfTupleReturnTypes.get(
+							((statement.init as CallExpression).callee as Identifier).name,
+						) ?? []
+					).some((shape) => shape.length >= 2)
+				) {
+					this.addTemplateError({
+						line: statement.startLine ?? statement.line,
+						column: statement.startColumn ?? statement.column,
+						length: statement.name.length,
+						message:
+							'Invalid assignment. Cannot assign a tuple to a variable "{name}".',
+						severity: DiagnosticSeverity.Error,
+						code: "CE10092",
+						ctx: { name: statement.name },
+					});
+				}
+
 				// First, register the variable in the symbol table
 				const symbol: SymbolInfo = {
 					name: statement.name,
@@ -819,6 +852,15 @@ export class UnifiedPineValidator {
 				for (const stmt of statement.body) {
 					this.validateStatement(stmt, version);
 				}
+				// A function whose implicit RETURN is a trailing if-statement with
+				// incompatible branch types is TV's CE10235 - the same rule as an
+				// if/switch EXPRESSION, but `if` in return position parses as an
+				// IfStatement, which the expression path never reaches. (A switch
+				// tail is a SwitchExpression and is already covered.) see INV106
+				const fnTail = statement.body[statement.body.length - 1];
+				if (version === "6" && fnTail?.type === "IfStatement") {
+					checkIfSwitchBranchTypes(this, fnTail, version);
+				}
 				this.popDeclScope();
 				this.currentFunctionName = prevFunctionName;
 				this.symbolTable.exitScope();
@@ -917,6 +959,42 @@ export class UnifiedPineValidator {
 						// Canonical bracket form - `isNumericType` etc. only
 						// recognise `series<float>`, not the space form.
 						elemType = `series<${elem}>` as PineType;
+					} else if (
+						version === "6" &&
+						(statement.collection.type === "Identifier" ||
+							statement.collection.type === "MemberExpression") &&
+						SCALAR_BASE_TYPES.has(TypeChecker.baseTypeName(base))
+					) {
+						// `for x in close` - a scalar is not iterable. TV's CE10123
+						// for the `foreach` pseudo-function: the collection ("id")
+						// arg is a scalar where an `array<type>` is expected.
+						// Restricted to the five scalar primitives (matrix/array/map
+						// are iterable; unknown/UDT stay lenient to avoid FPs), and to
+						// a plain variable/field receiver: the history-reference `[]`
+						// operator (`arr[histId]`) PRESERVES the array type but our
+						// element-type inference collapses it to the element scalar, so
+						// an IndexExpression collection would false-positive. see INV098
+						const desc = this.describeArgForTemplate(
+							statement.collection,
+							this.inferExpressionType(statement.collection, version),
+							version,
+						);
+						this.addTemplateError({
+							line: statement.collection.line || statement.line,
+							column: statement.collection.column || statement.column,
+							length: 0,
+							message: CE10123_TEMPLATE,
+							severity: DiagnosticSeverity.Error,
+							code: "CE10123",
+							ctx: {
+								argDisplayName: "id",
+								argUserFriendlyRepresentation: desc.repr,
+								argumentType: desc.typeStr,
+								currentTypeDocStr: "array<type>",
+								funId: "foreach",
+								typePostfix: "",
+							},
+						});
 					}
 				}
 				if ("iterator" in statement) {
@@ -939,6 +1017,7 @@ export class UnifiedPineValidator {
 						used: false,
 						kind: "variable",
 						declaredWith: null,
+						loopVar: true, // immutable - see INV099
 					});
 				}
 				if ("iterator2" in statement && statement.iterator2) {
@@ -950,6 +1029,7 @@ export class UnifiedPineValidator {
 						used: false,
 						kind: "variable",
 						declaredWith: null,
+						loopVar: true, // immutable - see INV099
 					});
 				}
 
@@ -1025,6 +1105,31 @@ export class UnifiedPineValidator {
 				break;
 
 			case "AssignmentStatement": {
+				// Reassigning a `for` counter / `for...in` element is TV's
+				// CE10174 - loop variables are immutable. Any mutation operator
+				// (`:=` / compound `+=` etc.; `=` is a redeclaration, a separate
+				// error) on a loopVar-flagged symbol, anchored at the target.
+				// see INV099
+				if (
+					version === "6" &&
+					statement.operator !== "=" &&
+					statement.target.type === "Identifier"
+				) {
+					const targetSym = this.symbolTable.lookup(
+						(statement.target as Identifier).name,
+					);
+					if (targetSym?.loopVar) {
+						this.addTemplateError({
+							line: statement.target.line || statement.line,
+							column: statement.target.column || statement.column,
+							length: (statement.target as Identifier).name.length,
+							message: 'Variable "{variableName}" cannot be mutable',
+							severity: DiagnosticSeverity.Error,
+							code: "CE10174",
+							ctx: { variableName: (statement.target as Identifier).name },
+						});
+					}
+				}
 				// `matrix = 0.0` - a type-keyword/namespace name used as a user
 				// variable parses as AssignmentStatement (the declaration path
 				// rejects keyword names), so the name would otherwise keep
@@ -1231,6 +1336,12 @@ export class UnifiedPineValidator {
 				for (const stmt of statement.body) {
 					this.validateStatement(stmt, version);
 				}
+				// Implicit-return trailing if-statement branch types (CE10235),
+				// as in FunctionDeclaration above. see INV106
+				const mTail = statement.body[statement.body.length - 1];
+				if (version === "6" && mTail?.type === "IfStatement") {
+					checkIfSwitchBranchTypes(this, mTail, version);
+				}
 				this.popDeclScope();
 
 				this.symbolTable.exitScope();
@@ -1274,6 +1385,7 @@ export class UnifiedPineValidator {
 				if (statement.type === "TypeDeclaration") {
 					registerTypeDeclaration(this,statement);
 					checkTypeFieldDefaults(this, statement, version);
+					checkDuplicateUdtFields(this, statement, version);
 				} else {
 					this.declaredTypeNames.add(statement.name); // see INV033
 					this.declaredEnumNames.add(statement.name); // see INV048
@@ -1418,12 +1530,55 @@ export class UnifiedPineValidator {
 			case "SwitchExpression": {
 				// Validate all cases in the switch expression
 				const switchExpr = expr as SwitchExpression;
+				// A switch WITH a subject desugars each case to `subject == case`,
+				// so a case value incomparable with the subject is TV's CE10123 for
+				// `operator ==` (probed `switch close` / `"a"` case -> expr1
+				// "literal string" but "series float" expected). Reuses the same
+				// `areTypesCompatible` predicate as the real `==` operator. Both
+				// sides must be concretely typed (unknown stays lenient). v6 only
+				// (G004). see INV104
+				const subjType = switchExpr.discriminant
+					? this.inferExpressionType(switchExpr.discriminant, version)
+					: null;
+				const subjDocStr =
+					switchExpr.discriminant && subjType
+						? this.describeArgForTemplate(
+								switchExpr.discriminant,
+								subjType,
+								version,
+							).typeStr
+						: "";
 				if (switchExpr.discriminant) {
 					this.validateExpression(switchExpr.discriminant, version);
 				}
 				for (const switchCase of switchExpr.cases) {
 					if (switchCase.condition) {
 						this.validateExpression(switchCase.condition, version);
+						if (version === "6" && subjType && subjType !== "unknown") {
+							const caseType = this.inferExpressionType(
+								switchCase.condition,
+								version,
+							);
+							if (
+								caseType !== "unknown" &&
+								!TypeChecker.areTypesCompatible(
+									subjType,
+									caseType,
+									"==",
+									false,
+								)
+							) {
+								addOperatorTypeError(
+									this,
+									"==",
+									"expr1",
+									switchCase.condition,
+									caseType,
+									subjDocStr,
+									version,
+								);
+							}
+						}
 					}
 					// `result` is contained in the last statement, so walk
 					// `statements` INSTEAD of `result` when present (see

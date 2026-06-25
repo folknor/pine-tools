@@ -1,0 +1,16 @@
+// @test regression/INV103-udt-method-not-found
+// @description Calling a method that does not exist on a local UDT instance (`a.foo()` where A has no field/method foo) is TV's CE10271 "Could not find method or method reference". A real user method, a field, and the built-in `.copy()` all stay clean. Probed 2026-06-25 via pine-lint --tv, see INV103.
+// @expects parse: success
+// @expects error: line=8, message=/Could not find method or method reference 'a.foo'/
+// @expects errors: 1
+
+//@version=6
+indicator("INV103-udt-method-not-found")
+type A
+    float v = 0.0
+method dbl(A self) => self.v * 2
+a = A.new(1.0)
+x = a.dbl()
+y = a.foo()
+b = a.copy()
+plot(x + a.v + b.v)

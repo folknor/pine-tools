@@ -211,8 +211,21 @@ export function validateCallExpression(
 	const ctorMatch = functionName.match(/^(.+)\.new$/);
 	if (ctorMatch && v.declaredTypeNames.has(ctorMatch[1])) return;
 
-	// Get function signature
-	const signature = v.functionSignatures.get(functionName);
+	// Get function signature. Generic constructors (array.new<T>, map.new<K,V>,
+	// matrix.new<T>) are keyed in the catalog WITH the template suffix, but the
+	// call's callee is the bare base (`array.new`), so a plain lookup misses and
+	// their args were never validated. Resolve the template signature so arg
+	// checks run (e.g. the INV107 size narrowing). All their params are optional,
+	// so no spurious CE10165. see INV107
+	let signature = v.functionSignatures.get(functionName);
+	if (!signature && GENERIC_FUNCTION_BASES.has(functionName)) {
+		for (const [key, sig] of v.functionSignatures) {
+			if (key.startsWith(`${functionName}<`)) {
+				signature = sig;
+				break;
+			}
+		}
+	}
 
 	// Check for top-level only functions in local scope
 	if (isTopLevelOnly(functionName) && v.blockDepth > 0) {
@@ -388,6 +401,38 @@ export function validateCallExpression(
 					call.column,
 					functionName.length,
 					`Could not find function or function reference '${functionName}'`,
+					DiagnosticSeverity.Error,
+				);
+			}
+
+			// Method call on a local UDT instance: `a.foo()` where `a : A` (a
+			// declared UDT), `foo` is neither a field of A nor a user method/func
+			// in scope. TV's CE10271 "method or method reference" (probed). Gated:
+			// single-dot callee, parserClean, `a` a user var whose base is a LOCAL
+			// UDT (imported-library UDTs/methods stay lenient - we lack their
+			// surface). declaredFunctionNames is source-ordered, so a method used
+			// before its declaration is flagged too - matching TV (forward method
+			// refs are CE10271, probed 2026-06-25). `copy` is excluded: every UDT
+			// instance has a built-in `.copy()` (probed - TV accepts `a.copy()`
+			// with no user method). see INV103
+			if (
+				v.parserClean &&
+				userShadowed &&
+				!!objSym &&
+				nsPath === rootName &&
+				memberName !== "copy" &&
+				!v.importedNamespaces.has(rootName) &&
+				v.udtFieldTypes.has(TypeChecker.baseTypeName(objSym.type as string)) &&
+				!v.udtFieldTypes
+					.get(TypeChecker.baseTypeName(objSym.type as string))
+					?.has(memberName) &&
+				!v.declaredFunctionNames.has(memberName)
+			) {
+				v.addError(
+					call.line,
+					call.column,
+					functionName.length,
+					`Could not find method or method reference '${functionName}'`,
 					DiagnosticSeverity.Error,
 				);
 			}
@@ -605,6 +650,94 @@ export function validateFunctionArguments(
 		}
 	}
 
+	// Collection RECEIVER type (CE10123): a param typed "any array/map/matrix
+	// type" is the receiver ("id"/"id1"). mapToPineType collapses it to "unknown"
+	// and these functions are "overloaded" (unknown params), so the generic loop
+	// never checks it - `array.get(close, 0)` was silent. A scalar receiver is
+	// TV's CE10123 with the kind's doc type ("array<type>" / "map<type, type>" /
+	// "matrix<type>"). Only the five scalar primitives are flagged; na / UDT /
+	// unknown receivers stay lenient. see INV101
+	if (checkArgTypes) {
+		for (let i = 0; i < signature.parameters.length; i++) {
+			const param = signature.parameters[i];
+			const m = /^any (array|map|matrix) type$/.exec(String(param.rawType ?? ""));
+			if (!m) continue;
+			const provided = providedArgs.get(param.name) ?? positionalArgs[i];
+			if (!provided) continue;
+			if (!SCALAR_BASE_TYPES.has(TypeChecker.baseTypeName(String(provided.type)))) {
+				continue;
+			}
+			const docStr =
+				m[1] === "array"
+					? "array<type>"
+					: m[1] === "map"
+						? "map<type, type>"
+						: "matrix<type>";
+			const desc = v.describeArgForTemplate(
+				provided.arg.value,
+				provided.type,
+				version,
+			);
+			v.addTemplateError({
+				line: provided.arg.value.line,
+				column: provided.arg.value.column,
+				length: 0,
+				message: CE10123_TEMPLATE,
+				severity: DiagnosticSeverity.Error,
+				code: "CE10123",
+				ctx: {
+					argDisplayName: param.name,
+					argUserFriendlyRepresentation: desc.repr,
+					argumentType: desc.typeStr,
+					currentTypeDocStr: docStr,
+					funId: functionName,
+					typePostfix: "",
+				},
+			});
+		}
+	}
+
+	// array/matrix concat element-type consistency (CE10123): the two collection
+	// args must share an element type. id1 fixes it; a mismatched id2 is TV's
+	// CE10123 reported at the ELEMENT level (id2, "series <id2-elem>" used but
+	// "series <id1-elem>" expected). Widening int->float is allowed (mutator
+	// rule). Both element types must resolve, else lenient. see INV102
+	if (
+		checkArgTypes &&
+		(functionName === "array.concat" || functionName === "matrix.concat")
+	) {
+		const kind = functionName.startsWith("array") ? "array" : "matrix";
+		const t1 = providedArgs.get("id1")?.type ?? positionalArgs[0]?.type;
+		const provided2 = providedArgs.get("id2") ?? positionalArgs[1];
+		if (t1 && provided2) {
+			const elem1 = collectionElementTarget(t1, kind, "id1");
+			const elem2 = collectionElementTarget(provided2.type, kind, "id2");
+			if (elem1 && elem2 && !elementArgAssignable(elem2 as PineType, elem1)) {
+				const desc = v.describeArgForTemplate(
+					provided2.arg.value,
+					provided2.type,
+					version,
+				);
+				v.addTemplateError({
+					line: provided2.arg.value.line,
+					column: provided2.arg.value.column,
+					length: 0,
+					message: CE10123_TEMPLATE,
+					severity: DiagnosticSeverity.Error,
+					code: "CE10123",
+					ctx: {
+						argDisplayName: "id2",
+						argUserFriendlyRepresentation: desc.repr,
+						argumentType: `series ${TypeChecker.baseTypeName(elem2)}`,
+						currentTypeDocStr: `series ${TypeChecker.baseTypeName(elem1)}`,
+						funId: functionName,
+						typePostfix: "",
+					},
+				});
+			}
+		}
+	}
+
 	// A `simple`-qualified param (e.g. ta.ema's `length: simple int`) rejects
 	// a series value. The param's qualifier is lost when mapToPineType
 	// collapses "simple int" -> "int", and these functions are often
@@ -638,6 +771,108 @@ export function validateFunctionArguments(
 					currentTypeDocStr: param.rawType ?? String(param.type),
 					funId: functionName,
 					typePostfix: "",
+				},
+			});
+		}
+	}
+
+	// CE10123: a FLOAT LITERAL in an `int` param slot. TV narrows strictly
+	// (float->int is rejected, though int->float widens), but isAssignable treats
+	// int<->float bidirectionally, so the main loop misses `ta.sma(close, 14.5)`
+	// and `array.new<int>(2.5)` (the latter also positional-bypassed as a generic).
+	// Scoped to a float LITERAL into a cleanly int-typed param: unambiguous - a
+	// literal is never series, so no overlap with the INV088 simple-qualifier
+	// check - and it runs regardless of the overload/generic positional bypass.
+	// Positional args are skipped on real-overload functions (ambiguous slots);
+	// named args are always safe. A float VARIABLE stays lenient (our float
+	// inference for those is the shakier path). see INV107
+	if (checkArgTypes) {
+		for (let i = 0; i < signature.parameters.length; i++) {
+			const param = signature.parameters[i];
+			if (
+				!param.type ||
+				param.type === "unknown" ||
+				TypeChecker.baseTypeName(String(param.type)) !== "int"
+			) {
+				continue;
+			}
+			const provided =
+				providedArgs.get(param.name) ??
+				(hasOverloadSignatures(functionName) ? undefined : positionalArgs[i]);
+			if (!provided || provided.arg.value.type !== "Literal") continue;
+			if (TypeChecker.baseTypeName(String(provided.type)) !== "float") continue;
+			const desc = v.describeArgForTemplate(
+				provided.arg.value,
+				provided.type,
+				version,
+			);
+			v.addTemplateError({
+				line: provided.arg.value.line,
+				column: provided.arg.value.column,
+				length: 0,
+				message: CE10123_TEMPLATE,
+				severity: DiagnosticSeverity.Error,
+				code: "CE10123",
+				ctx: {
+					argDisplayName: param.name,
+					argUserFriendlyRepresentation: desc.repr,
+					argumentType: desc.typeStr,
+					currentTypeDocStr: param.rawType ?? String(param.type),
+					funId: functionName,
+					typePostfix: "",
+				},
+			});
+		}
+	}
+
+	// CE10068: a param whose accepted values are a fixed set of NAMESPACED enum
+	// members (e.g. strategy.entry's `direction`: strategy.long/strategy.short)
+	// received a bare literal. TV reports the allowed members, not a type
+	// mismatch (CE10068, not CE10123). Gated tightly to avoid FPs:
+	//  - every allowedValue must be a dotted member (`strategy.long`). The
+	//    other allowedValues shape is bare idents (`close`, "Traditional") for
+	//    params that accept a series var or a plain string literal - flagging a
+	//    literal there would be wrong (max_bars_back(close), pivot type "Classic").
+	//  - the argument must be a numeric/string LITERAL: a namespaced constant is
+	//    an Identifier/MemberExpression, never a literal, so a literal is
+	//    unambiguously invalid (and a valid `strategy.long` / ternary of members
+	//    / variable stays lenient).
+	//  - positional args are only checked on single-signature functions; real
+	//    overloads (fill's plot/hline forms) scramble positions, so a positional
+	//    title can land in `display`'s slot. Named args are always unambiguous.
+	// see INV100
+	if (checkArgTypes) {
+		for (let i = 0; i < signature.parameters.length; i++) {
+			const param = signature.parameters[i];
+			// param.type === "unknown": a special enum type the checker doesn't
+			// model (strategy_direction, plot_display, barmerge_*, ...). This
+			// EXCLUDES modeled string-typed params - both genuine string enums
+			// (out of scope) and scrape-corrupted ones like strategy()'s
+			// `close_entries_rule` (a `const string` taking "FIFO"/"ANY", whose
+			// allowedValues wrongly scraped a stray "strategy.exit" cross-ref).
+			if (
+				param.type !== "unknown" ||
+				!param.allowedValues?.length ||
+				!param.allowedValues.every((vv) => vv.includes("."))
+			) {
+				continue;
+			}
+			const provided =
+				providedArgs.get(param.name) ??
+				(hasOverloadSignatures(functionName) ? undefined : positionalArgs[i]);
+			if (!provided || provided.arg.value.type !== "Literal") continue;
+			v.addTemplateError({
+				line: provided.arg.value.line,
+				column: provided.arg.value.column,
+				length: 0,
+				message:
+					'Invalid argument "{argumentName}" in "{funName}" call. Possible values: [{possibleValues}]',
+				severity: DiagnosticSeverity.Error,
+				code: "CE10068",
+				ctx: {
+					argumentName: param.name,
+					funName: functionName,
+					possibleValues: param.allowedValues.join(", "),
 				},
 			});
 		}

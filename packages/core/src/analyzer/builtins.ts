@@ -127,6 +127,10 @@ export interface ParameterInfo {
 	rawType?: string;
 	optional?: boolean;
 	defaultValue?: string;
+	// The fixed set of accepted values for an enum-typed param (e.g.
+	// strategy.entry's `direction`: strategy.long/strategy.short). An
+	// incompatible argument is TV's CE10068. see INV100
+	allowedValues?: string[];
 }
 
 /**
@@ -281,6 +285,7 @@ export function buildSignatureFromPineFunction(
 				rawType: param.type,
 				optional: !param.required,
 				defaultValue: param.default,
+				allowedValues: param.allowedValues,
 			});
 		}
 

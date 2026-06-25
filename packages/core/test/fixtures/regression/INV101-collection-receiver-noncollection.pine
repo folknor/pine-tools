@@ -1,0 +1,13 @@
+// @test regression/INV101-collection-receiver-noncollection
+// @description A collection-accessor builtin (array.get / map.get / matrix.get, ...) called with a scalar receiver is TV's CE10123 - the "any array/map/matrix type" param ("id") wants a collection. A real array receiver stays clean. Probed 2026-06-25 via pine-lint --tv, see INV101.
+// @expects parse: success
+// @expects error: line=4, message=/Cannot call "array.get" with argument "id"="x"/
+// @expects errors: 1
+
+//@version=6
+indicator("INV101-collection-receiver-noncollection")
+float x = 1.5
+y = array.get(x, 0)
+arr = array.new<float>(3, 1.0)
+z = array.get(arr, 0)
+plot(y + z)

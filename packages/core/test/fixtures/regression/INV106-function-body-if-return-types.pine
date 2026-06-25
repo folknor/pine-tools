@@ -1,0 +1,21 @@
+// @test regression/INV106-function-body-if-return-types
+// @description A function whose implicit RETURN is a trailing if-statement with incompatible branch types (42 vs "no") is TV's CE10235 - the same branch-compatibility rule as an if/switch EXPRESSION, but `if` in return position parses as an IfStatement, which the expression path never reached. A function returning compatible branches stays clean. Probed 2026-06-25 via pine-lint --tv, see INV106.
+// @expects parse: success
+// @expects error: line=4, message=/Return type of one of the "if" or "switch" blocks is not compatible/
+// @expects errors: 1
+
+//@version=6
+indicator("INV106-function-body-if-return-types")
+f(c) =>
+    if c
+        42
+    else
+        "no"
+g(c) =>
+    if c
+        1
+    else
+        2
+x = f(true)
+y = g(true)
+plot(y)

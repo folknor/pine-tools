@@ -1,0 +1,18 @@
+// @test regression/INV099-loop-var-mutation
+// @description Reassigning a `for` counter or a `for...in` element is TV's CE10174 "Variable ... cannot be mutable" - loop variables are immutable. Reading the loop variable (without reassigning) stays clean. Probed 2026-06-25 via pine-lint --tv, see INV099.
+// @expects parse: success
+// @expects error: line=5, message=/Variable "i" cannot be mutable/
+// @expects error: line=9, message=/Variable "v" cannot be mutable/
+// @expects errors: 2
+
+//@version=6
+indicator("INV099-loop-var-mutation")
+acc = 0
+for i = 0 to 5
+    i := 10
+    acc := acc + i
+arr = array.new<int>(3, 1)
+for v in arr
+    v := 99
+    acc := acc + v
+plot(acc)

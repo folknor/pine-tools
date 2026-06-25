@@ -1,0 +1,14 @@
+// @test regression/INV105-tuple-call-to-scalar
+// @description A tuple-returning USER function bound to a single variable (`a = f()` where `f` returns `[1, 2]`) is TV's CE10092 - a tuple can only be destructured. Destructuring (`[a, b] = f()`) and a scalar-returning call stay clean. Probed 2026-06-25 via pine-lint --tv, see INV105.
+// @expects parse: success
+// @expects error: line=4, message=/Cannot assign a tuple to a variable "a"/
+// @expects errors: 1
+
+//@version=6
+indicator("INV105-tuple-call-to-scalar")
+f() => [1, 2]
+a = f()
+[p, q] = f()
+g() => 7
+y = g()
+plot(p + q + y)

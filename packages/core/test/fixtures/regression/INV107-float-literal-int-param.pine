@@ -1,0 +1,14 @@
+// @test regression/INV107-float-literal-int-param
+// @description A float literal in an `int` param slot is TV's CE10123 - the language narrows strictly (float->int is rejected, int->float widens), but our isAssignable treated int<->float bidirectionally, so `ta.sma(close, 14.5)` and `array.new<int>(2.5)` slipped through. An int arg, and int->float widening, stay clean. Probed 2026-06-25 via pine-lint --tv, see INV107.
+// @expects parse: success
+// @expects error: line=3, message=/Cannot call "ta.sma" with argument "length"="14.5"/
+// @expects error: line=4, message=/Cannot call "array.new" with argument "size"="2.5"/
+// @expects errors: 2
+
+//@version=6
+indicator("INV107-float-literal-int-param")
+s = ta.sma(close, 14.5)
+a = array.new<int>(2.5, 0)
+ok = ta.sma(close, 14)
+b = array.new<float>(5, 2.5)
+plot(s + array.size(a) + ok + array.size(b))

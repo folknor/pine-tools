@@ -1,0 +1,15 @@
+// @test regression/INV097-duplicate-udt-field
+// @description Two fields with the same name in one `type` declaration are TV's CE10186 "Duplicated field", anchored at the second (duplicate) occurrence. A second distinct field stays clean. Probed 2026-06-25 via pine-lint --tv, see INV097.
+// @expects parse: success
+// @expects error: line=5, message=/Duplicated field: 'x'\./
+// @expects errors: 1
+
+//@version=6
+indicator("INV097-duplicate-udt-field")
+type T
+    int x = 1
+    int x = 2
+    float y = 3.0
+
+t = T.new()
+plot(t.x + t.y)

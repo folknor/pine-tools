@@ -1,0 +1,12 @@
+// @test regression/INV100-strategy-direction-allowedvalues
+// @description An order-generating strategy.* call (strategy.entry) given a bare literal for a namespaced-enum param (direction: strategy.long/strategy.short) is TV's CE10068 "Invalid argument ... Possible values: [...]" - not a type mismatch. A valid member, or a ternary of members, stays clean (direction accepts a series). Probed 2026-06-25 via pine-lint --tv, see INV100.
+// @expects parse: success
+// @expects error: line=3, message=/Invalid argument "direction" in "strategy.entry" call/
+// @expects errors: 1
+
+//@version=6
+strategy("INV100-strategy-direction-allowedvalues")
+strategy.entry("L", 5)
+strategy.entry("OK", strategy.long)
+strategy.entry("T", close > 0 ? strategy.long : strategy.short)
+plot(close)
