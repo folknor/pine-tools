@@ -42,6 +42,12 @@ shape, so every call returns the tuple. Builtins are NOT checked here - some
 `ta.vwap(hlc3)` (5 corpus FPs caught this in testing). Builtin tuple-to-scalar
 needs arity-aware overload resolution - left for a follow-up.
 
+**UPDATE (INV109, 2026-06-25):** the builtin follow-up is done. The single-var
+check now routes through `tupleInitArity` (the same args-aware classifier the
+destructure path uses, backed by `builtinCallTupleness`), so builtins are
+covered and the `ta.vwap` scalar overload is correctly left alone. See
+[INV109](../INV109-builtin-tuple-to-scalar/notes.md).
+
 ## Verification
 
 - Regression fixture `regression/INV105-tuple-call-to-scalar.pine` (single-var

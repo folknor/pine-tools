@@ -1,0 +1,11 @@
+// @test regression/INV112-const-composite-decl-args
+// @description A const-required decl arg fed a COMPOSITE non-const expression (ternary / comparison / string concat) is TV CE10123. INV014 covered builtin vars/calls; this extends describeNonConstArg to ternary and binary via exprQualifier (const<input<simple<series), rendering TV's `call "operator ?:" (series string)` repr. A const composite (`true ? "a" : "b"`) is NOT flagged. Probed 2026-06-25 via pine-lint --tv, see INV112.
+// @expects parse: success
+// @expects error: line=2, message=/"title"="call "operator \?:" \(series string\)/
+// @expects error: line=2, message=/"overlay"="call "operator >" \(series bool\)/
+// @expects error: line=3, message=/"message"="call "operator \+" \(series string\)/
+// @expects errors: 3
+//@version=6
+indicator(close > 0 ? "a" : "b", overlay = close > 0)
+alertcondition(close > open, "t", "Zone: " + str.tostring(close))
+plot(close, title = true ? "ok" : "fine")

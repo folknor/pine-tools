@@ -1,0 +1,11 @@
+// @test regression/INV108-nested-function-definition
+// @description A function/method definition is legal only at module scope. A nested => definition inside a function body (or an if/for/while block) is TV's CE10156 "Syntax error at input '=>'", anchored at the arrow. Our parser used to accept it (piners/freedom L-006). See INV108.
+// @expects parse: fail
+// @expects error: line=4, column=9, message=/Syntax error at input/
+//@version=6
+indicator("s")
+f() =>
+    g() =>
+        1
+    g()
+plot(f())

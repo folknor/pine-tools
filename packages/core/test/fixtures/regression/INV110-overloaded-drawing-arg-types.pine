@@ -1,0 +1,17 @@
+// @test regression/INV110-overloaded-drawing-arg-types
+// @description Drawing-object builtins (line.new/label.new/box.new) have a point-pair overload AND a legacy x1/y1/... overload whose params the MERGED signature types "unknown", so the generic positional check is bypassed and a wrong-typed legacy arg slipped through. Per-overload resolution now picks the legacy overload and reports the string-where-series-int mismatch as CE10123 (TV L-007). Valid point-pair and legacy calls stay clean. Probed 2026-06-25 via pine-lint --tv, see INV110.
+// @expects parse: success
+// @expects error: line=4, message=/Cannot call "line.new" with argument "x1"="a"/
+// @expects error: line=5, message=/Cannot call "label.new" with argument "x"="x"/
+// @expects error: line=6, message=/Cannot call "box.new" with argument "left"="b"/
+// @expects errors: 3
+//@version=6
+indicator("INV110-overloaded-drawing-arg-types")
+if barstate.islast
+    line.new("a", close, bar_index, open)
+    label.new("x", high, "hi")
+    box.new("b", high, bar_index, low)
+    line.new(bar_index, open, bar_index + 1, close)
+    line.new(chart.point.now(close), chart.point.now(open))
+    label.new(bar_index, high, "hi")
+plot(close)

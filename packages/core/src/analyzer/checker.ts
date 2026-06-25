@@ -60,25 +60,6 @@ import {
 	resolveCallReturnRaw,
 	unionParamInfo,
 } from "./builtins";
-import {
-	ARRAY_ELEMENT_RETURN_METHODS,
-	ARRAY_SELF_RETURN_METHODS,
-	arrayFromArgMatches,
-	arrayFromExpectedType,
-	CE10122_TEMPLATE,
-	CE10123_TEMPLATE,
-	collectionElementTarget,
-	elementArgAssignable,
-	isOpaqueHandleType,
-	isSeriesQualified,
-	isSimpleQualifiedParam,
-	MAP_SELF_RETURN_METHODS,
-	MATRIX_ARRAY_RETURN_METHODS,
-	MATRIX_SELF_RETURN_METHODS,
-	memberChainName,
-	NESTED_COLLECTION_MESSAGE,
-	SCALAR_BASE_TYPES,
-} from "./checker-helpers";
 import { isVoidCall, validateCallExpression } from "./checker-calls";
 import {
 	annotationToSymbolType,
@@ -100,11 +81,24 @@ import {
 	validateUnaryExpression,
 } from "./checker-expressions";
 import {
-	checkDuplicateUdtFields,
-	checkTypeFieldDefaults,
-	checkUdtFieldAccess,
-	resolveUdtFieldType,
-} from "./checker-udt";
+	ARRAY_ELEMENT_RETURN_METHODS,
+	ARRAY_SELF_RETURN_METHODS,
+	arrayFromArgMatches,
+	arrayFromExpectedType,
+	CE10122_TEMPLATE,
+	CE10123_TEMPLATE,
+	collectionElementTarget,
+	elementArgAssignable,
+	isOpaqueHandleType,
+	isSeriesQualified,
+	isSimpleQualifiedParam,
+	MAP_SELF_RETURN_METHODS,
+	MATRIX_ARRAY_RETURN_METHODS,
+	MATRIX_SELF_RETURN_METHODS,
+	memberChainName,
+	NESTED_COLLECTION_MESSAGE,
+	SCALAR_BASE_TYPES,
+} from "./checker-helpers";
 import {
 	defineTupleVariables,
 	inferTupleElementTypes,
@@ -112,6 +106,12 @@ import {
 	recordUdfTupleReturn,
 	tupleInitArity,
 } from "./checker-tuples";
+import {
+	checkDuplicateUdtFields,
+	checkTypeFieldDefaults,
+	checkUdtFieldAccess,
+	resolveUdtFieldType,
+} from "./checker-udt";
 import { type Symbol as SymbolInfo, SymbolTable } from "./symbols";
 import { type PineType, TypeChecker } from "./types";
 
@@ -213,7 +213,10 @@ export class UnifiedPineValidator {
 	private loopDepth = 0;
 
 	constructor(
-		public readonly localLibraryExportsBySourcePath: Map<string, Set<string>> = new Map(),
+		public readonly localLibraryExportsBySourcePath: Map<
+			string,
+			Set<string>
+		> = new Map(),
 		public readonly parserClean = true,
 	) {
 		this.symbolTable = new SymbolTable();
@@ -258,9 +261,7 @@ export class UnifiedPineValidator {
 					// overload). Methods parse as a separate node, so record them
 					// to keep UDF call-site validation from applying the function
 					// overload to a method call. see INV095
-					this.methodDeclaredNames.add(
-						(statement as { name: string }).name,
-					);
+					this.methodDeclaredNames.add((statement as { name: string }).name);
 				}
 			}
 		}
@@ -280,7 +281,10 @@ export class UnifiedPineValidator {
 						? this.localLibraryExportsBySourcePath.get(statement.sourcePath)
 						: undefined;
 					if (localExports) {
-						this.localLibraryExportsBySourcePath.set(statement.libraryPath, localExports);
+						this.localLibraryExportsBySourcePath.set(
+							statement.libraryPath,
+							localExports,
+						);
 						this.importedLibraryPaths.set(ns, statement.libraryPath);
 					} else if (LIBRARY_EXPORTS_BY_PATH.has(statement.libraryPath)) {
 						this.importedLibraryPaths.set(ns, statement.libraryPath);
@@ -319,9 +323,11 @@ export class UnifiedPineValidator {
 			};
 
 			// Use type annotation if present, otherwise infer from initialization
-				if (statement.typeAnnotation) {
-					symbol.type = annotationToSymbolType(this,statement.typeAnnotation.name);
-
+			if (statement.typeAnnotation) {
+				symbol.type = annotationToSymbolType(
+					this,
+					statement.typeAnnotation.name,
+				);
 			} else if (statement.init) {
 				const initType = this.inferExpressionType(statement.init, version);
 				// A bare-na initializer gives the variable NO type (TV's CE10097
@@ -351,11 +357,11 @@ export class UnifiedPineValidator {
 			statement.type === "EnumDeclaration"
 		) {
 			if (statement.type === "TypeDeclaration") {
-				registerTypeDeclaration(this,statement);
+				registerTypeDeclaration(this, statement);
 			} else {
 				this.declaredTypeNames.add(statement.name); // see INV033
 				this.declaredEnumNames.add(statement.name); // see INV048
-				recordEnumMembers(this,statement); // see INV096
+				recordEnumMembers(this, statement); // see INV096
 			}
 			const symbol: SymbolInfo = {
 				name: statement.name,
@@ -465,14 +471,15 @@ export class UnifiedPineValidator {
 						DiagnosticSeverity.Error,
 					);
 				}
-				checkBuiltinShadowDeclaration(this,
+				checkBuiltinShadowDeclaration(
+					this,
 					statement.name,
 					statement.line,
 					statement.column,
 					version,
 				);
-				checkTypeAnnotationName(this,statement, version);
-				checkRedeclaration(this,statement.name, statement, version);
+				checkTypeAnnotationName(this, statement, version);
+				checkRedeclaration(this, statement.name, statement, version);
 				// TV emits CE10025 a SECOND time at the statement start when a
 				// nested-collection constructor is a declaration initializer
 				// (probed: `var x = array.new<array<float>>()` errors at the
@@ -538,24 +545,21 @@ export class UnifiedPineValidator {
 					);
 				}
 
-				// A tuple-returning USER-FUNCTION call bound to a SINGLE variable is
-				// TV's CE10092 - a tuple can only be destructured (`[a, b] = f()`),
-				// never bound to one name. Restricted to UDFs: a UDF has one body
-				// hence one tuple shape, so every call returns the tuple. Builtins
-				// are NOT checked here - some (ta.vwap) have BOTH a scalar and a
-				// tuple overload, and `tupleInitElementTypes` would report the tuple
-				// shape for the scalar call `ta.vwap(hlc3)` (a corpus FP). Builtin
-				// tuple-to-scalar needs arity-aware overload resolution - see TODO.
-				// see INV105
+				// A tuple-returning call (or block expression) bound to a SINGLE
+				// variable is TV's CE10092 - a tuple can only be destructured
+				// (`[a, b] = f()`), never bound to one name. Uses the same
+				// arity classifier as the destructure path (INV058): it is
+				// args-aware, so a builtin's SCALAR overload (`ta.vwap(hlc3)`)
+				// is left alone while its tuple overload and always-tuple
+				// builtins (`ta.macd`) are flagged - the arity-aware overload
+				// resolution INV105 deferred. A bare tuple literal `a = [1, 2]`
+				// is the parser's CE10156 (INV049), so skip ArrayExpression. v6
+				// only (builtin returns data is v6, G004). see INV105 / INV109
 				if (
 					version === "6" &&
-					statement.init?.type === "CallExpression" &&
-					(statement.init as CallExpression).callee.type === "Identifier" &&
-					(
-						this.udfTupleReturnTypes.get(
-							((statement.init as CallExpression).callee as Identifier).name,
-						) ?? []
-					).some((shape) => shape.length >= 2)
+					statement.init &&
+					statement.init.type !== "ArrayExpression" &&
+					tupleInitArity(this, statement.init, version).kind === "tuple"
 				) {
 					this.addTemplateError({
 						line: statement.startLine ?? statement.line,
@@ -582,7 +586,10 @@ export class UnifiedPineValidator {
 
 				// Use type annotation if present, otherwise infer from initialization
 				if (statement.typeAnnotation) {
-					symbol.type = annotationToSymbolType(this,statement.typeAnnotation.name);
+					symbol.type = annotationToSymbolType(
+						this,
+						statement.typeAnnotation.name,
+					);
 				} else if (statement.init) {
 					const initType = this.inferExpressionType(statement.init, version);
 					// Bare-na initializer: no type for the variable - the
@@ -688,7 +695,8 @@ export class UnifiedPineValidator {
 				// Handle tuple destructuring: [a, b, c] = expr
 				const tupleDecl = statement as TupleDeclaration;
 				for (const name of tupleDecl.names) {
-					checkBuiltinShadowDeclaration(this,
+					checkBuiltinShadowDeclaration(
+						this,
 						name,
 						tupleDecl.line,
 						tupleDecl.column,
@@ -698,7 +706,7 @@ export class UnifiedPineValidator {
 					// declarations: a later `m = ...` is CE10095, and so is a
 					// duplicate name WITHIN one tuple (`[a, a] = ...`) - both
 					// anchored at the statement start (probed). see INV035
-					checkRedeclaration(this,name, tupleDecl, version);
+					checkRedeclaration(this, name, tupleDecl, version);
 				}
 				const elementTypes = inferTupleElementTypes(this, tupleDecl, version);
 				defineTupleVariables(this, tupleDecl, elementTypes);
@@ -793,7 +801,7 @@ export class UnifiedPineValidator {
 
 				// Redefinition: a same-arity declaration not distinguishable by
 				// explicit param types is illegal (CE10110/10112/10113). see INV091
-				checkFunctionRedefinition(this,statement, version);
+				checkFunctionRedefinition(this, statement, version);
 
 				// Register the function in the symbol table at the outer scope
 				this.declaredFunctionNames.add(statement.name); // see INV036
@@ -810,8 +818,9 @@ export class UnifiedPineValidator {
 				this.symbolTable.enterScope();
 				this.blockDepth++;
 
-				checkParamTypeAnnotations(this,statement.params, version);
-				checkExportedParamsTypified(this,
+				checkParamTypeAnnotations(this, statement.params, version);
+				checkExportedParamsTypified(
+					this,
 					statement.isExport,
 					statement.params,
 					version,
@@ -1303,8 +1312,9 @@ export class UnifiedPineValidator {
 				this.symbolTable.enterScope();
 				this.blockDepth++;
 
-				checkParamTypeAnnotations(this,statement.params, version);
-				checkExportedParamsTypified(this,
+				checkParamTypeAnnotations(this, statement.params, version);
+				checkExportedParamsTypified(
+					this,
 					statement.isExport,
 					statement.params,
 					version,
@@ -1383,13 +1393,13 @@ export class UnifiedPineValidator {
 			case "EnumDeclaration":
 			case "TypeDeclaration": {
 				if (statement.type === "TypeDeclaration") {
-					registerTypeDeclaration(this,statement);
+					registerTypeDeclaration(this, statement);
 					checkTypeFieldDefaults(this, statement, version);
 					checkDuplicateUdtFields(this, statement, version);
 				} else {
 					this.declaredTypeNames.add(statement.name); // see INV033
 					this.declaredEnumNames.add(statement.name); // see INV048
-					recordEnumMembers(this,statement); // see INV096
+					recordEnumMembers(this, statement); // see INV096
 				}
 				const symbol: SymbolInfo = {
 					name: statement.name,
@@ -1561,12 +1571,7 @@ export class UnifiedPineValidator {
 							);
 							if (
 								caseType !== "unknown" &&
-								!TypeChecker.areTypesCompatible(
-									subjType,
-									caseType,
-									"==",
-									false,
-								)
+								!TypeChecker.areTypesCompatible(subjType, caseType, "==", false)
 							) {
 								addOperatorTypeError(
 									this,
@@ -1600,7 +1605,7 @@ export class UnifiedPineValidator {
 						this.validateExpression(switchCase.result, version);
 					}
 				}
-				checkIfSwitchBranchTypes(this,switchExpr, version);
+				checkIfSwitchBranchTypes(this, switchExpr, version);
 				break;
 			}
 
@@ -1625,7 +1630,7 @@ export class UnifiedPineValidator {
 					this.blockDepth--;
 					this.symbolTable.exitScope();
 				}
-				checkIfSwitchBranchTypes(this,ifExpr, version);
+				checkIfSwitchBranchTypes(this, ifExpr, version);
 				break;
 			}
 		}

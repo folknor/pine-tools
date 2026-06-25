@@ -365,6 +365,31 @@ export function hasOverloadSignatures(functionName: string): boolean {
 	return (func?.overloads?.length ?? 0) > 1;
 }
 
+// Per-overload signatures with mapped param types - the overloads[] field
+// rebuilt into the same ParameterInfo shape as buildSignatureFromPineFunction.
+// The MERGED signature types the legacy drawing-object params (line.new's
+// x1/y1/x2/y2, label.new's x/y) as "unknown", which suppresses all positional
+// arg checks; resolving the actual overload a call selects and checking against
+// THAT overload's cleanly-typed params recovers them. see INV110
+export function getOverloadSignatures(
+	functionName: string,
+): FunctionSignature[] {
+	const func = FUNCTIONS_BY_NAME.get(functionName);
+	if (!func?.overloads || func.overloads.length === 0) return [];
+	return func.overloads.map((ov) => ({
+		name: functionName,
+		parameters: ov.parameters.map((p) => ({
+			name: p.name,
+			type: mapToPineType(p.type),
+			rawType: p.type,
+			optional: !p.required,
+			defaultValue: p.default,
+			allowedValues: p.allowedValues,
+		})),
+		returns: ov.returns || undefined,
+	}));
+}
+
 // The required-param NAME list of the overload with the FEWEST required
 // params (ties -> first). This is the arity floor: a call providing fewer
 // args than this list's length can satisfy NO overload, so it is a sound

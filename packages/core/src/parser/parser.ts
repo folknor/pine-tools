@@ -14,6 +14,10 @@ export interface ParserError {
 	message: string;
 }
 
+// TV's CE10156 wording for a `=>` function/method definition found in a
+// local scope (function body or if/for/while block). see INV108
+const NESTED_FUNC_DEF_ERROR = 'Syntax error at input "=>"';
+
 export class Parser {
 	// Token machinery and tracking state are public so co-located sub-
 	// parsers (expressions, statements, …) in sibling modules can read
@@ -24,6 +28,11 @@ export class Parser {
 	public current: number = 0;
 	public parenDepth: number = 0; // Track parenthesis nesting depth
 	public bracketDepth: number = 0; // Track bracket nesting depth for arrays
+	// Nesting depth of local scopes (function/method bodies and
+	// if/for/while blocks). 0 at module scope. Pine permits function and
+	// method DECLARATIONS only at module scope; a `=>` definition found at
+	// depth > 0 is TV's CE10156 syntax error. see INV108
+	private localScopeDepth: number = 0;
 	private lexerErrors: LexerError[] = [];
 	public parserErrors: ParserError[] = [];
 	private detectedVersion: string | null = null;
@@ -618,7 +627,16 @@ export class Parser {
 					);
 
 					// Check for arrow =>
-					if (this.match(TokenType.ARROW)) {
+					if (this.check(TokenType.ARROW)) {
+						// A function definition is only legal at module scope.
+						// Nested inside a function/method body or an
+						// if/for/while block, TV rejects the `=>` with CE10156
+						// "Syntax error at input '=>'". Anchor at the arrow.
+						// see INV108
+						if (this.localScopeDepth > 0) {
+							throw new Error(NESTED_FUNC_DEF_ERROR);
+						}
+						this.advance(); // consume =>
 						// It's a function definition!
 						return this.functionDeclaration(
 							nameToken.value,
@@ -628,7 +646,14 @@ export class Parser {
 							nameToken.indent ?? 0,
 						);
 					}
-				} catch (_e) {
+				} catch (e) {
+					// A confirmed nested `=>` definition (params + RPAREN +
+					// arrow all matched) is a real syntax error, not a
+					// mis-detected call - propagate it rather than backtracking
+					// and re-parsing the line as a call. see INV108
+					if (e instanceof Error && e.message === NESTED_FUNC_DEF_ERROR) {
+						throw e;
+					}
 					// Not a function definition (parsing params failed), backtrack
 					this.current = checkpoint;
 				}
@@ -1267,69 +1292,76 @@ export class Parser {
 		const body: AST.Statement[] = [];
 		let bodyIndent: number | null = null;
 
-		while (!this.isAtEnd()) {
-			const currentToken = this.peek();
+		// An if/for/while block is a local scope - a `=>` function
+		// definition is illegal here (INV108).
+		this.localScopeDepth++;
+		try {
+			while (!this.isAtEnd()) {
+				const currentToken = this.peek();
 
-			// Skip NEWLINE tokens when determining body boundaries
-			if (currentToken.type === TokenType.NEWLINE) {
-				this.advance();
-				continue;
-			}
+				// Skip NEWLINE tokens when determining body boundaries
+				if (currentToken.type === TokenType.NEWLINE) {
+					this.advance();
+					continue;
+				}
 
-			if (stopAtElse && this.check([TokenType.KEYWORD, ["else"]])) {
-				break;
-			}
+				if (stopAtElse && this.check([TokenType.KEYWORD, ["else"]])) {
+					break;
+				}
 
-			// Indent boundaries apply only to LINE-START tokens; a mid-line
-			// leftover (no indent) stays in the block and parses as the next
-			// statement - `indent || 0` used to read it as indent 0 and end
-			// the block. see INV047 / TODO #46(c)
-			if (currentToken.indent !== undefined) {
-				const currentIndent = currentToken.indent;
+				// Indent boundaries apply only to LINE-START tokens; a mid-line
+				// leftover (no indent) stays in the block and parses as the next
+				// statement - `indent || 0` used to read it as indent 0 and end
+				// the block. see INV047 / TODO #46(c)
+				if (currentToken.indent !== undefined) {
+					const currentIndent = currentToken.indent;
 
-				// Set expected body indentation from first statement
-				if (bodyIndent === null && currentToken.line > startLine) {
-					if (currentIndent <= baseIndent) {
-						// No properly-indented body - the block is empty. see INV008.
+					// Set expected body indentation from first statement
+					if (bodyIndent === null && currentToken.line > startLine) {
+						if (currentIndent <= baseIndent) {
+							// No properly-indented body - the block is empty. see INV008.
+							break;
+						}
+						bodyIndent = currentIndent;
+					}
+
+					// Stop if we've returned to base indentation level or less
+					if (
+						bodyIndent !== null &&
+						currentToken.line > startLine &&
+						currentIndent < bodyIndent
+					) {
 						break;
 					}
-					bodyIndent = currentIndent;
 				}
 
-				// Stop if we've returned to base indentation level or less
-				if (
-					bodyIndent !== null &&
-					currentToken.line > startLine &&
-					currentIndent < bodyIndent
-				) {
-					break;
+				try {
+					const stmt = this.statement();
+					if (stmt) {
+						body.push(stmt);
+					} else {
+						break;
+					}
+				} catch (e) {
+					// Record and resume at the next block line - propagating the
+					// throw killed every enclosing block and spilled the rest of
+					// the outer body. Depth counters reset like synchronize().
+					// see INV047 / TODO #46(c)
+					const at = this.peek();
+					this.parserErrors.push({
+						line: at.line,
+						column: at.column,
+						message: e instanceof Error ? e.message : String(e),
+					});
+					this.parenDepth = 0;
+					this.bracketDepth = 0;
+					while (!this.isAtEnd() && !this.check(TokenType.NEWLINE)) {
+						this.advance();
+					}
 				}
 			}
-
-			try {
-				const stmt = this.statement();
-				if (stmt) {
-					body.push(stmt);
-				} else {
-					break;
-				}
-			} catch (e) {
-				// Record and resume at the next block line - propagating the
-				// throw killed every enclosing block and spilled the rest of
-				// the outer body. Depth counters reset like synchronize().
-				// see INV047 / TODO #46(c)
-				const at = this.peek();
-				this.parserErrors.push({
-					line: at.line,
-					column: at.column,
-					message: e instanceof Error ? e.message : String(e),
-				});
-				this.parenDepth = 0;
-				this.bracketDepth = 0;
-				while (!this.isAtEnd() && !this.check(TokenType.NEWLINE)) {
-					this.advance();
-				}
-			}
+		} finally {
+			this.localScopeDepth--;
 		}
 
 		return body;
@@ -1591,91 +1623,98 @@ export class Parser {
 			this.advance();
 		}
 
-		// Check if next token is on a new line with deeper indentation
-		const nextToken = this.peek();
-		if (nextToken.line === line) {
-			// Single-line function: same line as =>. Like inline switch
-			// arms (TODO #33/#35), the body can be a comma-separated
-			// statement sequence ending in the return value:
-			//   f(x) => a := x, a * 2
-			try {
-				body.push(...this.parseInlineArrowBody());
-			} catch (_e) {
-				// Error parsing expression - function may be incomplete
-			}
-		} else {
-			// Multi-line function: parse all statements at deeper indentation
-			// Determine the expected function body indentation from the first token
-			let functionBodyIndent: number | null = null;
-
-			while (!this.isAtEnd()) {
-				const currentToken = this.peek();
-
-				// Skip NEWLINE tokens when determining function body boundaries
-				if (currentToken.type === TokenType.NEWLINE) {
-					this.advance();
-					continue;
+		// Statements parsed below are in a local scope - a nested `=>`
+		// definition is illegal here (INV108).
+		this.localScopeDepth++;
+		try {
+			// Check if next token is on a new line with deeper indentation
+			const nextToken = this.peek();
+			if (nextToken.line === line) {
+				// Single-line function: same line as =>. Like inline switch
+				// arms (TODO #33/#35), the body can be a comma-separated
+				// statement sequence ending in the return value:
+				//   f(x) => a := x, a * 2
+				try {
+					body.push(...this.parseInlineArrowBody());
+				} catch (_e) {
+					// Error parsing expression - function may be incomplete
 				}
+			} else {
+				// Multi-line function: parse all statements at deeper indentation
+				// Determine the expected function body indentation from the first token
+				let functionBodyIndent: number | null = null;
 
-				// The indent boundary checks apply only to LINE-START tokens
-				// (only those carry an indent). A MID-LINE leftover token -
-				// e.g. the `index` after `box_right = bar` parses on a mangled
-				// line - used to read as indent 0 via `indent || 0` and END
-				// the body, spilling every later body statement to top level
-				// where the params were unresolvable. It stays in the body and
-				// parses as the next statement. see INV047 / TODO #46(c)
-				if (currentToken.indent !== undefined) {
-					const currentIndent = currentToken.indent;
+				while (!this.isAtEnd()) {
+					const currentToken = this.peek();
 
-					// Set expected body indentation from first statement. The body
-					// must be indented STRICTLY MORE than the declaration itself -
-					// otherwise a bodyless declaration swallows following
-					// same-column statements to end-of-file. see INV008 / plan/31.
-					if (functionBodyIndent === null && currentToken.line > line) {
-						if (currentIndent <= baseIndent) {
+					// Skip NEWLINE tokens when determining function body boundaries
+					if (currentToken.type === TokenType.NEWLINE) {
+						this.advance();
+						continue;
+					}
+
+					// The indent boundary checks apply only to LINE-START tokens
+					// (only those carry an indent). A MID-LINE leftover token -
+					// e.g. the `index` after `box_right = bar` parses on a mangled
+					// line - used to read as indent 0 via `indent || 0` and END
+					// the body, spilling every later body statement to top level
+					// where the params were unresolvable. It stays in the body and
+					// parses as the next statement. see INV047 / TODO #46(c)
+					if (currentToken.indent !== undefined) {
+						const currentIndent = currentToken.indent;
+
+						// Set expected body indentation from first statement. The body
+						// must be indented STRICTLY MORE than the declaration itself -
+						// otherwise a bodyless declaration swallows following
+						// same-column statements to end-of-file. see INV008 / plan/31.
+						if (functionBodyIndent === null && currentToken.line > line) {
+							if (currentIndent <= baseIndent) {
+								break;
+							}
+							functionBodyIndent = currentIndent;
+						}
+
+						// Stop if we've returned to base indentation level or less
+						// AND we're past the function declaration line
+						if (
+							currentToken.line > line &&
+							functionBodyIndent !== null &&
+							currentIndent < functionBodyIndent
+						) {
 							break;
 						}
-						functionBodyIndent = currentIndent;
 					}
 
-					// Stop if we've returned to base indentation level or less
-					// AND we're past the function declaration line
-					if (
-						currentToken.line > line &&
-						functionBodyIndent !== null &&
-						currentIndent < functionBodyIndent
-					) {
-						break;
-					}
-				}
-
-				// Parse statement at this indentation level
-				try {
-					const stmt = this.statement();
-					if (stmt) {
-						body.push(stmt);
-					} else {
-						break;
-					}
-				} catch (e) {
-					// Record the error and resume at the NEXT body line instead
-					// of ending the body - breaking here spilled the remaining
-					// body statements out of the param scope. The depth
-					// counters get the same reset as synchronize() (a throw
-					// mid-group leaves them stuck). see INV047 / TODO #46(c)
-					const at = this.peek();
-					this.parserErrors.push({
-						line: at.line,
-						column: at.column,
-						message: e instanceof Error ? e.message : String(e),
-					});
-					this.parenDepth = 0;
-					this.bracketDepth = 0;
-					while (!this.isAtEnd() && !this.check(TokenType.NEWLINE)) {
-						this.advance();
+					// Parse statement at this indentation level
+					try {
+						const stmt = this.statement();
+						if (stmt) {
+							body.push(stmt);
+						} else {
+							break;
+						}
+					} catch (e) {
+						// Record the error and resume at the NEXT body line instead
+						// of ending the body - breaking here spilled the remaining
+						// body statements out of the param scope. The depth
+						// counters get the same reset as synchronize() (a throw
+						// mid-group leaves them stuck). see INV047 / TODO #46(c)
+						const at = this.peek();
+						this.parserErrors.push({
+							line: at.line,
+							column: at.column,
+							message: e instanceof Error ? e.message : String(e),
+						});
+						this.parenDepth = 0;
+						this.bracketDepth = 0;
+						while (!this.isAtEnd() && !this.check(TokenType.NEWLINE)) {
+							this.advance();
+						}
 					}
 				}
 			}
+		} finally {
+			this.localScopeDepth--;
 		}
 
 		return {
@@ -2147,61 +2186,68 @@ export class Parser {
 			this.advance();
 		}
 
-		// Check if next token is on a new line with deeper indentation
-		const nextToken = this.peek();
-		if (nextToken.line === line) {
-			// Single-line method: same line as =>. Comma-separated statement
-			// units ending in the return value, like inline switch arms and
-			// function bodies. see TODO #35.
-			try {
-				body.push(...this.parseInlineArrowBody());
-			} catch (_e) {
-				// Error parsing expression - method may be incomplete
-			}
-		} else {
-			// Multi-line method: parse all statements at deeper indentation
-			let methodBodyIndent: number | null = null;
-
-			while (!this.isAtEnd()) {
-				const currentToken = this.peek();
-				const currentIndent = currentToken.indent || 0;
-
-				// Skip NEWLINE tokens
-				if (currentToken.type === TokenType.NEWLINE) {
-					this.advance();
-					continue;
-				}
-
-				// Set expected body indentation from first statement. The body
-				// must be indented STRICTLY MORE than the declaration itself -
-				// see INV008 / plan/31.
-				if (methodBodyIndent === null && currentToken.line > line) {
-					if (currentIndent <= baseIndent) {
-						break;
-					}
-					methodBodyIndent = currentIndent;
-				}
-
-				// Stop if we've returned to base indentation level or less
-				if (
-					currentToken.line > line &&
-					methodBodyIndent !== null &&
-					currentIndent < methodBodyIndent
-				) {
-					break;
-				}
-
+		// Method body statements are in a local scope - a nested `=>`
+		// definition is illegal here (INV108).
+		this.localScopeDepth++;
+		try {
+			// Check if next token is on a new line with deeper indentation
+			const nextToken = this.peek();
+			if (nextToken.line === line) {
+				// Single-line method: same line as =>. Comma-separated statement
+				// units ending in the return value, like inline switch arms and
+				// function bodies. see TODO #35.
 				try {
-					const stmt = this.statement();
-					if (stmt) {
-						body.push(stmt);
-					} else {
+					body.push(...this.parseInlineArrowBody());
+				} catch (_e) {
+					// Error parsing expression - method may be incomplete
+				}
+			} else {
+				// Multi-line method: parse all statements at deeper indentation
+				let methodBodyIndent: number | null = null;
+
+				while (!this.isAtEnd()) {
+					const currentToken = this.peek();
+					const currentIndent = currentToken.indent || 0;
+
+					// Skip NEWLINE tokens
+					if (currentToken.type === TokenType.NEWLINE) {
+						this.advance();
+						continue;
+					}
+
+					// Set expected body indentation from first statement. The body
+					// must be indented STRICTLY MORE than the declaration itself -
+					// see INV008 / plan/31.
+					if (methodBodyIndent === null && currentToken.line > line) {
+						if (currentIndent <= baseIndent) {
+							break;
+						}
+						methodBodyIndent = currentIndent;
+					}
+
+					// Stop if we've returned to base indentation level or less
+					if (
+						currentToken.line > line &&
+						methodBodyIndent !== null &&
+						currentIndent < methodBodyIndent
+					) {
 						break;
 					}
-				} catch (_e) {
-					break;
+
+					try {
+						const stmt = this.statement();
+						if (stmt) {
+							body.push(stmt);
+						} else {
+							break;
+						}
+					} catch (_e) {
+						break;
+					}
 				}
 			}
+		} finally {
+			this.localScopeDepth--;
 		}
 
 		return {

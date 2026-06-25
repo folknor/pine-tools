@@ -70,11 +70,13 @@ emits CE10068 when:
 ## Residual / follow-up
 
 - Genuine string-typed enum params (`box.new(xloc=)`, `plotshape(style=)`,
-  `indicator(format=)`) are NOT checked: a string literal there is invalid on TV
-  but our `param.type === "unknown"` gate excludes modeled `string` params to
-  stay clear of the `close_entries_rule` data corruption. Tightening that needs
-  distinguishing genuine string enums from the corrupted scrape (e.g. the param
-  default being a dotted member vs a plain string) - left for a follow-up.
+  `indicator(format=)`) are NOT checked. **Resolved (INV111, 2026-06-25): this is
+  correct, not a gap.** Direct `--tv` probes show TV ACCEPTS arbitrary strings in
+  these plain `string`-typed params (`format = "bad"`, `style = "bad"`,
+  `xloc = "bad"` all compile clean) - only the special enum-TYPED params
+  (`strategy_direction` etc., which map to `unknown`) are enforced. The
+  `param.type === "unknown"` gate is confirmed correct; adding CE10068 here would
+  be a false positive. See [INV111](../INV111-string-typed-enum-not-enforced/notes.md).
 - Wrong-namespace member args (`strategy.entry("L", display.all)`) are not
   flagged (only literals are); detecting cross-namespace member misuse is a
   broader change.

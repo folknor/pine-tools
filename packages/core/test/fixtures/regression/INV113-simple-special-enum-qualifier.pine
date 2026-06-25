@@ -1,0 +1,13 @@
+// @test regression/INV113-simple-special-enum-qualifier
+// @description request.security's `lookahead: simple barmerge_lookahead` fed a SERIES value (a ternary over a series condition, bound to a var or inline) is TV CE10123 ("series barmerge_lookahead" but "simple barmerge_lookahead"). INV088 covered simple SCALAR params; the special enum types collapse to unknown, so this uses exprQualifier to prove the arg is series. A bare const member (barmerge.lookahead_on) is NOT flagged. Probed 2026-06-25 via pine-lint --tv, see INV113.
+// @expects parse: success
+// @expects error: line=4, message=/"lookahead"="la"\. An argument of "series barmerge_lookahead" type was used but a "simple barmerge_lookahead"/
+// @expects error: line=5, message=/"lookahead"="operator \?:"\. An argument of "series barmerge_lookahead"/
+// @expects errors: 2
+//@version=6
+indicator("s")
+la = close > 0 ? barmerge.lookahead_on : barmerge.lookahead_off
+h = request.security(syminfo.tickerid, "D", close, lookahead = la)
+i = request.security(syminfo.tickerid, "D", close, lookahead = close > 0 ? barmerge.lookahead_on : barmerge.lookahead_off)
+j = request.security(syminfo.tickerid, "D", close, lookahead = barmerge.lookahead_on)
+plot(h + i + j)

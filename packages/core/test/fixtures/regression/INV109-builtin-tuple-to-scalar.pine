@@ -1,0 +1,13 @@
+// @test regression/INV109-builtin-tuple-to-scalar
+// @description A BUILTIN tuple-returning call bound to a single variable is TV's CE10092 (INV105 extension to builtins). `ta.macd` always returns a tuple, so `m = ta.macd(...)` is flagged; `ta.vwap` has a scalar overload (`ta.vwap(hlc3)`) and a tuple overload (with stdev_mult), so only the tuple-overload call to a single var is flagged. Arity-aware via builtinCallTupleness. Probed 2026-06-25 via pine-lint --tv, see INV109.
+// @expects parse: success
+// @expects error: line=3, message=/Cannot assign a tuple to a variable "m"/
+// @expects error: line=4, message=/Cannot assign a tuple to a variable "vt"/
+// @expects errors: 2
+//@version=6
+indicator("INV109-builtin-tuple-to-scalar")
+m = ta.macd(close, 12, 26, 9)
+vt = ta.vwap(close, timeframe.change("1D"), 2.0)
+vs = ta.vwap(hlc3)
+[macdLine, signalLine, histLine] = ta.macd(close, 12, 26, 9)
+plot(vs + macdLine + signalLine + histLine)

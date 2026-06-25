@@ -674,3 +674,39 @@ contradiction means re-measure, not "the earlier author was wrong."
   param slot (`ta.sma(close, 14.5)`, `array.new<int>(2.5)`) now flagged
   (CE10123); also resolves generic-constructor signatures so their args are
   validated. freedom FINDINGS F-054.
+- [INV108](INV108-nested-function-definition/notes.md) - a function/method
+  definition nested inside a local scope (`f() => g() => 1`, or a `=>` def in an
+  if/for/while body) now rejected with CE10156 `Syntax error at input "=>"` at
+  the arrow, via a parser `localScopeDepth` counter. 0 corpus changes. freedom
+  FINDINGS L-006.
+- [INV109](INV109-builtin-tuple-to-scalar/notes.md) - INV105 extended to BUILTIN
+  tuple-returning calls bound to a single variable (`m = ta.macd(...)` -> CE10092)
+  by routing the single-var check through `tupleInitArity` / `builtinCallTupleness`,
+  whose arity-aware overload resolution leaves `ta.vwap(hlc3)`'s scalar overload
+  alone. 0 corpus changes. freedom FINDINGS F-038.
+- [INV110](INV110-overloaded-drawing-arg-types/notes.md) - drawing-object
+  builtins (line.new/label.new/box.new) whose legacy x1/y1/... overload the
+  merged signature types `unknown` now get per-overload arg resolution
+  (`getOverloadSignatures` + `checkOverloadResolvedArgs`): the call's best-fit
+  overload is resolved and the first type mismatch reported as CE10123
+  (`line.new("a", ...)` -> x1 series int). 0 corpus changes. freedom FINDINGS
+  L-007.
+- [INV112](INV112-const-composite-decl-args/notes.md) - const-required decl args
+  fed a COMPOSITE non-const expression (ternary `indicator(close>0?"a":"b")`,
+  comparison `overlay=close>0`, concat `message="..."+str.tostring(...)`) now
+  flagged CE10123 via `exprQualifier` (const<input<simple<series) + ternary/binary
+  cases in describeNonConstArg, rendering TV's `call "operator ?:" (series string)`
+  repr. +3 corpus TPs (TV-confirmed). Residual: input-required `plotshape(style=)`
+  series var. freedom FINDINGS F-041.
+- [INV113](INV113-simple-special-enum-qualifier/notes.md) - `request.security`'s
+  `lookahead: simple barmerge_lookahead` fed a SERIES value (ternary over a series
+  condition) now CE10123. INV088 covered `simple <scalar>`; the special enum types
+  collapse to unknown, so this proves series-ness via INV112's `exprQualifier` and
+  renders `series <param-base>`. 0 corpus changes. freedom FINDINGS F-050.
+- [INV111](INV111-string-typed-enum-not-enforced/notes.md) - NOT A DEFECT.
+  Probed whether TV enforces value-membership on plain `string`-typed "enum"
+  params (`box.new(xloc=)`, `plotshape(style=)`, `indicator(format=)`); TV
+  ACCEPTS arbitrary strings there (only special enum-TYPED params like
+  `strategy_direction` are enforced, INV100). The INV100 `param.type ===
+  "unknown"` gate is confirmed correct; adding CE10068 would be an FP. TODO #59
+  closed.

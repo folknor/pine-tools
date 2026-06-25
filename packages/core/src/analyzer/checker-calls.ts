@@ -9,12 +9,15 @@
 import { LIBRARY_EXPORTS_BY_PATH, TYPE_NAMES } from "../../../../pine-data/v6";
 import { DiagnosticSeverity } from "../common/errors";
 import type {
+	BinaryExpression,
 	CallArgument,
 	CallExpression,
 	Expression,
 	Identifier,
 	Literal,
 	MemberExpression,
+	TernaryExpression,
+	UnaryExpression,
 } from "../parser/ast";
 import {
 	type FunctionSignature,
@@ -23,15 +26,17 @@ import {
 	getConstParamDocType,
 	getMinArgsForVariadic,
 	getMinimalRequiredParams,
-	hasOverloads,
+	getOverloadSignatures,
 	hasOverloadSignatures,
+	hasOverloads,
 	isBuiltinConstant,
 	isTopLevelOnly,
 	isVariadicFunction,
 	KNOWN_NAMESPACE_PREFIXES,
 	KNOWN_NAMESPACES,
-	namedParamUnionMembers,
 	NAMESPACE_PROPERTIES,
+	namedParamUnionMembers,
+	type ParameterInfo,
 	paramRequiresConst,
 	positionalConstParam,
 	positionalParamUnionMembers,
@@ -198,8 +203,7 @@ export function validateCallExpression(
 	// argument prefix is skipped because the syntax diagnostic already owns it.
 	// see INV082
 	for (const arg of call.arguments) {
-		if (!arg.skipSemanticValidation)
-			v.validateExpression(arg.value, version);
+		if (!arg.skipSemanticValidation) v.validateExpression(arg.value, version);
 	}
 
 	// NOTE: Complex callee expressions (e.g., chained calls like `foo().bar()`,
@@ -302,9 +306,7 @@ export function validateCallExpression(
 		) {
 			const rootName = functionName.slice(0, functionName.indexOf("."));
 			const nsPath = functionName.slice(0, functionName.lastIndexOf("."));
-			const memberName = functionName.slice(
-				functionName.lastIndexOf(".") + 1,
-			);
+			const memberName = functionName.slice(functionName.lastIndexOf(".") + 1);
 			const objSym = v.symbolTable.lookup(rootName);
 			const userShadowed = !!objSym && objSym.line !== 0;
 			if (
@@ -385,7 +387,9 @@ export function validateCallExpression(
 			// the shadow symbol. Libraries we don't vendor have no entry, so
 			// they stay lenient.
 			const libExports =
-				LIBRARY_EXPORTS_BY_PATH.get(v.importedLibraryPaths.get(rootName) ?? "") ??
+				LIBRARY_EXPORTS_BY_PATH.get(
+					v.importedLibraryPaths.get(rootName) ?? "",
+				) ??
 				v.localLibraryExportsBySourcePath.get(
 					v.importedLibraryPaths.get(rootName) ?? "",
 				);
@@ -418,7 +422,7 @@ export function validateCallExpression(
 			if (
 				v.parserClean &&
 				userShadowed &&
-				!!objSym &&
+				objSym &&
 				nsPath === rootName &&
 				memberName !== "copy" &&
 				!v.importedNamespaces.has(rootName) &&
@@ -473,6 +477,169 @@ export function isVoidCall(
 	return resolveCallReturnRaw(fnName, argTypes) === "void";
 }
 
+// Per-overload positional/named arg type-checking. The MERGED signature of an
+// overloaded drawing-object builtin types its legacy params (line.new's
+// x1/y1/x2/y2, label.new's x/y) as "unknown", so the generic positional loop -
+// already bypassed for overloaded functions - never checks them. Resolve which
+// overload the call selects by best fit over the call's RELIABLY-typed args,
+// then report the first reliable type mismatch in that overload as CE10123,
+// matching TV. Conservative to avoid FPs: requires a UNIQUE best-fit overload
+// (no tie), counts/reports mismatches only on cleanly-typed args against
+// cleanly-typed params (so a valid call, whose true overload has zero
+// mismatches, is silent), and REPORTS only on params the merged signature lost
+// to "unknown" (clean merged params are already covered by the named-arg loop /
+// INV107, so this never double-fires). see INV110
+function checkOverloadResolvedArgs(
+	v: UnifiedPineValidator,
+	call: CallExpression,
+	functionName: string,
+	signature: FunctionSignature,
+	positionalArgs: { arg: CallArgument; type: PineType }[],
+	providedArgs: Map<string, { arg: CallArgument; type: PineType }>,
+	version: string,
+): void {
+	const overloads = getOverloadSignatures(functionName);
+	if (overloads.length < 2) return;
+	const posCount = positionalArgs.length;
+
+	// Candidate overloads: every provided named arg is a param of the overload,
+	// and the positional args do not overflow it.
+	const candidates = overloads.filter((ov) => {
+		for (const name of providedArgs.keys()) {
+			if (!ov.parameters.some((p) => p.name === name)) return false;
+		}
+		return posCount <= ov.parameters.length;
+	});
+	if (candidates.length === 0) return;
+
+	// Base type with any qualifier stripped (mirrors builtins.baseOfRawType).
+	const baseOf = (raw: string): string => {
+		const s = raw.trim();
+		const br = s.match(/^(?:const|input|simple|series)<(.+)>$/);
+		if (br) return br[1].trim();
+		return s.replace(/^(const|input|simple|series)\s+/, "").trim();
+	};
+	const isScalarArg = (t: PineType): boolean =>
+		SCALAR_BASE_TYPES.has(TypeChecker.baseTypeName(String(t)));
+	const isScalarUnionRaw = (raw: string): boolean =>
+		raw.includes("/") &&
+		raw.split("/").every((m) => SCALAR_BASE_TYPES.has(m.trim()));
+
+	// Classify an arg against a param: -1 mismatch, +1 match, 0 neutral (cannot
+	// tell). The merged type collapses unions ("series int/float") and the UDT
+	// `chart.point` to "unknown", so consult the rawType to recover the signal
+	// that distinguishes the point-pair overload from the legacy x/y form.
+	const classify = (
+		argType: PineType,
+		param: ParameterInfo | undefined,
+	): number => {
+		if (!param || argType === "unknown") return 0;
+		const raw = param.rawType ? baseOf(String(param.rawType)) : "";
+		// A clearly-scalar arg cannot be a chart.point.
+		if (raw === "chart.point") return isScalarArg(argType) ? -1 : 0;
+		if (!param.type || param.type === "unknown") {
+			if (isScalarUnionRaw(raw)) {
+				return raw
+					.split("/")
+					.some((m) => TypeChecker.isAssignable(argType, m.trim() as PineType))
+					? 1
+					: -1;
+			}
+			return 0;
+		}
+		return TypeChecker.isAssignable(argType, param.type) ? 1 : -1;
+	};
+
+	const score = (ov: FunctionSignature): { mm: number; mt: number } => {
+		let mm = 0;
+		let mt = 0;
+		const tally = (c: number) => {
+			if (c < 0) mm++;
+			else if (c > 0) mt++;
+		};
+		for (let i = 0; i < posCount; i++)
+			tally(classify(positionalArgs[i].type, ov.parameters[i]));
+		for (const [name, prov] of providedArgs)
+			tally(
+				classify(
+					prov.type,
+					ov.parameters.find((p) => p.name === name),
+				),
+			);
+		return { mm, mt };
+	};
+
+	// Resolve to the best-fit overload: fewest mismatches, then most matches.
+	let best = candidates[0];
+	let bestS = score(best);
+	let tie = false;
+	for (let k = 1; k < candidates.length; k++) {
+		const s = score(candidates[k]);
+		if (s.mm < bestS.mm || (s.mm === bestS.mm && s.mt > bestS.mt)) {
+			best = candidates[k];
+			bestS = s;
+			tie = false;
+		} else if (s.mm === bestS.mm && s.mt === bestS.mt) {
+			tie = true;
+		}
+	}
+	// Resolved cleanly (no mismatch in the selected overload) or ambiguously
+	// (two overloads tie at the best score) -> stay lenient.
+	if (bestS.mm === 0 || tie) return;
+
+	// Only the legacy params the merged signature dropped to "unknown" are ours
+	// to report (clean merged params are covered by the named-arg loop / INV107),
+	// and only scalar / scalar-union params render a meaningful CE10123.
+	const mergedLossy = (name: string): boolean => {
+		const m = signature.parameters.find((p) => p.name === name);
+		return !m || !m.type || m.type === "unknown";
+	};
+	const reportable = (param: ParameterInfo): boolean => {
+		const raw = param.rawType ? baseOf(String(param.rawType)) : "";
+		return SCALAR_BASE_TYPES.has(raw) || isScalarUnionRaw(raw);
+	};
+	const report = (
+		value: Expression,
+		argType: PineType,
+		param: ParameterInfo,
+	): void => {
+		const desc = v.describeArgForTemplate(value, argType, version);
+		v.addTemplateError({
+			line: value.line,
+			column: value.column,
+			length: 0,
+			message: CE10123_TEMPLATE,
+			severity: DiagnosticSeverity.Error,
+			code: "CE10123",
+			ctx: {
+				argDisplayName: param.name,
+				argUserFriendlyRepresentation: desc.repr,
+				argumentType: desc.typeStr,
+				currentTypeDocStr: param.rawType ?? String(param.type),
+				funId: functionName,
+				typePostfix: "",
+			},
+		});
+	};
+
+	// Report the FIRST reportable mismatch in the resolved overload (TV reports
+	// one, at the offending argument) - positional first, then named.
+	for (let i = 0; i < posCount; i++) {
+		const param = best.parameters[i];
+		if (!param || classify(positionalArgs[i].type, param) >= 0) continue;
+		if (!reportable(param) || !mergedLossy(param.name)) continue;
+		report(positionalArgs[i].arg.value, positionalArgs[i].type, param);
+		return;
+	}
+	for (const [name, prov] of providedArgs) {
+		const param = best.parameters.find((p) => p.name === name);
+		if (!param || classify(prov.type, param) >= 0) continue;
+		if (!reportable(param) || !mergedLossy(name)) continue;
+		report(prov.arg.value, prov.type, param);
+		return;
+	}
+}
+
 export function validateFunctionArguments(
 	v: UnifiedPineValidator,
 	call: CallExpression,
@@ -483,10 +650,7 @@ export function validateFunctionArguments(
 	const args = call.arguments;
 
 	// Build map of provided arguments
-	const providedArgs = new Map<
-		string,
-		{ arg: CallArgument; type: PineType }
-	>();
+	const providedArgs = new Map<string, { arg: CallArgument; type: PineType }>();
 	const positionalArgs: { arg: CallArgument; type: PineType }[] = [];
 
 	for (const arg of args) {
@@ -549,9 +713,7 @@ export function validateFunctionArguments(
 			positionalArgs.length >= 1 &&
 			positionalArgs[0].type !== "unknown"
 		) {
-			const arg0Base = TypeChecker.baseTypeName(
-				String(positionalArgs[0].type),
-			);
+			const arg0Base = TypeChecker.baseTypeName(String(positionalArgs[0].type));
 			const expected = arrayFromExpectedType(arg0Base);
 			if (expected) {
 				for (let i = 1; i < positionalArgs.length; i++) {
@@ -598,6 +760,22 @@ export function validateFunctionArguments(
 	// separately (getPolymorphicReturnType).
 	const functionHasOverloads = hasOverloads(functionName);
 	const checkArgTypes = version === "6";
+
+	// Per-overload arg type-checking for the functions the generic positional
+	// loop bypasses (overloaded - their merged signature has unknown-typed
+	// params). Recovers the legacy drawing-object arg checks (line.new x1/y1
+	// etc). see INV110
+	if (checkArgTypes && functionHasOverloads && !call.recovered) {
+		checkOverloadResolvedArgs(
+			v,
+			call,
+			functionName,
+			signature,
+			positionalArgs,
+			providedArgs,
+			version,
+		);
+	}
 
 	// Collection mutators (array.push/set/insert/unshift/fill, map.put, ...)
 	// type their value/key param as "series <type of the array's/map's
@@ -660,11 +838,15 @@ export function validateFunctionArguments(
 	if (checkArgTypes) {
 		for (let i = 0; i < signature.parameters.length; i++) {
 			const param = signature.parameters[i];
-			const m = /^any (array|map|matrix) type$/.exec(String(param.rawType ?? ""));
+			const m = /^any (array|map|matrix) type$/.exec(
+				String(param.rawType ?? ""),
+			);
 			if (!m) continue;
 			const provided = providedArgs.get(param.name) ?? positionalArgs[i];
 			if (!provided) continue;
-			if (!SCALAR_BASE_TYPES.has(TypeChecker.baseTypeName(String(provided.type)))) {
+			if (
+				!SCALAR_BASE_TYPES.has(TypeChecker.baseTypeName(String(provided.type)))
+			) {
 				continue;
 			}
 			const docStr =
@@ -769,6 +951,63 @@ export function validateFunctionArguments(
 					argUserFriendlyRepresentation: desc.repr,
 					argumentType: desc.typeStr,
 					currentTypeDocStr: param.rawType ?? String(param.type),
+					funId: functionName,
+					typePostfix: "",
+				},
+			});
+		}
+	}
+
+	// CE10123: a `simple <special-enum>` param (request.security's
+	// `lookahead: simple barmerge_lookahead`, scale_type, ...) fed a
+	// series-qualified arg. INV088 covers `simple <scalar>`; the special enum
+	// types collapse to "unknown" in mapToPineType, so neither the generic loop
+	// nor INV088 sees them, and the ARG's base is unknown too. exprQualifier
+	// proves the arg promotes to series (a ternary over a series condition);
+	// the arg base IS the param's special type (just series-qualified), so the
+	// argumentType renders as `series <param-base>` (matching TV). A const /
+	// simple / input arg (a bare `barmerge.lookahead_on`) is left alone. see
+	// INV113
+	if (checkArgTypes) {
+		for (let i = 0; i < signature.parameters.length; i++) {
+			const param = signature.parameters[i];
+			const raw = (param.rawType ?? "").trim();
+			const m = raw.match(/^simple\s+([A-Za-z_][A-Za-z0-9_.]*)$/);
+			if (!m || SCALAR_BASE_TYPES.has(m[1])) continue;
+			const provided = providedArgs.get(param.name) ?? positionalArgs[i];
+			if (!provided) continue;
+			const argExpr = provided.arg.value;
+			if (exprQualifier(v, argExpr, version) !== "series") continue;
+			// TV renders a special-enum composite's repr bare ("operator ?:"),
+			// not the string case's `call "operator ?:" (type)` wrapper; a leaf
+			// var/member is rendered by name (probed - variable form "la").
+			let repr: string;
+			if (argExpr.type === "TernaryExpression") {
+				repr = "operator ?:";
+			} else if (
+				argExpr.type === "BinaryExpression" ||
+				argExpr.type === "UnaryExpression"
+			) {
+				repr = `operator ${(argExpr as BinaryExpression | UnaryExpression).operator}`;
+			} else {
+				repr = v.describeArgForTemplate(
+					argExpr,
+					`series ${m[1]}` as PineType,
+					version,
+				).repr;
+			}
+			v.addTemplateError({
+				line: argExpr.line,
+				column: argExpr.column,
+				length: 0,
+				message: CE10123_TEMPLATE,
+				severity: DiagnosticSeverity.Error,
+				code: "CE10123",
+				ctx: {
+					argDisplayName: param.name,
+					argUserFriendlyRepresentation: repr,
+					argumentType: `series ${m[1]}`,
+					currentTypeDocStr: raw,
 					funId: functionName,
 					typePostfix: "",
 				},
@@ -993,11 +1232,7 @@ export function validateFunctionArguments(
 	// sound CE10165. Measured against that overload's own param order, so
 	// ta.highest(10) (the 1-arg form) is fine while matrix.sum(m) flags the
 	// missing id2. see INV056
-	if (
-		checkArgTypes &&
-		!call.recovered &&
-		hasOverloadSignatures(functionName)
-	) {
+	if (checkArgTypes && !call.recovered && hasOverloadSignatures(functionName)) {
 		const minReq = getMinimalRequiredParams(functionName);
 		for (let j = positionalArgs.length; j < minReq.length; j++) {
 			const name = minReq[j];
@@ -1220,6 +1455,80 @@ export function checkConstArgs(
 	}
 }
 
+// Qualifier lattice for arg-qualifier inference: const < input < simple <
+// series (TV's promotion order). see INV112
+const QUALIFIER_NAMES = ["const", "input", "simple", "series"] as const;
+type QualName = (typeof QUALIFIER_NAMES)[number];
+const qrankOf = (q: QualName): number => QUALIFIER_NAMES.indexOf(q);
+
+// Infer the qualifier of an expression (const/input/simple/series), promoting
+// composites to their strongest operand: a ternary or binary over a series
+// operand is series. Returns null when it cannot be determined for ANY leaf,
+// so callers stay conservative (a `true ? "a" : "b"` of all-const leaves is
+// const and must not be flagged; an unresolvable leaf yields null = lenient).
+// see INV112
+export function exprQualifier(
+	v: UnifiedPineValidator,
+	expr: Expression,
+	version: string,
+): QualName | null {
+	switch (expr.type) {
+		case "Literal":
+			return "const";
+		case "Identifier": {
+			const name = (expr as Identifier).name;
+			const info = getBuiltinVarInfo(name);
+			if (info) return info.qualifier as QualName;
+			const sym = v.symbolTable.lookup(name);
+			const symType = sym?.type as string | undefined;
+			const m = symType?.match(/^(series|input|simple|const)[< ]/);
+			if (sym?.kind === "variable" && m) return m[1] as QualName;
+			return null;
+		}
+		case "MemberExpression": {
+			const m = expr as MemberExpression;
+			if (m.object.type !== "Identifier") return null;
+			const name = `${(m.object as Identifier).name}.${m.property.name}`;
+			if (isBuiltinConstant(name)) return "const";
+			const info = getBuiltinVarInfo(name);
+			if (info) return info.qualifier as QualName;
+			return null;
+		}
+		case "CallExpression": {
+			const ce = expr as CallExpression;
+			const name = memberChainName(ce.callee);
+			if (!name) return null;
+			const argTypes = ce.arguments.map((a) =>
+				v.inferExpressionType(a.value, version),
+			);
+			const raw = resolveCallReturnRaw(name, argTypes);
+			const lead = raw?.match(/^(const|input|simple|series)\b/);
+			return lead ? (lead[1] as QualName) : null;
+		}
+		case "UnaryExpression":
+			return exprQualifier(v, (expr as UnaryExpression).argument, version);
+		case "BinaryExpression": {
+			const b = expr as BinaryExpression;
+			const l = exprQualifier(v, b.left, version);
+			const r = exprQualifier(v, b.right, version);
+			if (l === null || r === null) return null;
+			return qrankOf(l) >= qrankOf(r) ? l : r;
+		}
+		case "TernaryExpression": {
+			const t = expr as TernaryExpression;
+			const parts = [t.condition, t.consequent, t.alternate].map((e) =>
+				exprQualifier(v, e, version),
+			);
+			if (parts.some((p) => p === null)) return null;
+			return (parts as QualName[]).reduce((a, b) =>
+				qrankOf(a) >= qrankOf(b) ? a : b,
+			);
+		}
+		default:
+			return null;
+	}
+}
+
 // Decide whether an argument expression is PROVABLY non-const, and if so
 // describe it (argumentType + user-friendly repr) for the CE10123 message.
 // Deliberately conservative: returns null whenever we can't be certain
@@ -1291,6 +1600,28 @@ export function describeNonConstArg(
 				return { typeStr: `${info.qualifier} ${info.base}`, repr: name };
 			}
 			return null;
+		}
+		// Composite args (`close > 0 ? "a" : "b"`, `close > 0`): provably
+		// non-const when the inferred qualifier promotes above const. TV renders
+		// these as `call "operator ?:" (series string)` / `call "operator >"
+		// (series bool)`. A const composite (`true ? "a" : "b"`) yields "const"
+		// and is left alone. see INV112
+		case "TernaryExpression":
+		case "BinaryExpression": {
+			const q = exprQualifier(v, expr, version);
+			if (!q || q === "const") return null;
+			const base = TypeChecker.baseTypeName(
+				String(v.inferExpressionType(expr, version)),
+			);
+			if (base === "unknown") return null;
+			const op =
+				expr.type === "TernaryExpression"
+					? "?:"
+					: (expr as BinaryExpression).operator;
+			return {
+				typeStr: `${q} ${base}`,
+				repr: `call "operator ${op}" (${q} ${base})`,
+			};
 		}
 		default:
 			return null;
