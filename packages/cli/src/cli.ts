@@ -16,8 +16,10 @@ import { SemanticAnalyzer } from "../../core/src/parser/semanticAnalyzer";
 // Replaced by esbuild's `define` at build time (see scripts/build-extension.js).
 // Falls back to "dev" if the file is run outside the bundle (e.g. via ts-node).
 declare const __BUILD_TIME__: string;
+declare const __VERSION__: string;
 const BUILD_TIME =
 	typeof __BUILD_TIME__ !== "undefined" ? __BUILD_TIME__ : "dev";
+const VERSION = typeof __VERSION__ !== "undefined" ? __VERSION__ : "dev";
 
 const HELP = `Usage: pine-lint [options] [file.pine]
 
@@ -32,7 +34,7 @@ Options:
   -H, --human               Human-readable output: one "file:line:col: severity: message"
                             line per finding plus a summary, instead of the JSON
                             payload. Exits 1 when there are errors. Works with --tv.
-  -V, --version             Print the build timestamp and exit
+  -V, --version             Print the version and build timestamp and exit
   -h, --help                Show this help and exit
 
 Input sources (pick one):
@@ -250,7 +252,7 @@ async function main() {
 	}
 
 	if (parsed.version) {
-		console.log(BUILD_TIME);
+		console.log(`pine-lint ${VERSION} (built ${BUILD_TIME})`);
 		process.exit(0);
 	}
 

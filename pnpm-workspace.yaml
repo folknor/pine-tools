@@ -3,6 +3,8 @@ allowBuilds:
   esbuild: true
   keytar: true
   puppeteer: true
+minimumReleaseAgeExclude:
+  - '@types/node@26.0.1'
 onlyBuiltDependencies:
   - '@vscode/vsce-sign'
   - esbuild

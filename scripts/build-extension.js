@@ -33,6 +33,17 @@ for (const file of fs.readdirSync(pineDataSrc)) {
 	}
 }
 
+// Release stamp. Both values are injected into every bundle via esbuild
+// `define` so any entry point can report `__VERSION__` (the package.json
+// semver) and `__BUILD_TIME__` (when this binary was produced, builder's
+// local timezone, second granularity).
+const pkgVersion = require("../package.json").version;
+const buildTime = (() => {
+	const d = new Date();
+	const pad = (n) => String(n).padStart(2, "0");
+	return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+})();
+
 // Common build options
 const commonOptions = {
 	bundle: true,
@@ -42,6 +53,10 @@ const commonOptions = {
 	sourcemap: !production,
 	minify: production,
 	treeShaking: true,
+	define: {
+		__VERSION__: JSON.stringify(pkgVersion),
+		__BUILD_TIME__: JSON.stringify(buildTime),
+	},
 };
 
 // Build the extension client
@@ -68,14 +83,9 @@ const mcpConfig = {
 	external: [], // Bundle everything for the MCP server
 };
 
-// Build the CLI. __BUILD_TIME__ is replaced at bundle time so `pine-lint
-// --version` reports when this binary was produced, in the builder's local
-// timezone (second granularity).
-const buildTime = (() => {
-	const d = new Date();
-	const pad = (n) => String(n).padStart(2, "0");
-	return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-})();
+// Build the CLI. __VERSION__ / __BUILD_TIME__ are injected via commonOptions
+// so `pine-lint --version` reports the package version and when this binary
+// was produced.
 const cliConfig = {
 	...commonOptions,
 	entryPoints: ["packages/cli/src/cli.ts"],
@@ -83,9 +93,6 @@ const cliConfig = {
 	external: [],
 	banner: {
 		js: "#!/usr/bin/env node",
-	},
-	define: {
-		__BUILD_TIME__: JSON.stringify(buildTime),
 	},
 };
 
