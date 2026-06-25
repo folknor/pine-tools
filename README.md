@@ -1,139 +1,51 @@
 # pine-tools
 
-Pine Script v6 support for VS Code. Syntax highlighting, IntelliSense, diagnostics.
+Unofficial Pine Script v6 tooling: a VS Code extension, a `pine-lint` CLI, an
+LSP server, and an MCP server, plus the generated language data behind them.
 
-Also contains a pinescript LSP, pinescript MCP, CLI pinescript linter, and other tools.
+The linter aims to be MORE correct than TradingView's own pine-lint: it catches
+what TV catches and things TV misses (TV stops at the first error, misattributes
+some failures, and accepts some nonsense expressions). See [AGENTS.md](AGENTS.md)
+for the methodology. Built with LLMs in a clean-room process; see
+[LLM.md](LLM.md).
 
-Built with LLMs. See [LLM.md](LLM.md).
+## What you get
 
-
-## Requirements
-
-- VS Code 1.108+
-- Node 22.18+
-- pnpm
+- VS Code extension: syntax highlighting, IntelliSense (475 functions, 162
+  variables, 237 constants), real-time diagnostics, hover docs, go-to-definition,
+  rename, formatting, and inlay hints.
+- pine-lint: a self-contained CLI that validates a `.pine` file (or stdin), with
+  an optional `--tv` mode that returns TradingView's own verdict.
+- LSP server: the same language features for any editor that speaks LSP.
+- MCP server: the language service exposed to AI assistants.
 
 ## Install
 
-```
-pnpm install
-pnpm run build
-```
+Grab the prebuilt artifacts from the latest
+[release](https://github.com/folknor/pine-tools/releases):
 
-## Build
+- `pine-tools-<version>.vsix` - the VS Code extension. Install with
+  `code --install-extension pine-tools-<version>.vsix`, or the Extensions view's
+  "Install from VSIX...".
+- `pine-lint` - a single executable Node script. Put it on your PATH and run
+  `pine-lint file.pine`.
 
-```
-pnpm run build          # dev build
-pnpm run build:prod     # production build
-pnpm run package        # create .vsix
-```
-
-Output goes to `dist/`.
-
-## Use Locally
-
-Build it first:
+Or build from source (Node 22.18+, pnpm):
 
 ```
 pnpm install
-pnpm run build
-```
-
-Then symlink to VS Code extensions dir:
-
-```
-ln -s $(pwd) ~/.vscode/extensions/pine-tools
-```
-
-Or package and install:
-
-```
-pnpm run package
-code --install-extension dist/pine-tools-*.vsix
-```
-
-Reload VS Code window after install. Use `pnpm run watch` for live development.
-
-## Test
-
-```
-pnpm test
-```
-
-## CLI
-
-```
-node dist/packages/cli/src/cli.js file.pine
-```
-
-Or after install:
-
-```
-pine-validate file.pine
-```
-
-## LSP Server
-
-```
-node dist/packages/lsp/bin/pine-lsp.js --stdio
-```
-
-For editors that speak Language Server Protocol.
-
-## MCP Server
-
-```
-node dist/packages/mcp/bin/pine-mcp.js
-```
-
-For AI assistants. See `packages/mcp/README.md`.
-
-## Library Imports
-
-Pine libraries (`import User/Library/Version`) have no discoverable source. Use `/// @source` to enable IntelliSense:
-
-```pine
-/// @source ./libs/my-library.pine
-import User/MyLibrary/1 as myLib
-
-x = myLib.myFunction(close)  // completions, hover, go-to-definition
-```
-
-Place the directive immediately before the import. Path is relative to current file.
-
-## Structure
-
-```
-packages/
-  core/               parser, analyzer
-  language-service/   editor-agnostic API
-  cli/                command-line validator
-  lsp/                language server
-  mcp/                model context protocol server
-  vscode/             extension client
-
-pine-data/v6/         function signatures, constants
-syntaxes/             TextMate grammar
-```
-
-## Data Pipeline
-
-Regenerate language data from crawling and scraping TradingView.com docs:
-
-```
-pnpm run crawl
-pnpm run scrape
-pnpm run generate
-pnpm run generate:syntax
+pnpm run package         # build dist/pine-tools-<version>.vsix
+pnpm run install:cli     # build and install pine-lint to ~/.local/bin
 ```
 
 ## License
 
-MIT
+MIT. See [LICENSE](LICENSE).
 
 ## Credits
 
-Original barebones vscode extension by Jaroslav Pantsjoha. Completely rewritten by folknor.
+Original barebones VS Code extension by Jaroslav Pantsjoha. Completely rewritten
+by folknor.
 
 ## Acknowledgements
 

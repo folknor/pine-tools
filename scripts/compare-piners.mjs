@@ -20,7 +20,7 @@ const DEFAULT_INPUTS = [
 	join(REPO_ROOT, "fixtures"),
 	join(REPO_ROOT, "pine-data/tests"),
 	join(REPO_ROOT, "vendor"),
-	join(REPO_ROOT, "adaptive-session-filter.pine"),
+	join(REPO_ROOT, "samples"),
 ];
 
 const args = process.argv.slice(2).filter((a) => a !== "--");
