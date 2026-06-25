@@ -11,6 +11,7 @@ import type {
 	CallExpression,
 	Expression,
 	ExpressionStatement,
+	FunctionDeclaration,
 	FunctionParam,
 	Identifier,
 	IfExpression,
@@ -24,6 +25,7 @@ import type {
 	SwitchExpression,
 	TernaryExpression,
 	TupleDeclaration,
+	TypeDeclaration,
 	UnaryExpression,
 } from "../parser/ast";
 import {
@@ -267,6 +269,15 @@ export class UnifiedPineValidator {
 	// 2026-06-25, see INV086 overload-sibling-dispatch). The self-recursion
 	// check below therefore only fires for names declared exactly once.
 	private overloadedFunctionNames: Set<string> = new Set();
+	// Per-name list of the param signatures declared so far, for the
+	// redefinition check: two same-arity declarations whose params are not
+	// distinguishable by explicit type are TV's CE10110/CE10112/CE10113. see
+	// INV091
+	private functionDeclSignatures: Map<string, FunctionParam[][]> = new Map();
+	// Loop-nesting depth (for/for-in/while). `break`/`continue` outside any loop
+	// are TV's CE10135/CE10136. Distinct from blockDepth, which also counts
+	// if-blocks (where break IS allowed if a loop encloses them). see INV092
+	private loopDepth = 0;
 
 	constructor(
 		private readonly localLibraryExportsBySourcePath: Map<string, Set<string>> = new Map(),
@@ -292,6 +303,8 @@ export class UnifiedPineValidator {
 		this.declScopes = [new Set()];
 		this.currentFunctionName = null;
 		this.overloadedFunctionNames.clear();
+		this.functionDeclSignatures.clear();
+		this.loopDepth = 0;
 
 		// Pre-pass: tally top-level function declarations so overloaded names
 		// (declared 2+ times) are known regardless of source order. The
@@ -990,9 +1003,28 @@ export class UnifiedPineValidator {
 				break;
 			}
 
-			case "ExpressionStatement":
+			case "ExpressionStatement": {
+				// `break`/`continue` parse as a bare Identifier statement; outside
+				// any loop they are TV's CE10135/CE10136. see INV092
+				const stmtExpr = statement.expression;
+				if (
+					version === "6" &&
+					this.loopDepth === 0 &&
+					stmtExpr.type === "Identifier" &&
+					(stmtExpr.name === "break" || stmtExpr.name === "continue")
+				) {
+					this.addTemplateError({
+						line: stmtExpr.line,
+						column: stmtExpr.column,
+						length: stmtExpr.name.length,
+						message: `"${stmtExpr.name}" is only allowed inside loops.`,
+						severity: DiagnosticSeverity.Error,
+						code: stmtExpr.name === "break" ? "CE10135" : "CE10136",
+					});
+				}
 				this.validateExpression(statement.expression, version);
 				break;
+			}
 
 			case "FunctionDeclaration": {
 				// First, infer the function return type from the body
@@ -1019,6 +1051,10 @@ export class UnifiedPineValidator {
 					statement.params,
 				);
 				if (tupleTypes) this.recordUdfTupleReturn(statement.name, tupleTypes);
+
+				// Redefinition: a same-arity declaration not distinguishable by
+				// explicit param types is illegal (CE10110/10112/10113). see INV091
+				this.checkFunctionRedefinition(statement, version);
 
 				// Register the function in the symbol table at the outer scope
 				this.declaredFunctionNames.add(statement.name); // see INV036
@@ -1148,6 +1184,7 @@ export class UnifiedPineValidator {
 				// For loops create a new scope and define the iterator variable
 				this.symbolTable.enterScope();
 				this.blockDepth++;
+				this.loopDepth++; // break/continue allowed below here. see INV092
 
 				// The for-in ELEMENT variable (single form's iterator, or
 				// `iterator2` of `for [index, value] in`) carries the
@@ -1240,6 +1277,7 @@ export class UnifiedPineValidator {
 
 				this.symbolTable.exitScope();
 				this.blockDepth--;
+				this.loopDepth--;
 				break;
 			}
 
@@ -1265,6 +1303,7 @@ export class UnifiedPineValidator {
 				}
 				this.symbolTable.enterScope();
 				this.blockDepth++;
+				this.loopDepth++; // break/continue allowed below here. see INV092
 				this.pushDeclScope();
 				for (const stmt of statement.body) {
 					this.validateStatement(stmt, version);
@@ -1272,6 +1311,7 @@ export class UnifiedPineValidator {
 				this.popDeclScope();
 				this.symbolTable.exitScope();
 				this.blockDepth--;
+				this.loopDepth--;
 				break;
 
 			case "ReturnStatement":
@@ -1526,6 +1566,7 @@ export class UnifiedPineValidator {
 			case "TypeDeclaration": {
 				if (statement.type === "TypeDeclaration") {
 					this.registerTypeDeclaration(statement);
+					this.checkTypeFieldDefaults(statement, version);
 				} else {
 					this.declaredTypeNames.add(statement.name); // see INV033
 					this.declaredEnumNames.add(statement.name); // see INV048
@@ -1577,9 +1618,50 @@ export class UnifiedPineValidator {
 	private checkUdtFieldAccess(expr: MemberExpression, version: string): void {
 		if (version !== "6") return;
 		const receiverType = this.resolveUdtExpressionType(expr.object);
-		if (!receiverType) return;
-		const fields = this.udtFieldTypes.get(TypeChecker.baseTypeName(receiverType));
-		if (!fields || fields.has(expr.property.name)) return;
+		if (receiverType) {
+			const fields = this.udtFieldTypes.get(
+				TypeChecker.baseTypeName(receiverType),
+			);
+			if (!fields || fields.has(expr.property.name)) return;
+			this.emitNoField(expr);
+			return;
+		}
+		// Field access on a scalar value (`close.foo`) - scalars have no fields,
+		// so any member read is TV's CE10198. Restricted to a plain IDENTIFIER
+		// receiver: inferring a deep-namespace member object (`strategy.commission`)
+		// would surface its own "Undeclared identifier" as a side effect, and a
+		// scalar sub-expression receiver is vanishingly rare. Guard against
+		// namespace/type/enum names (`color.red`, `math.pi`, `chart.point`),
+		// which are not scalar VALUES. see INV093
+		const obj = expr.object;
+		if (obj.type !== "Identifier") return;
+		const n = obj.name;
+		if (
+			KNOWN_NAMESPACES.includes(n) ||
+			TYPE_NAMES.has(n) ||
+			this.declaredTypeNames.has(n) ||
+			this.declaredEnumNames.has(n) ||
+			this.importedNamespaces.has(n)
+		) {
+			return;
+		}
+		const objBase = TypeChecker.baseTypeName(
+			this.inferExpressionType(obj, version) as string,
+		);
+		if (
+			objBase === "int" ||
+			objBase === "float" ||
+			objBase === "bool" ||
+			objBase === "string" ||
+			objBase === "color"
+		) {
+			this.emitNoField(expr);
+		}
+	}
+
+	// TV's CE10198 "Object has no field X", anchored at the member expression
+	// with the field name's length, deduped per property occurrence. see INV093
+	private emitNoField(expr: MemberExpression): void {
 		const key = `${expr.property.line}:${expr.property.column}:${expr.property.name}`;
 		if (this.reportedUdtFieldErrors.has(key)) return;
 		this.reportedUdtFieldErrors.add(key);
@@ -1590,6 +1672,45 @@ export class UnifiedPineValidator {
 			`Object has no field ${expr.property.name}`,
 			DiagnosticSeverity.Error,
 		);
+	}
+
+	// UDT field default value type check (CE10170): a literal default must be
+	// assignable to the field's declared type - int->float widening is fine, but
+	// float->int narrowing (and any base mismatch) is rejected (the INV087
+	// element rule). The parser captures only literal defaults; non-literals stay
+	// lenient. v6 only (G004). see INV094
+	private checkTypeFieldDefaults(
+		statement: TypeDeclaration,
+		version: string,
+	): void {
+		if (version !== "6" || !statement.fields) return;
+		for (const field of statement.fields) {
+			if (!field.defaultValue || !field.typeAnnotation) continue;
+			const fb = TypeChecker.baseTypeName(field.typeAnnotation.name);
+			if (fb !== "int" && fb !== "float" && fb !== "bool" && fb !== "string") {
+				continue; // color/array/map/UDT field defaults -> lenient
+			}
+			const defType = this.inferExpressionType(field.defaultValue, version);
+			if (elementArgAssignable(defType, fb)) continue;
+			const desc = this.describeArgForTemplate(
+				field.defaultValue,
+				defType,
+				version,
+			);
+			this.addTemplateError({
+				line: field.line ?? statement.line,
+				column: field.column ?? statement.column,
+				length: field.name.length,
+				message:
+					"Default value of type {defValTypeExpression} can not be assigned to an argument of type {explicitType}",
+				severity: DiagnosticSeverity.Error,
+				code: "CE10170",
+				ctx: {
+					defValTypeExpression: desc.typeStr,
+					explicitType: `series ${fb}`,
+				},
+			});
+		}
 	}
 
 	private inferReceiverMethodReturn(
@@ -2290,6 +2411,82 @@ export class UnifiedPineValidator {
 	// and no trailing period - matched to TV's raw template. see INV090
 	private static readonly CE10122_TEMPLATE =
 		'Cannot call "{funId}" with argument "{argDisplayName}"="{argUserFriendlyRepresentation}". An argument of "{argumentType}" type was used but one from "{expectedType}" is expected';
+
+	// Function redefinition (CE10110/10112/10113). Two declarations of the same
+	// name with the same arity are illegal unless some parameter position is
+	// "distinct" - both typed with different types, or exactly one typed (an
+	// untyped param is "undetermined", distinct from any concrete type). Methods
+	// need no special-casing: their typed receiver distinguishes same-named
+	// methods on different types. v6 only (G004). see INV091
+	private checkFunctionRedefinition(
+		statement: FunctionDeclaration,
+		version: string,
+	): void {
+		if (version !== "6") return;
+		const name = statement.name;
+		let sigs = this.functionDeclSignatures.get(name);
+		if (!sigs) {
+			sigs = [];
+			this.functionDeclSignatures.set(name, sigs);
+		}
+		const cur = statement.params;
+		for (const prev of sigs) {
+			if (prev.length !== cur.length) continue; // different arity -> legal
+			let distinct = false;
+			for (let i = 0; i < cur.length; i++) {
+				const a = prev[i].typeAnnotation?.name;
+				const b = cur[i].typeAnnotation?.name;
+				const aTyped = a != null;
+				const bTyped = b != null;
+				if (aTyped !== bTyped || (aTyped && bTyped && a !== b)) {
+					distinct = true;
+					break;
+				}
+			}
+			if (distinct) continue; // a valid overload
+			// Redefinition. TV anchors at the '(' after the name; code by typing.
+			const column = statement.column + name.length;
+			if (cur.length === 0) {
+				this.addTemplateError({
+					line: statement.line,
+					column,
+					length: 1,
+					message:
+						'Function "{functionName}" already defined. Either the type or the number of required parameters in overloaded versions of functions must be different.',
+					severity: DiagnosticSeverity.Error,
+					code: "CE10112",
+					ctx: { functionName: name },
+				});
+			} else if (
+				cur.every((p) => p.typeAnnotation?.name != null) &&
+				prev.every((p) => p.typeAnnotation?.name != null)
+			) {
+				this.addTemplateError({
+					line: statement.line,
+					column,
+					length: 1,
+					message:
+						'The "{functionName}" function has overloads with the same parameters. The type of parameters must be different in overloaded versions of functions.',
+					severity: DiagnosticSeverity.Error,
+					code: "CE10110",
+					ctx: { functionName: name },
+				});
+			} else {
+				this.addTemplateError({
+					line: statement.line,
+					column,
+					length: 1,
+					message:
+						'Function "{functionName}" already defined. The "{functionName1}" function has overloads using the same number of required parameters without them having distinct types. Function overloads with the same number of required parameters must have explicit parameter types that are unique among overloads.',
+					severity: DiagnosticSeverity.Error,
+					code: "CE10113",
+					ctx: { functionName: name, functionName1: name },
+				});
+			}
+			break; // one error per redefinition
+		}
+		sigs.push(cur);
+	}
 
 	// Render an internal PineType in TV's qualified display form ("series
 	// float"). Our lattice collapses const/input/simple to the bare base, so a

@@ -1,0 +1,17 @@
+// @test regression/udt-field-default-type
+// @description A UDT field's literal default must be assignable to the field's declared type (TV CE10170). float into an int field is a narrowing and is rejected; int into a float field is a widening and is fine; an exact-base default is fine. The parser now captures literal defaults (previously discarded) so the checker can type them. Probed 2026-06-25 via pine-lint --tv, see INV094.
+// @expects parse: success
+// @expects error: line=4, message=/Default value of type literal float can not be assigned to an argument of type series int/
+// @expects error: line=5, message=/Default value of type literal int can not be assigned to an argument of type series string/
+// @expects errors: 2
+
+//@version=6
+indicator("udt-field-default-type")
+type T
+    int x = 1.5
+    string b = 1
+    float a = 5
+    int ok = 3
+    bool okb = true
+t = T.new()
+plot(t.x + t.a + t.ok)

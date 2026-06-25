@@ -611,3 +611,18 @@ contradiction means re-measure, not "the earlier author was wrong."
   consistency (`array.from(1, "two", 3.0)` -> CE10122); arg0 fixes the element
   type, first incompatible later arg flagged in the variadic branch, numerics
   unify, v6-only. freedom FINDINGS D-005.
+- [INV091](INV091-function-redefinition/notes.md) - function redefinition
+  (CE10110/10112/10113); same-arity declarations not distinguishable by explicit
+  param type are illegal, three codes by typing, legal overloads stay clean.
+  freedom FINDINGS L-003.
+- [INV092](INV092-break-continue-outside-loop/notes.md) - break/continue outside
+  a loop (CE10135/10136); loopDepth tracker (distinct from blockDepth so in-loop
+  if-bodies stay clean). freedom FINDINGS F-035.
+- [INV093](INV093-field-access-non-udt/notes.md) - field access on a scalar
+  (`close.foo` -> CE10198 "Object has no field"); extends checkUdtFieldAccess to
+  scalar Identifier receivers (Identifier-only - inferring deep-namespace member
+  objects side-effects "Undeclared identifier"). freedom FINDINGS F-034.
+- [INV094](INV094-udt-field-default-type/notes.md) - UDT field literal default
+  type (`int x = 1.5` -> CE10170); parser now captures literal defaults (was
+  discarded), checker types them with the INV087 element rule. freedom FINDINGS
+  L-002.

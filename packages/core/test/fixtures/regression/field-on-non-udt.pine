@@ -1,0 +1,16 @@
+// @test regression/field-on-non-udt
+// @description A scalar value has no fields, so a member read like `close.foo` is TV's CE10198 "Object has no field foo". Valid member access stays clean: namespace members (color.red, math.pi), and UDT field reads (pt.x). Restricted to a plain Identifier receiver so deep-namespace members (strategy.commission.*) are untouched. Probed 2026-06-25 via pine-lint --tv, see INV093.
+// @expects parse: success
+// @expects error: line=3, message=/Object has no field foo/
+// @expects errors: 1
+
+//@version=6
+indicator("field-on-non-udt")
+y = close.foo
+c = color.red
+p = math.pi
+type Pt
+    float x
+pt = Pt.new()
+v = pt.x
+plot(p + v, color = c)

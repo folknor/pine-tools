@@ -1,0 +1,7 @@
+//@version=6
+// Probe (pine-lint --tv, 2026-06-25): CE10198 @ 3:5 -
+// "Object has no field foo" (ctx.fieldName = "foo").
+// Clean controls: color.red, math.pi, ta.sma(...), and UDT field reads (pt.x).
+indicator("s")
+y = close.foo
+plot(y)

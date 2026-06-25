@@ -1,0 +1,8 @@
+//@version=6
+// Probes (pine-lint --tv, 2026-06-25):
+//   break (line 3)    -> CE10135 @ 3:1 "break is only allowed inside loops."
+//   continue (line 3) -> CE10136 @ 3:1 "continue is only allowed inside loops."
+// Inside a for/while body (even nested in an if): clean.
+indicator("s")
+break
+plot(close)

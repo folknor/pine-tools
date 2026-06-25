@@ -65,6 +65,10 @@ export interface TypeField {
 	typeAnnotation?: TypeAnnotation;
 	line?: number;
 	column?: number;
+	// Literal default (`int x = 1.5`), captured so the checker can type-check it
+	// against the field type (CE10170). Only literal defaults are captured;
+	// non-literal defaults stay undefined. see INV094
+	defaultValue?: Expression;
 }
 
 export interface EnumDeclaration extends ASTNode {

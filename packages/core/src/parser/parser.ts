@@ -2028,11 +2028,45 @@ export class Parser {
 		) {
 			return null;
 		}
+		// Capture a LITERAL default (`int x = 1.5`) so the checker can type-check
+		// it against the field type (CE10170). Non-literal defaults stay
+		// undefined - left lenient. see INV094
+		let defaultValue: AST.Expression | undefined;
+		const eqTok = this.tokens[i + 1];
+		const valTok = this.tokens[i + 2];
+		if (eqTok?.type === TokenType.ASSIGN && eqTok.value === "=" && valTok) {
+			if (valTok.type === TokenType.NUMBER) {
+				defaultValue = {
+					type: "Literal",
+					value: Number(valTok.value),
+					raw: valTok.value,
+					line: valTok.line,
+					column: valTok.column,
+				};
+			} else if (valTok.type === TokenType.STRING) {
+				defaultValue = {
+					type: "Literal",
+					value: valTok.value,
+					raw: valTok.value,
+					line: valTok.line,
+					column: valTok.column,
+				};
+			} else if (valTok.type === TokenType.BOOL) {
+				defaultValue = {
+					type: "Literal",
+					value: valTok.value === "true",
+					raw: valTok.value,
+					line: valTok.line,
+					column: valTok.column,
+				};
+			}
+		}
 		return {
 			name: fieldToken.value,
 			typeAnnotation: { name: typeName },
 			line: fieldToken.line,
 			column: fieldToken.column,
+			defaultValue,
 		};
 	}
 

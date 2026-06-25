@@ -1,0 +1,19 @@
+// @test regression/break-continue-outside-loop
+// @description break/continue parse as a bare Identifier statement; outside any loop they are TV's CE10135/CE10136 ("... is only allowed inside loops."). Inside a for/while body - including nested inside an if within the loop - they stay clean (loopDepth, not blockDepth, gates this). Probed 2026-06-25 via pine-lint --tv, see INV092.
+// @expects parse: success
+// @expects error: line=3, message=/"break" is only allowed inside loops/
+// @expects error: line=4, message=/"continue" is only allowed inside loops/
+// @expects errors: 2
+
+//@version=6
+indicator("break-continue-outside-loop")
+break
+continue
+for i = 0 to 3
+    if i > 1
+        break
+    else
+        continue
+while close > open
+    break
+plot(close)

@@ -1,0 +1,10 @@
+//@version=6
+// Probe (pine-lint --tv, 2026-06-25): CE10170 @ 4:5 -
+// "Default value of type literal float can not be assigned to an argument
+//  of type series int". (string b = 1 -> literal int / series string.)
+// Clean: float a = 5 (int->float widen), int ok = 3, bool okb = true.
+indicator("s")
+type T
+    int x = 1.5
+t = T.new()
+plot(t.x)

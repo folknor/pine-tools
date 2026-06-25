@@ -1,0 +1,12 @@
+//@version=6
+// Probes (pine-lint --tv, 2026-06-25). Each pair is the second decl's anchor:
+//   f()/f()         -> CE10112 @ 5:2 (arity 0)
+//   f(x)/f(x)       -> CE10113 @ 5:2 (same arity, untyped)
+//   f(int x)/f(int y) -> CE10110 @ 5:2 (same explicit type)
+// Legal (clean): f(int x)/f(string x); f(int x)/f(x); f(x)/f(x, y).
+indicator("s")
+f() =>
+    1
+f() =>
+    2
+plot(f())

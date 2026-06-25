@@ -1,0 +1,25 @@
+// @test regression/function-redefinition
+// @description Two declarations of the same name with the same arity are illegal unless distinguishable by explicit param type. TV uses three codes: CE10112 (arity 0), CE10113 (same arity, untyped), CE10110 (same arity, same explicit type). A typed-vs-untyped pair, different explicit types, or different arity are legal overloads and stay clean. Probed 2026-06-25 via pine-lint --tv, see INV091.
+// @expects parse: success
+// @expects error: line=5, message=/Function "f" already defined.*number of required parameters in overloaded/
+// @expects error: line=9, message=/Function "g" already defined.*without them having distinct types/
+// @expects error: line=13, message=/The "h" function has overloads with the same parameters/
+// @expects errors: 3
+
+//@version=6
+indicator("function-redefinition")
+f() =>
+    1
+f() =>
+    2
+g(x) =>
+    x
+g(x) =>
+    x + 1
+h(int a) =>
+    a
+h(int b) =>
+    b
+k(int x) => x
+k(string x) => 0
+plot(f() + g(1) + h(2) + k(3))
