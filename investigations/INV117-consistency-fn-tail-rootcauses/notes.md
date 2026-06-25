@@ -51,19 +51,25 @@ Family 3 (its `stClose[1]` index must count), so it stays doubly-blocked.
 
 ## Family 2 - library-body history-dependence (no body available)
 
-These call into imported LIBRARY functions/methods whose bodies we do not have
-(only export signatures via `pine-data/v6/libraries.json`):
-- `6293fd71` `cust_series` = `col.cust_series(...)` (library `col`).
+These are history-dependent via a call whose body we cannot analyze:
+- `6293fd71` `cust_series` = `col.cust_series(...)`, library
+  `jason5480/series_collection/4` - which IS vendored. So this one is attackable
+  by a library-body history pass; and since INV117 Family 1 already makes its
+  gate (`if stClose > stOpen`) series, the body-history pass is the ONLY
+  remaining blocker. A real sub-project (extend `generate:libraries` to record a
+  per-export history-dependence flag + checker import resolution).
 - `b369d637` `scan` is history-dependent via `zigzag.calculate()`, `zigzag` a
-  `zg.Zigzag` (library type method).
-- `db76cf79` `FindST` indexes only builtins (`high[1]`); its history-dependence
-  comes from `high[helper.SkipEQHigh(2)]` (library `helper`) and/or `MS.Add`.
-  Probed: array mutation alone (`MS.ST.unshift`) does NOT make a method
-  history-dependent (TV silent), so it is the library call.
-
-Attackable ONLY for vendored libs by scanning vendored bodies for `[]` /
-history-dependent calls - a real sub-project, and these specific libs may not be
-vendored.
+  `zg.Zigzag` from `Trendoscope/ZigzagLite/3`. **PERMANENTLY BLOCKED**:
+  Trendoscope libs are CC-BY-NC, on the deliberate license-exclusion list (TODO
+  #41/#53, 7 CC-BY-NC Trendoscope libs), so the source cannot be vendored. No
+  engineering resolves a missing-source-by-license constraint - this single FN
+  makes "fix ALL 9" impossible.
+- `db76cf79` `FindST` is fully LOCAL (no imports; `helper` is a local `Helper`
+  UDT, `MS` a local `MarketStructure`). But its leaves do not trip our criterion
+  OR the probes: `SkipEQHigh` only indexes the BUILTIN `high[i]` (silent per
+  probe), `MS.Add` only mutates arrays (`MS.ST.unshift`, silent per probe). TV
+  warns `FindST` for a reason neither our model nor isolated probes reproduce -
+  criterion still unknown.
 
 ## Family 3 - indexing a USER-defined global series var (criterion correction)
 
