@@ -40,6 +40,39 @@ IDs so the two stay in sync.
   untyped in mapToPineType because typing them surfaces line-returning
   UDFs mis-inferred as series<float> - 58 corpus FPs in the reverted
   attempt).
+
+  **Concrete plan - per-call-site arg-qualifier propagation (the shared
+  infrastructure).** Today the analysis is call-site INSENSITIVE: a UDF's
+  param qualifier comes from its type annotation alone (`withSeriesParams`
+  in `semanticAnalyzer.ts`; typed-unqualified -> series, untyped ->
+  undetermined per INV114 Fix 2), never from the arguments actually passed.
+  TV monomorphizes per call site; we don't. That single gap drives both the
+  consistency-warning FPs and FNs (#61) and the INV014/INV016 gate
+  conservatism.
+  - **Phase 1 - call-site arg-qualifier collection (tractable, FP-reducing,
+    TV-backed).** Add a pre-pass that, per UDF, gathers every call site and
+    unions each argument's inferred qualifier; `withSeriesParams` then keys
+    off that union (a param is series only if some call site passes a series
+    arg) instead of the annotation. Fixes the ~11 typed-param consistency
+    FPs (#61: `draw_lbl` etc., TYPED-param UDFs only ever called with
+    non-series args) and lets INV014/INV016 drop their UDF-return / user-var
+    gates. Only REMOVES warnings TV doesn't emit, so low new-FP risk if the
+    unknown-arg path stays conservative (current behavior). Hard sub-problem:
+    an arg's qualifier can depend on the ENCLOSING function's param (UDF
+    called inside a UDF) -> needs fixpoint / topological resolution over the
+    call graph with recursion guards; first cut resolves only directly-
+    inferable args and stays conservative otherwise.
+  - **Phase 2 - history through reassigned globals / library data flow
+    (lower confidence).** Extend Phase 1 to propagate history-dependence
+    through arguments and library-tainted globals (#61: `getTrendLineScore` -
+    `highSource` reassigned from history-dependent `ca.macandles`/`hacandles`
+    exports, zigzag-derived arrays into `array.min` into the loop bound).
+    Needs a fresh probe round FIRST to pin TV's exact criterion: reassigning
+    a global to a history-dependent series (`ta.sma`) alone was probed silent
+    (INV119, 2026-06-26), so the trigger is subtler than "taint on reassign".
+  - Validate each step against the warning sweep (`lint:failures` ->
+    `lint:categorize`); FindST stays documented-as-blocked (criterion
+    unreproducible, must not gate the rest).
 - **#18 (residual) - pine-lint's variable-list output
   (`astExtractor.ts`) labels some built-in color constants
   `"undetermined type"`.** A display-path quirk, cosmetic, not a
@@ -367,8 +400,9 @@ IDs so the two stay in sync.
     leaves only index builtins / mutate arrays, both probed silent). See INV117.
   - ~11 consistency FPs on TV-clean files (TYPED-param UDFs called only with
     NON-series args, `draw_lbl` etc.) and the CW10013 shadowing tail (3 tv-only):
-    both need per-call-site arg-qualifier propagation into params, the #9
-    umbrella. Backward-reference series tracking is a non-issue (none in corpus).
+    both need per-call-site arg-qualifier propagation into params - #9's Phase 1
+    (the FP-reducing, tractable slice; getTrendLineScore is #9's Phase 2).
+    Backward-reference series tracking is a non-issue (none in corpus).
 
 ## Gotchas
 

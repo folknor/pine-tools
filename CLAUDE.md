@@ -2,6 +2,16 @@
 
 ## More Rules
 
+### The spec-loop
+
+**The spec-loop**: when the user asks to orchestrate, to run the loop, or to
+work a goal down to landed commits, read `reference/orchestrate.md` FIRST and
+follow it exactly - it is the standing procedure (roles, the seven steps, the
+waiting discipline, codex invocation). Note its Input section: confirm the
+goal with the user before launching anything. The orchestrate.md workflow,
+once invoked, overrides the foreground-subagent rule below (its launches are
+background by design, per the user's standing instruction in that document).
+
 ### General rules
 
 - Subagents must always be launched in the foreground (never
