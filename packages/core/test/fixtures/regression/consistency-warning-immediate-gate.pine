@@ -1,0 +1,32 @@
+//@version=6
+// @expects warnings: 2
+// @expects warning: line=18, message="should be called"
+// @expects warning: line=26, message="should be called"
+indicator("immediate-gate")
+src = input.source(close)
+
+// P3a - SILENCED: untyped param `src` shadows the series global, so the
+// immediate gate `if not na(src)` is undetermined; ta.atr must NOT warn.
+volStop(src, atrlen) =>
+    r = 0.0
+    if not na(src)
+        r := ta.atr(atrlen)
+    r
+
+// P3b control - STILL WARNS: identical call under a genuinely series
+// immediate gate (`if close > open`); ta.atr must warn (CW10003/4).
+volStopSeries(atrlen) =>
+    r = 0.0
+    if close > open
+        r := ta.atr(atrlen)
+    r
+
+// P1 control - STILL WARNS: an entered undetermined outer gate stacked over
+// an inner series ternary gate must not silence the inner series-gated call.
+pick(src, len) =>
+    r = 0.0
+    if not na(src)
+        r := close > open ? ta.atr(len) : na
+    r
+
+plot(volStop(src, 14) + volStopSeries(14) + pick(src, 14))

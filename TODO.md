@@ -53,11 +53,17 @@ IDs so the two stay in sync.
     TV-backed).** Add a pre-pass that, per UDF, gathers every call site and
     unions each argument's inferred qualifier; `withSeriesParams` then keys
     off that union (a param is series only if some call site passes a series
-    arg) instead of the annotation. Fixes the ~11 typed-param consistency
+    arg) instead of the annotation. Fixes the genuine typed-param consistency
     FPs (#61: `draw_lbl` etc., TYPED-param UDFs only ever called with
-    non-series args) and lets INV014/INV016 drop their UDF-return / user-var
-    gates. Only REMOVES warnings TV doesn't emit, so low new-FP risk if the
-    unknown-arg path stays conservative (current behavior). Hard sub-problem:
+    non-series args). NOTE: the a21df338 triage (2026-06-26) REFUTED the
+    earlier "~11 consistency FPs are all typed-param call-site cases" framing -
+    the `1477fbef` `ta.atr` / `47d21dbd` `ta.sma` carriers wrongly lumped into
+    that count are untyped-param UNDETERMINED-GATE cases, not typed-param;
+    `ta.atr` is already cleared by INV120's immediate-gate rule and `ta.sma` is
+    a documented residual, so neither needs this Phase. This Phase also lets
+    INV014/INV016 drop their UDF-return / user-var gates. Only REMOVES warnings
+    TV doesn't emit, so low new-FP risk if the unknown-arg path stays
+    conservative (current behavior). Hard sub-problem:
     an arg's qualifier can depend on the ENCLOSING function's param (UDF
     called inside a UDF) -> needs fixpoint / topological resolution over the
     call graph with recursion guards; first cut resolves only directly-
@@ -398,11 +404,23 @@ IDs so the two stay in sync.
     [INV119](investigations/INV119-user-global-index-history/notes.md).
   - `FindST`: TV warns it; the criterion is unreproducible by probe (its local
     leaves only index builtins / mutate arrays, both probed silent). See INV117.
-  - ~11 consistency FPs on TV-clean files (TYPED-param UDFs called only with
-    NON-series args, `draw_lbl` etc.) and the CW10013 shadowing tail (3 tv-only):
-    both need per-call-site arg-qualifier propagation into params - #9's Phase 1
-    (the FP-reducing, tractable slice; getTrendLineScore is #9's Phase 2).
-    Backward-reference series tracking is a non-issue (none in corpus).
+  - `1477fbef` `ta.atr` and `47d21dbd` `ta.sma` are untyped-param
+    undetermined-gate FPs, NOT typed-param call-site sensitivity (the prior
+    INV114 framing was wrong - corrected via the a21df338 triage). `71fb0ec4`'s
+    `updateTrendLine` FP was already resolved by INV116/INV118; only its
+    `getTrendLineScore` FN remains (library-data-flow item). INV120's first two
+    attempts were reverted as net-negative because ancestor/context suppression
+    over-fired (+5 then +11 tvOnly FNs - `ta.ema`/`ta.crossover`/`_inRange`).
+    The landed INV120 Item 1 immediate-gate rule clears `1477fbef` `ta.atr`:
+    suppress only when the innermost governing condition is undetermined. It
+    intentionally does NOT clear `47d21dbd` `ta.sma`, whose immediate gate is the
+    series ternary `na(w[1])`; that remains a documented residual FP. Measured
+    2026-06-26: warning consistency localOnly 1312 -> 1311 (only `ta.atr`
+    cleared, no new entries), warning tvOnly held at 7 (the decisive FN gate -
+    neither reverted attempt's +5/+11 regression recurred).
+  - The other consistency FPs on TV-clean files (`draw_lbl` etc.) and the CW10013
+    shadowing tail (3 tv-only) need per-call-site arg-qualifier propagation into
+    params (#9). Backward-reference series tracking is a non-issue (none in corpus).
 
 ## Gotchas
 
@@ -662,4 +680,3 @@ bypassed it entirely - see INV054.)
   files still count as confirmable even though TV's warning pass may
   never have run there - a full fix would bucket ALL local-only
   warnings on TV-erroring files.
-

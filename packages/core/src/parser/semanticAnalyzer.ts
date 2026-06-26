@@ -68,6 +68,12 @@ export class SemanticAnalyzer {
 	// Innermost-first record of WHY we are in conditional scope - drives
 	// the context-specific CONDITIONAL_SERIES wording (TV's CW10002/3/4).
 	private conditionalScopeKinds: ConditionalScopeKind[] = [];
+	// Untyped params of the function currently being analyzed in the
+	// emission pass. They are "undetermined type" to TV. see INV120
+	private currentUntypedParams: Set<string> = new Set();
+	// Parallel to conditionalScopeKinds: whether the immediate governing
+	// condition for this frame is undetermined. see INV120
+	private conditionalGateUndetermined: boolean[] = [];
 	// Variables whose value is series-qualified (per-bar-varying) -
 	// initialized or reassigned from a series expression. Built in the
 	// collect pass in source order, so `b = close > open` then `if b`
@@ -104,6 +110,8 @@ export class SemanticAnalyzer {
 		this.usedVariables.clear();
 		this.historyDependentUdfs.clear();
 		this.conditionalScopeKinds = [];
+		this.currentUntypedParams = new Set();
+		this.conditionalGateUndetermined = [];
 		this.seriesVars.clear();
 		this.udfReturnTupleSeries.clear();
 		this.udfReturnsSeries.clear();
@@ -326,19 +334,29 @@ export class SemanticAnalyzer {
 		declaration: FunctionDeclaration | MethodDeclaration,
 	): void {
 		// Analyze function/method body with params marked series
-		this.withSeriesParams(declaration.params, () => {
-			this.withScopeFrame(() => {
-				// Params are scope names but do NOT shadow-warn (probed:
-				// a param named after an earlier global is silent - INV020).
-				const frame = this.scopeNames[this.scopeNames.length - 1];
-				for (const param of declaration.params) {
-					if (param.name) frame.add(param.name);
-				}
-				for (const statement of declaration.body) {
-					this.analyzeStatement(statement);
-				}
+		const prevUntyped = this.currentUntypedParams;
+		this.currentUntypedParams = new Set(
+			declaration.params
+				.filter((p) => p.name && !p.typeAnnotation)
+				.map((p) => p.name),
+		);
+		try {
+			this.withSeriesParams(declaration.params, () => {
+				this.withScopeFrame(() => {
+					// Params are scope names but do NOT shadow-warn (probed:
+					// a param named after an earlier global is silent - INV020).
+					const frame = this.scopeNames[this.scopeNames.length - 1];
+					for (const param of declaration.params) {
+						if (param.name) frame.add(param.name);
+					}
+					for (const statement of declaration.body) {
+						this.analyzeStatement(statement);
+					}
+				});
 			});
-		});
+		} finally {
+			this.currentUntypedParams = prevUntyped;
+		}
 	}
 
 	/**
@@ -388,7 +406,12 @@ export class SemanticAnalyzer {
 
 		this.analyzeExpression(statement.condition);
 
-		if (conditional) this.enterConditionalScope();
+		if (conditional) {
+			this.enterConditionalScope(
+				"block",
+				this.isUndeterminedGate(statement.condition),
+			);
+		}
 		this.withScopeFrame(() => {
 			for (const stmt of statement.consequent) {
 				this.analyzeStatement(stmt);
@@ -615,7 +638,12 @@ export class SemanticAnalyzer {
 	private analyzeTernaryExpression(expr: TernaryExpression): void {
 		const conditional = this.isSeriesishExpression(expr.condition);
 		this.analyzeExpression(expr.condition);
-		if (conditional) this.enterConditionalScope("ternary");
+		if (conditional) {
+			this.enterConditionalScope(
+				"ternary",
+				this.isUndeterminedGate(expr.condition),
+			);
+		}
 		this.analyzeExpression(expr.consequent);
 		this.analyzeExpression(expr.alternate);
 		if (conditional) this.exitConditionalScope();
@@ -651,7 +679,14 @@ export class SemanticAnalyzer {
 			// Arm bodies execute only when their condition matches.
 			// `result` is contained in the last statement, so walk
 			// `statements` INSTEAD of `result` when present (see SwitchCase).
-			if (conditional) this.enterConditionalScope();
+			if (conditional) {
+				this.enterConditionalScope(
+					"block",
+					expr.discriminant
+						? this.isUndeterminedGate(expr.discriminant)
+						: false,
+				);
+			}
 			if (switchCase.statements) {
 				const statements = switchCase.statements;
 				this.withScopeFrame(() => {
@@ -666,14 +701,19 @@ export class SemanticAnalyzer {
 		}
 	}
 
-	private enterConditionalScope(kind: ConditionalScopeKind = "block"): void {
+	private enterConditionalScope(
+		kind: ConditionalScopeKind = "block",
+		undetermined = false,
+	): void {
 		this.conditionalScopeKinds.push(kind);
+		this.conditionalGateUndetermined.push(undetermined);
 		this.conditionalScopeDepth++;
 		this.inConditionalScope = true;
 	}
 
 	private exitConditionalScope(): void {
 		this.conditionalScopeKinds.pop();
+		this.conditionalGateUndetermined.pop();
 		this.conditionalScopeDepth--;
 		if (this.conditionalScopeDepth === 0) {
 			this.inConditionalScope = false;
@@ -720,6 +760,17 @@ export class SemanticAnalyzer {
 		// ternary branches, CW10002 for and/or operands.
 		// see plan/31 Finding 7 / TODO #32.
 		if (histDep) {
+			// Immediate-gate rule: suppress when the IMMEDIATE (innermost)
+			// governing condition is undetermined. Reading ONLY the top frame
+			// is what keeps an outer undetermined gate from silencing a call
+			// whose innermost gate is series (P1). see INV120
+			if (
+				this.conditionalGateUndetermined[
+					this.conditionalGateUndetermined.length - 1
+				]
+			) {
+				return;
+			}
 			const kind =
 				this.conditionalScopeKinds[this.conditionalScopeKinds.length - 1] ??
 				"block";
@@ -737,6 +788,33 @@ export class SemanticAnalyzer {
 				DiagnosticSeverity.Warning,
 				"CONDITIONAL_SERIES",
 			);
+		}
+	}
+
+	/**
+	 * Is `condition` an undetermined gate - one TV does not treat as a
+	 * per-bar-varying selector? True iff it references an untyped param of the
+	 * current function and, with those param names masked out of seriesVars, is
+	 * not series. The masking is load-bearing for the shadowed-global case
+	 * (`src` in 1477fbef). Judge only the immediate condition. see INV120
+	 */
+	private isUndeterminedGate(condition: Expression): boolean {
+		if (this.currentUntypedParams.size === 0) return false;
+		if (!this.expressionReferencesNames(condition, this.currentUntypedParams)) {
+			return false;
+		}
+		// Deliberate transient mutation of shared seriesVars: delete the untyped
+		// param names, ask the series oracle, then restore in finally. The series
+		// check is synchronous so no other reader observes the gap - this borrows
+		// seriesVars rather than cloning it.
+		const masked: string[] = [];
+		for (const name of this.currentUntypedParams) {
+			if (this.seriesVars.delete(name)) masked.push(name);
+		}
+		try {
+			return !this.isSeriesishExpression(condition);
+		} finally {
+			for (const name of masked) this.seriesVars.add(name);
 		}
 	}
 

@@ -47,6 +47,7 @@ GEMINI.md
 .codex
 .agents
 .maki
+__pycache__/
 
 # Personal
 pinescripts

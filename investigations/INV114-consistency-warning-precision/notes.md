@@ -80,13 +80,16 @@ consistency FPs on TV-clean files 249 -> 11; total warning localOnly 1627 ->
 
 ## Residual (pre-existing, NOT introduced here - all were FPs we already had)
 
-11 consistency warnings remain local-only on TV-clean files, assorted causes:
-- TYPED-param UDFs called only with non-series args (`f1b6bd45` `draw_lbl`,
-  `47d21dbd` line 93) - genuine call-site sensitivity TV resolves by
-  monomorphizing; our analysis is call-site insensitive. Matching needs
-  arg-qualifier propagation into params, same blocker as TODO #9.
-- `25a4a7fad123` `math.sum`, `1477fbefe1fb` `ta.atr`, `61a3a7b65bba`
-  `ta.highest/lowest`, the `find_recent_value()` CW10002 cases - to be triaged.
+11 consistency warnings remained local-only on TV-clean files after INV114,
+assorted causes. The later a21df338 triage refuted the typed-param
+monomorphization framing for the `1477fbef`/`47d21dbd` carriers: they are
+untyped-param undetermined-gate cases, not typed-param cases. INV120 Item 1
+cleared `1477fbefe1fb` `ta.atr` with the immediate-gate rule. `47d21dbd`
+`ta.sma` remains a documented residual FP because its immediate gate is the
+series ternary `na(w[1])`; the reverted ancestor-aware rule that cleared it
+introduced new FNs. Other residual roots (`25a4a7fad123` `math.sum`,
+`61a3a7b65bba` `ta.highest/lowest`, and the `find_recent_value()` CW10002 cases)
+are tracked from TODO #61 / INV120 onward.
 
 The two block-scope state-variable FNs (`5881e014` `ta.crossunder/crossover`
 inside `else if tradeState == 1`) are a separate untouched FN class: the `:=`-

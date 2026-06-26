@@ -90,5 +90,9 @@ is preserved.
 9 consistency warnings remain tv-only (`6293fd71` getStandardTrueRange/
 cust_series/ta.stdev, `71fb0ec4` getTrendLineScore, `b369d637` scan, `db76cf79`
 FindST). Different cause from the method-name gap (these survived it); to be
-triaged separately. The 11 TV-clean consistency FPs are the INV114 residual
-(typed-param call-site sensitivity), untouched here.
+triaged separately. The later a21df338 triage refuted the INV114 typed-param
+call-site sensitivity framing for the `1477fbef`/`47d21dbd` TV-clean consistency
+FPs: those carriers have untyped params. INV120 Item 1 cleared `1477fbef`
+`ta.atr` with the immediate-gate rule. `47d21dbd` `ta.sma` remains a documented
+residual FP because its immediate gate is series and the ancestor-aware rule that
+cleared it over-suppressed real warnings.
