@@ -59,17 +59,26 @@ paths respectively.
   earlier line-475 stop. Baseline re-snapshotted (16060 -> 16063). Full vitest
   suite green (373 tests).
 
-## Residual
+## Residual - RESOLVED as a non-issue (2026-06-26, see G007)
 
 - **`plotshape(style = st)` where `st` is a series variable** (F-041's 4th
-  sub-case) is NOT flagged. Two blockers, both separate from the const-composite
-  core: (a) `style` is INPUT-required (`input string`), not const - it needs an
-  input-qualifier check analogous to INV088's simple-qualifier one, and
-  `checkConstArgs` only handles const-required params; (b) a ternary of `shape.*`
-  members infers base `series float` (our ternary base-inference doesn't resolve
-  member-constant string types - `shape.triangleup` is catalog-typed `string`
-  but the branch inference defaults to float), so even with an input check the
-  rendered argumentType would read `series float` not TV's `series string`. Left
-  as a follow-up; the const-composite headline of #60 is delivered.
+  sub-case) is correctly NOT flagged. The two blockers this note originally
+  listed both evaporated under direct probing:
+  - (b) is already gone: `st = close > 0 ? shape.triangleup : shape.triangledown`
+    infers `series string` today (member constants resolve through
+    NAMESPACE_PROPERTIES -> `string`, then the series condition wraps it). The
+    "infers series float" claim was an untested assumption.
+  - (a) is moot: **TV does not enforce the input qualifier at all.** Probed
+    2026-06-26 (`pine-lint --tv`), one script, same `bar_index` (series int):
+    `offset = bar_index` (simple int) -> CE10123; `show_last = bar_index`
+    (input int) -> ACCEPTED. And `style = sstr` (series string) is accepted
+    while the identical `sstr` into `text` (const string) is CE10123. So adding
+    an INV088-style input-qualifier check would be a pure false-positive
+    generator. Full probes + the simple-vs-input asymmetry live in
+    [../../gotchas/G007-tv-does-not-enforce-input-qualifier.md](../../gotchas/G007-tv-does-not-enforce-input-qualifier.md).
+
+  Our checker already matches TV byte-for-byte on the combined call (rejects
+  `offset`, accepts `show_last`/`style`). The const-composite headline of #60
+  was delivered above; this residual is closed, not deferred.
 - Wrong-namespace member args and other composite shapes (if/switch expressions
   as args) follow the same `exprQualifier` machinery if a real case appears.

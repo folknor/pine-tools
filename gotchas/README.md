@@ -57,3 +57,7 @@ when TV's behavior diverged, with no stored probe to re-check it.
   argument (untyped UDF results), sibling args included; tv-accepts
   mutation verdicts can be TV FNs; INV001-class true positives, never
   relax to match
+- [G007](G007-tv-does-not-enforce-input-qualifier.md) - TV enforces the
+  `simple` qualifier on args (INV088) but NOT the `input` qualifier:
+  series flows into `input`-typed params (plotshape style/show_last) with
+  no error. Do not add an input-qualifier check - closes TODO #60 residual

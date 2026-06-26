@@ -1,0 +1,8 @@
+// @test regression/G007-input-qualifier-not-enforced
+// @description TV enforces the `simple` qualifier on args but NOT the `input` qualifier. Same series value: `offset = bar_index` (simple int) is CE10123, while `show_last = bar_index` (input int) and `style = <series string ternary>` (input string) are ACCEPTED. Pins our TV-matched behavior so a future input-qualifier check can't silently introduce these false positives. Probed 2026-06-26 via pine-lint --tv, see gotchas/G007.
+// @expects parse: success
+// @expects error: line=3, message=/"offset"="bar_index". An argument of "series int" type was used but a "simple int"/
+// @expects errors: 1
+//@version=6
+indicator("s")
+plotshape(close, offset = bar_index, show_last = bar_index, style = close > 0 ? shape.triangleup : shape.triangledown)

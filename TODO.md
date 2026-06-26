@@ -319,17 +319,17 @@ IDs so the two stay in sync.
 - **Minor data residue (record-only, low value):** `ta.vwap.anchor`'s default
   and the "X by default" phrasing are deliberately unparsed (see
   `parse-default.ts`). Skip unless a consumer needs them.
-- **#60 (residual) - input-qualifier check for `plotshape(style=)` series var
-  (freedom FINDINGS F-041 tail).** The const-composite core landed in INV112
-  (ternary title, comparison overlay, concat message - CE10123 via `exprQualifier`
-  + describeNonConstArg ternary/binary). The one remaining sub-case is
-  `plotshape(style = st)` where `st` is a series variable: `style` is
-  INPUT-required (`input string`), not const, so `checkConstArgs` does not cover
-  it - it needs an input-qualifier check analogous to INV088's simple one. Also
-  blocked on a base-inference gap: a ternary of `shape.*` members infers `series
-  float` not `series string` (member-constant string types aren't resolved in the
-  ternary branch inference), so the rendered argumentType would mismatch TV's
-  `series string`. See INV112 residual.
+- **#60 - DONE.** The const-composite core landed in INV112 (ternary title,
+  comparison overlay, concat message - CE10123 via `exprQualifier` +
+  describeNonConstArg ternary/binary). The deferred `plotshape(style = st)`
+  sub-case is now CLOSED as a non-issue: probing (`pine-lint --tv`, 2026-06-26)
+  proved **TV does not enforce the input qualifier** - same `bar_index` (series
+  int), `offset` (simple int) is CE10123 but `show_last`/`style` (input) are
+  accepted - so an INV088-style input check would be a pure FP generator. The
+  base-inference blocker also evaporated (`shape.*` ternaries already infer
+  `series string`). Our checker matches TV byte-for-byte. See
+  [G007](gotchas/G007-tv-does-not-enforce-input-qualifier.md), the INV112
+  residual, and `regression/G007-input-qualifier-not-enforced.pine`.
 - **#61 (residual) - CW10003/4 consistency-warning precision.** A round of
   precision work landed across [INV114](investigations/INV114-consistency-warning-precision/notes.md)
   (series-contagion through call args; untyped-param "undetermined" gate),
@@ -347,9 +347,22 @@ IDs so the two stay in sync.
   INV-docs hold the probes/measurements - do NOT re-inline them here.
 
   **Pending** (each blocked, with its blocker):
-  - `getStandardTrueRange` x2, `getTrendLineScore`: fixable via the user-global
-    index rule but it over-fires (+4 corpus FPs) - needs a narrower predicate.
-    See [INV119](investigations/INV119-user-global-index-history/notes.md).
+  - `getStandardTrueRange` x2, `getTrendLineScore`: the user-global-index rule
+    (INV117 Family 3) was **refuted** on re-measurement (`pine-lint --tv`,
+    2026-06-26): ~20 variants - const/dynamic offset, in-loop, iterative,
+    conditionally-reassigned global, nested UDF, series-array arg, a faithful
+    getTrendLineScore+updateTrendLine replica, AND the real `import ca` +
+    `highSource := ca.macandles(...)` reassignment - are ALL silent, so indexing
+    a user global is NOT TV's criterion (that is why part-1 over-fired +4 FPs).
+    `getTrendLineScore` IS a genuine tvOnly warning (the `257:25` position is
+    G005 `\r\r\n` doubling of editor line 129, the call site - correctly
+    attributed, not garbage). Its real cause is library DATA FLOW: highSource is
+    reassigned from history-dependent `ca.macandles`/`hacandles` exports and the
+    pivot arrays come from `zg.czigzag`; the history emerges only from the whole
+    file, surviving no reduction. Same class as INV117 Family 2 but one level
+    more indirect - needs whole-program history/qualifier propagation (#9), not a
+    structural rule. See
+    [INV119](investigations/INV119-user-global-index-history/notes.md).
   - `FindST`: TV warns it; the criterion is unreproducible by probe (its local
     leaves only index builtins / mutate arrays, both probed silent). See INV117.
   - ~11 consistency FPs on TV-clean files (TYPED-param UDFs called only with
