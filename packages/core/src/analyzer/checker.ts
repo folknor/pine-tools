@@ -18,7 +18,6 @@ import type {
 	Literal,
 	MemberExpression,
 	Program,
-	ReturnStatement,
 	Statement,
 	SwitchExpression,
 	TernaryExpression,
@@ -79,6 +78,12 @@ import {
 	recordUdfTupleReturn,
 	tupleInitArity,
 } from "./checker-tuples";
+import { resolveUdfParamBindings } from "./checker-udf-fixpoint";
+import {
+	defineParamsWithBindings,
+	inferGroundedScalarReturn,
+	udfIdentityKey,
+} from "./checker-udf-grounding";
 import {
 	checkDuplicateUdtFields,
 	checkTypeFieldDefaults,
@@ -178,6 +183,10 @@ export class UnifiedPineValidator {
 	// UDF body registry for structural qualifier provenance. It deliberately
 	// stores declarations separately from return-type inference. see INV122
 	public udfBodyRecords: Map<string, UdfBodyRecord[]> = new Map();
+	// UDF identity -> untyped param bindings, resolved before the main pass.
+	// see INV123.
+	public udfParamBindings: Map<string, Map<string, PineType>> = new Map();
+	public udfAmbiguousReturnNames: Set<string> = new Set();
 	// Names declared as a METHOD. A method can share a name with a function
 	// (legal overload); UDF call-site validation skips such names since the
 	// captured function signature may not be the overload a plain call resolves
@@ -218,6 +227,8 @@ export class UnifiedPineValidator {
 		this.overloadedFunctionNames.clear();
 		this.functionDeclSignatures.clear();
 		this.udfBodyRecords.clear();
+		this.udfParamBindings.clear();
+		this.udfAmbiguousReturnNames.clear();
 		this.methodDeclaredNames.clear();
 		this.loopDepth = 0;
 
@@ -269,6 +280,17 @@ export class UnifiedPineValidator {
 				}
 			}
 		}
+
+		// The fixpoint re-infers UDF bodies and call-site args many times under
+		// provisional bindings. inferExpressionType is not pure - a member access
+		// on a known namespace with an undeclared property emits CE10272 (see the
+		// addError in inferExpressionType's MemberExpression case). Those
+		// provisional emissions must not leak into the real diagnostic stream or
+		// the main pass would double-report them. Truncate back to the pre-fixpoint
+		// count (INV005 isolate-and-restore discipline, errors axis). see INV123
+		const errorsBeforeFixpoint = this.errors.length;
+		resolveUdfParamBindings(this, ast, version);
+		this.errors.length = errorsBeforeFixpoint;
 
 		// Single pass: collect declarations and validate together
 		// This ensures function parameters are in scope during validation
@@ -771,6 +793,10 @@ export class UnifiedPineValidator {
 						statement.body,
 						version,
 						statement.params,
+						this.udfParamBindings.get(
+							udfIdentityKey(statement.name, "function", statement.params),
+						),
+						this.udfAmbiguousReturnNames.has(statement.name),
 					);
 				}
 
@@ -782,6 +808,9 @@ export class UnifiedPineValidator {
 					statement.body,
 					version,
 					statement.params,
+					this.udfParamBindings.get(
+						udfIdentityKey(statement.name, "function", statement.params),
+					),
 				);
 				if (tupleTypes) recordUdfTupleReturn(this, statement.name, tupleTypes);
 
@@ -1267,6 +1296,10 @@ export class UnifiedPineValidator {
 						statement.body,
 						version,
 						statement.params,
+						this.udfParamBindings.get(
+							udfIdentityKey(statement.name, "method", statement.params),
+						),
+						this.udfAmbiguousReturnNames.has(statement.name),
 					);
 				}
 
@@ -1276,6 +1309,9 @@ export class UnifiedPineValidator {
 					statement.body,
 					version,
 					statement.params,
+					this.udfParamBindings.get(
+						udfIdentityKey(statement.name, "method", statement.params),
+					),
 				);
 				if (tupleTypes) recordUdfTupleReturn(this, statement.name, tupleTypes);
 
@@ -1852,69 +1888,29 @@ export class UnifiedPineValidator {
 		body: Statement[],
 		version: string,
 		params?: FunctionParam[],
+		bindings?: Map<string, PineType>,
+		forceUnknown = false,
 	): PineType {
 		// Enter a temporary scope for type inference
 		this.symbolTable.enterScope();
 
 		// Isolate the expression-type cache for the duration of this pass.
-		// This pass guesses `series<float>` for untyped params (below), and
-		// caching body-expression types under that guess poisons the later
-		// validation pass, which registers untyped params as `unknown`: e.g.
-		// `cond ? "1440" : tf` was cached as string|series<float> here and
-		// then flagged as an incompatible ternary, where an uncached lookup
-		// would have skipped the check. see INV005 / #18.
+		// This pass binds untyped params from the precomputed UDF fixpoint.
+		// Keep its expression cache isolated so provisional body-expression
+		// types cannot poison the later validation pass. see INV005 / INV123.
 		const savedExpressionTypes = this.expressionTypes;
 		this.expressionTypes = new Map();
 
-		// Add function parameters to temporary scope. Honour the declared
-		// type when present - without this, a `bool a` parameter would be
-		// registered as `series<float>` here, the body's `a and b`
-		// expression would be cached with `a: series<float>`, and the
-		// subsequent full validation pass would read the wrong type from
-		// cache and report "Operator 'and' requires bool operands, but
-		// left operand is series<float>". For untyped UDF params, fall
-		// back to `series<float>` as before. see INV005.
-		if (params) {
-			for (const param of params) {
-				const paramType: PineType = param.typeAnnotation
-					? mapToPineType(param.typeAnnotation.name)
-					: "series<float>";
-				this.symbolTable.define({
-					name: param.name,
-					type: paramType,
-					line: 0,
-					column: 0,
-					used: false,
-					kind: "variable",
-					declaredWith: null,
-				});
-			}
-		}
+		defineParamsWithBindings(this, params, bindings);
 
 		// Temporarily collect declarations from function body
 		for (const stmt of body) {
 			this.collectDeclarations(stmt, version);
 		}
 
-		let returnType: PineType = "unknown";
-
-		// Look for return statements in the function body
-		for (const stmt of body) {
-			if (stmt.type === "ReturnStatement") {
-				const returnStmt = stmt as ReturnStatement;
-				returnType = this.inferExpressionType(returnStmt.value, version);
-				break;
-			}
-		}
-
-		// If no explicit return, check if the last statement is an expression
-		if (returnType === "unknown" && body.length > 0) {
-			const lastStmt = body[body.length - 1];
-			if (lastStmt.type === "ExpressionStatement") {
-				const exprStmt = lastStmt as ExpressionStatement;
-				returnType = this.inferExpressionType(exprStmt.expression, version);
-			}
-		}
+		const returnType = forceUnknown
+			? "unknown"
+			: inferGroundedScalarReturn(this, body, version);
 
 		// Exit the temporary scope and drop this pass's cache entries
 		this.symbolTable.exitScope();

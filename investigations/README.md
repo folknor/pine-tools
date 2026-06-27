@@ -759,3 +759,7 @@ contradiction means re-measure, not "the earlier author was wrong."
   first-class qualifier provenance channel, shared qualifier lattice,
   conservative `exprQualifier` wrapper, UDF const-preservation capability,
   and zero corpus verdict movement.
+- [INV123](INV123-udf-call-graph-fixpoint/notes.md) - TODO #9 Loop 2:
+  identity-keyed UDF parameter binding fixpoint, shared scalar/tuple
+  grounding, removal of the untyped-param `series<float>` guess, and zero
+  local corpus verdict movement.

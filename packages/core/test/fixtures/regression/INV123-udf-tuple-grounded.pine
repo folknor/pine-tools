@@ -1,0 +1,8 @@
+// @test regression/INV123-udf-tuple-grounded
+// @description Tuple-returning UDFs share the same untyped-param grounding path as scalar returns, so destructured elements do not fall back to series<float>.
+// @expects errors: 0
+//@version=6
+indicator("INV123 udf tuple grounded")
+pair(p) => [p, close > open]
+[txt, cond] = pair("hello")
+plot(cond ? close : open)

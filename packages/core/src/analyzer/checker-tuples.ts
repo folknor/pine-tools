@@ -25,6 +25,7 @@ import {
 } from "./builtins";
 import type { UnifiedPineValidator } from "./checker";
 import { memberChainName } from "./checker-helpers";
+import { defineParamsWithBindings } from "./checker-udf-grounding";
 import { type PineType, TypeChecker } from "./types";
 
 /**
@@ -417,7 +418,7 @@ export function mergeTupleBranchTypes(branches: PineType[][]): PineType[] {
 			}
 			if (!pick) pick = t;
 		}
-		merged.push(pick ?? "series<float>");
+		merged.push(pick ?? "unknown");
 	}
 	return merged;
 }
@@ -455,33 +456,17 @@ export function inferUdfTupleReturnTypes(
 	body: Statement[],
 	version: string,
 	params?: FunctionParam[],
+	bindings?: Map<string, PineType>,
 ): PineType[] | undefined {
 	if (body.length === 0) return undefined;
 
 	// Mirror inferFunctionReturnType's temp-scope setup so the
-	// element-type inference sees the parameters and any locals - and
-	// its cache isolation: this pass guesses series<float> for untyped
-	// params, and caching under that guess poisons the validation pass.
-	// see INV026.
+	// element-type inference sees the parameters and any locals, with the same
+	// cache isolation and UDF fixpoint bindings as the scalar path. see INV123.
 	const savedExpressionTypes = v.expressionTypes;
 	v.expressionTypes = new Map();
 	v.symbolTable.enterScope();
-	if (params) {
-		for (const param of params) {
-			const paramType: PineType = param.typeAnnotation
-				? mapToPineType(param.typeAnnotation.name)
-				: "series<float>";
-			v.symbolTable.define({
-				name: param.name,
-				type: paramType,
-				line: 0,
-				column: 0,
-				used: false,
-				kind: "variable",
-				declaredWith: null,
-			});
-		}
-	}
+	defineParamsWithBindings(v, params, bindings);
 	for (const stmt of body) {
 		v.collectDeclarations(stmt, version);
 	}

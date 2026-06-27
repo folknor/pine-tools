@@ -20,6 +20,12 @@ regenerate with `node scripts/find-real-failures.mjs` followed by
 indexed at [investigations/README.md](investigations/README.md)
 and are not duplicated here - TODO.md is for *pending* work only.
 
+Measurement note, 2026-06-27: before and after INV123, the local snapshot was
+stable at 1879 fixtures, 622 fixtures with errors, and 16063 total error
+records. The TV inventory command scanned 748 v6 fixtures but all 748 TV
+responses were unparseable in this sandbox, so the generated FP/FN category
+counts for this run are not a usable TV parity measurement.
+
 ## Pending follow-ups
 
 Open work items, each either deferred from an investigation or queued
@@ -42,8 +48,10 @@ IDs so the two stay in sync.
   attempt).
 
   Implementation trail: Loop 1 qualifier provenance is recorded in
-  [INV122](investigations/INV122-qualifier-provenance/notes.md). Remaining
-  work is still Loop 2 grounded UDF inference and Loop 3 gate removal.
+  [INV122](investigations/INV122-qualifier-provenance/notes.md). Loop 2
+  grounded UDF inference is recorded in
+  [INV123](investigations/INV123-udf-call-graph-fixpoint/notes.md). Remaining
+  work is Loop 3 gate removal and the qualifier-propagation work below.
 
   **Concrete plan - per-call-site arg-qualifier propagation (the shared
   infrastructure).** Today the analysis is call-site INSENSITIVE: a UDF's

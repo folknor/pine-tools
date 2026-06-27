@@ -1,0 +1,7 @@
+// @test regression/INV123-paramless-control
+// @description Paramless UDF inference was not affected by the untyped-param guess and must keep reporting the existing bool-to-nz error.
+// @expects error: line=4, message=/Cannot call/
+//@version=6
+indicator("INV123 paramless control")
+g() => close > open
+plot(nz(g()))

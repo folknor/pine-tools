@@ -1,0 +1,8 @@
+// @test regression/INV123-udf-param-grounded
+// @description Loop 2 grounds an untyped UDF param from its call sites instead of guessing series<float>. The diagnostic gate still accepts this shape; the unit test pins the inferred call type.
+// @expects errors: 0
+//@version=6
+indicator("INV123 udf param grounded")
+f(p) => p
+x = f("hello")
+
