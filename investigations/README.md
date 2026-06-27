@@ -771,3 +771,8 @@ contradiction means re-measure, not "the earlier author was wrong."
   while const is preserved through a const-returning UDF (probe A). Includes the
   one corpus union-gate FP this surfaced (a CE10095-redeclared name whose two
   channels disagree on the base) and its narrowing fix (`redeclaredNames` skip).
+- [INV125](INV125-drawing-handle-tv-probes/notes.md) - TODO #9 Item 4:
+  drawing-handle annotation typing probes for `line`, `label`, `box`, `table`,
+  `linefill`, `polyline`, and `chart.point`. TV rejects scalar assignment into
+  each handle with CE10173; `chart.point` renders bare while the other handles
+  render series-qualified.

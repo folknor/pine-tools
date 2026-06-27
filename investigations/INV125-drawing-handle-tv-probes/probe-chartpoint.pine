@@ -1,0 +1,4 @@
+//@version=6
+indicator("probe chartpoint")
+chart.point v = 5
+plot(close)

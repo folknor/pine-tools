@@ -26,6 +26,16 @@ Measurement note, 2026-06-27: after INV124, the local snapshot is stable at
 appearances, and 0 disappeared appearances. The current categorized inventory
 scans 748 v6 fixtures and reports 0 local-only and 0 tv-only categories.
 
+Measurement note, 2026-06-27: after INV125 / Item 4 drawing-handle annotation
+typing, the local snapshot remains stable at 1879 fixtures, 622 fixtures with
+errors, and 16057 total error records. `node scripts/regression-check.mjs`
+reports 0 changed fixtures, 0 new error appearances, and 0 disappeared
+appearances. `node scripts/find-real-failures.mjs --concurrency 4` completed in
+this sandbox with all 748 TV responses unparseable, so its refreshed
+0-local-only / 0-tv-only category counts are not a meaningful remote comparison;
+the TV-backed handle verdicts are the dated probes recorded in
+[INV125](investigations/INV125-drawing-handle-tv-probes/notes.md).
+
 ## Pending follow-ups
 
 Open work items, each either deferred from an investigation or queued
@@ -41,11 +51,9 @@ IDs so the two stay in sync.
   and INV014's const-arg check drop their conservative reliability gates
   (they used to skip args typed via UDF returns / user vars to avoid FPs,
   so they missed real violations that flow through a variable; the gates
-  are now dropped - Loop 3 below), and would unblock INV063's residual FNs
-  (`line l = 5`, `Point p = 5`: drawing-type/UDT annotations are left
-  untyped in mapToPineType because typing them surfaces line-returning
-  UDFs mis-inferred as series<float> - 58 corpus FPs in the reverted
-  attempt).
+  are now dropped - Loop 3 below). INV063's drawing-handle annotation
+  residual is closed by INV125 / Item 4; UDT declaration typing had already
+  been restored before that item landed.
 
   Implementation trail: Loop 1 qualifier provenance is recorded in
   [INV122](investigations/INV122-qualifier-provenance/notes.md). Loop 2

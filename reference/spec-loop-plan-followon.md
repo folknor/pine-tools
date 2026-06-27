@@ -197,6 +197,16 @@ until then.
 
 ### Item 4 - INV063 drawing-type / UDT annotation typing
 
+**STATUS: LANDED.** All seven drawing-handle annotations
+(`line`/`label`/`box`/`table`/`linefill`/`polyline`/`chart.point`) are typed in
+`mapToPineType`; the int-into-handle assignment now fires CE10173, matching TV
+(probed per-handle in `investigations/INV125`, 2026-06-27). The 58 prior FPs did
+not recur (regression 0 changed). The `Point p = 5` UDT case was already correct
+on HEAD; `chart.point` renders bare (not `series chart.point`); a UDT-name
+collision FP (a UDT named `Box`/`Line`/... colliding with the lowercased keyword)
+was caught by the corpus gate and fixed via case-sensitive matching. See git log
++ INV063/INV125. Record kept below.
+
 Source: `investigations/INV063`; TODO #9 residual. **Depends on the foundation's
 Loop 2** (grounded, call-site-sensitive inference) - NOT startable before it.
 

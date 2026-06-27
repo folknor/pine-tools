@@ -1,0 +1,14 @@
+// @test regression/INV063-line-udf-reassignment-canary
+// @description Typing line annotations must not revive INV063's prior line-returning-UDF reassignment false positives.
+// @expects parse: success
+// @expects no-errors
+
+//@version=6
+indicator("INV063 line UDF canary")
+new_level(src) =>
+    var line ln = na
+    ln := line.new(bar_index, src, bar_index, src)
+    ln
+var line lvl = na
+lvl := new_level(close)
+plot(close)

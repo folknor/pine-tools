@@ -1,0 +1,4 @@
+//@version=6
+indicator("probe linefill")
+linefill v = 5
+plot(close)

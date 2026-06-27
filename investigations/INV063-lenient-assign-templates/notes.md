@@ -53,17 +53,30 @@ renderQualifiedType rules (`const int`, `series float`), na is
 
 ## Residuals
 
-- **`line l = 5` is an FN (p05).** Typing drawing-type symbols
-  (mapToPineType entries for line/label/box/table) makes the check fire
-  TV-identically on the minimal probe, but surfaced 58 corpus FPs in 2
-  files: a line-returning UDF (`new_level` tail `line_`) has its return
-  guessed `series<float>` from untyped params, so every
-  `lineN := new_level(...)` reassignment mis-flagged, plus 4 binary-op
-  FPs from the same mis-inference. Reverted; the FN waits on #9's
-  robust UDF-return inference. The attempt is preserved in this note;
-  the mapToPineType comment points here.
-- UDT declarations (`Point p = 5`, p06) are silent for the same reason
-  (UDT annotations map to unknown) - same blocker.
-- Member/index `:=` targets keep the internal wording (unprobed).
-- `linefill`/`polyline`/`chart.point` annotations also map to unknown
-  (not in the PineType union) - same class as the drawing-type residual.
+- **`line l = 5` FN (p05) - CLOSED.** The original attempt typed the
+  drawing-type symbols (mapToPineType entries for line/label/box/table)
+  while the inference under them still guessed `series<float>` for any
+  UDF with untyped params, so a line-returning UDF (`new_level` tail
+  `line_`) was typed `series<float>` and every `lineN := new_level(...)`
+  reassignment mis-flagged - 58 corpus FPs in 2 files (50 + 4 binary-op
+  from the same mis-inference). That attempt was reverted at the time.
+  TODO #9's Loop 2 (grounded, call-site-sensitive UDF inference, commit
+  `2e34e94`) deleted the `series<float>` guess, so a line-returning UDF
+  now infers its real base or `unknown`, never a scalar, and the FP class
+  is structurally gone. All seven drawing handles
+  (line/label/box/table/linefill/polyline/chart.point) were then `--tv`-
+  probed and typed; see [INV125](../INV125-drawing-handle-tv-probes/notes.md)
+  for the dated probe verdicts and the landing commit in git log. The
+  permanent FP canary lives in
+  `packages/core/test/fixtures/regression/INV063-line-udf-reassignment-canary.pine`
+  and the FN coverage in `INV063-drawing-handle-annotations.pine`.
+- **UDT declarations (`Point p = 5`, p06) - CLOSED (independently).** No
+  longer silent: `annotationToSymbolType` resolves a UDT name via
+  `declaredTypeNames` and `renderAssignDiagnosticType` renders it bare, so
+  the correct CE10173 fires. This was already restored before the
+  drawing-handle typing landed; INV125 records the confirmation.
+- **`linefill`/`polyline`/`chart.point` annotations - CLOSED.** Now members
+  of the `PineType` union and typed in `mapToPineType` (same INV125 landing).
+  `chart.point` renders bare; the other two render `series <handle>`.
+- Member/index `:=` targets keep the internal wording (unprobed) - still
+  open, a separate item if ever pursued.

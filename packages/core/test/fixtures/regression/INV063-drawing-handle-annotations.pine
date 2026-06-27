@@ -1,0 +1,22 @@
+// @test regression/INV063-drawing-handle-annotations
+// @description Drawing-handle annotations are typed, so scalar initializers use TV's CE10173 template. Probed 2026-06-27 in investigations/INV125-drawing-handle-tv-probes/notes.md; chart.point renders bare while the other handles render series-qualified.
+// @expects parse: success
+// @expects errors: 7
+// @expects error: line=3, message=/Cannot assign a value of the "const int" type to the "l" variable. The variable is declared with the "series line" type./
+// @expects error: line=4, message=/Cannot assign a value of the "const int" type to the "lb" variable. The variable is declared with the "series label" type./
+// @expects error: line=5, message=/Cannot assign a value of the "const int" type to the "bx" variable. The variable is declared with the "series box" type./
+// @expects error: line=6, message=/Cannot assign a value of the "const int" type to the "tb" variable. The variable is declared with the "series table" type./
+// @expects error: line=7, message=/Cannot assign a value of the "const int" type to the "lf" variable. The variable is declared with the "series linefill" type./
+// @expects error: line=8, message=/Cannot assign a value of the "const int" type to the "pl" variable. The variable is declared with the "series polyline" type./
+// @expects error: line=9, message=/Cannot assign a value of the "const int" type to the "cp" variable. The variable is declared with the "chart.point" type./
+
+//@version=6
+indicator("INV063 drawing handles")
+line l = 5
+label lb = 5
+box bx = 5
+table tb = 5
+linefill lf = 5
+polyline pl = 5
+chart.point cp = 5
+plot(close)

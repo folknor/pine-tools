@@ -1,0 +1,4 @@
+//@version=6
+indicator("probe polyline")
+polyline v = 5
+plot(close)

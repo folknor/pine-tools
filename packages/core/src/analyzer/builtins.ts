@@ -162,6 +162,16 @@ const BUILTIN_SCALAR_TYPES = new Set([
 	"na",
 ]);
 
+const DRAWING_HANDLE_ANNOTATION_TYPES = new Set([
+	"line",
+	"label",
+	"box",
+	"table",
+	"linefill",
+	"polyline",
+	"chart.point",
+]);
+
 // Lowercase the inner type if it matches a built-in scalar; otherwise
 // preserve the original casing so user-defined types like `POI` survive.
 function normalizeInnerType(inner: string): string {
@@ -183,14 +193,12 @@ export function mapToPineType(typeStr?: string): PineType {
 		bool: "bool",
 		string: "string",
 		color: "color",
-		// Drawing types (line/label/box/table) deliberately NOT mapped: typing
-		// those symbols surfaces UDF-return mis-inference as corpus FPs (a
-		// line-returning UDF guesses series<float> from its untyped params),
-		// e.g. 50 FPs in one file on `lineN := udf(...)` reassignments. So
-		// `line l = 5` stays an FN until #9's robust UDF-return inference
-		// lands. see INV063
-		// plot/hline ARE mapped (unlike the drawing handles above): they are
-		// returned ONLY by the builtin plot()/hline(), never by a UDF (Pine bars
+		// NOTE: the drawing handles (line/label/box/table/linefill/polyline/
+		// chart.point) are NOT in this map - they are matched case-sensitively
+		// below so a user type named `Box`/`Label`/`Line` does not collide with
+		// the lowercase builtin keyword. see INV063/INV125.
+		// plot/hline are mapped: they are returned only by the builtin
+		// plot()/hline(), never by a UDF (Pine bars
 		// plot()/hline() from function bodies), so the INV063 UDF-return
 		// mis-inference cannot arise. Typing them lets arithmetic on a plot
 		// handle (`x = plot(close)` then `x + 1`) be rejected. see INV089
@@ -231,6 +239,14 @@ export function mapToPineType(typeStr?: string): PineType {
 		return typeMap[normalized];
 	}
 
+	// Drawing handles are lowercase grammar keywords; match case-sensitively
+	// (against the original, not the lowercased form) so a capitalized user
+	// type like `Box`/`Label`/`Line` resolves as a UDT instead of colliding
+	// with the builtin handle. see INV063/INV125.
+	if (DRAWING_HANDLE_ANNOTATION_TYPES.has(trimmed)) {
+		return trimmed as PineType;
+	}
+
 	// For generic container types we match case-insensitively against the
 	// original (case-preserved) string and normalize only the inner type
 	// when it's a known built-in. This keeps user-defined type names like
@@ -263,6 +279,14 @@ export function mapToPineType(typeStr?: string): PineType {
 // Map return type string to PineType
 // Uses mapToPineType internally - this function exists for API clarity
 export function mapReturnTypeToPineType(returnTypeStr: string): PineType {
+	// Item 4 types the bare-keyword ANNOTATION only; builtin handle returns
+	// stay unknown (out of scope - Section 8). The six handle builtins return
+	// the qualified `series <handle>` (already -> unknown), but chart.point.*
+	// return bare `chart.point` in the data, so guard it explicitly here.
+	// see INV063/INV125.
+	if (DRAWING_HANDLE_ANNOTATION_TYPES.has(returnTypeStr.trim().toLowerCase())) {
+		return "unknown";
+	}
 	return mapToPineType(returnTypeStr);
 }
 
