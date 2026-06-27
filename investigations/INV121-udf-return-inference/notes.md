@@ -1,12 +1,45 @@
 # INV121 - UDF-return inference reliability (the B0 probe record for #9 Item 3)
 
 **Date:** 2026-06-26
-**Status:** probe record for #9. No code yet. NOTE: the original "B0" framing
-here used param-less UDFs, which do NOT exercise the call-site-insensitivity
-bug; it is superseded by the param-dependent canary in
-`reference/spec-9-udf-inference-foundation.md` Section 5 (probed 2026-06-26).
+**Status:** probe record for #9. NOTE: the original "B0" framing here used
+param-less UDFs, which do NOT exercise the call-site-insensitivity bug; it is
+superseded by the param-dependent canary recorded below (probed 2026-06-26). The
+inference rewrite that this probe round justified landed as Loop 1/2/3 - see
+INV122 (qualifier provenance), INV123 (call-graph fixpoint), and INV124 (the
+gate-drop probes + landed gate removal).
 **Source:** TODO #9 (robust UDF-return inference -> drop INV014/INV016 gates);
 INV063 (the 58-FP `series<float>` guess).
+
+## The param-dependent canary (the corrected B0, `pine-lint --tv`, 2026-06-26, `success:true`)
+
+The B0 probes below (P1-P5) are all param-LESS, so they do not exercise the real
+bug: call-site-insensitive return inference. A UDF with no untyped params infers
+correctly from its body, so the `series<float>` guess never fires. The bug needs
+an UNTYPED PARAM used in the return, called with a non-float argument. The
+corrected canary (`probe-param-dependent.pine`):
+
+```pine
+//@version=6
+indicator("x")
+f(p) => p
+plot(nz(f("hello")))
+```
+
+`f(p) => p` returns its untyped param `p`. Bound to the old `series<float>`
+guess, `f` typed `f() -> series<float>` for ALL call sites, so `f("hello")` was
+`series<float>` (not `string`), `nz(...)` `series float`, and `plot(...)`
+accepted it. **TV: CE10123 at line 4 (the `nz` call)** - a `literal string` was
+passed where `simple int` is expected. **We (before Loop 2): no error** - the
+guess masked the real arg type. A genuine we-accept / TV-rejects disagreement,
+which also proves TV answered rather than returning an empty/fallback result.
+This is the load-bearing false-negative that justified the whole #9 inference
+rewrite; the same through-UDF class is re-probed with full verdicts in INV124
+(B1 `int(f("hello"))`, B2 `b = f("hello")` / `int(b)`).
+
+The param-less control (`probe-p2-p3.pine`): `g() => close > open` /
+`plot(nz(g()))` and the through-var `b = g()` / `plot(nz(b))`. Both we AND TV
+flag CE10123 at `plot` (`nz(bool)` -> `series color`, plot wants numeric) - no
+disagreement, confirming param-less UDFs were already handled and are NOT the bug.
 
 ## Why
 

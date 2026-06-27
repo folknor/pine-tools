@@ -55,21 +55,11 @@ IDs so the two stay in sync.
   and INV024 (the biggest single cluster was a parser bug masquerading
   as inference - qualifier-led declarations truncating function
   bodies); remaining FPs need a fresh corpus diff and per-category
-  dives. Robust UDF-return inference also let INV016's union-arg check
-  and INV014's const-arg check drop their conservative reliability gates
-  (they used to skip args typed via UDF returns / user vars to avoid FPs,
-  so they missed real violations that flow through a variable; the gates
-  are now dropped - Loop 3 below). INV063's drawing-handle annotation
-  residual is closed by INV125 / Item 4; UDT declaration typing had already
-  been restored before that item landed.
-
-  Implementation trail: Loop 1 qualifier provenance is recorded in
-  [INV122](investigations/INV122-qualifier-provenance/notes.md). Loop 2
-  grounded UDF inference is recorded in
-  [INV123](investigations/INV123-udf-call-graph-fixpoint/notes.md). Loop 3 gate
-  removal is recorded in
-  [INV124](investigations/INV124-loop3-gate-drop-probes/notes.md). Remaining
-  work is the qualifier-propagation work below.
+  dives. The grounded-inference foundation that the remaining
+  qualifier-propagation work builds on has landed: qualifier provenance,
+  call-graph-fixpoint UDF inference (which retired the `series<float>`
+  param guess), and the INV014/INV016 reliability-gate removal - see
+  INV122 / INV123 / INV124 for the trail.
 
   **Concrete plan - per-call-site arg-qualifier propagation (the shared
   infrastructure).** Today the analysis is call-site INSENSITIVE: a UDF's
@@ -92,7 +82,7 @@ IDs so the two stay in sync.
     the `1477fbef` `ta.atr` / `47d21dbd` `ta.sma` carriers wrongly lumped into
     that count are untyped-param UNDETERMINED-GATE cases, not typed-param;
     `ta.atr` is already cleared by INV120's immediate-gate rule and `ta.sma` is
-    a documented residual, so neither needs this Phase. (The INV014/INV016
+    tracked under #61 as a next-loop candidate, so neither needs this Phase. (The INV014/INV016
     UDF-return / user-var gates have already been dropped independently by
     Loop 3 - INV124 - so they are no longer waiting on this Phase.) Only
     REMOVES warnings TV doesn't emit, so low new-FP risk if the unknown-arg
@@ -101,13 +91,10 @@ IDs so the two stay in sync.
     called inside a UDF) -> needs fixpoint / topological resolution over the
     call graph with recursion guards; first cut resolves only directly-
     inferable args and stays conservative otherwise.
-  - **Phase 2 - closed by INV126 / Item 5.** The fresh probe round pinned the
-    actual criterion as a non-transitive user-global series index plus an
-    inconsistent call context. The checker implements that conjunction directly;
-    it does not model library taint.
   - Validate each step against the warning sweep (`lint:failures` ->
-    `lint:categorize`); FindST stays documented-as-blocked (criterion
-    unreproducible, must not gate the rest).
+    `lint:categorize`); FindST stays unreproduced under the strategies tried
+    so far (not yet re-probed with a conjunction-style battery), and must not
+    gate the rest.
 - **#18 (residual) - pine-lint's variable-list output
   (`astExtractor.ts`) labels some built-in color constants
   `"undetermined type"`.** A display-path quirk, cosmetic, not a
@@ -387,17 +374,6 @@ IDs so the two stay in sync.
 - **Minor data residue (record-only, low value):** `ta.vwap.anchor`'s default
   and the "X by default" phrasing are deliberately unparsed (see
   `parse-default.ts`). Skip unless a consumer needs them.
-- **#60 - DONE.** The const-composite core landed in INV112 (ternary title,
-  comparison overlay, concat message - CE10123 via `exprQualifier` +
-  describeNonConstArg ternary/binary). The deferred `plotshape(style = st)`
-  sub-case is now CLOSED as a non-issue: probing (`pine-lint --tv`, 2026-06-26)
-  proved **TV does not enforce the input qualifier** - same `bar_index` (series
-  int), `offset` (simple int) is CE10123 but `show_last`/`style` (input) are
-  accepted - so an INV088-style input check would be a pure FP generator. The
-  base-inference blocker also evaporated (`shape.*` ternaries already infer
-  `series string`). Our checker matches TV byte-for-byte. See
-  [G007](gotchas/G007-tv-does-not-enforce-input-qualifier.md), the INV112
-  residual, and `regression/G007-input-qualifier-not-enforced.pine`.
 - **#61 (residual) - CW10003/4 consistency-warning precision.** A round of
   precision work landed across [INV114](investigations/INV114-consistency-warning-precision/notes.md)
   (series-contagion through call args; untyped-param "undetermined" gate),
@@ -413,33 +389,82 @@ IDs so the two stay in sync.
   libs). Net: warning tvOnly 26 -> 7, localOnly 1627 -> 1312, ~238 switch-MA
   FPs cleared, 0 new FPs; pinned by five `*.pine` regression fixtures. The
   INV-docs hold the probes/measurements - do NOT re-inline them here.
-  INV126 closed the Item 5 tail: `getStandardTrueRange` x2 and
-  `getTrendLineScore` now warn under the pinned conjunction of UDF indexes
-  user-declared global series plus inconsistent call context. The
-  implementation keeps this UDF classification non-transitive, so
-  `updateTrendLine` and `scan` stay silent.
 
-  **Pending** (each blocked, with its blocker):
-  - `FindST`: TV warns it; the criterion is unreproducible by probe (its local
-    leaves only index builtins / mutate arrays, both probed silent). See INV117.
-  - `1477fbef` `ta.atr` and `47d21dbd` `ta.sma` are untyped-param
-    undetermined-gate FPs, NOT typed-param call-site sensitivity (the prior
-    INV114 framing was wrong - corrected via the a21df338 triage). `71fb0ec4`'s
-    `updateTrendLine` FP was already resolved by INV116/INV118; its
-    `getTrendLineScore` FN is now resolved too (INV126 user-global-index rule -
-    NOT library data flow, which was a red herring). INV120's first two
-    attempts were reverted as net-negative because ancestor/context suppression
-    over-fired (+5 then +11 tvOnly FNs - `ta.ema`/`ta.crossover`/`_inRange`).
-    The landed INV120 Item 1 immediate-gate rule clears `1477fbef` `ta.atr`:
-    suppress only when the innermost governing condition is undetermined. It
-    intentionally does NOT clear `47d21dbd` `ta.sma`, whose immediate gate is the
-    series ternary `na(w[1])`; that remains a documented residual FP. Measured
-    2026-06-26: warning consistency localOnly 1312 -> 1311 (only `ta.atr`
-    cleared, no new entries), warning tvOnly held at 7 (the decisive FN gate -
-    neither reverted attempt's +5/+11 regression recurred).
-  - The other consistency FPs on TV-clean files (`draw_lbl` etc.) and the CW10013
-    shadowing tail (3 tv-only) need per-call-site arg-qualifier propagation into
-    params (#9). Backward-reference series tracking is a non-issue (none in corpus).
+  **Pending**:
+  - `FindST` (`db76cf79`): TV warns it; no reproducing probe under the
+    strategies tried so far (its local leaves only index builtins / mutate
+    arrays, both probed silent), and it has NOT yet been re-probed with a
+    conjunction-style battery - the technique that cracked INV119 /
+    `getTrendLineScore` in INV126. Still does not gate goal completion. See
+    INV117 (Family 2).
+  - `47d21dbd` `ta.sma` is an untyped-param undetermined-gate FP whose immediate
+    gate is the series ternary `na(w[1])` (the prior INV114 typed-param
+    call-site framing was wrong - corrected via the a21df338 triage). It is NOT
+    a permanent residual: the earlier INV120 over-fire (+5/+11 tvOnly FNs on
+    `ta.ema`/`ta.crossover`/`_inRange`, two attempts reverted) came from
+    ancestor-aware suppression riding a leaky qualifier heuristic. Loops 1-2
+    have since landed a REAL qualifier model (`qualifier.ts`
+    series>simple>input>const lattice + provenance), and Item 5 / INV126 showed
+    how to carry a clean qualifier set (`globalSeriesVars`) into the
+    SemanticAnalyzer consistency channel. So `ta.sma` is now ATTEMPTABLE as a
+    next-loop candidate: an INV126-style `--tv` probe round to pin its
+    outer-undetermined + sibling-na-seed criterion, then a model-backed
+    ancestor-aware suppression. (Sibling `1477fbef` `ta.atr` was the same class
+    and is already cleared by INV120's immediate-gate rule - suppress only when
+    the innermost governing condition is undetermined.)
+  - Three consistency-warning FPs on TV-clean files are DEFERRED as documented
+    residuals (like FindST), not fixable now: `61a3a7` (`ta.highest`/`lowest`),
+    `6152b9` (`ta.crossunder`), `f1b6bd45` (`draw_lbl`). All three are genuine FPs
+    (`compare-tv`: TV 0 errors / 0 warnings, no error-stop; we warn), but TV's
+    silence reproduces ONLY on the full carrier. SIX structural/whole-program
+    hypotheses were probed (`pine-lint --tv`, 2026-06-26) and ALL still WARN, so
+    no structural rule we can validate reproduces the silence - any fix would be
+    guessing, and this area already cost two reverted over-firing attempts
+    (INV120):
+    - `61a3a7`: outer `input.bool` guard over an inner series ternary (Q1:
+      `b=input.bool(true)` / `c = b ? (close>open ? ta.highest(close,100) :
+      ta.lowest(close,100)) : 0.0`) WARNS, same as the no-guard control; and the
+      call nested as a `color.from_gradient` arg (P1B) WARNS. So an outer
+      const/input guard does NOT silence an inner series call - the outer-guard
+      hypothesis is refuted.
+    - `6152b9`: `ta.crossunder` in `else if` CONDITION position (C1) WARNS; an
+      identical `ta.crossunder` evaluated unconditionally via plotshape (P2B) WARNS.
+    - `f1b6bd45`: a `var`-declared opaque (label/line) indexed purely for a
+      side-effect `delete` (`label.delete(lbl[1])`, D1, void-tail too) WARNS; a
+      const-bounded `for`-loop / loop-counter immediate gate (P3B) WARNS.
+    Likely a TV behavior on large/complex files we cannot model. The earlier
+    "these need per-call-site arg-qualifier propagation (#9)" framing is refuted -
+    the arg-qualifier-adjacent hypotheses above all still warn. Backward-reference
+    series tracking is a non-issue (none in corpus). #61's consistency-FP side is
+    largely closed: 1 fixed (`ta.atr`, d74060c), 3 unreproducible (here), 1
+    next-loop candidate (`ta.sma`, see above), the rest TV-error-stops / G005
+    phantoms.
+  - `math.sum` (`25a4a7`): a suspected consistency FP where the triage thinks we
+    may be MORE correct than TV. Probe-gated - run `--tv` first; act on it (or
+    record it as a TV FN) only if the probe confirms a real FP. Not yet probed.
+  - The CW10013 "Shadowing variable" tail (3 tv-only) is a separate documented
+    residual after Item 5 (INV126 landing measurement: warning tvOnly 7 -> 4 = the
+    3 CW10013 + 1 `FindST`).
+
+- **#62 - CE FN: ternary operations returning tuples are not flagged.** TV emits
+  a hard error `Ternary operations cannot return tuples` (it error-stops the
+  warning pass) on a UDF whose body is a ternary with tuple branches, e.g.
+  `getStandardOHLC() => cond ? [a, b] : request.security(...)`. Our checker does
+  NOT emit it - a false negative. Found as a lateral finding while probing
+  INV126 (its Battery A probes were malformed by exactly this shape, which TV
+  rejected and which error-stopped the warning pass). Reproduce with a minimal
+  fixture, pin a regression, then add the check. See
+  [INV126](investigations/INV126-item5-library-dataflow-probes/notes.md)
+  (Battery A note).
+- **#63 - G005 line-doubling phantom-FP risk in emitted diagnostics.** On
+  stray-CR / `\r\r\n` files, emitted diagnostic lines are ~2x the true source
+  line (the lexer doubles line numbers per G005's line-splitting convention).
+  The lexer fix aligned us WITH TV on terminator styles, but the doubled
+  coordinates remain a phantom-FP risk in triage / comparison tooling and for any
+  consumer mapping a diagnostic back to source. Flagged as a lateral finding in
+  the 2026-06-26 #61 triage; tracked as its own future item, not folded into the
+  consistency work. See
+  [G005](gotchas/G005-tv-diagnostic-position-conventions.md).
 
 ## Gotchas
 

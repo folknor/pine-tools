@@ -4,9 +4,11 @@ Date: 2026-06-27
 
 ## Source
 
-`reference/spec-loop-plan-followon.md` Item 4 (INV063 drawing-type / UDT
-annotation typing), built on the landed #9 foundation (Loop 2 grounding,
-commit 2e34e94). The Item 4 spec requires an orchestrator `--tv` probe
+TODO #9 (INV063 drawing-type / UDT annotation typing - the "Item 4" follow-on),
+built on the landed #9 inference foundation (Loop 2 grounding, commit 2e34e94).
+The originating orchestration plan (`reference/spec-loop-plan-followon.md` Item 4)
+was deleted once landed; its durable record is TODO #9, INV063, and git history.
+The Item 4 spec requires an orchestrator `--tv` probe
 side-step (codex is network-isolated) to confirm, per handle, that TV rejects
 an obviously-wrong assignment into the handle-typed variable BEFORE the code
 brick - so that typing the annotation in `mapToPineType` matches TV and is not

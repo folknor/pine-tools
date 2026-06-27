@@ -2,7 +2,10 @@
 
 **Date:** 2026-06-27
 **Status:** Loop 1 implementation for TODO #9. No verdict changes.
-**Source:** TODO #9 and `reference/spec-9-udf-inference-foundation.md` Piece 1.
+**Source:** TODO #9 (robust UDF-return inference, Loop 1 qualifier-provenance).
+The originating design substrate (`reference/spec-9-udf-inference-foundation.md`)
+was an orchestration artifact, deleted once landed; its durable record is TODO #9
+plus this loop's INV122/INV123/INV124 trail and the git history.
 
 ## Scope
 

@@ -4,9 +4,12 @@ Date: 2026-06-27
 
 ## Source
 
-TODO #9, `reference/spec-9-udf-inference-foundation.md` Section 5.3 / Section 7
-Loop 3. Loop 3 drops the two blanket reliability gates that compensate for the
-old `series<float>` UDF guess (now replaced by the Loop 2 fixpoint, INV123):
+TODO #9, Loop 3 (the gate-drop payoff). The originating design substrate
+(`reference/spec-9-udf-inference-foundation.md` Section 5.3 / Section 7 Loop 3)
+was an orchestration artifact, deleted once landed; its durable record is TODO #9
+plus the INV121-INV124 trail and git history. Loop 3 drops the two blanket
+reliability gates that compensate for the old `series<float>` UDF guess (now
+replaced by the Loop 2 fixpoint, INV123):
 
 - INV016's `isReliablyTyped` (union-arg check, `checker-calls.ts`) - skips any
   argument typed through a user variable or a UDF call.

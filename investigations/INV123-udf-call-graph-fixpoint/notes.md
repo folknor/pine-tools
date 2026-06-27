@@ -4,10 +4,12 @@ Date: 2026-06-27
 
 ## Summary
 
-**Source:** TODO #9 and `reference/spec-9-udf-inference-foundation.md` Piece 2
-(the call-graph fixpoint) and Piece 3 (the unified tuple path). Loop 2 of TODO #9
-replaces the checker-side untyped UDF parameter guess (`series<float>`) with a
-call-graph fixpoint. The fixpoint binds each untyped parameter to the join of the
+**Source:** TODO #9 (robust UDF-return inference, Loop 2: the call-graph fixpoint
+plus the unified tuple path). The originating design substrate
+(`reference/spec-9-udf-inference-foundation.md` Pieces 2/3) was an orchestration
+artifact, deleted once landed; its durable record is TODO #9 plus the
+INV121-INV124 trail and git history. Loop 2 of TODO #9 replaces the checker-side
+untyped UDF parameter guess (`series<float>`) with a call-graph fixpoint. The fixpoint binds each untyped parameter to the join of the
 argument types passed at resolvable call sites. Unresolved or conflicting call
 sites ground to `unknown`, not to a scalar guess.
 

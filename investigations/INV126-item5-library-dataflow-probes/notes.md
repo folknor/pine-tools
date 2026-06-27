@@ -4,11 +4,13 @@ Date: 2026-06-27
 
 ## Source
 
-`reference/spec-loop-plan-followon.md` Item 5 (#61 consistency-warning FALSE
-NEGATIVES: `getStandardTrueRange` x2, `getTrendLineScore`). This is the Step-0
-`--tv` probe round the plan mandates (codex cannot run `--tv`), run by the
-orchestrator to pin TV's exact criterion BEFORE any spec/code. Supersedes
-INV119's refutation of the bare "user-global-index" rule (see Reconciliation).
+TODO #61 (consistency-warning FALSE NEGATIVES: `getStandardTrueRange` x2,
+`getTrendLineScore` - the "Item 5" follow-on). The originating orchestration plan
+(`reference/spec-loop-plan-followon.md` Item 5) was deleted once landed; its
+durable record is TODO #61 and git history. This is the Step-0 `--tv` probe round
+the plan mandated (codex cannot run `--tv`), run by the orchestrator to pin TV's
+exact criterion BEFORE any spec/code. Supersedes INV119's refutation of the bare
+"user-global-index" rule (see Reconciliation).
 
 ## Carriers
 
