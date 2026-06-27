@@ -1,0 +1,6 @@
+//@version=6
+indicator("x")
+g() => close > open
+plot(nz(g()))
+b = g()
+plot(nz(b))

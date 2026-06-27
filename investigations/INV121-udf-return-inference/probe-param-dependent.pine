@@ -1,0 +1,4 @@
+//@version=6
+indicator("x")
+f(p) => p
+plot(nz(f("hello")))
