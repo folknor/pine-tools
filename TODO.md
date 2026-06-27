@@ -82,7 +82,7 @@ IDs so the two stay in sync.
     the `1477fbef` `ta.atr` / `47d21dbd` `ta.sma` carriers wrongly lumped into
     that count are untyped-param UNDETERMINED-GATE cases, not typed-param;
     `ta.atr` is already cleared by INV120's immediate-gate rule and `ta.sma` is
-    tracked under #61 as a next-loop candidate, so neither needs this Phase. (The INV014/INV016
+    tracked under #61 as a low-ROI tractable deferred fix, so neither needs this Phase. (The INV014/INV016
     UDF-return / user-var gates have already been dropped independently by
     Loop 3 - INV124 - so they are no longer waiting on this Phase.) Only
     REMOVES warnings TV doesn't emit, so low new-FP risk if the unknown-arg
@@ -400,18 +400,32 @@ IDs so the two stay in sync.
   - `47d21dbd` `ta.sma` is an untyped-param undetermined-gate FP whose immediate
     gate is the series ternary `na(w[1])` (the prior INV114 typed-param
     call-site framing was wrong - corrected via the a21df338 triage). It is NOT
-    a permanent residual: the earlier INV120 over-fire (+5/+11 tvOnly FNs on
-    `ta.ema`/`ta.crossover`/`_inRange`, two attempts reverted) came from
-    ancestor-aware suppression riding a leaky qualifier heuristic. Loops 1-2
-    have since landed a REAL qualifier model (`qualifier.ts`
-    series>simple>input>const lattice + provenance), and Item 5 / INV126 showed
-    how to carry a clean qualifier set (`globalSeriesVars`) into the
-    SemanticAnalyzer consistency channel. So `ta.sma` is now ATTEMPTABLE as a
-    next-loop candidate: an INV126-style `--tv` probe round to pin its
-    outer-undetermined + sibling-na-seed criterion, then a model-backed
-    ancestor-aware suppression. (Sibling `1477fbef` `ta.atr` was the same class
-    and is already cleared by INV120's immediate-gate rule - suppress only when
-    the innermost governing condition is undetermined.)
+    a permanent residual, but it is a LOW-ROI, now-tractable deferred fix - not
+    loop-worthy on its own. Calibration:
+    - The code is small: a suppression condition in `checkConditionalSeriesCall`,
+      not a subsystem. Difficulty was never the blocker.
+    - It is a false POSITIVE, so the risk is over-SUPPRESSION (silencing
+      legitimate warnings corpus-wide) - the riskier direction. The two reverted
+      INV120 attempts did exactly this (+5, then +11 tvOnly FNs on
+      `ta.ema`/`ta.crossover`/`_inRange`), and that detonated because the
+      ancestor-gate judgment rode the leaky `seriesVars` heuristic. Loops 1-2
+      landed a REAL qualifier model (`qualifier.ts` series>simple>input>const
+      lattice + provenance) and Item 5/INV126 showed how to carry a clean
+      qualifier set (`globalSeriesVars`) into the SemanticAnalyzer channel, so
+      the tooling gap that actually caused the reverts is now closed.
+    - The criterion is already HALF-PINNED: INV120's P2b narrowed TV's silence to
+      "outer-undetermined gate AND a distinct-sibling `na`-seed", so the probe
+      round is a short confirm/sharpen battery, not a from-scratch INV126-scale
+      investigation.
+    - The real reason it stays deferred is ROI asymmetry, NOT difficulty: it is
+      ONE corpus FP, and the downside (re-introducing FNs in the most-reverted
+      area of the checker) structurally outweighs the upside (-1 FP). If pursued
+      it does NOT need the full orchestration loop - a short `--tv` probe round
+      -> targeted model-backed suppression -> `lint:failures` warning-sweep gate
+      (zero new tvOnly) suffices.
+    (Sibling `1477fbef` `ta.atr` was the same class and is already cleared by
+    INV120's immediate-gate rule - suppress only when the innermost governing
+    condition is undetermined.)
   - Three consistency-warning FPs on TV-clean files are DEFERRED as documented
     residuals (like FindST), not fixable now: `61a3a7` (`ta.highest`/`lowest`),
     `6152b9` (`ta.crossunder`), `f1b6bd45` (`draw_lbl`). All three are genuine FPs
@@ -437,8 +451,8 @@ IDs so the two stay in sync.
     the arg-qualifier-adjacent hypotheses above all still warn. Backward-reference
     series tracking is a non-issue (none in corpus). #61's consistency-FP side is
     largely closed: 1 fixed (`ta.atr`, d74060c), 3 unreproducible (here), 1
-    next-loop candidate (`ta.sma`, see above), the rest TV-error-stops / G005
-    phantoms.
+    low-ROI tractable deferred fix (`ta.sma`, see above), the rest TV-error-stops
+    / G005 phantoms.
   - `math.sum` (`25a4a7`): a suspected consistency FP where the triage thinks we
     may be MORE correct than TV. Probe-gated - run `--tv` first; act on it (or
     record it as a TV FN) only if the probe confirms a real FP. Not yet probed.
