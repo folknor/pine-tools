@@ -7,6 +7,7 @@ import {
 	type PineFunction,
 	VARIABLES_BY_NAME,
 } from "../../../../pine-data/v6";
+import { leadingQualifierOf, type Qualifier, qualRank } from "./qualifier";
 import type { PineType } from "./types";
 
 /**
@@ -563,22 +564,15 @@ export function getPolymorphicReturnType(
 // ===========================================================================
 
 const CONST_SCALAR_BASES = new Set(["int", "float", "bool", "string", "color"]);
-const QUALIFIER_RANK: Record<string, number> = {
-	const: 0,
-	input: 1,
-	simple: 2,
-	series: 3,
-};
 
 // Leading qualifier of a raw pine-data OR internal type string. "const int" ->
 // "const", "series<int>" -> "series", "int" -> undefined.
-function leadingQualifier(type: string): string | undefined {
-	const m = type.trim().match(/^(const|input|simple|series)\b/);
-	return m ? m[1] : undefined;
+function leadingQualifier(type: string): Qualifier | undefined {
+	return leadingQualifierOf(type);
 }
 
 function qrank(q: string | undefined): number {
-	return q ? (QUALIFIER_RANK[q] ?? 0) : 0;
+	return q ? qualRank(q as Qualifier) : 0;
 }
 
 // Base type with any qualifier stripped. Handles space form ("const int" ->

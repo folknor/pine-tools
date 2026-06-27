@@ -755,3 +755,7 @@ contradiction means re-measure, not "the earlier author was wrong."
   series and the `ta.stdev` pair warns (tvOnly 12->10, 0 FPs). Records the
   Family-3 criterion correction (indexing a USER global series var counts;
   INV018 p4's "globals don't count" is too broad - it's BUILTIN globals).
+- [INV122](INV122-qualifier-provenance/notes.md) - TODO #9 Loop 1:
+  first-class qualifier provenance channel, shared qualifier lattice,
+  conservative `exprQualifier` wrapper, UDF const-preservation capability,
+  and zero corpus verdict movement.

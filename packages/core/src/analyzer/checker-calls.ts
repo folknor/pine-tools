@@ -16,7 +16,6 @@ import type {
 	Identifier,
 	Literal,
 	MemberExpression,
-	TernaryExpression,
 	UnaryExpression,
 } from "../parser/ast";
 import {
@@ -57,6 +56,8 @@ import {
 	NESTED_COLLECTION_MESSAGE,
 	SCALAR_BASE_TYPES,
 } from "./checker-helpers";
+import { qualifierProvenance } from "./checker-provenance";
+import type { Qualifier } from "./qualifier";
 import { type PineType, TypeChecker } from "./types";
 
 // User-function call-site validation (CE10115/CE10165/CE10123). The local
@@ -1455,78 +1456,23 @@ export function checkConstArgs(
 	}
 }
 
-// Qualifier lattice for arg-qualifier inference: const < input < simple <
-// series (TV's promotion order). see INV112
-const QUALIFIER_NAMES = ["const", "input", "simple", "series"] as const;
-type QualName = (typeof QUALIFIER_NAMES)[number];
-const qrankOf = (q: QualName): number => QUALIFIER_NAMES.indexOf(q);
-
 // Infer the qualifier of an expression (const/input/simple/series), promoting
 // composites to their strongest operand: a ternary or binary over a series
 // operand is series. Returns null when it cannot be determined for ANY leaf,
 // so callers stay conservative (a `true ? "a" : "b"` of all-const leaves is
 // const and must not be flagged; an unresolvable leaf yields null = lenient).
-// see INV112
+// Conservative policy keeps UDF/user-var/switch behavior identical to the
+// original scattered reader while the full resolver stays available. see INV122
 export function exprQualifier(
 	v: UnifiedPineValidator,
 	expr: Expression,
 	version: string,
-): QualName | null {
-	switch (expr.type) {
-		case "Literal":
-			return "const";
-		case "Identifier": {
-			const name = (expr as Identifier).name;
-			const info = getBuiltinVarInfo(name);
-			if (info) return info.qualifier as QualName;
-			const sym = v.symbolTable.lookup(name);
-			const symType = sym?.type as string | undefined;
-			const m = symType?.match(/^(series|input|simple|const)[< ]/);
-			if (sym?.kind === "variable" && m) return m[1] as QualName;
-			return null;
-		}
-		case "MemberExpression": {
-			const m = expr as MemberExpression;
-			if (m.object.type !== "Identifier") return null;
-			const name = `${(m.object as Identifier).name}.${m.property.name}`;
-			if (isBuiltinConstant(name)) return "const";
-			const info = getBuiltinVarInfo(name);
-			if (info) return info.qualifier as QualName;
-			return null;
-		}
-		case "CallExpression": {
-			const ce = expr as CallExpression;
-			const name = memberChainName(ce.callee);
-			if (!name) return null;
-			const argTypes = ce.arguments.map((a) =>
-				v.inferExpressionType(a.value, version),
-			);
-			const raw = resolveCallReturnRaw(name, argTypes);
-			const lead = raw?.match(/^(const|input|simple|series)\b/);
-			return lead ? (lead[1] as QualName) : null;
-		}
-		case "UnaryExpression":
-			return exprQualifier(v, (expr as UnaryExpression).argument, version);
-		case "BinaryExpression": {
-			const b = expr as BinaryExpression;
-			const l = exprQualifier(v, b.left, version);
-			const r = exprQualifier(v, b.right, version);
-			if (l === null || r === null) return null;
-			return qrankOf(l) >= qrankOf(r) ? l : r;
-		}
-		case "TernaryExpression": {
-			const t = expr as TernaryExpression;
-			const parts = [t.condition, t.consequent, t.alternate].map((e) =>
-				exprQualifier(v, e, version),
-			);
-			if (parts.some((p) => p === null)) return null;
-			return (parts as QualName[]).reduce((a, b) =>
-				qrankOf(a) >= qrankOf(b) ? a : b,
-			);
-		}
-		default:
-			return null;
-	}
+): Qualifier | null {
+	return (
+		qualifierProvenance(v, expr, version, {
+			trustUdfAndUserVars: false,
+		})?.qualifier ?? null
+	);
 }
 
 // Decide whether an argument expression is PROVABLY non-const, and if so

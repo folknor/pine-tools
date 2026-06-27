@@ -10,6 +10,7 @@ import type {
 	CallExpression,
 	Expression,
 	ExpressionStatement,
+	FunctionDeclaration,
 	FunctionParam,
 	Identifier,
 	IfExpression,
@@ -70,6 +71,7 @@ import {
 	NESTED_COLLECTION_MESSAGE,
 	SCALAR_BASE_TYPES,
 } from "./checker-helpers";
+import type { UdfBodyRecord } from "./checker-provenance";
 import {
 	defineTupleVariables,
 	inferTupleElementTypes,
@@ -173,6 +175,9 @@ export class UnifiedPineValidator {
 	// distinguishable by explicit type are TV's CE10110/CE10112/CE10113. see
 	// INV091
 	public functionDeclSignatures: Map<string, FunctionParam[][]> = new Map();
+	// UDF body registry for structural qualifier provenance. It deliberately
+	// stores declarations separately from return-type inference. see INV122
+	public udfBodyRecords: Map<string, UdfBodyRecord[]> = new Map();
 	// Names declared as a METHOD. A method can share a name with a function
 	// (legal overload); UDF call-site validation skips such names since the
 	// captured function signature may not be the overload a plain call resolves
@@ -212,6 +217,7 @@ export class UnifiedPineValidator {
 		this.currentFunctionName = null;
 		this.overloadedFunctionNames.clear();
 		this.functionDeclSignatures.clear();
+		this.udfBodyRecords.clear();
 		this.methodDeclaredNames.clear();
 		this.loopDepth = 0;
 
@@ -369,6 +375,15 @@ export class UnifiedPineValidator {
 				this.collectDeclarations(stmt, version);
 			}
 		}
+	}
+
+	private recordUdfBody(statement: FunctionDeclaration): void {
+		let records = this.udfBodyRecords.get(statement.name);
+		if (!records) {
+			records = [];
+			this.udfBodyRecords.set(statement.name, records);
+		}
+		records.push({ declaration: statement, body: statement.body });
 	}
 
 	// The governing condition expressions of a conditional-expression node
@@ -775,6 +790,7 @@ export class UnifiedPineValidator {
 				checkFunctionRedefinition(this, statement, version);
 
 				// Register the function in the symbol table at the outer scope
+				this.recordUdfBody(statement);
 				this.declaredFunctionNames.add(statement.name); // see INV036
 				this.symbolTable.define({
 					name: statement.name,

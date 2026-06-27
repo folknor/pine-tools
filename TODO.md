@@ -41,6 +41,10 @@ IDs so the two stay in sync.
   UDFs mis-inferred as series<float> - 58 corpus FPs in the reverted
   attempt).
 
+  Implementation trail: Loop 1 qualifier provenance is recorded in
+  [INV122](investigations/INV122-qualifier-provenance/notes.md). Remaining
+  work is still Loop 2 grounded UDF inference and Loop 3 gate removal.
+
   **Concrete plan - per-call-site arg-qualifier propagation (the shared
   infrastructure).** Today the analysis is call-site INSENSITIVE: a UDF's
   param qualifier comes from its type annotation alone (`withSeriesParams`

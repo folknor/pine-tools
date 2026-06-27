@@ -1,0 +1,8 @@
+// Description: UDF returning a const literal remains valid for input.int(defval)
+// @expects errors: 0
+
+//@version=6
+indicator("x")
+f() => 5
+y = input.int(defval = f())
+plot(y)
