@@ -1276,49 +1276,6 @@ export function validateFunctionArguments(
 	checkUnionArgs(v, call, functionName, version);
 }
 
-// Whether an expression's inferred type is trustworthy enough to flag an
-// arg-type mismatch on. Literals and operator expressions have solid type
-// rules; built-in vars/constants/calls carry types straight from pine-data.
-// User identifiers and user-defined-function calls are excluded - our
-// inference for those is the known-shaky path (UDF returns, etc.), and a
-// wrong base there would surface as a false positive. see INV016.
-export function isReliablyTyped(
-	v: UnifiedPineValidator,
-	expr: Expression,
-): boolean {
-	switch (expr.type) {
-		case "Literal":
-		case "BinaryExpression":
-		case "UnaryExpression":
-			return true;
-		case "Identifier":
-			return getBuiltinVarInfo((expr as Identifier).name) !== undefined;
-		case "MemberExpression": {
-			const m = expr as MemberExpression;
-			if (m.object.type !== "Identifier") return false;
-			const name = `${(m.object as Identifier).name}.${m.property.name}`;
-			return isBuiltinConstant(name) || getBuiltinVarInfo(name) !== undefined;
-		}
-		case "CallExpression": {
-			const ce = expr as CallExpression;
-			let name = "";
-			if (ce.callee.type === "Identifier") {
-				name = (ce.callee as Identifier).name;
-			} else if (ce.callee.type === "MemberExpression") {
-				const mm = ce.callee as MemberExpression;
-				if (mm.object.type === "Identifier") {
-					name = `${(mm.object as Identifier).name}.${mm.property.name}`;
-				}
-			}
-			// Built-in call (return type from pine-data) - trust it; a UDF call
-			// is not in functionSignatures, so it's excluded.
-			return name !== "" && v.functionSignatures.has(name);
-		}
-		default:
-			return false;
-	}
-}
-
 // Validate arguments against UNION-typed params (e.g. nz's
 // `series int/float/color`, int's `series int/float`). The main arg loop maps
 // a union to "unknown" via mapToPineType and skips it (the INV013 safety net),
@@ -1358,12 +1315,19 @@ export function checkUnionArgs(
 			paramInfo = unionParamInfo(functionName, index);
 		}
 		if (!members) continue;
-		// Only trust the arg's type when it comes from a reliable source.
-		// Broad union-checking otherwise amplifies every type-inference gap
-		// (UDF returns, user vars) into a false positive on valid code - e.g.
-		// `color.from_gradient(Vol, ...)` where `Vol = someUdf()` is a float we
-		// mis-infer as bool. Mirrors describeNonConstArg's conservatism. INV016
-		if (!isReliablyTyped(v, arg.value)) continue;
+		// A redeclared name (CE10095) has two conflicting declarations; our
+		// symbol table resolves to the last while TV uses the first, so the
+		// inferred base is untrustworthy - skip it rather than risk a
+		// wrong-scalar FP (the residual narrowing for the dropped
+		// isReliablyTyped blanket). see INV124
+		if (
+			arg.value.type === "Identifier" &&
+			v.redeclaredNames.has((arg.value as Identifier).name)
+		)
+			continue;
+		// Loop 2's grounded UDF/user-var inference makes broad union checking
+		// safe: unresolved or conflicting inputs ground to unknown and are
+		// skipped below, while known scalar bases can be checked. see INV123/INV124
 		const argType = v.inferExpressionType(arg.value, version);
 		const argBase = v.getBaseType(argType);
 		if (!SCALARS.has(argBase)) continue; // unknown/na/non-scalar -> skip
@@ -1477,11 +1441,16 @@ export function exprQualifier(
 
 // Decide whether an argument expression is PROVABLY non-const, and if so
 // describe it (argumentType + user-friendly repr) for the CE10123 message.
-// Deliberately conservative: returns null whenever we can't be certain
-// (user variables, composite expressions, user-defined functions), so we
-// never flag something TV would accept. Catches the common cases: built-in
-// calls whose resolved overload returns simple/series/input (e.g.
-// timestamp("UTC", y, m, d, ...)) and non-const built-in variables. see INV014
+// Deliberately conservative: returns null whenever the qualifier cannot be
+// proven non-const (a bare-scalar user variable, a composite whose leaves are
+// all const, an unresolvable expression), so we never flag something TV would
+// accept. Catches: built-in calls whose resolved overload returns
+// simple/series/input (e.g. timestamp("UTC", y, m, d, ...)), non-const
+// built-in variables, series/input-qualified user vars (INV040), and non-const
+// composites (INV112). A UDF call is resolved through Loop 1's trusting
+// provenance channel, which preserves const through a const-returning body
+// (f() => 5 stays clean) and flags a grounded non-const return (f() => close).
+// see INV014/INV122/INV124
 export function describeNonConstArg(
 	v: UnifiedPineValidator,
 	expr: Expression,
@@ -1504,10 +1473,25 @@ export function describeNonConstArg(
 				v.inferExpressionType(a.value, version),
 			);
 			const raw = resolveCallReturnRaw(name, argTypes);
-			// Only a positively non-const (simple/series/input) resolved return
-			// is grounds to flag; const or unknown -> leave it alone.
-			if (raw && /^(simple|series|input)\b/.test(raw)) {
-				return { typeStr: raw, repr: `call "${name}" (${raw})` };
+			// Builtin path: a resolved simple/series/input return is grounds to
+			// flag; a resolved const return is left alone. An unresolved return
+			// (raw undefined - a UDF, or a builtin whose overload didn't match)
+			// falls through to the UDF provenance fallback below.
+			if (raw) {
+				if (/^(simple|series|input)\b/.test(raw)) {
+					return { typeStr: raw, repr: `call "${name}" (${raw})` };
+				}
+				return null;
+			}
+			// UDF fallback: resolveCallReturnRaw only knows builtins. The
+			// trusting provenance path preserves const-returning UDF calls while
+			// exposing genuinely non-const returns. see INV122/INV124
+			const prov = qualifierProvenance(v, expr, version, {
+				trustUdfAndUserVars: true,
+			});
+			if (prov && prov.qualifier !== "const" && prov.base !== "unknown") {
+				const typeStr = `${prov.qualifier} ${prov.base}`;
+				return { typeStr, repr: `call "${name}" (${typeStr})` };
 			}
 			return null;
 		}

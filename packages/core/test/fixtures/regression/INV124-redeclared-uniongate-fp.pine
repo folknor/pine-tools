@@ -1,0 +1,10 @@
+// @test regression/INV124-redeclared-uniongate-fp
+// @description INV124 union-gate FP guard: a redeclared variable (float then bool) passed to a union-typed param must NOT raise CE10123. TV resolves later references to the FIRST (float) declaration and is silent on the call; our symbol table keeps the bool, so the union gate skips redeclared names. Only the CE10095 redeclaration error remains.
+// @expects errors: 1
+// @expects error: line=4, message="already defined"
+//@version=6
+indicator("redecl union gate fp")
+float x = close
+bool x = ta.crossover(close, open)
+z = ta.crossover(close, x)
+plot(z ? 1 : 0)

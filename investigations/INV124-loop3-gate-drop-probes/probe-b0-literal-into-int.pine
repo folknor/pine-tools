@@ -1,0 +1,4 @@
+//@version=6
+indicator("probe b0")
+x = int("hello")
+plot(x)

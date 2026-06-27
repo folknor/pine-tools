@@ -1,0 +1,5 @@
+//@version=6
+indicator("probe b1")
+f(p) => p
+x = int(f("hello"))
+plot(x)

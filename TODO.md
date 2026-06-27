@@ -20,11 +20,11 @@ regenerate with `node scripts/find-real-failures.mjs` followed by
 indexed at [investigations/README.md](investigations/README.md)
 and are not duplicated here - TODO.md is for *pending* work only.
 
-Measurement note, 2026-06-27: before and after INV123, the local snapshot was
-stable at 1879 fixtures, 622 fixtures with errors, and 16063 total error
-records. The TV inventory command scanned 748 v6 fixtures but all 748 TV
-responses were unparseable in this sandbox, so the generated FP/FN category
-counts for this run are not a usable TV parity measurement.
+Measurement note, 2026-06-27: after INV124, the local snapshot is stable at
+1879 fixtures, 622 fixtures with errors, and 16057 total error records.
+`node scripts/regression-check.mjs` reports 0 changed fixtures, 0 new error
+appearances, and 0 disappeared appearances. The current categorized inventory
+scans 748 v6 fixtures and reports 0 local-only and 0 tv-only categories.
 
 ## Pending follow-ups
 
@@ -37,11 +37,11 @@ IDs so the two stay in sync.
   and INV024 (the biggest single cluster was a parser bug masquerading
   as inference - qualifier-led declarations truncating function
   bodies); remaining FPs need a fresh corpus diff and per-category
-  dives. Robust UDF-return inference here would also let INV016's
-  union-arg check and INV014's const-arg check drop their conservative
-  reliability gates (both currently skip args typed via UDF returns /
-  user vars to avoid FPs, so they miss real violations that flow
-  through a variable), and would unblock INV063's residual FNs
+  dives. Robust UDF-return inference also let INV016's union-arg check
+  and INV014's const-arg check drop their conservative reliability gates
+  (they used to skip args typed via UDF returns / user vars to avoid FPs,
+  so they missed real violations that flow through a variable; the gates
+  are now dropped - Loop 3 below), and would unblock INV063's residual FNs
   (`line l = 5`, `Point p = 5`: drawing-type/UDT annotations are left
   untyped in mapToPineType because typing them surfaces line-returning
   UDFs mis-inferred as series<float> - 58 corpus FPs in the reverted
@@ -50,17 +50,21 @@ IDs so the two stay in sync.
   Implementation trail: Loop 1 qualifier provenance is recorded in
   [INV122](investigations/INV122-qualifier-provenance/notes.md). Loop 2
   grounded UDF inference is recorded in
-  [INV123](investigations/INV123-udf-call-graph-fixpoint/notes.md). Remaining
-  work is Loop 3 gate removal and the qualifier-propagation work below.
+  [INV123](investigations/INV123-udf-call-graph-fixpoint/notes.md). Loop 3 gate
+  removal is recorded in
+  [INV124](investigations/INV124-loop3-gate-drop-probes/notes.md). Remaining
+  work is the qualifier-propagation work below.
 
   **Concrete plan - per-call-site arg-qualifier propagation (the shared
   infrastructure).** Today the analysis is call-site INSENSITIVE: a UDF's
   param qualifier comes from its type annotation alone (`withSeriesParams`
   in `semanticAnalyzer.ts`; typed-unqualified -> series, untyped ->
   undetermined per INV114 Fix 2), never from the arguments actually passed.
-  TV monomorphizes per call site; we don't. That single gap drives both the
-  consistency-warning FPs and FNs (#61) and the INV014/INV016 gate
-  conservatism.
+  TV monomorphizes per call site; we don't. That single gap drives the
+  consistency-warning FPs and FNs (#61); it also drove the INV014/INV016 gate
+  conservatism, now resolved at the blanket level by Loop 3 (INV124) - only the
+  const-gate's user-var-into-const-param residual stays on its conservative
+  branch (no TV witness; see INV124).
   - **Phase 1 - call-site arg-qualifier collection (tractable, FP-reducing,
     TV-backed).** Add a pre-pass that, per UDF, gathers every call site and
     unions each argument's inferred qualifier; `withSeriesParams` then keys
@@ -72,10 +76,11 @@ IDs so the two stay in sync.
     the `1477fbef` `ta.atr` / `47d21dbd` `ta.sma` carriers wrongly lumped into
     that count are untyped-param UNDETERMINED-GATE cases, not typed-param;
     `ta.atr` is already cleared by INV120's immediate-gate rule and `ta.sma` is
-    a documented residual, so neither needs this Phase. This Phase also lets
-    INV014/INV016 drop their UDF-return / user-var gates. Only REMOVES warnings
-    TV doesn't emit, so low new-FP risk if the unknown-arg path stays
-    conservative (current behavior). Hard sub-problem:
+    a documented residual, so neither needs this Phase. (The INV014/INV016
+    UDF-return / user-var gates have already been dropped independently by
+    Loop 3 - INV124 - so they are no longer waiting on this Phase.) Only
+    REMOVES warnings TV doesn't emit, so low new-FP risk if the unknown-arg
+    path stays conservative (current behavior). Hard sub-problem:
     an arg's qualifier can depend on the ENCLOSING function's param (UDF
     called inside a UDF) -> needs fixpoint / topological resolution over the
     call graph with recursion guards; first cut resolves only directly-

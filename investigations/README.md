@@ -763,3 +763,11 @@ contradiction means re-measure, not "the earlier author was wrong."
   identity-keyed UDF parameter binding fixpoint, shared scalar/tuple
   grounding, removal of the untyped-param `series<float>` guess, and zero
   local corpus verdict movement.
+- [INV124](INV124-loop3-gate-drop-probes/notes.md) - TODO #9 Loop 3:
+  dropped the two blanket reliability gates the old `series<float>` guess
+  needed - INV016's `isReliablyTyped` union-arg skip and INV014's
+  `describeNonConstArg` UDF conservatism - so CE10123 now catches violations
+  flowing through a UDF call or user var (probes B1/B2/C, all `--tv`-confirmed)
+  while const is preserved through a const-returning UDF (probe A). Includes the
+  one corpus union-gate FP this surfaced (a CE10095-redeclared name whose two
+  channels disagree on the base) and its narrowing fix (`redeclaredNames` skip).

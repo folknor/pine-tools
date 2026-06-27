@@ -161,6 +161,13 @@ export class UnifiedPineValidator {
 	// single set. Unlike the symbol table, if-bodies get their own frame
 	// here (TV scopes them) and builtins never enter it. see INV035
 	public declScopes: Array<Set<string>> = [];
+	// Names that triggered a CE10095 redeclaration (declared more than once in
+	// the same scope). Their inferred type is untrustworthy: our symbol table
+	// keeps the LAST declaration's type while TV resolves later references to
+	// the FIRST, so the two channels can disagree on the base. The union-arg
+	// gate (checkUnionArgs) skips arguments referencing such a name to avoid a
+	// false positive on the wrong-scalar resolution. see INV124 / INV035
+	public redeclaredNames: Set<string> = new Set();
 	// Name of the UDF / method whose body is currently being validated, or
 	// null at top level. Pine v6 forbids recursion: a direct self-call inside
 	// the body resolves to nothing (TV reports CE10271 "Could not find function

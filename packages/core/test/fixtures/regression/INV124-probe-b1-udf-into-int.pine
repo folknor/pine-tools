@@ -1,0 +1,9 @@
+// @test regression/INV124-probe-b1-udf-into-int
+// @description INV124 Probe B1: a non-numeric UDF return passed directly to int() is CE10123.
+// @expects errors: 1
+// @expects error: line=4, message="simple int"
+//@version=6
+indicator("probe b1")
+f(p) => p
+x = int(f("hello"))
+plot(x)

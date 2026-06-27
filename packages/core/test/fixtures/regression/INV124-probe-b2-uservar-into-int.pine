@@ -1,0 +1,10 @@
+// @test regression/INV124-probe-b2-uservar-into-int
+// @description INV124 Probe B2: a through-variable non-numeric UDF return passed to int() is CE10123.
+// @expects errors: 1
+// @expects error: line=5, message="simple int"
+//@version=6
+indicator("probe b2")
+f(p) => p
+b = f("hello")
+x = int(b)
+plot(x)

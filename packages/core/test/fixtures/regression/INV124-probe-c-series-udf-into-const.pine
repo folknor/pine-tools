@@ -1,0 +1,9 @@
+// @test regression/INV124-probe-c-series-udf-into-const
+// @description INV124 Probe C: a series-returning UDF passed to input.int(defval) is CE10123.
+// @expects errors: 1
+// @expects error: line=4, message="series float"
+//@version=6
+indicator("probe c")
+f() => close
+y = input.int(defval = f())
+plot(y)

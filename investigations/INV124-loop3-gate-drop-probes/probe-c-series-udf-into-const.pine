@@ -1,0 +1,5 @@
+//@version=6
+indicator("probe c")
+f() => close
+y = input.int(defval = f())
+plot(y)

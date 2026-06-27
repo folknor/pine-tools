@@ -259,6 +259,9 @@ export function checkRedeclaration(
 	const frame = v.declScopes[v.declScopes.length - 1];
 	if (!frame) return;
 	if (version === "6" && frame.has(name)) {
+		// Record the conflict so type-dependent gates (the union-arg check)
+		// can treat references to this name as untrustworthy. see INV124
+		v.redeclaredNames.add(name);
 		const startLine = statement.startLine ?? statement.line;
 		const startColumn = statement.startColumn ?? statement.column;
 		const span =

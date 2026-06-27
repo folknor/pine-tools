@@ -1,0 +1,8 @@
+// @test regression/INV124-probe-a-const-udf-accept
+// @description INV124 Probe A: a const-returning UDF remains const-eligible for input.int(defval). TV accepts this shape.
+// @expects errors: 0
+//@version=6
+indicator("probe a")
+f() => 5
+y = input.int(defval = f())
+plot(y)

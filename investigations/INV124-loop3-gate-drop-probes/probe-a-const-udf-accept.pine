@@ -1,0 +1,5 @@
+//@version=6
+indicator("probe a")
+f() => 5
+y = input.int(defval = f())
+plot(y)
