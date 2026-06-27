@@ -1,0 +1,10 @@
+//@version=6
+indicator("Ak4")
+import jason5480/series_collection/4 as col
+trueRange() => na(close[1]) ? high - low : math.max(high - low, math.abs(high - close[1]), math.abs(low - close[1]))
+var float ladder = na
+if close > open
+    ladder := col.cust_series(14, col.SeriesType.rma, trueRange())
+dyn = col.cust_series(14, col.SeriesType.rma, trueRange())
+control = close > open ? ta.sma(close, 5) : 0.0
+plot(dyn + control)

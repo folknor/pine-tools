@@ -57,6 +57,16 @@ export class SemanticAnalyzer {
 	// the collect pass, in source order, so declaration-before-use makes
 	// transitive UDF->UDF dependence resolve. see TODO #32.
 	private historyDependentUdfs: Set<string> = new Set();
+	// Names of USER-DECLARED GLOBAL series variables (direct children of the
+	// program body whose value is series-qualified). Distinct from `seriesVars`
+	// (which also holds locals and transient params). Drives the global-index
+	// history-dependence rule. Builtins (`close`, `high`) are never added here.
+	// see INV126
+	private globalSeriesVars: Set<string> = new Set();
+	// UDFs that are history-dependent solely because their body indexes a user-
+	// declared GLOBAL series var. Kept separate from `historyDependentUdfs`
+	// because this flavour does not propagate to callers. see INV126
+	private globalIndexDependentUdfs: Set<string> = new Set();
 	// import alias -> library path (`import a/b/1 as lib` -> lib -> "a/b/1"),
 	// so a `lib.member()` call can be resolved against the vendored library's
 	// history-dependent export set. see INV118
@@ -109,6 +119,8 @@ export class SemanticAnalyzer {
 		this.declaredVariables.clear();
 		this.usedVariables.clear();
 		this.historyDependentUdfs.clear();
+		this.globalSeriesVars.clear();
+		this.globalIndexDependentUdfs.clear();
 		this.conditionalScopeKinds = [];
 		this.currentUntypedParams = new Set();
 		this.conditionalGateUndetermined = [];
@@ -129,6 +141,8 @@ export class SemanticAnalyzer {
 
 		// First pass: collect all variable declarations
 		this.collectVariableDeclarations(ast);
+		this.collectGlobalSeriesVars(ast.body);
+		this.classifyGlobalIndexUdfs(ast.body);
 
 		// Second pass: analyze statements and track usage
 		for (const statement of ast.body) {
@@ -732,6 +746,9 @@ export class SemanticAnalyzer {
 		if (call.callee.type === "Identifier") {
 			functionName = call.callee.name;
 			histDep = this.isHistoryDependentFunction(functionName);
+			if (!histDep && this.globalIndexDependentUdfs.has(functionName)) {
+				histDep = true;
+			}
 		} else if (call.callee.type === "MemberExpression") {
 			const member = call.callee;
 			const full =
@@ -747,7 +764,10 @@ export class SemanticAnalyzer {
 				functionName = FUNCTIONS_BY_NAME.get(full)?.flags?.historyDependent
 					? full
 					: member.property.name;
-			} else if (this.historyDependentUdfs.has(member.property.name)) {
+			} else if (
+				this.historyDependentUdfs.has(member.property.name) ||
+				this.globalIndexDependentUdfs.has(member.property.name)
+			) {
 				histDep = true;
 				functionName = member.property.name;
 			}
@@ -978,6 +998,50 @@ export class SemanticAnalyzer {
 		}
 	}
 
+	private collectGlobalSeriesVars(body: Statement[]): void {
+		for (const statement of body) {
+			if (statement.type === "VariableDeclaration" && statement.name) {
+				if (this.seriesVars.has(statement.name)) {
+					this.globalSeriesVars.add(statement.name);
+				}
+			} else if (
+				statement.type === "AssignmentStatement" &&
+				statement.target.type === "Identifier"
+			) {
+				if (this.seriesVars.has(statement.target.name)) {
+					this.globalSeriesVars.add(statement.target.name);
+				}
+			} else if (statement.type === "TupleDeclaration") {
+				for (const name of statement.names) {
+					if (name && this.seriesVars.has(name)) {
+						this.globalSeriesVars.add(name);
+					}
+				}
+			}
+		}
+	}
+
+	private classifyGlobalIndexUdfs(body: Statement[]): void {
+		for (const statement of body) {
+			if (
+				(statement.type === "FunctionDeclaration" ||
+					statement.type === "MethodDeclaration") &&
+				statement.name &&
+				!this.historyDependentUdfs.has(statement.name) &&
+				this.scanStatementsForGlobalIndex(
+					statement.body,
+					new Set(
+						statement.params
+							.map((param) => param.name)
+							.filter((name): name is string => !!name),
+					),
+				)
+			) {
+				this.globalIndexDependentUdfs.add(statement.name);
+			}
+		}
+	}
+
 	private collectDeclarationsInStatement(
 		statement: Statement,
 		inSeriesConditional = false,
@@ -1187,6 +1251,98 @@ export class SemanticAnalyzer {
 			}
 		}
 		return false;
+	}
+
+	private scanStatementsForGlobalIndex(
+		statements: Statement[],
+		scopeNames: Set<string>,
+	): boolean {
+		for (const statement of statements) {
+			if (statement.type === "VariableDeclaration" && statement.name) {
+				scopeNames.add(statement.name);
+			} else if (statement.type === "TupleDeclaration") {
+				for (const name of statement.names) {
+					if (name) scopeNames.add(name);
+				}
+			}
+			for (const expr of this.statementExpressions(statement)) {
+				if (this.exprIndexesGlobalSeries(expr, scopeNames)) {
+					return true;
+				}
+			}
+			if (
+				this.scanStatementsForGlobalIndex(
+					this.childStatements(statement),
+					scopeNames,
+				)
+			) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private exprIndexesGlobalSeries(
+		expr: Expression,
+		scopeNames: Set<string>,
+	): boolean {
+		switch (expr.type) {
+			case "IndexExpression":
+				if (
+					expr.object.type === "Identifier" &&
+					this.globalSeriesVars.has(expr.object.name) &&
+					!scopeNames.has(expr.object.name)
+				) {
+					return true;
+				}
+				return (
+					this.exprIndexesGlobalSeries(expr.object, scopeNames) ||
+					this.exprIndexesGlobalSeries(expr.index, scopeNames)
+				);
+			case "CallExpression":
+				return (
+					this.exprIndexesGlobalSeries(expr.callee, scopeNames) ||
+					expr.arguments.some((arg) =>
+						this.exprIndexesGlobalSeries(arg.value, scopeNames),
+					)
+				);
+			case "MemberExpression":
+				return this.exprIndexesGlobalSeries(expr.object, scopeNames);
+			case "BinaryExpression":
+				return (
+					this.exprIndexesGlobalSeries(expr.left, scopeNames) ||
+					this.exprIndexesGlobalSeries(expr.right, scopeNames)
+				);
+			case "UnaryExpression":
+				return this.exprIndexesGlobalSeries(expr.argument, scopeNames);
+			case "TernaryExpression":
+				return (
+					this.exprIndexesGlobalSeries(expr.condition, scopeNames) ||
+					this.exprIndexesGlobalSeries(expr.consequent, scopeNames) ||
+					this.exprIndexesGlobalSeries(expr.alternate, scopeNames)
+				);
+			case "ArrayExpression":
+				return expr.elements.some((element) =>
+					this.exprIndexesGlobalSeries(element, scopeNames),
+				);
+			case "SwitchExpression":
+				return (
+					(expr.discriminant
+						? this.exprIndexesGlobalSeries(expr.discriminant, scopeNames)
+						: false) ||
+					expr.cases.some(
+						(c) =>
+							(c.condition
+								? this.exprIndexesGlobalSeries(c.condition, scopeNames)
+								: false) ||
+							(c.statements
+								? this.scanStatementsForGlobalIndex(c.statements, scopeNames)
+								: this.exprIndexesGlobalSeries(c.result, scopeNames)),
+					)
+				);
+			default:
+				return false;
+		}
 	}
 
 	/** Does the expression reference any of the given names? */

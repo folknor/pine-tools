@@ -61,7 +61,9 @@ outcomes folded into git history / `investigations/` / `gotchas/` / `TODO.md`.
 - **#61 consistency warnings - the live work outside #9.** A 2026-06-26 triage
   (agent a21df338) of every consistency localOnly-on-TV-clean entry REFUTED the
   prior framing. Item 1 landed the one cleanly fixable FP; Item 2 deferred the
-  unreproducible residuals; Item 5 is the remaining FN side (library data flow).
+  unreproducible residuals; Item 5 (LANDED) cleared the FN side - INV126 pinned
+  it as a user-global series index plus an inconsistent call, not the "library
+  data flow" the framing first assumed.
 
 ## The items (ordered by dependency; one commit each)
 
@@ -222,23 +224,27 @@ Loop 2's gate already proved the carriers compare clean.
 Gate: INV063 FNs caught (probe-backed); the 58 prior FPs do NOT reappear; suite +
 regression green.
 
-### Item 5 - #61 consistency FNs: library data flow (Phase 2)
+### Item 5 - #61 consistency FNs: user-global series index + inconsistent call
+
+**STATUS: LANDED.** `getStandardTrueRange` x2 and `getTrendLineScore` now warn
+CW10003. The Step-0 `--tv` probe round (`investigations/INV126`) pinned the real
+criterion as a CONJUNCTION: a UDF body that indexes a USER-DECLARED GLOBAL series
+var with `[n]` AND an inconsistent (conditional / in-loop) call to it. The
+"library data flow" framing was a RED HERRING (INV126 B-k1/B-k2: library taint,
+zigzag-derived arrays, and dynamic `array.min` bounds are all irrelevant); the
+classification is implemented NON-TRANSITIVELY in `semanticAnalyzer.ts`, so
+callers (`updateTrendLine`, `scan`) stay silent, matching TV. This SUPERSEDES
+INV119's refutation of the bare user-global-index rule (INV119 tested the two
+factors apart, never together). See git log + INV126; record kept below.
 
 Source: TODO #61 (getStandardTrueRange/getTrendLineScore); `investigations/
-INV117`, `INV118`, `INV119`. Independent of the #9 foundation (the foundation's
-Section 9 names this OUT of scope - it is history-dependence through reassigned
-library-tainted globals, not a type-inference base/qualifier problem).
+INV117`, `INV118`, `INV119`, `INV126`. Independent of the #9 foundation (the
+foundation's Section 9 names this OUT of scope). NOTE: `71fb0ec4` carries BOTH an
+`updateTrendLine` FP (Item 1) and a `getTrendLineScore` FN (here) - distinct
+functions, opposite directions.
 
-`highSource` reassigned from history-dependent `ca.macandles`/`hacandles`
-exports, zigzag-derived arrays into `array.min` into the loop bound. INV119
-refuted the naive user-global-index rule; the cause is library data flow. Step 0
-of this item's spec is a Claude side-step `--tv` probe round (codex cannot run
-`--tv`) to pin TV's exact criterion, recorded as a new INV BEFORE any change.
-NOTE: `71fb0ec4` carries BOTH an `updateTrendLine` FP (Item 1) and a
-`getTrendLineScore` FN (here) - distinct functions, opposite directions.
-
-Gate: getStandardTrueRange (x2) + getTrendLineScore warn; `compare-tv` clean on
-the carriers; ZERO new FPs; suite + regression green.
+Gate (met): getStandardTrueRange (x2) + getTrendLineScore warn; the carriers
+compare clean (callers silent); ZERO new FPs; suite + regression green.
 
 ## Out of scope / blocked (the stopping rule)
 

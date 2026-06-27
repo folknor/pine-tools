@@ -1,0 +1,6 @@
+//@version=6
+indicator("AminBI")
+tr() => close[1]
+control = close > open ? ta.sma(close, 5) : 0.0
+val = close > open ? tr() : 0.0
+plot(val + control)

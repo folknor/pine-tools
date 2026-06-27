@@ -1,0 +1,24 @@
+//@version=6
+indicator("Bfull", overlay = true)
+import HeWhoMustNotBeNamed/zigzag/5 as zg
+import HeWhoMustNotBeNamed/customcandles/2 as ca
+ohlcSource = input.string('ma', 'src', options = ['regular', 'ma'])
+highSource = high
+lowSource = low
+if ohlcSource == 'ma'
+    [mo, mh, ml, mc] = ca.macandles('sma', 10)
+    highSource := mh
+    lowSource := ml
+[zp, zpb, zpd, zpr, zo, zod, ztb, zdv, np, dp] = zg.czigzag(5, 34, highSource, lowSource)
+score(barArray) =>
+    s = 0
+    minBar = array.min(barArray)
+    for bar = minBar to bar_index by 1
+        if highSource[bar_index - bar] > lowSource[bar_index - bar]
+            s := s + 1
+    s
+control = close > open ? ta.sma(close, 5) : 0.0
+x = 0
+for i = 0 to 2 by 1
+    x := score(zpb)
+plot(x + control)

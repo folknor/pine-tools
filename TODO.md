@@ -1,20 +1,15 @@
 # TODO
 
-> **Read first**: [CLAUDE.md](CLAUDE.md) - Methodology. We aim to be MORE
-> correct than TradingView's pine-lint. The "false positive" / "false
-> negative" labels below are TV-diff heuristics, not verdicts. Treat
-> them as navigation aids; investigate each before acting.
-
 Discrepancies between our linter and TradingView's pine-lint over 748 v6
 fixtures.
 
-- **disagreements where we flag and TV doesn't** ("FP"-labelled) - 
+- **disagreements where we flag and TV doesn't** ("FP"-labelled) -
   some are genuine over-strictness in our linter, some are us
   correctly catching what TV missed (see INV001 for the canonical
   example).
 - **disagreements where TV flags and we don't** ("FN"-labelled).
 
-Current counts live in `lint-reports/failures-by-category.json` - 
+Current counts live in `lint-reports/failures-by-category.json` -
 regenerate with `node scripts/find-real-failures.mjs` followed by
 `node scripts/categorize-failures.mjs`. Past investigations are
 indexed at [investigations/README.md](investigations/README.md)
@@ -35,6 +30,19 @@ this sandbox with all 748 TV responses unparseable, so its refreshed
 0-local-only / 0-tv-only category counts are not a meaningful remote comparison;
 the TV-backed handle verdicts are the dated probes recorded in
 [INV125](investigations/INV125-drawing-handle-tv-probes/notes.md).
+
+Measurement note, 2026-06-27: after INV126 / Item 5 user-global index
+consistency, the local snapshot remains stable at 1879 fixtures, 622 fixtures
+with errors, and 16057 total error records. `node scripts/regression-check.mjs`
+reports 0 changed fixtures, 0 new error appearances, and 0 disappeared
+appearances. The named local carriers now emit `getStandardTrueRange` x2 and
+`getTrendLineScore` x1, with no `updateTrendLine` / `scan` cascade. The TV
+sweep was attempted before and after with
+`node scripts/find-real-failures.mjs --concurrency 4`, but all 748 TV responses
+were unparseable in this sandbox, so the refreshed 0-local-only / 0-tv-only
+category counts are not a meaningful remote comparison; the TV-backed criterion
+is the dated probe record in
+[INV126](investigations/INV126-item5-library-dataflow-probes/notes.md).
 
 ## Pending follow-ups
 
@@ -93,14 +101,10 @@ IDs so the two stay in sync.
     called inside a UDF) -> needs fixpoint / topological resolution over the
     call graph with recursion guards; first cut resolves only directly-
     inferable args and stays conservative otherwise.
-  - **Phase 2 - history through reassigned globals / library data flow
-    (lower confidence).** Extend Phase 1 to propagate history-dependence
-    through arguments and library-tainted globals (#61: `getTrendLineScore` -
-    `highSource` reassigned from history-dependent `ca.macandles`/`hacandles`
-    exports, zigzag-derived arrays into `array.min` into the loop bound).
-    Needs a fresh probe round FIRST to pin TV's exact criterion: reassigning
-    a global to a history-dependent series (`ta.sma`) alone was probed silent
-    (INV119, 2026-06-26), so the trigger is subtler than "taint on reassign".
+  - **Phase 2 - closed by INV126 / Item 5.** The fresh probe round pinned the
+    actual criterion as a non-transitive user-global series index plus an
+    inconsistent call context. The checker implements that conjunction directly;
+    it does not model library taint.
   - Validate each step against the warning sweep (`lint:failures` ->
     `lint:categorize`); FindST stays documented-as-blocked (criterion
     unreproducible, must not gate the rest).
@@ -409,31 +413,21 @@ IDs so the two stay in sync.
   libs). Net: warning tvOnly 26 -> 7, localOnly 1627 -> 1312, ~238 switch-MA
   FPs cleared, 0 new FPs; pinned by five `*.pine` regression fixtures. The
   INV-docs hold the probes/measurements - do NOT re-inline them here.
+  INV126 closed the Item 5 tail: `getStandardTrueRange` x2 and
+  `getTrendLineScore` now warn under the pinned conjunction of UDF indexes
+  user-declared global series plus inconsistent call context. The
+  implementation keeps this UDF classification non-transitive, so
+  `updateTrendLine` and `scan` stay silent.
 
   **Pending** (each blocked, with its blocker):
-  - `getStandardTrueRange` x2, `getTrendLineScore`: the user-global-index rule
-    (INV117 Family 3) was **refuted** on re-measurement (`pine-lint --tv`,
-    2026-06-26): ~20 variants - const/dynamic offset, in-loop, iterative,
-    conditionally-reassigned global, nested UDF, series-array arg, a faithful
-    getTrendLineScore+updateTrendLine replica, AND the real `import ca` +
-    `highSource := ca.macandles(...)` reassignment - are ALL silent, so indexing
-    a user global is NOT TV's criterion (that is why part-1 over-fired +4 FPs).
-    `getTrendLineScore` IS a genuine tvOnly warning (the `257:25` position is
-    G005 `\r\r\n` doubling of editor line 129, the call site - correctly
-    attributed, not garbage). Its real cause is library DATA FLOW: highSource is
-    reassigned from history-dependent `ca.macandles`/`hacandles` exports and the
-    pivot arrays come from `zg.czigzag`; the history emerges only from the whole
-    file, surviving no reduction. Same class as INV117 Family 2 but one level
-    more indirect - needs whole-program history/qualifier propagation (#9), not a
-    structural rule. See
-    [INV119](investigations/INV119-user-global-index-history/notes.md).
   - `FindST`: TV warns it; the criterion is unreproducible by probe (its local
     leaves only index builtins / mutate arrays, both probed silent). See INV117.
   - `1477fbef` `ta.atr` and `47d21dbd` `ta.sma` are untyped-param
     undetermined-gate FPs, NOT typed-param call-site sensitivity (the prior
     INV114 framing was wrong - corrected via the a21df338 triage). `71fb0ec4`'s
-    `updateTrendLine` FP was already resolved by INV116/INV118; only its
-    `getTrendLineScore` FN remains (library-data-flow item). INV120's first two
+    `updateTrendLine` FP was already resolved by INV116/INV118; its
+    `getTrendLineScore` FN is now resolved too (INV126 user-global-index rule -
+    NOT library data flow, which was a red herring). INV120's first two
     attempts were reverted as net-negative because ancestor/context suppression
     over-fired (+5 then +11 tvOnly FNs - `ta.ema`/`ta.crossover`/`_inRange`).
     The landed INV120 Item 1 immediate-gate rule clears `1477fbef` `ta.atr`:
@@ -454,7 +448,7 @@ index.
 
 - [G001](gotchas/G001-tv-pine-lint-not-spec.md) - TV's pine-lint is an
   unreliable comparator, not a stable spec.
-- [G002](gotchas/G002-reference-underdocuments-accepted-types.md) - 
+- [G002](gotchas/G002-reference-underdocuments-accepted-types.md) -
   **RETRACTED 2026-06-02.** Claimed the linter accepts more than the
   reference documents (`nz`/`fixnan` bool/string, `int` bool, `plot.title`
   non-const); isolated `--tv` probes show TV flags all of them (CE10123).

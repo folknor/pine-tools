@@ -1,0 +1,32 @@
+//@version=6
+// @expects errors: 0
+// @expects warnings: 2
+// @expects warning: line=22, message="should be called"
+// @expects warning: line=25, message="should be called"
+indicator("userglobal-index-consistency")
+
+g = close + 1
+
+// WARNS: indexes user global g, called conditionally.
+tr() => g[1]
+
+// WARNS: indexes user global g, called in a loop.
+score() =>
+    s = 0.0
+    for i = 0 to 2
+        s := s + g[i]
+    s
+
+// SILENT control: indexes a builtin global.
+trBuiltin() => close[1]
+
+// SILENT control: indexes user global g but is called consistently.
+trConsistent() => g[1]
+
+a = close > open ? tr() : 0.0
+b = 0.0
+for k = 0 to 1
+    b := b + score()
+c = close > open ? trBuiltin() : 0.0
+d = trConsistent()
+plot(a + b + c + d)

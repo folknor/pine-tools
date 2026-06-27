@@ -5,6 +5,14 @@
 implementation fixes 3 FNs but the rule is too broad and adds ~4 corpus FPs even
 with the cascade gate. Records the exact tradeoff so a future, narrower attempt
 does not re-derive it. Builds on the INV117 Family-3 finding.
+**SUPERSEDED by INV126 (2026-06-27, the landed fix).** This note's 2026-06-26
+re-measurement concluded the user-global-index criterion was REFUTED and
+whole-file-emergent. INV126 showed why those probes missed it: the trigger is
+the CONJUNCTION of (user-global index) AND (inconsistent call context), which
+this note's variants never tested together (they varied one factor at a time).
+The dated probe records below are kept verbatim as a point-in-time measurement
+(G001); only this forward-pointer is added. The landed rule is a NON-TRANSITIVE
+user-global-index classification - see INV126 and git log.
 **Target FNs:** `getStandardTrueRange` x2 (`6293fd71`), `getTrendLineScore`
 (`71fb0ec4`) - the INV117 tail that is NOT library-body (INV118) and NOT
 unreproducible (`FindST`).
@@ -140,7 +148,11 @@ program qualifier/history propagation (the #9 umbrella), not a structural rule.
 ## Status of the 3 targets
 
 ~~Fixable in principle (the rule warns them correctly); blocked on a narrower
-user-global predicate that does not over-fire.~~ **Superseded by the 2026-06-26
+user-global predicate that does not over-fire.~~ ~~**Superseded by the 2026-06-26
 re-measurement above: the criterion is refuted, the rule is not TV-backed, real
-trigger unisolated.** `FindST` is separate and still
-unreproducible (see INV117/INV118).
+trigger unisolated.**~~ **RESOLVED by INV126 (2026-06-27):** the trigger is the
+CONJUNCTION of user-global index AND inconsistent call; `getStandardTrueRange`
+x2 and `getTrendLineScore` now warn via the landed non-transitive rule. The
+"trigger unisolated / refuted" conclusion above was itself an artifact of
+probing the two factors apart. `FindST` is separate and still unreproducible
+(see INV117/INV118).

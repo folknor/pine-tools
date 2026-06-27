@@ -738,7 +738,7 @@ contradiction means re-measure, not "the earlier author was wrong."
   exempt; probed). With a cascade gate (`array.size(untypedParam)` is
   undetermined) it warns `getStandardTrueRange` x2 + `getTrendLineScore`
   correctly, but the rule is too broad: +4 corpus FPs on TV-clean files.
-  Net-negative, reverted; needs a narrower user-global predicate (#9-adjacent).
+  Net-negative, reverted. SUPERSEDED by INV126 (the conjunction it never tested).
 - [INV118](INV118-library-history-dependence/notes.md) - CW10003 across the
   IMPORT boundary. generate-libraries derives per-export history-dependence
   (gated by series-return, exempting side-effect builders) into
@@ -776,3 +776,11 @@ contradiction means re-measure, not "the earlier author was wrong."
   `linefill`, `polyline`, and `chart.point`. TV rejects scalar assignment into
   each handle with CE10173; `chart.point` renders bare while the other handles
   render series-qualified.
+- [INV126](INV126-item5-library-dataflow-probes/notes.md) - TODO #61 Item 5
+  consistency FN: probed TV's exact criterion as a CONJUNCTION - a UDF body that
+  indexes a USER-DECLARED GLOBAL series var with `[n]` AND an inconsistent
+  (conditional / in-loop) call to it. Library taint, zigzag arrays, and dynamic
+  `array.min` bounds are all red herrings (the plan's "library data flow"
+  framing). Landed a NON-TRANSITIVE user-global-index classification in
+  `semanticAnalyzer.ts`: `getStandardTrueRange` x2 + `getTrendLineScore` warn
+  while callers (`updateTrendLine`, `scan`) stay silent. Supersedes INV119.

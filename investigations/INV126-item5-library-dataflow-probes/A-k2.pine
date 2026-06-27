@@ -1,0 +1,12 @@
+//@version=6
+indicator("Ak2")
+import jason5480/series_collection/4 as col
+getStandardOHLC() =>
+    chart.is_standard ? [open, high, low, close] : request.security(syminfo.tickerid, "", [open, high, low, close])
+[so, sh, sl, sc] = getStandardOHLC()
+trueRange() => na(sc[1]) ? sh - sl : math.max(sh - sl, math.abs(sh - sc[1]), math.abs(sl - sc[1]))
+var float ladder = na
+if close > open
+    ladder := col.cust_series(14, col.SeriesType.rma, trueRange())
+control = close > open ? ta.sma(close, 5) : 0.0
+plot(ladder + control)
