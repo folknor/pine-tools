@@ -793,3 +793,10 @@ contradiction means re-measure, not "the earlier author was wrong."
   CLI/LSP emitted diagnostics now collapse stray-CR line numbers back to
   displayed source lines. TV-diff scripts apply the same display mapping to TV
   diagnostics before comparison.
+- [INV129](INV129-sibling-na-seed-consistency/notes.md) - TODO #61:
+  cleared the `47d21dbd` `ta.sma` CW10004 false positive. TV suppresses the
+  sibling seed idiom `result := na(w[1]) ? ta.*(...) : f(w[1])` only under an
+  outer untyped-param gate; the same seed without that gate warns, and self-
+  seeds such as McGinley `mg := na(mg[1]) ? ta.ema(...) : ...` still warn.
+  Implemented with a narrow ternary/assignment context check and an ambient
+  undetermined-gate tracker for non-series untyped `if` conditions.

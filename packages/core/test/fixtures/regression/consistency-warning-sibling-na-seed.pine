@@ -1,0 +1,27 @@
+//@version=6
+// @description TV suppresses CW10004 for the sibling-seed idiom under an untyped selector: `result := na(w[1]) ? ta.sma(...) : f(w[1])` inside `if type == ...`. The same seed without the outer undetermined gate still warns, and self-seeds such as `mg := na(mg[1]) ? ta.ema(...) : ...` still warn. Probed 2026-06-28, see INV129.
+// @expects warnings: 2
+// @expects warning: line=13, message="The function 'ta.sma' should be called on each calculation"
+// @expects warning: line=19, message="The function 'ta.ema' should be called on each calculation"
+
+indicator("consistency-warning-sibling-na-seed")
+ma(type, src, len) =>
+    float result = 0
+    if type == "SMMA"
+        w = ta.wma(src, len)
+        result := na(w[1]) ? ta.sma(src, len) : (w[1] * (len - 1) + src) / len
+    result
+
+float outside = 0
+wOutside = ta.wma(close, 14)
+outside := na(wOutside[1]) ? ta.sma(close, 14) : (wOutside[1] * 13 + close) / 14
+
+mc(type, src, len) =>
+    float result = 0
+    if type == "McGinley"
+        mg = 0.0
+        mg := na(mg[1]) ? ta.ema(src, len) : mg[1] + (src - mg[1]) / len
+        result := mg
+    result
+
+plot(ma("SMMA", close, 14) + outside + mc("McGinley", close, 14))

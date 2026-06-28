@@ -44,6 +44,22 @@ category counts are not a meaningful remote comparison; the TV-backed criterion
 is the dated probe record in
 [INV126](investigations/INV126-item5-library-dataflow-probes/notes.md).
 
+Measurement note, 2026-06-28: after INV129 / #61 sibling `na`-seed
+suppression, the local error baseline remains stable at 1879 fixtures, 622
+fixtures with errors, and 16057 total error records. `node
+scripts/regression-check.mjs` reports 0 changed fixtures, 0 new error
+appearances, and 0 disappeared appearances. `node scripts/find-real-failures.mjs --concurrency 4` scanned 748
+v6 fixtures: errors are 29 local-only / 0 tv-only / 1 same-position message
+pair; warning tv-only is 4 (the 3 CW10013 shadowing records plus `FindST`); the
+`47d21dbd` `ta.sma` CW10004 local-only warning is cleared. Warning local-only is
+NOT a stable metric: it measured 1290 (5 TV-unparseable files) on the landing
+run and 1310 on two byte-identical same-day reruns (4 TV-unparseable), because
+`totalWarningLocalOnly` sums only the files TV also parsed - a file flipping
+in/out of TV's unparseable set moves it by its whole warning count (G001; the
+candlestick `C_*` unused-var snippet spread across ~52 fixtures dominates that
+churn). The correctness-meaningful invariants are the error split (29/0) and
+warning tv-only (4).
+
 ## Pending follow-ups
 
 Open work items, each either deferred from an investigation or queued
@@ -82,7 +98,7 @@ IDs so the two stay in sync.
     the `1477fbef` `ta.atr` / `47d21dbd` `ta.sma` carriers wrongly lumped into
     that count are untyped-param UNDETERMINED-GATE cases, not typed-param;
     `ta.atr` is already cleared by INV120's immediate-gate rule and `ta.sma` is
-    tracked under #61 as a low-ROI tractable deferred fix, so neither needs this Phase. (The INV014/INV016
+    cleared by INV129's sibling `na`-seed rule, so neither needs this Phase. (The INV014/INV016
     UDF-return / user-var gates have already been dropped independently by
     Loop 3 - INV124 - so they are no longer waiting on this Phase.) Only
     REMOVES warnings TV doesn't emit, so low new-FP risk if the unknown-arg
@@ -386,9 +402,11 @@ IDs so the two stay in sync.
   inference), and [INV118](investigations/INV118-library-history-dependence/notes.md)
   (CW10003 across the import boundary - derived per-export history-dependence,
   library member/typed-local resolution, a live-fetch override for CC-BY-NC
-  libs). Net: warning tvOnly 26 -> 7, localOnly 1627 -> 1312, ~238 switch-MA
-  FPs cleared, 0 new FPs; pinned by five `*.pine` regression fixtures. The
-  INV-docs hold the probes/measurements - do NOT re-inline them here.
+  libs), and [INV129](investigations/INV129-sibling-na-seed-consistency/notes.md)
+  (the `47d21dbd` sibling `na(w[1])` seed false positive). Net through INV129:
+  warning tvOnly is down to 4, the `ta.sma` local-only residual is cleared, and
+  the error-channel sweep remains 0 tv-only. The INV-docs hold the
+  probes/measurements - do NOT re-inline them here.
 
   **Pending**:
   - `FindST` (`db76cf79`): TV warns it; no reproducing probe under the
@@ -397,35 +415,6 @@ IDs so the two stay in sync.
     conjunction-style battery - the technique that cracked INV119 /
     `getTrendLineScore` in INV126. Still does not gate goal completion. See
     INV117 (Family 2).
-  - `47d21dbd` `ta.sma` is an untyped-param undetermined-gate FP whose immediate
-    gate is the series ternary `na(w[1])` (the prior INV114 typed-param
-    call-site framing was wrong - corrected via the a21df338 triage). It is NOT
-    a permanent residual, but it is a LOW-ROI, now-tractable deferred fix - not
-    loop-worthy on its own. Calibration:
-    - The code is small: a suppression condition in `checkConditionalSeriesCall`,
-      not a subsystem. Difficulty was never the blocker.
-    - It is a false POSITIVE, so the risk is over-SUPPRESSION (silencing
-      legitimate warnings corpus-wide) - the riskier direction. The two reverted
-      INV120 attempts did exactly this (+5, then +11 tvOnly FNs on
-      `ta.ema`/`ta.crossover`/`_inRange`), and that detonated because the
-      ancestor-gate judgment rode the leaky `seriesVars` heuristic. Loops 1-2
-      landed a REAL qualifier model (`qualifier.ts` series>simple>input>const
-      lattice + provenance) and Item 5/INV126 showed how to carry a clean
-      qualifier set (`globalSeriesVars`) into the SemanticAnalyzer channel, so
-      the tooling gap that actually caused the reverts is now closed.
-    - The criterion is already HALF-PINNED: INV120's P2b narrowed TV's silence to
-      "outer-undetermined gate AND a distinct-sibling `na`-seed", so the probe
-      round is a short confirm/sharpen battery, not a from-scratch INV126-scale
-      investigation.
-    - The real reason it stays deferred is ROI asymmetry, NOT difficulty: it is
-      ONE corpus FP, and the downside (re-introducing FNs in the most-reverted
-      area of the checker) structurally outweighs the upside (-1 FP). If pursued
-      it does NOT need the full orchestration loop - a short `--tv` probe round
-      -> targeted model-backed suppression -> `lint:failures` warning-sweep gate
-      (zero new tvOnly) suffices.
-    (Sibling `1477fbef` `ta.atr` was the same class and is already cleared by
-    INV120's immediate-gate rule - suppress only when the innermost governing
-    condition is undetermined.)
   - Three consistency-warning FPs on TV-clean files are DEFERRED as documented
     residuals (like FindST), not fixable now: `61a3a7` (`ta.highest`/`lowest`),
     `6152b9` (`ta.crossunder`), `f1b6bd45` (`draw_lbl`). All three are genuine FPs
@@ -450,9 +439,8 @@ IDs so the two stay in sync.
     "these need per-call-site arg-qualifier propagation (#9)" framing is refuted -
     the arg-qualifier-adjacent hypotheses above all still warn. Backward-reference
     series tracking is a non-issue (none in corpus). #61's consistency-FP side is
-    largely closed: 1 fixed (`ta.atr`, d74060c), 3 unreproducible (here), 1
-    low-ROI tractable deferred fix (`ta.sma`, see above), the rest TV-error-stops
-    / G005 phantoms.
+    largely closed: 2 fixed (`ta.atr`, `ta.sma`), 3 unreproducible (here), the
+    rest TV-error-stops / G005 phantoms.
   - `math.sum` (`25a4a7`): a suspected consistency FP where the triage thinks we
     may be MORE correct than TV. Probe-gated - run `--tv` first; act on it (or
     record it as a TV FN) only if the probe confirms a real FP. Not yet probed.

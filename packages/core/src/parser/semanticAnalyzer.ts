@@ -42,6 +42,13 @@ export interface SemanticWarning {
 // Why a region is conditional - selects the CONDITIONAL_SERIES wording
 // (TV's CW10003 / CW10004 / CW10002 respectively).
 type ConditionalScopeKind = "block" | "ternary" | "andor";
+type TernaryBranch = "consequent" | "alternate";
+
+interface ActiveTernaryContext {
+	condition: Expression;
+	alternate: Expression;
+	branch: TernaryBranch;
+}
 
 export class SemanticAnalyzer {
 	private warnings: SemanticWarning[] = [];
@@ -84,6 +91,11 @@ export class SemanticAnalyzer {
 	// Parallel to conditionalScopeKinds: whether the immediate governing
 	// condition for this frame is undetermined. see INV120
 	private conditionalGateUndetermined: boolean[] = [];
+	// Name currently being initialized/reassigned while walking the RHS. Used
+	// to keep the INV129 sibling-seed exception from silencing self-seeds.
+	private currentAssignmentTarget: string | null = null;
+	private ternaryContextStack: ActiveTernaryContext[] = [];
+	private ambientUndeterminedGateDepth = 0;
 	// Variables whose value is series-qualified (per-bar-varying) -
 	// initialized or reassigned from a series expression. Built in the
 	// collect pass in source order, so `b = close > open` then `if b`
@@ -124,6 +136,9 @@ export class SemanticAnalyzer {
 		this.conditionalScopeKinds = [];
 		this.currentUntypedParams = new Set();
 		this.conditionalGateUndetermined = [];
+		this.currentAssignmentTarget = null;
+		this.ternaryContextStack = [];
+		this.ambientUndeterminedGateDepth = 0;
 		this.seriesVars.clear();
 		this.udfReturnTupleSeries.clear();
 		this.udfReturnsSeries.clear();
@@ -266,8 +281,11 @@ export class SemanticAnalyzer {
 		this.declareName(declaration.name, declaration.line, declaration.column);
 		// Unused-variable tracking is handled at the symbol table level -
 		// here we only record the name for shadow detection and walk init.
-		if (declaration.init) {
-			this.analyzeExpression(declaration.init);
+		const init = declaration.init;
+		if (init) {
+			this.withAssignmentTarget(declaration.name, () => {
+				this.analyzeExpression(init);
+			});
 		}
 	}
 
@@ -417,29 +435,33 @@ export class SemanticAnalyzer {
 		// so calls inside stay consistent (TV is silent there; probed -
 		// see isSeriesishExpression). The condition itself always executes.
 		const conditional = this.isSeriesishExpression(statement.condition);
+		const undetermined = this.isUndeterminedGate(statement.condition);
 
 		this.analyzeExpression(statement.condition);
 
 		if (conditional) {
-			this.enterConditionalScope(
-				"block",
-				this.isUndeterminedGate(statement.condition),
-			);
+			this.enterConditionalScope("block", undetermined);
+		} else if (undetermined) {
+			this.enterAmbientUndeterminedGate();
 		}
-		this.withScopeFrame(() => {
-			for (const stmt of statement.consequent) {
-				this.analyzeStatement(stmt);
-			}
-		});
-		if (statement.alternate) {
-			const alternate = statement.alternate;
+		try {
 			this.withScopeFrame(() => {
-				for (const stmt of alternate) {
+				for (const stmt of statement.consequent) {
 					this.analyzeStatement(stmt);
 				}
 			});
+			if (statement.alternate) {
+				const alternate = statement.alternate;
+				this.withScopeFrame(() => {
+					for (const stmt of alternate) {
+						this.analyzeStatement(stmt);
+					}
+				});
+			}
+		} finally {
+			if (conditional) this.exitConditionalScope();
+			else if (undetermined) this.exitAmbientUndeterminedGate();
 		}
-		if (conditional) this.exitConditionalScope();
 	}
 
 	private analyzeForStatement(statement: ForStatement | ForInStatement): void {
@@ -517,7 +539,22 @@ export class SemanticAnalyzer {
 	private analyzeAssignmentStatement(statement: AssignmentStatement): void {
 		// Analyze target and value expressions
 		this.analyzeExpression(statement.target);
-		this.analyzeExpression(statement.value);
+		this.withAssignmentTarget(
+			statement.target.type === "Identifier" ? statement.target.name : null,
+			() => {
+				this.analyzeExpression(statement.value);
+			},
+		);
+	}
+
+	private withAssignmentTarget(name: string | null, fn: () => void): void {
+		const prev = this.currentAssignmentTarget;
+		this.currentAssignmentTarget = name;
+		try {
+			fn();
+		} finally {
+			this.currentAssignmentTarget = prev;
+		}
 	}
 
 	private analyzeExpression(expr: Expression): void {
@@ -651,16 +688,28 @@ export class SemanticAnalyzer {
 
 	private analyzeTernaryExpression(expr: TernaryExpression): void {
 		const conditional = this.isSeriesishExpression(expr.condition);
+		const undetermined = this.isUndeterminedGate(expr.condition);
 		this.analyzeExpression(expr.condition);
 		if (conditional) {
-			this.enterConditionalScope(
-				"ternary",
-				this.isUndeterminedGate(expr.condition),
-			);
+			this.enterConditionalScope("ternary", undetermined);
+		} else if (undetermined) {
+			this.enterAmbientUndeterminedGate();
 		}
-		this.analyzeExpression(expr.consequent);
-		this.analyzeExpression(expr.alternate);
-		if (conditional) this.exitConditionalScope();
+		const ternaryContext: ActiveTernaryContext = {
+			condition: expr.condition,
+			alternate: expr.alternate,
+			branch: "consequent",
+		};
+		this.ternaryContextStack.push(ternaryContext);
+		try {
+			this.analyzeExpression(expr.consequent);
+			ternaryContext.branch = "alternate";
+			this.analyzeExpression(expr.alternate);
+		} finally {
+			this.ternaryContextStack.pop();
+			if (conditional) this.exitConditionalScope();
+			else if (undetermined) this.exitAmbientUndeterminedGate();
+		}
 	}
 
 	private analyzeSwitchExpression(expr: SwitchExpression): void {
@@ -734,6 +783,14 @@ export class SemanticAnalyzer {
 		}
 	}
 
+	private enterAmbientUndeterminedGate(): void {
+		this.ambientUndeterminedGateDepth++;
+	}
+
+	private exitAmbientUndeterminedGate(): void {
+		this.ambientUndeterminedGateDepth--;
+	}
+
 	private checkConditionalSeriesCall(call: CallExpression): void {
 		// `functionName` is the DISPLAY name in the warning; `histDep` is the
 		// detection result. They differ for library/method calls: detection
@@ -791,6 +848,9 @@ export class SemanticAnalyzer {
 			) {
 				return;
 			}
+			if (this.shouldSuppressSiblingSeedConsistencyWarning()) {
+				return;
+			}
 			const kind =
 				this.conditionalScopeKinds[this.conditionalScopeKinds.length - 1] ??
 				"block";
@@ -808,6 +868,109 @@ export class SemanticAnalyzer {
 				DiagnosticSeverity.Warning,
 				"CONDITIONAL_SERIES",
 			);
+		}
+	}
+
+	// TV is silent for the SMMA seed idiom under an untyped selector:
+	// `if type == ...` / `result := na(w[1]) ? ta.sma(...) : f(w[1])`.
+	// It still warns without the outer undetermined gate, and on self-seeds
+	// such as `mg := na(mg[1]) ? ta.ema(...) : ...`. see INV129
+	private shouldSuppressSiblingSeedConsistencyWarning(): boolean {
+		if (!this.hasUndeterminedAncestorGate()) return false;
+		const kind =
+			this.conditionalScopeKinds[this.conditionalScopeKinds.length - 1];
+		if (kind !== "ternary") return false;
+		const ternary =
+			this.ternaryContextStack[this.ternaryContextStack.length - 1];
+		if (!ternary || ternary.branch !== "consequent") return false;
+		const seed = this.naHistorySeedName(ternary.condition);
+		if (!seed) return false;
+		if (this.currentAssignmentTarget === seed) return false;
+		return this.expressionReadsHistoryOfName(ternary.alternate, seed);
+	}
+
+	private hasUndeterminedAncestorGate(): boolean {
+		if (this.ambientUndeterminedGateDepth > 0) return true;
+		for (let i = 0; i < this.conditionalGateUndetermined.length - 1; i++) {
+			if (this.conditionalGateUndetermined[i]) return true;
+		}
+		return false;
+	}
+
+	private naHistorySeedName(expr: Expression): string | null {
+		if (
+			expr.type !== "CallExpression" ||
+			expr.callee.type !== "Identifier" ||
+			expr.callee.name !== "na" ||
+			expr.arguments.length !== 1
+		) {
+			return null;
+		}
+		return this.historyIndexIdentifierName(expr.arguments[0].value);
+	}
+
+	private historyIndexIdentifierName(expr: Expression): string | null {
+		if (
+			expr.type === "IndexExpression" &&
+			expr.object.type === "Identifier" &&
+			expr.index.type === "Literal" &&
+			expr.index.value === 1
+		) {
+			return expr.object.name;
+		}
+		return null;
+	}
+
+	private expressionReadsHistoryOfName(expr: Expression, name: string): boolean {
+		const indexed = this.historyIndexIdentifierName(expr);
+		if (indexed === name) return true;
+		switch (expr.type) {
+			case "CallExpression":
+				return (
+					this.expressionReadsHistoryOfName(expr.callee, name) ||
+					expr.arguments.some((a) =>
+						this.expressionReadsHistoryOfName(a.value, name),
+					)
+				);
+			case "MemberExpression":
+				return this.expressionReadsHistoryOfName(expr.object, name);
+			case "BinaryExpression":
+				return (
+					this.expressionReadsHistoryOfName(expr.left, name) ||
+					this.expressionReadsHistoryOfName(expr.right, name)
+				);
+			case "UnaryExpression":
+				return this.expressionReadsHistoryOfName(expr.argument, name);
+			case "TernaryExpression":
+				return (
+					this.expressionReadsHistoryOfName(expr.condition, name) ||
+					this.expressionReadsHistoryOfName(expr.consequent, name) ||
+					this.expressionReadsHistoryOfName(expr.alternate, name)
+				);
+			case "ArrayExpression":
+				return expr.elements.some((e) =>
+					this.expressionReadsHistoryOfName(e, name),
+				);
+			case "IndexExpression":
+				return (
+					this.expressionReadsHistoryOfName(expr.object, name) ||
+					this.expressionReadsHistoryOfName(expr.index, name)
+				);
+			case "SwitchExpression":
+				return (
+					(expr.discriminant
+						? this.expressionReadsHistoryOfName(expr.discriminant, name)
+						: false) ||
+					expr.cases.some(
+						(c) =>
+							(c.condition
+								? this.expressionReadsHistoryOfName(c.condition, name)
+								: false) ||
+							this.expressionReadsHistoryOfName(c.result, name),
+					)
+				);
+			default:
+				return false;
 		}
 	}
 
