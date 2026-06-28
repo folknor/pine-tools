@@ -1,0 +1,37 @@
+// @test regression/consistency-warning-undetermined-local-history
+// @description A local value derived from an untyped param is "undetermined type" to TV, so indexing that local does not make the UDF history-dependent. This clears the draw_lbl false positive without changing typed-param or builtin-history controls. Probed 2026-06-28, see INV130.
+// @expects parse: success
+// @expects warning: line=27, message="The function 'typedLbl' should be called on each calculation"
+// @expects warning: line=28, message="The function 'taFromUntyped' should be called on each calculation"
+// @expects warnings: 2
+
+//@version=6
+indicator("undetermined local history")
+var labels = array.new<label>()
+
+copyLocal(x) =>
+    s = x
+    label.new(bar_index, s[1], "x")
+
+drawLbl(x, y, txt, col) =>
+    var lbl = label(na)
+    lbl := label.new(x, y, txt, color = color(na), textcolor = col)
+    label.delete(lbl[1])
+    labels.push(lbl)
+
+typedLbl(int x, float y, string txt, color col) =>
+    var lbl = label(na)
+    lbl := label.new(x, y, txt, color = color(na), textcolor = col)
+    label.delete(lbl[1])
+
+taFromUntyped(src, len) =>
+    w = ta.wma(src, len)
+    label.new(bar_index, w[1], "x")
+
+if close > open
+    copyLocal(high)
+    drawLbl(bar_index, high, "x", color.red)
+    typedLbl(bar_index, high, "x", color.red)
+    taFromUntyped(close, 14)
+
+plot(close)

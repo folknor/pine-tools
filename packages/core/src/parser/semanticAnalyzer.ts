@@ -882,7 +882,7 @@ export class SemanticAnalyzer {
 		if (kind !== "ternary") return false;
 		const ternary =
 			this.ternaryContextStack[this.ternaryContextStack.length - 1];
-		if (!ternary || ternary.branch !== "consequent") return false;
+		if (ternary?.branch !== "consequent") return false;
 		const seed = this.naHistorySeedName(ternary.condition);
 		if (!seed) return false;
 		if (this.currentAssignmentTarget === seed) return false;
@@ -921,7 +921,10 @@ export class SemanticAnalyzer {
 		return null;
 	}
 
-	private expressionReadsHistoryOfName(expr: Expression, name: string): boolean {
+	private expressionReadsHistoryOfName(
+		expr: Expression,
+		name: string,
+	): boolean {
 		const indexed = this.historyIndexIdentifierName(expr);
 		if (indexed === name) return true;
 		switch (expr.type) {
@@ -965,8 +968,7 @@ export class SemanticAnalyzer {
 						(c) =>
 							(c.condition
 								? this.expressionReadsHistoryOfName(c.condition, name)
-								: false) ||
-							this.expressionReadsHistoryOfName(c.result, name),
+								: false) || this.expressionReadsHistoryOfName(c.result, name),
 					)
 				);
 			default:
@@ -1367,27 +1369,32 @@ export class SemanticAnalyzer {
 		underUndetermined = false,
 	): boolean {
 		for (const statement of statements) {
-			// A local assigned (declared OR reassigned) inside a branch gated by
-			// an UNDETERMINED condition - one that references an untyped param
-			// and is not otherwise series (INV114) - becomes undetermined, so
-			// indexing it does NOT count as own-scope history (draw_ob:
-			// `candle_ := close<open` under `if candle_type`, candle_type
-			// untyped -> silent). We model that by REMOVING it from the
-			// qualifying set; params indexed directly are unaffected. Outside an
-			// undetermined branch, a local declaration qualifies as before. see
-			// INV116
+			// A local assigned (declared OR reassigned) inside an undetermined
+			// branch, or from a value that references an untyped param, becomes
+			// undetermined. Indexing that local does NOT count as own-scope
+			// history. Params indexed directly are unaffected. see INV116 / INV130
 			if (statement.type === "VariableDeclaration" && statement.name) {
-				if (underUndetermined) scopeNames.delete(statement.name);
-				else scopeNames.add(statement.name);
+				if (
+					underUndetermined ||
+					(statement.init &&
+						this.isUndeterminedLocalValue(statement.init, untypedParams))
+				) {
+					// A local derived from an untyped param is itself
+					// undetermined, so indexing it is not UDF history. see INV130
+					scopeNames.delete(statement.name);
+				} else {
+					scopeNames.add(statement.name);
+				}
 			} else if (statement.type === "TupleDeclaration") {
 				for (const n of statement.names) {
 					if (underUndetermined) scopeNames.delete(n);
 					else scopeNames.add(n);
 				}
 			} else if (
-				underUndetermined &&
 				statement.type === "AssignmentStatement" &&
-				statement.target.type === "Identifier"
+				statement.target.type === "Identifier" &&
+				(underUndetermined ||
+					this.isUndeterminedLocalValue(statement.value, untypedParams))
 			) {
 				scopeNames.delete(statement.target.name);
 			}
@@ -1414,6 +1421,16 @@ export class SemanticAnalyzer {
 			}
 		}
 		return false;
+	}
+
+	private isUndeterminedLocalValue(
+		expr: Expression,
+		untypedParams: Set<string>,
+	): boolean {
+		return (
+			untypedParams.size > 0 &&
+			this.expressionReferencesNames(expr, untypedParams)
+		);
 	}
 
 	private scanStatementsForGlobalIndex(

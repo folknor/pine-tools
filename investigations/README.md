@@ -800,3 +800,8 @@ contradiction means re-measure, not "the earlier author was wrong."
   seeds such as McGinley `mg := na(mg[1]) ? ta.ema(...) : ...` still warn.
   Implemented with a narrow ternary/assignment context check and an ambient
   undetermined-gate tracker for non-series untyped `if` conditions.
+- [INV130](INV130-undetermined-local-history/notes.md) - TODO #61 / #9:
+  cleared the `f1b6bd45` `draw_lbl` CW10003 false positive. Locals whose value
+  references an untyped UDF param are `undetermined type` to TV, so indexing
+  that local does not make the UDF history-dependent. Direct param indexing and
+  history-dependent builtin calls inside the value still count.

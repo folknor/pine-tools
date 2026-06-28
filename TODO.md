@@ -60,6 +60,16 @@ candlestick `C_*` unused-var snippet spread across ~52 fixtures dominates that
 churn). The correctness-meaningful invariants are the error split (29/0) and
 warning tv-only (4).
 
+Measurement note, 2026-06-28: after INV130 / `draw_lbl` undetermined-local
+history suppression, `node scripts/regression-check.mjs` still reports 0 changed
+fixtures, 0 new error appearances, and 0 disappeared errors. `node
+scripts/find-real-failures.mjs --concurrency 4` scanned 748 v6 fixtures: errors
+remain 29 local-only / 0 tv-only / 1 same-position message pair; warning tv-only
+remains 4 (the 3 CW10013 shadowing records plus `FindST`); warning local-only
+measured 1308 with the same 4 TV-unparseable files as the 1310 post-INV129
+rerun. The only intended warning-channel movement is the two `draw_lbl`
+local-only warnings in `f1b6bd45`, now cleared.
+
 ## Pending follow-ups
 
 Open work items, each either deferred from an investigation or queued
@@ -415,9 +425,9 @@ IDs so the two stay in sync.
     conjunction-style battery - the technique that cracked INV119 /
     `getTrendLineScore` in INV126. Still does not gate goal completion. See
     INV117 (Family 2).
-  - Three consistency-warning FPs on TV-clean files are DEFERRED as documented
-    residuals (like FindST), not fixable now: `61a3a7` (`ta.highest`/`lowest`),
-    `6152b9` (`ta.crossunder`), `f1b6bd45` (`draw_lbl`). All three are genuine FPs
+  - Two consistency-warning FPs on TV-clean files are DEFERRED as documented
+    residuals (like FindST), not fixable now: `61a3a7` (`ta.highest`/`lowest`)
+    and `6152b9` (`ta.crossunder`). Both are genuine FPs
     (`compare-tv`: TV 0 errors / 0 warnings, no error-stop; we warn), but TV's
     silence reproduces ONLY on the full carrier. SIX structural/whole-program
     hypotheses were probed (`pine-lint --tv`, 2026-06-26) and ALL still WARN, so
@@ -432,15 +442,12 @@ IDs so the two stay in sync.
       hypothesis is refuted.
     - `6152b9`: `ta.crossunder` in `else if` CONDITION position (C1) WARNS; an
       identical `ta.crossunder` evaluated unconditionally via plotshape (P2B) WARNS.
-    - `f1b6bd45`: a `var`-declared opaque (label/line) indexed purely for a
-      side-effect `delete` (`label.delete(lbl[1])`, D1, void-tail too) WARNS; a
-      const-bounded `for`-loop / loop-counter immediate gate (P3B) WARNS.
     Likely a TV behavior on large/complex files we cannot model. The earlier
     "these need per-call-site arg-qualifier propagation (#9)" framing is refuted -
     the arg-qualifier-adjacent hypotheses above all still warn. Backward-reference
     series tracking is a non-issue (none in corpus). #61's consistency-FP side is
-    largely closed: 2 fixed (`ta.atr`, `ta.sma`), 3 unreproducible (here), the
-    rest TV-error-stops / G005 phantoms.
+    largely closed: 3 fixed (`ta.atr`, `ta.sma`, `draw_lbl` via INV130), 2
+    unreproducible (here), the rest TV-error-stops / G005 phantoms.
   - `math.sum` (`25a4a7`): a suspected consistency FP where the triage thinks we
     may be MORE correct than TV. Probe-gated - run `--tv` first; act on it (or
     record it as a TV FN) only if the probe confirms a real FP. Not yet probed.
