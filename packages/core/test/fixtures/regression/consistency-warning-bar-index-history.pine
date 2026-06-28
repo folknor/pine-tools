@@ -1,0 +1,23 @@
+// @test regression/consistency-warning-bar-index-history
+// @description TV treats bar_index[1] inside a UDF as function history, unlike ordinary builtin history such as high[1] or time[1]. Probed 2026-06-28, see INV132.
+// @expects parse: success
+// @expects warning: line=11, message="The function 'usesBarIndex' should be called on each calculation"
+// @expects warning: line=15, message="The function 'ta.sma' should be called on each calculation"
+// @expects warnings: 2
+
+//@version=6
+indicator("bar index udf history")
+usesBarIndex() => bar_index[1]
+usesTime() => time[1]
+usesHigh() => high[1]
+var int b = na
+var int t = na
+var float h = na
+var float c = na
+if barstate.isconfirmed
+    b := usesBarIndex()
+    t := usesTime()
+    h := usesHigh()
+if close > open
+    c := ta.sma(close, 2)
+plot(b + t + h + c)

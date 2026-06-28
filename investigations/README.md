@@ -811,3 +811,7 @@ contradiction means re-measure, not "the earlier author was wrong."
   variable assigned from that result suppresses CW10003/4 only when it appears
   in the immediate branch gate. Identity returns and series tails that ignore
   the untyped param still warn.
+- [INV132](INV132-bar-index-udf-history/notes.md) - TODO #61 / #9: cleared the
+  `db76cf79` `FindST` CW10003 false negative. TV treats `bar_index[1]` inside a
+  UDF/method as function history, unlike ordinary builtin history such as
+  `high[1]` and `time[1]`.

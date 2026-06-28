@@ -79,6 +79,15 @@ remains 4 (the 3 CW10013 shadowing records plus `FindST`); warning local-only
 measured 1293 with 4 TV-unparseable files. The intended warning-channel movement
 is the two `math.sum` local-only warnings in `25a4a7`, now cleared.
 
+Measurement note, 2026-06-28: after INV132 / `bar_index[1]` UDF-history
+classification, `node scripts/regression-check.mjs` still reports 0 changed
+fixtures, 0 new error appearances, and 0 disappeared errors. `node
+scripts/find-real-failures.mjs --concurrency 4` scanned 748 v6 fixtures: errors
+remain 29 local-only / 0 tv-only / 1 same-position message pair; warning tv-only
+is down to 3 (only the CW10013 shadowing records remain); warning local-only
+measured 1293 with 4 TV-unparseable files. The intended warning-channel movement
+is the `FindST` TV-only warning in `db76cf79`, now shared with TV.
+
 ## Pending follow-ups
 
 Open work items, each either deferred from an investigation or queued
@@ -127,9 +136,8 @@ IDs so the two stay in sync.
     call graph with recursion guards; first cut resolves only directly-
     inferable args and stays conservative otherwise.
   - Validate each step against the warning sweep (`lint:failures` ->
-    `lint:categorize`); FindST stays unreproduced under the strategies tried
-    so far (not yet re-probed with a conjunction-style battery), and must not
-    gate the rest.
+    `lint:categorize`). The remaining warning tv-only tail after INV132 is only
+    the three CW10013 shadowing records; the consistency FN side is clear.
 - **#18 (residual) - pine-lint's variable-list output
   (`astExtractor.ts`) labels some built-in color constants
   `"undetermined type"`.** A display-path quirk, cosmetic, not a
@@ -426,21 +434,18 @@ IDs so the two stay in sync.
   [INV130](investigations/INV130-undetermined-local-history/notes.md)
   (`f1b6bd45` `draw_lbl` undetermined local history), and
   [INV131](investigations/INV131-undetermined-udf-gate/notes.md)
-  (`25a4a7` `math.sum` under an undetermined UDF-result gate). Net through
-  INV131: warning tvOnly is down to 4, the `ta.sma`, `draw_lbl`, and `math.sum`
-  local-only residuals are cleared, and
+  (`25a4a7` `math.sum` under an undetermined UDF-result gate), and
+  [INV132](investigations/INV132-bar-index-udf-history/notes.md)
+  (`db76cf79` `FindST` via `bar_index[1]` UDF history). Net through INV132:
+  warning tvOnly is down to 3 (only the CW10013 shadowing records), the
+  `ta.sma`, `draw_lbl`, and `math.sum` local-only residuals are cleared, the
+  `FindST` tv-only residual is cleared, and
   the error-channel sweep remains 0 tv-only. The INV-docs hold the
   probes/measurements - do NOT re-inline them here.
 
   **Pending**:
-  - `FindST` (`db76cf79`): TV warns it; no reproducing probe under the
-    strategies tried so far (its local leaves only index builtins / mutate
-    arrays, both probed silent), and it has NOT yet been re-probed with a
-    conjunction-style battery - the technique that cracked INV119 /
-    `getTrendLineScore` in INV126. Still does not gate goal completion. See
-    INV117 (Family 2).
   - Two consistency-warning FPs on TV-clean files are DEFERRED as documented
-    residuals (like FindST), not fixable now: `61a3a7` (`ta.highest`/`lowest`)
+    residuals, not fixable now: `61a3a7` (`ta.highest`/`lowest`)
     and `6152b9` (`ta.crossunder`). Both are genuine FPs
     (`compare-tv`: TV 0 errors / 0 warnings, no error-stop; we warn), but TV's
     silence reproduces ONLY on the full carrier. SIX structural/whole-program
@@ -463,8 +468,7 @@ IDs so the two stay in sync.
     largely closed: 4 fixed (`ta.atr`, `ta.sma`, `draw_lbl`, `math.sum`), 2
     unreproducible (here), the rest TV-error-stops / G005 phantoms.
   - The CW10013 "Shadowing variable" tail (3 tv-only) is a separate documented
-    residual after Item 5 (INV126 landing measurement: warning tvOnly 7 -> 4 = the
-    3 CW10013 + 1 `FindST`).
+    residual after INV132 (warning tvOnly 4 -> 3 = `FindST` cleared).
 
 ## Gotchas
 

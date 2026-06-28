@@ -2090,8 +2090,13 @@ export class SemanticAnalyzer {
 				// The `[]` history-referencing operator counts only when it
 				// indexes the function's own scope values (params/locals) -
 				// a global's history is consistent regardless of when the
-				// call executes. see the scanStatements doc above.
+				// call executes. TV makes a narrow exception for `bar_index[1]`,
+				// which is function-history even though ordinary builtin
+				// history such as `high[1]` and `time[1]` stays silent. see
+				// INV132 and the scanStatements doc above.
 				return (
+					(expr.object.type === "Identifier" &&
+						expr.object.name === "bar_index") ||
 					this.expressionReferencesNames(expr.object, scopeNames) ||
 					this.scanExpressionForHistoryDependence(expr.object, scopeNames) ||
 					this.scanExpressionForHistoryDependence(expr.index, scopeNames)
