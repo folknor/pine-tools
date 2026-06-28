@@ -1790,6 +1790,8 @@ export class UnifiedPineValidator {
 	// probe as "const", INV061 p09). see INV061
 	public renderTvType(t: PineType, bareQualifier: string): string {
 		const m = (t as string).match(/^(series|simple|input|const)<(.+)>$/);
+		const base = TypeChecker.baseTypeName(t as string);
+		if (this.udtFieldTypes.has(base)) return base;
 		if (m) return `${m[1]} ${m[2]}`;
 		if (
 			t === "unknown" ||

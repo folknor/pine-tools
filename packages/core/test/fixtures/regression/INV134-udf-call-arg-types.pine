@@ -1,0 +1,19 @@
+// @test regression/INV134-udf-call-arg-types
+// @description User-function CE10123 call-site checking covers declared UDT params and simple-qualified primitive params. Probed 2026-06-28, see investigations/INV134-udf-call-arg-types/notes.md.
+// @expects parse: success
+// @expects error: line=9, column=12, message=/Cannot call "g" with argument "a"="b".*An argument of "B" type was used but a "A"/
+// @expects error: line=11, column=15, message=/Cannot call "f" with argument "n"="bar_index".*An argument of "series int" type was used but a "simple int"/
+// @expects errors: 2
+//@version=6
+indicator("INV134")
+type A
+    int x
+type B
+    int y
+g(A a) => a.x
+b = B.new(1)
+badUdt = g(b)
+f(simple int n) => n
+badSimple = f(bar_index)
+ok = f(5)
+plot(badUdt + badSimple + ok)

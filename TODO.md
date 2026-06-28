@@ -97,59 +97,22 @@ local-only measured 1292 with 4 TV-unparseable files. `node
 scripts/categorize-failures.mjs` reports 29 local-only hits in 3 error
 categories and 0 tv-only categories.
 
+Measurement note, 2026-06-28: after INV134 / #62 UDF call-site UDT and
+simple-param arg-type checking, `node scripts/regression-check.mjs` reports 0
+changed fixtures, 0 new error appearances, and 0 disappeared errors across 1879
+fixtures - the new CE10123 checks fire only on corpus-absent targeted-probe
+shapes (UDT into a wrong UDT param, a series value into a `simple` param), so the
+error baseline is byte-unchanged and the INV133 sweep numbers still hold. The two
+TV-only false negatives (TODO #62 / freedom L-001) are now caught, verified by
+`INV134-udf-call-arg-types.pine` and the dated `--tv` probes in the INV134 notes.
+The full vitest suite is 421 passing.
+
 ## Pending follow-ups
 
 Open work items, each either deferred from an investigation or queued
 as a discrete next step. Sequential numbering matches the task-tool
 IDs so the two stay in sync.
 
-- **#9 - type-inference where we infer non-bool but TV infers bool.**
-  Umbrella task. Several big wins landed via INV005, INV010, INV011,
-  and INV024 (the biggest single cluster was a parser bug masquerading
-  as inference - qualifier-led declarations truncating function
-  bodies); remaining FPs need a fresh corpus diff and per-category
-  dives. The grounded-inference foundation that the remaining
-  qualifier-propagation work builds on has landed: qualifier provenance,
-  call-graph-fixpoint UDF inference (which retired the `series<float>`
-  param guess), and the INV014/INV016 reliability-gate removal - see
-  INV122 / INV123 / INV124 for the trail.
-
-  **Concrete plan - per-call-site arg-qualifier propagation (the shared
-  infrastructure).** Today the analysis is call-site INSENSITIVE: a UDF's
-  param qualifier comes from its type annotation alone (`withSeriesParams`
-  in `semanticAnalyzer.ts`; typed-unqualified -> series, untyped ->
-  undetermined per INV114 Fix 2), never from the arguments actually passed.
-  TV monomorphizes per call site; we don't. That single gap drives the
-  consistency-warning FPs and FNs (#61); it also drove the INV014/INV016 gate
-  conservatism, now resolved at the blanket level by Loop 3 (INV124) - only the
-  const-gate's user-var-into-const-param residual stays on its conservative
-  branch (no TV witness; see INV124).
-  - **Phase 1 - call-site arg-qualifier collection (tractable, FP-reducing,
-    TV-backed).** Add a pre-pass that, per UDF, gathers every call site and
-    unions each argument's inferred qualifier; `withSeriesParams` then keys
-    off that union (a param is series only if some call site passes a series
-    arg) instead of the annotation. Fixes the genuine typed-param consistency
-    FPs (#61: `draw_lbl` etc., TYPED-param UDFs only ever called with
-    non-series args). NOTE: the a21df338 triage (2026-06-26) REFUTED the
-    earlier "~11 consistency FPs are all typed-param call-site cases" framing -
-    the `1477fbef` `ta.atr` / `47d21dbd` `ta.sma` carriers wrongly lumped into
-    that count are untyped-param UNDETERMINED-GATE cases, not typed-param;
-    `ta.atr` is already cleared by INV120's immediate-gate rule and `ta.sma` is
-    cleared by INV129's sibling `na`-seed rule, so neither needs this Phase. (The INV014/INV016
-    UDF-return / user-var gates have already been dropped independently by
-    Loop 3 - INV124 - so they are no longer waiting on this Phase.) Only
-    REMOVES warnings TV doesn't emit, so low new-FP risk if the unknown-arg
-    path stays conservative (current behavior). Hard sub-problem:
-    an arg's qualifier can depend on the ENCLOSING function's param (UDF
-    called inside a UDF) -> needs fixpoint / topological resolution over the
-    call graph with recursion guards; first cut resolves only directly-
-    inferable args and stays conservative otherwise.
-  - Validate each step against the warning sweep (`lint:failures` ->
-    `lint:categorize`). After INV133, both the consistency FN side and the
-    warning tv-only side are clear in the refreshed corpus sweep. The old
-    "typed-param call-site propagation" framing is not currently justified by
-    a live corpus carrier; revive it only if a new concrete disagreement shows
-    that shape.
 - **#18 (residual) - pine-lint's variable-list output
   (`astExtractor.ts`) labels some built-in color constants
   `"undetermined type"`.** A display-path quirk, cosmetic, not a
@@ -662,20 +625,19 @@ counts:
 
 ## Type checker - over-strict bool / arg / assign rules
 
-Per task #9 the root cause is more likely our type inference producing
-non-bool types where TV correctly produces bool. Every once-large class
-is cleared (qualifier coercion, INV049's destructure-init types,
-INV059's unknown-typing of unclassifiable elements, INV060's v4/v5
-numeric-bool legacy gate - trail in the investigations index). What
-remains:
+Every once-large #9 class is cleared (qualifier coercion, INV049's
+destructure-init types, INV059's unknown-typing of unclassifiable
+elements, INV060's v4/v5 numeric-bool legacy gate, and the later
+INV122-INV133 qualifier/consistency trail). The current report has no
+live TV-only type-checker categories. The remaining local-only type row
+is documented full-file mangle residue:
 
 | count | files | category |
 |---|---|---|
-| 1 | 1 | `Cannot call "operator ?:" with argument ...` (`8439b236...` mangled ternary-wrap recovery residue; the clean synthetic INV026 trio now matches TV at the branch argument positions)  |
+| 1 | 1 | `Cannot call "operator ?:" with argument ...` (`8439b236...` mangled ternary-wrap recovery residue; the clean synthetic INV026 trio now matches TV at the branch argument positions, and INV081 confirms the plot-style-condition shape is a real TV CE10123 in isolation) |
 
-**Right approach**: pick a specific FP, trace through `inferExpressionType`
-in `checker.ts` to see why we produce e.g. `series<float>` for what
-should be `series<bool>`. Don't relax the bool checks - they're correct.
+Do not relax bool checks to chase this row; there is no current #9
+carrier that justifies the old per-call-site qualifier propagation plan.
 
 ## Type checker - false negatives
 

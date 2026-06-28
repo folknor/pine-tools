@@ -820,3 +820,7 @@ contradiction means re-measure, not "the earlier author was wrong."
   User-defined type names now count as parent-scope names for child-scope
   variable declarations, and typed declaration shadow warnings anchor at the
   leading type token instead of the identifier.
+- [INV134](INV134-udf-call-arg-types/notes.md) - TODO #62: user-function
+  call-site CE10123 validation now covers declared UDT params (`B` into `A`)
+  and `simple <primitive>` params receiving series values. The CLI result
+  extractor also renders UDT constructor variables as their UDT type.

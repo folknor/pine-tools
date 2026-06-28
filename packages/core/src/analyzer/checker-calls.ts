@@ -65,9 +65,9 @@ import { type PineType, TypeChecker } from "./types";
 // signatures captured for the redefinition check. Conservative, to avoid
 // FPs: only NON-overloaded UDFs (exactly one signature); count checks gated
 // on a clean parse (a recovery-truncated call must not misfire); arg-type
-// checks only on TYPED PRIMITIVE params (untyped/UDT/collection params accept
-// anything we can't prove wrong); positional args only. v6 only (G004). see
-// INV095
+// checks only on typed primitive / known UDT params (untyped/collection/
+// unknown params accept anything we can't prove wrong); positional args only.
+// v6 only (G004). see INV095 / INV134
 export function validateUserFunctionCall(
 	v: UnifiedPineValidator,
 	call: CallExpression,
@@ -127,22 +127,39 @@ export function validateUserFunctionCall(
 		}
 	}
 
-	// Arg TYPE (CE10123) for typed primitive params.
+	// Arg TYPE (CE10123) for typed primitive / UDT params.
 	for (let i = 0; i < posArgs.length && i < params.length; i++) {
 		const ann = params[i].typeAnnotation?.name;
 		if (!ann) continue; // untyped param -> accepts anything
 		const base = TypeChecker.baseTypeName(ann);
-		if (
-			base !== "int" &&
-			base !== "float" &&
-			base !== "bool" &&
-			base !== "string" &&
-			base !== "color"
-		) {
-			continue; // UDT / collection / unknown param -> lenient
-		}
+		const primitiveParam = SCALAR_BASE_TYPES.has(base);
+		if (!primitiveParam && !v.udtFieldTypes.has(base)) continue;
 		const argExpr = posArgs[i].value;
 		const argType = v.inferExpressionType(argExpr, version);
+		if (
+			isSimpleQualifiedParam(ann) &&
+			isSeriesQualified(argType) &&
+			TypeChecker.isAssignable(argType, base as PineType)
+		) {
+			const desc = v.describeArgForTemplate(argExpr, argType, version);
+			v.addTemplateError({
+				line: argExpr.line,
+				column: argExpr.column,
+				length: 0,
+				message: CE10123_TEMPLATE,
+				severity: DiagnosticSeverity.Error,
+				code: "CE10123",
+				ctx: {
+					argDisplayName: params[i].name,
+					argUserFriendlyRepresentation: desc.repr,
+					argumentType: desc.typeStr,
+					currentTypeDocStr: ann,
+					funId: functionName,
+					typePostfix: "",
+				},
+			});
+			continue;
+		}
 		if (TypeChecker.isAssignable(argType, base as PineType)) continue;
 		const desc = v.describeArgForTemplate(argExpr, argType, version);
 		v.addTemplateError({
@@ -157,8 +174,10 @@ export function validateUserFunctionCall(
 				argUserFriendlyRepresentation: desc.repr,
 				argumentType: desc.typeStr,
 				// UDF params default to the series qualifier (TV renders
-				// `int x` as "series int"); keep an explicit qualifier as-is.
-				currentTypeDocStr: ann === base ? `series ${base}` : ann,
+				// `int x` as "series int"). UDT params render bare (`A`),
+				// and explicit qualifiers render as written. see INV134
+				currentTypeDocStr:
+					primitiveParam && ann === base ? `series ${base}` : ann,
 				funId: functionName,
 				typePostfix: "",
 			},

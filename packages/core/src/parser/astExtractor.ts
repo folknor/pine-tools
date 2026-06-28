@@ -161,6 +161,7 @@ export class ASTExtractor {
 	private extractedVariables: PineLintVariable[] = [];
 	// User-defined function return types: name → return type
 	private userDefinedFunctions: Map<string, string> = new Map();
+	private userDefinedTypes: Set<string> = new Set();
 
 	/**
 	 * Extract pine-lint compatible result from AST
@@ -169,7 +170,9 @@ export class ASTExtractor {
 		this.scopeCounter = 0;
 		this.extractedVariables = [];
 		this.userDefinedFunctions = new Map();
+		this.userDefinedTypes = new Set();
 
+		this.collectUserDefinedTypes(ast);
 		// First pass: collect UDF return types so they're available for variable type inference
 		this.collectUserDefinedFunctions(ast);
 
@@ -179,6 +182,14 @@ export class ASTExtractor {
 		const enums = this.extractEnums(ast);
 
 		return { variables, functions, types, enums };
+	}
+
+	private collectUserDefinedTypes(ast: Program): void {
+		for (const stmt of ast.body) {
+			if (stmt.type === "TypeDeclaration") {
+				this.userDefinedTypes.add((stmt as TypeDeclaration).name);
+			}
+		}
 	}
 
 	/**
@@ -473,15 +484,29 @@ export class ASTExtractor {
 	 * Convert type annotation to pine-lint type string
 	 */
 	private typeAnnotationToString(annotation: TypeAnnotation): string {
-		const baseName = annotation.name.toLowerCase();
+		const raw = annotation.name.trim();
+		const qualified = raw.match(/^(series|simple|input|const)\s+(.+)$/i);
+		if (qualified) {
+			const base = this.formatTypeName(qualified[2]);
+			return `${qualified[1].toLowerCase()} ${base}`;
+		}
+
+		const baseName = this.formatTypeName(raw);
 		const qualifier = annotation.qualifier?.toLowerCase();
 
 		if (qualifier) {
 			return `${qualifier} ${baseName}`;
 		}
 
+		if (this.userDefinedTypes.has(raw)) return raw;
+
 		// Default to simple for basic types
 		return `simple ${baseName}`;
+	}
+
+	private formatTypeName(name: string): string {
+		const trimmed = name.trim();
+		return this.userDefinedTypes.has(trimmed) ? trimmed : trimmed.toLowerCase();
 	}
 
 	/**
@@ -528,6 +553,10 @@ export class ASTExtractor {
 				const call = expr as CallExpression;
 				const funcName = this.getCalleeString(call.callee);
 				const funcDef = FUNCTIONS_BY_NAME.get(funcName);
+				const ctorMatch = funcName.match(/^(.+)\.new$/);
+				if (ctorMatch && this.userDefinedTypes.has(ctorMatch[1])) {
+					return ctorMatch[1];
+				}
 
 				// Handle generic type arguments: array.new<float>() -> array<float>
 				if (call.typeArguments && call.typeArguments.length > 0) {
