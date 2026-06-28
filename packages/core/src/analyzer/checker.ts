@@ -1822,6 +1822,7 @@ export class UnifiedPineValidator {
 		expr: Expression,
 		inferred: PineType,
 		version: string,
+		bareIdentifierQualifier: "const" | "series" = "series",
 	): { repr: string; typeStr: string } {
 		switch (expr.type) {
 			case "Literal": {
@@ -1852,7 +1853,8 @@ export class UnifiedPineValidator {
 					expr.type === "Identifier"
 						? this.symbolTable.lookup((expr as Identifier).name)
 						: undefined;
-				const bareQualifier = sym && sym.line !== 0 ? "series" : "const";
+				const bareQualifier =
+					sym && sym.line !== 0 ? bareIdentifierQualifier : "const";
 				return {
 					repr: name || "?",
 					typeStr: qualified ?? this.renderTvType(inferred, bareQualifier),

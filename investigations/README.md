@@ -833,3 +833,7 @@ contradiction means re-measure, not "the earlier author was wrong."
   `astExtractor` now renders variables initialized from namespaced constants
   (`color.red`, `display.none`, etc.) with TV's const-qualified variable-list
   types instead of `undetermined type`.
+- [INV137](INV137-equality-nonliteral-mismatch/notes.md) - TODO #57 residual:
+  `==`/`!=` mismatches now use TV's CE10123 operator template for the
+  nonliteral/both-const primitive and enum cases too, including `color.red == 1`,
+  `boolVar == stringVar`, and enum-vs-bool/string/int pairs.

@@ -1,0 +1,32 @@
+// @test regression/INV137-equality-nonliteral-mismatch
+// @description `==`/`!=` mismatches without the old single-literal shape still use TV's CE10123 operator template. TV picks the lower-priority operand as the offender: color loses to int (expected float), int loses to enum, enum loses to bool/string, and bool loses to string. Probed 2026-06-28 via pine-lint --tv, see INV137.
+// @expects parse: success
+// @expects error: line=10, message=/Cannot call "operator ==" with argument "expr0"="b".*"const bool".*"const string"/
+// @expects error: line=11, message=/Cannot call "operator !=" with argument "expr1"="b".*"const bool".*"const string"/
+// @expects error: line=12, message=/Cannot call "operator ==" with argument "expr0"="color.red".*"const color".*"const float"/
+// @expects error: line=13, message=/Cannot call "operator ==" with argument "expr1"="color.red".*"const color".*"const float"/
+// @expects error: line=14, message=/Cannot call "operator ==" with argument "expr0"="v".*"const E".*"const bool"/
+// @expects error: line=15, message=/Cannot call "operator ==" with argument "expr1"="i".*"const int".*"const enum"/
+// @expects error: line=16, message=/Cannot call "operator ==" with argument "expr0"="v".*"const E".*"const string"/
+// @expects errors: 7
+
+//@version=6
+indicator("INV137 equality nonliteral mismatch")
+enum E
+    a
+    b
+bool b = true
+string s = "x"
+v = E.a
+int i = 1
+badVar = b == s
+badVarFlip = s != b
+badColor = color.red == 1
+badColorFlip = 1 == color.red
+badEnumBool = v == b
+badEnumInt = v == i
+badEnumString = v == s
+okColor = color.red != color.blue
+okEnum = v == E.b
+used = na(badVar) or na(badVarFlip) or na(badColor) or na(badColorFlip) or na(badEnumBool) or na(badEnumInt) or na(badEnumString)
+plot(used ? 1 : okColor ? 2 : okEnum ? 3 : 0)

@@ -160,34 +160,32 @@ export function validateBinaryExpression(
 			return;
 		}
 
-		// Align `==`/`!=` incompatibilities to TV's CE10123. When exactly one
-		// operand is a LITERAL, TV anchors the error at that literal (the
-		// offender) and reports the OTHER operand's type as expected -
-		// independent of left/right position (`close == "x"` and `"x" ==
-		// close` both flag the string and expect `series float`; `b == 1` and
-		// `1 == b` both flag the int and expect `const bool`). Probed
-		// 2026-06-25, see #57 / INV096. Exotic both-const shapes (color vs a
-		// numeric literal invert this - TV flags the color, expects float) are
-		// absent from the corpus; leave them to the generic fallback below.
+		// Align `==`/`!=` incompatibilities to TV's CE10123. TV mostly blames a
+		// single literal operand, but falls back to a probed type priority for
+		// color and int-vs-string literal exceptions, and for nonliteral pairs.
+		// see INV096 / INV137
 		if (expr.operator === "==" || expr.operator === "!=") {
-			const leftLit = expr.left.type === "Literal";
-			const rightLit = expr.right.type === "Literal";
-			if (leftLit !== rightLit) {
-				const offenderExpr = leftLit ? expr.left : expr.right;
-				const offenderType = leftLit ? leftType : rightType;
-				const expectedType = leftLit ? rightType : leftType;
-				if (!TypeChecker.isColorType(expectedType)) {
-					addOperatorTypeError(
-						v,
-						expr.operator,
-						leftLit ? "expr0" : "expr1",
-						offenderExpr,
-						offenderType,
-						renderEqExpectedType(v, expectedType),
-						version,
-					);
-					return;
-				}
+			const choice = eqMismatchChoice(
+				v,
+				expr.left,
+				leftType,
+				expr.right,
+				rightType,
+			);
+			if (choice) {
+				const offenderExpr = choice.side === "left" ? expr.left : expr.right;
+				const offenderType = choice.side === "left" ? leftType : rightType;
+				addOperatorTypeError(
+					v,
+					expr.operator,
+					choice.side === "left" ? "expr0" : "expr1",
+					offenderExpr,
+					offenderType,
+					renderEqExpectedType(v, choice.expectedType),
+					version,
+					"const",
+				);
+				return;
 			}
 		}
 
@@ -201,13 +199,81 @@ export function validateBinaryExpression(
 	}
 }
 
+function eqMismatchChoice(
+	v: UnifiedPineValidator,
+	leftExpr: Expression,
+	leftType: PineType,
+	rightExpr: Expression,
+	rightType: PineType,
+): { side: "left" | "right"; expectedType: PineType } | null {
+	const leftLiteral = leftExpr.type === "Literal";
+	const rightLiteral = rightExpr.type === "Literal";
+	if (leftLiteral !== rightLiteral) {
+		const literalSide = leftLiteral ? "left" : "right";
+		const literalType = leftLiteral ? leftType : rightType;
+		const otherType = leftLiteral ? rightType : leftType;
+		if (!eqLiteralException(otherType, literalType)) {
+			return { side: literalSide, expectedType: otherType };
+		}
+	}
+
+	const leftPriority = eqMismatchPriority(v, leftType);
+	const rightPriority = eqMismatchPriority(v, rightType);
+	if (
+		leftPriority === null ||
+		rightPriority === null ||
+		leftPriority === rightPriority
+	) {
+		return null;
+	}
+	return leftPriority < rightPriority
+		? { side: "left", expectedType: rightType }
+		: { side: "right", expectedType: leftType };
+}
+
+function eqLiteralException(
+	otherType: PineType,
+	literalType: PineType,
+): boolean {
+	const otherBase = TypeChecker.baseTypeName(String(otherType));
+	const literalBase = TypeChecker.baseTypeName(String(literalType));
+	return (
+		otherBase === "color" || (otherBase === "int" && literalBase === "string")
+	);
+}
+
+function eqMismatchPriority(
+	v: UnifiedPineValidator,
+	type: PineType,
+): number | null {
+	const base = TypeChecker.baseTypeName(String(type));
+	if (base === "float") return 6;
+	if (base === "string") return 5;
+	if (base === "bool") return 4;
+	if (v.enumMemberNames.has(base)) return 3;
+	if (base === "int") return 2;
+	if (base === "color") return 1;
+	return null;
+}
+
 // The expected-type rendering for a CE10123 `==`/`!=` mismatch. TV renders
 // an enum-typed expected operand as the generic "const enum" (distinct from
 // arithmetic, which shows "const E" - so the rendering is operator-specific;
-// see #57). Everything else flows through the normal qualifier render.
+// see #57). If an int operand is the numeric side, TV expects the operator's
+// float overload. Everything else flows through the normal qualifier render.
 function renderEqExpectedType(v: UnifiedPineValidator, t: PineType): string {
-	if (v.enumMemberNames.has(t)) return "const enum";
+	const base = TypeChecker.baseTypeName(String(t));
+	if (v.enumMemberNames.has(base)) return "const enum";
+	if (base === "int") return v.renderTvType(eqFloatExpectedType(t), "const");
 	return v.renderTvType(t, "const");
+}
+
+function eqFloatExpectedType(t: PineType): PineType {
+	const raw = String(t);
+	if (raw === "int") return "float";
+	return raw
+		.replace(/^(series|simple|input|const)<int>$/, "$1<float>")
+		.replace(/^(series|simple|input|const)\s+int$/, "$1 float") as PineType;
 }
 
 export function expectedArithmeticOperandType(
@@ -259,8 +325,14 @@ export function addOperatorTypeError(
 	argType: PineType,
 	expectedType: string,
 	version: string,
+	argBareQualifier: "const" | "series" = "series",
 ): void {
-	const desc = v.describeArgForTemplate(expr, argType, version);
+	const desc = v.describeArgForTemplate(
+		expr,
+		argType,
+		version,
+		argBareQualifier,
+	);
 	v.addTemplateError({
 		line: expr.line,
 		column: expr.column,

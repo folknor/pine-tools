@@ -376,24 +376,6 @@ IDs so the two stay in sync.
   Remaining, if worth pursuing: continue auditing any future specialized
   leading-wrap joiners for the same CE10013 wording/anchor behavior; no
   inventory rows currently hit them.
-- **#57 (residual) - `==`/`!=` operator type-mismatch diagnostics.** The
-  literal-operand cases now emit TV's CE10123 `Cannot call "operator X" ...`
-  template (`validateBinaryExpression`, see `eq-operator-type-mismatch.pine` +
-  the updated `enum-operand-type.pine`). TV's rule, probed 2026-06-25: when
-  exactly one operand is a LITERAL, it anchors the error at that literal (the
-  offender) and reports the OTHER operand's type as expected - independent of
-  left/right order (`close == "x"` and `"x" == close` both flag the string,
-  expect `series float`; `b == 1` and `1 == b` both flag the int, expect
-  `const bool`; the bool side renders with its real qualifier const/series/
-  input bool; an enum side renders as the generic "const enum" - distinct from
-  arithmetic's "const E"). This covers every `==`/`!=` mismatch in the corpus
-  (all carry a literal operand); the 100 corpus carriers re-worded clean (0
-  regression). **Remaining:** the both-non-literal / both-const shapes (e.g.
-  `boolVar == stringVar`, `color.red == 1`) keep the old `Type mismatch:
-  cannot apply ...` fallback. TV resolves those via a type-priority ordering
-  (float > enum > string > bool > int > color, with the int operand of a
-  numeric pair rendered as float) that is corpus-absent and not yet replicated.
-  Surfaced by [INV096](investigations/INV096-enum-operand-type/notes.md).
 - **Minor data residue (record-only, low value):** `ta.vwap.anchor`'s default
   and the "X by default" phrasing are deliberately unparsed (see
   `parse-default.ts`). Skip unless a consumer needs them.
