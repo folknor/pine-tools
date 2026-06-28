@@ -824,3 +824,8 @@ contradiction means re-measure, not "the earlier author was wrong."
   call-site CE10123 validation now covers declared UDT params (`B` into `A`)
   and `simple <primitive>` params receiving series values. The CLI result
   extractor also renders UDT constructor variables as their UDT type.
+- [INV135](INV135-cast-return-qualifier/notes.md) - builtin return inference now
+  uses matched overload returns (`resolveCallReturnRaw`) where available, instead
+  of the merged `functions.json` return, so argument qualifiers are preserved.
+  Casts are the motivating probe: `int(close)` is `series int`, not the merged
+  `const int`.

@@ -107,6 +107,18 @@ TV-only false negatives (TODO #62 / freedom L-001) are now caught, verified by
 `INV134-udf-call-arg-types.pine` and the dated `--tv` probes in the INV134 notes.
 The full vitest suite is 421 passing.
 
+Measurement note, 2026-06-28: INV135 makes builtin return inference use the
+matched overload return (`resolveCallReturnRaw`) where available, instead of the
+frozen merged `functions.json` return. Casts are the motivating probe (their
+merged return is const but overloads vary by qualifier): `int(close)` is now
+`series int`, not `const int`. The targeted fixture is
+`INV135-cast-return-qualifier.pine`; the dated `--tv` probes live in the INV135
+notes. Full vitest is 422 passing. `node scripts/regression-check.mjs` reports 0
+new appearances and 0 disappeared errors. The one changed corpus fixture is a
+same-position local cascade wording becoming more precise (`const color` ->
+`series color`) in a file where TV stops at an earlier string error - that
+position is past TV's stop, so it is not TV-adjudicated.
+
 ## Pending follow-ups
 
 Open work items, each either deferred from an investigation or queued

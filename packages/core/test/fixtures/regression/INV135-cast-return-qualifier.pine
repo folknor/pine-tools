@@ -1,0 +1,14 @@
+// @test regression/INV135-cast-return-qualifier
+// @description Builtin casts preserve the strongest argument qualifier in return inference. Probed 2026-06-28, see investigations/INV135-cast-return-qualifier/notes.md.
+// @expects parse: success
+// @expects error: line=5, column=12, message=/Cannot call "f" with argument "n"="x".*An argument of "series int" type was used but a "simple int"/
+// @expects error: line=6, column=13, message=/Cannot call "f" with argument "n"="call "int" \(series int\)".*An argument of "series int" type was used but a "simple int"/
+// @expects errors: 2
+//@version=6
+indicator("INV135")
+x = int(close)
+f(simple int n) => n
+badVar = f(x)
+badCall = f(int(close))
+ok = f(int(5))
+plot(badVar + badCall + ok)

@@ -5,7 +5,9 @@ import { FUNCTIONS_BY_NAME, VARIABLES_BY_NAME } from "../../../../pine-data/v6";
 import {
 	type ArgumentInfo,
 	getPolymorphicReturnType,
+	resolveCallReturnRaw,
 } from "../analyzer/builtins";
+import type { PineType } from "../analyzer/types";
 import type {
 	CallExpression,
 	EnumDeclaration,
@@ -632,7 +634,10 @@ export class ASTExtractor {
 
 				// Default: use return type from pine-data or user-defined functions
 				if (funcDef?.returns) {
-					return funcDef.returns;
+					const argTypes = call.arguments.map((arg) =>
+						this.inferExpressionType(arg.value),
+					) as PineType[];
+					return resolveCallReturnRaw(funcName, argTypes) ?? funcDef.returns;
 				}
 
 				// Check user-defined functions (collected in first pass)

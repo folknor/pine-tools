@@ -2122,6 +2122,11 @@ export class UnifiedPineValidator {
 							: "unknown";
 						break;
 					}
+					const rawReturn = resolveCallReturnRaw(funcName, argTypes);
+					if (rawReturn) {
+						type = mapReturnTypeToPineType(rawReturn);
+						break;
+					}
 					type = mapReturnTypeToPineType(ret);
 					break;
 				}
