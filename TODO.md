@@ -70,6 +70,15 @@ measured 1308 with the same 4 TV-unparseable files as the 1310 post-INV129
 rerun. The only intended warning-channel movement is the two `draw_lbl`
 local-only warnings in `f1b6bd45`, now cleared.
 
+Measurement note, 2026-06-28: after INV131 / `math.sum` undetermined-UDF-result
+gate suppression, `node scripts/regression-check.mjs` still reports 0 changed
+fixtures, 0 new error appearances, and 0 disappeared errors. `node
+scripts/find-real-failures.mjs --concurrency 4` scanned 748 v6 fixtures: errors
+remain 29 local-only / 0 tv-only / 1 same-position message pair; warning tv-only
+remains 4 (the 3 CW10013 shadowing records plus `FindST`); warning local-only
+measured 1293 with 4 TV-unparseable files. The intended warning-channel movement
+is the two `math.sum` local-only warnings in `25a4a7`, now cleared.
+
 ## Pending follow-ups
 
 Open work items, each either deferred from an investigation or queued
@@ -413,8 +422,13 @@ IDs so the two stay in sync.
   (CW10003 across the import boundary - derived per-export history-dependence,
   library member/typed-local resolution, a live-fetch override for CC-BY-NC
   libs), and [INV129](investigations/INV129-sibling-na-seed-consistency/notes.md)
-  (the `47d21dbd` sibling `na(w[1])` seed false positive). Net through INV129:
-  warning tvOnly is down to 4, the `ta.sma` local-only residual is cleared, and
+  (the `47d21dbd` sibling `na(w[1])` seed false positive),
+  [INV130](investigations/INV130-undetermined-local-history/notes.md)
+  (`f1b6bd45` `draw_lbl` undetermined local history), and
+  [INV131](investigations/INV131-undetermined-udf-gate/notes.md)
+  (`25a4a7` `math.sum` under an undetermined UDF-result gate). Net through
+  INV131: warning tvOnly is down to 4, the `ta.sma`, `draw_lbl`, and `math.sum`
+  local-only residuals are cleared, and
   the error-channel sweep remains 0 tv-only. The INV-docs hold the
   probes/measurements - do NOT re-inline them here.
 
@@ -446,11 +460,8 @@ IDs so the two stay in sync.
     "these need per-call-site arg-qualifier propagation (#9)" framing is refuted -
     the arg-qualifier-adjacent hypotheses above all still warn. Backward-reference
     series tracking is a non-issue (none in corpus). #61's consistency-FP side is
-    largely closed: 3 fixed (`ta.atr`, `ta.sma`, `draw_lbl` via INV130), 2
+    largely closed: 4 fixed (`ta.atr`, `ta.sma`, `draw_lbl`, `math.sum`), 2
     unreproducible (here), the rest TV-error-stops / G005 phantoms.
-  - `math.sum` (`25a4a7`): a suspected consistency FP where the triage thinks we
-    may be MORE correct than TV. Probe-gated - run `--tv` first; act on it (or
-    record it as a TV FN) only if the probe confirms a real FP. Not yet probed.
   - The CW10013 "Shadowing variable" tail (3 tv-only) is a separate documented
     residual after Item 5 (INV126 landing measurement: warning tvOnly 7 -> 4 = the
     3 CW10013 + 1 `FindST`).

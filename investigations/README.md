@@ -805,3 +805,9 @@ contradiction means re-measure, not "the earlier author was wrong."
   references an untyped UDF param are `undetermined type` to TV, so indexing
   that local does not make the UDF history-dependent. Direct param indexing and
   history-dependent builtin calls inside the value still count.
+- [INV131](INV131-undetermined-udf-gate/notes.md) - TODO #61 / #9: cleared the
+  `25a4a7` `math.sum` CW10003 false positive. A UDF result is
+  `undetermined type` when its series tail depends on untyped params; a caller
+  variable assigned from that result suppresses CW10003/4 only when it appears
+  in the immediate branch gate. Identity returns and series tails that ignore
+  the untyped param still warn.

@@ -1,0 +1,27 @@
+// @test regression/consistency-warning-undetermined-udf-gate
+// @description A UDF whose series tail depends on untyped params returns undetermined type to TV. A variable assigned from that result suppresses CW10003/4 only when it appears in the immediate gate. Probed 2026-06-28, see INV131.
+// @expects parse: success
+// @expects warning: line=17, message="The function 'math.sum' should be called on each calculation"
+// @expects warning: line=19, message="The function 'math.sum' should be called on each calculation"
+// @expects warnings: 2
+
+//@version=6
+indicator("undetermined udf gate")
+f(x, len) =>
+    ta.sma(x, len)
+u = f(close, 6)
+g(x) =>
+    ta.sma(close, 6)
+gu = g(1)
+var float y = na
+var float z = na
+var float a = na
+var float b = na
+if close > u and close > open
+    y := math.sum(volume, 6)
+    z := ta.sma(close, 6)
+if close > open
+    a := math.sum(volume, 6)
+if close > gu and close > open
+    b := math.sum(volume, 6)
+plot(y + z + a + b)

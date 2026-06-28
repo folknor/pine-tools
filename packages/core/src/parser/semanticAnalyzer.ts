@@ -101,6 +101,10 @@ export class SemanticAnalyzer {
 	// collect pass in source order, so `b = close > open` then `if b`
 	// resolves. Drives the series-condition gate (see seriesish docs).
 	private seriesVars: Set<string> = new Set();
+	// User variables TV displays as "undetermined type". If one appears in an
+	// immediate gate, TV suppresses CW10003/4 for calls in that branch even when
+	// another part of the gate is series. see INV131
+	private undeterminedVars: Set<string> = new Set();
 	// UDF name -> per-position series-ness of its returned TUPLE, so a
 	// destructure `[a, b] = f()` can mark `a`/`b` series from f's return
 	// (TV types `[..] = getStandardOHLC()` elements as series; we otherwise
@@ -112,6 +116,10 @@ export class SemanticAnalyzer {
 	// only when it produces a SERIES (`cust_series`), not when it is a side-
 	// effect builder returning `this`/void (`StatsData.update`). see INV118
 	private udfReturnsSeries: Set<string> = new Set();
+	// UDFs whose series tail depends on an untyped param. TV exposes their call
+	// result as "undetermined type"; if that value gates a branch, CW10003/4 is
+	// suppressed for the branch. see INV131
+	private udfReturnsUndetermined: Set<string> = new Set();
 	// Lexical scope stack for shadow detection (TV's CW10013/CW10011):
 	// each frame holds the names declared SO FAR in that scope, in source
 	// order - TV only warns when the parent declaration precedes the
@@ -140,8 +148,10 @@ export class SemanticAnalyzer {
 		this.ternaryContextStack = [];
 		this.ambientUndeterminedGateDepth = 0;
 		this.seriesVars.clear();
+		this.undeterminedVars.clear();
 		this.udfReturnTupleSeries.clear();
 		this.udfReturnsSeries.clear();
+		this.udfReturnsUndetermined.clear();
 		this.importAliasToPath.clear();
 		this.localLibraryVar.clear();
 		this.scopeNames = [new Set()];
@@ -202,6 +212,161 @@ export class SemanticAnalyzer {
 			);
 		}
 		return false;
+	}
+
+	private tailDependsOnDerivedUntyped(
+		statements: Statement[],
+		untypedParams: Set<string>,
+	): boolean {
+		if (untypedParams.size === 0) return false;
+		return this.tailBlockDependsOnDerivedUntyped(
+			statements,
+			new Set(untypedParams),
+			new Set(),
+		);
+	}
+
+	private tailBlockDependsOnDerivedUntyped(
+		statements: Statement[],
+		derived: Set<string>,
+		localSeries: Set<string>,
+	): boolean {
+		for (let i = 0; i < statements.length; i++) {
+			const statement = statements[i];
+			if (
+				i === statements.length - 1 &&
+				this.tailStatementDependsOnDerivedUntyped(
+					statement,
+					derived,
+					localSeries,
+				)
+			) {
+				return true;
+			}
+			this.recordDerivedUntypedEffects(statement, derived, localSeries);
+		}
+		return false;
+	}
+
+	private tailStatementDependsOnDerivedUntyped(
+		statement: Statement,
+		derived: Set<string>,
+		localSeries: Set<string>,
+	): boolean {
+		if (statement.type === "ExpressionStatement") {
+			return this.expressionDependsOnDerivedSeries(
+				statement.expression,
+				derived,
+				localSeries,
+			);
+		}
+		if (statement.type === "ReturnStatement") {
+			return this.expressionDependsOnDerivedSeries(
+				statement.value,
+				derived,
+				localSeries,
+			);
+		}
+		if (statement.type === "IfStatement") {
+			return (
+				this.tailBlockDependsOnDerivedUntyped(
+					statement.consequent,
+					new Set(derived),
+					new Set(localSeries),
+				) ||
+				(statement.alternate
+					? this.tailBlockDependsOnDerivedUntyped(
+							statement.alternate,
+							new Set(derived),
+							new Set(localSeries),
+						)
+					: false)
+			);
+		}
+		if (statement.type === "SequenceStatement") {
+			return this.tailBlockDependsOnDerivedUntyped(
+				statement.statements,
+				derived,
+				localSeries,
+			);
+		}
+		return false;
+	}
+
+	private expressionDependsOnDerivedSeries(
+		expr: Expression,
+		derived: Set<string>,
+		localSeries: Set<string>,
+	): boolean {
+		return (
+			this.expressionReferencesNames(expr, derived) &&
+			this.isSeriesishExpressionWithLocalSeries(expr, localSeries)
+		);
+	}
+
+	private recordDerivedUntypedEffects(
+		statement: Statement,
+		derived: Set<string>,
+		localSeries: Set<string>,
+	): void {
+		switch (statement.type) {
+			case "VariableDeclaration":
+				if (statement.name && statement.init) {
+					this.recordDerivedUntypedTarget(
+						statement.name,
+						statement.init,
+						derived,
+						localSeries,
+					);
+				}
+				return;
+			case "AssignmentStatement":
+				if (statement.target.type === "Identifier") {
+					this.recordDerivedUntypedTarget(
+						statement.target.name,
+						statement.value,
+						derived,
+						localSeries,
+					);
+				}
+				return;
+			case "TupleDeclaration": {
+				const initReferencesDerived = this.expressionReferencesNames(
+					statement.init,
+					derived,
+				);
+				const initIsSeries = this.isSeriesishExpressionWithLocalSeries(
+					statement.init,
+					localSeries,
+				);
+				for (const name of statement.names) {
+					if (!name) continue;
+					if (initReferencesDerived) derived.add(name);
+					if (initIsSeries) localSeries.add(name);
+				}
+				return;
+			}
+			case "FunctionDeclaration":
+			case "MethodDeclaration":
+				return;
+		}
+		for (const child of this.childStatements(statement)) {
+			this.recordDerivedUntypedEffects(child, derived, localSeries);
+		}
+	}
+
+	private recordDerivedUntypedTarget(
+		name: string,
+		value: Expression,
+		derived: Set<string>,
+		localSeries: Set<string>,
+	): void {
+		if (this.expressionReferencesNames(value, derived)) {
+			derived.add(name);
+		}
+		if (this.isSeriesishExpressionWithLocalSeries(value, localSeries)) {
+			localSeries.add(name);
+		}
 	}
 
 	/** Map every `<alias>.<Type>`-annotated var (at any depth) to its alias. */
@@ -978,12 +1143,21 @@ export class SemanticAnalyzer {
 
 	/**
 	 * Is `condition` an undetermined gate - one TV does not treat as a
-	 * per-bar-varying selector? True iff it references an untyped param of the
-	 * current function and, with those param names masked out of seriesVars, is
-	 * not series. The masking is load-bearing for the shadowed-global case
-	 * (`src` in 1477fbef). Judge only the immediate condition. see INV120
+	 * per-bar-varying selector? For current-function params, true iff it
+	 * references an untyped param and, with those param names masked out of
+	 * seriesVars, is not series. The masking is load-bearing for the
+	 * shadowed-global case (`src` in 1477fbef). For user variables TV displays
+	 * as "undetermined type", referencing the value in the immediate gate is
+	 * enough to suppress CW10003/4 in the branch. Judge only the immediate
+	 * condition. see INV120 / INV131
 	 */
 	private isUndeterminedGate(condition: Expression): boolean {
+		if (
+			this.undeterminedVars.size > 0 &&
+			this.expressionReferencesNames(condition, this.undeterminedVars)
+		) {
+			return true;
+		}
 		if (this.currentUntypedParams.size === 0) return false;
 		if (!this.expressionReferencesNames(condition, this.currentUntypedParams)) {
 			return false;
@@ -1001,6 +1175,228 @@ export class SemanticAnalyzer {
 		} finally {
 			for (const name of masked) this.seriesVars.add(name);
 		}
+	}
+
+	private expressionIsUndetermined(expr: Expression): boolean {
+		switch (expr.type) {
+			case "Identifier":
+				return this.undeterminedVars.has(expr.name);
+			case "CallExpression":
+				return (
+					this.callReturnsUndetermined(expr) ||
+					this.expressionIsUndetermined(expr.callee) ||
+					expr.arguments.some((a) => this.expressionIsUndetermined(a.value))
+				);
+			case "MemberExpression":
+				return this.expressionIsUndetermined(expr.object);
+			case "BinaryExpression":
+				return (
+					this.expressionIsUndetermined(expr.left) ||
+					this.expressionIsUndetermined(expr.right)
+				);
+			case "UnaryExpression":
+				return this.expressionIsUndetermined(expr.argument);
+			case "TernaryExpression":
+				return (
+					this.expressionIsUndetermined(expr.condition) ||
+					this.expressionIsUndetermined(expr.consequent) ||
+					this.expressionIsUndetermined(expr.alternate)
+				);
+			case "ArrayExpression":
+				return expr.elements.some((e) => this.expressionIsUndetermined(e));
+			case "IndexExpression":
+				return (
+					this.expressionIsUndetermined(expr.object) ||
+					this.expressionIsUndetermined(expr.index)
+				);
+			case "SwitchExpression":
+				return (
+					(expr.discriminant
+						? this.expressionIsUndetermined(expr.discriminant)
+						: false) ||
+					expr.cases.some(
+						(c) =>
+							(c.condition
+								? this.expressionIsUndetermined(c.condition)
+								: false) ||
+							(c.statements
+								? c.statements.some((s) => this.statementIsUndeterminedValue(s))
+								: this.expressionIsUndetermined(c.result)),
+					)
+				);
+			case "IfExpression":
+				return (
+					this.expressionIsUndetermined(expr.condition) ||
+					expr.consequent.some((s) => this.statementIsUndeterminedValue(s)) ||
+					(expr.alternate
+						? expr.alternate.some((s) => this.statementIsUndeterminedValue(s))
+						: false)
+				);
+			default:
+				return false;
+		}
+	}
+
+	private statementIsUndeterminedValue(statement: Statement): boolean {
+		switch (statement.type) {
+			case "VariableDeclaration":
+				return statement.init
+					? this.expressionIsUndetermined(statement.init)
+					: false;
+			case "TupleDeclaration":
+				return this.expressionIsUndetermined(statement.init);
+			case "ExpressionStatement":
+				return this.expressionIsUndetermined(statement.expression);
+			case "AssignmentStatement":
+				return this.expressionIsUndetermined(statement.value);
+			case "ReturnStatement":
+				return this.expressionIsUndetermined(statement.value);
+			case "IfStatement":
+				return (
+					this.expressionIsUndetermined(statement.condition) ||
+					statement.consequent.some((s) =>
+						this.statementIsUndeterminedValue(s),
+					) ||
+					(statement.alternate
+						? statement.alternate.some((s) =>
+								this.statementIsUndeterminedValue(s),
+							)
+						: false)
+				);
+			case "SequenceStatement":
+				return statement.statements.some((s) =>
+					this.statementIsUndeterminedValue(s),
+				);
+			default:
+				return false;
+		}
+	}
+
+	private callReturnsUndetermined(call: CallExpression): boolean {
+		if (call.callee.type === "Identifier") {
+			return this.udfReturnsUndetermined.has(call.callee.name);
+		}
+		if (call.callee.type === "MemberExpression") {
+			const member = call.callee;
+			if (this.udfReturnsUndetermined.has(member.property.name)) {
+				return true;
+			}
+			if (member.object.type === "Identifier") {
+				return this.udfReturnsUndetermined.has(
+					`${member.object.name}.${member.property.name}`,
+				);
+			}
+		}
+		return false;
+	}
+
+	private isSeriesishExpressionWithLocalSeries(
+		expr: Expression,
+		localSeries: Set<string>,
+	): boolean {
+		if (this.isSeriesishExpression(expr)) return true;
+		switch (expr.type) {
+			case "Identifier":
+				return localSeries.has(expr.name);
+			case "CallExpression":
+				return expr.arguments.some((a) =>
+					this.isSeriesishExpressionWithLocalSeries(a.value, localSeries),
+				);
+			case "MemberExpression":
+				return this.isSeriesishExpressionWithLocalSeries(
+					expr.object,
+					localSeries,
+				);
+			case "BinaryExpression":
+				return (
+					this.isSeriesishExpressionWithLocalSeries(expr.left, localSeries) ||
+					this.isSeriesishExpressionWithLocalSeries(expr.right, localSeries)
+				);
+			case "UnaryExpression":
+				return this.isSeriesishExpressionWithLocalSeries(
+					expr.argument,
+					localSeries,
+				);
+			case "TernaryExpression":
+				return (
+					this.isSeriesishExpressionWithLocalSeries(
+						expr.condition,
+						localSeries,
+					) ||
+					this.isSeriesishExpressionWithLocalSeries(
+						expr.consequent,
+						localSeries,
+					) ||
+					this.isSeriesishExpressionWithLocalSeries(expr.alternate, localSeries)
+				);
+			case "ArrayExpression":
+				return expr.elements.some((e) =>
+					this.isSeriesishExpressionWithLocalSeries(e, localSeries),
+				);
+			case "IndexExpression":
+				return true;
+			case "SwitchExpression":
+				return (
+					(expr.discriminant
+						? this.isSeriesishExpressionWithLocalSeries(
+								expr.discriminant,
+								localSeries,
+							)
+						: false) ||
+					expr.cases.some(
+						(c) =>
+							(c.condition
+								? this.isSeriesishExpressionWithLocalSeries(
+										c.condition,
+										localSeries,
+									)
+								: false) ||
+							this.isSeriesishExpressionWithLocalSeries(c.result, localSeries),
+					)
+				);
+			case "IfExpression":
+				return (
+					this.isSeriesishExpressionWithLocalSeries(
+						expr.condition,
+						localSeries,
+					) ||
+					this.statementListTailIsSeries(expr.consequent, localSeries) ||
+					(expr.alternate
+						? this.statementListTailIsSeries(expr.alternate, localSeries)
+						: false)
+				);
+			default:
+				return false;
+		}
+	}
+
+	private statementListTailIsSeries(
+		statements: Statement[],
+		localSeries: Set<string>,
+	): boolean {
+		const tail = statements[statements.length - 1];
+		if (!tail) return false;
+		if (tail.type === "ExpressionStatement") {
+			return this.isSeriesishExpressionWithLocalSeries(
+				tail.expression,
+				localSeries,
+			);
+		}
+		if (tail.type === "ReturnStatement") {
+			return this.isSeriesishExpressionWithLocalSeries(tail.value, localSeries);
+		}
+		if (tail.type === "IfStatement") {
+			return (
+				this.statementListTailIsSeries(tail.consequent, localSeries) ||
+				(tail.alternate
+					? this.statementListTailIsSeries(tail.alternate, localSeries)
+					: false)
+			);
+		}
+		if (tail.type === "SequenceStatement") {
+			return this.statementListTailIsSeries(tail.statements, localSeries);
+		}
+		return false;
 	}
 
 	/**
@@ -1210,6 +1606,7 @@ export class SemanticAnalyzer {
 	private collectDeclarationsInStatement(
 		statement: Statement,
 		inSeriesConditional = false,
+		inUndeterminedConditional = false,
 	): void {
 		switch (statement.type) {
 			case "VariableDeclaration":
@@ -1218,6 +1615,12 @@ export class SemanticAnalyzer {
 						line: statement.line,
 						column: statement.column,
 					});
+					if (
+						inUndeterminedConditional ||
+						(statement.init && this.expressionIsUndetermined(statement.init))
+					) {
+						this.undeterminedVars.add(statement.name);
+					}
 					if (statement.init && this.isSeriesishExpression(statement.init)) {
 						this.seriesVars.add(statement.name);
 					}
@@ -1239,6 +1642,13 @@ export class SemanticAnalyzer {
 				) {
 					this.seriesVars.add(statement.target.name);
 				}
+				if (
+					statement.target.type === "Identifier" &&
+					(inUndeterminedConditional ||
+						this.expressionIsUndetermined(statement.value))
+				) {
+					this.undeterminedVars.add(statement.target.name);
+				}
 				break;
 
 			case "TupleDeclaration": {
@@ -1249,6 +1659,12 @@ export class SemanticAnalyzer {
 							line: statement.line,
 							column: statement.column,
 						});
+						if (
+							inUndeterminedConditional ||
+							this.expressionIsUndetermined(statement.init)
+						) {
+							this.undeterminedVars.add(name);
+						}
 					}
 				}
 				// Series-type the members from a UDF tuple return, so a later
@@ -1292,6 +1708,14 @@ export class SemanticAnalyzer {
 					}
 					if (this.tailIsSeries(tail)) {
 						this.udfReturnsSeries.add(statement.name);
+					}
+					const untypedParams = new Set(
+						statement.params
+							.filter((p) => p.name && !p.typeAnnotation)
+							.map((p) => p.name),
+					);
+					if (this.tailDependsOnDerivedUntyped(statement.body, untypedParams)) {
+						this.udfReturnsUndetermined.add(statement.name);
 					}
 				}
 				// Record history-dependent user functions for the
@@ -1340,8 +1764,17 @@ export class SemanticAnalyzer {
 			((statement.type === "IfStatement" ||
 				statement.type === "WhileStatement") &&
 				this.isSeriesishExpression(statement.condition));
+		const childUndeterminedConditional =
+			inUndeterminedConditional ||
+			((statement.type === "IfStatement" ||
+				statement.type === "WhileStatement") &&
+				this.isUndeterminedGate(statement.condition));
 		for (const child of this.childStatements(statement)) {
-			this.collectDeclarationsInStatement(child, childConditional);
+			this.collectDeclarationsInStatement(
+				child,
+				childConditional,
+				childUndeterminedConditional,
+			);
 		}
 	}
 
@@ -1564,9 +1997,58 @@ export class SemanticAnalyzer {
 					this.expressionReferencesNames(expr.object, names) ||
 					this.expressionReferencesNames(expr.index, names)
 				);
+			case "SwitchExpression":
+				return (
+					(expr.discriminant
+						? this.expressionReferencesNames(expr.discriminant, names)
+						: false) ||
+					expr.cases.some(
+						(c) =>
+							(c.condition
+								? this.expressionReferencesNames(c.condition, names)
+								: false) ||
+							(c.statements
+								? c.statements.some((s) =>
+										this.statementReferencesNames(s, names),
+									)
+								: this.expressionReferencesNames(c.result, names)),
+					)
+				);
+			case "IfExpression":
+				return (
+					this.expressionReferencesNames(expr.condition, names) ||
+					expr.consequent.some((s) =>
+						this.statementReferencesNames(s, names),
+					) ||
+					(expr.alternate
+						? expr.alternate.some((s) =>
+								this.statementReferencesNames(s, names),
+							)
+						: false)
+				);
 			default:
 				return false;
 		}
+	}
+
+	private statementReferencesNames(
+		statement: Statement,
+		names: Set<string>,
+	): boolean {
+		if (
+			statement.type === "FunctionDeclaration" ||
+			statement.type === "MethodDeclaration"
+		) {
+			return false;
+		}
+		return (
+			this.statementExpressions(statement).some((expr) =>
+				this.expressionReferencesNames(expr, names),
+			) ||
+			this.childStatements(statement).some((child) =>
+				this.statementReferencesNames(child, names),
+			)
+		);
 	}
 
 	/** Enumerate a statement's direct child expressions. */
