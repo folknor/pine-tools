@@ -1,0 +1,18 @@
+// @test regression/INV133-udt-name-shadowing
+// @description CW10013 treats user-defined type names as parent-scope names, and typed variable declarations anchor the warning at the leading type token. Probed 2026-06-28, see investigations/INV133-udt-name-shadowing/notes.md.
+// @expects parse: success
+// @expects warnings: 2
+// @expects warning: line=7, column=5, message="Shadowing variable 'hz' which exists in parent scope"
+// @expects warning: line=10, column=5, message="Shadowing variable 'outer' which exists in parent scope"
+//@version=6
+indicator("INV133")
+outer = 1
+type hz
+    int x
+f() =>
+    hz hz = hz.new(1)
+    hz.x
+g() =>
+    int outer = 2
+    outer
+plot(f() + g())

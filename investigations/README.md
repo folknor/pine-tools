@@ -815,3 +815,8 @@ contradiction means re-measure, not "the earlier author was wrong."
   `db76cf79` `FindST` CW10003 false negative. TV treats `bar_index[1]` inside a
   UDF/method as function history, unlike ordinary builtin history such as
   `high[1]` and `time[1]`.
+- [INV133](INV133-udt-name-shadowing/notes.md) - TODO #61 warning tail:
+  cleared the three remaining CW10013 TV-only shadowing records in `1727708a`.
+  User-defined type names now count as parent-scope names for child-scope
+  variable declarations, and typed declaration shadow warnings anchor at the
+  leading type token instead of the identifier.

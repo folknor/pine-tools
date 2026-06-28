@@ -437,13 +437,25 @@ export class SemanticAnalyzer {
 				this.analyzeExpression(statement.value);
 				break;
 
-			// TypeDeclaration, EnumDeclaration, ImportStatement are name-only
-			// nodes - nothing to walk. see plan/31 Finding 3.
+			case "TypeDeclaration":
+				// Type names count as parent-scope names for CW10013 when a
+				// child-scope variable later reuses the same spelling. see INV133
+				this.scopeNames[this.scopeNames.length - 1].add(statement.name);
+				break;
+
+			// EnumDeclaration and ImportStatement are name-only nodes - nothing
+			// to walk. see plan/31 Finding 3.
 		}
 	}
 
 	private analyzeVariableDeclaration(declaration: VariableDeclaration): void {
-		this.declareName(declaration.name, declaration.line, declaration.column);
+		const anchor = this.declarationShadowAnchor(declaration);
+		this.declareName(
+			declaration.name,
+			anchor.line,
+			anchor.column,
+			anchor.length,
+		);
 		// Unused-variable tracking is handled at the symbol table level -
 		// here we only record the name for shadow detection and walk init.
 		const init = declaration.init;
@@ -452,6 +464,24 @@ export class SemanticAnalyzer {
 				this.analyzeExpression(init);
 			});
 		}
+	}
+
+	private declarationShadowAnchor(declaration: VariableDeclaration): {
+		line: number;
+		column: number;
+		length: number;
+	} {
+		const line = declaration.startLine ?? declaration.line;
+		const column = declaration.startColumn ?? declaration.column;
+		// Span from the anchor token through the end of the name, so a typed
+		// (`hz hz`) or `var` declaration highlights `<type> <name>` rather than
+		// just the keyword. The anchor token always precedes the name on the
+		// same line; fall back to the name alone if they ever split lines.
+		const length =
+			line === declaration.line
+				? declaration.column - column + declaration.name.length
+				: declaration.name.length;
+		return { line, column, length };
 	}
 
 	/**
@@ -472,12 +502,17 @@ export class SemanticAnalyzer {
 	 * CW10011 for `open` in a local scope even though built-ins "exist
 	 * in parent scope" in spirit).
 	 */
-	private declareName(name: string, line: number, column: number): void {
+	private declareName(
+		name: string,
+		line: number,
+		column: number,
+		length = name.length,
+	): void {
 		if (VARIABLES_BY_NAME.has(name)) {
 			this.addWarning(
 				line,
 				column,
-				name.length,
+				length,
 				`Shadowing built-in variable '${name}'`,
 				DiagnosticSeverity.Warning,
 				"SHADOW_BUILTIN",
@@ -489,7 +524,7 @@ export class SemanticAnalyzer {
 			this.addWarning(
 				line,
 				column,
-				name.length,
+				length,
 				`Shadowing variable '${name}' which exists in parent scope. Did you want to use the ':=' operator instead of '=' ?`,
 				DiagnosticSeverity.Warning,
 				"SHADOW_VARIABLE",
