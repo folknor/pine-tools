@@ -125,13 +125,6 @@ Open work items, each either deferred from an investigation or queued
 as a discrete next step. Sequential numbering matches the task-tool
 IDs so the two stay in sync.
 
-- **#18 (residual) - pine-lint's variable-list output
-  (`astExtractor.ts`) labels some built-in color constants
-  `"undetermined type"`.** A display-path quirk, cosmetic, not a
-  validator issue. The original ternary color/string FP cluster was
-  resolved via
-  [INV026](investigations/INV026-literal-color-and-param-guess-fps/notes.md)
-  (2026-06-04).
 - **#20 - refine INV012 with a context-aware synchronize.** Current
   `synchronize()` skips to the next column-1 statement after a parse
   error. Correct in aggregate (−1270 cascade FPs across the corpus)
@@ -353,7 +346,7 @@ IDs so the two stay in sync.
   uncovered-in-tests function list to zero, all TV-diffed with zero
   error disagreement. Authoring them re-confirmed two known display
   quirks (request.seed's `series <type>` placeholder in the variable
-  list - #18's astExtractor class; the checker correctly infers
+  list - an astExtractor display-path quirk; the checker correctly infers
   unknown) and one real catch by our own checker (timeframe.from_seconds
   returns a timeframe STRING - the draft summed it numerically and the
   checker rightly objected). **2026-06-20:** added
@@ -432,29 +425,29 @@ IDs so the two stay in sync.
   the probes/measurements - do NOT re-inline them here.
 
   **Pending**:
-  - Two consistency-warning FPs on TV-clean files are DEFERRED as documented
-    residuals, not fixable now: `61a3a7` (`ta.highest`/`lowest`)
-    and `6152b9` (`ta.crossunder`). Both are genuine FPs
-    (`compare-tv`: TV 0 errors / 0 warnings, no error-stop; we warn), but TV's
-    silence reproduces ONLY on the full carrier. SIX structural/whole-program
+  - One consistency-warning FP on a TV-clean file is DEFERRED as a documented
+    residual, not fixable now: `61a3a7` (`ta.highest`/`lowest`). It is a genuine
+    FP (`compare-tv`: TV 0 errors / 0 warnings, no error-stop; we warn), but TV's
+    silence reproduces ONLY on the full carrier. Structural/whole-program
     hypotheses were probed (`pine-lint --tv`, 2026-06-26) and ALL still WARN, so
     no structural rule we can validate reproduces the silence - any fix would be
     guessing, and this area already cost two reverted over-firing attempts
-    (INV120):
-    - `61a3a7`: outer `input.bool` guard over an inner series ternary (Q1:
-      `b=input.bool(true)` / `c = b ? (close>open ? ta.highest(close,100) :
-      ta.lowest(close,100)) : 0.0`) WARNS, same as the no-guard control; and the
-      call nested as a `color.from_gradient` arg (P1B) WARNS. So an outer
-      const/input guard does NOT silence an inner series call - the outer-guard
-      hypothesis is refuted.
-    - `6152b9`: `ta.crossunder` in `else if` CONDITION position (C1) WARNS; an
-      identical `ta.crossunder` evaluated unconditionally via plotshape (P2B) WARNS.
-    Likely a TV behavior on large/complex files we cannot model. The earlier
-    "these need per-call-site arg-qualifier propagation (#9)" framing is refuted -
-    the arg-qualifier-adjacent hypotheses above all still warn. Backward-reference
-    series tracking is a non-issue (none in corpus). #61's consistency-FP side is
-    largely closed: 4 fixed (`ta.atr`, `ta.sma`, `draw_lbl`, `math.sum`), 2
-    unreproducible (here), the rest TV-error-stops / G005 phantoms.
+    (INV120): outer `input.bool` guard over an inner series ternary (Q1:
+    `b=input.bool(true)` / `c = b ? (close>open ? ta.highest(close,100) :
+    ta.lowest(close,100)) : 0.0`) WARNS, same as the no-guard control; and the
+    call nested as a `color.from_gradient` arg (P1B) WARNS. So an outer
+    const/input guard does NOT silence an inner series call - the outer-guard
+    hypothesis is refuted. Likely a TV behavior on large/complex files we cannot
+    model. The earlier "these need per-call-site arg-qualifier propagation (#9)"
+    framing is refuted - the arg-qualifier-adjacent hypotheses still warn.
+    Backward-reference series tracking is a non-issue (none in corpus). The
+    former second residual `6152b9` (`ta.crossunder`) is gone: it now reports
+    clean locally (re-checked 2026-06-28: 0 warnings on the full carrier),
+    matching TV, cleared by a later precision round.
+
+  #61's consistency-FP side is largely closed: 5 resolved (`ta.atr`, `ta.sma`,
+  `draw_lbl`, `math.sum`, `ta.crossunder`/`6152b9`), 1 unreproducible
+  (`61a3a7`), the rest TV-error-stops / G005 phantoms.
 
 ## Gotchas
 

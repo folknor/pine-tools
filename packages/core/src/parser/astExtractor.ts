@@ -1,7 +1,11 @@
 // AST Extractor for pine-lint compatible output format
 // This module extracts variables, functions, types, and enums from the Pine Script AST
 
-import { FUNCTIONS_BY_NAME, VARIABLES_BY_NAME } from "../../../../pine-data/v6";
+import {
+	CONSTANTS_BY_NAME,
+	FUNCTIONS_BY_NAME,
+	VARIABLES_BY_NAME,
+} from "../../../../pine-data/v6";
 import {
 	type ArgumentInfo,
 	getPolymorphicReturnType,
@@ -154,6 +158,10 @@ function getVariableType(varName: string): string | undefined {
 	if (variable?.type) {
 		// Normalize format: "series<float>" -> "series float"
 		return variable.type.replace(/<(\w+)>/, " $1");
+	}
+	const constant = CONSTANTS_BY_NAME.get(varName);
+	if (constant?.type) {
+		return `const ${constant.type.replace(/<(\w+)>/, " $1")}`;
 	}
 	return undefined;
 }

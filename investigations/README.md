@@ -829,3 +829,7 @@ contradiction means re-measure, not "the earlier author was wrong."
   of the merged `functions.json` return, so argument qualifiers are preserved.
   Casts are the motivating probe: `int(close)` is `series int`, not the merged
   `const int`.
+- [INV136](INV136-constant-extractor-types/notes.md) - TODO #18 residual:
+  `astExtractor` now renders variables initialized from namespaced constants
+  (`color.red`, `display.none`, etc.) with TV's const-qualified variable-list
+  types instead of `undetermined type`.

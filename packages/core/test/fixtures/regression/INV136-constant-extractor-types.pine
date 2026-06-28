@@ -1,0 +1,14 @@
+// @test regression/INV136-constant-extractor-types
+// @description Namespaced constants in the pine-lint variable list render with const-qualified types. Probed 2026-06-28, see investigations/INV136-constant-extractor-types/notes.md.
+// @expects parse: success
+// @expects no-errors
+// @expects warnings: 0
+//@version=6
+indicator("INV136")
+x = color.red
+y = color.silver
+a = display.none
+b = barmerge.gaps_off
+sec = request.security(syminfo.tickerid, timeframe.period, close, gaps = b)
+plot(close, color = x, display = a)
+plot(sec, color = y, display = a)
