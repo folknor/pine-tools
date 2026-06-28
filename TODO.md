@@ -460,26 +460,6 @@ IDs so the two stay in sync.
     residual after Item 5 (INV126 landing measurement: warning tvOnly 7 -> 4 = the
     3 CW10013 + 1 `FindST`).
 
-- **#62 - CE FN: ternary operations returning tuples are not flagged.** TV emits
-  a hard error `Ternary operations cannot return tuples` (it error-stops the
-  warning pass) on a UDF whose body is a ternary with tuple branches, e.g.
-  `getStandardOHLC() => cond ? [a, b] : request.security(...)`. Our checker does
-  NOT emit it - a false negative. Found as a lateral finding while probing
-  INV126 (its Battery A probes were malformed by exactly this shape, which TV
-  rejected and which error-stopped the warning pass). Reproduce with a minimal
-  fixture, pin a regression, then add the check. See
-  [INV126](investigations/INV126-item5-library-dataflow-probes/notes.md)
-  (Battery A note).
-- **#63 - G005 line-doubling phantom-FP risk in emitted diagnostics.** On
-  stray-CR / `\r\r\n` files, emitted diagnostic lines are ~2x the true source
-  line (the lexer doubles line numbers per G005's line-splitting convention).
-  The lexer fix aligned us WITH TV on terminator styles, but the doubled
-  coordinates remain a phantom-FP risk in triage / comparison tooling and for any
-  consumer mapping a diagnostic back to source. Flagged as a lateral finding in
-  the 2026-06-26 #61 triage; tracked as its own future item, not folded into the
-  consistency work. See
-  [G005](gotchas/G005-tv-diagnostic-position-conventions.md).
-
 ## Gotchas
 
 See [gotchas/README.md](gotchas/README.md) for the format and full

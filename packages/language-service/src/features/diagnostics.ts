@@ -1,5 +1,6 @@
 import { UnifiedPineValidator } from "../../../core/src/analyzer/checker";
 import { renderMessage } from "../../../core/src/common/errors";
+import { createSourcePositionMapper } from "../../../core/src/common/sourcePositions";
 import type { ParsedDocument } from "../documents/ParsedDocument";
 import { type Diagnostic, DiagnosticSeverity } from "../types";
 import { getUnresolvedImports } from "./imports";
@@ -10,13 +11,16 @@ import { getUnresolvedImports } from "./imports";
  */
 export function getDiagnostics(doc: ParsedDocument): Diagnostic[] {
 	const diagnostics: Diagnostic[] = [];
+	const mapSourcePosition = createSourcePositionMapper(doc.content);
 
 	// 1. Parse errors from lexer/parser
 	for (const err of doc.parseErrors) {
+		const start = mapSourcePosition({ line: err.line, column: err.column });
+		const end = mapSourcePosition({ line: err.line, column: err.column + 1 });
 		diagnostics.push({
 			range: {
-				start: { line: err.line - 1, character: err.column - 1 },
-				end: { line: err.line - 1, character: err.column },
+				start: { line: start.line - 1, character: start.column - 1 },
+				end: { line: end.line - 1, character: end.column - 1 },
 			},
 			severity: DiagnosticSeverity.Error,
 			message: err.message,
@@ -39,13 +43,18 @@ export function getDiagnostics(doc: ParsedDocument): Diagnostic[] {
 			// which dropped every semantic error and surfaced validator
 			// warnings AS errors. see INV061 (lateral finding)
 			if (error.severity === 0) {
+				const start = mapSourcePosition({
+					line: error.line,
+					column: error.column,
+				});
+				const end = mapSourcePosition({
+					line: error.line,
+					column: error.column + error.length,
+				});
 				diagnostics.push({
 					range: {
-						start: { line: error.line - 1, character: error.column - 1 },
-						end: {
-							line: error.line - 1,
-							character: error.column - 1 + error.length,
-						},
+						start: { line: start.line - 1, character: start.column - 1 },
+						end: { line: end.line - 1, character: end.column - 1 },
 					},
 					severity: DiagnosticSeverity.Error,
 					message: renderMessage(error),

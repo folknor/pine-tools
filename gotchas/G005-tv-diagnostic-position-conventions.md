@@ -24,7 +24,14 @@ Our lexer used to SKIP `\r` entirely: `\r\r\n` counted one break
 first `//` comment swallowed the whole file and we reported ZERO
 diagnostics. Fixed 2026-06-04 in `lexer.ts` (`handleLineBreak`; lone
 `\r` breaks, `\r\n` breaks at the `\n`) - our positions now match TV's
-on every terminator style. Tests: `packages/core/test/lexer-line-endings.test.ts`.
+on every terminator style internally. Tests:
+`packages/core/test/lexer-line-endings.test.ts`.
+
+As of INV128, local CLI/LSP emitted diagnostics map `\r\r\n` raw line numbers
+back to displayed source lines so a three-line file reports diagnostics on line
+3, not TV/raw line 5. The TV-diff scripts apply the same display-line mapping
+to TV diagnostics before comparing, so the internal lexer convention can keep
+matching TV without leaking doubled line numbers to users.
 
 ### Probe (line conventions)
 

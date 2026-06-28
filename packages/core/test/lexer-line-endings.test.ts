@@ -10,6 +10,7 @@
  */
 
 import { describe, expect, it } from "vitest";
+import { createSourcePositionMapper } from "../src/common/sourcePositions";
 import { Lexer, TokenType } from "../src/parser/lexer";
 
 function tokenAt(code: string, value: string) {
@@ -63,5 +64,21 @@ describe("lexer line terminators (G005)", () => {
 		const code = '//@version=6\r\r\ns = "one\r\r\ntwo"\r\r\nb = 2';
 		// s on line 3, string spans 3-5, b on line 7.
 		expect(tokenAt(code, "b").line).toBe(7);
+	});
+
+	it("maps CRCRLF diagnostics back to displayed source lines", () => {
+		const map = createSourcePositionMapper(
+			"a = 1\r\r\nb = 2\r\r\nc = 3\r\r\n",
+		);
+		expect(map({ line: 1, column: 1 })).toEqual({ line: 1, column: 1 });
+		expect(map({ line: 3, column: 1 })).toEqual({ line: 2, column: 1 });
+		expect(map({ line: 5, column: 1 })).toEqual({ line: 3, column: 1 });
+	});
+
+	it("leaves ordinary line-ending diagnostics on the same lines", () => {
+		for (const code of ["a = 1\nb = 2", "a = 1\r\nb = 2", "a = 1\rb = 2"]) {
+			const map = createSourcePositionMapper(code);
+			expect(map({ line: 2, column: 1 })).toEqual({ line: 2, column: 1 });
+		}
 	});
 });

@@ -5,6 +5,7 @@ import {
 	UnifiedPineValidator,
 } from "../../core/src/analyzer/checker";
 import { renderMessage } from "../../core/src/common/errors";
+import { createSourcePositionMapper } from "../../core/src/common/sourcePositions";
 import {
 	ASTExtractor,
 	type PineLintError,
@@ -367,32 +368,46 @@ async function main() {
 			const semanticAnalyzer = new SemanticAnalyzer();
 			semanticWarnings.push(...semanticAnalyzer.analyze(ast));
 		}
+		const mapSourcePosition = createSourcePositionMapper(code);
 
 		// Convert lexer errors to pine-lint format. Lexer/parser failures are the
 		// `syntax` stage - a syntax-only consumer filter keys on this exactly.
-		const lexerPineLintErrors: PineLintError[] = lexerErrors.map((e) => ({
-			start: { line: e.line, column: e.column },
-			end: { line: e.line, column: e.column + 1 },
-			message: e.message,
-			stage: "syntax",
-		}));
+		const lexerPineLintErrors: PineLintError[] = lexerErrors.map((e) => {
+			const start = mapSourcePosition({ line: e.line, column: e.column });
+			const end = mapSourcePosition({ line: e.line, column: e.column + 1 });
+			return {
+				start,
+				end,
+				message: e.message,
+				stage: "syntax",
+			};
+		});
 
 		// Convert parser errors to pine-lint format
-		const parserPineLintErrors: PineLintError[] = parserErrors.map((e) => ({
-			start: { line: e.line, column: e.column },
-			end: { line: e.line, column: e.column + 1 },
-			message: e.message,
-			stage: "syntax",
-		}));
+		const parserPineLintErrors: PineLintError[] = parserErrors.map((e) => {
+			const start = mapSourcePosition({ line: e.line, column: e.column });
+			const end = mapSourcePosition({ line: e.line, column: e.column + 1 });
+			return {
+				start,
+				end,
+				message: e.message,
+				stage: "syntax",
+			};
+		});
 
 		// Convert validation errors to pine-lint format (only errors, not warnings).
 		// Preserve optional `code`/`ctx` so structured pine-lint errors round-trip.
 		const validationPineLintErrors: PineLintError[] = validationErrors
 			.filter((e) => e.severity === DiagnosticSeverity.Error)
 			.map((e) => {
+				const start = mapSourcePosition({ line: e.line, column: e.column });
+				const end = mapSourcePosition({
+					line: e.line,
+					column: e.column + e.length,
+				});
 				const out: PineLintError = {
-					start: { line: e.line, column: e.column },
-					end: { line: e.line, column: e.column + e.length },
+					start,
+					end,
 					message: e.message,
 					stage: "type",
 				};
@@ -405,12 +420,19 @@ async function main() {
 		// from the SemanticAnalyzer pass - the `analysis` stage.
 		const semanticPineLintWarnings: PineLintError[] = semanticWarnings
 			.filter((w) => w.severity === DiagnosticSeverity.Warning)
-			.map((w) => ({
-				start: { line: w.line, column: w.column },
-				end: { line: w.line, column: w.column + w.length },
-				message: w.message,
-				stage: "analysis",
-			}));
+			.map((w) => {
+				const start = mapSourcePosition({ line: w.line, column: w.column });
+				const end = mapSourcePosition({
+					line: w.line,
+					column: w.column + w.length,
+				});
+				return {
+					start,
+					end,
+					message: w.message,
+					stage: "analysis",
+				};
+			});
 
 		// Combine all errors (lexer errors first, then parser, then validation)
 		const errors: PineLintError[] = [

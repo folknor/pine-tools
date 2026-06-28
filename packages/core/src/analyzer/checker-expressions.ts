@@ -8,6 +8,7 @@
 
 import { DiagnosticSeverity } from "../common/errors";
 import type {
+	ArrayExpression,
 	BinaryExpression,
 	Expression,
 	ExpressionStatement,
@@ -20,11 +21,15 @@ import type {
 } from "../parser/ast";
 import type { UnifiedPineValidator } from "./checker";
 import { CE10123_TEMPLATE, isOpaqueHandleType } from "./checker-helpers";
+import { tupleInitArity } from "./checker-tuples";
 import { type PineType, TypeChecker } from "./types";
 
 // The if/switch EXPRESSION nodes whose branches the CE10235 check walks. An
 // `else if` chain lowers to a nested IfStatement in the `alternate` block.
 type BranchNode = IfExpression | IfStatement | SwitchExpression;
+
+const TERNARY_TUPLE_MESSAGE =
+	"Ternary operations cannot return tuples. Convert the expression into an `if` or `switch` conditional structure to return a tuple.";
 
 // A value is acceptable in a bool context (if/while/ternary condition,
 // and/or/not operand) when it IS bool, when we can't tell, or - on
@@ -305,6 +310,20 @@ export function validateTernaryExpression(
 		addBoolOperatorError(v, "?:", "expr0", expr.condition, condType, version);
 	}
 
+	const tupleAnchor = ternaryTupleResultAnchor(v, expr, version);
+	if (tupleAnchor) {
+		const start = expressionStart(tupleAnchor);
+		v.addTemplateError({
+			line: start.line,
+			column: start.column,
+			length: 0,
+			message: TERNARY_TUPLE_MESSAGE,
+			severity: DiagnosticSeverity.Error,
+			code: "CE10163",
+		});
+		return;
+	}
+
 	// Check that both branches have compatible types - stricter than
 	// isAssignable. pine-lint --tv accepts cross-type mixes here
 	// (color|string, color|int, even simple<string>|series<float>) but
@@ -349,6 +368,32 @@ export function validateTernaryExpression(
 			},
 		});
 	}
+}
+
+function ternaryTupleResultAnchor(
+	v: UnifiedPineValidator,
+	expr: TernaryExpression,
+	version: string,
+): Expression | undefined {
+	const consequentArity = tupleInitArity(v, expr.consequent, version);
+	const alternateArity = tupleInitArity(v, expr.alternate, version);
+	if (consequentArity.kind === "tuple" || alternateArity.kind === "tuple") {
+		// TV anchors CE10163 at the first result expression, even when only the
+		// alternate branch is tuple-producing. see INV127
+		return expr.consequent;
+	}
+	return undefined;
+}
+
+function expressionStart(expr: Expression): { line: number; column: number } {
+	if (expr.type === "ArrayExpression") {
+		const arr = expr as ArrayExpression;
+		return {
+			line: arr.startLine ?? arr.line,
+			column: arr.startColumn ?? arr.column,
+		};
+	}
+	return { line: expr.line, column: expr.column };
 }
 
 // Strict ternary branch compatibility: branches must share a type

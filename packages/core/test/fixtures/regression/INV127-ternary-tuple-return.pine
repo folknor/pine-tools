@@ -1,0 +1,20 @@
+// @test regression/INV127-ternary-tuple-return
+// @description A ternary expression cannot return a tuple. TV emits CE10163 at the first result expression, even when the tuple-producing branch is the alternate. Direct scalar ternaries destructured into tuples still use the existing tuple-shape error. Probed 2026-06-28 via pine-lint --tv, see INV127.
+// @expects parse: success
+// @expects error: line=3, message=/Ternary operations cannot return tuples/
+// @expects error: line=5, message=/Ternary operations cannot return tuples/
+// @expects error: line=7, message=/Ternary operations cannot return tuples/
+// @expects error: line=9, message=/Cannot assign a variable to a tuple/
+// @expects errors: 4
+
+//@version=6
+indicator("INV127 ternary tuple return")
+f_both() => close > open ? [open, high] : [low, close]
+
+f_alt() => close > open ? close : [low, close]
+
+[e, f] = close > open ? [1, 2] : [3, 4]
+
+[g, h] = close > open ? 1 : 2
+
+plot(e + f + g + h)

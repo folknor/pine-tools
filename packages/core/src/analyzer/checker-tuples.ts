@@ -15,6 +15,7 @@ import type {
 	ReturnStatement,
 	Statement,
 	SwitchExpression,
+	TernaryExpression,
 	TupleDeclaration,
 } from "../parser/ast";
 import {
@@ -221,10 +222,26 @@ export function tupleInitArity(
 		case "Identifier":
 		case "BinaryExpression":
 		case "UnaryExpression":
-		case "TernaryExpression":
 		case "MemberExpression":
 		case "IndexExpression":
 			return { kind: "scalar" };
+
+		case "TernaryExpression": {
+			const ternary = expr as TernaryExpression;
+			const branches = [
+				tupleInitArity(v, ternary.consequent, version),
+				tupleInitArity(v, ternary.alternate, version),
+			];
+			if (branches.some((b) => b.kind === "tuple")) {
+				// CE10163 is emitted by the ternary validator. Returning unknown here
+				// avoids duplicate destructure-shape diagnostics. see INV127
+				return { kind: "unknown" };
+			}
+			if (branches.every((b) => b.kind === "scalar")) {
+				return { kind: "scalar" };
+			}
+			return { kind: "unknown" };
+		}
 
 		case "CallExpression": {
 			const call = expr as CallExpression;

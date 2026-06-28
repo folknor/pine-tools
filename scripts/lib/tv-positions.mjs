@@ -14,9 +14,10 @@
 // + 29 + 1 + 29 + 1 (lines 129/130) + 13 leading spaces stripped.
 //
 // This module inverts that: walk forward from the reported line while
-// the column overflows the line's contributed length. Used by the
-// TV-diff scripts only - our own linter always reports physical
-// positions. see TODO #38.
+// the column overflows the line's contributed length. Used by the TV-diff
+// scripts only. The returned position is the display position used by local
+// pine-lint diagnostics, so CRCRLF's raw TV/lexer line numbers are collapsed
+// after wrapped-statement mapping. see TODO #38 / INV128.
 
 // The code part of a line: everything up to a `//` comment that is not
 // inside a string literal, INCLUDING the whitespace before the comment.
@@ -75,6 +76,58 @@ export function mapTvPositionToPhysical(lines, line, col) {
 	return original;
 }
 
+// NOTE: kept byte-for-byte in sync with the copy in
+// packages/core/src/common/sourcePositions.ts (this .mjs can't import the TS
+// core module). Change both together. see INV128
+function buildRawToDisplayLineMap(source) {
+	const rawToDisplay = [0, 1];
+	let rawLine = 1;
+	let displayLine = 1;
+	let i = 0;
+
+	while (i < source.length) {
+		const ch = source[i];
+		if (ch === "\r") {
+			let runEnd = i;
+			while (source[runEnd] === "\r") runEnd++;
+
+			if (source[runEnd] === "\n") {
+				const crCount = runEnd - i;
+				for (let n = 0; n < crCount - 1; n++) {
+					rawLine++;
+					rawToDisplay[rawLine] = displayLine;
+				}
+				rawLine++;
+				displayLine++;
+				rawToDisplay[rawLine] = displayLine;
+				i = runEnd + 1;
+			} else {
+				while (i < runEnd) {
+					rawLine++;
+					displayLine++;
+					rawToDisplay[rawLine] = displayLine;
+					i++;
+				}
+			}
+			continue;
+		}
+
+		if (ch === "\n") {
+			rawLine++;
+			displayLine++;
+			rawToDisplay[rawLine] = displayLine;
+		}
+		i++;
+	}
+
+	return rawToDisplay;
+}
+
+function mapRawToDisplay(rawToDisplay, position) {
+	const line = rawToDisplay[position.line] ?? position.line;
+	return line === position.line ? position : { ...position, line };
+}
+
 /**
  * Remap an array of {line, col, ...} TV diagnostics against the source
  * text. Non-overflowing positions pass through untouched. The split
@@ -83,9 +136,18 @@ export function mapTvPositionToPhysical(lines, line, col) {
  */
 export function remapTvDiagnostics(source, diags) {
 	const lines = source.split(/\r\n|\r|\n/);
+	const rawToDisplay = buildRawToDisplayLineMap(source);
 	return diags.map((d) => {
-		const mapped = mapTvPositionToPhysical(lines, d.line, d.col);
-		if (mapped.line === d.line && mapped.col === d.col) return d;
-		return { ...d, line: mapped.line, col: mapped.col, tvLogical: { line: d.line, col: d.col } };
+		const physical = mapTvPositionToPhysical(lines, d.line, d.col);
+		const display = mapRawToDisplay(rawToDisplay, physical);
+		if (display.line === d.line && display.col === d.col) return d;
+		const extra = {};
+		if (physical.line !== d.line || physical.col !== d.col) {
+			extra.tvLogical = { line: d.line, col: d.col };
+		}
+		if (display.line !== physical.line) {
+			extra.rawPosition = { line: physical.line, col: physical.col };
+		}
+		return { ...d, line: display.line, col: display.col, ...extra };
 	});
 }

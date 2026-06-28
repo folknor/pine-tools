@@ -784,3 +784,12 @@ contradiction means re-measure, not "the earlier author was wrong."
   framing). Landed a NON-TRANSITIVE user-global-index classification in
   `semanticAnalyzer.ts`: `getStandardTrueRange` x2 + `getTrendLineScore` warn
   while callers (`updateTrendLine`, `scan`) stay silent. Supersedes INV119.
+- [INV127](INV127-ternary-tuple-return/notes.md) - TODO #62 CE10163 false
+  negative: ternary result branches cannot produce tuples. The checker now
+  flags tuple-producing consequent or alternate branches at the first result
+  expression and suppresses duplicate direct-destructure shape diagnostics.
+- [INV128](INV128-crcrlf-diagnostic-display-lines/notes.md) - TODO #63:
+  CRCRLF diagnostics keep G005's TV-matching raw lexer lines internally, but
+  CLI/LSP emitted diagnostics now collapse stray-CR line numbers back to
+  displayed source lines. TV-diff scripts apply the same display mapping to TV
+  diagnostics before comparison.
