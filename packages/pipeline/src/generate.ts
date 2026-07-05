@@ -79,14 +79,31 @@ interface ReferenceProse {
 	seeAlso?: string[];
 }
 
+// Strip the invisible whitespace TV's DOM leaks into scraped text: nbsp -> a
+// plain space, zero-width space -> gone. TV renders reference example code with
+// &nbsp; for indentation, which Puppeteer's textContent decodes to literal
+// U+00A0; left as-is, an example whose every space is a nbsp won't compile if
+// copied as Pine. Both are rendering artifacts, never meaningful Pine content.
+const NBSP = String.fromCodePoint(0xa0);
+const ZERO_WIDTH_SPACE = String.fromCodePoint(0x200b);
+function stripInvisibleWhitespace(s: string): string {
+	return s.split(NBSP).join(" ").split(ZERO_WIDTH_SPACE).join("");
+}
+
+function normalizeExamples(examples?: string[]): string[] | undefined {
+	if (!examples || examples.length === 0) return undefined;
+	return examples.map(stripInvisibleWhitespace);
+}
+
 function pickProse(src: {
 	returnsDescription?: string;
 	remarks?: string;
 	seeAlso?: string[];
 }): ReferenceProse {
 	const out: ReferenceProse = {};
-	if (src.returnsDescription) out.returnsDescription = src.returnsDescription;
-	if (src.remarks) out.remarks = src.remarks;
+	if (src.returnsDescription)
+		out.returnsDescription = stripInvisibleWhitespace(src.returnsDescription);
+	if (src.remarks) out.remarks = stripInvisibleWhitespace(src.remarks);
 	if (src.seeAlso && src.seeAlso.length > 0) out.seeAlso = src.seeAlso;
 	return out;
 }
@@ -706,7 +723,7 @@ function generateFunctions(
 			flags: Object.keys(flags).length > 0 ? flags : undefined,
 			overloads: buildOverloads(detail, name),
 			deprecated,
-			examples: detail.examples,
+			examples: normalizeExamples(detail.examples),
 			...pickProse(detail),
 		};
 
@@ -1014,8 +1031,7 @@ function generateTypes(
 			namespace: name.includes(".") ? name.split(".")[0] : undefined,
 			kind: TYPE_KINDS[name] ?? "object",
 			description: sc?.description || undefined,
-			examples:
-				sc?.examples && sc.examples.length > 0 ? sc.examples : undefined,
+			examples: normalizeExamples(sc?.examples),
 			fields: sc?.fields && sc.fields.length > 0 ? sc.fields : undefined,
 			...(sc ? pickProse(sc) : {}),
 		};
@@ -1068,8 +1084,7 @@ function generateAnnotations(
 			name,
 			description: sc?.description || "",
 			syntax: sc?.syntax || undefined,
-			examples:
-				sc?.examples && sc.examples.length > 0 ? sc.examples : undefined,
+			examples: normalizeExamples(sc?.examples),
 			...(sc ? pickProse(sc) : {}),
 		};
 	});
@@ -1121,8 +1136,7 @@ function generateOperators(
 			name,
 			syntax: sc?.syntax || undefined,
 			description: sc?.description || "",
-			examples:
-				sc?.examples && sc.examples.length > 0 ? sc.examples : undefined,
+			examples: normalizeExamples(sc?.examples),
 			...(sc ? pickProse(sc) : {}),
 		};
 	});

@@ -1,7 +1,7 @@
 /**
  * Pine Script V6 Functions
  * Auto-generated from TradingView documentation
- * Generated: 2026-06-10T13:04:50.043Z
+ * Generated: 2026-07-05T11:32:13.116Z
  * Total: 475 functions
  */
 
@@ -118,7 +118,6 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "array<int>"
       }
     ],
-    "examples": [],
     "seeAlso": [
       "array.new_float",
       "array.insert",
@@ -416,7 +415,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series bool",
-    "examples": [],
     "remarks": "This function also works with arrays of int and float types, in which case zero values are considered false, and all others true.",
     "seeAlso": [
       "array.some",
@@ -1501,7 +1499,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "array<linefill>",
-    "examples": [],
     "returnsDescription": "The ID of an array object which may be used in other array.*() functions.",
     "remarks": "An array index starts from 0."
   },
@@ -1627,7 +1624,6 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series int"
       }
     ],
-    "examples": [],
     "remarks": "In statistics, the percentile is the percent of ranking items that appear at or below a certain score. This measurement shows the percentage of scores within a standard frequency distribution that is lower than the percentile rank being measured. Linear interpolation estimates the value between two ranks.\nReturns na if the id array is empty.",
     "seeAlso": [
       "array.new_float",
@@ -1694,7 +1690,6 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series int"
       }
     ],
-    "examples": [],
     "remarks": "In statistics, the percentile is the percent of ranking items that appear at or below a certain score. This measurement shows the percentage of scores within a standard frequency distribution that is lower than the percentile rank you're measuring.\nReturns na if the id array is empty.",
     "seeAlso": [
       "array.new_float",
@@ -1761,7 +1756,6 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series int"
       }
     ],
-    "examples": [],
     "remarks": "Percentile rank is the number of elements in the array that are less than or equal to the reference value, expressed as a percentage.\nReturns na if the id array is empty.",
     "seeAlso": [
       "array.new_float",
@@ -2087,7 +2081,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series bool",
-    "examples": [],
     "remarks": "This function also works with arrays of int and float types, in which case zero values are considered false, and all others true.",
     "seeAlso": [
       "array.every",
@@ -2728,7 +2721,6 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series bool"
       }
     ],
-    "examples": [],
     "returnsDescription": "The value of the argument after casting to bool.",
     "seeAlso": [
       "float",
@@ -2752,7 +2744,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series box",
-    "examples": [],
     "returnsDescription": "The value of the argument after casting to box.",
     "seeAlso": [
       "float",
@@ -2800,7 +2791,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "box.new"
     ]
@@ -2819,7 +2809,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": [],
     "returnsDescription": "The price value.",
     "seeAlso": [
       "box.new",
@@ -2840,7 +2829,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series int",
-    "examples": [],
     "returnsDescription": "A bar index or a UNIX timestamp (in milliseconds).",
     "seeAlso": [
       "box.new",
@@ -2861,7 +2849,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series int",
-    "examples": [],
     "returnsDescription": "A bar index or a UNIX timestamp (in milliseconds).",
     "seeAlso": [
       "box.new",
@@ -2882,7 +2869,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": [],
     "returnsDescription": "The price value.",
     "seeAlso": [
       "box.new",
@@ -3438,7 +3424,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "box.new"
     ]
@@ -3463,7 +3448,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "box.new"
     ]
@@ -3488,7 +3472,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "box.new",
       "line.style_solid",
@@ -3516,7 +3499,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "box.new"
     ]
@@ -3541,7 +3523,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "box.new",
       "box.get_bottom"
@@ -3566,8 +3547,7 @@ export const FUNCTIONS: PineFunction[] = [
         "required": true
       }
     ],
-    "returns": "void",
-    "examples": []
+    "returns": "void"
   },
   {
     "name": "box.set_extend",
@@ -3589,7 +3569,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "box.new",
       "extend.none",
@@ -3618,7 +3597,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "box.new",
       "box.get_left"
@@ -3650,7 +3628,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "box.new",
       "box.get_left",
@@ -3677,7 +3654,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "box.new",
       "box.get_right"
@@ -3709,7 +3685,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "box.new",
       "box.get_right",
@@ -3736,7 +3711,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "box.set_text_color",
       "box.set_text_size",
@@ -3765,7 +3739,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "box.set_text",
       "box.set_text_size",
@@ -3832,7 +3805,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "box.set_text_color",
       "box.set_text_size",
@@ -3866,7 +3838,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "box.set_text",
       "box.set_text_size",
@@ -3894,7 +3865,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "box.set_text",
       "box.set_text_color",
@@ -3927,7 +3897,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "box.set_text",
       "box.set_text_size",
@@ -3959,7 +3928,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "box.set_text",
       "box.set_text_size",
@@ -3988,7 +3956,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "box.new",
       "box.get_top"
@@ -4013,8 +3980,7 @@ export const FUNCTIONS: PineFunction[] = [
         "required": true
       }
     ],
-    "returns": "void",
-    "examples": []
+    "returns": "void"
   },
   {
     "name": "box.set_xloc",
@@ -4052,7 +4018,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "box.new",
       "xloc.bar_index",
@@ -4072,8 +4037,7 @@ export const FUNCTIONS: PineFunction[] = [
         "required": true
       }
     ],
-    "returns": "chart.point",
-    "examples": []
+    "returns": "chart.point"
   },
   {
     "name": "chart.point.from_index",
@@ -4095,7 +4059,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "chart.point",
-    "examples": [],
     "remarks": "The time field values of chart.point instances returned from this function will be na, meaning drawing objects with xloc values set to xloc.bar_time will not work with them."
   },
   {
@@ -4118,7 +4081,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "chart.point",
-    "examples": [],
     "remarks": "The index field values of chart.point instances returned from this function will be na, meaning drawing objects with xloc values set to xloc.bar_index will not work with them."
   },
   {
@@ -4147,7 +4109,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "chart.point",
-    "examples": [],
     "remarks": "Whether a drawing object uses a point's time or index field as an x-coordinate depends on the xloc type used in the function call that returned the drawing.\nIt's important to note that this function does not verify that the time and index values refer to the same bar.",
     "seeAlso": [
       "polyline.new"
@@ -4168,7 +4129,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "chart.point",
-    "examples": [],
     "remarks": "The chart.point instance returned from this function records values for its index and time fields on the bar it executed on, making it suitable for use with drawing objects of any xloc type."
   },
   {
@@ -4230,7 +4190,6 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series color"
       }
     ],
-    "examples": [],
     "returnsDescription": "The value of the argument after casting to color.",
     "seeAlso": [
       "float",
@@ -4867,7 +4826,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series int",
-    "examples": [],
     "returnsDescription": "The calculated day of the month, expressed in the specified time zone.",
     "remarks": "A UNIX timestamp represents the number of milliseconds elapsed since 00:00 UTC on 1970-01-01. The meaning of a UNIX timestamp does not change relative to any time zone.",
     "seeAlso": [
@@ -4902,7 +4860,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series int",
-    "examples": [],
     "returnsDescription": "The calculated day number, expressed in the specified time zone.",
     "remarks": "A UNIX timestamp represents the number of milliseconds elapsed since 00:00 UTC on 1970-01-01. The meaning of a UNIX timestamp does not change relative to any time zone.",
     "seeAlso": [
@@ -5264,7 +5221,6 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series float"
       }
     ],
-    "examples": [],
     "returnsDescription": "Series without na gaps.",
     "seeAlso": [
       "na",
@@ -5331,7 +5287,6 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series float"
       }
     ],
-    "examples": [],
     "returnsDescription": "The value of the argument after casting to float.",
     "seeAlso": [
       "int",
@@ -5356,7 +5311,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": [],
     "returnsDescription": "The total \"buy\" volume measured by the footprint."
   },
   {
@@ -5373,7 +5327,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": [],
     "returnsDescription": "The overall volume delta for the footprint."
   },
   {
@@ -5396,7 +5349,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "volume_row",
-    "examples": [],
     "returnsDescription": "The ID of a volume_row object representing the footprint row that contains the specified price, or na if the price is outside the footprint's price range."
   },
   {
@@ -5413,7 +5365,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "volume_row",
-    "examples": [],
     "returnsDescription": "The ID of a volume_row object representing the footprint's POC row."
   },
   {
@@ -5430,7 +5381,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "array<volume_row>",
-    "examples": [],
     "returnsDescription": "The ID of an array containing a volume_row ID for each row in the footprint."
   },
   {
@@ -5447,7 +5397,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": [],
     "returnsDescription": "The total \"sell\" volume measured by the footprint."
   },
   {
@@ -5464,7 +5413,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": [],
     "returnsDescription": "The total volume measured by the footprint."
   },
   {
@@ -5481,7 +5429,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "volume_row",
-    "examples": [],
     "returnsDescription": "The ID of a volume_row object representing the footprint's VAH row."
   },
   {
@@ -5498,7 +5445,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "volume_row",
-    "examples": [],
     "returnsDescription": "The ID of a volume_row object representing the footprint's VAL row."
   },
   {
@@ -5590,7 +5536,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series int",
-    "examples": [],
     "returnsDescription": "Hour (in exchange timezone) for provided UNIX time.",
     "remarks": "UNIX time is the number of milliseconds that have elapsed since 00:00:00 UTC, 1 January 1970.",
     "seeAlso": [
@@ -7659,7 +7604,6 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series int"
       }
     ],
-    "examples": [],
     "returnsDescription": "The value of the argument after casting to int.",
     "seeAlso": [
       "float",
@@ -7683,7 +7627,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series label",
-    "examples": [],
     "returnsDescription": "The value of the argument after casting to label.",
     "seeAlso": [
       "float",
@@ -7731,7 +7674,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "label.new"
     ]
@@ -7794,7 +7736,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": [],
     "returnsDescription": "Floating point value representing price.",
     "seeAlso": [
       "label.new"
@@ -8263,7 +8204,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "label.new"
     ]
@@ -8287,8 +8227,7 @@ export const FUNCTIONS: PineFunction[] = [
         "required": true
       }
     ],
-    "returns": "void",
-    "examples": []
+    "returns": "void"
   },
   {
     "name": "label.set_size",
@@ -8311,7 +8250,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "size.auto",
       "size.tiny",
@@ -8365,7 +8303,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "label.new"
     ]
@@ -8390,7 +8327,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "label.new",
       "label.set_text_formatting"
@@ -8455,7 +8391,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "label.new",
       "label.set_text"
@@ -8486,7 +8421,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "text.align_left",
       "text.align_center",
@@ -8514,7 +8448,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "label.new"
     ]
@@ -8539,7 +8472,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "label.new"
     ]
@@ -8564,7 +8496,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "label.new"
     ]
@@ -8595,7 +8526,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "xloc.bar_index",
       "xloc.bar_time",
@@ -8628,7 +8558,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "label.new"
     ]
@@ -8653,7 +8582,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "label.new"
     ]
@@ -8678,7 +8606,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "yloc.price",
       "yloc.abovebar",
@@ -8737,7 +8664,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series line",
-    "examples": [],
     "returnsDescription": "The value of the argument after casting to line.",
     "seeAlso": [
       "float",
@@ -8785,7 +8711,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "line.new"
     ]
@@ -8855,7 +8780,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series int",
-    "examples": [],
     "returnsDescription": "UNIX timestamp (in milliseconds) or bar index.",
     "seeAlso": [
       "line.new"
@@ -8875,7 +8799,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": [],
     "returnsDescription": "Price value.",
     "seeAlso": [
       "line.new"
@@ -8895,7 +8818,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": [],
     "returnsDescription": "Price value.",
     "seeAlso": [
       "line.new"
@@ -9179,7 +9101,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "line.new"
     ]
@@ -9204,7 +9125,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "extend.none",
       "extend.right",
@@ -9232,8 +9152,7 @@ export const FUNCTIONS: PineFunction[] = [
         "required": true
       }
     ],
-    "returns": "void",
-    "examples": []
+    "returns": "void"
   },
   {
     "name": "line.set_second_point",
@@ -9254,8 +9173,7 @@ export const FUNCTIONS: PineFunction[] = [
         "required": true
       }
     ],
-    "returns": "void",
-    "examples": []
+    "returns": "void"
   },
   {
     "name": "line.set_style",
@@ -9277,7 +9195,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "line.style_solid",
       "line.style_dotted",
@@ -9308,7 +9225,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "line.new"
     ]
@@ -9333,7 +9249,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "line.new"
     ]
@@ -9358,7 +9273,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "line.new"
     ]
@@ -9395,7 +9309,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "xloc.bar_index",
       "xloc.bar_time",
@@ -9428,7 +9341,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "line.new"
     ]
@@ -9459,7 +9371,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "line.new"
     ]
@@ -9484,7 +9395,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "line.new"
     ]
@@ -9509,7 +9419,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "line.new"
     ]
@@ -9527,7 +9436,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series linefill",
-    "examples": [],
     "returnsDescription": "The value of the argument after casting to linefill.",
     "seeAlso": [
       "float",
@@ -9552,8 +9460,7 @@ export const FUNCTIONS: PineFunction[] = [
         "required": true
       }
     ],
-    "returns": "void",
-    "examples": []
+    "returns": "void"
   },
   {
     "name": "linefill.get_line1",
@@ -9568,8 +9475,7 @@ export const FUNCTIONS: PineFunction[] = [
         "required": true
       }
     ],
-    "returns": "series line",
-    "examples": []
+    "returns": "series line"
   },
   {
     "name": "linefill.get_line2",
@@ -9584,8 +9490,7 @@ export const FUNCTIONS: PineFunction[] = [
         "required": true
       }
     ],
-    "returns": "series line",
-    "examples": []
+    "returns": "series line"
   },
   {
     "name": "linefill.new",
@@ -9613,7 +9518,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series linefill",
-    "examples": [],
     "returnsDescription": "The ID of a linefill object that can be passed to other linefill.*() functions.",
     "remarks": "If any line of the two is deleted, the linefill object is also deleted. If the lines are moved (e.g. via line.set_xy() functions), the linefill object is also moved.\nIf both lines are extended in the same direction relative to the lines themselves (e.g. both have extend.right as the value of their extend= parameter), the space between line extensions will also be filled."
   },
@@ -9636,8 +9540,7 @@ export const FUNCTIONS: PineFunction[] = [
         "required": true
       }
     ],
-    "returns": "void",
-    "examples": []
+    "returns": "void"
   },
   {
     "name": "log.error",
@@ -10294,7 +10197,6 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series float"
       }
     ],
-    "examples": [],
     "returnsDescription": "The absolute value of number."
   },
   {
@@ -10357,7 +10259,6 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series float"
       }
     ],
-    "examples": [],
     "returnsDescription": "The arc cosine of a value; the returned angle is in the range [0, Pi], or na if y is outside of range [-1, 1]."
   },
   {
@@ -10420,7 +10321,6 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series float"
       }
     ],
-    "examples": [],
     "returnsDescription": "The arcsine of a value; the returned angle is in the range [-Pi/2, Pi/2], or na if y is outside of range [-1, 1]."
   },
   {
@@ -10483,7 +10383,6 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series float"
       }
     ],
-    "examples": [],
     "returnsDescription": "The arc tangent of a value; the returned angle is in the range [-Pi/2, Pi/2]."
   },
   {
@@ -10547,7 +10446,6 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series float"
       }
     ],
-    "examples": [],
     "returnsDescription": "Average.",
     "seeAlso": [
       "math.sum",
@@ -10615,7 +10513,6 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series int"
       }
     ],
-    "examples": [],
     "returnsDescription": "The smallest \"int\" value that is greater than or equal to the number.",
     "seeAlso": [
       "math.floor",
@@ -10682,7 +10579,6 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series float"
       }
     ],
-    "examples": [],
     "returnsDescription": "The trigonometric cosine of an angle."
   },
   {
@@ -10745,7 +10641,6 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series float"
       }
     ],
-    "examples": [],
     "returnsDescription": "A value representing e raised to the power of number.",
     "seeAlso": [
       "math.pow"
@@ -10811,7 +10706,6 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series int"
       }
     ],
-    "examples": [],
     "returnsDescription": "The largest \"int\" value that is less than or equal to the number.",
     "seeAlso": [
       "math.ceil",
@@ -10878,7 +10772,6 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series float"
       }
     ],
-    "examples": [],
     "returnsDescription": "The natural logarithm of number.",
     "seeAlso": [
       "math.log10"
@@ -10944,7 +10837,6 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series float"
       }
     ],
-    "examples": [],
     "returnsDescription": "The base 10 logarithm of number.",
     "seeAlso": [
       "math.log"
@@ -11419,7 +11311,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": [],
     "returnsDescription": "A random value."
   },
   {
@@ -11556,7 +11447,6 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series float"
       }
     ],
-    "examples": [],
     "returnsDescription": "The value of number rounded to the nearest integer, or according to precision.",
     "remarks": "Note that for 'na' values function returns 'na'.",
     "seeAlso": [
@@ -11602,7 +11492,6 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series float"
       }
     ],
-    "examples": [],
     "returnsDescription": "The number rounded to tick precision.",
     "remarks": "Note that for 'na' values function returns 'na'.",
     "seeAlso": [
@@ -11673,7 +11562,6 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series float"
       }
     ],
-    "examples": [],
     "returnsDescription": "The sign of the argument."
   },
   {
@@ -11736,7 +11624,6 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series float"
       }
     ],
-    "examples": [],
     "returnsDescription": "The trigonometric sine of an angle."
   },
   {
@@ -11799,7 +11686,6 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series float"
       }
     ],
-    "examples": [],
     "returnsDescription": "The square root of number.",
     "seeAlso": [
       "math.pow"
@@ -11831,7 +11717,6 @@ export const FUNCTIONS: PineFunction[] = [
       "polymorphic": "numeric",
       "historyDependent": true
     },
-    "examples": [],
     "returnsDescription": "Sum of source for length bars back.",
     "remarks": "na values in the source series are ignored; the function calculates on the length quantity of non-na values.",
     "seeAlso": [
@@ -11899,7 +11784,6 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series float"
       }
     ],
-    "examples": [],
     "returnsDescription": "The trigonometric tangent of an angle."
   },
   {
@@ -11916,7 +11800,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": [],
     "returnsDescription": "The angle value in degrees."
   },
   {
@@ -11933,7 +11816,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": [],
     "returnsDescription": "The angle value in radians."
   },
   {
@@ -12417,7 +12299,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series int",
-    "examples": [],
     "seeAlso": [
       "matrix.new",
       "matrix.columns",
@@ -12586,8 +12467,7 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series bool",
-    "examples": [],
-    "returnsDescription": "Returns true if the id matrix is ​​anti-diagonal, false otherwise.",
+    "returnsDescription": "Returns true if the id matrix is anti-diagonal, false otherwise.",
     "remarks": "Returns false with non-square matrices.",
     "seeAlso": [
       "matrix.new",
@@ -12611,7 +12491,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series bool",
-    "examples": [],
     "returnsDescription": "Returns true, if the id matrix is antisymmetric, false otherwise.",
     "remarks": "Returns false with non-square matrices.",
     "seeAlso": [
@@ -12635,7 +12514,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series bool",
-    "examples": [],
     "returnsDescription": "Returns true if the id matrix is binary, false otherwise.",
     "seeAlso": [
       "matrix.new",
@@ -12657,7 +12535,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series bool",
-    "examples": [],
     "returnsDescription": "Returns true if the id matrix is diagonal, false otherwise.",
     "remarks": "Returns false with non-square matrices.",
     "seeAlso": [
@@ -12682,7 +12559,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series bool",
-    "examples": [],
     "returnsDescription": "Returns true if id is an identity matrix, false otherwise.",
     "remarks": "Returns false with non-square matrices.",
     "seeAlso": [
@@ -12705,7 +12581,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series bool",
-    "examples": [],
     "returnsDescription": "Returns true if the id matrix is square, false otherwise.",
     "seeAlso": [
       "matrix.new",
@@ -12729,7 +12604,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series bool",
-    "examples": [],
     "returnsDescription": "Returns true if the id matrix is stochastic, false otherwise.",
     "seeAlso": [
       "matrix.new",
@@ -12750,7 +12624,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series bool",
-    "examples": [],
     "returnsDescription": "Returns true if the id matrix is symmetric, false otherwise.",
     "remarks": "Returns false with non-square matrices.",
     "seeAlso": [
@@ -12774,7 +12647,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series bool",
-    "examples": [],
     "returnsDescription": "Returns true if the id matrix is triangular, false otherwise.",
     "remarks": "Returns false with non-square matrices.",
     "seeAlso": [
@@ -12797,7 +12669,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series bool",
-    "examples": [],
     "returnsDescription": "Returns true if all elements of the id matrix are zero, false otherwise.",
     "seeAlso": [
       "matrix.new",
@@ -14030,7 +13901,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series int",
-    "examples": [],
     "returnsDescription": "Minute (in exchange timezone) for provided UNIX time.",
     "remarks": "UNIX time is the number of milliseconds that have elapsed since 00:00:00 UTC, 1 January 1970.",
     "seeAlso": [
@@ -14064,7 +13934,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series int",
-    "examples": [],
     "returnsDescription": "Month (in exchange timezone) for provided UNIX time.",
     "remarks": "UNIX time is the number of milliseconds that have elapsed since 00:00:00 UTC, 1 January 1970.\nNote that this function returns the month based on the time of the bar's open. For overnight sessions (e.g. EURUSD, where Monday session starts on Sunday, 17:00 UTC-4) this value can be lower by 1 than the month of the trading day.",
     "seeAlso": [
@@ -15069,8 +14938,7 @@ export const FUNCTIONS: PineFunction[] = [
         "required": true
       }
     ],
-    "returns": "void",
-    "examples": []
+    "returns": "void"
   },
   {
     "name": "polyline.new",
@@ -15470,7 +15338,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "footprint",
-    "examples": [],
     "returnsDescription": "The ID of a footprint object containing volume footprint data for the current bar, or na if no data is available.",
     "remarks": "Only accounts with Premium or Ultimate plans can use scripts that call this function.\nA single script cannot include more than one request.footprint() call."
   },
@@ -15800,8 +15667,7 @@ export const FUNCTIONS: PineFunction[] = [
         "required": true
       }
     ],
-    "returns": "void",
-    "examples": []
+    "returns": "void"
   },
   {
     "name": "second",
@@ -15823,7 +15689,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series int",
-    "examples": [],
     "returnsDescription": "Second (in exchange timezone) for provided UNIX time.",
     "remarks": "UNIX time is the number of milliseconds that have elapsed since 00:00:00 UTC, 1 January 1970.",
     "seeAlso": [
@@ -15992,7 +15857,6 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series bool"
       }
     ],
-    "examples": [],
     "returnsDescription": "True if the source string ends with the substring specified in str, false otherwise.",
     "seeAlso": [
       "str.startswith"
@@ -16166,7 +16030,6 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series int"
       }
     ],
-    "examples": [],
     "returnsDescription": "The number of chars in source string."
   },
   {
@@ -16218,7 +16081,6 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series string"
       }
     ],
-    "examples": [],
     "returnsDescription": "A new string with all letters converted to lowercase.",
     "seeAlso": [
       "str.upper"
@@ -16363,7 +16225,6 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series int"
       }
     ],
-    "examples": [],
     "returnsDescription": "Position of the str string in the source string.",
     "remarks": "Strings indexing starts at 0.",
     "seeAlso": [
@@ -16706,7 +16567,6 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series string"
       }
     ],
-    "examples": [],
     "returnsDescription": "Processed string."
   },
   {
@@ -16729,7 +16589,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "array<string>",
-    "examples": [],
     "returnsDescription": "The id of an array of strings."
   },
   {
@@ -16805,7 +16664,6 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series bool"
       }
     ],
-    "examples": [],
     "returnsDescription": "True if the source string starts with the substring specified in str, false otherwise.",
     "seeAlso": [
       "str.endswith"
@@ -16983,7 +16841,6 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series float"
       }
     ],
-    "examples": [],
     "returnsDescription": "A \"float\" equivalent of the value in string. If the value is not a properly formed integer or floating point value, the function returns na."
   },
   {
@@ -17078,7 +16935,6 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series string"
       }
     ],
-    "examples": [],
     "returnsDescription": "The string representation of the value argument.\nIf the value argument is a string, it is returned as is.\nWhen the value is na, the function returns the string \"NaN\".",
     "remarks": "The formatting of float values will also round those values when necessary, e.g. str.tostring(3.99, '#') will return \"4\".\nTo display trailing zeros, use '0' instead of '#'. For example, '#.000'.\nWhen using format.mintick, the value will be rounded to the nearest number that can be divided by syminfo.mintick without the remainder. The string is returned with trailing zeros.\nIf the x argument is a string, the same string value will be returned.\nBool type arguments return \"true\" or \"false\".\nWhen x is na, the function returns \"NaN\"."
   },
@@ -17196,7 +17052,6 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series string"
       }
     ],
-    "examples": [],
     "returnsDescription": "A new string with all letters converted to uppercase.",
     "seeAlso": [
       "str.lower"
@@ -17899,7 +17754,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": [],
     "seeAlso": [
       "strategy.closedtrades.max_drawdown",
       "strategy.max_drawdown"
@@ -17941,7 +17795,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": [],
     "seeAlso": [
       "strategy.closedtrades.max_runup",
       "strategy.max_runup"
@@ -17984,7 +17837,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": [],
     "seeAlso": [
       "strategy.closedtrades.profit"
     ]
@@ -18500,7 +18352,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": [],
     "seeAlso": [
       "strategy.opentrades.max_drawdown",
       "strategy.max_drawdown"
@@ -18543,7 +18394,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": [],
     "seeAlso": [
       "strategy.opentrades.max_runup",
       "strategy.max_runup"
@@ -18588,7 +18438,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": [],
     "seeAlso": [
       "strategy.opentrades.profit"
     ]
@@ -18941,7 +18790,6 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series string"
       }
     ],
-    "examples": [],
     "returnsDescription": "The value of the argument after casting to string.",
     "seeAlso": [
       "float",
@@ -19269,7 +19117,6 @@ export const FUNCTIONS: PineFunction[] = [
     "flags": {
       "historyDependent": true
     },
-    "examples": [],
     "returnsDescription": "Commodity channel index of source for length bars back.",
     "remarks": "na values in the source series are ignored."
   },
@@ -19459,7 +19306,6 @@ export const FUNCTIONS: PineFunction[] = [
     "flags": {
       "historyDependent": true
     },
-    "examples": [],
     "returnsDescription": "Correlation coefficient.",
     "remarks": "na values in the source series are ignored; the function calculates on the length quantity of non-na values.",
     "seeAlso": [
@@ -19489,7 +19335,6 @@ export const FUNCTIONS: PineFunction[] = [
     "flags": {
       "historyDependent": true
     },
-    "examples": [],
     "returnsDescription": "true if two series have crossed each other, otherwise false.",
     "seeAlso": [
       "ta.change"
@@ -19518,7 +19363,6 @@ export const FUNCTIONS: PineFunction[] = [
     "flags": {
       "historyDependent": true
     },
-    "examples": [],
     "returnsDescription": "true if source1 crossed over source2 otherwise false."
   },
   {
@@ -19544,7 +19388,6 @@ export const FUNCTIONS: PineFunction[] = [
     "flags": {
       "historyDependent": true
     },
-    "examples": [],
     "returnsDescription": "true if source1 crossed under source2 otherwise false."
   },
   {
@@ -19564,7 +19407,6 @@ export const FUNCTIONS: PineFunction[] = [
     "flags": {
       "historyDependent": true
     },
-    "examples": [],
     "returnsDescription": "Total sum series.",
     "seeAlso": [
       "math.sum"
@@ -19696,7 +19538,6 @@ export const FUNCTIONS: PineFunction[] = [
     "flags": {
       "historyDependent": true
     },
-    "examples": [],
     "returnsDescription": "true if current source value is less than any previous source value for length bars back, false otherwise.",
     "remarks": "na values in the source series are ignored; the function calculates on the length quantity of non-na values.",
     "seeAlso": [
@@ -19756,7 +19597,6 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series float"
       }
     ],
-    "examples": [],
     "returnsDescription": "Highest value in the series.",
     "remarks": "Two args version: source is a series and length is the number of bars back.\nOne arg version: length is the number of bars back. Algorithm uses high as a source series.\nna values in the source series are ignored.",
     "seeAlso": [
@@ -19820,7 +19660,6 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series int"
       }
     ],
-    "examples": [],
     "returnsDescription": "Offset to the highest bar.",
     "remarks": "Two args version: source is a series and length is the number of bars back.\nOne arg version: length is the number of bars back. Algorithm uses high as a source series.\nna values in the source series are ignored.",
     "seeAlso": [
@@ -19989,7 +19828,6 @@ export const FUNCTIONS: PineFunction[] = [
     "flags": {
       "historyDependent": true
     },
-    "examples": [],
     "returnsDescription": "Linear regression curve.",
     "remarks": "na values in the source series are included in calculations and will produce an na result."
   },
@@ -20046,7 +19884,6 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series float"
       }
     ],
-    "examples": [],
     "returnsDescription": "Lowest value in the series.",
     "remarks": "Two args version: source is a series and length is the number of bars back.\nOne arg version: length is the number of bars back. Algorithm uses low as a source series.\nna values in the source series are ignored.",
     "seeAlso": [
@@ -20110,7 +19947,6 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series int"
       }
     ],
-    "examples": [],
     "returnsDescription": "Offset to the lowest bar.",
     "remarks": "Two args version: source is a series and length is the number of bars back.\nOne arg version: length is the number of bars back. Algorithm uses low as a source series.\nna values in the source series are ignored.",
     "seeAlso": [
@@ -20184,7 +20020,6 @@ export const FUNCTIONS: PineFunction[] = [
     "flags": {
       "historyDependent": true
     },
-    "examples": [],
     "remarks": "na"
   },
   {
@@ -20247,7 +20082,6 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series float"
       }
     ],
-    "examples": [],
     "returnsDescription": "The median of the series.",
     "remarks": "na values in the source series are ignored; the function calculates on the length quantity of non-na values."
   },
@@ -20301,7 +20135,6 @@ export const FUNCTIONS: PineFunction[] = [
     "flags": {
       "historyDependent": true
     },
-    "examples": [],
     "remarks": "na"
   },
   {
@@ -20364,7 +20197,6 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series float"
       }
     ],
-    "examples": [],
     "returnsDescription": "The most frequently occurring value from the source. If none exists, returns the smallest value instead.",
     "remarks": "na values in the source series are ignored; the function calculates on the length quantity of non-na values."
   },
@@ -20391,7 +20223,6 @@ export const FUNCTIONS: PineFunction[] = [
     "flags": {
       "historyDependent": true
     },
-    "examples": [],
     "returnsDescription": "Momentum of source price and source price length bars ago.",
     "remarks": "na values in the source series are included in calculations and will produce an na result.",
     "seeAlso": [
@@ -20427,7 +20258,6 @@ export const FUNCTIONS: PineFunction[] = [
     "flags": {
       "historyDependent": true
     },
-    "examples": [],
     "returnsDescription": "P-th percentile of source series for length bars back.",
     "remarks": "Note that a percentile calculated using this method will NOT always be a member of the input data set.\nna values in the source series are included in calculations and will produce an na result.",
     "seeAlso": [
@@ -20463,7 +20293,6 @@ export const FUNCTIONS: PineFunction[] = [
     "flags": {
       "historyDependent": true
     },
-    "examples": [],
     "returnsDescription": "P-th percentile of source series for length bars back.",
     "remarks": "Using the Nearest Rank method on lengths less than 100 bars back can result in the same number being used for more than one percentile.\nA percentile calculated using the Nearest Rank method will always be a member of the input data set.\nThe 100th percentile is defined to be the largest value in the input data set.\nna values in the source series are ignored.",
     "seeAlso": [
@@ -20493,7 +20322,6 @@ export const FUNCTIONS: PineFunction[] = [
     "flags": {
       "historyDependent": true
     },
-    "examples": [],
     "returnsDescription": "Percent rank of source for length bars back.",
     "remarks": "na values in the source series are included in calculations and will produce an na result."
   },
@@ -20755,7 +20583,6 @@ export const FUNCTIONS: PineFunction[] = [
         "returns": "series float"
       }
     ],
-    "examples": [],
     "returnsDescription": "The difference between the min and max values in the series.",
     "remarks": "na values in the source series are ignored; the function calculates on the length quantity of non-na values."
   },
@@ -20782,7 +20609,6 @@ export const FUNCTIONS: PineFunction[] = [
     "flags": {
       "historyDependent": true
     },
-    "examples": [],
     "returnsDescription": "The Rank Correlation Index, a value between -100 to 100."
   },
   {
@@ -20808,7 +20634,6 @@ export const FUNCTIONS: PineFunction[] = [
     "flags": {
       "historyDependent": true
     },
-    "examples": [],
     "returnsDescription": "true if current source is greater than any previous source for length bars back, false otherwise.",
     "remarks": "na values in the source series are ignored.",
     "seeAlso": [
@@ -20876,7 +20701,6 @@ export const FUNCTIONS: PineFunction[] = [
     "flags": {
       "historyDependent": true
     },
-    "examples": [],
     "returnsDescription": "The rate of change of source for length bars back.",
     "remarks": "na values in the source series are included in calculations and will produce an na result."
   },
@@ -21058,7 +20882,6 @@ export const FUNCTIONS: PineFunction[] = [
     "flags": {
       "historyDependent": true
     },
-    "examples": [],
     "returnsDescription": "Stochastic.",
     "remarks": "na values in the source series are ignored.",
     "seeAlso": [
@@ -21144,7 +20967,6 @@ export const FUNCTIONS: PineFunction[] = [
     "flags": {
       "historyDependent": true
     },
-    "examples": [],
     "returnsDescription": "True range. It is math.max(high - low, math.abs(high - close[1]), math.abs(low - close[1])).",
     "remarks": "ta.tr(false) is exactly the same as ta.tr.",
     "seeAlso": [
@@ -21181,7 +21003,6 @@ export const FUNCTIONS: PineFunction[] = [
     "flags": {
       "historyDependent": true
     },
-    "examples": [],
     "returnsDescription": "True strength index. A value in range [-1, 1].",
     "remarks": "na values in the source series are ignored; the function calculates on the length quantity of non-na values."
   },
@@ -21351,7 +21172,6 @@ export const FUNCTIONS: PineFunction[] = [
     "flags": {
       "historyDependent": true
     },
-    "examples": [],
     "returnsDescription": "Variance of source for length bars back.",
     "remarks": "If biased is true, function will calculate using a biased estimate of the entire population, if false - unbiased estimate of a sample.\nna values in the source series are ignored; the function calculates on the length quantity of non-na values.",
     "seeAlso": [
@@ -21556,7 +21376,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series table",
-    "examples": [],
     "returnsDescription": "The value of the argument after casting to table.",
     "seeAlso": [
       "float",
@@ -21687,7 +21506,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "remarks": "This function does not create the table itself, but defines the table’s cells. To use it, you first need to create a table object with table.new().\nEach table.cell() call overwrites all previously defined properties of a cell. If you call table.cell() twice in a row, e.g., the first time with text='Test Text', and the second time with text_color=color.red but without a new text argument, the default value of the 'text' being an empty string, it will overwrite 'Test Text', and your cell will display an empty string. If you want, instead, to modify any of the cell's properties, use the table.cell_set_*() functions.\nA single script can only display one table in each of the possible locations. If table.cell() is used on several bars to change the same attribute of a cell (e.g. change the background color of the cell to red on the first bar, then to yellow on the second bar), only the last change will be reflected in the table, i.e., the cell’s background will be yellow. Avoid unnecessary setting of cell properties by enclosing function calls in an if barstate.islast block whenever possible, to restrict their execution to the last bar of the series.",
     "seeAlso": [
       "table.cell_set_bgcolor",
@@ -21734,7 +21552,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "table.cell_set_height",
       "table.cell_set_text",
@@ -21778,7 +21595,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "table.cell_set_bgcolor",
       "table.cell_set_text",
@@ -21869,7 +21685,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "table.cell_set_bgcolor",
       "table.cell_set_height",
@@ -21964,7 +21779,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "table.cell_set_bgcolor",
       "table.cell_set_height",
@@ -22014,7 +21828,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "table.cell_set_bgcolor",
       "table.cell_set_height",
@@ -22059,7 +21872,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "table.cell_set_bgcolor",
       "table.cell_set_height",
@@ -22108,7 +21920,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "table.cell_set_bgcolor",
       "table.cell_set_height",
@@ -22198,7 +22009,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "table.cell_set_bgcolor",
       "table.cell_set_height",
@@ -22444,7 +22254,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "table.clear",
       "table.delete",
@@ -22477,7 +22286,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "table.clear",
       "table.delete",
@@ -22510,7 +22318,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "table.clear",
       "table.delete",
@@ -22543,7 +22350,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "table.clear",
       "table.delete",
@@ -22576,7 +22382,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "table.clear",
       "table.delete",
@@ -22619,7 +22424,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
-    "examples": [],
     "seeAlso": [
       "table.clear",
       "table.delete",
@@ -24376,7 +24180,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": [],
     "returnsDescription": "The total \"buy\" volume for the footprint row."
   },
   {
@@ -24393,7 +24196,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": [],
     "returnsDescription": "The volume delta for the footprint row."
   },
   {
@@ -24410,7 +24212,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": [],
     "returnsDescription": "The lower boundary of the footprint row's price range."
   },
   {
@@ -24427,7 +24228,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series bool",
-    "examples": [],
     "returnsDescription": "A value of true if the footprint row has a detected buy imbalance, and false otherwise."
   },
   {
@@ -24444,7 +24244,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series bool",
-    "examples": [],
     "returnsDescription": "A value of true if the footprint row has a detected sell imbalance, and false otherwise."
   },
   {
@@ -24461,7 +24260,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": [],
     "returnsDescription": "The total \"sell\" volume for the footprint row."
   },
   {
@@ -24478,7 +24276,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": [],
     "returnsDescription": "The total volume for the footprint row."
   },
   {
@@ -24495,7 +24292,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series float",
-    "examples": [],
     "returnsDescription": "The upper boundary of the footprint row's price range."
   },
   {
@@ -24518,7 +24314,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series int",
-    "examples": [],
     "returnsDescription": "The calculated week number, expressed in the specified time zone.",
     "remarks": "A UNIX timestamp represents the number of milliseconds elapsed since 00:00 UTC on 1970-01-01. The meaning of a UNIX timestamp does not change relative to any time zone.",
     "seeAlso": [
@@ -24553,7 +24348,6 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "series int",
-    "examples": [],
     "returnsDescription": "Year (in exchange timezone) for provided UNIX time.",
     "remarks": "UNIX time is the number of milliseconds that have elapsed since 00:00:00 UTC, 1 January 1970.\nNote that this function returns the year based on the time of the bar's open. For overnight sessions (e.g. EURUSD, where Monday session starts on Sunday, 17:00 UTC-4) this value can be lower by 1 than the year of the trading day.",
     "seeAlso": [
