@@ -1,0 +1,6 @@
+//@version=6
+indicator("p02 which qualifiers are legal on a UDT field")
+type t
+    varip float a
+    var float b
+plot(t.new().a + t.new().b)

@@ -1,0 +1,7 @@
+//@version=6
+indicator("p03 field access on a LOCAL UDT parameter")
+type pt
+    float v
+f(pt p) =>
+    p.bogusField
+plot(f(pt.new(1.0)))

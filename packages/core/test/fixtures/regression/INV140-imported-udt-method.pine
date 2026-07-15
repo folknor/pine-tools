@@ -1,0 +1,14 @@
+// @test regression/INV140-imported-udt-method
+// @description Registering imported UDTs widens INV103's method check to them, which forces a new gate: a library's exported METHODS extend its own types and are NOT in declaredFunctionNames (local only), so without `importedMethodMayExist` every `p.hide()` would be a false positive. `hide` and `delete` are exported methods of robbatt/lib_profile/44 extending Profile and must stay clean; `bogusMethod` is neither a field, an export, nor local, and TV flags it (probed 2026-07-15). lib_plot_objects is imported because Profile's fields reference its types and TV requires that import explicitly. See investigations/INV140-imported-udt-surfaces/notes.md.
+// @expects parse: success
+// @expects errors: 1
+// @expects error: line=8, column=5, message="Could not find method or method reference 'p.bogusMethod'"
+//@version=6
+indicator("x")
+import robbatt/lib_profile/44 as PF
+import robbatt/lib_plot_objects/56 as D
+f(PF.Profile p) =>
+    p.hide()
+    p.delete()
+    p.bogusMethod()
+plot(1)

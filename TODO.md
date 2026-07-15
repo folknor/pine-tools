@@ -15,134 +15,24 @@ regenerate with `node scripts/find-real-failures.mjs` followed by
 indexed at [investigations/README.md](investigations/README.md)
 and are not duplicated here - TODO.md is for *pending* work only.
 
-Measurement note, 2026-06-27: after INV124, the local snapshot is stable at
-1879 fixtures, 622 fixtures with errors, and 16057 total error records.
-`node scripts/regression-check.mjs` reports 0 changed fixtures, 0 new error
-appearances, and 0 disappeared appearances. The current categorized inventory
-scans 748 v6 fixtures and reports 0 local-only and 0 tv-only categories.
+Measurement note, 2026-07-15 (current state; earlier per-INV notes live in git
+history and in each investigation, per G001 - they were dated point-in-time
+records, not standing facts). The local snapshot is stable at 1879 fixtures,
+622 fixtures with errors, and 16057 total error records.
+`node scripts/regression-check.mjs` reports 0 changed fixtures and 0 new error
+appearances, other than INV138's single `2997d729…` v5 disappearance (a real FP
+removal, TV-confirmed silent). The last full TV sweep (INV133, 2026-06-28, 748
+v6 fixtures) measured errors at 29 local-only / 0 tv-only / 1 same-position
+message pair and warning tv-only at 0; every change since has left the v6 error
+baseline byte-identical, so that window still holds. Full vitest: 438 passing.
 
-Measurement note, 2026-06-27: after INV125 / Item 4 drawing-handle annotation
-typing, the local snapshot remains stable at 1879 fixtures, 622 fixtures with
-errors, and 16057 total error records. `node scripts/regression-check.mjs`
-reports 0 changed fixtures, 0 new error appearances, and 0 disappeared
-appearances. `node scripts/find-real-failures.mjs --concurrency 4` completed in
-this sandbox with all 748 TV responses unparseable, so its refreshed
-0-local-only / 0-tv-only category counts are not a meaningful remote comparison;
-the TV-backed handle verdicts are the dated probes recorded in
-[INV125](investigations/INV125-drawing-handle-tv-probes/notes.md).
-
-Measurement note, 2026-06-27: after INV126 / Item 5 user-global index
-consistency, the local snapshot remains stable at 1879 fixtures, 622 fixtures
-with errors, and 16057 total error records. `node scripts/regression-check.mjs`
-reports 0 changed fixtures, 0 new error appearances, and 0 disappeared
-appearances. The named local carriers now emit `getStandardTrueRange` x2 and
-`getTrendLineScore` x1, with no `updateTrendLine` / `scan` cascade. The TV
-sweep was attempted before and after with
-`node scripts/find-real-failures.mjs --concurrency 4`, but all 748 TV responses
-were unparseable in this sandbox, so the refreshed 0-local-only / 0-tv-only
-category counts are not a meaningful remote comparison; the TV-backed criterion
-is the dated probe record in
-[INV126](investigations/INV126-item5-library-dataflow-probes/notes.md).
-
-Measurement note, 2026-06-28: after INV129 / #61 sibling `na`-seed
-suppression, the local error baseline remains stable at 1879 fixtures, 622
-fixtures with errors, and 16057 total error records. `node
-scripts/regression-check.mjs` reports 0 changed fixtures, 0 new error
-appearances, and 0 disappeared appearances. `node scripts/find-real-failures.mjs --concurrency 4` scanned 748
-v6 fixtures: errors are 29 local-only / 0 tv-only / 1 same-position message
-pair; warning tv-only is 4 (the 3 CW10013 shadowing records plus `FindST`); the
-`47d21dbd` `ta.sma` CW10004 local-only warning is cleared. Warning local-only is
-NOT a stable metric: it measured 1290 (5 TV-unparseable files) on the landing
-run and 1310 on two byte-identical same-day reruns (4 TV-unparseable), because
-`totalWarningLocalOnly` sums only the files TV also parsed - a file flipping
-in/out of TV's unparseable set moves it by its whole warning count (G001; the
-candlestick `C_*` unused-var snippet spread across ~52 fixtures dominates that
-churn). The correctness-meaningful invariants are the error split (29/0) and
-warning tv-only (4).
-
-Measurement note, 2026-06-28: after INV130 / `draw_lbl` undetermined-local
-history suppression, `node scripts/regression-check.mjs` still reports 0 changed
-fixtures, 0 new error appearances, and 0 disappeared errors. `node
-scripts/find-real-failures.mjs --concurrency 4` scanned 748 v6 fixtures: errors
-remain 29 local-only / 0 tv-only / 1 same-position message pair; warning tv-only
-remains 4 (the 3 CW10013 shadowing records plus `FindST`); warning local-only
-measured 1308 with the same 4 TV-unparseable files as the 1310 post-INV129
-rerun. The only intended warning-channel movement is the two `draw_lbl`
-local-only warnings in `f1b6bd45`, now cleared.
-
-Measurement note, 2026-06-28: after INV131 / `math.sum` undetermined-UDF-result
-gate suppression, `node scripts/regression-check.mjs` still reports 0 changed
-fixtures, 0 new error appearances, and 0 disappeared errors. `node
-scripts/find-real-failures.mjs --concurrency 4` scanned 748 v6 fixtures: errors
-remain 29 local-only / 0 tv-only / 1 same-position message pair; warning tv-only
-remains 4 (the 3 CW10013 shadowing records plus `FindST`); warning local-only
-measured 1293 with 4 TV-unparseable files. The intended warning-channel movement
-is the two `math.sum` local-only warnings in `25a4a7`, now cleared.
-
-Measurement note, 2026-06-28: after INV132 / `bar_index[1]` UDF-history
-classification, `node scripts/regression-check.mjs` still reports 0 changed
-fixtures, 0 new error appearances, and 0 disappeared errors. `node
-scripts/find-real-failures.mjs --concurrency 4` scanned 748 v6 fixtures: errors
-remain 29 local-only / 0 tv-only / 1 same-position message pair; warning tv-only
-is down to 3 (only the CW10013 shadowing records remain); warning local-only
-measured 1293 with 4 TV-unparseable files. The intended warning-channel movement
-is the `FindST` TV-only warning in `db76cf79`, now shared with TV.
-
-Measurement note, 2026-06-28: after INV133 / UDT-name CW10013 shadowing,
-`node scripts/regression-check.mjs` still reports 0 changed fixtures, 0 new
-error appearances, and 0 disappeared errors. `node scripts/find-real-failures.mjs
---concurrency 4` scanned 748 v6 fixtures: errors remain 29 local-only / 0
-tv-only / 1 same-position message pair; warning tv-only is now 0; warning
-local-only measured 1292 with 4 TV-unparseable files. `node
-scripts/categorize-failures.mjs` reports 29 local-only hits in 3 error
-categories and 0 tv-only categories.
-
-Measurement note, 2026-06-28: after INV134 / #62 UDF call-site UDT and
-simple-param arg-type checking, `node scripts/regression-check.mjs` reports 0
-changed fixtures, 0 new error appearances, and 0 disappeared errors across 1879
-fixtures - the new CE10123 checks fire only on corpus-absent targeted-probe
-shapes (UDT into a wrong UDT param, a series value into a `simple` param), so the
-error baseline is byte-unchanged and the INV133 sweep numbers still hold. The two
-TV-only false negatives (TODO #62 / freedom L-001) are now caught, verified by
-`INV134-udf-call-arg-types.pine` and the dated `--tv` probes in the INV134 notes.
-The full vitest suite is 421 passing.
-
-Measurement note, 2026-06-28: INV135 makes builtin return inference use the
-matched overload return (`resolveCallReturnRaw`) where available, instead of the
-frozen merged `functions.json` return. Casts are the motivating probe (their
-merged return is const but overloads vary by qualifier): `int(close)` is now
-`series int`, not `const int`. The targeted fixture is
-`INV135-cast-return-qualifier.pine`; the dated `--tv` probes live in the INV135
-notes. Full vitest is 422 passing. `node scripts/regression-check.mjs` reports 0
-new appearances and 0 disappeared errors. The one changed corpus fixture is a
-same-position local cascade wording becoming more precise (`const color` ->
-`series color`) in a file where TV stops at an earlier string error - that
-position is past TV's stop, so it is not TV-adjudicated.
-
-Measurement note, 2026-07-15: after INV138 / #41 slices (b) and (c)
-(scalar- and collection-receiver method calls), `node
-scripts/regression-check.mjs` reports 0 new error appearances over 1879
-fixtures. The one changed fixture is `2997d729…` (v5), where fixing the
-`array<T>[n]` history-reference inference removed a bogus "Cannot assign a value
-of the "swingPoint" type" at line 400; `compare-tv` on that carrier is now 0
-local / 0 TV errors. No v6 fixture changed, so the INV133 sweep window (errors
-29 local-only / 0 tv-only / 1 same-position message pair) still holds unchanged
-and no TV sweep was spent re-measuring it: no new local errors can raise
-local-only, and the new CE10271 checks can only lower tv-only. The TV-backed
-verdicts are the 10 dated probes in
-[INV138](investigations/INV138-scalar-receiver-method-calls/notes.md). Full
-vitest is 431 passing.
-
-Measurement note, 2026-07-15: after INV139 / #41 slice (a) exported-library
-types, `node scripts/regression-check.mjs` reports 0 new error appearances over
-1879 fixtures; the only changed fixture is still INV138's `2997d729…` v5
-disappearance, so no v6 fixture moved and the INV133 sweep window continues to
-hold. The new check gates real corpus type annotations against 88 libraries'
-export sets and produced no FPs. `pine-data/v6/libraries.json` grew by 76 names
-(exported types/enums), purely additive. The TV-backed verdicts are the 2 dated
-probes in
-[INV139](investigations/INV139-imported-library-types/notes.md), where p02
-matches TV exactly on both position and message. Full vitest is 433 passing.
+**Warning local-only is NOT a stable metric** - do not read movement in it as
+signal. It measured 1290 then 1310 on byte-identical same-day reruns, because
+`totalWarningLocalOnly` sums only the files TV also parsed, so one file
+flipping in or out of TV's unparseable set moves it by that file's whole
+warning count (G001; the candlestick `C_*` unused-var snippet, spread across
+~52 fixtures, dominates the churn). The correctness-meaningful invariants are
+the error split and warning tv-only.
 
 ## Pending follow-ups
 
@@ -201,66 +91,18 @@ IDs so the two stay in sync.
   reference pages, INV/G pointers) where the client advertises support.
   Requires widening the internal `Diagnostic.message` type or adding a
   parallel rich field, plus a capability check before sending markup.
-- **#41 - MemberExpression callee validation.** INV036's CE10271 covers
-  Identifier callees, INV053 extended it to undefined members of
-  known builtin namespaces (`ta.bogus`, `math.notreal`), INV064
-  generalized that to any namespace DEPTH (`chart.point.newx`,
-  `strategy.risk.bogusxyz` - the old check only handled single-segment
-  `ns.member`), and INV065 closed the **scalar-shadow** slice (a local
-  `string`/`int`/etc. shadowing a namespace name, e.g. `timeframe.changex`
-  inside `f(simple string timeframe)`, is still CE10271 because scalars
-  carry no builtin methods), and INV067 closed the **vendored-library**
-  slice (members of imported libraries we vendor under `vendor/` -
-  `import TradingView/ta/9` -> `ta.emax` is CE10271 because it is not in
-  ta/9's `export` set; validated against the new
-  `pine-data/v6/libraries.json`), and INV138 closed the **scalar-receiver** and
-  **collection-receiver** slices (`x.abs()`, `arr.pushx()` - an unknown member
-  on a receiver that RESOLVES to a scalar or an array/matrix/map is CE10271;
-  the collection method surface is a catalog lookup, and the whole check is
-  gated on imported libraries' export sets because an exported
-  `method add(float, float)` makes `x.add(2.0)` legal on a bare `float`).
-  The vendored set is now 88 libraries
-  (25 authors): TradingView/ta + RelativeValue plus the ~75 MPL-2.0
-  community libraries the corpus imports, fetched via the new
-  `fetch:library` step (pine-facade) - see the library-infrastructure
-  item below. **Still open - (a), re-scoped 2026-07-15** after verifying each
-  of its old claims; three of the four were stale, two of them already
-  contradicted by #53 in this same file:
-  - ~~exported TYPES are dropped from the export set~~ - FIXED by
-    [INV139](investigations/INV139-imported-library-types/notes.md): the parser
-    never set `isExport` on a `TypeDeclaration` and `generate-libraries.ts`
-    filtered to functions/methods, so `export type` never reached
-    `libraries.json`. Both layers fixed; `invalidAnnotationBase` now validates
-    `alias.Name` against the export set, matching TV exactly
-    (`"ffUtil.Newz" is not a valid type keyword.`). **Residual: imported UDT
-    SURFACES.** We know a library exports `News`, but not its fields or
-    methods, so `n.bogusField` / `n.bogusMethod()` on an imported UDT instance
-    is still lenient (INV103's "we lack their surface", one level down).
-    Closing it needs the export set to carry each exported type's field list
-    and the methods declared on it, not just its name.
-  - **members of libraries not in `vendor/`** - genuinely open, but it is a
-    DATA gap, not a checker gap: the logic exists (INV067 + INV138's
-    `importedMethodMayExist`), it just has no export set to read. Vendoring
-    more is #53(a). The 10 license-excluded (7 CC-BY-NC Trendoscope + 3
-    unlicensed) are deliberate policy, not a bug.
-  - ~~the 1 parse-quarantined `TFlab/FVGDetectorLibrary/1`~~ - STALE: both /1
-    and /3 are in `libraries.json` (#53 already said so).
-  - ~~local `/// @source` libraries not wired into the core checker~~ - STALE:
-    probed 2026-07-15, `ml.addOne` (a real export) is clean and `ml.addTwo` is
-    CE10271 (#53 already said so).
-  - ~~UDT method calls need UDT method namespaces~~ - STALE for LOCAL UDTs:
-    INV103 does it (`p.bogusMethod` is CE10271, probed 2026-07-15). The
-    residual is imported-library UDTs, which is the first bullet above.
-
-  The former (d) - **method calls on an
-  UNDEFINED receiver** (`undefinedVar.push(x)`) - was FIXED on 2026-06-20
-  by `a35bac7`, and INV066's earlier "blocked behind robust receiver
-  resolution / same blocker as #9" framing is **retracted**: the
-  `parserClean` gate that commit introduced sidesteps the scope-attribution
-  problem instead of solving it, so #20/#9 were never prerequisites. We emit
-  CE10271 there but not TV's second CE10272 record. The interim mitigations
-  are in (INV059 types unclassifiable destructure elements `unknown`; INV062
-  validates the argument expressions of unresolvable calls).
+- **#41 - MemberExpression callee validation. CLOSED 2026-07-15.** Every slice
+  landed; the trail is INV036/053/064/065/066/067/103/138/139/140 in the
+  [investigations index](investigations/README.md), not repeated here. Two
+  cautions worth carrying forward, both learned the expensive way: slice (d)
+  sat "OPEN, blocked behind robust receiver resolution" for a month after
+  `a35bac7` fixed it, and slice (a) listed three gaps that #53 already
+  contradicted in this same file - so re-verify a claim here before planning
+  around it. Live successors: **#64** (transitive imports, the one real
+  residual) and **#53(a)** (vendoring more libraries - a data gap, since the
+  checker logic exists and simply has no export set to read; the 10
+  license-excluded libs are deliberate policy). We emit CE10271 for an
+  undefined receiver but not TV's second CE10272 record.
 - **#53 - vendored-library export infrastructure (INV067).** The data
   layer powering #41's imported-library member validation. `vendor/
   <Author>/<Lib>/<Version>.pine` holds published library SOURCE (MPL-2.0
@@ -358,22 +200,10 @@ IDs so the two stay in sync.
   vendored libs). **The full-pool dry-run is
   now the preferred entry point** (free, deterministic, exhaustive; TV
   spend then scales with the `local-accepts` count, not the mutant
-  count). The 16 delete-decl local-accepts were TV-triaged: 14
-  survivors (1 tv-accepts, 1 TV crash), all one class -> INV066
-  (undefined method-call receiver, OPEN: the FP-safe fix needs receiver
-  resolution we don't have - see #41). **2026-06-20 rerun:** after the
-  #41/#53/#45 follow-ups, the same full-pool dry-run still leaves only
-  16 `local-accepts`, all `delete-decl`; TV triage produced 15 survivors
-  and 1 `tv-accepts`, still the same undefined method-receiver class
-  already tracked by INV066 (the former TV-crash case now returns TV's
-  internal `TypeError: e.equals is not a function` as an error payload).
-  A narrower implementation attempt was reverted before commit: even with
-  root-name and function-body gates, parser-damaged corpus files produced
-  broad recovery churn, so this needs a parser-clean / reliable-scope guard
-  rather than just a smaller receiver predicate. That is HISTORY: the
-  undefined-receiver check landed on 2026-06-20 in `a35bac7`, gated on a clean
-  parse (`parserClean`) rather than on the receiver-resolution work the notes
-  had asked for - see INV066's Resolution section.
+  count). Its 16 `delete-decl` survivors were all one class, the undefined
+  method-call receiver, which `a35bac7` then FIXED on 2026-06-20 by gating on a
+  clean parse (`parserClean`) - not on the "receiver resolution we don't have"
+  those runs concluded was needed. See INV066's Resolution.
   **2026-07-15 rerun** (after INV138): the same full-pool dry-run (18,978
   mutants over all 697 both-clean fixtures) is down to **1 `local-accepts`**
   from 16, and that one TV-triages to `tv-accepts` - so **0 survivors**. The 15
@@ -492,6 +322,34 @@ IDs so the two stay in sync.
   #61's consistency-FP side is largely closed: 5 resolved (`ta.atr`, `ta.sma`,
   `draw_lbl`, `math.sum`, `ta.crossunder`/`6152b9`), 1 unreproducible
   (`61a3a7`), the rest TV-error-stops / G005 phantoms.
+- **#64 - transitive library imports (CE-unknown).** Surfaced by
+  [INV140](investigations/INV140-imported-udt-surfaces/notes.md) p07, and the
+  live residual of the now-closed #41. TV requires a library to be imported
+  EXPLICITLY when a UDT you use has fields referencing ITS types: using
+  `PF.Profile` after only `import robbatt/lib_profile/44` draws four errors,
+  one per referencing field type - `The type "Line" is declared in the
+  "robbatt/lib_plot_objects/56" library, but the library is not explicitly
+  imported. To use the type, import that library` (probed 2026-07-15). We are
+  silent. The data now exists to implement it (`LIBRARY_TYPE_FIELDS` records
+  each field's declared type), but the check needs each field type's
+  DECLARING-LIBRARY provenance, which the current `alias.Base` qualification
+  does not record - a field is stored as `alias.Line`, not as
+  "Line, from robbatt/lib_plot_objects/56". So: extend the generator to record
+  provenance per field type, then flag a used type whose provenance library is
+  not among the script's imports. FP-safe by the usual rule - stay silent for
+  any library whose surface we lack.
+- **#63 - CE10288 for `var` in a type declaration.** Surfaced by
+  [INV140](investigations/INV140-imported-udt-surfaces/notes.md) p02. TV rejects
+  a `var`-qualified UDT field with CE10288 "The keywords "var" cannot be used in
+  a type declaration. Use them when declaring variables of that type.", anchored
+  at the DECLARATION (`varip` is the only legal field qualifier - probed
+  2026-07-15). `scanTypeFieldAtCurrent` does not recognise `var` there, so it
+  drops the field, and the dropped name then surfaces as "Object has no field x"
+  at each USAGE instead. Not an FP (TV errors too) but the wrong message at the
+  wrong position, and the same dropped-field mechanism that made INV140's
+  `varip`/array-field bug a real false positive. Fix is to emit CE10288 from the
+  scanner and keep the field. Small and self-contained; no corpus carrier known,
+  so it is a correctness/message-alignment item, not a measured one.
 
 ## Gotchas
 

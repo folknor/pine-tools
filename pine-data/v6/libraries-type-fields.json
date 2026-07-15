@@ -1,0 +1,551 @@
+{
+  "HoanGhetti/SimpleTrendlines/4": {
+    "TrendlineSettings": {
+      "x_axis": "int",
+      "offset": "int",
+      "strictMode": "bool",
+      "strictType": "int"
+    },
+    "TrendlineData": {
+      "slope": "float",
+      "x1": "int",
+      "x2": "int",
+      "y1": "float",
+      "y2": "float",
+      "changeInX": "int"
+    },
+    "TrendlineLines": {
+      "startline": "line",
+      "trendline": "line"
+    },
+    "Trendline": {
+      "info": "TrendlineSettings",
+      "values": "TrendlineData",
+      "lines": "TrendlineLines"
+    }
+  },
+  "HoanGhetti/SimpleTrendlines/5": {
+    "TrendlineSettings": {
+      "x_axis": "int",
+      "offset": "int",
+      "strictMode": "bool",
+      "strictType": "int"
+    },
+    "TrendlineData": {
+      "slope": "float",
+      "x1": "int",
+      "x2": "int",
+      "y1": "float",
+      "y2": "float",
+      "changeInX": "int"
+    },
+    "TrendlineLines": {
+      "startline": "line",
+      "trendline": "line"
+    },
+    "Trendline": {
+      "info": "TrendlineSettings",
+      "values": "TrendlineData",
+      "lines": "TrendlineLines"
+    }
+  },
+  "jason5480/analytics_tables/3": {
+    "SideStats": {
+      "numOf": "int",
+      "maxStreak": "int",
+      "sumProfit": "float",
+      "profitStDev": "float",
+      "sumGain": "float",
+      "gainStDev": "float",
+      "avgQuantityPerc": "float",
+      "avgCapitalRiskPerc": "float",
+      "avgTPExecutedCount": "float",
+      "avgRiskRewardRatio": "float",
+      "sumFreeProfit": "float",
+      "freeProfitStDev": "float"
+    },
+    "StatsTable": {
+      "table": "table",
+      "rows": "int",
+      "columns": "int"
+    },
+    "StatsData": {
+      "wins": "SideStats",
+      "losses": "SideStats",
+      "numOfInconclusiveExits": "int",
+      "avgProfitStr": "string",
+      "profitStDevStr": "string",
+      "lossProfitStDevStr": "string",
+      "avgFreeProfitStr": "string",
+      "freeProfitStDevStr": "string",
+      "lossFreeProfitStDevStr": "string"
+    },
+    "MetricsTable": {
+      "table": "table",
+      "rows": "int",
+      "columns": "int"
+    },
+    "SeasonalData": {
+      "seasonality": "Seasonality",
+      "eonToMatrixRow": "map<int,int>",
+      "numOfEons": "int",
+      "mostRecentMatrixRow": "int",
+      "balances": "matrix<float>",
+      "returnPercs": "matrix<float>",
+      "maxDDs": "matrix<float>",
+      "eonReturnPercs": "array<float>",
+      "eonCAGRs": "array<float>",
+      "eonMaxDDs": "array<float>"
+    },
+    "SeasonalTable": {
+      "table": "table",
+      "headRows": "int",
+      "headColumns": "int",
+      "eonRows": "int",
+      "seasonColumns": "int",
+      "statsRows": "int",
+      "statsColumns": "int",
+      "rows": "int",
+      "columns": "int",
+      "extended": "bool"
+    }
+  },
+  "jason5480/chrono_utils/7": {
+    "DateTimeWindow": {
+      "fromDateTime": "int",
+      "toDateTime": "int"
+    },
+    "SessionDays": {
+      "days": "map<int,bool>"
+    },
+    "SessionTime": {
+      "hourInDay": "int",
+      "minuteInHour": "int",
+      "minuteInDay": "int"
+    },
+    "SessionTimeRange": {
+      "startTime": "SessionTime",
+      "endTime": "SessionTime",
+      "isOvernight": "bool"
+    },
+    "Session": {
+      "days": "SessionDays",
+      "timeRanges": "array<SessionTimeRange>"
+    },
+    "SessionView": {
+      "sess": "Session",
+      "names": "array<string>",
+      "colors": "array<color>"
+    }
+  },
+  "jason5480/chrono_utils/8": {
+    "DateTimeWindow": {
+      "fromDateTime": "int",
+      "toDateTime": "int"
+    },
+    "SessionDays": {
+      "days": "map<int,bool>"
+    },
+    "SessionTime": {
+      "hourInDay": "int",
+      "minuteInHour": "int",
+      "minuteInDay": "int"
+    },
+    "SessionTimeRange": {
+      "startTime": "SessionTime",
+      "endTime": "SessionTime",
+      "isOvernight": "bool"
+    },
+    "Session": {
+      "days": "SessionDays",
+      "timeRanges": "array<SessionTimeRange>"
+    },
+    "SessionView": {
+      "sess": "Session",
+      "names": "array<string>",
+      "colors": "array<color>"
+    }
+  },
+  "jason5480/distance_ratio/16": {
+    "DistSettings": {
+      "distMethod": "DistMethod",
+      "distMul": "float",
+      "commissionRatio": "float"
+    },
+    "RestrictSettings": {
+      "restrDistMethod": "DistMethod",
+      "minDistMul": "float",
+      "maxDistMul": "float",
+      "commissionRatio": "float"
+    },
+    "AuxData": {
+      "atr": "float",
+      "stdev": "float",
+      "baseQuantity": "float",
+      "stopLossDist": "float"
+    }
+  },
+  "jason5480/series_collection/4": {
+    "RingBuffer": {
+      "curIndex": "int",
+      "size": "int",
+      "data": "array<float>"
+    },
+    "ClockBuffer": {
+      "curIndex": "int",
+      "size": "int",
+      "data": "array<float>"
+    }
+  },
+  "jason5480/tts_convention/7": {
+    "DealConditions": {
+      "startLongDeal": "bool",
+      "startShortDeal": "bool",
+      "endLongDeal": "bool",
+      "endShortDeal": "bool",
+      "cnlStartLongDeal": "bool",
+      "cnlStartShortDeal": "bool",
+      "cnlEndLongDeal": "bool",
+      "cnlEndShortDeal": "bool"
+    }
+  },
+  "jason5480/two_ma_logic/11": {
+    "TwoMaDrawings": {
+      "fastMA": "float",
+      "slowMA": "float",
+      "emaLine": "float",
+      "emaUpperBand": "float",
+      "emaLowerBand": "float"
+    }
+  },
+  "jmosullivan/Table/1": {
+    "Cell": {
+      "content": "string",
+      "bgColor": "color",
+      "textColor": "color",
+      "align": "string",
+      "colspan": "int",
+      "rowspan": "int"
+    }
+  },
+  "reees/Obj_XABCD_Harmonic/10": {
+    "harmonic_params": {
+      "pct_error": "float",
+      "pct_asym": "float",
+      "types": "int[]",
+      "w_e": "float",
+      "w_p": "float",
+      "w_d": "float"
+    },
+    "xabcd_harmonic": {
+      "bull": "bool",
+      "tp": "int",
+      "x": "p.point",
+      "a": "p.point",
+      "b": "p.point",
+      "c": "p.point",
+      "d": "p.point",
+      "r_xb": "float",
+      "re_xb": "float",
+      "r_ac": "float",
+      "re_ac": "float",
+      "r_bd": "float",
+      "re_bd": "float",
+      "r_xd": "float",
+      "re_xd": "float",
+      "score": "float",
+      "score_eAvg": "float",
+      "score_prz": "float",
+      "score_eD": "float",
+      "prz_bN": "float",
+      "prz_bF": "float",
+      "prz_xN": "float",
+      "prz_xF": "float",
+      "t1Hit": "bool",
+      "t1": "float",
+      "t2Hit": "bool",
+      "t2": "float",
+      "sHit": "bool",
+      "stop": "float",
+      "entry": "float",
+      "eHit": "bool",
+      "e": "p.point",
+      "invalid_d": "bool",
+      "pLines": "line[]",
+      "pLabel": "label",
+      "pid": "string",
+      "params": "harmonic_params"
+    }
+  },
+  "reees/Pattern/1": {
+    "point": {
+      "x": "int",
+      "y": "float",
+      "label": "label"
+    },
+    "leg": {
+      "a": "point",
+      "b": "point",
+      "deltaX": "int",
+      "deltaY": "float",
+      "prev": "leg",
+      "next": "leg",
+      "retrace": "float",
+      "line": "line"
+    },
+    "pattern": {
+      "legs": "leg[]",
+      "type": "string",
+      "subType": "string",
+      "name": "string",
+      "pid": "string"
+    }
+  },
+  "robbatt/lib_plot_objects/56": {
+    "Candle": {
+      "bar_time": "int",
+      "bar_time_close": "int",
+      "bar_idx": "int",
+      "o": "float",
+      "h": "float",
+      "l": "float",
+      "c": "float",
+      "v": "float"
+    },
+    "LabelArgs": {
+      "text_color": "color",
+      "bg_color": "color",
+      "text_font_family": "string",
+      "xloc": "string",
+      "yloc": "string",
+      "style": "string",
+      "size": "string",
+      "text_align": "string"
+    },
+    "Label": {
+      "point": "chart.point",
+      "txt": "string",
+      "tooltip": "string",
+      "hidden": "bool",
+      "plot": "label"
+    },
+    "LineArgs": {
+      "line_color": "color",
+      "style": "string",
+      "width": "int",
+      "xloc": "string",
+      "extend": "string"
+    },
+    "Line": {
+      "start": "chart.point",
+      "end": "chart.point",
+      "hidden": "bool",
+      "plot": "line"
+    },
+    "LineFill": {
+      "a": "Line",
+      "b": "Line",
+      "fill_color": "color",
+      "flip_support": "Line",
+      "plot": "linefill"
+    },
+    "PolyLineArgs": {
+      "line_color": "color",
+      "fill_color": "color",
+      "style": "string",
+      "width": "int",
+      "xloc": "string"
+    },
+    "PolyLine": {
+      "points": "chart.point[]",
+      "curved": "bool",
+      "closed": "bool",
+      "hidden": "bool",
+      "plot": "polyline"
+    },
+    "CenterLabel": {
+      "center_label": "Label",
+      "source_line": "Line",
+      "source_polyline": "PolyLine"
+    },
+    "BoxArgs": {
+      "border_color": "color",
+      "border_width": "int",
+      "border_style": "string",
+      "bg_color": "color",
+      "xloc": "string",
+      "extend": "string"
+    },
+    "BoxTextArgs": {
+      "text_color": "color",
+      "text_size": "string",
+      "text_halign": "string",
+      "text_valign": "string",
+      "text_wrap": "string",
+      "text_font_family": "string"
+    },
+    "Box": {
+      "left_top": "chart.point",
+      "right_bottom": "chart.point",
+      "txt": "string",
+      "hidden": "bool",
+      "plot": "box"
+    }
+  },
+  "robbatt/lib_profile/44": {
+    "Bucket": {
+      "idx": "int",
+      "value": "float",
+      "top": "float",
+      "btm": "float",
+      "center": "float",
+      "fraction": "float",
+      "plot_bucket_line": "D.Line"
+    },
+    "ProfileConfig": {
+      "show_poc": "bool",
+      "show_profile": "bool",
+      "show_va": "bool",
+      "show_va_fill": "bool",
+      "show_background": "bool",
+      "show_labels": "bool",
+      "show_price_levels": "bool",
+      "extend": "bool",
+      "poc_label_text": "string",
+      "vah_label_text": "string",
+      "val_label_text": "string",
+      "args_poc_line": "D.LineArgs",
+      "args_vah_line": "D.LineArgs",
+      "args_val_line": "D.LineArgs",
+      "args_poc_label": "D.LabelArgs",
+      "args_vah_label": "D.LabelArgs",
+      "args_val_label": "D.LabelArgs",
+      "args_profile_line": "D.LineArgs",
+      "args_profile_bg": "D.BoxArgs",
+      "va_fill_color": "color",
+      "initialized": "bool"
+    },
+    "Profile": {
+      "id": "int",
+      "resolution": "int",
+      "vah_threshold_pc": "float",
+      "val_threshold_pc": "float",
+      "data_opens": "float[]",
+      "data_highs": "float[]",
+      "data_lows": "float[]",
+      "data_closes": "float[]",
+      "data_values": "float[]",
+      "h": "float",
+      "l": "float",
+      "total": "float",
+      "total_up": "float",
+      "total_down": "float",
+      "buckets": "Bucket[]",
+      "poc_bucket_index": "int",
+      "vah_bucket_index": "int",
+      "val_bucket_index": "int",
+      "poc": "float",
+      "vah": "float",
+      "val": "float",
+      "plot_poc": "D.Line",
+      "plot_vah": "D.Line",
+      "plot_val": "D.Line",
+      "plot_poc_label": "D.Label",
+      "plot_vah_label": "D.Label",
+      "plot_val_label": "D.Label",
+      "plot_va_fill": "D.LineFill",
+      "plot_profile_bg": "D.Box",
+      "hidden": "bool"
+    }
+  },
+  "toodegrees/forex_factory_utility/16": {
+    "News": {
+      "dow": "string",
+      "dat": "string",
+      "_t": "int",
+      "tod": "string",
+      "cur": "string",
+      "imp": "color",
+      "ttl": "string",
+      "tmst": "int",
+      "ln": "line"
+    }
+  },
+  "Trendoscope/Drawing/2": {
+    "LineProperties": {
+      "xloc": "string",
+      "extend": "string",
+      "color": "color",
+      "style": "string",
+      "width": "int"
+    },
+    "Line": {
+      "start": "chart.point",
+      "end": "chart.point",
+      "properties": "LineProperties",
+      "object": "line"
+    },
+    "LabelProperties": {
+      "xloc": "string",
+      "yloc": "string",
+      "color": "color",
+      "style": "string",
+      "textcolor": "color",
+      "size": "string",
+      "textalign": "string",
+      "text_font_family": "string"
+    },
+    "Label": {
+      "point": "chart.point",
+      "lblText": "string",
+      "tooltip": "string",
+      "properties": "LabelProperties",
+      "object": "label"
+    },
+    "Linefill": {
+      "line1": "Line",
+      "line2": "Line",
+      "fillColor": "color",
+      "transparency": "int",
+      "object": "linefill"
+    },
+    "BoxProperties": {
+      "border_color": "color",
+      "bgcolor": "color",
+      "border_width": "int",
+      "border_style": "string",
+      "extend": "string",
+      "xloc": "string"
+    },
+    "BoxText": {
+      "boxText": "string",
+      "text_size": "string",
+      "text_color": "color",
+      "text_halign": "string",
+      "text_valign": "string",
+      "text_wrap": "string",
+      "text_font_family": "string"
+    },
+    "Box": {
+      "p1": "chart.point",
+      "p2": "chart.point",
+      "properties": "BoxProperties",
+      "textProperties": "BoxText",
+      "object": "box"
+    },
+    "PolyLineProperties": {
+      "curved": "bool",
+      "closed": "bool",
+      "xloc": "string",
+      "lineColor": "color",
+      "fillColor": "color",
+      "lineStyle": "string",
+      "lineWidth": "int"
+    },
+    "PolyLine": {
+      "points": "array<chart.point>",
+      "properties": "PolyLineProperties",
+      "object": "polyline"
+    }
+  }
+}

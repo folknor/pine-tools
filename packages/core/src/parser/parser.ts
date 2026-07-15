@@ -2040,32 +2040,44 @@ export class Parser {
 	private scanTypeFieldAtCurrent(): AST.TypeField | null {
 		let i = this.current;
 		let typeName: string | undefined;
+		// `varip` may qualify a UDT field (`varip float poc`) and is not part of
+		// the type name. It is the ONLY legal qualifier here: `var` in a type
+		// declaration is TV's CE10288 (probed 2026-07-15). Unrecognised, the
+		// whole field was dropped, and a dropped field name reads as a typo -
+		// `robbatt/lib_profile/44`'s Profile lost poc/vah/val that way. see INV140
+		if (
+			this.tokens[i]?.type === TokenType.KEYWORD &&
+			this.tokens[i].value === "varip"
+		) {
+			i++;
+		}
 		const start = this.tokens[i];
 		if (!start) return null;
 
 		if (start.type === TokenType.KEYWORD && this.isTypeTokenAt(i)) {
 			typeName = start.value;
 			i++;
-			const scanned = this.scanGenericTypeSuffixAt(i);
-			typeName += scanned.suffix;
-			i = scanned.next;
 		} else if (start.type === TokenType.IDENTIFIER) {
-			const next = this.tokens[i + 1];
 			if (
-				next?.type === TokenType.IDENTIFIER ||
-				next?.type === TokenType.KEYWORD
-			) {
-				typeName = start.value;
-				i++;
-			} else if (
-				next?.type === TokenType.DOT &&
-				this.tokens[i + 2]?.type === TokenType.IDENTIFIER &&
-				(this.tokens[i + 3]?.type === TokenType.IDENTIFIER ||
-					this.tokens[i + 3]?.type === TokenType.KEYWORD)
+				this.tokens[i + 1]?.type === TokenType.DOT &&
+				this.tokens[i + 2]?.type === TokenType.IDENTIFIER
 			) {
 				typeName = `${start.value}.${this.tokens[i + 2].value}`;
 				i += 3;
+			} else {
+				typeName = start.value;
+				i++;
 			}
+		}
+		// Suffix-scan every branch, not just the keyword one: a UDT-typed array
+		// field (`Bucket[] buckets`, `D.Line[] plots`) was dropped because the
+		// identifier branch never consumed its `[]` and the field-name check then
+		// saw `[`. The trailing name check below is what rejects a non-field line,
+		// so consuming an identifier here is safe. see INV140
+		if (typeName !== undefined) {
+			const scanned = this.scanGenericTypeSuffixAt(i);
+			typeName += scanned.suffix;
+			i = scanned.next;
 		}
 
 		const fieldToken = this.tokens[i];

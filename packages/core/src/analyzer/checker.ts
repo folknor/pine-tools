@@ -1,7 +1,11 @@
 // Pine Script Type Checker and Validator
 // Performs semantic analysis and type checking on the AST
 
-import { LIBRARY_EXPORTS_BY_PATH, TYPE_NAMES } from "../../../../pine-data/v6";
+import {
+	LIBRARY_EXPORTS_BY_PATH,
+	LIBRARY_TYPE_FIELDS,
+	TYPE_NAMES,
+} from "../../../../pine-data/v6";
 import { DiagnosticSeverity, type ValidationError } from "../common/errors";
 import { TYPE_KEYWORDS } from "../constants/keywords";
 import type {
@@ -284,6 +288,7 @@ export class UnifiedPineValidator {
 					} else if (LIBRARY_EXPORTS_BY_PATH.has(statement.libraryPath)) {
 						this.importedLibraryPaths.set(ns, statement.libraryPath);
 					}
+					this.registerImportedLibraryTypes(ns, statement.libraryPath);
 				}
 			}
 		}
@@ -311,6 +316,47 @@ export class UnifiedPineValidator {
 		}
 
 		return this.errors;
+	}
+
+	/**
+	 * Register an imported library's exported UDTs as `alias.TypeName`, so an
+	 * imported UDT instance types like a local one and its members validate
+	 * against the real field surface. Without this the checker knows a library
+	 * exports `News` (INV139) but nothing about its insides, and every
+	 * `n.field` / `n.method()` on it stays lenient - INV103's "imported-library
+	 * UDTs/methods stay lenient, we lack their surface".
+	 *
+	 * Registering into `declaredTypeNames` + `udtFieldTypes` reuses the existing
+	 * local-UDT machinery (`annotationToSymbolType`, `checkUdtFieldAccess`, and
+	 * INV103's method check) rather than adding a parallel imported path.
+	 *
+	 * A field's own type is resolved to a builtin where possible, qualified when
+	 * it names another exported type of the SAME library (`Candle.args` ->
+	 * `alias.LabelArgs`), and left "unknown" otherwise - lenient, never a false
+	 * positive on a real field. Libraries we do not vendor have no entry and are
+	 * untouched. see INV140
+	 */
+	private registerImportedLibraryTypes(ns: string, libraryPath: string): void {
+		const libTypes = LIBRARY_TYPE_FIELDS[libraryPath];
+		if (!libTypes) return;
+		for (const [typeName, fields] of Object.entries(libTypes)) {
+			const qualified = `${ns}.${typeName}`;
+			this.declaredTypeNames.add(qualified);
+			const fieldMap = new Map<string, PineType>();
+			for (const [fieldName, rawType] of Object.entries(fields)) {
+				const mapped = mapToPineType(rawType);
+				if (mapped !== "unknown") {
+					fieldMap.set(fieldName, mapped);
+					continue;
+				}
+				const base = TypeChecker.baseTypeName(rawType);
+				fieldMap.set(
+					fieldName,
+					base in libTypes ? (`${ns}.${base}` as PineType) : "unknown",
+				);
+			}
+			this.udtFieldTypes.set(qualified, fieldMap);
+		}
 	}
 
 	public collectDeclarations(
@@ -853,8 +899,12 @@ export class UnifiedPineValidator {
 				for (const param of statement.params) {
 					// Use explicit type annotation if present, otherwise "unknown"
 					// Using "unknown" for untyped params avoids false positives from heuristics
+					// annotationToSymbolType, not mapToPineType: the latter maps only
+					// BUILTIN types, so a UDT-annotated param (`f(pt p)`, or an
+					// imported `f(ffUtil.News n)`) collapsed to "unknown" and every
+					// field/method check on it went silent. see INV140
 					const paramType: PineType = param.typeAnnotation
-						? mapToPineType(param.typeAnnotation.name)
+						? annotationToSymbolType(this, param.typeAnnotation.name)
 						: "unknown";
 
 					this.symbolTable.define({
@@ -1350,11 +1400,13 @@ export class UnifiedPineValidator {
 					version,
 				);
 
-				// Add method parameters to scope with proper type
+				// Add method parameters to scope with proper type. UDT annotations
+				// need annotationToSymbolType - see the FunctionDeclaration params
+				// above. see INV140
 				for (const param of statement.params) {
 					let paramType: PineType = "unknown";
 					if (param.typeAnnotation) {
-						paramType = mapToPineType(param.typeAnnotation.name);
+						paramType = annotationToSymbolType(this, param.typeAnnotation.name);
 					}
 					this.symbolTable.define({
 						name: param.name,

@@ -1,0 +1,6 @@
+//@version=6
+indicator("p05 unknown method on an imported UDT instance")
+import robbatt/lib_profile/44 as PF
+f(PF.Profile p) =>
+    p.bogusMethod()
+plot(1)

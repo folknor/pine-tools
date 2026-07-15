@@ -524,16 +524,22 @@ export function validateCallExpression(
 				);
 			}
 
-			// Method call on a local UDT instance: `a.foo()` where `a : A` (a
-			// declared UDT), `foo` is neither a field of A nor a user method/func
-			// in scope. TV's CE10271 "method or method reference" (probed). Gated:
-			// single-dot callee, parserClean, `a` a user var whose base is a LOCAL
-			// UDT (imported-library UDTs/methods stay lenient - we lack their
-			// surface). declaredFunctionNames is source-ordered, so a method used
+			// Method call on a UDT instance: `a.foo()` where `a : A` (a declared
+			// UDT), `foo` is neither a field of A nor a user method/func in scope.
+			// TV's CE10271 "method or method reference" (probed). Gated:
+			// single-dot callee, parserClean, `a` a user var whose base is a known
+			// UDT. declaredFunctionNames is source-ordered, so a method used
 			// before its declaration is flagged too - matching TV (forward method
 			// refs are CE10271, probed 2026-06-25). `copy` is excluded: every UDT
 			// instance has a built-in `.copy()` (probed - TV accepts `a.copy()`
 			// with no user method). see INV103
+			//
+			// INV140 registers IMPORTED library UDTs here too (as `alias.T`), which
+			// widens this check to them - so it now also has to exclude names an
+			// imported library could own: its exported methods extend its own
+			// types, and they are not in declaredFunctionNames (which is local
+			// only). Without that gate every `newsObj.libMethod()` would be a false
+			// positive.
 			if (
 				v.parserClean &&
 				userShadowed &&
@@ -545,7 +551,8 @@ export function validateCallExpression(
 				!v.udtFieldTypes
 					.get(TypeChecker.baseTypeName(objSym.type as string))
 					?.has(memberName) &&
-				!v.declaredFunctionNames.has(memberName)
+				!v.declaredFunctionNames.has(memberName) &&
+				!importedMethodMayExist(v, memberName)
 			) {
 				v.addError(
 					call.line,

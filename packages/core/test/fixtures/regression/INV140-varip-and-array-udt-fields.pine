@@ -1,0 +1,15 @@
+// @test regression/INV140-varip-and-array-udt-fields
+// @description A PRE-EXISTING false positive, found while wiring imported UDT surfaces: `scanTypeFieldAtCurrent` dropped any field it could not shape-match, and a dropped field name then reads as a typo ("Object has no field b"). It missed `varip`-qualified fields (`varip float b`) because `varip` is a KEYWORD but not a type token, and UDT-typed array fields (`bucket[] c`) because only the keyword branch suffix-scanned `[]`. TV accepts all of these (probed 2026-07-15); `varip` is the ONLY legal field qualifier, `var` being CE10288. This cost the vendored robbatt/lib_profile/44 its poc/vah/val fields (13 captured of 30). See investigations/INV140-imported-udt-surfaces/notes.md.
+// @expects parse: success
+// @expects errors: 0
+//@version=6
+indicator("x")
+type bucket
+    float v
+type t
+    int a
+    varip float b
+    bucket[] c
+    varip float[] d
+o = t.new()
+plot(o.a + o.b + array.size(o.c) + array.size(o.d))

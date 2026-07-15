@@ -855,3 +855,11 @@ contradiction means re-measure, not "the earlier author was wrong."
   were unvalidated. `alias.Name` is now checked against the export set, matching
   TV's `"ffUtil.Newz" is not a valid type keyword.` exactly. Residual: imported
   UDT field/method surfaces.
+- [INV140](INV140-imported-udt-surfaces/notes.md) - closes INV139's residual and
+  the last of TODO #41: exported types now carry their FIELD surface, registered
+  as `alias.TypeName` so the local-UDT machinery validates imported instances.
+  Surfaced two pre-existing bugs on the way - UDT-annotated params typed as
+  "unknown" (a LOCAL-UDT FN too), and `scanTypeFieldAtCurrent` silently DROPPING
+  `varip`-qualified and UDT-typed-array fields, a live FP on TV-clean code that
+  cost `robbatt/lib_profile/44` 17 of its 30 Profile fields. New residual: TV's
+  transitive-import rule.

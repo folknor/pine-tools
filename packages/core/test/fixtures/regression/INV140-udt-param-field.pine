@@ -1,0 +1,12 @@
+// @test regression/INV140-udt-param-field
+// @description A UDT-annotated function PARAMETER now carries its type, so field access on it is checked. The three param-binding sites used `mapToPineType`, which maps only BUILTIN types and returned "unknown" for a UDT name, silencing every field/method check on `f(pt p)`. `annotationToSymbolType` (the sibling helper) already fell back to declaredTypeNames. TV flags this (probed 2026-07-15, same position); the FN affected LOCAL UDTs as much as imported ones. See investigations/INV140-imported-udt-surfaces/notes.md.
+// @expects parse: success
+// @expects errors: 1
+// @expects error: line=6, column=5, message="Object has no field bogusField"
+//@version=6
+indicator("x")
+type pt
+    float v
+f(pt p) =>
+    p.bogusField
+plot(f(pt.new(1.0)))

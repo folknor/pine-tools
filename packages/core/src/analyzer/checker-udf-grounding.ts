@@ -8,8 +8,8 @@ import type {
 	Statement,
 	SwitchExpression,
 } from "../parser/ast";
-import { mapToPineType } from "./builtins";
 import type { UnifiedPineValidator } from "./checker";
+import { annotationToSymbolType } from "./checker-declarations";
 import { type PineType, TypeChecker } from "./types";
 
 export function udfIdentityKey(
@@ -62,8 +62,10 @@ export function defineParamsWithBindings(
 ): void {
 	if (!params) return;
 	for (const param of params) {
+		// annotationToSymbolType, not mapToPineType: a UDT-annotated param would
+		// otherwise ground as "unknown". see INV140
 		const paramType: PineType = param.typeAnnotation
-			? mapToPineType(param.typeAnnotation.name)
+			? annotationToSymbolType(v, param.typeAnnotation.name)
 			: (bindings?.get(param.name) ?? "unknown");
 		v.symbolTable.define({
 			name: param.name,

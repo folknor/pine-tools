@@ -1,0 +1,9 @@
+//@version=6
+indicator("p04 field access on an imported UDT parameter")
+import toodegrees/forex_factory_utility/16 as ffUtil
+f(ffUtil.News n) =>
+    // `dow` is a real field of the library's exported `News` type.
+    str.length(n.dow)
+g(ffUtil.News n) =>
+    str.length(n.bogusField)
+plot(1)

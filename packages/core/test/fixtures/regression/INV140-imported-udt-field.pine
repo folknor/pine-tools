@@ -1,0 +1,13 @@
+// @test regression/INV140-imported-udt-field
+// @description An imported library's exported UDT now carries its FIELD surface, so members of an instance validate instead of staying lenient (INV103's "imported-library UDTs/methods stay lenient - we lack their surface"). `dow` is a real field of toodegrees/forex_factory_utility/16's exported `News` type and must stay clean; `bogusField` is not, and TV flags it at the same position (probed 2026-07-15). See investigations/INV140-imported-udt-surfaces/notes.md.
+// @expects parse: success
+// @expects errors: 1
+// @expects error: line=7, column=16, message="Object has no field bogusField"
+//@version=6
+indicator("x")
+import toodegrees/forex_factory_utility/16 as ffUtil
+good(ffUtil.News n) =>
+    str.length(n.dow)
+bad(ffUtil.News n) =>
+    str.length(n.bogusField)
+plot(1)

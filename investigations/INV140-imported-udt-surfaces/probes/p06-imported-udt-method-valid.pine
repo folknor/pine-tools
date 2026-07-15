@@ -1,0 +1,10 @@
+//@version=6
+indicator("p06 real exported methods on an imported UDT instance - must stay clean")
+import robbatt/lib_profile/44 as PF
+// Profile's fields reference lib_plot_objects types, and TV requires that
+// library to be imported explicitly before Profile can be used (see p07).
+import robbatt/lib_plot_objects/56 as D
+f(PF.Profile p) =>
+    p.hide()
+    p.delete()
+plot(1)

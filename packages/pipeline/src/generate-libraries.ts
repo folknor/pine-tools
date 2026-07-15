@@ -79,6 +79,12 @@ const libraries: Record<string, string[]> = {};
 // `lib.export()` call (CW10003). Derived offline by running the SemanticAnalyzer
 // on the library body - a FACT about the public API, not the source. see INV118
 const historyDependent: Record<string, string[]> = {};
+// "Author/Lib/Version" -> exported type name -> field name -> field type. The
+// FIELD SURFACE of each exported UDT, so the checker can type an imported UDT
+// instance and validate its members instead of staying lenient. Fields whose
+// annotation we cannot read are recorded as "unknown" rather than dropped: the
+// NAME set must stay complete or a real field reads as a typo. see INV140
+const typeFields: Record<string, Record<string, Record<string, string>>> = {};
 const quarantined: string[] = [];
 
 for (const { libPath, file } of collectLibraryFiles().sort((a, b) =>
@@ -121,6 +127,26 @@ for (const { libPath, file } of collectLibraryFiles().sort((a, b) =>
 		),
 	].sort();
 	libraries[libPath] = exports;
+
+	// The field surface of each exported UDT. see INV140
+	const libTypes: Record<string, Record<string, string>> = {};
+	for (const s of ast.body as Array<{
+		type: string;
+		name: string;
+		isExport?: boolean;
+		fields?: Array<{ name: string; typeAnnotation?: { name: string } }>;
+	}>) {
+		if (s.type !== "TypeDeclaration" || !s.isExport) continue;
+		const fields: Record<string, string> = {};
+		for (const f of s.fields ?? []) {
+			if (!f.name) continue;
+			// Keep the name even when the annotation is unreadable - an absent
+			// name would make a REAL field look like a typo.
+			fields[f.name] = f.typeAnnotation?.name ?? "unknown";
+		}
+		libTypes[s.name] = fields;
+	}
+	if (Object.keys(libTypes).length > 0) typeFields[libPath] = libTypes;
 
 	// Which exports are history-dependent: run the analyzer on the library body
 	// and intersect its history-dependent UDF set with the export surface.
@@ -190,6 +216,20 @@ export const LIBRARY_HISTORY_DEPENDENT_BY_PATH: Map<string, Set<string>> =
 	new Map(
 		Object.entries(LIBRARY_HISTORY_DEPENDENT).map(([k, v]) => [k, new Set(v)]),
 	);
+
+/**
+ * "Author/Lib/Version" -> exported type name -> field name -> field type.
+ *
+ * The FIELD SURFACE of each \`export type\`, so the checker can type an imported
+ * UDT instance (\`lib.T o = lib.T.new()\`) and validate \`o.field\` against it
+ * rather than staying lenient. A field whose annotation could not be read is
+ * recorded as "unknown" - the name set is complete even where the types are
+ * not, so a real field never reads as a typo. See INV140.
+ */
+export const LIBRARY_TYPE_FIELDS: Record<
+	string,
+	Record<string, Record<string, string>>
+> = ${JSON.stringify(typeFields, null, 2)};
 `;
 
 fs.writeFileSync(path.join(OUTPUT_DIR, "libraries.ts"), ts);
@@ -200,6 +240,10 @@ fs.writeFileSync(
 fs.writeFileSync(
 	path.join(OUTPUT_DIR, "libraries-history-dependent.json"),
 	`${JSON.stringify(historyDependent, null, 2)}\n`,
+);
+fs.writeFileSync(
+	path.join(OUTPUT_DIR, "libraries-type-fields.json"),
+	`${JSON.stringify(typeFields, null, 2)}\n`,
 );
 
 console.log(

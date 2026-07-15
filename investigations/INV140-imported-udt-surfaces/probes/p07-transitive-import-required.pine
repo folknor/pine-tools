@@ -1,0 +1,6 @@
+//@version=6
+indicator("p07 using a UDT whose fields reference ANOTHER library's types")
+import robbatt/lib_profile/44 as PF
+f(PF.Profile p) =>
+    p.hide()
+plot(1)

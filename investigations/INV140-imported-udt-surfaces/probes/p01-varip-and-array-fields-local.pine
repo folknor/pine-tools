@@ -1,0 +1,10 @@
+//@version=6
+indicator("p01 varip and UDT-array fields on a LOCAL type - pre-existing FP")
+type bucket
+    float v
+type t
+    int a
+    varip float b
+    bucket[] c
+o = t.new()
+plot(o.a + o.b + array.size(o.c))
