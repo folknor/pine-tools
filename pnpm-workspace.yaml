@@ -5,6 +5,15 @@ allowBuilds:
   puppeteer: true
 minimumReleaseAgeExclude:
   - '@types/node@26.0.1'
+  - '@biomejs/biome@2.5.4'
+  - '@biomejs/cli-darwin-arm64@2.5.4'
+  - '@biomejs/cli-darwin-x64@2.5.4'
+  - '@biomejs/cli-linux-arm64-musl@2.5.4'
+  - '@biomejs/cli-linux-arm64@2.5.4'
+  - '@biomejs/cli-linux-x64-musl@2.5.4'
+  - '@biomejs/cli-linux-x64@2.5.4'
+  - '@biomejs/cli-win32-arm64@2.5.4'
+  - '@biomejs/cli-win32-x64@2.5.4'
 onlyBuiltDependencies:
   - '@vscode/vsce-sign'
   - esbuild
