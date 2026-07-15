@@ -1,0 +1,11 @@
+// @test regression/INV138-imported-method-on-scalar
+// @description A library's exported method is callable UNQUALIFIED on a receiver of its first param's type, so `x.add(2.0)` is legal for a `float x` once RicardoSantos/MathOperator/2 (which declares `export method add(float value_a, float value_b)`) is imported - TV accepts it and rejects the identical call without the import (probed p02 vs p04, 2026-07-15). The Manual documents only namespace-qualified library access, so this is TV-authority over prose. A typo'd member stays CE10271 because it is in no imported export set. See investigations/INV138-scalar-receiver-method-calls/notes.md.
+// @expects parse: success
+// @expects error: line=7, column=6, message="Could not find method or method reference 'x.addx'"
+//@version=6
+indicator("x")
+import RicardoSantos/MathOperator/2 as mo
+float x = 1.0
+// Legal: `add` is an exported method of the imported library.
+plot(x.add(2.0))
+plot(x.addx(2.0))

@@ -1,0 +1,19 @@
+// @test regression/INV138-scalar-receiver-no-false-positive
+// @description The two escape hatches that keep the INV138 scalar-receiver check FP-safe, both TV-clean (probed p06, 2026-07-15). A user `method` on a scalar type makes `a.getType()` legal, including via overloads on several scalar types. `declaredFunctionNames` is name-only (it does not match the overload signature), which is deliberately over-lenient - it must never flag a name a user method owns. The imported-library hatch is pinned separately by INV138-imported-method-on-scalar.
+// @expects parse: success
+// @expects errors: 0
+//@version=6
+indicator("x")
+method getType(int this) =>
+    na(this) ? "int(na)" : "int"
+method getType(float this) =>
+    na(this) ? "float(na)" : "float"
+method getType(string this) =>
+    na(this) ? "string(na)" : "string"
+a = 1
+b = 1.0
+e = "1"
+results = str.format("a: {0}\nb: {1}\ne: {2}", a.getType(), b.getType(), e.getType())
+var label lbl = label.new(0, 0)
+lbl.set_x(bar_index)
+lbl.set_text(results)

@@ -1,0 +1,5 @@
+//@version=6
+indicator("p01 qualified control")
+import RicardoSantos/MathOperator/2 as mo
+float x = 1.0
+plot(mo.add(x, 2.0))

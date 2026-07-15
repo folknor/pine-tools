@@ -2252,13 +2252,14 @@ export class UnifiedPineValidator {
 					break;
 				}
 
-				// Handle array<T>[index] → T
-				const arrayMatch = arrayType.match(/^array<(.+)>$/);
-				if (arrayMatch) {
-					type = arrayMatch[1] as PineType;
-					break;
-				}
-
+				// `[]` on a COLLECTION is the history operator, not element
+				// access: `arr[1]` is the array reference as of one bar ago, so
+				// `array<T>[n]` stays `array<T>` (matrix/map likewise, via the
+				// fall-through). Elements come from `array.get()` only. TV names
+				// the type outright - `float y = c[1]` is CE10123 "Cannot assign a
+				// value of the "array<float>" type" - and accepts `c[1].size()`
+				// (probed p07/p08). An earlier `array<T>[index] → T` rule here
+				// typed the receiver as its element scalar. see INV138
 				type = arrayType === "unknown" ? "unknown" : arrayType;
 				break;
 			}

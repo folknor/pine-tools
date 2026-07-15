@@ -1,0 +1,6 @@
+//@version=6
+indicator("p11 INV065 p04 - a collection shadowing a builtin namespace name")
+math = array.new<float>(0)
+math.push(1.0)
+math.pushx(1.0)
+plot(math.size())

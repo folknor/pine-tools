@@ -1,0 +1,4 @@
+//@version=6
+indicator("p04 same call without the import")
+float x = 1.0
+plot(x.add(2.0))

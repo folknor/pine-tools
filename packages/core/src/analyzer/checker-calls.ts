@@ -29,6 +29,7 @@ import {
 	hasOverloadSignatures,
 	hasOverloads,
 	isBuiltinConstant,
+	isCatalogFunction,
 	isTopLevelOnly,
 	isVariadicFunction,
 	KNOWN_NAMESPACE_PREFIXES,
@@ -183,6 +184,40 @@ export function validateUserFunctionCall(
 			},
 		});
 	}
+}
+
+/**
+ * Could `member` be an exported METHOD of some imported library, making an
+ * unqualified `receiver.member(...)` call legal?
+ *
+ * A library's exported method is callable unqualified on a receiver of its
+ * first param's type - `import RicardoSantos/MathOperator/2` makes `x.add(2.0)`
+ * legal for a `float x`, while the identical call without the import is
+ * CE10271 (probed p02 vs p04). TV's translate_light response exposes this by
+ * emitting a second `thisType`-bearing signature per exported method.
+ *
+ * Conservative on both unknowns:
+ * - any import whose export set we lack (unvendored / license-excluded /
+ *   parse-quarantined) means ANY member could be its method - stay silent.
+ * - the export sets are name-only, so a plain exported FUNCTION named `add`
+ *   also suppresses. Over-lenient, never a false positive.
+ *
+ * see INV138
+ */
+function importedMethodMayExist(
+	v: UnifiedPineValidator,
+	member: string,
+): boolean {
+	for (const ns of v.importedNamespaces) {
+		const path = v.importedLibraryPaths.get(ns);
+		if (!path) return true; // export set unavailable - cannot rule it out
+		const exports =
+			LIBRARY_EXPORTS_BY_PATH.get(path) ??
+			v.localLibraryExportsBySourcePath.get(path);
+		if (!exports) return true;
+		if (exports.has(member)) return true;
+	}
+	return false;
 }
 
 export function validateCallExpression(
@@ -390,6 +425,66 @@ export function validateCallExpression(
 					scalarShadow
 						? `Could not find method or method reference '${functionName}'`
 						: `Could not find function or function reference '${functionName}'`,
+					DiagnosticSeverity.Error,
+				);
+			}
+
+			// Method call on a SCALAR receiver that is not a namespace:
+			// `x.abs()`, `s.length()`. Scalars carry no builtin methods (the
+			// Manual's built-in-method list covers only array/matrix/map and the
+			// drawing/collection ID types), so such a call is valid ONLY via a
+			// user method or a library's exported method - both checked below.
+			// TV's CE10271 "method or method reference" (probed p03/p04/p05).
+			// The namespace-shadow form (`timeframe.changex` where `timeframe` is
+			// a string param) is INV065's block above; excluded here so a single
+			// call never reports twice. see INV138
+			const scalarReceiver =
+				v.parserClean &&
+				userShadowed &&
+				!!objSym &&
+				nsPath === rootName &&
+				!KNOWN_NAMESPACE_PREFIXES.has(nsPath) &&
+				!v.importedNamespaces.has(rootName) &&
+				SCALAR_BASE_TYPES.has(
+					TypeChecker.baseTypeName(objSym.type as string),
+				) &&
+				!v.declaredFunctionNames.has(memberName) &&
+				!(functionName in NAMESPACE_PROPERTIES) &&
+				!GENERIC_FUNCTION_BASES.has(functionName);
+			// Method call on a COLLECTION receiver: `arr.pushx(1.0)`,
+			// `m.putx(...)`, `mx.setx(...)`. Unlike scalars, collections DO carry
+			// builtin methods - but they are exactly their namespace's catalog
+			// functions (`id.get(i)` == `array.get(id, i)`), so the member is
+			// valid iff `array.<member>` / `map.<member>` / `matrix.<member>` is
+			// a catalog entry. TV's CE10271 otherwise (probed p09; p10 pins the
+			// valid builtin + user-method forms clean). This is INV065's residual
+			// slice (b), which it deferred for want of the per-collection method
+			// set - that set is the catalog, so no hardcoded table is needed.
+			// see INV138
+			const receiverBase = objSym
+				? TypeChecker.baseTypeName(objSym.type as string)
+				: "";
+			const collectionKind = receiverBase.match(/^(array|matrix|map)</)?.[1];
+			const collectionReceiver =
+				v.parserClean &&
+				userShadowed &&
+				!!objSym &&
+				nsPath === rootName &&
+				!!collectionKind &&
+				!v.importedNamespaces.has(rootName) &&
+				!isCatalogFunction(collectionKind, memberName) &&
+				!v.declaredFunctionNames.has(memberName) &&
+				!(functionName in NAMESPACE_PROPERTIES) &&
+				!GENERIC_FUNCTION_BASES.has(functionName);
+			if (
+				(scalarReceiver || collectionReceiver) &&
+				!importedMethodMayExist(v, memberName)
+			) {
+				v.addError(
+					call.line,
+					call.column,
+					functionName.length,
+					`Could not find method or method reference '${functionName}'`,
 					DiagnosticSeverity.Error,
 				);
 			}

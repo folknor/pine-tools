@@ -1,0 +1,5 @@
+//@version=6
+indicator("p08 array history reference is not the element type")
+var array<float> c = array.new<float>(1, 0.0)
+float y = c[1]
+plot(y)

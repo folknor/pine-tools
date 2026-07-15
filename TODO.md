@@ -119,6 +119,20 @@ same-position local cascade wording becoming more precise (`const color` ->
 `series color`) in a file where TV stops at an earlier string error - that
 position is past TV's stop, so it is not TV-adjudicated.
 
+Measurement note, 2026-07-15: after INV138 / #41 slices (b) and (c)
+(scalar- and collection-receiver method calls), `node
+scripts/regression-check.mjs` reports 0 new error appearances over 1879
+fixtures. The one changed fixture is `2997d729…` (v5), where fixing the
+`array<T>[n]` history-reference inference removed a bogus "Cannot assign a value
+of the "swingPoint" type" at line 400; `compare-tv` on that carrier is now 0
+local / 0 TV errors. No v6 fixture changed, so the INV133 sweep window (errors
+29 local-only / 0 tv-only / 1 same-position message pair) still holds unchanged
+and no TV sweep was spent re-measuring it: no new local errors can raise
+local-only, and the new CE10271 checks can only lower tv-only. The TV-backed
+verdicts are the 10 dated probes in
+[INV138](investigations/INV138-scalar-receiver-method-calls/notes.md). Full
+vitest is 431 passing.
+
 ## Pending follow-ups
 
 Open work items, each either deferred from an investigation or queued
@@ -188,7 +202,13 @@ IDs so the two stay in sync.
   slice (members of imported libraries we vendor under `vendor/` -
   `import TradingView/ta/9` -> `ta.emax` is CE10271 because it is not in
   ta/9's `export` set; validated against the new
-  `pine-data/v6/libraries.json`). The vendored set is now 88 libraries
+  `pine-data/v6/libraries.json`), and INV138 closed the **scalar-receiver** and
+  **collection-receiver** slices (`x.abs()`, `arr.pushx()` - an unknown member
+  on a receiver that RESOLVES to a scalar or an array/matrix/map is CE10271;
+  the collection method surface is a catalog lookup, and the whole check is
+  gated on imported libraries' export sets because an exported
+  `method add(float, float)` makes `x.add(2.0)` legal on a bare `float`).
+  The vendored set is now 88 libraries
   (25 authors): TradingView/ta + RelativeValue plus the ~75 MPL-2.0
   community libraries the corpus imports, fetched via the new
   `fetch:library` step (pine-facade) - see the library-infrastructure
@@ -198,13 +218,8 @@ IDs so the two stay in sync.
   unlicensed, deliberately lenient), the 1 parse-quarantined
   (`TFlab/FVGDetectorLibrary/1`, see #45), and local `/// @source`
   libraries (the language-service resolver isn't wired into the core
-  checker); plus UDT method calls (need UDT method namespaces); (b)
-  **collection-typed
-  shadows** (`math.pushx()` where `math` is an `array` - INV065 p04: TV
-  flags, we skip, because array/matrix/map methods are catalog functions
-  AND can be user-extended); (c) **method calls on any non-namespace
-  scalar** (`x.abs()`, `s.length()` - INV065 p06/p07: TV CE10271, we skip
-  because the receiver name is not a known namespace); and (d) **method
+  checker); plus UDT method calls (need UDT method namespaces); and (d)
+  **method
   calls on an UNDEFINED receiver** (`undefinedVar.push(x)` - INV066,
   OPEN: TV CE10272+CE10271, but undefined-checking the callee's root
   identifier produced 247 corpus FPs by exposing receiver-resolution

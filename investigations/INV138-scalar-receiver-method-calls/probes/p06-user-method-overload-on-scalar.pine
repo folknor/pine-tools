@@ -1,0 +1,21 @@
+//@version=6
+indicator("p06 user method overloads on scalar receivers - must stay clean")
+
+method getType(int this) =>
+    na(this) ? "int(na)" : "int"
+
+method getType(float this) =>
+    na(this) ? "float(na)" : "float"
+
+method getType(string this) =>
+    na(this) ? "string(na)" : "string"
+
+a = 1
+b = 1.0
+e = "1"
+
+results = str.format("a: {0}\nb: {1}\ne: {2}", a.getType(), b.getType(), e.getType())
+
+var label lbl = label.new(0, 0)
+lbl.set_x(bar_index)
+lbl.set_text(results)

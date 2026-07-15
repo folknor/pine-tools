@@ -1,0 +1,9 @@
+//@version=6
+indicator("p09 unknown member on collection receivers")
+arr = array.new<float>(0)
+m = map.new<string, float>()
+mx = matrix.new<float>(2, 2, 0.0)
+arr.pushx(1.0)
+m.putx("a", 1.0)
+mx.setx(0, 0, 1.0)
+plot(1)

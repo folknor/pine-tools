@@ -1,0 +1,15 @@
+// @test regression/INV138-collection-receiver-method-call
+// @description An unknown member on an array/map/matrix receiver is TV's CE10271 "method or method reference" (probed p09, 2026-07-15). Collections DO carry builtin methods, but they are exactly their namespace's catalog functions - `id.get(i)` and `array.get(id, i)` are the same entry - so validity is a catalog lookup rather than a hardcoded per-collection method table. This is INV065's residual slice (b). See investigations/INV138-scalar-receiver-method-calls/notes.md.
+// @expects parse: success
+// @expects error: line=6, column=1, message="Could not find method or method reference 'arr.pushx'"
+// @expects error: line=7, column=1, message="Could not find method or method reference 'm.putx'"
+// @expects error: line=8, column=1, message="Could not find method or method reference 'mx.setx'"
+//@version=6
+indicator("x")
+arr = array.new<float>(0)
+m = map.new<string, float>()
+mx = matrix.new<float>(2, 2, 0.0)
+arr.pushx(1.0)
+m.putx("a", 1.0)
+mx.setx(0, 0, 1.0)
+plot(1)

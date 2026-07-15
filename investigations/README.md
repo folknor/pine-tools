@@ -837,3 +837,13 @@ contradiction means re-measure, not "the earlier author was wrong."
   `==`/`!=` mismatches now use TV's CE10123 operator template for the
   nonliteral/both-const primitive and enum cases too, including `color.red == 1`,
   `boolVar == stringVar`, and enum-vs-bool/string/int pairs.
+- [INV138](INV138-scalar-receiver-method-calls/notes.md) - TODO #41 residual
+  slices (b) and (c): an unknown member on a resolved SCALAR receiver
+  (`x.abs()`) or COLLECTION receiver (`arr.pushx()`) is now CE10271, the
+  collection surface being a catalog lookup rather than a hardcoded method
+  table. Gated on imported export sets: TV accepts `x.add(2.0)` on a `float`
+  when a library exporting `method add(float, float)` is imported and rejects it
+  without, which the Manual's namespace-only prose does not document. Also
+  root-caused `array<T>[n]` being typed as its element `T` instead of
+  `array<T>` - `[]` on a collection is the history operator - which was both a
+  standalone FN and the source of the slice's only FPs.

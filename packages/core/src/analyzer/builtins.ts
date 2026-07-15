@@ -338,6 +338,17 @@ export function buildFunctionSignatures(): Map<string, FunctionSignature> {
 	return signatures;
 }
 
+// Is `<namespace>.<member>` a real catalog function? The built-in METHOD forms
+// are the same catalog entries as the namespace functions - `id.get(i)` and
+// `array.get(id, i)` are equivalent (Manual, "Built-in methods") - so the
+// method surface of a collection receiver is exactly its namespace's function
+// set. Generic entries are keyed with their template suffix (`array.new<float>`),
+// hence the GENERIC_FUNCTION_BASES fallback. see INV138
+export function isCatalogFunction(namespace: string, member: string): boolean {
+	const name = `${namespace}.${member}`;
+	return FUNCTIONS_BY_NAME.has(name) || GENERIC_FUNCTION_BASES.has(name);
+}
+
 // Check if a function is variadic (accepts variable number of arguments)
 export function isVariadicFunction(functionName: string): boolean {
 	const func = FUNCTIONS_BY_NAME.get(functionName);

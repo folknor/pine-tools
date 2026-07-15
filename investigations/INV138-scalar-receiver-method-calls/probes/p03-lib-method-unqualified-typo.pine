@@ -1,0 +1,5 @@
+//@version=6
+indicator("p03 unqualified typo of imported method on float receiver")
+import RicardoSantos/MathOperator/2 as mo
+float x = 1.0
+plot(x.addx(2.0))

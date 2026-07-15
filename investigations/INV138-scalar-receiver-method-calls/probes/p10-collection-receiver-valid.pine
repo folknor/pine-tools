@@ -1,0 +1,14 @@
+//@version=6
+indicator("p10 valid members on collection receivers - must stay clean")
+method scale(array<float> this, float k) =>
+    for [i, v] in this
+        this.set(i, v * k)
+    this
+arr = array.new<float>(0)
+m = map.new<string, float>()
+mx = matrix.new<float>(2, 2, 0.0)
+arr.push(1.0)
+arr.scale(2.0)
+m.put("a", 1.0)
+mx.set(0, 0, 1.0)
+plot(arr.size() + m.size() + mx.rows())

@@ -1,0 +1,5 @@
+//@version=6
+indicator("p05 re-probe of INV065 p06/p07 - scalar receivers, no import")
+f(float x) => x.abs()
+g(string s) => s.length()
+plot(f(1.0) + str.length(g("a")))

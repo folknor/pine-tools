@@ -1,0 +1,12 @@
+// @test regression/INV138-array-history-type
+// @description `[]` on a collection is the HISTORY operator, not element access: `arr[1]` is the array reference as of one bar ago, so `array<T>[n]` stays `array<T>`. TV names the type outright - `float y = c[1]` is "Cannot assign a value of the "array<float>" type" - and accepts `c[1].size()` (probed p07/p08, 2026-07-15). An earlier `array<T>[index] -> T` rule in inferExpressionType typed such a receiver as its element scalar, which both suppressed this assignment error and (once INV138's scalar-receiver check landed) turned every `arr[1].size()` into a false positive. See investigations/INV138-scalar-receiver-method-calls/notes.md.
+// @expects parse: success
+// @expects error: line=7, column=1, message=/Cannot assign a value of the "array<float>" type to the "y" variable/
+//@version=6
+indicator("x")
+var array<float> c = array.new<float>(1, 0.0)
+// Legal: the history reference is still an array, so it carries array methods.
+prev = c[1]
+plot(na(prev) ? 0 : prev.size())
+float y = c[1]
+plot(y)

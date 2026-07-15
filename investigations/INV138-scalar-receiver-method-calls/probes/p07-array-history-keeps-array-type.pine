@@ -1,0 +1,5 @@
+//@version=6
+indicator("p07 array history reference keeps the array type")
+var array<float> c = array.new<float>(1, 0.0)
+prev = c[1]
+plot(na(prev) ? 0 : prev.size())

@@ -1,0 +1,11 @@
+// @test regression/INV138-scalar-receiver-method-call
+// @description A method call on a plain SCALAR receiver whose name is not a builtin namespace (`x.abs()`, `s.length()`) is TV's CE10271 "method or method reference": scalars carry no builtin methods, so only a user method or an imported library's exported method can legitimize the call, and neither exists here (probed p05, 2026-07-15). This is INV065's residual slice (c) - it left these silent because the receiver is not in KNOWN_NAMESPACE_PREFIXES. See investigations/INV138-scalar-receiver-method-calls/notes.md.
+// @expects parse: success
+// @expects error: line=3, column=15, message="Could not find method or method reference 'x.abs'"
+// @expects error: line=5, column=16, message="Could not find method or method reference 's.length'"
+//@version=6
+indicator("x")
+f(float x) => x.abs()
+// `math.abs`/`str.length` are namespace functions, not methods on the value.
+g(string s) => s.length()
+plot(f(1.0) + str.length(g("a")))
