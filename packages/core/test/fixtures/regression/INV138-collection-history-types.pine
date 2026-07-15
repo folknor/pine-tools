@@ -1,0 +1,17 @@
+// @test regression/INV138-collection-history-types
+// @description Sibling of INV138-array-history-type, covering the receiver kinds that reach the same IndexExpression branch: `[]` is the history operator for matrix, map and UDT receivers too, so `mx[1]` stays `matrix<float>`, `mp[1]` stays `map<string, float>` and `p[1]` stays `pt`. All three match TV exactly on position and message (probed 2026-07-15). These pass by FALL-THROUGH - the branch only ever special-cased `series<T>` and (until INV138) `array<T>`, so nothing here is asserted by code that names matrix/map/UDT. That makes the behavior easy to break silently while editing that branch, which is why it is pinned. INV138 removed the `array<T>[index] -> T` rule but only probed the array case; this fixture closes that gap. See investigations/INV138-scalar-receiver-method-calls/notes.md.
+// @expects parse: success
+// @expects error: line=8, column=1, message=/Cannot assign a value of the "matrix<float>" type/
+// @expects error: line=9, column=1, message=/Cannot assign a value of the "map<string, float>" type/
+// @expects error: line=10, column=1, message=/Cannot assign a value of the "pt" type/
+//@version=6
+indicator("x")
+type pt
+    float v
+var matrix<float> mx = matrix.new<float>(2, 2, 0.0)
+var map<string, float> mp = map.new<string, float>()
+var pt p = pt.new(1.0)
+float a = mx[1]
+float b = mp[1]
+float c = p[1]
+plot(a + b + c)

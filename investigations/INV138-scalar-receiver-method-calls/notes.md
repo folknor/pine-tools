@@ -142,6 +142,20 @@ this same bug by excluding `IndexExpression` collections from its for-in scalar
 check. That exclusion is now redundant for the array case but still does work
 for the series case (`for x in close[1]`), so it is left alone.
 
+**Follow-up, 2026-07-15 - the other receiver kinds are verified, not assumed.**
+The fix removed the `array<T>` branch and let collections fall through, and the
+original note claimed matrix/map/UDT "already did" the right thing by never
+matching the `array<` pattern. That was inspection, not evidence, and only the
+array case had been probed - the same unverified-assertion shape that produced
+this slice's 8 FPs. Probed all three (`probes/` is INV138's; these live in the
+fixture): `float y = mx[1]` is `"matrix<float>"`, `float y = mp[1]` is
+`"map<string, float>"`, `float y = p[1]` is `"pt"`, each matching TV EXACTLY on
+position and message, and the positive forms (`mx[1].rows()`, `mp[1].size()`,
+`p[1].v`) are clean on both sides. The claim holds. Because it holds only by
+fall-through - no code names matrix/map/UDT here - it is now pinned by
+`regression/INV138-collection-history-types.pine` so a future edit to the branch
+cannot break it silently.
+
 ## Verification
 
 - 10 probe files under `probes/`, all matching TV's verdicts post-fix.
