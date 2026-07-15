@@ -108,11 +108,13 @@ export set we lack (unvendored, license-excluded, parse-quarantined) means ANY
 member could be its method, so we stay silent for the whole file; and the export
 sets are name-only, so a plain exported *function* named `add` also suppresses.
 
-**FP-safety direction.** Unlike INV066 (which asserted a receiver is UNDEFINED
-and produced 247 corpus FPs by tripping over receiver-resolution gaps), these
-checks fire only when the receiver RESOLVES to a known scalar or collection. A
-resolution gap yields silence, not a false flag. That is why this slice lands
-where #41(d) is still blocked.
+**FP-safety direction.** These checks fire only when the receiver RESOLVES to a
+known scalar or collection, so a resolution gap yields silence rather than a
+false flag. That is the complement of INV066, which asserts a receiver resolves
+to NOTHING; its first attempt produced 247 corpus FPs by tripping over
+resolution gaps, and it was landed in `a35bac7` once the `parserClean` gate
+excluded the parser-damaged sources those FPs came from. Both directions now
+share that gate.
 
 ## Root cause found on the way: `array<T>[n]` is not `T`
 
@@ -157,9 +159,9 @@ for the series case (`for x in close[1]`), so it is left alone.
 ## Residual (still #41)
 
 - **(a)** members of imported libraries we do not vendor, and UDT method
-  namespaces.
-- **(d)** method calls on an UNDEFINED receiver ([INV066](../INV066-undefined-receiver-method-call/notes.md),
-  still OPEN - needs receiver resolution).
+  namespaces. This is the only #41 slice still open: the undefined-receiver
+  slice (d) was fixed in `a35bac7`
+  (see [INV066](../INV066-undefined-receiver-method-call/notes.md)).
 - A scalar/collection receiver whose type does not resolve (typed `unknown`,
   undetermined UDF results) stays silent by design.
 - Columns are anchored at the call start; TV anchors at the member, a few chars

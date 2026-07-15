@@ -23,11 +23,19 @@
 //
 // Usage:
 //   node scripts/mutation-run.mjs [--fixtures N] [--operators a,b,c]
-//        [--sites-per N] [--seed N] [--concurrency N] [--dry-run]
+//        [--sites-per N] [--seed N] [--concurrency N] [--dry-run] [--verbose]
 //
 //   --dry-run generates and writes the mutants, runs the LOCAL side only
 //   (no TV calls), and reports which mutants our linter already kills -
 //   for sanity-checking an operator before spending TV budget.
+//
+//   --verbose streams a line per mutant. Off by default: the preferred entry
+//   point is the full-pool dry-run (--fixtures 9999 --sites-per 6), ~19k
+//   mutants, whose stream buries the summary. Survivors always print.
+//
+// WARNING: there is no --help. Any unrecognised flag is ignored and the run
+// starts immediately, spending ~fixtures x operators x sites-per TV calls
+// unless --dry-run is passed.
 //
 // Output: mutation-reports/run-<utc>.json + a console summary grouped by
 // (operator, TV error code). Mutants live in mutation-reports/mutants/
@@ -55,6 +63,12 @@ const SITES_PER = Number(opt("sites-per", "1"));
 const SEED = Number(opt("seed", "1"));
 const CONCURRENCY = Number(opt("concurrency", "4"));
 const DRY_RUN = args.includes("--dry-run");
+// Per-mutant progress is one line each, and the preferred entry point - the
+// full-pool dry-run (`--fixtures 9999 --sites-per 6`) - is ~19k mutants, so
+// printing it by default drowns the verdict summary and survivor triage that
+// are the actual output. Stay quiet and let the report file carry the detail;
+// --verbose restores the per-mutant stream for interactive progress.
+const VERBOSE = args.includes("--verbose");
 
 for (const op of OPS) {
 	if (!OPERATORS[op]) {
@@ -199,10 +213,14 @@ async function worker() {
 		const m = mutants[next++];
 		const r = await judgeMutant(m);
 		results.push(r);
-		const tag = r.verdict === "SURVIVOR" ? " <-- FN GAP" : "";
-		console.log(
-			`  [${results.length}/${mutants.length}] ${r.verdict.padEnd(12)} ${basename(r.path)}${tag}`,
-		);
+		// Survivors are the whole signal, so they print even when quiet; the
+		// rest of the stream is progress and lives in the report.
+		if (VERBOSE || r.verdict === "SURVIVOR") {
+			const tag = r.verdict === "SURVIVOR" ? " <-- FN GAP" : "";
+			console.log(
+				`  [${results.length}/${mutants.length}] ${r.verdict.padEnd(12)} ${basename(r.path)}${tag}`,
+			);
+		}
 	}
 }
 await Promise.all(Array.from({ length: CONCURRENCY }, worker));

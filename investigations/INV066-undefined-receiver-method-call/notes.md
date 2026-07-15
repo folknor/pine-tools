@@ -1,8 +1,10 @@
 # INV066 - undefined method-call RECEIVER is unvalidated (CE10272/CE10271 FN)
 
 **Date:** 2026-06-19
-**Status:** OPEN (finding confirmed + TV-probed; FP-safe fix deferred - see
-"Why deferred")
+**Status:** FIXED 2026-06-20 (`a35bac7`) - see "Resolution". The sections below
+from "Why deferred" onward are the historical record of the deferral, kept
+because the FP breakdown is the evidence for how the fix was finally shaped;
+they are NOT current state.
 **Area:** `packages/core/src/analyzer/checker.ts` (validateCallExpression
 MemberExpression callee). Sibling of INV062 (call ARGUMENTS) and INV053/64
 (namespace MEMBER names).
@@ -55,6 +57,31 @@ TWO errors -
 `probes/p02-defined-receiver-ok.pine` (`definedArr = array.new<float>(0)` /
 `definedArr.push(1.0)`): clean both sides. TV reached TV (it disagreed with
 our pre-fix silence on p01), so the silence was a real FN.
+
+## Resolution (2026-06-20, `a35bac7`)
+
+Fixed. `validateCallExpression`'s `!signature` MemberExpression branch now
+emits CE10271 when the receiver root resolves to no symbol
+(`v.parserClean && !objSym && ...`), with the roots that are not symbol-table
+entries excluded explicitly: `importedNamespaces`, `KNOWN_NAMESPACES`,
+`TYPE_NAMES`, `declaredTypeNames`, `NAMESPACE_PROPERTIES`, and
+`GENERIC_FUNCTION_BASES`.
+
+The unlock was the **`parserClean` gate**, added by that same commit and
+threaded from the CLI and language-service. The "To resume" list below asked
+for reliable nested-scope receiver resolution first; that turned out to be the
+wrong framing. The FP breakdown above is dominated by parser-damaged and
+dedent-misattributed sources, so gating the check to sources that parsed
+cleanly sidesteps the scope-attribution problem entirely rather than solving
+it - the #20 scope-attribution work is NOT a prerequisite. The import-alias and
+legacy-version causes are handled by the explicit root exclusions above.
+
+Verified: `probes/p01-undefined-receiver.pine` now flags
+`Could not find method or method reference 'undefinedArr.push'`;
+`probes/p02-defined-receiver-ok.pine` stays clean.
+
+NOTE: we emit only TV's CE10271 here, not its second CE10272 "Undeclared
+identifier" record - one diagnostic per call rather than TV's two.
 
 ## Attempted fix and why it was reverted
 

@@ -218,17 +218,16 @@ IDs so the two stay in sync.
   unlicensed, deliberately lenient), the 1 parse-quarantined
   (`TFlab/FVGDetectorLibrary/1`, see #45), and local `/// @source`
   libraries (the language-service resolver isn't wired into the core
-  checker); plus UDT method calls (need UDT method namespaces); and (d)
-  **method
-  calls on an UNDEFINED receiver** (`undefinedVar.push(x)` - INV066,
-  OPEN: TV CE10272+CE10271, but undefined-checking the callee's root
-  identifier produced 247 corpus FPs by exposing receiver-resolution
-  gaps - function params in nested scopes, import namespaces/aliases,
-  legacy versions - so it is gated behind robust receiver resolution,
-  same blocker as #9). The interim mitigations are in (INV059 types
-  unclassifiable destructure elements `unknown`; INV062 validates the
-  argument expressions of unresolvable calls); real member-call
-  validation still needs the export-set data.
+  checker); plus UDT method calls (need UDT method namespaces). That is
+  the only slice still open. The former (d) - **method calls on an
+  UNDEFINED receiver** (`undefinedVar.push(x)`) - was FIXED on 2026-06-20
+  by `a35bac7`, and INV066's earlier "blocked behind robust receiver
+  resolution / same blocker as #9" framing is **retracted**: the
+  `parserClean` gate that commit introduced sidesteps the scope-attribution
+  problem instead of solving it, so #20/#9 were never prerequisites. We emit
+  CE10271 there but not TV's second CE10272 record. The interim mitigations
+  are in (INV059 types unclassifiable destructure elements `unknown`; INV062
+  validates the argument expressions of unresolvable calls).
 - **#53 - vendored-library export infrastructure (INV067).** The data
   layer powering #41's imported-library member validation. `vendor/
   <Author>/<Lib>/<Version>.pine` holds published library SOURCE (MPL-2.0
@@ -338,7 +337,22 @@ IDs so the two stay in sync.
   A narrower implementation attempt was reverted before commit: even with
   root-name and function-body gates, parser-damaged corpus files produced
   broad recovery churn, so this needs a parser-clean / reliable-scope guard
-  rather than just a smaller receiver predicate. **Remaining:** periodically
+  rather than just a smaller receiver predicate. That is HISTORY: the
+  undefined-receiver check landed on 2026-06-20 in `a35bac7`, gated on a clean
+  parse (`parserClean`) rather than on the receiver-resolution work the notes
+  had asked for - see INV066's Resolution section.
+  **2026-07-15 rerun** (after INV138): the same full-pool dry-run (18,978
+  mutants over all 697 both-clean fixtures) is down to **1 `local-accepts`**
+  from 16, and that one TV-triages to `tv-accepts` - so **0 survivors**. The 15
+  that disappeared are the INV066 delete-decl class `a35bac7` now kills. The
+  remaining mutant deletes `extend = false` in `2eeb43fa906f`, whose only use
+  is `extend.none`: `extend` is also a builtin NAMESPACE, so removing the
+  shadow leaves the member access valid and the mutant is not broken Pine. That
+  is a `mutate.mjs` operator bug of the same shape as the documented `:=` one -
+  `delete-decl` should skip a declaration shadowing a builtin namespace whose
+  uses are all namespace-member accesses. Fixing it would take the pool to a
+  clean 0 `local-accepts`.
+  **Remaining:** periodically
   re-run the dry-run as the corpus/operators grow and TV-verify any new
   `local-accepts`.
 - **#52 - fixture-coverage build-out (the census target list).**
@@ -491,7 +505,7 @@ count.
 | `scripts/audit-fixtures.mjs` | Scans every `.pine` fixture under `packages/core/test/fixtures/` without running vitest. Flags fixtures with malformed `@expects` directives and fixtures whose only assertion is a total `errors: N` count (no per-error coverage), printing suggested `// @expects error: line=N, message="..."` directives ready to paste. Exits non-zero on malformed directives. Wrapper: `pnpm run audit:fixtures` (also rebuilds the compiled helpers it imports). |
 | `scripts/fixture-coverage.mjs` | Coverage census behind #52. Parses every corpus + test fixture with our own parser and cross-references the JSON catalog to surface BLIND SPOTS: catalog entries referenced in zero fixtures, behavioral flags whose rule is never exercised (esp. `topLevelOnly` functions never called in a violating local scope - the INV054 class), and a structural-shape census (member-chain depth, switch/forIn/tuple/enum) per set. Deterministic, offline, ~2s. `--json` for machine output. It finds gaps, it does not judge correctness - the uncovered-function list is #52's fixture-building target list. |
 | `scripts/mutate.mjs` | The (b) piece of #48. Generates single-site mutants from a clean `.pine`: text-level splices at lexer-located sites, one mutation per mutant, operators mapped to the TV error code they should provoke (drop-required-arg/CE10165, typo-member/CE10271, wrong-type-literal/CE10123, typo-param-name/CE10120, delete-decl/CE10272, unbalance-bracket/CE10015, bad-qualifier-form/CE10147). Module (for the orchestrator) + CLI (`--print <i> --out <path>` for inspection). Offline. |
-| `scripts/mutation-run.mjs` | The (c) piece of #48. Picks BOTH-CLEAN fixtures (local AND TV 0 errors, from `real-failures.json`), generates mutants, judges each via `compare-tv.mjs --json`, classifies tv-accepts / killed / SURVIVOR (TV rejects, we accept - the FN signal), groups survivors by (operator, TV code). Bounded TV budget: fixtures x operators x sites-per calls, seed-rotated. `--dry-run` = local side only, zero TV calls. Reports to `mutation-reports/` (gitignored). Run 1 (seed 1, 86 mutants): 1 survivor -> INV062. Run 2 (seed 2, 7 operators, 115 mutants): 0 survivors; the 2 tv-accepts were TV FNs -> G006. |
+| `scripts/mutation-run.mjs` | The (c) piece of #48. Picks BOTH-CLEAN fixtures (local AND TV 0 errors, from `real-failures.json`), generates mutants, judges each via `compare-tv.mjs --json`, classifies tv-accepts / killed / SURVIVOR (TV rejects, we accept - the FN signal), groups survivors by (operator, TV code). Bounded TV budget: fixtures x operators x sites-per calls, seed-rotated. `--dry-run` = local side only, zero TV calls. Quiet by default (the full-pool dry-run is ~19k mutants, whose per-mutant stream buries the summary); `--verbose` restores it, and survivors always print. There is NO `--help` - an unrecognised flag is ignored and the run starts spending TV immediately. Reports to `mutation-reports/` (gitignored). Run 1 (seed 1, 86 mutants): 1 survivor -> INV062. Run 2 (seed 2, 7 operators, 115 mutants): 0 survivors; the 2 tv-accepts were TV FNs -> G006. |
 | `scripts/audit-error-reachability.mjs` | The check-site half of #48's free slice. Enumerates every `addError`/`addWarning`/`addTemplateError` call site in the compiled checker + SemanticAnalyzer, wraps them at runtime to capture call-site stack frames, and validates corpus + test fixtures + investigation probes in-process. Reports DEAD sites (never fire anywhere - the INV050 class), probe-only sites (nothing pins them), and corpus-but-never-in-tests sites (untested real-world behavior). Offline, ~30s. `--json` for machine output. First run yielded INV059 (4 findings); the INV061 addTemplateError widening yielded the str.tostring(map) catch. |
 
 Repro for any fixture:
