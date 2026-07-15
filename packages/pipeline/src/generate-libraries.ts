@@ -101,13 +101,20 @@ for (const { libPath, file } of collectLibraryFiles().sort((a, b) =>
 		quarantined.push(libPath);
 		continue;
 	}
+	// The public surface is exported functions, methods, AND types/enums: a
+	// library's `export type T` is importable as `alias.T` (the corpus does
+	// this - `method processData(ffUtil.News[] N, ...)`), so dropping it left
+	// `lib.BogusType.new()` uncaught and imported UDT instances untypeable.
+	// see INV139
 	const exports = [
 		...new Set(
 			ast.body
 				.filter(
 					(s: { type: string; isExport?: boolean }) =>
 						(s.type === "FunctionDeclaration" ||
-							s.type === "MethodDeclaration") &&
+							s.type === "MethodDeclaration" ||
+							s.type === "TypeDeclaration" ||
+							s.type === "EnumDeclaration") &&
 						!!s.isExport,
 				)
 				.map((s: { name: string }) => s.name),

@@ -1,0 +1,10 @@
+// @test regression/INV139-unknown-library-type-lenient
+// @description The lenience that keeps INV139's import-alias type check FP-safe: a library we do not vendor has no export set, so ANY dotted type under its alias could be a real export and we must stay silent. Only a library whose full surface we hold can contradict a name. `NotVendored/Nope/1` is not in pine-data/v6/libraries.json, so `np.Whatever` is accepted even though `np.Whatever` is exactly the shape INV139 flags for a KNOWN library (see INV139-imported-library-type). See investigations/INV139-imported-library-types/notes.md.
+// @expects parse: success
+// @expects errors: 0
+//@version=6
+indicator("x")
+import NotVendored/Nope/1 as np
+f(np.Whatever[] N) =>
+    array.size(N)
+plot(1)

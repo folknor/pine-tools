@@ -1,0 +1,6 @@
+//@version=6
+indicator("p02 type that the imported library does not export")
+import toodegrees/forex_factory_utility/16 as ffUtil
+f(ffUtil.Newz[] N) =>
+    array.size(N)
+plot(1)

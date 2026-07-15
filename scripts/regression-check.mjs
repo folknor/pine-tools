@@ -51,7 +51,9 @@ const OUT = resolve("lint-reports/regression-report.json");
 try {
 	await access(FIXTURES);
 } catch {
-	console.error(`No ${FIXTURES} - run scripts/collect-pine-fixtures.mjs first.`);
+	console.error(
+		`No ${FIXTURES} - the corpus is gitignored and machine-local. It was built by scripts/collect-pine-fixtures.mjs (removed; recoverable from git history), which walked a source tree copying .pine files by sha256.`,
+	);
 	process.exit(2);
 }
 

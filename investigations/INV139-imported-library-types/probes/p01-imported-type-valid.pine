@@ -1,0 +1,6 @@
+//@version=6
+indicator("p01 real exported type of an imported library")
+import toodegrees/forex_factory_utility/16 as ffUtil
+f(ffUtil.News[] N) =>
+    array.size(N)
+plot(1)

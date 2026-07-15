@@ -360,11 +360,19 @@
     "zigzag"
   ],
   "HoanGhetti/SimpleTrendlines/4": [
+    "Trendline",
+    "TrendlineData",
+    "TrendlineLines",
+    "TrendlineSettings",
     "drawLine",
     "drawTrendline",
     "new"
   ],
   "HoanGhetti/SimpleTrendlines/5": [
+    "Trendline",
+    "TrendlineData",
+    "TrendlineLines",
+    "TrendlineSettings",
     "drawLine",
     "drawTrendline",
     "new"
@@ -381,6 +389,13 @@
     "MsgDoShortMKT"
   ],
   "jason5480/analytics_tables/3": [
+    "MetricsTable",
+    "SeasonalData",
+    "SeasonalTable",
+    "Seasonality",
+    "SideStats",
+    "StatsData",
+    "StatsTable",
     "getTablePos",
     "init",
     "update"
@@ -392,6 +407,13 @@
     "lower_short_biased_price"
   ],
   "jason5480/chrono_utils/7": [
+    "DateTimeWindow",
+    "Session",
+    "SessionDays",
+    "SessionTime",
+    "SessionTimeRange",
+    "SessionView",
+    "Timezone",
     "barInMilliseconds",
     "draw",
     "exTimezone",
@@ -424,6 +446,14 @@
     "tomorrow"
   ],
   "jason5480/chrono_utils/8": [
+    "DateTimeWindow",
+    "Session",
+    "SessionDays",
+    "SessionTime",
+    "SessionTimeRange",
+    "SessionView",
+    "Timezone",
+    "ViewMode",
     "barInMilliseconds",
     "draw",
     "draw_bars",
@@ -458,6 +488,10 @@
     "tomorrow"
   ],
   "jason5480/distance_ratio/16": [
+    "AuxData",
+    "DistMethod",
+    "DistSettings",
+    "RestrictSettings",
     "price",
     "ratio",
     "restrict_price",
@@ -467,6 +501,8 @@
     "unit_price"
   ],
   "jason5480/external_input_utils/11": [
+    "InternalSource",
+    "Operator",
     "enumToSrc",
     "evalCond"
   ],
@@ -486,6 +522,9 @@
     "num_of_non_decimal_digits"
   ],
   "jason5480/series_collection/4": [
+    "ClockBuffer",
+    "RingBuffer",
+    "SeriesType",
     "alma",
     "alma_back",
     "alma_front",
@@ -548,10 +587,12 @@
     "replace_all"
   ],
   "jason5480/tts_convention/7": [
+    "DealConditions",
     "getDealConditions",
     "getSignal"
   ],
   "jason5480/two_ma_logic/11": [
+    "TwoMaDrawings",
     "getDealConditions"
   ],
   "jdehorty/KernelFunctions/2": [
@@ -581,6 +622,7 @@
     "update_table"
   ],
   "jmosullivan/Table/1": [
+    "Cell",
     "debug",
     "floatArrayToCellArray",
     "floatMatrixToCellMatrix",
@@ -803,19 +845,24 @@
     "get_name",
     "get_pid",
     "get_symbol",
+    "harmonic_params",
     "init",
     "init_params",
-    "set_target"
+    "set_target",
+    "xabcd_harmonic"
   ],
   "reees/Pattern/1": [
     "draw",
     "draw_label",
     "erase",
     "erase_label",
+    "leg",
     "leg_getLineTerms",
     "leg_getPrice",
     "leg_init",
-    "pattern_init"
+    "pattern",
+    "pattern_init",
+    "point"
   ],
   "reees/TA/11": [
     "div_bear",
@@ -929,6 +976,7 @@
     "vwap"
   ],
   "robbatt/lib_no_delay/18": [
+    "MovingAverage",
     "atr",
     "bb",
     "dev",
@@ -956,6 +1004,18 @@
     "wma"
   ],
   "robbatt/lib_plot_objects/56": [
+    "Box",
+    "BoxArgs",
+    "BoxTextArgs",
+    "Candle",
+    "CenterLabel",
+    "Label",
+    "LabelArgs",
+    "Line",
+    "LineArgs",
+    "LineFill",
+    "PolyLine",
+    "PolyLineArgs",
     "apply_style",
     "body_bottom",
     "body_size",
@@ -990,6 +1050,9 @@
     "wick_size_top"
   ],
   "robbatt/lib_profile/44": [
+    "Bucket",
+    "Profile",
+    "ProfileConfig",
     "apply_style",
     "calculate",
     "create_profile",
@@ -1056,6 +1119,7 @@
     "FF_OnChartLine",
     "FF_Table",
     "MMM",
+    "News",
     "NewsAMPM_TOD",
     "adjustTimezone",
     "boxLoc",
@@ -1399,6 +1463,16 @@
     "wpo"
   ],
   "Trendoscope/Drawing/2": [
+    "Box",
+    "BoxProperties",
+    "BoxText",
+    "Label",
+    "LabelProperties",
+    "Line",
+    "LineProperties",
+    "Linefill",
+    "PolyLine",
+    "PolyLineProperties",
     "clear",
     "createBox",
     "createLabel",

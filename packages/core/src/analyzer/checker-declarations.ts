@@ -6,7 +6,7 @@
 // on the validator (heavily called from the statement walk). see INV023, INV033,
 // INV035, INV052, INV091, INV096.
 
-import { TYPE_NAMES } from "../../../../pine-data/v6";
+import { LIBRARY_EXPORTS_BY_PATH, TYPE_NAMES } from "../../../../pine-data/v6";
 import { DiagnosticSeverity } from "../common/errors";
 import { TYPE_KEYWORDS } from "../constants/keywords";
 import type { FunctionDeclaration, Statement } from "../parser/ast";
@@ -159,6 +159,38 @@ export function checkTypeAnnotationName(
 	);
 }
 
+/**
+ * A dotted type annotation (`ffUtil.News`) names a type exported by an imported
+ * library. Valid iff that name is in the library's export set - TV rejects the
+ * rest with the same "is not a valid type keyword" wording it uses for local
+ * types, quoting the FULL dotted name (probed `ffUtil.Newz`, 2026-07-15).
+ *
+ * Lenient wherever we cannot know, so this never manufactures a false positive:
+ * a root that is not an imported namespace, an import whose export set we lack
+ * (unvendored / license-excluded / parse-quarantined), or a deeper path than
+ * `alias.Name` all return null. Only a library whose FULL surface we hold can
+ * contradict a name. Builtin dotted types (`chart.point`) never reach here -
+ * TYPE_NAMES catches them first.
+ *
+ * see INV139
+ */
+function importAliasTypeInvalid(
+	v: UnifiedPineValidator,
+	base: string,
+): string | null {
+	if (base.indexOf(".") !== base.lastIndexOf(".")) return null;
+	const alias = base.slice(0, base.indexOf("."));
+	const member = base.slice(base.indexOf(".") + 1);
+	if (!v.importedNamespaces.has(alias)) return null;
+	const path = v.importedLibraryPaths.get(alias);
+	if (!path) return null; // export set unavailable - stay lenient
+	const exports =
+		LIBRARY_EXPORTS_BY_PATH.get(path) ??
+		v.localLibraryExportsBySourcePath.get(path);
+	if (!exports) return null;
+	return exports.has(member) ? null : base;
+}
+
 // Returns the annotation's base name when it does NOT name a known type
 // (built-in keyword, pine-data object type, or an earlier UDT/enum),
 // null when the annotation is acceptable. Shared by the declaration and
@@ -177,7 +209,7 @@ export function invalidAnnotationBase(
 	if (!base) return null;
 	if (TYPE_KEYWORDS.has(base)) return null;
 	if (TYPE_NAMES.has(base)) return null; // incl. dotted chart.point
-	if (base.includes(".")) return null; // import-alias types - unvalidated
+	if (base.includes(".")) return importAliasTypeInvalid(v, base);
 	if (v.declaredTypeNames.has(base)) return null;
 	return base;
 }

@@ -58,6 +58,10 @@ export interface TypeDeclaration extends ASTNode {
 	type: "TypeDeclaration";
 	name: string;
 	fields?: TypeField[];
+	// `export type T` in a library. Part of the library's public surface, so
+	// generate-libraries records it alongside exported functions/methods.
+	// see INV139
+	isExport?: boolean;
 }
 
 export interface TypeField {
@@ -77,6 +81,9 @@ export interface EnumDeclaration extends ASTNode {
 	// Member names, captured so the checker can type `E.member` as the enum
 	// type and reject incompatible operations (CE10123). see INV096
 	members?: string[];
+	// `export enum E` in a library - same public-surface role as
+	// TypeDeclaration.isExport. see INV139
+	isExport?: boolean;
 }
 
 export interface AssignmentStatement extends ASTNode {

@@ -847,3 +847,11 @@ contradiction means re-measure, not "the earlier author was wrong."
   root-caused `array<T>[n]` being typed as its element `T` instead of
   `array<T>` - `[]` on a collection is the history operator - which was both a
   standalone FN and the source of the slice's only FPs.
+- [INV139](INV139-imported-library-types/notes.md) - TODO #41 residual slice
+  (a), re-scoped: three of its four claims were stale (two already contradicted
+  by #53). The real gap was that a library's `export type` never reached
+  `libraries.json` - the parser did not set `isExport` on a `TypeDeclaration`
+  and the generator filtered to functions/methods - so dotted type annotations
+  were unvalidated. `alias.Name` is now checked against the export set, matching
+  TV's `"ffUtil.Newz" is not a valid type keyword.` exactly. Residual: imported
+  UDT field/method surfaces.

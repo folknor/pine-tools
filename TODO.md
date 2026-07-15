@@ -133,6 +133,17 @@ verdicts are the 10 dated probes in
 [INV138](investigations/INV138-scalar-receiver-method-calls/notes.md). Full
 vitest is 431 passing.
 
+Measurement note, 2026-07-15: after INV139 / #41 slice (a) exported-library
+types, `node scripts/regression-check.mjs` reports 0 new error appearances over
+1879 fixtures; the only changed fixture is still INV138's `2997d729…` v5
+disappearance, so no v6 fixture moved and the INV133 sweep window continues to
+hold. The new check gates real corpus type annotations against 88 libraries'
+export sets and produced no FPs. `pine-data/v6/libraries.json` grew by 76 names
+(exported types/enums), purely additive. The TV-backed verdicts are the 2 dated
+probes in
+[INV139](investigations/INV139-imported-library-types/notes.md), where p02
+matches TV exactly on both position and message. Full vitest is 433 passing.
+
 ## Pending follow-ups
 
 Open work items, each either deferred from an investigation or queued
@@ -212,14 +223,36 @@ IDs so the two stay in sync.
   (25 authors): TradingView/ta + RelativeValue plus the ~75 MPL-2.0
   community libraries the corpus imports, fetched via the new
   `fetch:library` step (pine-facade) - see the library-infrastructure
-  item below. **Still open:** (a) members of imported libraries NOT in
-  `vendor/` - any published lib the corpus doesn't import (so wasn't
-  fetched), the 10 license-excluded ones (7 CC-BY-NC Trendoscope + 3
-  unlicensed, deliberately lenient), the 1 parse-quarantined
-  (`TFlab/FVGDetectorLibrary/1`, see #45), and local `/// @source`
-  libraries (the language-service resolver isn't wired into the core
-  checker); plus UDT method calls (need UDT method namespaces). That is
-  the only slice still open. The former (d) - **method calls on an
+  item below. **Still open - (a), re-scoped 2026-07-15** after verifying each
+  of its old claims; three of the four were stale, two of them already
+  contradicted by #53 in this same file:
+  - ~~exported TYPES are dropped from the export set~~ - FIXED by
+    [INV139](investigations/INV139-imported-library-types/notes.md): the parser
+    never set `isExport` on a `TypeDeclaration` and `generate-libraries.ts`
+    filtered to functions/methods, so `export type` never reached
+    `libraries.json`. Both layers fixed; `invalidAnnotationBase` now validates
+    `alias.Name` against the export set, matching TV exactly
+    (`"ffUtil.Newz" is not a valid type keyword.`). **Residual: imported UDT
+    SURFACES.** We know a library exports `News`, but not its fields or
+    methods, so `n.bogusField` / `n.bogusMethod()` on an imported UDT instance
+    is still lenient (INV103's "we lack their surface", one level down).
+    Closing it needs the export set to carry each exported type's field list
+    and the methods declared on it, not just its name.
+  - **members of libraries not in `vendor/`** - genuinely open, but it is a
+    DATA gap, not a checker gap: the logic exists (INV067 + INV138's
+    `importedMethodMayExist`), it just has no export set to read. Vendoring
+    more is #53(a). The 10 license-excluded (7 CC-BY-NC Trendoscope + 3
+    unlicensed) are deliberate policy, not a bug.
+  - ~~the 1 parse-quarantined `TFlab/FVGDetectorLibrary/1`~~ - STALE: both /1
+    and /3 are in `libraries.json` (#53 already said so).
+  - ~~local `/// @source` libraries not wired into the core checker~~ - STALE:
+    probed 2026-07-15, `ml.addOne` (a real export) is clean and `ml.addTwo` is
+    CE10271 (#53 already said so).
+  - ~~UDT method calls need UDT method namespaces~~ - STALE for LOCAL UDTs:
+    INV103 does it (`p.bogusMethod` is CE10271, probed 2026-07-15). The
+    residual is imported-library UDTs, which is the first bullet above.
+
+  The former (d) - **method calls on an
   UNDEFINED receiver** (`undefinedVar.push(x)`) - was FIXED on 2026-06-20
   by `a35bac7`, and INV066's earlier "blocked behind robust receiver
   resolution / same blocker as #9" framing is **retracted**: the
@@ -490,9 +523,20 @@ count.
 
 ## Scripts behind this report
 
+**Where the corpus comes from.** `fixtures/` is gitignored and machine-local -
+it is NOT in the repo, and there is no longer a script to rebuild it.
+`scripts/collect-pine-fixtures.mjs` (removed 2026-07-15, recoverable from git
+history) walked a source tree and copied `.pine` files by sha256. It was
+removed as a footgun rather than a tool: its `SKIP_DIRS` covered
+`node_modules`/`dist`/etc and it skipped its own `fixtures/` destination, but
+NOT this repo, so re-running it would sweep every `investigations/**/probes/`
+file, all 88 `vendor/` libraries, and every `packages/core/test/fixtures/`
+regression fixture into the corpus - polluting the very baseline the regression
+contract measures against. Anyone rebuilding a corpus should start from that
+history version AND exclude the repo.
+
 | script | purpose |
 |---|---|
-| `scripts/collect-pine-fixtures.mjs` | Walks a source tree (default `/home/folk/Programs`), dedupes `.pine` files by sha256, copies unique ones into `fixtures/<hash>.pine`. Run once to (re)build the corpus. |
 | `scripts/compare-tv.mjs` | One file at a time: runs local + `--tv` in parallel, prints the error diff (local-only / tv-only) for that file. Pass `--json` to emit machine-readable output. Repro tool. |
 | `scripts/lint-batch.mjs` | Batch lint: files, directories, or quoted globs; one compact errors/warnings block per file. `--diff` runs the compare-tv position diff per file (TV-capped at concurrency 4), `--tv` shows TV verdicts, plus `--errors-only`/`--filter`/`--quiet`/`--json`. Replaces ad-hoc `for f in ...` shell loops - the probe-directory workhorse. |
 | `scripts/find-real-failures.mjs` | Runs local + `--tv` on every v6 fixture, records per-file false positives (we flag, TV doesn't) and false negatives (TV flags, we don't). Writes `lint-reports/real-failures.json`. Hits TV ~750 times (~2 min at concurrency 4). |

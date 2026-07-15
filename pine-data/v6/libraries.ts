@@ -368,11 +368,19 @@ export const LIBRARY_EXPORTS: Record<string, string[]> = {
     "zigzag"
   ],
   "HoanGhetti/SimpleTrendlines/4": [
+    "Trendline",
+    "TrendlineData",
+    "TrendlineLines",
+    "TrendlineSettings",
     "drawLine",
     "drawTrendline",
     "new"
   ],
   "HoanGhetti/SimpleTrendlines/5": [
+    "Trendline",
+    "TrendlineData",
+    "TrendlineLines",
+    "TrendlineSettings",
     "drawLine",
     "drawTrendline",
     "new"
@@ -389,6 +397,13 @@ export const LIBRARY_EXPORTS: Record<string, string[]> = {
     "MsgDoShortMKT"
   ],
   "jason5480/analytics_tables/3": [
+    "MetricsTable",
+    "SeasonalData",
+    "SeasonalTable",
+    "Seasonality",
+    "SideStats",
+    "StatsData",
+    "StatsTable",
     "getTablePos",
     "init",
     "update"
@@ -400,6 +415,13 @@ export const LIBRARY_EXPORTS: Record<string, string[]> = {
     "lower_short_biased_price"
   ],
   "jason5480/chrono_utils/7": [
+    "DateTimeWindow",
+    "Session",
+    "SessionDays",
+    "SessionTime",
+    "SessionTimeRange",
+    "SessionView",
+    "Timezone",
     "barInMilliseconds",
     "draw",
     "exTimezone",
@@ -432,6 +454,14 @@ export const LIBRARY_EXPORTS: Record<string, string[]> = {
     "tomorrow"
   ],
   "jason5480/chrono_utils/8": [
+    "DateTimeWindow",
+    "Session",
+    "SessionDays",
+    "SessionTime",
+    "SessionTimeRange",
+    "SessionView",
+    "Timezone",
+    "ViewMode",
     "barInMilliseconds",
     "draw",
     "draw_bars",
@@ -466,6 +496,10 @@ export const LIBRARY_EXPORTS: Record<string, string[]> = {
     "tomorrow"
   ],
   "jason5480/distance_ratio/16": [
+    "AuxData",
+    "DistMethod",
+    "DistSettings",
+    "RestrictSettings",
     "price",
     "ratio",
     "restrict_price",
@@ -475,6 +509,8 @@ export const LIBRARY_EXPORTS: Record<string, string[]> = {
     "unit_price"
   ],
   "jason5480/external_input_utils/11": [
+    "InternalSource",
+    "Operator",
     "enumToSrc",
     "evalCond"
   ],
@@ -494,6 +530,9 @@ export const LIBRARY_EXPORTS: Record<string, string[]> = {
     "num_of_non_decimal_digits"
   ],
   "jason5480/series_collection/4": [
+    "ClockBuffer",
+    "RingBuffer",
+    "SeriesType",
     "alma",
     "alma_back",
     "alma_front",
@@ -556,10 +595,12 @@ export const LIBRARY_EXPORTS: Record<string, string[]> = {
     "replace_all"
   ],
   "jason5480/tts_convention/7": [
+    "DealConditions",
     "getDealConditions",
     "getSignal"
   ],
   "jason5480/two_ma_logic/11": [
+    "TwoMaDrawings",
     "getDealConditions"
   ],
   "jdehorty/KernelFunctions/2": [
@@ -589,6 +630,7 @@ export const LIBRARY_EXPORTS: Record<string, string[]> = {
     "update_table"
   ],
   "jmosullivan/Table/1": [
+    "Cell",
     "debug",
     "floatArrayToCellArray",
     "floatMatrixToCellMatrix",
@@ -811,19 +853,24 @@ export const LIBRARY_EXPORTS: Record<string, string[]> = {
     "get_name",
     "get_pid",
     "get_symbol",
+    "harmonic_params",
     "init",
     "init_params",
-    "set_target"
+    "set_target",
+    "xabcd_harmonic"
   ],
   "reees/Pattern/1": [
     "draw",
     "draw_label",
     "erase",
     "erase_label",
+    "leg",
     "leg_getLineTerms",
     "leg_getPrice",
     "leg_init",
-    "pattern_init"
+    "pattern",
+    "pattern_init",
+    "point"
   ],
   "reees/TA/11": [
     "div_bear",
@@ -937,6 +984,7 @@ export const LIBRARY_EXPORTS: Record<string, string[]> = {
     "vwap"
   ],
   "robbatt/lib_no_delay/18": [
+    "MovingAverage",
     "atr",
     "bb",
     "dev",
@@ -964,6 +1012,18 @@ export const LIBRARY_EXPORTS: Record<string, string[]> = {
     "wma"
   ],
   "robbatt/lib_plot_objects/56": [
+    "Box",
+    "BoxArgs",
+    "BoxTextArgs",
+    "Candle",
+    "CenterLabel",
+    "Label",
+    "LabelArgs",
+    "Line",
+    "LineArgs",
+    "LineFill",
+    "PolyLine",
+    "PolyLineArgs",
     "apply_style",
     "body_bottom",
     "body_size",
@@ -998,6 +1058,9 @@ export const LIBRARY_EXPORTS: Record<string, string[]> = {
     "wick_size_top"
   ],
   "robbatt/lib_profile/44": [
+    "Bucket",
+    "Profile",
+    "ProfileConfig",
     "apply_style",
     "calculate",
     "create_profile",
@@ -1064,6 +1127,7 @@ export const LIBRARY_EXPORTS: Record<string, string[]> = {
     "FF_OnChartLine",
     "FF_Table",
     "MMM",
+    "News",
     "NewsAMPM_TOD",
     "adjustTimezone",
     "boxLoc",
@@ -1407,6 +1471,16 @@ export const LIBRARY_EXPORTS: Record<string, string[]> = {
     "wpo"
   ],
   "Trendoscope/Drawing/2": [
+    "Box",
+    "BoxProperties",
+    "BoxText",
+    "Label",
+    "LabelProperties",
+    "Line",
+    "LineProperties",
+    "Linefill",
+    "PolyLine",
+    "PolyLineProperties",
     "clear",
     "createBox",
     "createLabel",

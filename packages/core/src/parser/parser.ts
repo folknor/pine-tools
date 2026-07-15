@@ -1842,7 +1842,13 @@ export class Parser {
 		// reference like `Name.Member` becomes "Undefined variable 'Name'".
 		// see INV002.
 		if (this.match([TokenType.KEYWORD, ["enum", "type"]])) {
-			return this.typeOrEnumDeclaration(this.previous().value);
+			// Mark the public surface: a library's `export type` / `export enum`
+			// is importable as `alias.T`, so generate-libraries needs it in the
+			// export set. It was dropped, which left `lib.BogusType.new()`
+			// uncaught and instances of imported UDTs untypeable. see INV139
+			const decl = this.typeOrEnumDeclaration(this.previous().value);
+			decl.isExport = true;
+			return decl;
 		}
 
 		// Exported variable declaration (Pine v6 libraries). All four forms

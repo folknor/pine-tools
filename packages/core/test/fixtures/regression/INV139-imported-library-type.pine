@@ -1,0 +1,13 @@
+// @test regression/INV139-imported-library-type
+// @description A dotted type annotation names a type exported by an imported library; TV rejects one that is not in the library's export set with the same "is not a valid type keyword" wording it uses for local types, quoting the FULL dotted name (probed `ffUtil.Newz` against toodegrees/forex_factory_utility/16, 2026-07-15). `invalidAnnotationBase` used to bail on any dotted base ("import-alias types - unvalidated") because the export sets held functions/methods only - `generate-libraries` dropped `export type`. `News` is a real export of that library and must stay clean; `Newz` is not. See investigations/INV139-imported-library-types/notes.md.
+// @expects parse: success
+// @expects errors: 1
+// @expects error: line=6, column=5, message=/"ffUtil.Newz" is not a valid type keyword/
+//@version=6
+indicator("x")
+import toodegrees/forex_factory_utility/16 as ffUtil
+good(ffUtil.News[] N) =>
+    array.size(N)
+bad(ffUtil.Newz[] N) =>
+    array.size(N)
+plot(1)
