@@ -9,13 +9,8 @@ work a goal down to landed commits, run `orchestrate` FIRST and
 follow it exactly - it is the standing procedure (roles, the seven steps, the
 waiting discipline, codex invocation). Note its Input section: confirm the
 goal with the user before launching anything. The orchestrate workflow,
-once invoked, overrides the foreground-subagent rule below (its launches are
+once invoked, overrides the global foreground-subagent rule (its launches are
 background by design, per the user's standing instruction in that document).
-
-### General rules
-
-- Subagents must always be launched in the foreground (never
-  `run_in_background: true`) so the user can approve tool requests.
 
 ### Memory rules
 
@@ -45,6 +40,7 @@ in CLAUDE.md or the relevant docs.
 - When committing other changes: always tag along markdown files if dirty.
 - Write substantive engineering-focused commit messages.
 - Never `git push` unless the user explicitly asks. Stop after the commit.
+- Remember to update CHANGELOG.md for relevant commits (but not general small performance improvements.)
 
 ### Multi-Agent Orchestration
 
@@ -91,5 +87,3 @@ Subagent prompt rules:
 - Do pass anything learned in *this* conversation that the agent can't see: the
   user's framing, prior decisions, what's already been ruled out, the specific
   claim being audited.
-- For review tasks, ask for findings labeled *bug* / *gap* / *smell* / *nit* so
-  the orchestrator can triage without re-reading the whole report.
