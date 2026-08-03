@@ -53,6 +53,16 @@ const KNOWN_NAMES = new Set([
 	...CONSTANTS.map((c) => c.name),
 ]);
 
+// Every dotted catalog name's prefix - `extend` (from `extend.none`), `color`,
+// `math`, `ta`, ... Derived from the data rather than listed here so it tracks
+// the catalog. Used by delete-decl to tell a shadowing declaration apart from a
+// load-bearing one. see the note there.
+const BUILTIN_NAMESPACES = new Set(
+	[...KNOWN_NAMES]
+		.filter((n) => n.includes("."))
+		.map((n) => n.slice(0, n.indexOf("."))),
+);
+
 // Deterministic PRNG so a (fixture, seed) pair always yields the same
 // site rotation - runs are bounded and reproducible, per the #48 design.
 function mulberry32(seed) {
@@ -335,15 +345,26 @@ export const OPERATORS = {
 				const next = lines[t.line]; // 0-based: the line AFTER t.line
 				if (next !== undefined && /^[ \t]/.test(next) && next.trim() !== "")
 					continue;
-				// The name must be USED later (a later token outside this line).
-				const usedLater = tokens.some(
-					(u, k) =>
-						k > i &&
-						u.type === "IDENTIFIER" &&
-						u.value === t.value &&
-						u.line > t.line &&
-						tokens[k + 1]?.type !== "ASSIGN",
-				);
+				// The name must be USED later (a later token outside this line),
+				// and the use must actually DEPEND on the declaration. A name that
+				// shadows a builtin NAMESPACE resolves fine without it as long as
+				// every use is a namespace-member access: `extend = false` whose
+				// only use is `extend.none` deletes to still-valid Pine, so TV
+				// accepts and the mutant is not broken code - a wasted probe of the
+				// same shape as the `:=` skip above. A BARE use (`extend + 1`) does
+				// depend on the declaration, so such a site is still generated.
+				const usedLater = tokens.some((u, k) => {
+					if (k <= i) return false;
+					if (u.type !== "IDENTIFIER" || u.value !== t.value) return false;
+					if (u.line <= t.line) return false;
+					if (tokens[k + 1]?.type === "ASSIGN") return false;
+					if (
+						BUILTIN_NAMESPACES.has(u.value) &&
+						tokens[k + 1]?.type === "DOT"
+					)
+						return false;
+					return true;
+				});
 				if (!usedLater) continue;
 				const from = starts[t.line - 1];
 				const to = t.line < starts.length ? starts[t.line] : source.length;

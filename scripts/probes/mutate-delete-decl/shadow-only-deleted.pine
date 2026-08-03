@@ -1,0 +1,4 @@
+//@version=6
+indicator("shadow only")
+plot(close)
+l = line.new(bar_index, high, bar_index, low, extend = extend.none)

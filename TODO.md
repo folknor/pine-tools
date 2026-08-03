@@ -208,16 +208,20 @@ IDs so the two stay in sync.
   clean parse (`parserClean`) - not on the "receiver resolution we don't have"
   those runs concluded was needed. See INV066's Resolution.
   **2026-07-15 rerun** (after INV138): the same full-pool dry-run (18,978
-  mutants over all 697 both-clean fixtures) is down to **1 `local-accepts`**
-  from 16, and that one TV-triages to `tv-accepts` - so **0 survivors**. The 15
-  that disappeared are the INV066 delete-decl class `a35bac7` now kills. The
-  remaining mutant deletes `extend = false` in `2eeb43fa906f`, whose only use
-  is `extend.none`: `extend` is also a builtin NAMESPACE, so removing the
-  shadow leaves the member access valid and the mutant is not broken Pine. That
-  is a `mutate.mjs` operator bug of the same shape as the documented `:=` one -
-  `delete-decl` should skip a declaration shadowing a builtin namespace whose
-  uses are all namespace-member accesses. Fixing it would take the pool to a
-  clean 0 `local-accepts`.
+  mutants over all 697 both-clean fixtures) went to **1 `local-accepts`** from
+  16, and that one TV-triaged to `tv-accepts` - so **0 survivors**. The 15 that
+  disappeared are the INV066 delete-decl class `a35bac7` now kills.
+  **2026-08-03: the last one is gone too and the pool is a clean 0
+  `local-accepts` over all 18,978 mutants.** It was a `mutate.mjs` operator bug,
+  not a finding: the mutant deleted `extend = false` in `2eeb43fa906f`, whose
+  only use is `extend.none`, and since `extend` is also a builtin NAMESPACE the
+  member access stays valid without the declaration. `delete-decl` now discounts
+  a use that is a namespace-member access on a builtin namespace (the namespace
+  set is derived from the dotted catalog names, not listed), so the site is
+  generated only when some use actually DEPENDS on the declaration. TV-verified
+  both directions - deleting the shadow-only declaration is clean, deleting it
+  with a bare use present is a real CE10272 - by the re-runnable probes in
+  `scripts/probes/mutate-delete-decl/`.
   **Remaining:** periodically
   re-run the dry-run as the corpus/operators grow and TV-verify any new
   `local-accepts`.
