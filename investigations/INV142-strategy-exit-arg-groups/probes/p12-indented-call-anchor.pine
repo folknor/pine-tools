@@ -1,0 +1,6 @@
+//@version=6
+strategy("p12 anchor when the call is indented")
+
+if bar_index == 1
+    strategy.entry("L", strategy.long)
+    strategy.exit("X", from_entry = "L", trail_price = high)

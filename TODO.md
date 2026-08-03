@@ -345,47 +345,6 @@ IDs so the two stay in sync.
   provenance per field type, then flag a used type whose provenance library is
   not among the script's imports. FP-safe by the usual rule - stay silent for
   any library whose surface we lack.
-- **#65 - inter-parameter argument-group constraints (`strategy.exit` first).**
-  Reported externally in `../freedom/FINDINGS.md` finding 2 (2026-08-01, against
-  `pine-lint 0.5.0`): we accept `strategy.exit(..., trail_price=...)` with no
-  `trail_offset=`, which TV rejects with
-
-  ```
-  strategy.exit must have at least one of the following parameters: "profit",
-  "limit", "loss", "stop" or one of the following pairs: "trail_offset" and
-  "trail_price" / "trail_points".
-  ```
-
-  A genuine tv-only FN, i.e. a class our sweep reports 0 of. It is invisible to
-  the corpus loop by construction: the corpus is published WORKING scripts, so a
-  shape TV rejects cannot appear in it. That is the #48/#52 blind spot, not a
-  gap in the sweep. `piners validate` already implements the rule (`PINE0411`,
-  `"stage":"semantic"`, TV's message verbatim) and both controls stay clean
-  there, so a known-good reference for wording and for non-over-rejection
-  exists. The reported controls are `trail_complete.pine` (`trail_price` +
-  `trail_offset`) and `trail_accompanied.pine` (`stop=` + `trail_price=`), both
-  clean on TV and locally; only the bare `trail_price=` form
-  (`trail_bare.pine`) differs.
-
-  Work: open an INV, re-probe all three shapes with `pine-lint --tv` and record
-  the exact scripts plus dated output (the FINDINGS numbers are someone else's
-  point-in-time measurement, so they are a lead, not a fact we inherit); pin a
-  regression fixture; then implement. The open design question is WHERE the rule
-  lives. Per the Data-vs-Syntax rule it belongs in `functions.json`, but this is
-  an inter-parameter constraint (an "at least one of / or one of these pairs"
-  group) and the current param schema expresses only per-param facts
-  (`required`, `allowedValues`, `min`/`max`). So it needs either a new
-  `argGroups`-style field on the function entry, generated from a probe-backed
-  data file in the #21 shape, or a checker special-case that the architecture
-  rule says not to write. Prefer the former; the group is stated verbatim in
-  TV's own message, so it is scrapable/probe-recordable rather than guessed.
-  Worth surveying which other builtins carry the same "at least one of" prose
-  before fixing the schema shape around a single function.
-
-  Adjacent, NOT ours: FINDINGS 3 reports that piners EXECUTES an offset-free
-  trail leg as a live exit and that it dominates (23 of 29 exits, ~5x pnl swing).
-  That is a runtime-fill parity question, unadjudicated, and lint has nothing to
-  say about it - `--tv` settles compilation, not fill semantics.
 
 ## Gotchas
 

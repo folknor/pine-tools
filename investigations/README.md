@@ -870,3 +870,13 @@ contradiction means re-measure, not "the earlier author was wrong."
   errors too - but the wrong message at the wrong position, and fully SILENT
   when the field is never read. Now scanned like `varip` so the field survives,
   with TV's CE10288 emitted at the `var` token.
+- [INV142](INV142-strategy-exit-arg-groups/notes.md) - TODO #65, reported
+  externally: we accepted `strategy.exit` with a bare `trail_price=` and no
+  `trail_offset=`, which TV rejects. A tv-only class the corpus structurally
+  cannot surface (published scripts work). Adds `FunctionFlags.argGroups`, a
+  probe-backed inter-parameter requirement the per-param schema could not
+  express, carrying TV's own wording. Re-probing corrected the report on three
+  points - the quoted message was truncated, presence is SYNTACTIC (`profit =
+  na` is clean), and a positional `trail_price` can never violate the rule.
+  Also fixes a `generate` footgun that silently dropped the libraries export
+  from the pine-data barrel.

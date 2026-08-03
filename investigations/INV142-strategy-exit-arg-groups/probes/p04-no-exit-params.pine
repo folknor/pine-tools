@@ -1,0 +1,7 @@
+//@version=6
+strategy("p04 no exit params at all")
+
+if bar_index == 1
+    strategy.entry("L", strategy.long)
+
+strategy.exit("X", from_entry = "L")

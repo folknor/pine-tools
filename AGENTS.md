@@ -316,6 +316,15 @@ param types + returns) alongside the merged view, and params carry `default`
 and `min`/`max`. `types` includes `chart.point`'s fields; the opaque ID types
 have none.
 
+INTER-parameter requirements, which the per-param fields above cannot express,
+live in `flags.argGroups = { message, anyOf: string[][] }` - the call must
+supply at least one `anyOf` combination, each combination being names that must
+ALL be present. Probe-backed, since the reference documents no such constraint
+(`strategy.exit`'s "at least one of profit/limit/loss/stop, or the pair
+trail_offset + trail_price / trail_points" is the only populated entry - see
+INV142). Presence is SYNTACTIC, matching TV: an explicitly-passed `na` counts.
+The message is TV's own, so the checker carries no wording of its own.
+
 Every reference item also carries the prose sub-sections the structured fields
 otherwise drop, for downstream/external consumers: `returnsDescription` (the
 Returns *sentence*, distinct from the typed `returns`), `remarks` (free-text
@@ -333,6 +342,11 @@ are scraped via `op_<symbol>` anchors and mirrored under `op__<hex-slug>` (the
 slug avoids the `?:`/`+=`/`==` filename collisions a naive safe-name produces).
 
 **Regenerating is safe** - customizations are in the scripts, not output files.
+(One exception is now handled rather than merely known: `generate` rewrites
+`pine-data/v6/index.ts`, whose template used to omit `export * from
+"./libraries"` - so every `generate` silently dropped `LIBRARY_EXPORTS_BY_PATH`
+from the barrel, and `generate:libraries` did not put it back. The template now
+emits that export when `libraries.ts` exists. See INV142.)
 
 **WARNING: Always run `pnpm run reextract:dom` AND `pnpm run reextract:sections`
 after any `scrape`.** A `scrape` rebuilds `complete-v6-details.json` from the

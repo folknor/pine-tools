@@ -431,8 +431,47 @@ function getFunctionFlags(name: string): Record<string, unknown> | undefined {
 		flags.historyDependent = true;
 	}
 
+	if (ARG_GROUPS[name]) {
+		flags.argGroups = ARG_GROUPS[name];
+	}
+
 	return Object.keys(flags).length > 0 ? flags : undefined;
 }
+
+// Inter-parameter requirements: "the call must supply at least one of these
+// combinations". Each entry of `anyOf` is a combination whose members must ALL
+// be present; the call is valid if ANY combination is satisfied.
+//
+// This is a LINTER-ONLY fact - the reference documents no such constraint for
+// strategy.exit (its remarks describe the trailing pair's behavior but never
+// say a call must carry one of these), so there is nothing to scrape and it is
+// probed instead, per the pipeline rule for facts the reference under-documents.
+//
+// Presence is SYNTACTIC, not value-based: `strategy.exit("X", profit = na)` is
+// clean on TV even though the value is na, so an explicitly-passed argument
+// counts however it is written (probe p09). That is what makes the rule
+// statically checkable at all. Positional arguments count the same way, which
+// in practice means a positional `trail_price` can never violate the rule -
+// reaching it positionally necessarily supplies profit/limit/loss/stop first
+// (probe p11). See investigations/INV142-strategy-exit-arg-groups/notes.md.
+const ARG_GROUPS: Record<string, { message: string; anyOf: string[][] }> = {
+	// pine-lint --tv, 2026-08-03, probes p01-p12. Errors: trail_price alone,
+	// trail_points alone, trail_offset alone, no exit params at all. Clean:
+	// trail_price+trail_offset, trail_points+trail_offset, stop+trail_price,
+	// profit alone. Anchored at the callee's start position.
+	"strategy.exit": {
+		message:
+			'strategy.exit must have at least one of the following parameters: "profit", "limit", "loss", "stop" or one of the following pairs: "trail_offset" and "trail_price" / "trail_points". To close the position at market price, use "strategy.close"',
+		anyOf: [
+			["profit"],
+			["limit"],
+			["loss"],
+			["stop"],
+			["trail_offset", "trail_price"],
+			["trail_offset", "trail_points"],
+		],
+	},
+};
 
 // =============================================================================
 // GENERATORS
@@ -1298,6 +1337,16 @@ function generateVersionIndex(
 ): void {
 	console.log("Generating index.ts...");
 
+	// `libraries.ts` is written by the SEPARATE generate-libraries step, so this
+	// template must not hardcode its export: emitting it unconditionally breaks
+	// tsc on a tree that has never run that step, and omitting it unconditionally
+	// (the previous behavior) silently DROPPED `LIBRARY_EXPORTS_BY_PATH` from the
+	// barrel on every `generate`, disabling imported-library validation until
+	// someone noticed. Key it on the file instead. see INV142
+	const librariesExport = fs.existsSync(path.join(OUTPUT_DIR, "libraries.ts"))
+		? '\nexport * from "./libraries";'
+		: "";
+
 	const content = `/**
  * Pine Script ${VERSION.toUpperCase()} Language Data
  * Auto-generated - single entry point for all ${VERSION} data
@@ -1311,7 +1360,7 @@ export * from "./constants";
 export * from "./types";
 export * from "./annotations";
 export * from "./operators";
-export * from "./keywords";
+export * from "./keywords";${librariesExport}
 
 // Re-export types
 export type {
