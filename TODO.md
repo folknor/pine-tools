@@ -15,13 +15,16 @@ regenerate with `node scripts/find-real-failures.mjs` followed by
 indexed at [investigations/README.md](investigations/README.md)
 and are not duplicated here - TODO.md is for *pending* work only.
 
-Measurement note, 2026-07-15 (current state; earlier per-INV notes live in git
+Measurement note, 2026-08-03 (current state; earlier per-INV notes live in git
 history and in each investigation, per G001 - they were dated point-in-time
-records, not standing facts). The local snapshot is stable at 1879 fixtures,
-622 fixtures with errors, and 16057 total error records.
-`node scripts/regression-check.mjs` reports 0 changed fixtures and 0 new error
-appearances, other than INV138's single `2997d729…` v5 disappearance (a real FP
-removal, TV-confirmed silent). The last full TV sweep (INV133, 2026-06-28, 748
+records, not standing facts). The baseline was re-snapshotted on 2026-08-03 to
+absorb INV138's `2997d729…` v5 disappearance (a real FP removal, TV-confirmed
+silent) which the previous 2026-06-28 baseline still carried as a standing
+exception. The local snapshot is now stable at 1879 fixtures, 621 fixtures with
+errors, and 16056 total error records, and
+`node scripts/regression-check.mjs` reports a clean 0 changed fixtures /
+0 new error appearances with no exception.
+The last full TV sweep (INV133, 2026-06-28, 748
 v6 fixtures) measured errors at 29 local-only / 0 tv-only / 1 same-position
 message pair and warning tv-only at 0; every change since has left the v6 error
 baseline byte-identical, so that window still holds. Full vitest: 438 passing.
@@ -338,18 +341,47 @@ IDs so the two stay in sync.
   provenance per field type, then flag a used type whose provenance library is
   not among the script's imports. FP-safe by the usual rule - stay silent for
   any library whose surface we lack.
-- **#63 - CE10288 for `var` in a type declaration.** Surfaced by
-  [INV140](investigations/INV140-imported-udt-surfaces/notes.md) p02. TV rejects
-  a `var`-qualified UDT field with CE10288 "The keywords "var" cannot be used in
-  a type declaration. Use them when declaring variables of that type.", anchored
-  at the DECLARATION (`varip` is the only legal field qualifier - probed
-  2026-07-15). `scanTypeFieldAtCurrent` does not recognise `var` there, so it
-  drops the field, and the dropped name then surfaces as "Object has no field x"
-  at each USAGE instead. Not an FP (TV errors too) but the wrong message at the
-  wrong position, and the same dropped-field mechanism that made INV140's
-  `varip`/array-field bug a real false positive. Fix is to emit CE10288 from the
-  scanner and keep the field. Small and self-contained; no corpus carrier known,
-  so it is a correctness/message-alignment item, not a measured one.
+- **#65 - inter-parameter argument-group constraints (`strategy.exit` first).**
+  Reported externally in `../freedom/FINDINGS.md` finding 2 (2026-08-01, against
+  `pine-lint 0.5.0`): we accept `strategy.exit(..., trail_price=...)` with no
+  `trail_offset=`, which TV rejects with
+
+  ```
+  strategy.exit must have at least one of the following parameters: "profit",
+  "limit", "loss", "stop" or one of the following pairs: "trail_offset" and
+  "trail_price" / "trail_points".
+  ```
+
+  A genuine tv-only FN, i.e. a class our sweep reports 0 of. It is invisible to
+  the corpus loop by construction: the corpus is published WORKING scripts, so a
+  shape TV rejects cannot appear in it. That is the #48/#52 blind spot, not a
+  gap in the sweep. `piners validate` already implements the rule (`PINE0411`,
+  `"stage":"semantic"`, TV's message verbatim) and both controls stay clean
+  there, so a known-good reference for wording and for non-over-rejection
+  exists. The reported controls are `trail_complete.pine` (`trail_price` +
+  `trail_offset`) and `trail_accompanied.pine` (`stop=` + `trail_price=`), both
+  clean on TV and locally; only the bare `trail_price=` form
+  (`trail_bare.pine`) differs.
+
+  Work: open an INV, re-probe all three shapes with `pine-lint --tv` and record
+  the exact scripts plus dated output (the FINDINGS numbers are someone else's
+  point-in-time measurement, so they are a lead, not a fact we inherit); pin a
+  regression fixture; then implement. The open design question is WHERE the rule
+  lives. Per the Data-vs-Syntax rule it belongs in `functions.json`, but this is
+  an inter-parameter constraint (an "at least one of / or one of these pairs"
+  group) and the current param schema expresses only per-param facts
+  (`required`, `allowedValues`, `min`/`max`). So it needs either a new
+  `argGroups`-style field on the function entry, generated from a probe-backed
+  data file in the #21 shape, or a checker special-case that the architecture
+  rule says not to write. Prefer the former; the group is stated verbatim in
+  TV's own message, so it is scrapable/probe-recordable rather than guessed.
+  Worth surveying which other builtins carry the same "at least one of" prose
+  before fixing the schema shape around a single function.
+
+  Adjacent, NOT ours: FINDINGS 3 reports that piners EXECUTES an offset-free
+  trail leg as a live exit and that it dominates (23 of 29 exits, ~5x pnl swing).
+  That is a runtime-fill parity question, unadjudicated, and lint has nothing to
+  say about it - `--tv` settles compilation, not fill semantics.
 
 ## Gotchas
 

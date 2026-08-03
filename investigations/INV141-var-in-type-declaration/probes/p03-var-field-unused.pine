@@ -1,0 +1,9 @@
+//@version=6
+indicator("p03 var field never read")
+
+type t
+    var float b
+    float c
+
+x = t.new(1.0, 2.0)
+plot(x.c)

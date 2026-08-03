@@ -863,3 +863,10 @@ contradiction means re-measure, not "the earlier author was wrong."
   `varip`-qualified and UDT-typed-array fields, a live FP on TV-clean code that
   cost `robbatt/lib_profile/44` 17 of its 30 Profile fields. New residual: TV's
   transitive-import rule.
+- [INV141](INV141-var-in-type-declaration/notes.md) - closes INV140's p02
+  residual (TODO #63): `var` is not a legal UDT field qualifier (`varip` is the
+  only one), and the scanner did not recognise it, so it DROPPED the field and
+  the name resurfaced as "Object has no field" at each usage. Never an FP - TV
+  errors too - but the wrong message at the wrong position, and fully SILENT
+  when the field is never read. Now scanned like `varip` so the field survives,
+  with TV's CE10288 emitted at the `var` token.

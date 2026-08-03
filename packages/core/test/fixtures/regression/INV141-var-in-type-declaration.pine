@@ -1,0 +1,12 @@
+// @test regression/INV141-var-in-type-declaration
+// @description `var` is not a legal UDT field qualifier - TV rejects it with CE10288 anchored at the `var` token (probed 2026-07-15, re-probed 2026-08-03; `varip` is the only legal one and stays clean). `scanTypeFieldAtCurrent` did not recognise `var` there, so it DROPPED the field, and the dropped name then resurfaced as "Object has no field b" at each USAGE - right that it errors, wrong message at the wrong position. The field is now kept and CE10288 reported at the declaration - reading `b` below pins that it survives rather than resurfacing as a bogus field error. The `varip` field `c` is deliberately left unread, pinning that the legal qualifier still draws nothing. Probe p03 covers the unread-`var` case, where the old behavior was silent outright. See investigations/INV141-var-in-type-declaration/notes.md.
+// @expects parse: fail
+// @expects error: line=4, message="cannot be used in a type declaration. Use them when declaring variables of that type."
+//@version=6
+indicator("x")
+type t
+    var float b
+    varip float c
+    float d
+o = t.new(1.0, 2.0, 3.0)
+plot(o.b + o.d)

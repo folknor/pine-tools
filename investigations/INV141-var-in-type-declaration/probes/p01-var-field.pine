@@ -1,0 +1,8 @@
+//@version=6
+indicator("p01 var field")
+
+type t
+    var float b
+
+x = t.new(1.0)
+plot(x.b)
