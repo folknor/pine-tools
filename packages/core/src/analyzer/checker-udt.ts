@@ -3,7 +3,10 @@
 // field typing, the CE10198 "object has no field" check, and the CE10170
 // field-default type check. see INV093, INV094.
 
-import { TYPE_NAMES } from "../../../../pine-data/v6";
+import {
+	LIBRARY_FOREIGN_TYPE_REFS,
+	TYPE_NAMES,
+} from "../../../../pine-data/v6";
 import { DiagnosticSeverity } from "../common/errors";
 import type {
 	CallExpression,
@@ -54,6 +57,59 @@ export function resolveUdtFieldType(
 	return fields.get(expr.property.name) ?? null;
 }
 
+/**
+ * TV requires a library to be imported EXPLICITLY when a UDT you use has fields
+ * referencing THAT library's types: using `PF.Profile` after importing only
+ * lib_profile draws one error per referencing field type, naming the declaring
+ * library. We were silent (INV140 p07, the live residual of TODO #41).
+ *
+ * The trigger is a MEMBER ACCESS on a value of the type, not the declaration:
+ * `PF.Profile p = na` alone is clean on TV, and so is a param that is never
+ * used - only touching a member does it (probed q01/q05/q08). One error per
+ * distinct foreign type per SCRIPT, in field-declaration order.
+ *
+ * FP-safe by construction: a library we do not vendor has no
+ * LIBRARY_FOREIGN_TYPE_REFS entry, and a field type whose alias did not resolve
+ * to one of that library's own imports was never recorded, so both stay silent.
+ *
+ * ANCHOR - TV uses two different ones, and both are matched here. A METHOD CALL
+ * (`p.hide()`) anchors at the call. A plain FIELD access (`p.poc`) anchors at
+ * the SCRIPT DECLARATION statement instead, which first read like a degenerate
+ * fallback (it landed on 2:1 in two probes) but is real: moving the
+ * `indicator()` call down the file moved the anchor with it. Callers pass the
+ * position appropriate to their trigger. see INV143
+ */
+export function checkTransitiveLibraryImports(
+	v: UnifiedPineValidator,
+	receiverType: string | null | undefined,
+	line: number,
+	column: number,
+	length: number,
+): void {
+	if (!receiverType) return;
+	const base = TypeChecker.baseTypeName(receiverType);
+	const dot = base.indexOf(".");
+	if (dot <= 0) return;
+	const libraryPath = v.importedLibraryPaths.get(base.slice(0, dot));
+	if (!libraryPath) return;
+	const refs = LIBRARY_FOREIGN_TYPE_REFS[libraryPath]?.[base.slice(dot + 1)];
+	if (!refs) return;
+	const imported = new Set(v.importedLibraryPaths.values());
+	for (const ref of refs) {
+		if (imported.has(ref.library)) continue;
+		const key = `${ref.type}@${ref.library}`;
+		if (v.reportedTransitiveImports.has(key)) continue;
+		v.reportedTransitiveImports.add(key);
+		v.addError(
+			line,
+			column,
+			length,
+			`The type "${ref.type}" is declared in the "${ref.library}" library, but the library is not explicitly imported. To use the type, import that library`,
+			DiagnosticSeverity.Error,
+		);
+	}
+}
+
 export function checkUdtFieldAccess(
 	v: UnifiedPineValidator,
 	expr: MemberExpression,
@@ -61,6 +117,18 @@ export function checkUdtFieldAccess(
 ): void {
 	if (version !== "6") return;
 	const receiverType = resolveUdtExpressionType(v, expr.object);
+	// Field-access trigger for the transitive-import rule, anchored at the script
+	// declaration statement per TV. With no declaration statement to anchor to
+	// (an incomplete script) we stay silent rather than invent a position.
+	if (v.declarationStatementPos) {
+		checkTransitiveLibraryImports(
+			v,
+			receiverType,
+			v.declarationStatementPos.line,
+			v.declarationStatementPos.column,
+			expr.property.name.length,
+		);
+	}
 	if (receiverType) {
 		const fields = v.udtFieldTypes.get(TypeChecker.baseTypeName(receiverType));
 		if (!fields || fields.has(expr.property.name)) return;

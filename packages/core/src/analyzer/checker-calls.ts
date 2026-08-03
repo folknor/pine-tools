@@ -59,6 +59,7 @@ import {
 	SCALAR_BASE_TYPES,
 } from "./checker-helpers";
 import { qualifierProvenance } from "./checker-provenance";
+import { checkTransitiveLibraryImports } from "./checker-udt";
 import type { Qualifier } from "./qualifier";
 import { type PineType, TypeChecker } from "./types";
 
@@ -465,6 +466,21 @@ export function validateCallExpression(
 			const receiverBase = objSym
 				? TypeChecker.baseTypeName(objSym.type as string)
 				: "";
+			// A METHOD CALL on an imported UDT is one of the two triggers for TV's
+			// transitive-import rule (the other is a field access, handled in
+			// checkUdtFieldAccess). Anchored at the call, which is exactly where TV
+			// puts it for this case. Runs regardless of whether the method resolves
+			// - the complaint is about the TYPE's field surface, not the member.
+			// see INV143
+			if (v.parserClean && objSym) {
+				checkTransitiveLibraryImports(
+					v,
+					receiverBase,
+					call.line,
+					call.column,
+					functionName.length,
+				);
+			}
 			const collectionKind = receiverBase.match(/^(array|matrix|map)</)?.[1];
 			const collectionReceiver =
 				v.parserClean &&

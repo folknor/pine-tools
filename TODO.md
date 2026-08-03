@@ -27,7 +27,13 @@ errors, and 16056 total error records, and
 The last full TV sweep (INV133, 2026-06-28, 748
 v6 fixtures) measured errors at 29 local-only / 0 tv-only / 1 same-position
 message pair and warning tv-only at 0; every change since has left the v6 error
-baseline byte-identical, so that window still holds. Full vitest: 438 passing.
+baseline byte-identical, so that window still holds. Full vitest: 441 passing.
+
+Note on the three checks added 2026-08-03 (INV141/INV142/INV143): all three are
+classes the corpus CANNOT carry, so their 0-changed regression results are not
+evidence of coverage on their own - each is pinned by probes and a fixture
+instead. See each INV's Verification section for what negative evidence the
+corpus does supply.
 
 **Warning local-only is NOT a stable metric** - do not read movement in it as
 signal. It measured 1290 then 1310 on byte-identical same-day reruns, because
@@ -101,8 +107,9 @@ IDs so the two stay in sync.
   sat "OPEN, blocked behind robust receiver resolution" for a month after
   `a35bac7` fixed it, and slice (a) listed three gaps that #53 already
   contradicted in this same file - so re-verify a claim here before planning
-  around it. Live successors: **#64** (transitive imports, the one real
-  residual) and **#53(a)** (vendoring more libraries - a data gap, since the
+  around it. The transitive-import successor is now CLOSED too
+  ([INV143](investigations/INV143-transitive-library-imports/notes.md)). The one
+  live successor is **#53(a)** (vendoring more libraries - a data gap, since the
   checker logic exists and simply has no export set to read; the 10
   license-excluded libs are deliberate policy). We emit CE10271 for an
   undefined receiver but not TV's second CE10272 record.
@@ -329,22 +336,6 @@ IDs so the two stay in sync.
   #61's consistency-FP side is largely closed: 5 resolved (`ta.atr`, `ta.sma`,
   `draw_lbl`, `math.sum`, `ta.crossunder`/`6152b9`), 1 unreproducible
   (`61a3a7`), the rest TV-error-stops / G005 phantoms.
-- **#64 - transitive library imports (CE-unknown).** Surfaced by
-  [INV140](investigations/INV140-imported-udt-surfaces/notes.md) p07, and the
-  live residual of the now-closed #41. TV requires a library to be imported
-  EXPLICITLY when a UDT you use has fields referencing ITS types: using
-  `PF.Profile` after only `import robbatt/lib_profile/44` draws four errors,
-  one per referencing field type - `The type "Line" is declared in the
-  "robbatt/lib_plot_objects/56" library, but the library is not explicitly
-  imported. To use the type, import that library` (probed 2026-07-15). We are
-  silent. The data now exists to implement it (`LIBRARY_TYPE_FIELDS` records
-  each field's declared type), but the check needs each field type's
-  DECLARING-LIBRARY provenance, which the current `alias.Base` qualification
-  does not record - a field is stored as `alias.Line`, not as
-  "Line, from robbatt/lib_plot_objects/56". So: extend the generator to record
-  provenance per field type, then flag a used type whose provenance library is
-  not among the script's imports. FP-safe by the usual rule - stay silent for
-  any library whose surface we lack.
 
 ## Gotchas
 

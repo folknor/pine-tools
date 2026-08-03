@@ -1,0 +1,6 @@
+//@version=6
+indicator("q06 variable declaration followed by a method call")
+import robbatt/lib_profile/44 as PF
+PF.Profile p = na
+p.hide()
+plot(1)

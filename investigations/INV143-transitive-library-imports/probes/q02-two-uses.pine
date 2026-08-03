@@ -1,0 +1,8 @@
+//@version=6
+indicator("q02 two separate uses of the same imported UDT")
+import robbatt/lib_profile/44 as PF
+f(PF.Profile p) =>
+    p.hide()
+g(PF.Profile q) =>
+    q.hide()
+plot(1)

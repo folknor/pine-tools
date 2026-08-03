@@ -1,0 +1,8 @@
+//@version=6
+// a comment line, so the indicator() call is NOT on line 2
+// another comment line
+indicator("q09 does TV's field-access anchor track the indicator statement")
+import robbatt/lib_profile/44 as PF
+f(PF.Profile p) =>
+    p.poc
+plot(1)

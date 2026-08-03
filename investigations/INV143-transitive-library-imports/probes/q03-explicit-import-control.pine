@@ -1,0 +1,7 @@
+//@version=6
+indicator("q03 control - the referenced library IS explicitly imported")
+import robbatt/lib_profile/44 as PF
+import robbatt/lib_plot_objects/56 as D
+f(PF.Profile p) =>
+    p.hide()
+plot(1)

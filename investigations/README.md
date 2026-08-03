@@ -880,3 +880,13 @@ contradiction means re-measure, not "the earlier author was wrong."
   na` is clean), and a positional `trail_price` can never violate the rule.
   Also fixes a `generate` footgun that silently dropped the libraries export
   from the pine-data barrel.
+- [INV143](INV143-transitive-library-imports/notes.md) - TODO #64, closing
+  INV140's p07 residual and the last live piece of #41. TV requires a library to
+  be imported EXPLICITLY when a UDT you use has fields referencing ITS types.
+  Needed the field type's DECLARING library, which `LIBRARY_TYPE_FIELDS` could
+  not give (it stores `D.Line`, and `D` is an alias private to the library's own
+  source), so the generator now resolves each field type through that library's
+  own imports into `LIBRARY_FOREIGN_TYPE_REFS`. Trigger is a member access, not
+  the declaration; reported once per type per script. TV's field-access anchor
+  looked like a degenerate `2:1` artifact until a probe moved the `indicator()`
+  call and the anchor moved with it - it is the script declaration statement.

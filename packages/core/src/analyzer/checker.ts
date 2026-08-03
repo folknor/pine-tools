@@ -100,6 +100,10 @@ import { type PineType, TypeChecker } from "./types";
 // Re-export for backward compatibility
 export { DiagnosticSeverity, type ValidationError } from "../common/errors";
 
+// The script declaration statement's callee. Exactly one of these opens a
+// script, and TV anchors INV143's field-access case at it.
+const DECLARATION_FUNCTIONS = new Set(["indicator", "strategy", "library"]);
+
 export class UnifiedPineValidator {
 	private errors: ValidationError[] = [];
 	// NOTE: several members below are `public` rather than `private` because the
@@ -145,6 +149,16 @@ export class UnifiedPineValidator {
 	public declaredFunctionNames: Set<string> = new Set();
 	public udtFieldTypes: Map<string, Map<string, PineType>> = new Map();
 	public reportedUdtFieldErrors: Set<string> = new Set();
+	// Transitive-import errors already reported, keyed "type@library". TV reports
+	// each missing library's type ONCE per script, not once per use site (probed:
+	// two separate UDFs each using PF.Profile still draw exactly 4). see INV143
+	public reportedTransitiveImports: Set<string> = new Set();
+	// Position of the script DECLARATION statement (indicator/strategy/library).
+	// TV anchors a transitive-import error triggered by a FIELD access here
+	// rather than at the field - probed by moving the `indicator()` call down the
+	// file, which moved the anchor with it. see INV143
+	public declarationStatementPos: { line: number; column: number } | null =
+		null;
 	// Namespaces bound by an `import` - the alias if present, else the
 	// library name (the path's middle segment: `import User/ta/8` binds the
 	// namespace `ta`). Members of these are library calls we cannot resolve,
@@ -231,6 +245,8 @@ export class UnifiedPineValidator {
 		this.declaredFunctionNames.clear();
 		this.udtFieldTypes.clear();
 		this.reportedUdtFieldErrors.clear();
+		this.reportedTransitiveImports.clear();
+		this.declarationStatementPos = null;
 		this.importedNamespaces.clear();
 		this.importedLibraryPaths.clear();
 		this.declScopes = [new Set()];
@@ -269,6 +285,19 @@ export class UnifiedPineValidator {
 		// recognised regardless of source order (the main pass below is
 		// single-pass top-to-bottom). see INV053
 		for (const statement of ast.body) {
+			// The script declaration statement, for INV143's field-access anchor.
+			if (
+				!this.declarationStatementPos &&
+				statement.type === "ExpressionStatement" &&
+				statement.expression.type === "CallExpression" &&
+				statement.expression.callee.type === "Identifier" &&
+				DECLARATION_FUNCTIONS.has(statement.expression.callee.name)
+			) {
+				this.declarationStatementPos = {
+					line: statement.expression.line,
+					column: statement.expression.column,
+				};
+			}
 			if (statement.type === "ImportStatement") {
 				const ns = statement.alias ?? statement.libraryPath.split("/")[1];
 				if (ns) {
