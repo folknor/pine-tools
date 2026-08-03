@@ -863,3 +863,30 @@ contradiction means re-measure, not "the earlier author was wrong."
   `varip`-qualified and UDT-typed-array fields, a live FP on TV-clean code that
   cost `robbatt/lib_profile/44` 17 of its 30 Profile fields. New residual: TV's
   transitive-import rule.
+- [INV141](INV141-var-in-type-declaration/notes.md) - closes INV140's p02
+  residual (TODO #63): `var` is not a legal UDT field qualifier (`varip` is the
+  only one), and the scanner did not recognise it, so it DROPPED the field and
+  the name resurfaced as "Object has no field" at each usage. Never an FP - TV
+  errors too - but the wrong message at the wrong position, and fully SILENT
+  when the field is never read. Now scanned like `varip` so the field survives,
+  with TV's CE10288 emitted at the `var` token.
+- [INV142](INV142-strategy-exit-arg-groups/notes.md) - TODO #65, reported
+  externally: we accepted `strategy.exit` with a bare `trail_price=` and no
+  `trail_offset=`, which TV rejects. A tv-only class the corpus structurally
+  cannot surface (published scripts work). Adds `FunctionFlags.argGroups`, a
+  probe-backed inter-parameter requirement the per-param schema could not
+  express, carrying TV's own wording. Re-probing corrected the report on three
+  points - the quoted message was truncated, presence is SYNTACTIC (`profit =
+  na` is clean), and a positional `trail_price` can never violate the rule.
+  Also fixes a `generate` footgun that silently dropped the libraries export
+  from the pine-data barrel.
+- [INV143](INV143-transitive-library-imports/notes.md) - TODO #64, closing
+  INV140's p07 residual and the last live piece of #41. TV requires a library to
+  be imported EXPLICITLY when a UDT you use has fields referencing ITS types.
+  Needed the field type's DECLARING library, which `LIBRARY_TYPE_FIELDS` could
+  not give (it stores `D.Line`, and `D` is an alias private to the library's own
+  source), so the generator now resolves each field type through that library's
+  own imports into `LIBRARY_FOREIGN_TYPE_REFS`. Trigger is a member access, not
+  the declaration; reported once per type per script. TV's field-access anchor
+  looked like a degenerate `2:1` artifact until a probe moved the `indicator()`
+  call and the anchor moved with it - it is the script declaration statement.

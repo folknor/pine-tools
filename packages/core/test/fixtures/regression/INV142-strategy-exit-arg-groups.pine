@@ -1,0 +1,14 @@
+// @test regression/INV142-strategy-exit-arg-groups
+// @description TV requires strategy.exit to carry at least one of profit/limit/loss/stop, or the PAIR trail_offset + trail_price / trail_points. A bare `trail_price=` with no `trail_offset=` was accepted locally while TV rejects it - a tv-only error class the corpus can never surface, since the corpus is published WORKING scripts. Presence is SYNTACTIC: an explicitly-passed `na` counts (probe p09), which is what makes the rule statically checkable. The rule, its combinations and TV's wording live in flags.argGroups in pine-data, not in the checker. Probed 2026-08-03, p01-p12. See investigations/INV142-strategy-exit-arg-groups/notes.md.
+// @expects error: line=5, message="strategy.exit must have at least one of the following parameters"
+// @expects errors: 1
+//@version=6
+strategy("x")
+if bar_index == 1
+    strategy.entry("L", strategy.long)
+strategy.exit("bare", from_entry = "L", trail_price = high)
+strategy.exit("pair", from_entry = "L", trail_price = high, trail_offset = 10)
+strategy.exit("points", from_entry = "L", trail_points = 100, trail_offset = 10)
+strategy.exit("accompanied", from_entry = "L", stop = low, trail_price = high)
+strategy.exit("profit", from_entry = "L", profit = 100)
+strategy.exit("explicit-na", from_entry = "L", profit = na)

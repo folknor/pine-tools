@@ -1,7 +1,7 @@
 /**
  * Pine Script V6 Functions
  * Auto-generated from TradingView documentation
- * Generated: 2026-07-05T11:32:13.116Z
+ * Generated: 2026-08-03T19:00:51.628Z
  * Total: 475 functions
  */
 
@@ -18172,6 +18172,33 @@ export const FUNCTIONS: PineFunction[] = [
       }
     ],
     "returns": "void",
+    "flags": {
+      "argGroups": {
+        "message": "strategy.exit must have at least one of the following parameters: \"profit\", \"limit\", \"loss\", \"stop\" or one of the following pairs: \"trail_offset\" and \"trail_price\" / \"trail_points\". To close the position at market price, use \"strategy.close\"",
+        "anyOf": [
+          [
+            "profit"
+          ],
+          [
+            "limit"
+          ],
+          [
+            "loss"
+          ],
+          [
+            "stop"
+          ],
+          [
+            "trail_offset",
+            "trail_price"
+          ],
+          [
+            "trail_offset",
+            "trail_points"
+          ]
+        ]
+      }
+    },
     "examples": [
       "//@version=6\nstrategy(\"Exit bracket strategy\", overlay = true)\n\n// Inputs that define the profit and loss amount of each trade as a tick distance from the entry price.\nint profitDistanceInput = input.int(100, \"Profit distance, in ticks\", 1)\nint lossDistanceInput   = input.int(100, \"Loss distance, in ticks\", 1)\n\n// Variables to track the take-profit and stop-loss price.\nvar float takeProfit = na\nvar float stopLoss   = na\n\n// Calculate a 14-bar and 28-bar moving average of `close` prices.\nfloat sma14 = ta.sma(close, 14)\nfloat sma28 = ta.sma(close, 28)\n\nif ta.crossover(sma14, sma28) and strategy.opentrades == 0\n    // Place a market order to enter a long position.\n    strategy.entry(\"My Long Entry ID\", strategy.long)\n    // Place a take-profit and stop-loss order when the entry order fills.\n    strategy.exit(\"My Long Exit ID\", \"My Long Entry ID\", profit = profitDistanceInput, loss = lossDistanceInput)\n\nif ta.change(strategy.opentrades) == 1\n    //@variable The long entry price.\n    float entryPrice = strategy.opentrades.entry_price(0)\n    // Update the `takeProfit` and `stopLoss` values.\n    takeProfit := entryPrice + profitDistanceInput * syminfo.mintick\n    stopLoss   := entryPrice - lossDistanceInput * syminfo.mintick\n\nif ta.change(strategy.closedtrades) == 1\n    // Reset the `takeProfit` and `stopLoss`.\n    takeProfit := na\n    stopLoss   := na\n\n// Plot the `takeProfit` and `stopLoss`.\nplot(takeProfit, \"Take-profit level\", color.green, 2, plot.style_linebr)\nplot(stopLoss, \"Stop-loss level\", color.red, 2, plot.style_linebr)",
       "//@version=6\nstrategy(\"Trailing stop strategy\", overlay = true)\n\n//@variable The distance required to activate the trailing stop.\nfloat activationDistanceInput = input.int(100, \"Trail activation distance, in ticks\") * syminfo.mintick\n//@variable The number of ticks the trailing stop follows behind the price as it reaches new peaks.\nint trailDistanceInput = input.int(100, \"Trail distance, in ticks\")\n\n//@function Draws a label and line at the specified `price` to visualize a trailing stop order's activation level.\ndrawActivation(float price) =>\n    label.new(\n         bar_index, price, \"Activation level\", style = label.style_label_right,\n         color = color.gray, textcolor = color.white\n     )\n    line.new(\n         bar_index, price, bar_index + 1, price, extend = extend.right, style = line.style_dashed, color = color.gray\n     )\n\n//@function Stops the `l` line from extending further.\nmethod stopExtend(line l) =>\n    l.set_x2(bar_index)\n    l.set_extend(extend.none)\n\n// The activation line, active trailing stop price, and active trailing stop flag.\nvar line activationLine     = na\nvar float trailingStopPrice = na\nvar bool isActive           = false\n\nif bar_index % 100 == 0 and strategy.opentrades == 0\n    trailingStopPrice := na\n    isActive          := false\n    // Place a market order to enter a long position.\n    strategy.entry(\"My Long Entry ID\", strategy.long)\n    //@variable The activation level's price.\n    float activationPrice = close + activationDistanceInput\n    // Create a trailing stop order that activates the defined number of ticks above the entry price.\n    strategy.exit(\n         \"My Long Exit ID\", \"My Long Entry ID\", trail_price = activationPrice, trail_offset = trailDistanceInput,\n         oca_name = \"Exit\"\n     )\n    // Create new drawings at the `activationPrice`.\n    activationLine := drawActivation(activationPrice)\n\n// Logic for trailing stop visualization.\nif strategy.opentrades == 1\n    // Stop extending the `activationLine` when the stop activates.\n    if not isActive and high > activationLine.get_price(bar_index)\n        isActive := true\n        activationLine.stopExtend()\n    // Update the `trailingStopPrice` while the trailing stop is active.\n    if isActive\n        float offsetPrice = high - trailDistanceInput * syminfo.mintick\n        trailingStopPrice := math.max(nz(trailingStopPrice, offsetPrice), offsetPrice)\n\n// Close the trade with a market order if the trailing stop does not activate before the next 300th bar.\nif not isActive and bar_index % 300 == 0\n    strategy.close_all(\"Market close\")\n\n// Reset the `trailingStopPrice` and `isActive` flags when the trade closes, and stop extending the `activationLine`.\nif ta.change(strategy.closedtrades) > 0\n    if not isActive\n        activationLine.stopExtend()\n    trailingStopPrice := na\n    isActive          := false\n\n// Plot the `trailingStopPrice`.\nplot(trailingStopPrice, \"Trailing stop\", color.red, 3, plot.style_linebr)"

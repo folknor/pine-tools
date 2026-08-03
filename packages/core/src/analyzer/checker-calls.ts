@@ -21,6 +21,7 @@ import type {
 import {
 	type FunctionSignature,
 	GENERIC_FUNCTION_BASES,
+	getArgGroups,
 	getBuiltinVarInfo,
 	getConstParamDocType,
 	getMinArgsForVariadic,
@@ -58,6 +59,7 @@ import {
 	SCALAR_BASE_TYPES,
 } from "./checker-helpers";
 import { qualifierProvenance } from "./checker-provenance";
+import { checkTransitiveLibraryImports } from "./checker-udt";
 import type { Qualifier } from "./qualifier";
 import { type PineType, TypeChecker } from "./types";
 
@@ -464,6 +466,21 @@ export function validateCallExpression(
 			const receiverBase = objSym
 				? TypeChecker.baseTypeName(objSym.type as string)
 				: "";
+			// A METHOD CALL on an imported UDT is one of the two triggers for TV's
+			// transitive-import rule (the other is a field access, handled in
+			// checkUdtFieldAccess). Anchored at the call, which is exactly where TV
+			// puts it for this case. Runs regardless of whether the method resolves
+			// - the complaint is about the TYPE's field surface, not the member.
+			// see INV143
+			if (v.parserClean && objSym) {
+				checkTransitiveLibraryImports(
+					v,
+					receiverBase,
+					call.line,
+					call.column,
+					functionName.length,
+				);
+			}
 			const collectionKind = receiverBase.match(/^(array|matrix|map)</)?.[1];
 			const collectionReceiver =
 				v.parserClean &&
@@ -1364,6 +1381,42 @@ export function validateFunctionArguments(
 				call.column,
 				functionName.length,
 				`No value assigned to the "${name}" parameter in ${functionName}()`,
+				DiagnosticSeverity.Error,
+			);
+		}
+	}
+
+	// Inter-parameter argument groups: "at least one of these combinations must
+	// be supplied". The rule, its combinations, and TV's wording all come from
+	// flags.argGroups in pine-data - the checker embeds no language fact here.
+	//
+	// Presence is SYNTACTIC, which is what TV does: `strategy.exit("X", profit =
+	// na)` is clean even though the value is na (INV142 p09). So a parameter
+	// counts as supplied if it was written at all, whether by name or
+	// positionally. This is also why a positional `trail_price` never violates
+	// the rule - reaching it positionally means profit/limit/loss/stop were
+	// written first, even as na (p11).
+	//
+	// Anchored at the callee, matching TV (p12: an indented call reports at the
+	// call's own column, not column 1). v6 only per G004, and skipped for
+	// recovery-truncated calls whose arguments are incomplete rather than
+	// absent, like the CE10165 check above. see INV142
+	const argGroups = getArgGroups(functionName);
+	if (argGroups && version === "6" && !call.recovered) {
+		const supplied = new Set(providedArgs.keys());
+		for (let i = 0; i < positionalArgs.length; i++) {
+			const param = signature.parameters[i];
+			if (param) supplied.add(param.name);
+		}
+		const satisfied = argGroups.anyOf.some((combo) =>
+			combo.every((name) => supplied.has(name)),
+		);
+		if (!satisfied) {
+			v.addError(
+				call.line,
+				call.column,
+				functionName.length,
+				argGroups.message,
 				DiagnosticSeverity.Error,
 			);
 		}

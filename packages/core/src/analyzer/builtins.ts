@@ -19,6 +19,18 @@ export function isTopLevelOnly(functionName: string): boolean {
 	return func?.flags?.topLevelOnly === true;
 }
 
+/**
+ * Inter-parameter requirement for a function, if it has one: the call must
+ * supply at least one of the `anyOf` combinations. Uses flags.argGroups from
+ * pine-data, which carries TV's own message for the violation - the checker
+ * holds no table of its own. see INV142
+ */
+export function getArgGroups(
+	functionName: string,
+): { message: string; anyOf: string[][] } | undefined {
+	return FUNCTIONS_BY_NAME.get(functionName)?.flags?.argGroups;
+}
+
 // Build namespace properties from pine-data
 function buildNamespaceProperties(): Record<string, PineType> {
 	const props: Record<string, PineType> = {};

@@ -1,0 +1,6 @@
+//@version=6
+indicator("q04 an imported UDT whose fields reference no other library")
+import robbatt/lib_profile/44 as PF
+f(PF.Bucket b) =>
+    b.value
+plot(1)

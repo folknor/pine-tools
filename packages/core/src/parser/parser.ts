@@ -2045,11 +2045,20 @@ export class Parser {
 		// declaration is TV's CE10288 (probed 2026-07-15). Unrecognised, the
 		// whole field was dropped, and a dropped field name reads as a typo -
 		// `robbatt/lib_profile/44`'s Profile lost poc/vah/val that way. see INV140
-		if (
-			this.tokens[i]?.type === TokenType.KEYWORD &&
-			this.tokens[i].value === "varip"
-		) {
-			i++;
+		//
+		// `var` is scanned the same way so the field SURVIVES: dropping it merely
+		// relocated the complaint to every usage as "Object has no field b". We
+		// report CE10288 at the `var` token instead, matching TV's position and
+		// wording. see INV141
+		let illegalQualifier: Token | undefined;
+		if (this.tokens[i]?.type === TokenType.KEYWORD) {
+			const qualifier = this.tokens[i].value;
+			if (qualifier === "varip") {
+				i++;
+			} else if (qualifier === "var") {
+				illegalQualifier = this.tokens[i];
+				i++;
+			}
 		}
 		const start = this.tokens[i];
 		if (!start) return null;
@@ -2087,6 +2096,17 @@ export class Parser {
 				fieldToken?.type !== TokenType.KEYWORD)
 		) {
 			return null;
+		}
+		// Deferred to here so a non-field line that merely starts with `var` (this
+		// scanner runs on every body-indent line and rejects non-fields by the
+		// trailing name check above) cannot draw the diagnostic. see INV141
+		if (illegalQualifier) {
+			this.parserErrors.push({
+				line: illegalQualifier.line,
+				column: illegalQualifier.column,
+				message:
+					'The keywords "var" cannot be used in a type declaration. Use them when declaring variables of that type.',
+			});
 		}
 		// Capture a LITERAL default (`int x = 1.5`) so the checker can type-check
 		// it against the field type (CE10170). Non-literal defaults stay

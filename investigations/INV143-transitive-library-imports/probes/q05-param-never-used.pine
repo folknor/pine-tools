@@ -1,0 +1,6 @@
+//@version=6
+indicator("q05 param typed with the imported UDT but never used")
+import robbatt/lib_profile/44 as PF
+f(PF.Profile p) =>
+    1
+plot(f(na))

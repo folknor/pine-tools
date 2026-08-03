@@ -1,0 +1,7 @@
+//@version=6
+strategy("p08 trail_points bare")
+
+if bar_index == 1
+    strategy.entry("L", strategy.long)
+
+strategy.exit("X", from_entry = "L", trail_points = 100)

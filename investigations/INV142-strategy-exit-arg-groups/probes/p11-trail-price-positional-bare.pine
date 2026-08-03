@@ -1,0 +1,7 @@
+//@version=6
+strategy("p11 trail_price positional, no offset")
+
+if bar_index == 1
+    strategy.entry("L", strategy.long)
+
+strategy.exit("X", "L", na, 100, na, na, na, na, high)

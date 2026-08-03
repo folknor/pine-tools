@@ -1,0 +1,4 @@
+//@version=6
+indicator("q08 library imported but its UDTs never used")
+import robbatt/lib_profile/44 as PF
+plot(1)

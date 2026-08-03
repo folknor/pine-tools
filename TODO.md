@@ -15,16 +15,25 @@ regenerate with `node scripts/find-real-failures.mjs` followed by
 indexed at [investigations/README.md](investigations/README.md)
 and are not duplicated here - TODO.md is for *pending* work only.
 
-Measurement note, 2026-07-15 (current state; earlier per-INV notes live in git
+Measurement note, 2026-08-03 (current state; earlier per-INV notes live in git
 history and in each investigation, per G001 - they were dated point-in-time
-records, not standing facts). The local snapshot is stable at 1879 fixtures,
-622 fixtures with errors, and 16057 total error records.
-`node scripts/regression-check.mjs` reports 0 changed fixtures and 0 new error
-appearances, other than INV138's single `2997d729…` v5 disappearance (a real FP
-removal, TV-confirmed silent). The last full TV sweep (INV133, 2026-06-28, 748
+records, not standing facts). The baseline was re-snapshotted on 2026-08-03 to
+absorb INV138's `2997d729…` v5 disappearance (a real FP removal, TV-confirmed
+silent) which the previous 2026-06-28 baseline still carried as a standing
+exception. The local snapshot is now stable at 1879 fixtures, 621 fixtures with
+errors, and 16056 total error records, and
+`node scripts/regression-check.mjs` reports a clean 0 changed fixtures /
+0 new error appearances with no exception.
+The last full TV sweep (INV133, 2026-06-28, 748
 v6 fixtures) measured errors at 29 local-only / 0 tv-only / 1 same-position
 message pair and warning tv-only at 0; every change since has left the v6 error
-baseline byte-identical, so that window still holds. Full vitest: 438 passing.
+baseline byte-identical, so that window still holds. Full vitest: 441 passing.
+
+Note on the three checks added 2026-08-03 (INV141/INV142/INV143): all three are
+classes the corpus CANNOT carry, so their 0-changed regression results are not
+evidence of coverage on their own - each is pinned by probes and a fixture
+instead. See each INV's Verification section for what negative evidence the
+corpus does supply.
 
 **Warning local-only is NOT a stable metric** - do not read movement in it as
 signal. It measured 1290 then 1310 on byte-identical same-day reruns, because
@@ -98,8 +107,9 @@ IDs so the two stay in sync.
   sat "OPEN, blocked behind robust receiver resolution" for a month after
   `a35bac7` fixed it, and slice (a) listed three gaps that #53 already
   contradicted in this same file - so re-verify a claim here before planning
-  around it. Live successors: **#64** (transitive imports, the one real
-  residual) and **#53(a)** (vendoring more libraries - a data gap, since the
+  around it. The transitive-import successor is now CLOSED too
+  ([INV143](investigations/INV143-transitive-library-imports/notes.md)). The one
+  live successor is **#53(a)** (vendoring more libraries - a data gap, since the
   checker logic exists and simply has no export set to read; the 10
   license-excluded libs are deliberate policy). We emit CE10271 for an
   undefined receiver but not TV's second CE10272 record.
@@ -205,16 +215,20 @@ IDs so the two stay in sync.
   clean parse (`parserClean`) - not on the "receiver resolution we don't have"
   those runs concluded was needed. See INV066's Resolution.
   **2026-07-15 rerun** (after INV138): the same full-pool dry-run (18,978
-  mutants over all 697 both-clean fixtures) is down to **1 `local-accepts`**
-  from 16, and that one TV-triages to `tv-accepts` - so **0 survivors**. The 15
-  that disappeared are the INV066 delete-decl class `a35bac7` now kills. The
-  remaining mutant deletes `extend = false` in `2eeb43fa906f`, whose only use
-  is `extend.none`: `extend` is also a builtin NAMESPACE, so removing the
-  shadow leaves the member access valid and the mutant is not broken Pine. That
-  is a `mutate.mjs` operator bug of the same shape as the documented `:=` one -
-  `delete-decl` should skip a declaration shadowing a builtin namespace whose
-  uses are all namespace-member accesses. Fixing it would take the pool to a
-  clean 0 `local-accepts`.
+  mutants over all 697 both-clean fixtures) went to **1 `local-accepts`** from
+  16, and that one TV-triaged to `tv-accepts` - so **0 survivors**. The 15 that
+  disappeared are the INV066 delete-decl class `a35bac7` now kills.
+  **2026-08-03: the last one is gone too and the pool is a clean 0
+  `local-accepts` over all 18,978 mutants.** It was a `mutate.mjs` operator bug,
+  not a finding: the mutant deleted `extend = false` in `2eeb43fa906f`, whose
+  only use is `extend.none`, and since `extend` is also a builtin NAMESPACE the
+  member access stays valid without the declaration. `delete-decl` now discounts
+  a use that is a namespace-member access on a builtin namespace (the namespace
+  set is derived from the dotted catalog names, not listed), so the site is
+  generated only when some use actually DEPENDS on the declaration. TV-verified
+  both directions - deleting the shadow-only declaration is clean, deleting it
+  with a bare use present is a real CE10272 - by the re-runnable probes in
+  `scripts/probes/mutate-delete-decl/`.
   **Remaining:** periodically
   re-run the dry-run as the corpus/operators grow and TV-verify any new
   `local-accepts`.
@@ -322,34 +336,6 @@ IDs so the two stay in sync.
   #61's consistency-FP side is largely closed: 5 resolved (`ta.atr`, `ta.sma`,
   `draw_lbl`, `math.sum`, `ta.crossunder`/`6152b9`), 1 unreproducible
   (`61a3a7`), the rest TV-error-stops / G005 phantoms.
-- **#64 - transitive library imports (CE-unknown).** Surfaced by
-  [INV140](investigations/INV140-imported-udt-surfaces/notes.md) p07, and the
-  live residual of the now-closed #41. TV requires a library to be imported
-  EXPLICITLY when a UDT you use has fields referencing ITS types: using
-  `PF.Profile` after only `import robbatt/lib_profile/44` draws four errors,
-  one per referencing field type - `The type "Line" is declared in the
-  "robbatt/lib_plot_objects/56" library, but the library is not explicitly
-  imported. To use the type, import that library` (probed 2026-07-15). We are
-  silent. The data now exists to implement it (`LIBRARY_TYPE_FIELDS` records
-  each field's declared type), but the check needs each field type's
-  DECLARING-LIBRARY provenance, which the current `alias.Base` qualification
-  does not record - a field is stored as `alias.Line`, not as
-  "Line, from robbatt/lib_plot_objects/56". So: extend the generator to record
-  provenance per field type, then flag a used type whose provenance library is
-  not among the script's imports. FP-safe by the usual rule - stay silent for
-  any library whose surface we lack.
-- **#63 - CE10288 for `var` in a type declaration.** Surfaced by
-  [INV140](investigations/INV140-imported-udt-surfaces/notes.md) p02. TV rejects
-  a `var`-qualified UDT field with CE10288 "The keywords "var" cannot be used in
-  a type declaration. Use them when declaring variables of that type.", anchored
-  at the DECLARATION (`varip` is the only legal field qualifier - probed
-  2026-07-15). `scanTypeFieldAtCurrent` does not recognise `var` there, so it
-  drops the field, and the dropped name then surfaces as "Object has no field x"
-  at each USAGE instead. Not an FP (TV errors too) but the wrong message at the
-  wrong position, and the same dropped-field mechanism that made INV140's
-  `varip`/array-field bug a real false positive. Fix is to emit CE10288 from the
-  scanner and keep the field. Small and self-contained; no corpus carrier known,
-  so it is a correctness/message-alignment item, not a measured one.
 
 ## Gotchas
 

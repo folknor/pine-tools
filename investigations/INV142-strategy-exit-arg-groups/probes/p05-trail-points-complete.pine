@@ -1,0 +1,7 @@
+//@version=6
+strategy("p05 trail_points with offset")
+
+if bar_index == 1
+    strategy.entry("L", strategy.long)
+
+strategy.exit("X", from_entry = "L", trail_points = 100, trail_offset = 10)

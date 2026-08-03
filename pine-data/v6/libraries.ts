@@ -2357,3 +2357,70 @@ export const LIBRARY_TYPE_FIELDS: Record<
     }
   }
 };
+
+/**
+ * "Author/Lib/Version" -> exported type name -> the DISTINCT foreign types its
+ * fields reference, each with the library that DECLARES it.
+ *
+ * TV requires a library to be imported EXPLICITLY by any script that uses a type
+ * whose fields reference that library's types - using `PF.Profile` after only
+ * importing lib_profile draws one error per referencing field type. Resolving
+ * this needs the DECLARING library, which `LIBRARY_TYPE_FIELDS` alone cannot
+ * give: it stores the annotation verbatim (`D.Line`), and `D` is an alias
+ * private to the library's own source. So the generator resolves each field
+ * type's alias against that library's own imports and records the result here.
+ * Order is field-declaration order, matching how TV reports them. See INV143.
+ */
+export const LIBRARY_FOREIGN_TYPE_REFS: Record<
+	string,
+	Record<string, Array<{ type: string; library: string }>>
+> = {
+  "reees/Obj_XABCD_Harmonic/10": {
+    "xabcd_harmonic": [
+      {
+        "type": "point",
+        "library": "reees/Pattern/1"
+      }
+    ]
+  },
+  "robbatt/lib_profile/44": {
+    "Bucket": [
+      {
+        "type": "Line",
+        "library": "robbatt/lib_plot_objects/56"
+      }
+    ],
+    "ProfileConfig": [
+      {
+        "type": "LineArgs",
+        "library": "robbatt/lib_plot_objects/56"
+      },
+      {
+        "type": "LabelArgs",
+        "library": "robbatt/lib_plot_objects/56"
+      },
+      {
+        "type": "BoxArgs",
+        "library": "robbatt/lib_plot_objects/56"
+      }
+    ],
+    "Profile": [
+      {
+        "type": "Line",
+        "library": "robbatt/lib_plot_objects/56"
+      },
+      {
+        "type": "Label",
+        "library": "robbatt/lib_plot_objects/56"
+      },
+      {
+        "type": "LineFill",
+        "library": "robbatt/lib_plot_objects/56"
+      },
+      {
+        "type": "Box",
+        "library": "robbatt/lib_plot_objects/56"
+      }
+    ]
+  }
+};

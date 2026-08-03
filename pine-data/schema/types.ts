@@ -134,6 +134,19 @@ export interface FunctionFlags {
 	 * TV's CW10003 criterion. Drives the CONDITIONAL_SERIES warning.
 	 */
 	historyDependent?: boolean;
+	/**
+	 * Inter-parameter requirement: the call must supply at least one of the
+	 * `anyOf` combinations, each of which is a set of parameter names that must
+	 * ALL be present. Expresses constraints the per-parameter fields cannot,
+	 * e.g. strategy.exit's "at least one of profit/limit/loss/stop, or the pair
+	 * trail_offset + trail_price / trail_points".
+	 *
+	 * Presence is SYNTACTIC - an explicitly-passed `na` counts, positionally or
+	 * by name - which is both what TV does and what makes this checkable
+	 * statically. `message` is TV's own wording for the violation. Probe-backed
+	 * (the reference documents no such constraint); see INV142.
+	 */
+	argGroups?: { message: string; anyOf: string[][] };
 }
 
 /**

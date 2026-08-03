@@ -85,6 +85,11 @@ const historyDependent: Record<string, string[]> = {};
 // annotation we cannot read are recorded as "unknown" rather than dropped: the
 // NAME set must stay complete or a real field reads as a typo. see INV140
 const typeFields: Record<string, Record<string, Record<string, string>>> = {};
+// libPath -> exported type -> the foreign types its fields reference. see INV143
+const foreignTypeRefs: Record<
+	string,
+	Record<string, Array<{ type: string; library: string }>>
+> = {};
 const quarantined: string[] = [];
 
 for (const { libPath, file } of collectLibraryFiles().sort((a, b) =>
@@ -128,8 +133,32 @@ for (const { libPath, file } of collectLibraryFiles().sort((a, b) =>
 	].sort();
 	libraries[libPath] = exports;
 
+	// This library's OWN import aliases, so a field type written `D.Line` can be
+	// resolved to the library that DECLARES Line. The alias is private to the
+	// library's source - a consumer of lib_profile never sees `D` - so without
+	// this the field type is an opaque string with no way to tell which library
+	// it points at. see INV143
+	const importedAs = new Map<string, string>();
+	for (const s of ast.body as Array<{
+		type: string;
+		alias?: string;
+		libraryPath?: string;
+	}>) {
+		if (s.type !== "ImportStatement") continue;
+		if (s.alias && s.libraryPath) importedAs.set(s.alias, s.libraryPath);
+	}
+
 	// The field surface of each exported UDT. see INV140
 	const libTypes: Record<string, Record<string, string>> = {};
+	// Per exported type, the DISTINCT foreign types its fields reference, with
+	// the library declaring each. TV requires such a library to be imported
+	// EXPLICITLY by any script that uses the type. Kept in field-declaration
+	// order (first occurrence wins), which is the order TV reports them in.
+	// see INV143
+	const libForeign: Record<
+		string,
+		Array<{ type: string; library: string }>
+	> = {};
 	for (const s of ast.body as Array<{
 		type: string;
 		name: string;
@@ -138,15 +167,32 @@ for (const { libPath, file } of collectLibraryFiles().sort((a, b) =>
 	}>) {
 		if (s.type !== "TypeDeclaration" || !s.isExport) continue;
 		const fields: Record<string, string> = {};
+		const foreign: Array<{ type: string; library: string }> = [];
+		const seenForeign = new Set<string>();
 		for (const f of s.fields ?? []) {
 			if (!f.name) continue;
 			// Keep the name even when the annotation is unreadable - an absent
 			// name would make a REAL field look like a typo.
-			fields[f.name] = f.typeAnnotation?.name ?? "unknown";
+			const annotation = f.typeAnnotation?.name ?? "unknown";
+			fields[f.name] = annotation;
+			// Strip a collection suffix (`D.Line[]`) first - the provenance is the
+			// ELEMENT type's. A dotted type whose prefix is NOT one of this
+			// library's aliases is left alone: it is some other qualified form, and
+			// inventing provenance for it would be the FP risk here.
+			const bare = annotation.replace(/\[\]$/, "");
+			const dot = bare.indexOf(".");
+			if (dot <= 0) continue;
+			const declaring = importedAs.get(bare.slice(0, dot));
+			const typeName = bare.slice(dot + 1);
+			if (!declaring || seenForeign.has(typeName)) continue;
+			seenForeign.add(typeName);
+			foreign.push({ type: typeName, library: declaring });
 		}
 		libTypes[s.name] = fields;
+		if (foreign.length > 0) libForeign[s.name] = foreign;
 	}
 	if (Object.keys(libTypes).length > 0) typeFields[libPath] = libTypes;
+	if (Object.keys(libForeign).length > 0) foreignTypeRefs[libPath] = libForeign;
 
 	// Which exports are history-dependent: run the analyzer on the library body
 	// and intersect its history-dependent UDF set with the export surface.
@@ -230,6 +276,24 @@ export const LIBRARY_TYPE_FIELDS: Record<
 	string,
 	Record<string, Record<string, string>>
 > = ${JSON.stringify(typeFields, null, 2)};
+
+/**
+ * "Author/Lib/Version" -> exported type name -> the DISTINCT foreign types its
+ * fields reference, each with the library that DECLARES it.
+ *
+ * TV requires a library to be imported EXPLICITLY by any script that uses a type
+ * whose fields reference that library's types - using \`PF.Profile\` after only
+ * importing lib_profile draws one error per referencing field type. Resolving
+ * this needs the DECLARING library, which \`LIBRARY_TYPE_FIELDS\` alone cannot
+ * give: it stores the annotation verbatim (\`D.Line\`), and \`D\` is an alias
+ * private to the library's own source. So the generator resolves each field
+ * type's alias against that library's own imports and records the result here.
+ * Order is field-declaration order, matching how TV reports them. See INV143.
+ */
+export const LIBRARY_FOREIGN_TYPE_REFS: Record<
+	string,
+	Record<string, Array<{ type: string; library: string }>>
+> = ${JSON.stringify(foreignTypeRefs, null, 2)};
 `;
 
 fs.writeFileSync(path.join(OUTPUT_DIR, "libraries.ts"), ts);

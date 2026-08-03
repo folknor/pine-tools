@@ -1,0 +1,13 @@
+// @test regression/INV143-transitive-library-imports
+// @description TV requires a library to be imported EXPLICITLY when a UDT you use has fields referencing ITS types: using PF.Profile after importing only lib_profile draws one error per referencing field type, naming robbatt/lib_plot_objects/56. We were silent (INV140 p07, the live residual of TODO #41). The trigger is a MEMBER ACCESS, not the declaration - `PF.Profile p = na` alone is clean on TV, as is a param never used. Reported once per distinct type per SCRIPT, not per use site. Here the method call anchors at the call itself, which is TV's anchor for that trigger. Probed 2026-08-03, q01-q09. See investigations/INV143-transitive-library-imports/notes.md.
+// @expects error: line=5, message=/type .Line. is declared in the .robbatt.lib_plot_objects.56. library, but the library is not explicitly imported/
+// @expects error: line=5, message=/type .Label. is declared in the .robbatt/
+// @expects error: line=5, message=/type .LineFill. is declared in the .robbatt/
+// @expects error: line=5, message=/type .Box. is declared in the .robbatt/
+// @expects errors: 4
+//@version=6
+indicator("x")
+import robbatt/lib_profile/44 as PF
+f(PF.Profile p) =>
+    p.hide()
+plot(1)

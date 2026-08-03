@@ -1,0 +1,7 @@
+//@version=6
+strategy("p02 trail complete")
+
+if bar_index == 1
+    strategy.entry("L", strategy.long)
+
+strategy.exit("X", from_entry = "L", trail_price = high, trail_offset = 10)

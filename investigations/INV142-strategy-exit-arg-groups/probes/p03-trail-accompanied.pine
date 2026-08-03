@@ -1,0 +1,7 @@
+//@version=6
+strategy("p03 trail accompanied by stop")
+
+if bar_index == 1
+    strategy.entry("L", strategy.long)
+
+strategy.exit("X", from_entry = "L", stop = low, trail_price = high)
