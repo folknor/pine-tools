@@ -1,0 +1,15 @@
+// @test regression/lint-repainting-security
+// @description REPAINTING_SECURITY: a request.security() reading the current, still-forming HTF bar is flagged. The four exemptions must stay silent: an explicit lookahead= argument, a history offset inside the expression, a history offset on the call itself, and a request that stays on the chart's timeframe. TV is silent on every line here (probed 2026-08-15, see INV144). See INV144.
+// @expects parse: success
+// @expects warnings: 1
+// @expects warning: line=3, message=/repaints/
+//@version=6
+indicator("repaint lint", overlay = true)
+bad = request.security(syminfo.tickerid, "D", close)
+okExplicit = request.security(syminfo.tickerid, "D", close, lookahead = barmerge.lookahead_off)
+okOffset = request.security(syminfo.tickerid, "D", close[1])
+okDynamicOffset = request.security(syminfo.tickerid, "D", close[barstate.isrealtime ? 1 : 0])
+okCallOffset = request.security(syminfo.tickerid, "D", close)[1]
+okSameTf = request.security(syminfo.tickerid, timeframe.period, close)
+okEmptyTf = request.security(syminfo.tickerid, "", close)
+plot(bad + okExplicit + okOffset + okDynamicOffset + okCallOffset + okSameTf + okEmptyTf)

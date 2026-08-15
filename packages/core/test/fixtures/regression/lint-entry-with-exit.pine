@@ -1,0 +1,11 @@
+// @test regression/lint-entry-with-exit
+// @description ENTRY_WITHOUT_EXIT must stay silent when any real exit mechanism exists anywhere in the script. See INV144.
+// @expects parse: success
+// @expects warnings: 0
+//@version=6
+strategy("entry with exit")
+if close > open
+    strategy.entry("long", strategy.long)
+if close < open
+    strategy.close("long")
+plot(close)

@@ -1,0 +1,11 @@
+// @test regression/lint-accumulator-lifetime
+// @description ACCUMULATOR_LIFETIME: a `var` numeric accumulator that a loop adds to again on every bar, with no reset anywhere, grows without bound. Compiles clean - TV is silent (probed 2026-08-15, see INV144). See INV144.
+// @expects parse: success
+// @expects warnings: 1
+// @expects warning: line=5, message=/grows without bound/
+//@version=6
+indicator("accumulator lint")
+var float sum = 0.0
+for i = 0 to 9
+    sum := sum + close[i]
+plot(sum)

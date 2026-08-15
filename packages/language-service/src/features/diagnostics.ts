@@ -1,4 +1,5 @@
 import { UnifiedPineValidator } from "../../../core/src/analyzer/checker";
+import { runSemanticLints } from "../../../core/src/analyzer/lint-semantic";
 import { renderMessage } from "../../../core/src/common/errors";
 import { createSourcePositionMapper } from "../../../core/src/common/sourcePositions";
 import type { ParsedDocument } from "../documents/ParsedDocument";
@@ -66,7 +67,36 @@ export function getDiagnostics(doc: ParsedDocument): Diagnostic[] {
 		// Keep diagnostics best-effort in the editor; parse errors are already reported.
 	}
 
-	// 3. Pattern-based warnings (moved from extension.ts)
+	// 3. Semantic lints - code that compiles and is still wrong (v6 only, like
+	// every other v6-specific nudge below: legacy scripts stay lenient). see
+	// INV144
+	if (doc.detectedVersion === "6") {
+		try {
+			for (const lint of runSemanticLints(doc.ast)) {
+				const start = mapSourcePosition({
+					line: lint.line,
+					column: lint.column,
+				});
+				const end = mapSourcePosition({
+					line: lint.line,
+					column: lint.column + lint.length,
+				});
+				diagnostics.push({
+					range: {
+						start: { line: start.line - 1, character: start.column - 1 },
+						end: { line: end.line - 1, character: end.column - 1 },
+					},
+					severity: DiagnosticSeverity.Warning,
+					message: lint.message,
+					source: "pine-lint",
+				});
+			}
+		} catch {
+			// Best-effort, same as the validator pass above.
+		}
+	}
+
+	// 4. Pattern-based warnings (moved from extension.ts)
 	diagnostics.push(...getPatternWarnings(doc));
 
 	return diagnostics;

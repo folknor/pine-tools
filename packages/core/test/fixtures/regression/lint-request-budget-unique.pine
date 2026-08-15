@@ -1,0 +1,10 @@
+// @test regression/lint-request-budget-unique
+// @description REQUEST_BUDGET counts UNIQUE request.*() calls, not textual ones. The Manual's own example loops request.security() 50 times with identical arguments and does NOT hit the limit, because repeated identical calls reuse the first request's data. A line-based counter flags this script; counting over serialized calls does not. See INV144.
+// @expects parse: success
+// @expects warnings: 0
+//@version=6
+indicator("identical requests are free")
+float reqSum = 0.0
+for i = 1 to 50
+    reqSum += request.security(syminfo.tickerid, "1D", close[1])
+plot(reqSum)

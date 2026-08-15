@@ -890,3 +890,13 @@ contradiction means re-measure, not "the earlier author was wrong."
   the declaration; reported once per type per script. TV's field-access anchor
   looked like a degenerate `2:1` artifact until a probe moved the `indicator()`
   call and the anchor moved with it - it is the script declaration statement.
+- [INV144](INV144-semantic-lint-checks/notes.md) - semantic lints: five checks
+  for code that COMPILES and is still wrong (repainting `request.security`, a
+  `var` accumulator a loop re-adds to every bar, the plot and `request.*`
+  budgets, an entry with no exit). Ported as IDEAS from the upstream fork's
+  line-based `semanticChecks.ts`; the implementations are ours and AST-based.
+  TV is silent on all five (probed), so they are warnings on a separate `lint`
+  stage rather than TV-mirroring diagnostics. Upstream's `ta.*`-in-a-conditional
+  check was dropped as redundant with our CW10003/4. A corpus sweep tightened
+  two rules: reversal entries ARE an exit, and a loop increment behind an `if`
+  is an event counter, not an unbounded accumulator.

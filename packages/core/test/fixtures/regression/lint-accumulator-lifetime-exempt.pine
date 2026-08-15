@@ -1,0 +1,22 @@
+// @test regression/lint-accumulator-lifetime-exempt
+// @description ACCUMULATOR_LIFETIME must stay silent on the three correct shapes: a reset before the loop (a reused buffer), a run-once guard around the loop (first-bar table building), and a plain non-`var` per-bar total. See INV144.
+// @expects parse: success
+// @expects warnings: 0
+//@version=6
+indicator("accumulator lint exemptions")
+
+var float buffered = 0.0
+buffered := 0.0
+for i = 0 to 9
+    buffered := buffered + close[i]
+
+var float seeded = 0.0
+if barstate.isfirst
+    for i = 0 to 9
+        seeded := seeded + i
+
+perBar = 0.0
+for i = 0 to 9
+    perBar := perBar + close[i]
+
+plot(buffered + seeded + perBar)

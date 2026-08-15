@@ -76,9 +76,12 @@ export interface PineLintEnum {
 
 // Which pipeline stage produced a diagnostic. "syntax" = lexer/parser errors,
 // "type" = the validator's type/semantic error pass, "analysis" = the
-// SemanticAnalyzer warning pass. Lets consumers filter exactly (e.g. a
-// syntax-only gate) instead of guessing from the message text.
-export type PineLintStage = "syntax" | "type" | "analysis";
+// SemanticAnalyzer warning pass, "lint" = our own semantic lints (see
+// analyzer/lint-semantic.ts), which mirror no TradingView diagnostic and are
+// the one stage a TV-comparison consumer should drop wholesale. Lets consumers
+// filter exactly (e.g. a syntax-only gate) instead of guessing from the
+// message text.
+export type PineLintStage = "syntax" | "type" | "analysis" | "lint";
 
 export interface PineLintError {
 	start: PineLintPosition;

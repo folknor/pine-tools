@@ -6,6 +6,7 @@
 
 import { Parser } from "../src/parser/parser";
 import { UnifiedPineValidator } from "../src/analyzer/checker";
+import { runSemanticLints } from "../src/analyzer/lint-semantic";
 import { renderMessage } from "../src/common/errors";
 import { SemanticAnalyzer } from "../src/parser/semanticAnalyzer";
 import type { Program } from "../src/parser/ast";
@@ -410,6 +411,16 @@ export function runTest(
 			const semanticAnalyzer = new SemanticAnalyzer();
 			result.validationErrors.push(
 				...semanticAnalyzer.analyze(ast).map((w) => ({
+					line: w.line,
+					column: w.column,
+					message: w.message,
+					severity: w.severity,
+				})),
+			);
+			// Our own semantic lints share the CLI's warning channel (on the
+			// `lint` stage there), so fixtures assert them the same way. see INV144
+			result.validationErrors.push(
+				...runSemanticLints(ast).map((w) => ({
 					line: w.line,
 					column: w.column,
 					message: w.message,

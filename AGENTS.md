@@ -512,6 +512,24 @@ pine-lint --tv --full-response <file.pine>    # keep the verbose "scopes" block 
 `pnpm run debug:compare -- <file.pine>` runs both at once and prints the
 local-only / tv-only error diff - the everyday repro tool.
 
+### The `lint` stage - the one channel that is NOT TV
+
+Every locally-produced diagnostic carries a `stage`: `syntax` (lexer/parser),
+`type` (the validator), `analysis` (the SemanticAnalyzer's TV-mirroring
+CW100xx warnings), and `lint`. The first three mirror TradingView. `lint` does
+not: it is our own semantic lints (`packages/core/src/analyzer/lint-semantic.ts`)
+for code that COMPILES and is still wrong - a repainting `request.security`, a
+`var` accumulator a loop re-adds to every bar, the plot / `request.*` budgets,
+an entry with no exit. TV is silent on all of them by design, so **do not treat
+a `lint`-stage finding as a TV disagreement**, and anything diffing us against
+TV should drop the stage wholesale. They are always warnings, never errors, and
+carry a `rule` id instead of a `CW` code. See INV144.
+
+Two standing rules for that module: a false positive there is worse than a
+miss (it teaches readers to ignore the channel), and any new rule must be
+swept over the corpus before it lands -
+`node investigations/INV144-semantic-lint-checks/count-lints.mjs`.
+
 ---
 
 ## Differential Testing

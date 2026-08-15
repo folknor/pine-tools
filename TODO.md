@@ -337,6 +337,20 @@ IDs so the two stay in sync.
   `draw_lbl`, `math.sum`, `ta.crossunder`/`6152b9`), 1 unreproducible
   (`61a3a7`), the rest TV-error-stops / G005 phantoms.
 
+- **#66 - a suppression mechanism for the semantic lints
+  ([INV144](investigations/INV144-semantic-lint-checks/notes.md)).** The five
+  `lint`-stage rules are advisory and, unlike everything else we emit, can be
+  correct-but-unwanted: an author who knows their MTF dashboard repaints has no
+  way to say so, and REPAINTING_SECURITY alone fires on 16.5% of the corpus's
+  clean-parsing v6 files (often many times per file). Every other channel we
+  have mirrors TV, where suppression would be wrong, so this is the first place
+  the question arises. Needs a decision on the surface - a source directive
+  (`// pine-lint-disable-next-line REPAINTING_SECURITY`), CLI flags, or editor
+  settings - before any of them is built; the `rule` id is already carried on
+  every warning, so the plumbing is the easy half. Note the CLI currently drops
+  `rule` when it maps to `PineLintError`, which any of these designs would need
+  to change.
+
 ## Gotchas
 
 See [gotchas/README.md](gotchas/README.md) for the format and full

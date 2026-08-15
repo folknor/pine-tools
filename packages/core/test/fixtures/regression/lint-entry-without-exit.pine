@@ -1,0 +1,12 @@
+// @test regression/lint-entry-without-exit
+// @description ENTRY_WITHOUT_EXIT: a strategy that opens positions and never closes them. strategy.cancel withdraws a PENDING order and must not count as an exit - counting it let a strategy with genuinely unbounded risk pass clean. TV is silent (probed 2026-08-15, see INV144). See INV144.
+// @expects parse: success
+// @expects warnings: 1
+// @expects warning: line=4, message=/never closes them/
+//@version=6
+strategy("entry without exit")
+if close > open
+    strategy.entry("long", strategy.long)
+if close < open
+    strategy.cancel("long")
+plot(close)

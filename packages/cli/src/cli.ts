@@ -4,6 +4,7 @@ import {
 	DiagnosticSeverity,
 	UnifiedPineValidator,
 } from "../../core/src/analyzer/checker";
+import { runSemanticLints } from "../../core/src/analyzer/lint-semantic";
 import { renderMessage } from "../../core/src/common/errors";
 import { createSourcePositionMapper } from "../../core/src/common/sourcePositions";
 import {
@@ -364,9 +365,14 @@ async function main() {
 
 		// Run semantic analysis to get warnings (only for v6)
 		const semanticWarnings = [];
+		// Our own semantic lints - kept in a separate bucket from the
+		// TV-mirroring SemanticAnalyzer warnings so they can carry the `lint`
+		// stage. see INV144
+		const semanticLints = [];
 		if (detectedVersion === "6") {
 			const semanticAnalyzer = new SemanticAnalyzer();
 			semanticWarnings.push(...semanticAnalyzer.analyze(ast));
+			semanticLints.push(...runSemanticLints(ast));
 		}
 		const mapSourcePosition = createSourcePositionMapper(code);
 
@@ -434,6 +440,21 @@ async function main() {
 				};
 			});
 
+		// Our own semantic lints - the `lint` stage. see INV144
+		const lintPineLintWarnings: PineLintError[] = semanticLints.map((w) => {
+			const start = mapSourcePosition({ line: w.line, column: w.column });
+			const end = mapSourcePosition({
+				line: w.line,
+				column: w.column + w.length,
+			});
+			return {
+				start,
+				end,
+				message: w.message,
+				stage: "lint" as const,
+			};
+		});
+
 		// Combine all errors (lexer errors first, then parser, then validation)
 		const errors: PineLintError[] = [
 			...lexerPineLintErrors,
@@ -442,7 +463,10 @@ async function main() {
 		];
 
 		// Combine all warnings
-		const warnings: PineLintError[] = [...semanticPineLintWarnings];
+		const warnings: PineLintError[] = [
+			...semanticPineLintWarnings,
+			...lintPineLintWarnings,
+		];
 
 		// One envelope, always: locally-produced diagnostics live under
 		// result.errors / result.warnings as arrays that are always present

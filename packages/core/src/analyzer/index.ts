@@ -18,5 +18,6 @@ export {
 	UnifiedPineValidator,
 	type ValidationError,
 } from "./checker";
+export { runSemanticLints } from "./lint-semantic";
 export { Scope, type Symbol, SymbolTable } from "./symbols";
 export { type PineType, TypeChecker, TypeInfo } from "./types";
