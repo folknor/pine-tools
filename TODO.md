@@ -374,10 +374,13 @@ IDs so the two stay in sync.
   have mirrors TV, where suppression would be wrong, so this is the first place
   the question arises. Needs a decision on the surface - a source directive
   (`// pine-lint-disable-next-line REPAINTING_SECURITY`), CLI flags, or editor
-  settings - before any of them is built; the `rule` id is already carried on
-  every warning, so the plumbing is the easy half. Note the CLI currently drops
-  `rule` when it maps to `PineLintError`, which any of these designs would need
-  to change.
+  settings - before any of them is built. The CLI half is DONE: `--no-lint`
+  turns the whole stage off, and every `lint` diagnostic now carries its `rule`
+  id in the JSON output (and in brackets in `-H` output), so filtering by rule
+  is already possible from outside. What remains is PER-RULE, IN-SOURCE
+  suppression - the author who knows this one `request.security` repaints and
+  wants to say so at that line, which is the case neither a global flag nor an
+  external filter covers.
 
 ## Gotchas
 

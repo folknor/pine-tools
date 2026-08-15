@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- CLI: `--no-lint` skips the `lint` stage, for callers who want TradingView's
+  verdict and nothing else. The lints are on by default.
+- CLI: `lint`-stage diagnostics now carry their `rule` id (e.g.
+  `REPAINTING_SECURITY`) in the JSON output, so consumers can filter or
+  suppress by rule instead of pattern-matching the message prose. Human
+  (`-H`) output prefixes the rule in brackets, which also distinguishes our
+  findings from TradingView's mirrored warnings at a glance.
+- CLI: `--help` now documents the four diagnostic stages (`syntax`, `type`,
+  `analysis`, `lint`) and states that warnings never affect the exit code.
+
 - Refresh the Pine v6 reference data and Manual mirror against TradingView
   (previous scrape was 2026-05-29, so the catalog predated TV's July and August
   2026 additions). New parameters: `sort_field` on `array.binary_search`,

@@ -95,6 +95,11 @@ export interface PineLintError {
 	// holds the values that fill those placeholders.
 	code?: string;
 	ctx?: Record<string, string>;
+	// Stable machine-readable id for a `lint`-stage diagnostic (e.g.
+	// "REPAINTING_SECURITY"). Ours, not TradingView's - the TV-mirroring stages
+	// identify themselves with `code` instead. Set so a consumer can filter or
+	// suppress by rule without pattern-matching the prose. see INV144
+	rule?: string;
 }
 
 export interface PineLintResult {

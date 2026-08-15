@@ -507,7 +507,13 @@ pine-lint -c 'indicator("x")'                 # validate an inline string
 cat script.pine | pine-lint -                 # validate from stdin
 pine-lint --tv <file.pine>                    # TradingView's verdict (the authority)
 pine-lint --tv --full-response <file.pine>    # keep the verbose "scopes" block (stripped by default)
+pine-lint --no-lint <file.pine>               # skip our own semantic lints (the `lint` stage)
 ```
+
+Every locally-produced diagnostic carries a `stage` (`syntax` / `type` /
+`analysis` / `lint`) and `lint`-stage ones also carry a `rule` id, so a
+consumer filters by field rather than by pattern-matching the prose. Warnings
+never affect the exit code; only errors do.
 
 `pnpm run debug:compare -- <file.pine>` runs both at once and prints the
 local-only / tv-only error diff - the everyday repro tool.

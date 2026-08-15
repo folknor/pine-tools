@@ -33,6 +33,12 @@ Options:
                             and return its response instead of running locally
       --full-response       With --tv, keep the verbose "scopes" block in the result
                             (stripped by default)
+      --no-lint             Skip our own semantic lints (the "lint" stage). Those
+                            flag code that COMPILES and is still wrong - a
+                            repainting request.security(), a var accumulator a loop
+                            re-adds to every bar, the plot/request budgets, an entry
+                            with no exit. TradingView reports none of them, so use
+                            this when you want its verdict and nothing else.
   -H, --human               Human-readable output: one "file:line:col: severity: message"
                             line per finding plus a summary, instead of the JSON
                             payload. Exits 1 when there are errors. Works with --tv.
@@ -44,7 +50,18 @@ Input sources (pick one):
   pine-lint --code 'indicator("x") plot(close)'
   cat script.pine | pine-lint -
 
-Output: JSON on stdout matching the pine-lint format.`;
+Output: JSON on stdout matching the pine-lint format. Locally-produced
+diagnostics land in result.errors / result.warnings, each tagged with the
+stage that produced it:
+
+  syntax     lexer/parser errors
+  type       the validator's type and semantic error pass
+  analysis   TradingView's own warnings (CW codes), mirrored
+  lint       our semantic lints - warnings only, never errors, and the one
+             stage TradingView has no counterpart for. Each carries a "rule"
+             id (e.g. REPAINTING_SECURITY) for filtering. See --no-lint.
+
+Warnings never affect the exit code; only errors do.`;
 
 interface ParsedArgs {
 	help: boolean;
@@ -55,6 +72,7 @@ interface ParsedArgs {
 	tv: boolean;
 	fullResponse: boolean;
 	human: boolean;
+	noLint: boolean;
 }
 
 function parseArgs(argv: string[]): ParsedArgs {
@@ -65,6 +83,7 @@ function parseArgs(argv: string[]): ParsedArgs {
 		tv: false,
 		fullResponse: false,
 		human: false,
+		noLint: false,
 	};
 	for (let i = 0; i < argv.length; i++) {
 		const arg = argv[i];
@@ -82,6 +101,8 @@ function parseArgs(argv: string[]): ParsedArgs {
 			parsed.tv = true;
 		} else if (arg === "--full-response") {
 			parsed.fullResponse = true;
+		} else if (arg === "--no-lint") {
+			parsed.noLint = true;
 		} else if (arg === "-H" || arg === "--human") {
 			parsed.human = true;
 		} else if (arg === "-") {
@@ -217,8 +238,12 @@ function printHuman(payload: HumanPayload, label: string): number {
 	// TV has been seen putting errors both under result and at the top level.
 	const errors = payload.result?.errors ?? payload.errors ?? [];
 	const warnings = payload.result?.warnings ?? [];
+	// A `lint`-stage finding is prefixed with its rule id, both to mark it as
+	// ours rather than TradingView's and to name what `--no-lint` turns off.
 	const line = (severity: string, e: PineLintError) =>
-		`${label}:${e.start.line}:${e.start.column}: ${severity}: ${fillTemplate(e)}`;
+		`${label}:${e.start.line}:${e.start.column}: ${severity}: ${
+			e.rule ? `[${e.rule}] ` : ""
+		}${fillTemplate(e)}`;
 	const out: string[] = [];
 	for (const e of errors) out.push(line("error", e));
 	for (const w of warnings) out.push(line("warning", w));
@@ -372,7 +397,7 @@ async function main() {
 		if (detectedVersion === "6") {
 			const semanticAnalyzer = new SemanticAnalyzer();
 			semanticWarnings.push(...semanticAnalyzer.analyze(ast));
-			semanticLints.push(...runSemanticLints(ast));
+			if (!parsed.noLint) semanticLints.push(...runSemanticLints(ast));
 		}
 		const mapSourcePosition = createSourcePositionMapper(code);
 
@@ -440,7 +465,9 @@ async function main() {
 				};
 			});
 
-		// Our own semantic lints - the `lint` stage. see INV144
+		// Our own semantic lints - the `lint` stage. The `rule` id rides along so
+		// a consumer can filter or suppress by rule instead of matching prose.
+		// see INV144
 		const lintPineLintWarnings: PineLintError[] = semanticLints.map((w) => {
 			const start = mapSourcePosition({ line: w.line, column: w.column });
 			const end = mapSourcePosition({
@@ -452,6 +479,7 @@ async function main() {
 				end,
 				message: w.message,
 				stage: "lint" as const,
+				rule: w.rule,
 			};
 		});
 
