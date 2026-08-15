@@ -1,7 +1,7 @@
 /**
  * Pine Script V6 Functions
  * Auto-generated from TradingView documentation
- * Generated: 2026-08-03T19:00:51.628Z
+ * Generated: 2026-08-15T18:14:16.294Z
  * Total: 475 functions
  */
 
@@ -184,26 +184,76 @@ export const FUNCTIONS: PineFunction[] = [
     "name": "array.binary_search",
     "namespace": "array",
     "syntax": "array.binary_search(id, val) → series int",
-    "description": "The function returns the index of the value, or -1 if the value is not found. The array to search must be sorted in ascending order.",
+    "description": "Performs a binary search through a sorted array to locate an element corresponding to a target value. The function returns an element's index if the value from that element equals the target value. Otherwise, it returns -1.",
     "parameters": [
       {
         "name": "id",
-        "type": "array<int/float>",
-        "description": "An array object.",
+        "type": "unknown",
+        "description": "The ID of the array to search. The function can search an array of \"int\" or \"float\" values, or an array with elements of any user-defined type that contains at least one \"int\" or \"float\" field. The array's elements must be sorted in ascending order by numeric value for correct results.",
         "required": true
       },
       {
         "name": "val",
-        "type": "series int/float",
-        "description": "The value to search for in the array.",
+        "type": "series int/float/string",
+        "description": "The target value to locate in the array. If the array contains elements of the \"int\" or \"float\" type, the function searches the elements for the value directly. If the array contains elements of a user-defined type, the function searches for the value in the specified \"int\" or \"float\" field from the objects referenced by the array's elements.",
         "required": true
+      },
+      {
+        "name": "sort_field",
+        "type": "const int/string",
+        "description": "Optional. If the array contains elements of a user-defined type, this parameter specifies which of the type's fields the function uses to search the elements. The function can search the array using any of the type's \"int\" or \"float\" fields. An \"int\" sort_field argument specifies a field by its index, where 0 refers to the first field in the type declaration. A \"string\" argument specifies a field by its name. For correct results, the array's elements must be sorted in ascending order by the specified field. The default is 0.",
+        "required": false,
+        "default": "0"
       }
     ],
     "returns": "series int",
+    "overloads": [
+      {
+        "parameters": [
+          {
+            "name": "id",
+            "type": "array<int/float>",
+            "description": "The ID of the array to search. The function can search an array of \"int\" or \"float\" values, or an array with elements of any user-defined type that contains at least one \"int\" or \"float\" field. The array's elements must be sorted in ascending order by numeric value for correct results.",
+            "required": true
+          },
+          {
+            "name": "val",
+            "type": "series int/float",
+            "description": "The target value to locate in the array. If the array contains elements of the \"int\" or \"float\" type, the function searches the elements for the value directly. If the array contains elements of a user-defined type, the function searches for the value in the specified \"int\" or \"float\" field from the objects referenced by the array's elements.",
+            "required": true
+          }
+        ],
+        "returns": "series int"
+      },
+      {
+        "parameters": [
+          {
+            "name": "id",
+            "type": "any array type",
+            "description": "The ID of the array to search. The function can search an array of \"int\" or \"float\" values, or an array with elements of any user-defined type that contains at least one \"int\" or \"float\" field. The array's elements must be sorted in ascending order by numeric value for correct results.",
+            "required": true
+          },
+          {
+            "name": "val",
+            "type": "series int/float/string",
+            "description": "The target value to locate in the array. If the array contains elements of the \"int\" or \"float\" type, the function searches the elements for the value directly. If the array contains elements of a user-defined type, the function searches for the value in the specified \"int\" or \"float\" field from the objects referenced by the array's elements.",
+            "required": true
+          },
+          {
+            "name": "sort_field",
+            "type": "const int/string",
+            "description": "Optional. If the array contains elements of a user-defined type, this parameter specifies which of the type's fields the function uses to search the elements. The function can search the array using any of the type's \"int\" or \"float\" fields. An \"int\" sort_field argument specifies a field by its index, where 0 refers to the first field in the type declaration. A \"string\" argument specifies a field by its name. For correct results, the array's elements must be sorted in ascending order by the specified field. The default is 0.",
+            "required": false,
+            "default": "0"
+          }
+        ],
+        "returns": "series int"
+      }
+    ],
     "examples": [
       "//@version=6\nindicator(\"array.binary_search\")\na = array.from(5, -2, 0, 9, 1)\narray.sort(a) // [-2, 0, 1, 5, 9]\nposition = array.binary_search(a, 0) // 1\nplot(position)"
     ],
-    "remarks": "A binary search works on arrays pre-sorted in ascending order. It begins by comparing an element in the middle of the array with the target value. If the element matches the target value, its position in the array is returned. If the element's value is greater than the target value, the search continues in the lower half of the array. If the element's value is less than the target value, the search continues in the upper half of the array. By doing this recursively, the algorithm progressively eliminates smaller and smaller portions of the array in which the target value cannot lie.",
+    "remarks": "Unlike array.indexof() and array.lastindexof(), this function searches an array by repeatedly checking the middle element in the index range and dividing the search range in half. First, it checks if the value from the element at the middle index equals the target value, then returns that index immediately if the two values are equal. If the values are not equal, the function then reduces the search range to the first half of the current range if the target value is less than the middle value, and to the second half otherwise. This process repeats until the function either finds an element corresponding to the target value or reduces the search range to a single index.\nIf a sorted array contains multiple elements whose values match the target value, the index returned by this function does not necessarily correspond to the first or last occurrence of that value. To perform a binary search on an array and then retrieve the index for the first or last occurrence of a value, use the array.binary_search_leftmost() or array.binary_search_rightmost() function, respectively.",
     "seeAlso": [
       "array.new_float",
       "array.insert",
@@ -217,27 +267,77 @@ export const FUNCTIONS: PineFunction[] = [
     "name": "array.binary_search_leftmost",
     "namespace": "array",
     "syntax": "array.binary_search_leftmost(id, val) → series int",
-    "description": "The function returns the index of the value if it is found. When the value is not found, the function returns the index of the next smallest element to the left of where the value would lie if it was in the array. The array to search must be sorted in ascending order.",
+    "description": "Performs a binary search through a sorted array to locate an element corresponding to a target value. If the function locates the target value in the array's elements or referenced object fields, it returns the index of the first element whose retrieved value equals that value. Otherwise, it returns the index of the last element whose retrieved value is less than the target value, or 0 if the target value is less than the value from the first element.",
     "parameters": [
       {
         "name": "id",
-        "type": "array<int/float>",
-        "description": "An array object.",
+        "type": "unknown",
+        "description": "The ID of the array to search. The function can search an array of \"int\" or \"float\" values, or an array with elements of any user-defined type that contains at least one \"int\" or \"float\" field. The array's elements must be sorted in ascending order by numeric value for correct results.",
         "required": true
       },
       {
         "name": "val",
-        "type": "series int/float",
-        "description": "The value to search for in the array.",
+        "type": "series int/float/string",
+        "description": "The target value to locate in the array. If the array contains elements of the \"int\" or \"float\" type, the function searches the elements for the value directly. If the array contains elements of a user-defined type, the function searches for the value in the specified \"int\" or \"float\" field from the objects referenced by the array's elements.",
         "required": true
+      },
+      {
+        "name": "sort_field",
+        "type": "const int/string",
+        "description": "Optional. If the array contains elements of a user-defined type, this parameter specifies which of the type's fields the function uses to search the elements. The function can search the array using any of the type's \"int\" or \"float\" fields. An \"int\" sort_field argument specifies a field by its index, where 0 refers to the first field in the type declaration. A \"string\" argument specifies a field by its name. For correct results, the array's elements must be sorted in ascending order by the specified field. The default is 0.",
+        "required": false,
+        "default": "0"
       }
     ],
     "returns": "series int",
+    "overloads": [
+      {
+        "parameters": [
+          {
+            "name": "id",
+            "type": "array<int/float>",
+            "description": "The ID of the array to search. The function can search an array of \"int\" or \"float\" values, or an array with elements of any user-defined type that contains at least one \"int\" or \"float\" field. The array's elements must be sorted in ascending order by numeric value for correct results.",
+            "required": true
+          },
+          {
+            "name": "val",
+            "type": "series int/float",
+            "description": "The target value to locate in the array. If the array contains elements of the \"int\" or \"float\" type, the function searches the elements for the value directly. If the array contains elements of a user-defined type, the function searches for the value in the specified \"int\" or \"float\" field from the objects referenced by the array's elements.",
+            "required": true
+          }
+        ],
+        "returns": "series int"
+      },
+      {
+        "parameters": [
+          {
+            "name": "id",
+            "type": "any array type",
+            "description": "The ID of the array to search. The function can search an array of \"int\" or \"float\" values, or an array with elements of any user-defined type that contains at least one \"int\" or \"float\" field. The array's elements must be sorted in ascending order by numeric value for correct results.",
+            "required": true
+          },
+          {
+            "name": "val",
+            "type": "series int/float/string",
+            "description": "The target value to locate in the array. If the array contains elements of the \"int\" or \"float\" type, the function searches the elements for the value directly. If the array contains elements of a user-defined type, the function searches for the value in the specified \"int\" or \"float\" field from the objects referenced by the array's elements.",
+            "required": true
+          },
+          {
+            "name": "sort_field",
+            "type": "const int/string",
+            "description": "Optional. If the array contains elements of a user-defined type, this parameter specifies which of the type's fields the function uses to search the elements. The function can search the array using any of the type's \"int\" or \"float\" fields. An \"int\" sort_field argument specifies a field by its index, where 0 refers to the first field in the type declaration. A \"string\" argument specifies a field by its name. For correct results, the array's elements must be sorted in ascending order by the specified field. The default is 0.",
+            "required": false,
+            "default": "0"
+          }
+        ],
+        "returns": "series int"
+      }
+    ],
     "examples": [
       "//@version=6\nindicator(\"array.binary_search_leftmost\")\na = array.from(5, -2, 0, 9, 1)\narray.sort(a) // [-2, 0, 1, 5, 9]\nposition = array.binary_search_leftmost(a, 3) // 2\nplot(position)",
       "//@version=6\nindicator(\"array.binary_search_leftmost, repetitive elements\")\na = array.from(4, 5, 5, 5)\n// Returns the index of the first instance.\nposition = array.binary_search_leftmost(a, 5)\nplot(position) // Plots 1"
     ],
-    "remarks": "A binary search works on arrays pre-sorted in ascending order. It begins by comparing an element in the middle of the array with the target value. If the element matches the target value, its position in the array is returned. If the element's value is greater than the target value, the search continues in the lower half of the array. If the element's value is less than the target value, the search continues in the upper half of the array. By doing this recursively, the algorithm progressively eliminates smaller and smaller portions of the array in which the target value cannot lie.",
+    "remarks": "Unlike array.indexof() and array.lastindexof(), this function searches an array by repeatedly checking the middle element in the index range and dividing the search range in half. First, it checks if the value from the element at the middle index equals the target value, then returns that index immediately if the two values are equal. If the values are not equal, the function then reduces the search range to the first half of the current range if the target value is less than the middle value, and to the second half otherwise. This process repeats until the function either finds an element corresponding to the target value or reduces the search range to a single index.",
     "seeAlso": [
       "array.new_float",
       "array.insert",
@@ -251,27 +351,77 @@ export const FUNCTIONS: PineFunction[] = [
     "name": "array.binary_search_rightmost",
     "namespace": "array",
     "syntax": "array.binary_search_rightmost(id, val) → series int",
-    "description": "The function returns the index of the value if it is found. When the value is not found, the function returns the index of the element to the right of where the value would lie if it was in the array. The array must be sorted in ascending order.",
+    "description": "Performs a binary search through a sorted array to locate an element corresponding to a target value. If the function locates the target value in the array's elements or referenced object fields, it returns the index of the last element whose retrieved value equals that value. Otherwise, it returns the index of the first element whose retrieved value is greater than the target value, or the array's last index plus one if the target value is greater than the value from the last element.",
     "parameters": [
       {
         "name": "id",
-        "type": "array<int/float>",
-        "description": "An array object.",
+        "type": "unknown",
+        "description": "The ID of the array to search. The function can search an array of \"int\" or \"float\" values, or an array with elements of any user-defined type that contains at least one \"int\" or \"float\" field. The array's elements must be sorted in ascending order by numeric value for correct results.",
         "required": true
       },
       {
         "name": "val",
-        "type": "series int/float",
-        "description": "The value to search for in the array.",
+        "type": "series int/float/string",
+        "description": "The target value to locate in the array. If the array contains elements of the \"int\" or \"float\" type, the function searches the elements for the value directly. If the array contains elements of a user-defined type, the function searches for the value in the specified \"int\" or \"float\" field from the objects referenced by the array's elements.",
         "required": true
+      },
+      {
+        "name": "sort_field",
+        "type": "const int/string",
+        "description": "Optional. If the array contains elements of a user-defined type, this parameter specifies which of the type's fields the function uses to search the elements. The function can search the array using any of the type's \"int\" or \"float\" fields. An \"int\" sort_field argument specifies a field by its index, where 0 refers to the first field in the type declaration. A \"string\" argument specifies a field by its name. For correct results, the array's elements must be sorted in ascending order by the specified field. The default is 0.",
+        "required": false,
+        "default": "0"
       }
     ],
     "returns": "series int",
+    "overloads": [
+      {
+        "parameters": [
+          {
+            "name": "id",
+            "type": "array<int/float>",
+            "description": "The ID of the array to search. The function can search an array of \"int\" or \"float\" values, or an array with elements of any user-defined type that contains at least one \"int\" or \"float\" field. The array's elements must be sorted in ascending order by numeric value for correct results.",
+            "required": true
+          },
+          {
+            "name": "val",
+            "type": "series int/float",
+            "description": "The target value to locate in the array. If the array contains elements of the \"int\" or \"float\" type, the function searches the elements for the value directly. If the array contains elements of a user-defined type, the function searches for the value in the specified \"int\" or \"float\" field from the objects referenced by the array's elements.",
+            "required": true
+          }
+        ],
+        "returns": "series int"
+      },
+      {
+        "parameters": [
+          {
+            "name": "id",
+            "type": "any array type",
+            "description": "The ID of the array to search. The function can search an array of \"int\" or \"float\" values, or an array with elements of any user-defined type that contains at least one \"int\" or \"float\" field. The array's elements must be sorted in ascending order by numeric value for correct results.",
+            "required": true
+          },
+          {
+            "name": "val",
+            "type": "series int/float/string",
+            "description": "The target value to locate in the array. If the array contains elements of the \"int\" or \"float\" type, the function searches the elements for the value directly. If the array contains elements of a user-defined type, the function searches for the value in the specified \"int\" or \"float\" field from the objects referenced by the array's elements.",
+            "required": true
+          },
+          {
+            "name": "sort_field",
+            "type": "const int/string",
+            "description": "Optional. If the array contains elements of a user-defined type, this parameter specifies which of the type's fields the function uses to search the elements. The function can search the array using any of the type's \"int\" or \"float\" fields. An \"int\" sort_field argument specifies a field by its index, where 0 refers to the first field in the type declaration. A \"string\" argument specifies a field by its name. For correct results, the array's elements must be sorted in ascending order by the specified field. The default is 0.",
+            "required": false,
+            "default": "0"
+          }
+        ],
+        "returns": "series int"
+      }
+    ],
     "examples": [
       "//@version=6\nindicator(\"array.binary_search_rightmost\")\na = array.from(5, -2, 0, 9, 1)\narray.sort(a) // [-2, 0, 1, 5, 9]\nposition = array.binary_search_rightmost(a, 3) // 3\nplot(position)",
       "//@version=6\nindicator(\"array.binary_search_rightmost, repetitive elements\")\na = array.from(4, 5, 5, 5)\n// Returns the index of the last instance.\nposition = array.binary_search_rightmost(a, 5)\nplot(position) // Plots 3"
     ],
-    "remarks": "A binary search works on sorted arrays in ascending order. It begins by comparing an element in the middle of the array with the target value. If the element matches the target value, its position in the array is returned. If the element's value is greater than the target value, the search continues in the lower half of the array. If the element's value is less than the target value, the search continues in the upper half of the array. By doing this recursively, the algorithm progressively eliminates smaller and smaller portions of the array in which the target value cannot lie.",
+    "remarks": "Unlike array.indexof() and array.lastindexof(), this function searches an array by repeatedly checking the middle element in the index range and dividing the search range in half. First, it checks if the value from the element at the middle index equals the target value, then returns that index immediately if the two values are equal. If the values are not equal, the function then reduces the search range to the first half of the current range if the target value is less than the middle value, and to the second half otherwise. This process repeats until the function either finds an element corresponding to the target value or reduces the search range to a single index.",
     "seeAlso": [
       "array.new_float",
       "array.insert",
@@ -17059,7 +17209,7 @@ export const FUNCTIONS: PineFunction[] = [
   },
   {
     "name": "strategy",
-    "syntax": "strategy(title, shorttitle, overlay, format, precision, scale, pyramiding, calc_on_order_fills, calc_on_every_tick, max_bars_back, backtest_fill_limits_assumption, default_qty_type, default_qty_value, initial_capital, currency, slippage, commission_type, commission_value, process_orders_on_close, close_entries_rule, margin_long, margin_short, explicit_plot_zorder, max_lines_count, max_labels_count, max_boxes_count, calc_bars_count, risk_free_rate, use_bar_magnifier, fill_orders_on_standard_ohlc, max_polylines_count, dynamic_requests, behind_chart) → void",
+    "syntax": "strategy(title, shorttitle, overlay, format, precision, scale, pyramiding, calc_on_order_fills, calc_on_every_tick, max_bars_back, backtest_fill_limits_assumption, default_qty_type, default_qty_value, initial_capital, currency, slippage, commission_type, commission_value, process_orders_on_close, close_entries_rule, margin_long, margin_short, explicit_plot_zorder, max_lines_count, max_labels_count, max_boxes_count, calc_bars_count, risk_free_rate, use_bar_magnifier, fill_orders_on_standard_ohlc, max_polylines_count, dynamic_requests, behind_chart, calc_on_every_history_tick) → void",
     "description": "This declaration statement designates the script as a strategy and sets a number of strategy-related properties.",
     "parameters": [
       {
@@ -17123,14 +17273,14 @@ export const FUNCTIONS: PineFunction[] = [
       {
         "name": "calc_on_order_fills",
         "type": "const bool",
-        "description": "Specifies whether the strategy should be recalculated after an order is filled. If true, the strategy recalculates after an order is filled, as opposed to recalculating only when the bar closes. This setting can also be changed in the strategy's \"Settings/Properties\" tab. Optional. The default is false.",
+        "description": "Optional. Modifies the strategy's default calculation behavior on historical and realtime bars. Users can change the behavior by selecting the \"On order fill\" checkbox from the \"Script executions\" dropdown menu in the \"Settings/Properties\" tab. If true, the strategy performs a new execution to update its calculations on each tick where an order fill occurs. On historical bars, ticks refer to bar OHLC prices or intrabar prices from a lower timeframe, depending on the selected level of historical bar detail. On realtime bars, ticks refer to new price updates from the data feed. If the argument is false, the strategy executes only on the closing tick of each bar, and on any other ticks allowed by the selected \"Script executions\" settings. The default is false.",
         "required": false,
         "default": "false"
       },
       {
         "name": "calc_on_every_tick",
         "type": "const bool",
-        "description": "Specifies whether the strategy should be recalculated on each realtime tick. If true, when the strategy is running on a realtime bar, it will recalculate on each chart update. If false, the strategy only calculates when the realtime bar closes. The argument used does not affect strategy calculation on historical data. This setting can also be changed in the strategy's \"Settings/Properties\" tab. Optional. The default is false.",
+        "description": "Optional. Modifies the strategy's default calculation behavior on realtime bars. Users can change the behavior by selecting the \"On realtime bar tick\" checkbox from the \"Script executions\" dropdown menu in the \"Settings/Properties\" tab. If true, the strategy performs a new execution to update its calculations on every available tick in each realtime bar, where a tick refers to a new price update from the data feed. If false, the strategy executes only on the closing tick of each bar, and on any other ticks allowed by the selected \"Script executions\" settings. The default is false.",
         "required": false,
         "default": "false"
       },
@@ -17317,6 +17467,13 @@ export const FUNCTIONS: PineFunction[] = [
         "description": "Optional. Controls whether all plots and drawings appear behind the chart display (if true) or in front of it (if false). This parameter only takes effect when the overlay parameter is true. The default is true.",
         "required": false,
         "default": "true"
+      },
+      {
+        "name": "calc_on_every_history_tick",
+        "type": "const bool",
+        "description": "Optional. Modifies the strategy's default calculation behavior on historical bars. Users can change the behavior by selecting the \"On history bar tick\" checkbox from the \"Script executions\" dropdown menu in the \"Settings/Properties\" tab. An argument for this parameter must include the parameter's name (e.g., calc_on_every_history_tick = true). If the value is true, the strategy performs a new execution to update its calculations on every available tick in each historical bar. Historical ticks refer to bar OHLC prices or intrabar prices from a lower timeframe, depending on the selected level of historical bar detail. If false, the strategy executes only on the closing tick of each bar, and on any other ticks allowed by the selected \"Script executions\" settings. The default is false.",
+        "required": false,
+        "default": "false"
       }
     ],
     "returns": "void",

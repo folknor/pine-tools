@@ -98,10 +98,21 @@ function pickDiagnostics(raw) {
 			col: e.start?.column ?? 1,
 			message: fillTemplate(e.message ?? "", e.ctx),
 		});
+		// Our own semantic lints (INV144) live on the `lint` stage and mirror no
+		// TV diagnostic by design - TV is silent on every one of them. Diffing
+		// them against TV can only ever produce "local-only", which is not a
+		// disagreement, so counting them permanently inflates the metric (116
+		// REPAINTING_SECURITY records on the first sweep after they landed).
+		// Drop the stage here rather than asking every reader to subtract it.
+		const isTvComparable = (e) => e.stage !== "lint";
 		return {
 			ok: true,
-			errors: (j.result?.errors ?? j.errors ?? []).map(mapDiag),
-			warnings: (j.result?.warnings ?? j.warnings ?? []).map(mapDiag),
+			errors: (j.result?.errors ?? j.errors ?? [])
+				.filter(isTvComparable)
+				.map(mapDiag),
+			warnings: (j.result?.warnings ?? j.warnings ?? [])
+				.filter(isTvComparable)
+				.map(mapDiag),
 		};
 	} catch (e) {
 		return { ok: false, errors: [], warnings: [], parseError: e.message };

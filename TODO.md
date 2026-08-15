@@ -15,28 +15,56 @@ regenerate with `node scripts/find-real-failures.mjs` followed by
 indexed at [investigations/README.md](investigations/README.md)
 and are not duplicated here - TODO.md is for *pending* work only.
 
-Measurement note, 2026-08-03 (current state; earlier per-INV notes live in git
+Measurement note, 2026-08-15 (current state; earlier per-INV notes live in git
 history and in each investigation, per G001 - they were dated point-in-time
-records, not standing facts). The baseline was re-snapshotted on 2026-08-03 to
-absorb INV138's `2997d729…` v5 disappearance (a real FP removal, TV-confirmed
-silent) which the previous 2026-06-28 baseline still carried as a standing
-exception. The local snapshot is now stable at 1879 fixtures, 621 fixtures with
-errors, and 16056 total error records, and
-`node scripts/regression-check.mjs` reports a clean 0 changed fixtures /
-0 new error appearances with no exception.
-The last full TV sweep (INV133, 2026-06-28, 748
-v6 fixtures) measured errors at 29 local-only / 0 tv-only / 1 same-position
-message pair and warning tv-only at 0; every change since has left the v6 error
-baseline byte-identical, so that window still holds. Full vitest: 441 passing.
+records, not standing facts).
 
-Note on the three checks added 2026-08-03 (INV141/INV142/INV143): all three are
+**Full TV sweep, 2026-08-15** (`lint:failures`, 748 v6 fixtures, commit
+`12c817a`): errors at **29 local-only / 0 tv-only / 1 same-position message
+pair**, and **warning tv-only 0**. That error window is byte-identical to the
+2026-06-28 sweep, across INV133-INV145 - thirteen investigations including five
+new error-emitting checks (INV139/140/141/142/143). The 29 are the three
+already-explained categories: 20 probe-backed CE10156 wrap TPs in 2 files, 8
+`bar index` mangle sites in 1 file, and 1 mangled ternary-wrap residue.
+
+The local baseline was re-snapshotted the same day and now stands at 1879
+fixtures, 621 with errors, 16056 error records, with
+`node scripts/regression-check.mjs` reporting a clean **0 changed fixtures / 0
+new error appearances and no exception**. (The previous note claimed this
+re-snapshot had happened on 2026-08-03; it had not - the on-disk baseline was
+still the 2026-06-28 one, 622/16057, and every run since carried the
+`2997d729…` v5 disappearance as a phantom changed fixture. Corrected here.)
+
+Full vitest: 450 passing.
+
+Warning local-only read 1423 raw on this sweep, of which **131 are `lint`-stage
+records** (116 REPAINTING_SECURITY + 15 ACCUMULATOR_LIFETIME) that TV can never
+emit by construction - so the comparable figure is **1292**.
+`find-real-failures.mjs` now drops the `lint` stage before diffing (see
+INV144), which is why the stored report for this particular sweep still
+contains them: the filter landed after it ran. The next sweep produces 1292
+natively.
+
+Note on the checks added 2026-08-03 (INV141/INV142/INV143): all three are
 classes the corpus CANNOT carry, so their 0-changed regression results are not
 evidence of coverage on their own - each is pinned by probes and a fixture
 instead. See each INV's Verification section for what negative evidence the
-corpus does supply.
+corpus does supply. The same caveat applies to INV144's semantic lints (a
+channel TV has no counterpart for) and INV145's triple-delimited multiline
+strings (an April 2026 language feature the corpus predates entirely).
+
+**Reference data refreshed 2026-08-15.** The previous scrape was 2026-05-29, so
+the catalog was missing TV's July and August 2026 additions. The refresh
+(`crawl` -> `scrape` -> `reextract:dom` -> `reextract:sections` -> `generate`)
+changed parameters ONLY - `sort_field` on `array.binary_search`/`_leftmost`/
+`_rightmost`, and `calc_on_every_history_tick` on `strategy()`. The TOC
+inventory is unchanged at 876 items, and `variables`/`constants`/`types`/
+`operators`/`keywords` JSON came out byte-identical.
 
 **Warning local-only is NOT a stable metric** - do not read movement in it as
-signal. It measured 1290 then 1310 on byte-identical same-day reruns, because
+signal (this is on top of the `lint`-stage adjustment above, which is a fixed
+offset rather than churn). It measured 1290 then 1310 on byte-identical
+same-day reruns, because
 `totalWarningLocalOnly` sums only the files TV also parsed, so one file
 flipping in or out of TV's unparseable set moves it by that file's whole
 warning count (G001; the candlestick `C_*` unused-var snippet, spread across

@@ -1,12 +1,12 @@
 {
   "metadata": {
-    "extractedAt": "2026-05-29T18:02:53.029Z",
+    "extractedAt": "2026-08-15T18:02:59.414Z",
     "source": "https://www.tradingview.com/pine-script-reference/v6/",
     "totalItems": 876,
     "extractionMethod": "dynamic_discovery",
     "discoveryStats": {
       "tocItemsFound": 941,
-      "codeBlocksAnalyzed": 2866,
+      "codeBlocksAnalyzed": 2870,
       "variablesDiscovered": 161,
       "functionsDiscovered": 475,
       "constantsDiscovered": 239,
