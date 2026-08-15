@@ -380,11 +380,13 @@ function checkRepaintingSecurity(ctx: LintContext): SemanticWarning[] {
 function isChartTimeframe(expr: Expression): boolean {
 	if (expr.type === "Literal") {
 		// A string Literal's `value` keeps its delimiters (`"\"\""` for an empty
-		// string), so the emptiness test has to strip them.
+		// string), so the emptiness test has to strip them - three of them for
+		// the triple-delimited multiline form. see INV145
 		const text = String(expr.value);
 		const quote = text[0];
 		if (quote !== '"' && quote !== "'") return false;
-		return text.slice(1, -1) === "";
+		const width = text.startsWith(quote.repeat(3)) ? 3 : 1;
+		return text.slice(width, -width) === "";
 	}
 	return serialize(expr) === "timeframe.period";
 }

@@ -1,0 +1,38 @@
+// @test regression/multiline-string-triple-delimited
+// @description Triple-delimited multiline strings ("""...""" / '''...''') were added to Pine in April 2026. The lexer used to have no notion of them: the opening """ lexed as an empty string followed by a stray quote, the newline drew CE10017 "Missing enclosing character in the literal string", and the text lines became phantom undeclared identifiers. They must lex as one STRING token spanning the lines, with every newline and indentation space literal - so the continuation rule that ends a single-pair literal at a column-1 line (INV025) must NOT apply here. They must also NOT draw CW10001, whose own message tells the author to use this exact form. TV accepts all of this and warns nothing (probed 2026-08-15, see INV145).
+// @expects parse: success
+// @expects no-errors
+// @expects warnings: 0
+// @expects ast: body.1.init.type = "Literal"
+//@version=6
+indicator("triple-delimited multiline strings")
+
+// Lines start at column 1 - the single-pair continuation rule would end the
+// literal here, which is exactly what must not happen.
+string basic = """This is a multiline string.
+Each of these code lines literally represents a separate line of text.
+We do not have to add the \n escape sequence to separate the lines."""
+
+// Indentation inside the literal is literal text, at global and local scope.
+string indented = """No indentation.
+ Indented by one space.
+            Indented by 12 spaces.
+"""
+
+// Both delimiter flavours, concatenated as ordinary operands.
+string concatenated = """String 1
+""" + """String 2
+""" + '''String 3
+'''
+
+// An escaped delimiter must not close the literal.
+string escaped = """a \""" b"""
+
+if barstate.islastconfirmedhistory
+    string localScoped = """---
+No indentation.
+    Indented by four spaces.
+    """
+    log.info(basic + indented + concatenated + escaped + localScoped)
+
+plot(close)

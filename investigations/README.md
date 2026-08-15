@@ -900,3 +900,12 @@ contradiction means re-measure, not "the earlier author was wrong."
   check was dropped as redundant with our CW10003/4. A corpus sweep tightened
   two rules: reversal entries ARE an exit, and a loop increment behind an `if`
   is an event counter, not an unbounded accumulator.
+- [INV145](INV145-triple-delimited-multiline-strings/notes.md) - triple-
+  delimited multiline strings (`"""..."""` / `'''...'''`), added to Pine in
+  April 2026, did not lex at all: the opening delimiter became an empty string
+  plus a stray quote, the newline drew CE10017, and the text lines became
+  phantom undeclared identifiers. Four errors on a script TV accepts clean. The
+  new scanner skips `scanString`'s column-1 continuation rule (INV025) on
+  purpose, since a multiline string's lines routinely start at column 1, and
+  CW10001 now exempts the form its own message recommends. Grammar, not catalog
+  data - no re-scrape would have produced it.

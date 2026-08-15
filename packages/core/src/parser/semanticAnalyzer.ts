@@ -30,6 +30,11 @@ import type {
 const MULTILINE_STRING_MESSAGE =
 	'Defining a string enclosed in a single pair of quotation marks (") or apostrophes (\') across multiple lines is deprecated. Split the string into smaller strings and concatenate them with the `+` operator instead ("like " + "this"). Alternatively, to create a multiline string, enclose the text in three pairs of apostrophes (\'\'\'like this\'\'\') or quotation marks ("""like this""").';
 
+/** A `"""..."""` / `'''...'''` literal, delimiters included in `raw`. see INV145 */
+export function isTripleDelimited(raw: string): boolean {
+	return raw.startsWith('"""') || raw.startsWith("'''");
+}
+
 export interface SemanticWarning {
 	line: number;
 	column: number;
@@ -852,6 +857,12 @@ export class SemanticAnalyzer {
 	private checkMultilineStringLiteral(literal: Literal): void {
 		if (typeof literal.value !== "string") return;
 		if (!/[\r\n]/.test(literal.raw)) return;
+		// CW10001 deprecates spanning a SINGLE pair of delimiters across lines.
+		// The triple-delimited form (April 2026) is the sanctioned replacement -
+		// TV's own message tells you to use it - so warning on it would tell the
+		// author to do what they already did. TV emits no warning there (probed
+		// 2026-08-15, see INV145).
+		if (isTripleDelimited(literal.raw)) return;
 		this.addWarning(
 			literal.line,
 			1,

@@ -329,7 +329,17 @@ export class Lexer {
 
 			case '"':
 			case "'":
-				this.scanString(char);
+				// Three delimiters open a MULTILINE string (`"""..."""` /
+				// `'''...'''`), added to Pine in April 2026. It is a distinct
+				// literal form, not a run of single-line strings: the newlines
+				// between the delimiters are literal text, so the scanner must
+				// consume them rather than treat the line break as the broken-
+				// string error a single-pair literal would draw. see INV145
+				if (this.peek() === char && this.peekNext() === char) {
+					this.scanMultilineString(char);
+				} else {
+					this.scanString(char);
+				}
 				break;
 
 			default:
@@ -446,6 +456,74 @@ export class Lexer {
 
 		const value = this.source.substring(start, this.pos);
 		this.addToken(TokenType.COMMENT, value, value.length, {
+			line: startLine,
+			column: startColumn,
+		});
+	}
+
+	/**
+	 * A triple-delimited multiline string: `"""..."""` or `'''...'''`.
+	 *
+	 * Everything between the delimiters is literal text, including the newlines
+	 * and every space used for indentation, so this scanner deliberately does
+	 * NOT apply `scanString`'s continuation rule (the one that ends a literal
+	 * when the next line starts at column 1 - see INV025). A multiline string's
+	 * lines routinely start at column 1; that is the point of the form.
+	 *
+	 * The token keeps its delimiters in `value`, exactly as the single-line form
+	 * keeps its quotes, so consumers that strip delimiters must strip three.
+	 * see INV145
+	 */
+	private scanMultilineString(quote: string): void {
+		const start = this.pos - 1;
+		const startLine = this.line;
+		const startColumn = this.column - 1;
+
+		this.advance(); // second opening delimiter
+		this.advance(); // third opening delimiter
+
+		while (!this.isAtEnd()) {
+			if (this.peek() === "\\") {
+				// Escapes still apply, so `\"""` does not close the literal.
+				this.advance();
+				if (!this.isAtEnd()) this.advance();
+				continue;
+			}
+			if (
+				this.peek() === quote &&
+				this.peekNext() === quote &&
+				this.source.charAt(this.pos + 2) === quote
+			) {
+				this.advance();
+				this.advance();
+				this.advance();
+				const value = this.source.substring(start, this.pos);
+				this.addToken(TokenType.STRING, value, value.length, {
+					line: startLine,
+					column: startColumn,
+				});
+				return;
+			}
+			if (
+				this.peek() === "\n" ||
+				(this.peek() === "\r" && this.peekNext() !== "\n")
+			) {
+				// Literal newline inside the string (\r\n breaks at the \n; a
+				// lone \r is its own break - see G005).
+				this.line++;
+				this.column = 0;
+			}
+			this.advance();
+		}
+
+		// Ran to EOF without the closing delimiter.
+		this.lexerErrors.push({
+			line: startLine,
+			column: startColumn + 1,
+			message: `mismatched character '<EOF>' expecting '${quote.repeat(3)}'`,
+		});
+		const value = this.source.substring(start, this.pos);
+		this.addToken(TokenType.STRING, value, value.length, {
 			line: startLine,
 			column: startColumn,
 		});

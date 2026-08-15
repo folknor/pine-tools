@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Lex triple-delimited multiline strings (`"""..."""` / `'''...'''`), added to
+  Pine in April 2026. They previously produced four errors on a script
+  TradingView accepts clean: the opening delimiter lexed as an empty string
+  plus a stray quote, the newline drew CE10017, and the string's text lines
+  became phantom undeclared identifiers. CW10001 (the single-pair multiline
+  deprecation) now exempts the new form, which is what its own message tells
+  authors to use. See INV145.
+
 - Semantic lints: five checks for Pine that compiles cleanly and is still
   wrong. TradingView accepts all five, so they are warnings on a new `lint`
   stage in the CLI's `result.warnings`, separate from the TV-mirroring

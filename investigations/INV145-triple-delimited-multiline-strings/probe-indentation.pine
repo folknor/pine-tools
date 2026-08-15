@@ -1,0 +1,20 @@
+//@version=6
+indicator("Indentation in multiline strings demo")
+
+//@variable A multiline string with indentation defined in the global scope.
+string globalIndentedStr = """No indentation.
+Also no indentation.
+ Indented by one space.
+    Indented by four spaces.
+            Indented by 12 spaces.
+"""
+
+if barstate.islastconfirmedhistory
+    //@variable A multiline string with indentation defined in a local block.
+    string localIndentedStr = """---
+No indentation.
+    Indented by four spaces.
+    """
+
+    // Concatenate both strings and display the result in a label.
+    label.new(bar_index, 0, globalIndentedStr + localIndentedStr, textalign = text.align_left)
