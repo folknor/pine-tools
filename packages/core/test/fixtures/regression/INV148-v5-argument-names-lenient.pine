@@ -1,0 +1,9 @@
+// @test regression/INV148-v5-argument-names-lenient
+// @description The unknown-argument-NAME error (CE10120) is v6-only, for the same reason argument TYPE checking is: pine-data ships v6 signatures, so judging a v5 call against them flags every parameter v6 removed. `transp` is the carrier - TV accepts it on v5 with a deprecation WARNING and rejects it only on v6 (both probed 2026-08-21). A false error on a script that genuinely runs is worse than a missed one. See INV148.
+// @expects parse: success
+// @expects errors: 0
+//@version=5
+indicator("v5 transp", overlay = true)
+plot(close, transp = 100)
+plotshape(close > open, transp = 50)
+fill(plot(close), plot(open), transp = 90)

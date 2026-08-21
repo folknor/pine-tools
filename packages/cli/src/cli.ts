@@ -2,6 +2,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import {
 	DiagnosticSeverity,
+	UNSUPPORTED_VERSION_CODE,
 	UnifiedPineValidator,
 } from "../../core/src/analyzer/checker";
 import { runSemanticLints } from "../../core/src/analyzer/lint-semantic";
@@ -460,12 +461,19 @@ async function main() {
 					line: w.line,
 					column: w.column + w.length,
 				});
-				return {
+				// `rule` always, `code` when the warning mirrors a TV CW code.
+				// Without either, 122 of 140 corpus warnings were unfilterable
+				// except by matching prose. UNUSED_VARIABLE carries no code
+				// because TV emits nothing for it. see INV148
+				const out: PineLintError = {
 					start,
 					end,
 					message: w.message,
 					stage: "analysis",
+					rule: w.rule,
 				};
+				if (w.code !== undefined) out.code = w.code;
+				return out;
 			});
 
 		// Our own semantic lints - the `lint` stage. The `rule` id rides along so
@@ -487,11 +495,24 @@ async function main() {
 		});
 
 		// Combine all errors (lexer errors first, then parser, then validation)
-		const errors: PineLintError[] = [
-			...lexerPineLintErrors,
-			...parserPineLintErrors,
-			...validationPineLintErrors,
-		];
+		//
+		// For a version we refuse outright, the refusal is the ONLY thing we
+		// say. Our lexer and parser implement v6 grammar, so their verdicts on
+		// v4 source are not evidence of anything - and TV will not adjudicate
+		// them, since it rejects the file before parsing. Emitting them
+		// alongside the refusal gave the same v4 population two different
+		// explanations depending on whether the file happened to trip the
+		// lexer. see INV148
+		const unsupportedVersion = validationPineLintErrors.find(
+			(e) => e.code === UNSUPPORTED_VERSION_CODE,
+		);
+		const errors: PineLintError[] = unsupportedVersion
+			? [unsupportedVersion]
+			: [
+					...lexerPineLintErrors,
+					...parserPineLintErrors,
+					...validationPineLintErrors,
+				];
 
 		// Combine all warnings
 		const warnings: PineLintError[] = [

@@ -42,6 +42,13 @@ export interface SemanticWarning {
 	message: string;
 	severity: DiagnosticSeverity;
 	rule: string;
+	/**
+	 * TradingView's own CW code, when this warning mirrors one. Omitted where
+	 * TV has no counterpart - UNUSED_VARIABLE is ours alone (TV emits nothing
+	 * at all for an unused variable, probed 2026-08-21), so it must not claim
+	 * a code it cannot be filtered against. see INV148
+	 */
+	code?: string;
 }
 
 // Why a region is conditional - selects the CONDITIONAL_SERIES wording
@@ -521,6 +528,7 @@ export class SemanticAnalyzer {
 				`Shadowing built-in variable '${name}'`,
 				DiagnosticSeverity.Warning,
 				"SHADOW_BUILTIN",
+				"CW10011",
 			);
 		} else if (
 			this.scopeNames.length > 1 &&
@@ -533,6 +541,7 @@ export class SemanticAnalyzer {
 				`Shadowing variable '${name}' which exists in parent scope. Did you want to use the ':=' operator instead of '=' ?`,
 				DiagnosticSeverity.Warning,
 				"SHADOW_VARIABLE",
+				"CW10013",
 			);
 		}
 		this.scopeNames[this.scopeNames.length - 1].add(name);
@@ -809,6 +818,7 @@ export class SemanticAnalyzer {
 						`The variable '${expr.object.name}' is declared in local scope, which may not be executed at every update. So, obtaining its historical values may lead to unexpected results`,
 						DiagnosticSeverity.Warning,
 						"LOCAL_HISTORY",
+						"CW10018",
 					);
 				}
 				this.analyzeExpression(expr.object);
@@ -870,6 +880,7 @@ export class SemanticAnalyzer {
 			MULTILINE_STRING_MESSAGE,
 			DiagnosticSeverity.Warning,
 			"MULTILINE_STRING",
+			"CW10001",
 		);
 	}
 
@@ -1078,6 +1089,13 @@ export class SemanticAnalyzer {
 				message,
 				DiagnosticSeverity.Warning,
 				"CONDITIONAL_SERIES",
+				// The scope kind that selects the wording selects TV's code too
+				// (all three probed 2026-08-21). see INV148
+				kind === "andor"
+					? "CW10002"
+					: kind === "ternary"
+						? "CW10004"
+						: "CW10003",
 			);
 		}
 	}
@@ -2346,14 +2364,17 @@ export class SemanticAnalyzer {
 		message: string,
 		severity: DiagnosticSeverity,
 		rule: string,
+		code?: string,
 	): void {
-		this.warnings.push({
+		const warning: SemanticWarning = {
 			line,
 			column,
 			length,
 			message,
 			severity,
 			rule,
-		});
+		};
+		if (code !== undefined) warning.code = code;
+		this.warnings.push(warning);
 	}
 }

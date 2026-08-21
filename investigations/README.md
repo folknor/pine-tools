@@ -934,3 +934,18 @@ contradiction means re-measure, not "the earlier author was wrong."
   or `array.abs(array<int>)` types as `array<float>`. 34 of 475 functions were
   exposed to the first bug; most were masked by overload #0 already being the
   common answer or by int/float coercion.
+- [INV148](INV148-diagnostic-identity-and-v5-leniency/notes.md) - second
+  external corpus audit. `analysis`-stage warnings carried neither `code` nor
+  `rule`, leaving 122 of 140 corpus warnings filterable only by prose; they now
+  carry both, with each CW code probed rather than trusted from comments and
+  UNUSED_VARIABLE deliberately given none (TV emits nothing for it). The
+  pre-v5 refusal now suppresses every other diagnostic, reversing INV146's
+  call to let parse errors stand: our v6 grammar's verdicts on v4 source are
+  not evidence, and TV will not adjudicate them. And CE10120 is gated to v6,
+  because TV accepts `plot(..., transp = 100)` on v5 with a deprecation
+  warning while rejecting it on v6 - 445 corpus errors removed, 0 new. Four
+  further false positives are characterized with probes but left unfixed:
+  trailing-comma continuation, TV's declaration-vs-`:=` asymmetry on
+  collection element types, leading-dot chains broken by an interleaved
+  comment, and values derived from an UNTYPED parameter being grounded into
+  the error channel.

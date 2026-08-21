@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+- `analysis`-stage warnings now carry `rule` (e.g. `SHADOW_BUILTIN`) and, where
+  the warning mirrors one, TradingView's `code` (`CW10011`). They previously
+  carried neither, so 122 of 140 corpus warnings were filterable only by
+  matching message prose - despite `--help` advertising the stage as TV's CW
+  codes, mirrored. Every code was probed rather than assumed;
+  `UNUSED_VARIABLE` deliberately carries none, because TV emits no warning at
+  all for an unused variable. See INV148.
+- Pre-v5 scripts now report the unsupported-version refusal and nothing else.
+  Three v4 files in a corpus sweep got syntax errors alongside it, so the same
+  population received two different explanations depending on whether the file
+  tripped the lexer. Our lexer and parser implement v6 grammar, so their
+  verdicts on v4 source are not evidence, and TV never adjudicates them - it
+  rejects the file before parsing. Reverses the call made in INV146. See
+  INV148.
+- The unknown-argument-name error (CE10120) is now v6-only, matching the
+  argument-type gating that already existed for the same reason. `pine-data`
+  ships only v6 signatures, so a v5 call was flagged for every parameter v6
+  removed: TradingView accepts `plot(..., transp = 100)` on v5 with a
+  deprecation warning and rejects it only on v6. Removes 445 false errors
+  across 79 corpus fixtures with no new ones. See INV148.
+
 - CLI: `--version` now reports the git commit the binary was built from, e.g.
   `pine-lint 0.5.0 (12ef0e0, built 2026-08-21 10:29:59)`. The ref carries a
   `-dirty` suffix when the working tree had uncommitted changes, so a ref in a

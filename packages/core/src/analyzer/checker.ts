@@ -104,6 +104,14 @@ export { DiagnosticSeverity, type ValidationError } from "../common/errors";
 // script, and TV anchors INV143's field-access case at it.
 const DECLARATION_FUNCTIONS = new Set(["indicator", "strategy", "library"]);
 
+/**
+ * Marks the pre-v5 refusal. Not a TV code - TV rejects these before it has a
+ * diagnostic channel at all, answering `{"success":false,"reason":"Supported
+ * versions are >= 5"}` - so the name is ours and deliberately not CE-shaped.
+ * see INV146, INV148
+ */
+export const UNSUPPORTED_VERSION_CODE = "PINE_VERSION_UNSUPPORTED";
+
 export class UnifiedPineValidator {
 	private errors: ValidationError[] = [];
 	// NOTE: several members below are `public` rather than `private` because the
@@ -270,13 +278,17 @@ export class UnifiedPineValidator {
 		// see INV146
 		const versionNumber = Number.parseInt(version, 10);
 		if (Number.isFinite(versionNumber) && versionNumber < 5) {
-			this.addError(
-				1,
-				1,
-				1,
-				`Pine Script v${versionNumber} is not supported. Supported versions are >= 5.`,
-				DiagnosticSeverity.Error,
-			);
+			// Carries a code so the CLI can recognise the refusal structurally
+			// and drop every other diagnostic, rather than matching its prose.
+			// see INV146, INV148
+			this.addTemplateError({
+				line: 1,
+				column: 1,
+				length: 1,
+				message: `Pine Script v${versionNumber} is not supported. Supported versions are >= 5.`,
+				severity: DiagnosticSeverity.Error,
+				code: UNSUPPORTED_VERSION_CODE,
+			});
 			return this.errors;
 		}
 

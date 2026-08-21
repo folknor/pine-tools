@@ -1425,7 +1425,16 @@ export function validateFunctionArguments(
 	// Check for invalid named parameters - TV's CE10120, anchored at the
 	// argument NAME (probed `plotshape(..., shape = ...)`, INV059 p05 /
 	// INV061 p06). see INV061
+	//
+	// v6 only, for the same reason argument TYPE checking is (G004/INV013):
+	// pine-data ships v6 signatures, so judging a v5 call against them flags
+	// every parameter v6 removed. `plot(..., transp = 100)` is the corpus
+	// carrier - TV accepts it on v5 with a DEPRECATION WARNING, not an error
+	// (probed 2026-08-21), while rejecting it on v6. We cannot tell the two
+	// apart without v5 signatures, and a false error on a script that runs is
+	// worse than a missed one. see INV148
 	for (const [name, entry] of providedArgs.entries()) {
+		if (version !== "6") continue;
 		if (!signature.parameters.some((p) => p.name === name)) {
 			v.addTemplateError({
 				line: entry.arg.nameLine ?? call.line,
