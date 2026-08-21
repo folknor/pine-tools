@@ -97,11 +97,17 @@ it this class plus the pre-v5 syntax suppression from finding 2 (`plot`
 112, `plotchar` 31, `fill` 24, `strategy.entry` 18, `plotshape` 18, the rest
 syntax).
 
-## Characterized but NOT fixed
+## The other four findings - all now resolved
 
-Each is a confirmed local false positive with a dated probe. None is a
-one-line fix; they are listed here rather than in TODO.md because each needs a
-real investigation.
+Reported as local false positives. Two were, and are fixed; two were not, and
+we keep our stricter behaviour. All four carry dated probes.
+
+| finding | verdict | outcome |
+|---|---|---|
+| (a) mixed statement list | our bug | fixed, INV149 |
+| (b) collection `:=` element types | **TV unsound** | no change, G008 |
+| (c) wrap broken by a blank line | our bug | fixed, INV149 |
+| (d) undetermined declaration check | **TV false negative** | no change, G006 |
 
 **(a) and (c) were fixed in INV149** - the repros below are superseded by the
 minimized ones there. (a)'s trailing comma turned out to be incidental: the
@@ -135,10 +141,27 @@ TV, 2026-08-21, is asymmetric and the asymmetry is the finding:
 - `floats := ints` where `ints` is `array<int>` -> TV **clean**
 
 So TV element-type-checks a collection DECLARATION but not a `:=`
-reassignment. Before relaxing anything here, note AGENTS.md's rule: never
-relax a check because TV is silent. This is not silence - it is an explicit
-acceptance in one syntactic position and rejection in another, which may
-equally be a TV bug. Worth deciding deliberately, not by default.
+reassignment.
+
+**RESOLVED 2026-08-21: we are correct, TV has a soundness hole. No change.**
+The acceptance is not a widening coercion - it aliases. TV accepts pushing
+`1.5` through the alias into an array it still types as `array<int>`, then
+reading it back through an int-typed `array.get`:
+
+```pine
+//@version=6
+indicator("t")
+array<int> ints = array.from(1, 2, 3)
+array<float> floats = na
+floats := ints
+array.push(floats, 1.5)
+plot(array.get(ints, 3))
+```
+
+TV: clean. Pine collections are invariant, and the declaration form proves TV
+agrees the types are incompatible. Recorded as **G008**, pinned by
+`regression/G008-collection-reassign-element-check.pine`. Expect this in the
+local-only column of any TV diff; it is not a false positive.
 
 ### (c) Leading-dot method chain broken by an interleaved comment
 
@@ -192,16 +215,31 @@ through call arguments"), which the SemanticAnalyzer already implements for
 the warning channel. Note this is not about `ta.pivothigh`'s return type,
 which is `series float` whatever its arguments are.
 
-The fix therefore belongs in the checker's inference core: an argument tracing
-to an untyped parameter must make the call undetermined for the error channel.
-Our INV123 call-graph fixpoint currently binds `len` from the call site
-(`defineParamsWithBindings` falls back to the binding for an unannotated
-param), grounding the result, and that grounding reaches CE10123.
+**RESOLVED 2026-08-21: we are correct, TV has a false negative. No change.**
 
-Any fix must not undo INV124's gate drop, which depends on that same grounded
-inference being trusted - so the undetermined-ness needs to be tracked
-alongside the binding rather than replacing it. This is much the largest of
-the four and was deliberately left unstarted rather than half-landed.
+Asked what type it gives `ph`, TV answers `"undetermined type"` - not `bool`.
+It discards the author's explicit annotation rather than checking against it:
+
+```json
+{"name":"ph","scopeId":"#1","type":"undetermined type"}
+```
+
+And the error is provable without any inference of ours. BOTH `ta.pivothigh`
+overloads return `series float` unconditionally (`functions.json`), so the
+initializer is `series float` whatever `len` is. Our CE10123 does not depend
+on the INV123 fixpoint having guessed `len` correctly - it would hold even if
+`len` were genuinely unknowable.
+
+This is the same root cause as **G006** (TV's undetermined-type inference gap
+suppressing checks it should make), one check further along: G006 documented
+it for call ARGUMENTS, this extends it to the DECLARATION annotation. G006's
+standing instruction already applies - "do not relax our checks to match TV's
+silence here; they are INV001-class true positives". Pinned by
+`regression/G006-undetermined-declaration-check.pine`.
+
+Porting TV's behaviour would have meant deliberately un-checking an explicit
+`bool` annotation against a provably-`series float` initializer - strictly
+worse than what we do now.
 
 **Correction to the report on this file.** It was filed as both tools
 "independently reaching the same wrong series bool vs series float conclusion"

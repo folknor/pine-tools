@@ -1,0 +1,11 @@
+// @test regression/G006-undetermined-declaration-check
+// @description TV's "undetermined type" inference gap also discards an explicit declaration annotation: for `bool ph = ta.pivothigh(len, len)` with an UNTYPED `len`, TV reports ph as "undetermined type" rather than bool and emits nothing (probed 2026-08-21). The error is provable without any inference of ours - both ta.pivothigh overloads return `series float` unconditionally - so the initializer is series float whatever len is. Keep our CE10123; it is a true positive of the G001/INV001 class. TV's suppression is per-expression, not per-function: it still errors when the untyped param is unused, or when an unrelated untyped param sits beside a typed one. See G006, INV148 finding (d).
+// @expects parse: success
+// @expects errors: 1
+// @expects error: line=4, message=/"series float".*"ph"/
+//@version=6
+indicator("undetermined declaration", overlay = true)
+f(len) =>
+    bool ph = ta.pivothigh(len, len)
+    ph
+plot(f(5) ? 1 : 0)

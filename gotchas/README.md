@@ -56,8 +56,17 @@ when TV's behavior diverged, with no stored probe to re-check it.
   ALL argument checks on a call containing an "undetermined type"
   argument (untyped UDF results), sibling args included; tv-accepts
   mutation verdicts can be TV FNs; INV001-class true positives, never
-  relax to match
+  relax to match. Extended 2026-08-21: it also discards an explicit
+  DECLARATION annotation (`bool ph = ta.pivothigh(len, len)` with untyped
+  `len` types ph as "undetermined type", not bool), and the suppression is
+  per-EXPRESSION, not per-function
 - [G007](G007-tv-does-not-enforce-input-qualifier.md) - TV enforces the
   `simple` qualifier on args (INV088) but NOT the `input` qualifier:
   series flows into `input`-typed params (plotshape style/show_last) with
   no error. Do not add an input-qualifier check - closes TODO #60 residual
+- [G008](G008-collection-reassignment-skips-element-check.md) - TV
+  element-type-checks a collection DECLARATION but not a `:=`
+  reassignment, and the acceptance is UNSOUND rather than a widening
+  coercion: it aliases, so a float can be pushed through the alias into an
+  array TV still types as `array<int>`. Keep our error; a TV-clean corpus
+  file may legitimately carry it

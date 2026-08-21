@@ -27,15 +27,34 @@ new error-emitting checks (INV139/140/141/142/143). The 29 are the three
 already-explained categories: 20 probe-backed CE10156 wrap TPs in 2 files, 8
 `bar index` mangle sites in 1 file, and 1 mangled ternary-wrap residue.
 
-The local baseline was re-snapshotted the same day and now stands at 1879
-fixtures, 621 with errors, 16056 error records, with
-`node scripts/regression-check.mjs` reporting a clean **0 changed fixtures / 0
-new error appearances and no exception**. (The previous note claimed this
-re-snapshot had happened on 2026-08-03; it had not - the on-disk baseline was
-still the 2026-06-28 one, 622/16057, and every run since carried the
-`2997d729…` v5 disappearance as a phantom changed fixture. Corrected here.)
+**Superseded for the error window by INV146-INV149 (2026-08-21).** The TV
+sweep above has NOT been re-run since; treat its 29/0/1 split as predating
+those four investigations. Two of them move it by construction: INV146's
+pre-v5 refusal and INV148's v6-only argument-name gate both change what a
+non-v6 fixture reports, and INV148 alone removed 445 error records across 79
+fixtures. Re-run `lint:failures` before quoting the split again.
 
-Full vitest: 450 passing.
+Two categories are now *expected* local-only and must not be read as
+over-strictness when that sweep happens - both are TV holes we deliberately do
+not match, each pinned by a fixture: G008 (collection `:=` skips the element
+check - unsound, TV lets a float into an `array<int>` through the alias) and
+G006's declaration extension (an untyped param makes TV discard an explicit
+`bool` annotation).
+
+The local baseline was re-snapshotted 2026-08-21 and now stands at 1879
+fixtures, **774 with errors, 7103 error records**, with
+`node scripts/regression-check.mjs` reporting a clean **0 changed fixtures / 0
+new error appearances**. The jump from the 2026-08-15 figures (621 / 16056) is
+INV146 plus INV148 and is fully accounted for: the pre-v5 refusal gives an
+error to 643 previously-clean legacy fixtures (+files), while replacing each
+file's v4 cascade with a single diagnostic (-records).
+
+(An earlier note claimed a re-snapshot had happened on 2026-08-03; it had not -
+the on-disk baseline was still the 2026-06-28 one, 622/16057, and every run
+since carried the `2997d729…` v5 disappearance as a phantom changed fixture.
+Corrected 2026-08-15.)
+
+Full vitest: 456 passing.
 
 Warning local-only read 1423 raw on this sweep, of which **131 are `lint`-stage
 records** (116 REPAINTING_SECURITY + 15 ACCUMULATOR_LIFETIME) that TV can never
@@ -399,16 +418,35 @@ index.
   (so `\r\r\n` files double their line numbers), wrapped statements
   reported at logical-line columns (comment-stripped single-space
   join). Both probed 2026-06-04.
+- [G004](gotchas/G004-version-detection-leniency.md) - version detection
+  and declared-v4/v5 leniency (G003 intentionally unused).
 - [G006](gotchas/G006-undetermined-type-suppresses-arg-checks.md) - TV
   skips ALL argument checks on a call containing an "undetermined type"
   argument (untyped UDF results), sibling args included - so a
   mutation-run `tv-accepts` can be a TV FN, and our CE10123 there is an
-  INV001-class true positive. Probed 2026-06-11.
+  INV001-class true positive. Probed 2026-06-11. **Extended 2026-08-21:**
+  it also discards an explicit DECLARATION annotation - `bool ph =
+  ta.pivothigh(len, len)` with untyped `len` types `ph` as "undetermined
+  type", not `bool` - and the suppression is per-EXPRESSION, not
+  per-function.
+- [G007](gotchas/G007-tv-does-not-enforce-input-qualifier.md) - TV
+  enforces the `simple` qualifier on arguments but NOT `input`. Do not add
+  an input-qualifier check.
+- [G008](gotchas/G008-collection-reassignment-skips-element-check.md) - TV
+  element-type-checks a collection DECLARATION but not a `:=`
+  reassignment, and the acceptance is UNSOUND rather than a widening
+  coercion - it aliases, so a float can be pushed through the alias into
+  an array TV still types as `array<int>`. Keep our error. Probed
+  2026-08-21.
 
 Authoritative per-occurrence list lives in
 `lint-reports/failures-by-category.json`. For every category below the JSON
 holds every `(fixture, line, column, exact message)` that contributed to the
 count.
+
+Every category table below comes from the 2026-08-15 sweep and carries the
+same staleness caveat as the split above: INV146-INV149 landed after it and
+none of it has been re-measured against TV.
 
 ## Scripts behind this report
 

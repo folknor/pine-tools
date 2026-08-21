@@ -1,0 +1,11 @@
+// @test regression/G008-collection-reassign-element-check
+// @description We element-type-check a collection `:=` reassignment; TV does not, and its acceptance is UNSOUND rather than a widening coercion. Probed 2026-08-21: TV rejects the declaration form `array<float> f = array.from(0,0,0)` with this exact message, but accepts `floats := ints`, and then accepts `array.push(floats, 1.5)` writing a float into an array it still types as array<int>, readable back through an int-typed array.get. Pine collections are invariant. Keep this error - it is a true positive of the G001/INV001 class, and a TV-clean corpus file may legitimately carry it. See G008, INV148 finding (b).
+// @expects parse: success
+// @expects errors: 1
+// @expects error: line=5, message=/"array<int>".*"array<float>"/
+//@version=6
+indicator("collection reassign", overlay = true)
+array<int> ints = array.from(1, 2, 3)
+array<float> floats = na
+floats := ints
+plot(array.get(floats, 0))

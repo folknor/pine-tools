@@ -80,12 +80,54 @@ returns zero errors AND zero warnings on the full files, with populated
 variable lists (most variables "undetermined type" - both fixtures lean
 on untyped UDFs throughout).
 
+## It also suppresses the DECLARATION type check (2026-08-21)
+
+The same inference gap discards an explicit type annotation. Found by the
+second external corpus audit (INV148 finding (d)),
+`htf-support-resistance.pine:106`:
+
+```pine
+//@version=6
+indicator("t")
+f(len) =>
+    bool ph = ta.pivothigh(len, len)
+    ph
+plot(f(5) ? 1 : 0)
+```
+
+TV: clean. But its variable list reports `ph` as **"undetermined type"** -
+not `bool`. The author wrote `bool ph` and TV does not check the
+initializer against it, nor even retain it.
+
+The error is provable without any inference of our own: BOTH
+`ta.pivothigh` overloads return `series float` unconditionally
+(`functions.json`), so the initializer is `series float` whatever `len`
+is, and `bool ph = <series float>` is CE10123. Our diagnostic does not
+depend on the INV123 fixpoint having guessed `len` correctly.
+
+TV does NOT simply skip a function carrying an untyped parameter - two
+controls confirm the suppression is per-EXPRESSION, requiring the
+offending expression to reference the undetermined value. Both of these
+still error on TV:
+
+```pine
+f(len) =>                          // untyped param present, unused here
+    bool ph = ta.pivothigh(5, 5)
+```
+
+```pine
+f(int len, other) =>               // unrelated untyped param alongside
+    bool ph = ta.pivothigh(len, len)
+```
+
 ## Lesson
 
 - **Do not relax our arg checks to match TV's silence here.** Our
   CE10123 on these calls is a true positive of the INV001 class (we
   catch what TV misses). Pinned by
-  `packages/core/test/fixtures/regression/G006-undetermined-arg-suppression.pine`.
+  `packages/core/test/fixtures/regression/G006-undetermined-arg-suppression.pine`
+  and, for the declaration form,
+  `packages/core/test/fixtures/regression/G006-undetermined-declaration-check.pine`.
 - **Mutation-run triage:** a `tv-accepts` verdict does not always mean
   "the breakage was not invalid". When the mutated call sits near
   undetermined-typed values (untyped UDF results/params), TV's accept is
