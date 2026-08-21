@@ -402,6 +402,14 @@ export class Lexer {
 	private extractVersionFromAnnotation(annotation: string): void {
 		// Parse //@version=X where X is 2, 4, 5, or 6. Tolerate whitespace
 		// between // and @version and around the = (e.g. `// @version = 5`).
+		//
+		// FIRST wins, not last. TV takes the leading directive and ignores any
+		// later one; last-wins let a `//@version=4` further down the file
+		// retroactively rewrite the declared version, and because the version
+		// is consumed at different points (the multiline-string rule below
+		// reads it mid-lex, the checker reads it after) the file ended up
+		// validated against no coherent version at all. see INV146
+		if (this.detectedVersion !== null) return;
 		const match = annotation.match(/\/\/\s*@version\s*=\s*(\d+)/);
 		if (match) {
 			this.detectedVersion = match[1];

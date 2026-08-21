@@ -269,10 +269,6 @@ function argumentAt(
 	return positional[index]?.value;
 }
 
-function hasNamedArgument(call: CallExpression, name: string): boolean {
-	return call.arguments.some((a) => a.name === name);
-}
-
 /** Stable text for a node, so identical calls can be recognised as identical. */
 function serialize(expr: Expression): string {
 	switch (expr.type) {
@@ -334,9 +330,20 @@ function anchor(call: CallExpression): { line: number; column: number } {
  * bar. History shows the settled value and realtime shows a moving one, so the
  * backtest measures something the market will not reproduce.
  *
+ * An earlier version went silent whenever `lookahead=` was passed by name, on
+ * the theory that stating the intent made it deliberate. The Manual says the
+ * opposite - "neglecting to offset the `expression` argument in an HTF request
+ * causes lookahead bias on historical bars" - so `lookahead_on` on an
+ * un-offset expression is the textbook future leak, not evidence of an
+ * informed author. The old exemption also matched only NAMED arguments, so
+ * the same call warned or not depending on how lookahead was passed. Both
+ * fixed: lookahead is resolved positionally too, and only `lookahead_off`
+ * exempts. see INV146
+ *
  * Silent whenever the author has demonstrably considered it:
- *   - an explicit `lookahead=` argument (either value - stating the intent is
- *     what makes it deliberate),
+ *   - an explicit `lookahead = barmerge.lookahead_off` (the Manual's own
+ *     non-repainting idiom for LOWER-timeframe requests, which need no
+ *     offset - and HTF vs LTF is not statically decidable here),
  *   - a history offset anywhere in `expression` (`close[1]`, `ta.sma(c,14)[1]`,
  *     or the Manual's `close[barstate.isrealtime ? 1 : 0]` idiom),
  *   - a history offset on the CALL (`request.security(...)[1]`),
@@ -353,8 +360,20 @@ function checkRepaintingSecurity(ctx: LintContext): SemanticWarning[] {
 	const findings: SemanticWarning[] = [];
 
 	for (const { call } of ctx.callsNamed("request.security")) {
-		if (hasNamedArgument(call, "lookahead")) continue;
 		if (ctx.indexedCalls.has(call)) continue;
+
+		// Explicit `lookahead_off` stays silent - resolved positionally as well
+		// as by name. For a LOWER-timeframe request this is the Manual's
+		// prescribed non-repainting idiom ("use barmerge.lookahead_off for
+		// lower timeframe data requests"), needing no offset, and we cannot
+		// tell HTF from LTF statically when the timeframe is a variable. That
+		// makes silence a deliberate miss on un-offset HTF `lookahead_off`
+		// rather than an oversight: a false positive on the corpus's many
+		// legitimate LTF requests costs more than the miss. `lookahead_on`
+		// gets no such exemption - it repaints on BOTH sides (future leak on
+		// HTF, first-vs-last intrabar on LTF). see INV146
+		const lookahead = argumentAt(call, "lookahead", 4);
+		if (lookahead && isLookaheadOff(lookahead)) continue;
 
 		const timeframe = argumentAt(call, "timeframe", 1);
 		if (timeframe && isChartTimeframe(timeframe)) continue;
@@ -368,7 +387,7 @@ function checkRepaintingSecurity(ctx: LintContext): SemanticWarning[] {
 				anchor(call),
 				"request.security".length,
 				"REPAINTING_SECURITY",
-				"'request.security' reads the current, still-forming bar of the requested timeframe, so this value repaints. Offset the expression (close[1]) or pass 'lookahead' explicitly to record the intent.",
+				"'request.security' reads the current, still-forming bar of the requested timeframe, so this value repaints. Offset the expression by one bar (close[1]) - with 'lookahead = barmerge.lookahead_on' for a higher timeframe - so the request returns a confirmed value.",
 			),
 		);
 	}
@@ -389,6 +408,14 @@ function isChartTimeframe(expr: Expression): boolean {
 		return text.slice(width, -width) === "";
 	}
 	return serialize(expr) === "timeframe.period";
+}
+
+/**
+ * `barmerge.lookahead_off` - the explicit no-lookahead request. Matched by
+ * name so a positional argument counts the same as a named one. see INV146
+ */
+function isLookaheadOff(expr: Expression): boolean {
+	return serialize(expr) === "barmerge.lookahead_off";
 }
 
 /** Any `[...]` history access in the subtree, whatever the offset expression. */

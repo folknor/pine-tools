@@ -1,0 +1,10 @@
+// @test regression/version-directive-first-wins
+// @description The leading //@version directive wins; a later one anywhere in the file does not retroactively rewrite the declared version. Probed against TV 2026-08-21: this exact script returns CE10271 'study' not found AND CE10120 plot has no "transp", so TV ignores the trailing //@version=4 entirely. We used to take the LAST directive scanned, which accepted study() under v4 rules while still judging transp by v6 rules - a file validated against no coherent version. See INV146.
+// @expects parse: success
+// @expects errors: 2
+// @expects error: line=2, message=/study/
+// @expects error: line=4, message=/transp/
+//@version=6
+study("C")
+//@version=4
+plot(close, transp=50)

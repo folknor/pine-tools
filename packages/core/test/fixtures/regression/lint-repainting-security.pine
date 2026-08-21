@@ -1,15 +1,20 @@
 // @test regression/lint-repainting-security
-// @description REPAINTING_SECURITY: a request.security() reading the current, still-forming HTF bar is flagged. The four exemptions must stay silent: an explicit lookahead= argument, a history offset inside the expression, a history offset on the call itself, and a request that stays on the chart's timeframe. TV is silent on every line here (probed 2026-08-15, see INV144). See INV144.
+// @description REPAINTING_SECURITY: a request.security() whose expression carries no history offset is flagged, and lookahead_on gets no exemption - named or positional, it is the future leak the Manual warns about. Only lookahead_off exempts, because it is the Manual's prescribed idiom for lower-timeframe requests (which need no offset) and HTF vs LTF is not statically decidable. The other exemptions that must stay silent: a history offset inside the expression, a history offset on the call itself, and a request that stays on the chart's timeframe. TV is silent on every line here (probed 2026-08-15, see INV144). See INV144, INV146.
 // @expects parse: success
-// @expects warnings: 1
+// @expects warnings: 3
 // @expects warning: line=3, message=/repaints/
+// @expects warning: line=4, message=/repaints/
+// @expects warning: line=6, message=/repaints/
 //@version=6
 indicator("repaint lint", overlay = true)
 bad = request.security(syminfo.tickerid, "D", close)
-okExplicit = request.security(syminfo.tickerid, "D", close, lookahead = barmerge.lookahead_off)
+badLookaheadOn = request.security(syminfo.tickerid, "D", close, lookahead = barmerge.lookahead_on)
+okLookaheadOff = request.security(syminfo.tickerid, "5", close, lookahead = barmerge.lookahead_off)
+badPositional = request.security(syminfo.tickerid, "D", high, barmerge.gaps_off, barmerge.lookahead_on)
 okOffset = request.security(syminfo.tickerid, "D", close[1])
+okOffsetLookahead = request.security(syminfo.tickerid, "D", close[1], lookahead = barmerge.lookahead_on)
 okDynamicOffset = request.security(syminfo.tickerid, "D", close[barstate.isrealtime ? 1 : 0])
 okCallOffset = request.security(syminfo.tickerid, "D", close)[1]
 okSameTf = request.security(syminfo.tickerid, timeframe.period, close)
 okEmptyTf = request.security(syminfo.tickerid, "", close)
-plot(bad + okExplicit + okOffset + okDynamicOffset + okCallOffset + okSameTf + okEmptyTf)
+plot(bad + badLookaheadOn + okLookaheadOff + badPositional + okOffset + okOffsetLookahead + okDynamicOffset + okCallOffset + okSameTf + okEmptyTf)

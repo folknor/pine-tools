@@ -259,6 +259,27 @@ export class UnifiedPineValidator {
 		this.methodDeclaredNames.clear();
 		this.loopDepth = 0;
 
+		// Pine v4 and below are not supported, and pine-data ships only v6
+		// signatures - so every argument-schema check below judges a v4 script
+		// against v6 rules and buries it in errors that are correct v4
+		// (`input(..., type = input.source)`, `plot(..., transp = 50)`, both
+		// removed in v5). TV refuses these outright with a single
+		// "Supported versions are >= 5", and one honest refusal beats a
+		// cascade of wrong argument errors, so mirror it and stop. Parse
+		// diagnostics still stand - they come from the syntax stage, not here.
+		// see INV146
+		const versionNumber = Number.parseInt(version, 10);
+		if (Number.isFinite(versionNumber) && versionNumber < 5) {
+			this.addError(
+				1,
+				1,
+				1,
+				`Pine Script v${versionNumber} is not supported. Supported versions are >= 5.`,
+				DiagnosticSeverity.Error,
+			);
+			return this.errors;
+		}
+
 		// Pre-pass: tally top-level function declarations so overloaded names
 		// (declared 2+ times) are known regardless of source order. The
 		// self-recursion check skips them - an overloaded self-named call is

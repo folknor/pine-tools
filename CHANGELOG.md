@@ -2,6 +2,31 @@
 
 ## Unreleased
 
+- `REPAINTING_SECURITY` no longer exempts a `request.security` just because it
+  passes `lookahead`. The old check matched NAMED arguments only and treated
+  either value as a statement of intent, so it stayed silent on
+  `lookahead = barmerge.lookahead_on` with an un-offset expression - the
+  future leak the rule exists to catch, per the Manual - while still flagging
+  the same call written positionally. `lookahead` is now resolved
+  positionally as well as by name, and only `barmerge.lookahead_off` exempts,
+  since that is the Manual's prescribed idiom for lower-timeframe requests and
+  HTF vs LTF cannot be decided statically. The message advises the offset
+  instead of "record the intent," which taught the wrong fix. Corpus goes from
+  119 to 134 sites, all `lookahead_on` without an offset. See INV146.
+- The leading `//@version` directive now wins. Version detection took the LAST
+  directive scanned, so a `//@version=4` anywhere in the file retroactively
+  rewrote the declared version - accepting `study()` under v4 rules while
+  still judging `plot(transp = ...)` by v6 rules, a file validated against no
+  coherent version. TradingView ignores the trailing directive (probed
+  2026-08-21). See INV146.
+- Pre-v5 scripts now get one "not supported" diagnostic instead of a cascade
+  of v6 argument errors. `pine-data` ships only v6 signatures, and while
+  argument-*type* checking was already gated to v6, the unknown-argument-*name*
+  error was not - so correct v4 (`input(..., type = input.source)`,
+  `plot(..., transp = 50)`) was reported as invalid. TradingView refuses these
+  outright with "Supported versions are >= 5"; we now mirror that. Parse
+  diagnostics are unaffected. See INV146.
+
 - CLI: `--no-lint` skips the `lint` stage, for callers who want TradingView's
   verdict and nothing else. The lints are on by default.
 - CLI: `lint`-stage diagnostics now carry their `rule` id (e.g.

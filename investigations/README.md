@@ -909,3 +909,15 @@ contradiction means re-measure, not "the earlier author was wrong."
   purpose, since a multiline string's lines routinely start at column 1, and
   CW10001 now exempts the form its own message recommends. Grammar, not catalog
   data - no re-scrape would have produced it.
+- [INV146](INV146-repaint-lookahead-and-version-directive/notes.md) - three
+  findings from an external corpus audit. REPAINTING_SECURITY exempted any
+  NAMED `lookahead=`, on the theory that stating the intent made it
+  deliberate; the Manual says the opposite, so the rule went silent on
+  `lookahead_on` with an un-offset expression - the textbook future leak - and
+  disagreed with itself when lookahead was passed positionally. Only
+  `lookahead_off` exempts now (it is the prescribed LTF idiom, and HTF vs LTF
+  is not statically decidable), taking the corpus from 119 to 134 sites.
+  Separately: `//@version` was last-wins, so a directive further down the file
+  retroactively rewrote the declared version and produced a v4/v6 hybrid TV
+  does not agree with; and pre-v5 scripts were judged against v6 argument
+  schemas, cascading errors on correct v4 where TV simply refuses the script.
