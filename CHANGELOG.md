@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+- Built-in overload return types now resolve against generic arguments.
+  `baseOfRawType` only strips the qualifier, so `matrix<float>` was compared
+  verbatim against a `matrix<int/float>` parameter - and the union split was
+  naive enough to shred that parameter into `matrix<int` and `float>` - so no
+  overload ever matched and the resolver fell back to overload #0's return
+  type. `matrix.mult` consequently typed every call as `array<int>`, making
+  the function unusable: `matrix<float> c = matrix.mult(a, b)` was rejected on
+  code TradingView compiles clean. Union splitting is now bracket-depth aware
+  and generics match by container plus element type, invariant in the element
+  (Pine collections are). `matrix.diff` and `matrix.sum` had the same bug
+  unmasked; 31 further functions were exposed but masked. See INV147.
+- Overload selection breaks a qualifier-rank tie by picking the narrowest
+  matching overload instead of the first listed. `array.abs` is
+  `(array<int/float>) -> array<float>` and `(array<int>) -> array<int>`; an
+  `array<int>` argument satisfies both, so `array.abs(array<int>)` typed as
+  `array<float>` and was rejected against an `array<int>` declaration that TV
+  accepts. See INV147.
+
 - `REPAINTING_SECURITY` no longer exempts a `request.security` just because it
   passes `lookahead`. The old check matched NAMED arguments only and treated
   either value as a statement of intent, so it stayed silent on

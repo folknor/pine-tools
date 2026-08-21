@@ -1,0 +1,21 @@
+// @test regression/INV147-generic-overload-return
+// @description Overload return resolution must compare GENERIC types structurally. baseCompatible compared the whole "matrix<float>" string against a param "matrix<int/float>", so no overload ever matched and resolveCallReturnRaw fell back to overload #0's return - matrix.mult(m, m) typed as array<int>. Also locks the specificity tie-break: array<int> satisfies both array.abs overloads, and the narrower one must win or array.abs(array<int>) types as array<float>. TV accepts every line here and rejects the matrix<int> mismatch below with our exact wording (probed 2026-08-21). See INV147.
+// @expects parse: success
+// @expects errors: 1
+// @expects error: line=15, message=/"matrix<float>".*"matrix<int>"/
+//@version=6
+indicator("r")
+matrix<float> mf = matrix.new<float>(2, 2, 1.0)
+matrix<int> mi = matrix.new<int>(2, 2, 1)
+array<float> vf = array.new<float>(2, 1.0)
+array<int> vi = array.new<int>(2, 1)
+matrix<float> mult = matrix.mult(mf, mf)
+matrix<float> scalar = matrix.mult(mf, 2.0)
+array<float> vec = matrix.mult(mf, vf)
+matrix<int> multInt = matrix.mult(mi, mi)
+matrix<float> sum = matrix.sum(mf, mf)
+matrix<int> sumInt = matrix.sum(mi, mi)
+array<float> absF = array.abs(vf)
+array<int> absI = array.abs(vi)
+matrix<int> bad = matrix.mult(mf, mf)
+plot(matrix.get(mult, 0, 0) + matrix.get(scalar, 0, 0) + array.get(vec, 0) + matrix.get(multInt, 0, 0) + matrix.get(sum, 0, 0) + matrix.get(sumInt, 0, 0) + array.get(absF, 0) + array.get(absI, 0) + matrix.get(bad, 0, 0))

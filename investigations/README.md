@@ -921,3 +921,16 @@ contradiction means re-measure, not "the earlier author was wrong."
   retroactively rewrote the declared version and produced a v4/v6 hybrid TV
   does not agree with; and pre-v5 scripts were judged against v6 argument
   schemas, cascading errors on correct v4 where TV simply refuses the script.
+- [INV147](INV147-generic-overload-return-resolution/notes.md) - built-in
+  overload return resolution never matched a GENERIC type: `baseOfRawType`
+  only strips the qualifier, so `matrix<float>` was compared verbatim against
+  `matrix<int/float>` (with a naive `/` split that also shredded the generic),
+  no candidate ever matched, and `resolveCallReturnRaw` fell back to overload
+  #0's return. `matrix.mult` therefore typed every call as `array<int>` -
+  every call site a false error, on a function TV accepts. Fixed with
+  depth-aware union splitting and container-plus-element matching, invariant
+  in the element type. A second, pre-existing bug surfaced alongside it:
+  when several overloads match and the qualifier ties, the narrowest must win
+  or `array.abs(array<int>)` types as `array<float>`. 34 of 475 functions were
+  exposed to the first bug; most were masked by overload #0 already being the
+  common answer or by int/float coercion.

@@ -880,15 +880,85 @@ export function getBuiltinQualifiedType(name: string): string | undefined {
 	return undefined;
 }
 
+/**
+ * Split a type union on `/`, but only at angle-bracket depth 0, so
+ * `int/float/matrix<int/float>` yields three members rather than shredding the
+ * generic into `matrix<int` and `float>`. see INV147
+ */
+function splitUnionMembers(type: string): string[] {
+	const members: string[] = [];
+	let depth = 0;
+	let start = 0;
+	for (let i = 0; i < type.length; i++) {
+		const ch = type[i];
+		if (ch === "<") depth++;
+		else if (ch === ">") depth--;
+		else if (ch === "/" && depth === 0) {
+			members.push(type.slice(start, i).trim());
+			start = i + 1;
+		}
+	}
+	members.push(type.slice(start).trim());
+	return members.filter((m) => m.length > 0);
+}
+
+const GENERIC_RE = /^([A-Za-z_][\w.]*)<(.+)>$/;
+
 function baseCompatible(argBase: string, paramBase: string): boolean {
 	if (!paramBase || /unknown|\bany\b/.test(paramBase)) return true;
 	if (argBase === "unknown" || argBase === "na") return true;
 	const numeric = (x: string) => x === "int" || x === "float";
-	for (const pb of paramBase.split("/").map((s) => s.trim())) {
+	const argGeneric = argBase.match(GENERIC_RE);
+
+	for (const pb of splitUnionMembers(paramBase)) {
 		if (pb === argBase) return true;
+
+		// A generic argument (matrix<float>, array<int>) matches a generic
+		// param by CONTAINER plus element type. Without this the whole
+		// `matrix<float>` string was compared against `matrix<int>`, no
+		// overload ever matched, and the caller silently fell back to
+		// overload #0's return - matrix.mult(m, m) typed as `array<int>`.
+		//
+		// Elements must match EXACTLY (modulo union membership): Pine
+		// collections are invariant, so no int->float widening here. Widening
+		// would let matrix<float> match overload 3's `matrix<int>` as well as
+		// overload 4's `matrix<int/float>`, and the first-wins pool order
+		// would then hand back matrix<int>. see INV147
+		const pbGeneric = pb.match(GENERIC_RE);
+		if (argGeneric && pbGeneric && argGeneric[1] === pbGeneric[1]) {
+			const argElem = argGeneric[2].trim();
+			const pbElems = splitUnionMembers(pbGeneric[2]);
+			if (argElem === "unknown" || pbElems.includes("unknown")) return true;
+			if (pbElems.includes(argElem)) return true;
+			continue;
+		}
+		if (argGeneric || pbGeneric) continue;
+
 		if (numeric(argBase) && numeric(pb)) return true;
 	}
 	return false;
+}
+
+/**
+ * How WIDE a type is - the number of concrete alternatives it admits, counted
+ * through generics so `array<int/float>` (2) reads as less specific than
+ * `array<int>` (1). The specificity tie-break for overload selection. see INV147
+ */
+function typeWidth(type: string): number {
+	let total = 0;
+	for (const member of splitUnionMembers(type)) {
+		const generic = member.match(GENERIC_RE);
+		total += generic ? typeWidth(generic[2]) : 1;
+	}
+	return Math.max(total, 1);
+}
+
+/** Summed width of an overload's parameters - lower is more specific. */
+function paramWidth(ov: OverloadView): number {
+	return ov.parameters.reduce(
+		(n, p) => n + typeWidth(baseOfRawType(String(p.type ?? ""))),
+		0,
+	);
 }
 
 // Resolve the RAW return type (with qualifier, e.g. "simple int") of a built-in
@@ -921,12 +991,22 @@ export function resolveCallReturnRaw(
 	const pool = candidates.length > 0 ? candidates : views;
 
 	// With const/simple args, TV picks the lowest-qualifier matching overload.
-	let best = pool[0].returns;
+	// When the qualifier ties, the NARROWEST matching overload wins rather than
+	// whichever happened to be listed first: array.abs is documented as
+	// (array<int/float>) -> array<float> and (array<int>) -> array<int>, and an
+	// array<int> argument satisfies both, so pool order alone typed
+	// array.abs(array<int>) as array<float> - rejected against an array<int>
+	// declaration that TV accepts (probed 2026-08-21). see INV147
+	let bestOv = pool[0];
 	for (const ov of pool) {
-		if (qrank(leadingQualifier(ov.returns)) < qrank(leadingQualifier(best))) {
-			best = ov.returns;
+		const dq =
+			qrank(leadingQualifier(ov.returns)) -
+			qrank(leadingQualifier(bestOv.returns));
+		if (dq < 0 || (dq === 0 && paramWidth(ov) < paramWidth(bestOv))) {
+			bestOv = ov;
 		}
 	}
+	let best = bestOv.returns;
 	// A series argument forces at least a series result.
 	if (anySeriesArg && qrank(leadingQualifier(best)) < qrank("series")) {
 		const ser = pool.find((ov) => leadingQualifier(ov.returns) === "series");
