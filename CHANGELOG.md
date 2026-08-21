@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- CLI: `--version` now reports the git commit the binary was built from, e.g.
+  `pine-lint 0.5.0 (12ef0e0, built 2026-08-21 10:29:59)`. The ref carries a
+  `-dirty` suffix when the working tree had uncommitted changes, so a ref in a
+  bug report always points at source that actually ran, and degrades to
+  `unknown` outside a git checkout.
+
 - Built-in overload return types now resolve against generic arguments.
   `baseOfRawType` only strips the qualifier, so `matrix<float>` was compared
   verbatim against a `matrix<int/float>` parameter - and the union split was
@@ -93,6 +99,145 @@
   - `ENTRY_WITHOUT_EXIT` - a strategy that opens positions with no
     `strategy.exit`/`close`/`close_all` and no opposing entry to reverse into.
     `strategy.cancel` withdraws a pending order and does not count.
+
+- Flag transitively-required library imports. TV requires a library to be
+  imported explicitly when a UDT you use has fields referencing its types:
+  using `PF.Profile` having imported only `lib_profile` draws four errors, one
+  per referencing field type, naming `lib_plot_objects`. We were silent. The
+  generator now resolves each library's field annotations through that
+  library's own import aliases, since a field type like `D.Line` names an alias
+  private to its source that a consumer never sees. Reported once per distinct
+  type per script, triggered by member access rather than declaration. See
+  INV143.
+- Validate `strategy.exit`'s inter-parameter argument groups. TV requires at
+  least one of `profit`/`limit`/`loss`/`stop`, or the pair
+  `trail_offset` + `trail_price`/`trail_points`; we accepted a bare
+  `trail_price =` and passed a script that fails to compile on TV. The
+  reference documents no such constraint, so it is probed and baked into
+  `functions.json` as `flags.argGroups` rather than written into the checker,
+  carrying TV's own wording. Presence is syntactic - an explicit `na` counts.
+  See INV142.
+- Emit CE10288 for `var` in a type declaration. `varip` is the only legal
+  qualifier on a UDT field. The field scanner recognised only `varip`, so a
+  `var`-qualified field was dropped entirely, and a dropped field name reads as
+  a typo - which relocated the complaint to "Object has no field" at every
+  usage, or produced silence outright where the field was never read. See
+  INV141.
+
+- Validate imported UDT surfaces. We knew a library exported `News` but nothing
+  about its insides, so every member of an imported UDT instance stayed
+  lenient. Libraries now emit their type fields, and imported types register
+  through the same machinery as local UDTs. Two pre-existing bugs surfaced and
+  were fixed en route, neither about imports: UDT-annotated *parameters* typed
+  as `unknown` (so `f(pt p) => p.bogusField` was silent for local types too),
+  and the field scanner silently dropping `varip`-qualified and UDT-typed array
+  fields - a live false positive on TV-clean code that cost one library 17 of
+  its 30 fields. See INV140.
+- Validate imported-library types. A library's `export type` never reached its
+  export set, so dotted type annotations (`ffUtil.News`) went unchecked. Two
+  layers were broken: the parser did not mark a `TypeDeclaration` as exported,
+  and the generator filtered to functions and methods. TV reuses its local-type
+  wording here (`"ffUtil.Newz" is not a valid type keyword.`) rather than the
+  CE10271 form it uses for unknown library function members. Lenient wherever
+  the surface is unknown. See INV139.
+- Check method calls on scalar and collection receivers. An unknown member on a
+  receiver resolving to a scalar (`x.abs()`) or to an array/matrix/map
+  (`arr.pushx()`) is TV's CE10271 and we were silent. The collection method
+  surface is derived from the catalog rather than hardcoded, since the builtin
+  method form and the namespace function are the same entry. Gated on imported
+  libraries' export sets, because a library's exported method is callable
+  unqualified on a receiver of its first parameter's type - TV authority over
+  prose, which documents only namespace-qualified access. Also fixes an
+  inference bug this exposed: `arr[1]` is the history operator, so it stays
+  `array<T>` rather than typing as the element. See INV138.
+
+- Strip TradingView's invisible whitespace from generated examples and prose.
+  TV renders reference examples with `&nbsp;` for indentation, which Puppeteer
+  decodes to literal U+00A0, so `annotations.json` carried 1330 non-breaking
+  spaces - every space in each annotation example, none of which would compile
+  if copied as Pine. Offline generate-time normalization; no re-scrape needed.
+
+- Extend the `==`/`!=` CE10123 alignment to nonliteral and both-const operand
+  pairs (`boolVar == stringVar`, `color.red == 1`), which still fell back to
+  our own "Type mismatch" wording. Applies TV's probed operand priority; pairs
+  outside the probed primitive/enum set keep the generic fallback. See INV137.
+- Type namespaced constants in the pine-lint variable list. Variables
+  initialized from `color.red`, `display.none`, `barmerge.gaps_off` and the
+  like reported as "undetermined type" in the variable-list output even though
+  the checker typed them correctly. See INV136.
+- Use matched overload returns in builtin inference, preserving argument
+  qualifiers the merged return drops. Casts are the motivating case: their
+  merged return is const, so `int(close)` was inferred const where TV types it
+  `series int`. `int(5)` stays const. See INV135.
+- Check UDT and simple-qualified parameters at user-function call sites: a
+  declared UDT passed where a different UDT is expected, and a series value
+  passed into a `simple <primitive>` parameter. Scoped to non-overloaded,
+  non-method UDFs with a clean parse. See INV134.
+- Flag ternary tuple returns (CE10163). TV rejects ternaries whose branches
+  produce tuples; our checker accepted the shape. See INV127.
+- Diagnostics no longer leak doubled line numbers on `\r\r\n` files. The lexer
+  counts those as two breaks to match TV internally (G005), but the raw line
+  numbers reached emitted diagnostics, so a 3-line file reported on line 5. Raw
+  lexer lines now map back to displayed source lines at the emission boundary.
+  See INV128.
+- Consistency-warning (CW10003/4) precision: four further false-positive
+  classes suppressed and two false negatives caught, all probe-validated
+  against TV - `bar_index[1]` inside a UDF counts as function history while
+  ordinary builtin history like `high[1]` does not; undetermined-UDF and
+  undetermined-local gates no longer read as series gates; and UDT names now
+  count as parent-scope names for CW10013 shadowing, whose anchor also moves to
+  the leading type token to match TV. See INV129 through INV133.
+
+- Warn on user-global-index UDFs called inconsistently. TV emits CW10003 when a
+  UDF body indexes a user-declared global series variable *and* the call sits
+  in an inconsistent context (conditional or in a loop). Neither ingredient is
+  sufficient alone, which is why an earlier bare user-global-index rule
+  over-fired; the classification deliberately does not cascade to callers. See
+  INV126.
+- Type drawing-handle annotations, so `line`/`label`/`box`/`table`/`linefill`/
+  `polyline`/`chart.point` declarations catch int-into-handle assignments
+  (CE10173). Matched case-sensitively against the original annotation, since a
+  capitalized `Box`/`Line` is a legal user-defined type. Previously blocked by
+  the `series<float>` UDF guess, now removed. See INV125.
+- Const-argument (INV014) and union-argument (INV016) CE10123 checks now catch
+  violations flowing through a variable or a UDF call. The two blanket gates
+  that skipped user-typed values are gone, made safe by the grounded inference
+  below. See INV124.
+- UDF return inference is call-site sensitive. An untyped parameter was bound
+  to a hardcoded `series<float>` guess, so a UDF returning that parameter was
+  typed `series<float>` at every call site regardless of the arguments passed -
+  masking real false negatives and manufacturing false positives wherever the
+  guess was consumed. Replaced with a monotone call-graph fixpoint that binds
+  each untyped parameter to the join of its call-site argument types; ambiguous
+  sites ground to `unknown` rather than to a scalar guess. See INV123.
+- New qualifier-provenance layer exposing a value's qualifier (the
+  series/simple/input/const lattice) to the checker, deduplicating three prior
+  copies of that lattice. Const is preserved through const-returning UDFs. See
+  INV122.
+
+- Consistency-warning precision, the first round. Series is now contagious
+  through call arguments, so the McGinley `na(mg[1]) ? ...` idiom is recognised
+  as series-conditional; an untyped UDF parameter is treated as "undetermined"
+  rather than series, which alone removed 249 corpus false positives on
+  TV-clean files from the dominant MA-selector idiom; a conditional `:=` to a
+  const under a series-gated branch makes its target series; history-dependent
+  *method* calls register under their bare name and so can warn; and a local
+  assigned under an undetermined gate no longer counts as own-scope history.
+  See INV114 through INV116, INV120.
+- Detect history-dependence of imported-library calls. CW10003 fires when a
+  conditionally-called function is history-dependent, including one living in
+  an imported library, but we knew only each library's export *names*. Library
+  generation now scans vendored bodies and records which exports are
+  history-dependent. For libraries whose source cannot be redistributed, the
+  API fact alone is recorded, derived once and the source discarded. See
+  INV118.
+- Series-type tuple destructuring from a UDF return, so
+  `[a, b] = f()` marks its members series and a later `if a > b` reads as
+  series-conditional. See INV117.
+- Align `==`/`!=` type-mismatch diagnostics to TV's CE10123 template, the last
+  binary path still emitting our own wording. TV anchors at the literal operand
+  and reports the other operand's type as expected, independent of operand
+  order.
 
 ## 0.5.0 - 2026-06-25
 

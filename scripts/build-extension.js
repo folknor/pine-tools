@@ -5,6 +5,7 @@
  * Bundles the extension client and LSP server using esbuild.
  */
 
+const { execFileSync } = require("node:child_process");
 const esbuild = require("esbuild");
 const fs = require("node:fs");
 const path = require("node:path");
@@ -33,15 +34,38 @@ for (const file of fs.readdirSync(pineDataSrc)) {
 	}
 }
 
-// Release stamp. Both values are injected into every bundle via esbuild
+// Release stamp. All three values are injected into every bundle via esbuild
 // `define` so any entry point can report `__VERSION__` (the package.json
-// semver) and `__BUILD_TIME__` (when this binary was produced, builder's
-// local timezone, second granularity).
+// semver), `__BUILD_TIME__` (when this binary was produced, builder's
+// local timezone, second granularity) and `__GIT_REF__` (the commit it was
+// built from).
 const pkgVersion = require("../package.json").version;
 const buildTime = (() => {
 	const d = new Date();
 	const pad = (n) => String(n).padStart(2, "0");
 	return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+})();
+
+// The commit this bundle was built from, suffixed `-dirty` when the working
+// tree had uncommitted changes - without that suffix a ref is a promise the
+// binary cannot keep, since most builds during development are of edited
+// trees. Degrades to "unknown" when git is unavailable or the source is not a
+// checkout (a published tarball, a vendored copy), which must not fail the
+// build.
+const gitRef = (() => {
+	const git = (args) =>
+		execFileSync("git", args, {
+			cwd: path.join(__dirname, ".."),
+			encoding: "utf8",
+			stdio: ["ignore", "pipe", "ignore"],
+		}).trim();
+	try {
+		const sha = git(["rev-parse", "--short", "HEAD"]);
+		const dirty = git(["status", "--porcelain"]) !== "";
+		return dirty ? `${sha}-dirty` : sha;
+	} catch {
+		return "unknown";
+	}
 })();
 
 // Common build options
@@ -56,6 +80,7 @@ const commonOptions = {
 	define: {
 		__VERSION__: JSON.stringify(pkgVersion),
 		__BUILD_TIME__: JSON.stringify(buildTime),
+		__GIT_REF__: JSON.stringify(gitRef),
 	},
 };
 
