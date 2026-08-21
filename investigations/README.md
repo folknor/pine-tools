@@ -949,3 +949,14 @@ contradiction means re-measure, not "the earlier author was wrong."
   collection element types, leading-dot chains broken by an interleaved
   comment, and values derived from an UNTYPED parameter being grounded into
   the error channel.
+- [INV149](INV149-statement-list-and-wrap-continuation/notes.md) - two parser
+  false positives from INV148's residue, both "the parser looked one token too
+  far". A comma-separated statement list could not MIX an assignment with a
+  bare call (`b := na, c.clear()`): the assignment-led loop demanded an
+  assignment per unit and threw, aborting the statement and reporting back at
+  the leading `:=` - while the call-led path always allowed both, so the same
+  list parsed in one order and not the other. And a wrapped expression died on
+  a blank or comment-only line, because both filter to consecutive NEWLINEs and
+  a NEWLINE carries no indent, so peeking one token ahead read the wrap as
+  ended - which fired on the ordinary habit of commenting out one link of a
+  method chain. Both strictly additive: 0 corpus fixtures changed.

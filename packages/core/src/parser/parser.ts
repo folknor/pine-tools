@@ -855,23 +855,39 @@ export class Parser {
 						if (!this.commaUnitsContinue()) {
 							break;
 						}
+						// A unit after the comma may be an assignment OR a bare
+						// expression - `b := na, c.clear()` is one statement list
+						// mixing both, and TV accepts it (probed 2026-08-21).
+						// This loop used to REQUIRE an assignment and throw
+						// otherwise, which aborted the whole statement and
+						// surfaced the error back at the leading `:=`, pointing
+						// at the one unit that was fine. The mirror-image path
+						// in expressionStatement (a call-led line) always
+						// allowed both, so `c.clear(), a := na` parsed while the
+						// same list in the other order did not. see INV149
 						const nextTarget = this.expression();
 						if (
-							!this.match(TokenType.ASSIGN) &&
-							!this.match(TokenType.COMPOUND_ASSIGN)
+							this.match(TokenType.ASSIGN) ||
+							this.match(TokenType.COMPOUND_ASSIGN)
 						) {
-							throw new Error("Expected assignment operator after comma");
+							const nextOperator = this.previous().value;
+							const nextValue = this.expression();
+							statements.push({
+								type: "AssignmentStatement",
+								target: nextTarget,
+								operator: nextOperator,
+								value: nextValue,
+								line: nextTarget.line,
+								column: nextTarget.column,
+							});
+						} else {
+							statements.push({
+								type: "ExpressionStatement",
+								expression: nextTarget,
+								line: nextTarget.line,
+								column: nextTarget.column,
+							});
 						}
-						const nextOperator = this.previous().value;
-						const nextValue = this.expression();
-						statements.push({
-							type: "AssignmentStatement",
-							target: nextTarget,
-							operator: nextOperator,
-							value: nextValue,
-							line: nextTarget.line,
-							column: nextTarget.column,
-						});
 					}
 
 					return {
@@ -3370,6 +3386,18 @@ export class Parser {
 	public peekNext(): Token | null {
 		if (this.current + 1 >= this.tokens.length) return null;
 		return this.tokens[this.current + 1];
+	}
+
+	/**
+	 * The first token at or after the current position that is not a NEWLINE.
+	 * A blank line - or a comment-only line, filtered to the same thing - puts
+	 * consecutive NEWLINEs in the stream, and a NEWLINE carries no indent, so
+	 * `peekNext()` alone misreads a wrapped continuation as ended. see INV149
+	 */
+	public firstTokenAfterNewlines(): Token | null {
+		let i = this.current;
+		while (this.tokens[i]?.type === TokenType.NEWLINE) i++;
+		return this.tokens[i] ?? null;
 	}
 
 	public previous(): Token {

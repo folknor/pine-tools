@@ -423,8 +423,24 @@ export class ExpressionParser {
 			// Allow line continuation for expressions (except for certain cases)
 			// Skip newlines but allow continuation if we're in the middle of an expression
 			if (this.p.check(TokenType.NEWLINE)) {
-				// Check if the next token after newline suggests continuation
-				const nextToken = this.p.peekNext();
+				// Check if the next token after newline suggests continuation.
+				//
+				// Resolve past EVERY newline, not just one. A blank line - or a
+				// comment-only line, which is filtered to the same thing - puts
+				// two NEWLINEs in a row, so `peekNext()` returned the second
+				// NEWLINE. Its indent is undefined, which reads as 0, so
+				// `continuationIndent` went false and a legitimate wrapped
+				// method chain broke at the blank:
+				//
+				//     x = a.slice(0, 3)
+				//      .slice(0, 2)
+				//     //  .normalize()
+				//      .size()          <- "Unexpected token: ."
+				//
+				// TV accepts that (probed 2026-08-21). Commenting out one link
+				// of a chain is the obvious way to disable it, so this fired on
+				// ordinary edited code. see INV149
+				const nextToken = this.p.firstTokenAfterNewlines();
 				const postfixWrapToken = this.leadingWrapTokenAfterNewlines((t) => {
 					if (t.type === TokenType.DOT) return true;
 					if (t.type !== TokenType.LPAREN) return false;
@@ -459,8 +475,12 @@ export class ExpressionParser {
 						nextToken.type === TokenType.LPAREN ||
 						nextToken.type === TokenType.DOT)
 				) {
-					// Skip the newline and continue
-					this.p.advance();
+					// Skip the newline(s) and continue - all of them, so a
+					// blank or comment-only line inside the wrap does not leave
+					// the loop parked on a NEWLINE. see INV149
+					while (this.p.check(TokenType.NEWLINE)) {
+						this.p.advance();
+					}
 				} else if (postfixWrapToken) {
 					this.leadingWrapError(postfixWrapToken);
 					this.p.advance();

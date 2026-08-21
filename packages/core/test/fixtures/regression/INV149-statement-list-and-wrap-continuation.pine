@@ -1,0 +1,23 @@
+// @test regression/INV149-statement-list-and-wrap-continuation
+// @description Two parser false positives on shapes TV accepts (both probed 2026-08-21). (1) A comma-separated statement list may MIX an assignment with a bare call: `b := na, c.clear()`. The assignment-led loop required every later unit to be an assignment and threw otherwise, aborting the statement and reporting back at the leading ":=" - while the call-led path in expressionStatement always allowed both, so the same list parsed in one order and not the other. (2) A wrapped method chain survives a blank or comment-only line: those filter to consecutive NEWLINEs, and a NEWLINE carries no indent, so peeking one token ahead read the wrap as ended. Commenting out one link of a chain is the ordinary way to disable it. See INV149.
+// @expects parse: success
+// @expects errors: 0
+//@version=6
+indicator("mixed statement list and wrapped chain", overlay = true)
+var a = 0.0
+var b = 0.0
+var c = array.new<float>(5, 1.0)
+if close > open
+    b := na   , c.clear()
+    c.clear(), a := na
+    a := na   , b := na,
+    b := na   , c.clear()
+x = a
+ + 1.0
+
+ + 2.0
+y = array.new<float>(5, 1.0)
+ .slice(0, 3)
+ // .reverse()
+ .size()
+plot(x + y + b)

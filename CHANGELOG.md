@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+- A comma-separated statement list may now mix an assignment with a bare call,
+  as TradingView allows: `b := na, c.clear()`. The assignment-led loop required
+  every unit after a comma to be an assignment and threw otherwise, which
+  aborted the whole statement and reported `Unexpected token: :=` back at the
+  leading assignment - the one unit that was fine. The call-led path always
+  accepted both forms, so the same list parsed in one order and failed in the
+  other. See INV149.
+- A wrapped expression now survives a blank or comment-only line. Commenting
+  out one link of a method chain broke the wrap with `Unexpected token: .`,
+  because comments are filtered as trivia and both a comment-only line and a
+  blank line leave two consecutive newlines - and a newline carries no indent,
+  so peeking a single token past the wrap read it as ended. Applies to
+  operator wraps as well as method chains. See INV149.
 - `analysis`-stage warnings now carry `rule` (e.g. `SHADOW_BUILTIN`) and, where
   the warning mirrors one, TradingView's `code` (`CW10011`). They previously
   carried neither, so 122 of 140 corpus warnings were filterable only by

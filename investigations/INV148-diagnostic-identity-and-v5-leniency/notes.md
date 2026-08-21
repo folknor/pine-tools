@@ -103,6 +103,11 @@ Each is a confirmed local false positive with a dated probe. None is a
 one-line fix; they are listed here rather than in TODO.md because each needs a
 real investigation.
 
+**(a) and (c) were fixed in INV149** - the repros below are superseded by the
+minimized ones there. (a)'s trailing comma turned out to be incidental: the
+real trigger is a bare call in a comma-separated statement list. (c) is not
+about comments at all - a blank line reproduces it.
+
 ### (a) Trailing-comma line continuation
 
 `cvd-profiles.pine:576` ends `IBline := na, ` and continues on 577. We report
@@ -164,15 +169,39 @@ TV: clean. Us: `Cannot assign a value of the "series float" type to the "ph"
 variable. The variable is declared with the "const bool" type.`
 
 With `f(int len)` - a TYPED parameter - TV emits that error, character for
-character, including the "const bool" wording. So the discriminator is the
-untyped parameter: TV treats it as "undetermined type" and does not ground
-`ta.pivothigh(len, len)` to `series float`, exactly the model INV114
-established for the warning channel. Our INV123 call-graph fixpoint binds
-`len` from the call site and grounds the result, and that grounding now
-reaches the ERROR channel.
+character, including the "const bool" wording.
+
+Two further probes (2026-08-21) narrow the mechanism, and rule out the
+obvious first guess that TV simply skips a function with any untyped
+parameter. **It does not skip the body.** Both of these still error on TV:
+
+```pine
+f(len) =>                          // untyped param present...
+    bool ph = ta.pivothigh(5, 5)   // ...but this line does not use it
+```
+
+```pine
+f(int len, other) =>               // unrelated untyped param present
+    bool ph = ta.pivothigh(len, len)
+```
+
+So the discriminator is precise: **the offending expression must reference the
+untyped parameter.** An undetermined ARGUMENT makes the call's result
+undetermined - the exact mirror of INV114 finding 1 ("series is contagious
+through call arguments"), which the SemanticAnalyzer already implements for
+the warning channel. Note this is not about `ta.pivothigh`'s return type,
+which is `series float` whatever its arguments are.
+
+The fix therefore belongs in the checker's inference core: an argument tracing
+to an untyped parameter must make the call undetermined for the error channel.
+Our INV123 call-graph fixpoint currently binds `len` from the call site
+(`defineParamsWithBindings` falls back to the binding for an unannotated
+param), grounding the result, and that grounding reaches CE10123.
 
 Any fix must not undo INV124's gate drop, which depends on that same grounded
-inference. This is the largest of the four.
+inference being trusted - so the undetermined-ness needs to be tracked
+alongside the binding rather than replacing it. This is much the largest of
+the four and was deliberately left unstarted rather than half-landed.
 
 **Correction to the report on this file.** It was filed as both tools
 "independently reaching the same wrong series bool vs series float conclusion"
