@@ -199,6 +199,18 @@ export class SymbolTable {
 		return this.currentScope.lookupLocal(name);
 	}
 
+	// Does `name` resolve, from the CURRENT scope, to the global scope's own
+	// entry? Identity against `globalScope.lookupLocal` rather than a depth
+	// count, so a parameter or body-local that shadows a global answers false -
+	// which is what keeps the CE10088 global-mutation check off shadowed names.
+	// see INV150
+	resolvesToGlobal(name: string): boolean {
+		const resolved = this.currentScope.lookup(name);
+		return (
+			resolved !== undefined && resolved === this.globalScope.lookupLocal(name)
+		);
+	}
+
 	markUsed(name: string): void {
 		this.currentScope.markUsed(name);
 	}

@@ -2,6 +2,31 @@
 
 ## Unreleased
 
+- New error CE10088: a user-defined function or method may not reassign a
+  global variable. TradingView rejects it and we accepted it silently, so a
+  file passed locally and then failed at chart load - the dangerous direction.
+  The boundary is what makes the check safe: reassigning a global *scalar* is
+  the error, while mutating a *field* of a global object (`state.flag := true`)
+  is legal and is the ordinary way to carry mutable state into a function.
+  Locals and parameters that shadow a global are unaffected, as is a `:=` in a
+  top-level `if` block. Not version-gated. 24 new errors across the corpus, all
+  in the reported shape. See INV150.
+- `REPAINTING_SECURITY` now follows a call in the `expression` argument into
+  the script's own function and method bodies, so an offset taken inside a
+  helper is no longer reported as repainting. This was not an avoidable style:
+  TradingView rejects the history operator on a tuple-returning call, so a
+  multi-value non-repainting request has no form other than moving the offset
+  into a helper - the rule was flagging the only correct construction. Removes
+  10 corpus findings. See INV151.
+- `REPAINTING_SECURITY` no longer treats an explicit
+  `lookahead = barmerge.lookahead_off` as an exemption. That is the *default*,
+  so writing it out produces the identical call to omitting it, and the rule
+  warned on one spelling and not the other - with the silent half being the one
+  that hid a repainting read. A sweep of the 97 corpus calls passing it
+  explicitly found higher-timeframe requests (`"60"`, `"240"`, `"D"`, variables
+  named `i_htf` / `selectedHTF`), not the lower-timeframe population the
+  exemption assumed. Reverses INV146; corpus findings go 124 to 193. See
+  INV152.
 - A comma-separated statement list may now mix an assignment with a bare call,
   as TradingView allows: `b := na, c.clear()`. The assignment-led loop required
   every unit after a comma to be an assignment and threw otherwise, which

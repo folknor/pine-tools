@@ -92,11 +92,38 @@ class LintContext {
 	readonly calls: CallSite[] = [];
 	/** Calls that are the object of an index expression - `f(...)[1]`. */
 	readonly indexedCalls = new Set<CallExpression>();
+	/**
+	 * Bodies of the script's own functions, by name, so a rule can look at what
+	 * a call actually evaluates rather than only at its arguments. Methods are
+	 * keyed separately because a method call reads as `obj.name()` - the dotted
+	 * callee name never matches the bare declaration name. see INV151
+	 */
+	readonly functionBodies = new Map<string, Statement[]>();
+	readonly methodBodies = new Map<string, Statement[]>();
 
 	constructor(readonly ast: Program) {
 		walkStatements(ast.body, (stmt) => {
+			if (stmt.type === "FunctionDeclaration")
+				this.functionBodies.set(stmt.name, stmt.body);
+			else if (stmt.type === "MethodDeclaration")
+				this.methodBodies.set(stmt.name, stmt.body);
 			for (const expr of statementExpressions(stmt)) this.collect(expr);
 		});
+	}
+
+	/**
+	 * The script's own body for a call, or undefined for a builtin. A dotted
+	 * callee resolves against the METHOD table by its final segment only - an
+	 * `obj.f()` call cannot reach a plain function declaration, so consulting
+	 * `functionBodies` there would match `request.security` to a UDF named
+	 * `security`.
+	 */
+	bodyOf(call: CallExpression): Statement[] | undefined {
+		if (call.callee.type === "Identifier")
+			return this.functionBodies.get(call.callee.name);
+		if (call.callee.type === "MemberExpression")
+			return this.methodBodies.get(call.callee.property.name);
+		return undefined;
 	}
 
 	private collect(expr: Expression): void {
@@ -330,22 +357,30 @@ function anchor(call: CallExpression): { line: number; column: number } {
  * bar. History shows the settled value and realtime shows a moving one, so the
  * backtest measures something the market will not reproduce.
  *
- * An earlier version went silent whenever `lookahead=` was passed by name, on
- * the theory that stating the intent made it deliberate. The Manual says the
- * opposite - "neglecting to offset the `expression` argument in an HTF request
- * causes lookahead bias on historical bars" - so `lookahead_on` on an
- * un-offset expression is the textbook future leak, not evidence of an
- * informed author. The old exemption also matched only NAMED arguments, so
- * the same call warned or not depending on how lookahead was passed. Both
- * fixed: lookahead is resolved positionally too, and only `lookahead_off`
- * exempts. see INV146
+ * The `lookahead` argument is deliberately NOT consulted. Two earlier versions
+ * read it and both keyed on spelling rather than on the program: the first went
+ * silent on any NAMED `lookahead=`, the second (INV146) narrowed that to
+ * `barmerge.lookahead_off` resolved positionally too. But `lookahead_off` is
+ * the DEFAULT - writing it out produces the identical program to omitting it -
+ * so an exemption for it made the same call warn or not according to how its
+ * author spelled a no-op. `request.security(sym, "D", close)` and
+ * `request.security(sym, "D", close, lookahead = barmerge.lookahead_off)` are
+ * one call, and the second is the one that used to slip a repainting read
+ * through unnoticed.
+ *
+ * The exemption's real subject was lower-timeframe requests, which need no
+ * offset - but HTF vs LTF is not statically decidable here, and an un-annotated
+ * request is exactly as likely to be an LTF one, so keying on `lookahead_off`
+ * only suppressed the LTF false positives of authors who happened to write the
+ * default out. Dropping it takes the corpus rate from 17.2% to 26.7% of v6
+ * files; an un-offset `request.security` is the Manual's headline repainting
+ * bug, and that is a believable rate for scraped public scripts. see INV152
  *
  * Silent whenever the author has demonstrably considered it:
- *   - an explicit `lookahead = barmerge.lookahead_off` (the Manual's own
- *     non-repainting idiom for LOWER-timeframe requests, which need no
- *     offset - and HTF vs LTF is not statically decidable here),
  *   - a history offset anywhere in `expression` (`close[1]`, `ta.sma(c,14)[1]`,
- *     or the Manual's `close[barstate.isrealtime ? 1 : 0]` idiom),
+ *     or the Manual's `close[barstate.isrealtime ? 1 : 0]` idiom), including
+ *     one taken inside a helper the expression calls - see
+ *     `containsHistoryOffset` / INV151,
  *   - a history offset on the CALL (`request.security(...)[1]`),
  *   - a `timeframe` argument that is provably the chart's own timeframe
  *     (`""` or `timeframe.period`) - same-timeframe requests have no
@@ -362,25 +397,14 @@ function checkRepaintingSecurity(ctx: LintContext): SemanticWarning[] {
 	for (const { call } of ctx.callsNamed("request.security")) {
 		if (ctx.indexedCalls.has(call)) continue;
 
-		// Explicit `lookahead_off` stays silent - resolved positionally as well
-		// as by name. For a LOWER-timeframe request this is the Manual's
-		// prescribed non-repainting idiom ("use barmerge.lookahead_off for
-		// lower timeframe data requests"), needing no offset, and we cannot
-		// tell HTF from LTF statically when the timeframe is a variable. That
-		// makes silence a deliberate miss on un-offset HTF `lookahead_off`
-		// rather than an oversight: a false positive on the corpus's many
-		// legitimate LTF requests costs more than the miss. `lookahead_on`
-		// gets no such exemption - it repaints on BOTH sides (future leak on
-		// HTF, first-vs-last intrabar on LTF). see INV146
-		const lookahead = argumentAt(call, "lookahead", 4);
-		if (lookahead && isLookaheadOff(lookahead)) continue;
-
+		// No `lookahead` test here, by design - see the header. Writing the
+		// default out is not evidence of anything. see INV152
 		const timeframe = argumentAt(call, "timeframe", 1);
 		if (timeframe && isChartTimeframe(timeframe)) continue;
 
 		const expression = argumentAt(call, "expression", 2);
 		if (!expression) continue;
-		if (containsHistoryOffset(expression)) continue;
+		if (containsHistoryOffset(expression, ctx)) continue;
 
 		findings.push(
 			warn(
@@ -411,20 +435,51 @@ function isChartTimeframe(expr: Expression): boolean {
 }
 
 /**
- * `barmerge.lookahead_off` - the explicit no-lookahead request. Matched by
- * name so a positional argument counts the same as a named one. see INV146
+ * Any `[...]` history access reachable from the subtree, whatever the offset
+ * expression - INCLUDING one taken inside a function the subtree calls.
+ *
+ * Looking only at the literal argument text was wrong in a way the language
+ * forces on the author: TV rejects the history operator on a tuple-returning
+ * call (`Cannot call "operator SQBR"`), so a multi-value non-repainting request
+ * has NO form other than moving the offset into a helper -
+ * `request.security(sym, "D", f())` with `f() => [close[1], open[1]]`. That is
+ * the documented idiom, and the old test flagged it as repainting. Following
+ * the callee's body is what makes the rule test the expression the request
+ * actually evaluates. see INV151
+ *
+ * `visited` stops the walk revisiting a body. Pine forbids recursion, so this
+ * guards against a malformed tree rather than against legal code.
  */
-function isLookaheadOff(expr: Expression): boolean {
-	return serialize(expr) === "barmerge.lookahead_off";
-}
-
-/** Any `[...]` history access in the subtree, whatever the offset expression. */
-function containsHistoryOffset(expr: Expression): boolean {
+function containsHistoryOffset(
+	expr: Expression,
+	ctx: LintContext,
+	visited: Set<Statement[]> = new Set(),
+): boolean {
 	let found = false;
+	const called: CallExpression[] = [];
 	walkExpression(expr, (node) => {
 		if (node.type === "IndexExpression") found = true;
+		else if (node.type === "CallExpression") called.push(node);
 	});
-	return found;
+	if (found) return true;
+
+	for (const call of called) {
+		const body = ctx.bodyOf(call);
+		if (!body || visited.has(body)) continue;
+		visited.add(body);
+		let hit = false;
+		walkStatements(body, (stmt) => {
+			if (hit) return;
+			for (const sub of statementExpressions(stmt)) {
+				if (containsHistoryOffset(sub, ctx, visited)) {
+					hit = true;
+					return;
+				}
+			}
+		});
+		if (hit) return true;
+	}
+	return false;
 }
 
 // ─────────────────────────────────────────────────────────

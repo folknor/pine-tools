@@ -960,3 +960,32 @@ contradiction means re-measure, not "the earlier author was wrong."
   a NEWLINE carries no indent, so peeking one token ahead read the wrap as
   ended - which fired on the ordinary habit of commenting out one link of a
   method chain. Both strictly additive: 0 corpus fixtures changed.
+- [INV150](INV150-global-mutation-in-function/notes.md) - CE10088 "Cannot
+  modify global variable in function" was not implemented, so a UDF assigning
+  to a global passed locally and failed at load. The check rests entirely on
+  one boundary: reassigning a global SCALAR is the error, mutating a FIELD of a
+  global object is legal and is how mutable state is normally carried into a
+  function, so the Identifier-target guard is what keeps it off working code.
+  Globality is decided by symbol identity against the global scope, not scope
+  depth, so a shadowing parameter resolves correctly. Not version-gated (TV
+  raises it on v5 too, in its older wording). 24 new corpus errors, all in the
+  one reported shape; a mutated PARAMETER (CE10175) remains unimplemented.
+- [INV151](INV151-repainting-helper-offset/notes.md) - REPAINTING_SECURITY
+  looked for a literal `[n]` in the `expression` argument, so an offset taken
+  inside a helper the expression calls was invisible. That is not a style the
+  rule could ask authors to avoid: TV rejects the history operator on a
+  tuple-returning call (CE10123, `operator SQBR`), so a multi-value
+  non-repainting request has no form other than moving the offset into a
+  helper - the rule was flagging the only correct construction. The lint
+  context now records the script's own function and method bodies and the
+  offset test follows calls into them. 134 -> 124 corpus findings.
+- [INV152](INV152-repainting-lookahead-off/notes.md) - reverses INV146's
+  `lookahead_off` exemption. `lookahead_off` is the DEFAULT, so exempting it
+  made the identical call warn or not according to how its author spelled a
+  no-op, and the un-flagged half was the one hiding a repainting read. The
+  exemption's real subject was lower-timeframe requests, but an un-annotated
+  call is exactly as likely to be one; a sweep of the 97 corpus calls passing
+  it explicitly found `"60"`, `"240"`, `"D"` and variables named `i_htf` /
+  `selectedHTF`, not an LTF population. The rule no longer reads the argument.
+  124 -> 193 corpus findings (17.2% -> 26.7% of v6 files), a judgement recorded
+  in the notes rather than hidden in the number.

@@ -54,7 +54,7 @@ the on-disk baseline was still the 2026-06-28 one, 622/16057, and every run
 since carried the `2997d729…` v5 disappearance as a phantom changed fixture.
 Corrected 2026-08-15.)
 
-Full vitest: 456 passing.
+Full vitest: 458 passing.
 
 Warning local-only read 1423 raw on this sweep, of which **131 are `lint`-stage
 records** (116 REPAINTING_SECURITY + 15 ACCUMULATOR_LIFETIME) that TV can never
@@ -63,6 +63,12 @@ emit by construction - so the comparable figure is **1292**.
 INV144), which is why the stored report for this particular sweep still
 contains them: the filter landed after it ran. The next sweep produces 1292
 natively.
+
+The `lint`-stage half of that split moved on 2026-08-23: INV151 removed 10
+REPAINTING_SECURITY false positives (offsets taken inside a helper) and INV152
+then dropped the `lookahead_off` exemption, taking the corpus count to 193.
+Neither figure enters the TV comparison - the stage is dropped before diffing -
+but the 116 above is superseded as a description of the rule.
 
 Note on the checks added 2026-08-03 (INV141/INV142/INV143): all three are
 classes the corpus CANNOT carry, so their 0-changed regression results are not

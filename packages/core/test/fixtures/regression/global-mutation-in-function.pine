@@ -1,0 +1,28 @@
+// @test regression/global-mutation-in-function
+// @description CE10088: a user function may not reassign a global variable. TV raises it for := and for every compound operator, anchored at the target identifier (probed 2026-08-23 - see INV150). The boundary is what makes this checkable: mutating a FIELD of a global object is legal and is the ordinary way to carry mutable state into a function, a local declared inside the body is legal, a parameter shadowing a global resolves to the parameter, and a top-level if block is not a function at all. See INV150.
+// @expects parse: success
+// @expects errors: 2
+// @expects error: line=15, message=/^Cannot modify global variable "g" in function$/
+// @expects error: line=18, message=/^Cannot modify global variable "total" in function$/
+//@version=6
+indicator("global mutation", overlay = true)
+type State
+    bool flag
+var State st = State.new(false)
+var int g = 0
+var float total = 0.0
+
+legal(State s, int g) =>
+    s.flag := true
+    local = 0
+    local := local + 1
+    local + g
+mutates() =>
+    g += 1
+    g
+method bump(State s) =>
+    total := total + 1
+    s
+if bar_index > 0
+    g := 3
+plot(mutates() + legal(st, 1) + total + (bump(st).flag ? 1 : 0))

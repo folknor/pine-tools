@@ -229,6 +229,11 @@ export class UnifiedPineValidator {
 	// are TV's CE10135/CE10136. Distinct from blockDepth, which also counts
 	// if-blocks (where break IS allowed if a loop encloses them). see INV092
 	private loopDepth = 0;
+	// Depth of enclosing user-defined function / method bodies. Pine forbids a
+	// function body reassigning a global scalar (TV's CE10088), and nothing else
+	// distinguishes "inside a UDF" - blockDepth also counts if/loop blocks, where
+	// a top-level `g := 3` is perfectly legal. see INV150
+	private functionDepth = 0;
 
 	constructor(
 		public readonly localLibraryExportsBySourcePath: Map<
@@ -266,6 +271,7 @@ export class UnifiedPineValidator {
 		this.udfAmbiguousReturnNames.clear();
 		this.methodDeclaredNames.clear();
 		this.loopDepth = 0;
+		this.functionDepth = 0;
 
 		// Pine v4 and below are not supported, and pine-data ships only v6
 		// signatures - so every argument-schema check below judges a v4 script
@@ -993,9 +999,11 @@ export class UnifiedPineValidator {
 				const prevFunctionName = this.currentFunctionName;
 				this.currentFunctionName = statement.name;
 				this.pushDeclScope(statement.params.map((p) => p.name));
+				this.functionDepth++;
 				for (const stmt of statement.body) {
 					this.validateStatement(stmt, version);
 				}
+				this.functionDepth--;
 				// A function whose implicit RETURN is a trailing if-statement with
 				// incompatible branch types is TV's CE10235 - the same rule as an
 				// if/switch EXPRESSION, but `if` in return position parses as an
@@ -1274,6 +1282,43 @@ export class UnifiedPineValidator {
 						});
 					}
 				}
+				// A user function may not reassign a GLOBAL variable: TV's CE10088,
+				// anchored at the target identifier, for `:=` and every compound
+				// operator alike (`=` inside a body is a local declaration, not a
+				// write to the global). Raised on v5 too, with TV's older
+				// single-quoted wording, so this is not gated on version.
+				//
+				// The Identifier-target guard is load-bearing: mutating a FIELD of a
+				// global object (`ss.cp2 := false`) is legal and is the ordinary way
+				// to carry mutable state into a function, so a check that treated
+				// member targets the same way would fire on working code. Builtin
+				// seeds (line 0) are excluded - writing to those is a different
+				// error. see INV150
+				if (
+					this.functionDepth > 0 &&
+					statement.operator !== "=" &&
+					statement.target.type === "Identifier"
+				) {
+					const globalName = (statement.target as Identifier).name;
+					const globalSym = this.symbolTable.lookup(globalName);
+					if (
+						globalSym &&
+						globalSym.line > 0 &&
+						globalSym.kind === "variable" &&
+						this.symbolTable.resolvesToGlobal(globalName)
+					) {
+						this.addTemplateError({
+							line: statement.target.line || statement.line,
+							column: statement.target.column || statement.column,
+							length: globalName.length,
+							message:
+								'Cannot modify global variable "{variableName}" in function',
+							severity: DiagnosticSeverity.Error,
+							code: "CE10088",
+							ctx: { variableName: globalName },
+						});
+					}
+				}
 				// `matrix = 0.0` - a type-keyword/namespace name used as a user
 				// variable parses as AssignmentStatement (the declaration path
 				// rejects keyword names), so the name would otherwise keep
@@ -1487,9 +1532,11 @@ export class UnifiedPineValidator {
 					this.collectDeclarations(stmt, version);
 				}
 				this.pushDeclScope(statement.params.map((p) => p.name));
+				this.functionDepth++;
 				for (const stmt of statement.body) {
 					this.validateStatement(stmt, version);
 				}
+				this.functionDepth--;
 				// Implicit-return trailing if-statement branch types (CE10235),
 				// as in FunctionDeclaration above. see INV106
 				const mTail = statement.body[statement.body.length - 1];
