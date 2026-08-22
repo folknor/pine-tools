@@ -67,8 +67,11 @@ natively.
 The `lint`-stage half of that split moved on 2026-08-23: INV151 removed 10
 REPAINTING_SECURITY false positives (offsets taken inside a helper) and INV152
 then dropped the `lookahead_off` exemption, taking the corpus count to 193.
-Neither figure enters the TV comparison - the stage is dropped before diffing -
-but the 116 above is superseded as a description of the rule.
+INV153 then split those 193 by `lookahead` - 23 `LOOKAHEAD_BIAS` (the calls that
+really do read future data) and 170 reworded `REPAINTING_SECURITY` - without
+changing the total. None of these figures enter the TV comparison - the stage is
+dropped before diffing - but the 116 above is superseded as a description of the
+rule.
 
 Note on the checks added 2026-08-03 (INV141/INV142/INV143): all three are
 classes the corpus CANNOT carry, so their 0-changed regression results are not

@@ -74,7 +74,10 @@ import {
 	NESTED_COLLECTION_MESSAGE,
 	SCALAR_BASE_TYPES,
 } from "./checker-helpers";
-import type { UdfBodyRecord } from "./checker-provenance";
+import {
+	arrayFromWidensToFloat,
+	type UdfBodyRecord,
+} from "./checker-provenance";
 import {
 	defineTupleVariables,
 	inferTupleElementTypes,
@@ -781,6 +784,13 @@ export class UnifiedPineValidator {
 									initType,
 									varSymbol.type,
 									version !== "6",
+								) &&
+								!arrayFromWidensToFloat(
+									this,
+									statement.init,
+									initType,
+									varSymbol.type,
+									version,
 								)
 							) {
 								// TV uses the same CE10173 template and statement-start
@@ -1427,7 +1437,14 @@ export class UnifiedPineValidator {
 							);
 						}
 					} else if (
-						!TypeChecker.isAssignable(valueType, targetType, version !== "6")
+						!TypeChecker.isAssignable(valueType, targetType, version !== "6") &&
+						!arrayFromWidensToFloat(
+							this,
+							statement.value,
+							valueType,
+							targetType,
+							version,
+						)
 					) {
 						// Identifier targets get TV's CE10173 template (probed - see
 						// INV063); member/index targets keep the internal wording

@@ -27,6 +27,33 @@
   named `i_htf` / `selectedHTF`), not the lower-timeframe population the
   exemption assumed. Reverses INV146; corpus findings go 124 to 193. See
   INV152.
+- New rule `LOOKAHEAD_BIAS` splits the un-offset `request.security` finding in
+  two. A call passing `lookahead = barmerge.lookahead_on` with no history offset
+  reads the requested period from its *start*, so on historical bars it returns
+  data that did not exist yet; that is now its own rule with its own wording.
+  Everything else keeps `REPAINTING_SECURITY`, reworded: `lookahead_off`
+  (written or defaulted) leaks nothing - history settles on the period's final
+  value - it only repaints against realtime, the higher-timeframe fix shifts the
+  value by one period, and a same- or lower-timeframe request needs no change at
+  all. The old shared message made the future-leak claim for all of them, which
+  invited a "fix" that changes what a script computes. `lookahead` still never
+  exempts a call (INV152 stands); it only selects the rule. Corpus total
+  unchanged at 193 - 23 `LOOKAHEAD_BIAS`, 170 `REPAINTING_SECURITY`. See INV153.
+- A comma-separated declaration list led by `var` / `varip` / `const` now
+  declares every unit, not just the first. `var a = 0, isNew = false` left
+  `isNew` undeclared, reporting `Undeclared identifier` at its own declaration
+  site and at every use, on a file TradingView accepts. The typed form
+  (`int a = 0, b = 1`) already handled untyped units; the `var`-led one did not.
+  A `:=` unit still parses as a reassignment, since it does not declare. The
+  false positive invited prefixing `var`, which would turn a per-bar local into
+  a persistent one. See INV154.
+- `array.from` with all-const-int arguments now widens to `array<float>` where
+  one is expected, matching TradingView's overload choice: `array<float> v =
+  array.from(0, 0, 0)` is accepted, in a declaration, a `:=` to a UDT field, or
+  a constructor argument. The deciding property is const-ness, not literal
+  spelling - `array.from(0, 1 + 2)` widens, and a single non-const `int`
+  argument (`array.from(0, k)`) still errors, as on TradingView. This is the
+  collection form of the ordinary `float x = 0` promotion. See INV155.
 - A comma-separated statement list may now mix an assignment with a bare call,
   as TradingView allows: `b := na, c.clear()`. The assignment-led loop required
   every unit after a comma to be an assignment and threw otherwise, which

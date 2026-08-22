@@ -357,9 +357,9 @@ function anchor(call: CallExpression): { line: number; column: number } {
  * bar. History shows the settled value and realtime shows a moving one, so the
  * backtest measures something the market will not reproduce.
  *
- * The `lookahead` argument is deliberately NOT consulted. Two earlier versions
- * read it and both keyed on spelling rather than on the program: the first went
- * silent on any NAMED `lookahead=`, the second (INV146) narrowed that to
+ * The `lookahead` argument never EXEMPTS a call - two earlier versions let it,
+ * and both keyed on spelling rather than on the program: the first went silent
+ * on any NAMED `lookahead=`, the second (INV146) narrowed that to
  * `barmerge.lookahead_off` resolved positionally too. But `lookahead_off` is
  * the DEFAULT - writing it out produces the identical program to omitting it -
  * so an exemption for it made the same call warn or not according to how its
@@ -375,6 +375,25 @@ function anchor(call: CallExpression): { line: number; column: number } {
  * default out. Dropping it takes the corpus rate from 17.2% to 26.7% of v6
  * files; an un-offset `request.security` is the Manual's headline repainting
  * bug, and that is a believable rate for scraped public scripts. see INV152
+ *
+ * What `lookahead` DOES decide is which of two different defects this is, and
+ * the two get separate rule ids because acting on them differs:
+ *
+ *   - `barmerge.lookahead_on` with no offset requests the value at the START of
+ *     the requested period, so on history it returns data that did not exist
+ *     yet. That is future leak - `LOOKAHEAD_BIAS` - and the fix is to add the
+ *     offset, keeping `lookahead_on`.
+ *   - `lookahead_off`, written or defaulted, leaks nothing: history shows the
+ *     value at the END of the period. It still repaints, because realtime shows
+ *     the bar still forming - `REPAINTING_SECURITY`, and on a LOWER-timeframe
+ *     request there is nothing to fix at all.
+ *
+ * Emitting the future-leak wording for both was expensive downstream: it reads
+ * as a correctness finding, and acting on it for a `lookahead_off` call means
+ * adding an offset AND switching to `lookahead_on`, which shifts every signal
+ * by one higher-timeframe bar. A sweep of ~60 such conversions, plus CHANGELOG
+ * entries asserting the calls had supplied data that did not exist yet, had to
+ * be reverted. see INV153
  *
  * Silent whenever the author has demonstrably considered it:
  *   - a history offset anywhere in `expression` (`close[1]`, `ta.sma(c,14)[1]`,
@@ -397,8 +416,8 @@ function checkRepaintingSecurity(ctx: LintContext): SemanticWarning[] {
 	for (const { call } of ctx.callsNamed("request.security")) {
 		if (ctx.indexedCalls.has(call)) continue;
 
-		// No `lookahead` test here, by design - see the header. Writing the
-		// default out is not evidence of anything. see INV152
+		// `lookahead` never exempts, it only picks the message - see the header.
+		// Writing the default out is not evidence of anything. see INV152/INV153
 		const timeframe = argumentAt(call, "timeframe", 1);
 		if (timeframe && isChartTimeframe(timeframe)) continue;
 
@@ -406,12 +425,19 @@ function checkRepaintingSecurity(ctx: LintContext): SemanticWarning[] {
 		if (!expression) continue;
 		if (containsHistoryOffset(expression, ctx)) continue;
 
+		const lookahead = argumentAt(call, "lookahead", 4);
+		const leaks =
+			lookahead !== undefined &&
+			serialize(lookahead) === "barmerge.lookahead_on";
+
 		findings.push(
 			warn(
 				anchor(call),
 				"request.security".length,
-				"REPAINTING_SECURITY",
-				"'request.security' reads the current, still-forming bar of the requested timeframe, so this value repaints. Offset the expression by one bar (close[1]) - with 'lookahead = barmerge.lookahead_on' for a higher timeframe - so the request returns a confirmed value.",
+				leaks ? "LOOKAHEAD_BIAS" : "REPAINTING_SECURITY",
+				leaks
+					? "'request.security' with 'lookahead = barmerge.lookahead_on' and no history offset returns the requested period's value from the START of that period, so on historical bars it reads data that did not exist yet. Offset the expression by one bar (close[1]), keeping 'lookahead_on'."
+					: "'request.security' reads the current, still-forming bar of the requested timeframe, so this value repaints: history settles on the period's final value while realtime shows it moving. For a HIGHER timeframe, offset the expression by one bar (close[1]) together with 'lookahead = barmerge.lookahead_on' - note that shifts the value by one period. A same- or lower-timeframe request needs no change.",
 			),
 		);
 	}

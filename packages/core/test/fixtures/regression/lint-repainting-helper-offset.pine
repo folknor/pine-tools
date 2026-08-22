@@ -1,8 +1,8 @@
 // @test regression/lint-repainting-helper-offset
-// @description REPAINTING_SECURITY must follow a call in the expression into the script's own function bodies. A tuple-returning request has no other form: TV rejects the history operator on a tuple-returning call ("Cannot call \"operator SQBR\""), so the offset has to move inside a helper, and testing only the literal argument text flagged the documented non-repainting idiom as repainting. The helper with no offset still warns, so this widens what the rule can see rather than weakening it. TV is silent on both lines. See INV151.
+// @description REPAINTING_SECURITY must follow a call in the expression into the script's own function bodies. A tuple-returning request has no other form: TV rejects the history operator on a tuple-returning call ("Cannot call \"operator SQBR\""), so the offset has to move inside a helper, and testing only the literal argument text flagged the documented non-repainting idiom as repainting. The helper with no offset still warns - as LOOKAHEAD_BIAS, since it passes lookahead_on (INV153) - so this widens what the rule can see rather than weakening it. TV is silent on both lines. See INV151, INV153.
 // @expects parse: success
 // @expects warnings: 1
-// @expects warning: line=10, message=/repaints/
+// @expects warning: line=10, message=/did not exist yet/
 //@version=6
 indicator("helper offset", overlay = true)
 offsetPair() =>

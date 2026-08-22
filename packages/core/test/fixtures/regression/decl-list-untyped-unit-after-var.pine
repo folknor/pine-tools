@@ -1,0 +1,15 @@
+// @test regression/decl-list-untyped-unit-after-var
+// @description A comma-separated declaration list led by var/varip/const declares EVERY unit, including the untyped `name = value` ones. The var-led comma loop had no untyped-unit case, so a later name fell through to the expression branch and became an AssignmentStatement - leaving the name undeclared for the rest of the scope and reporting an undeclared identifier at its own declaration site and at every use. The typed lists (`int a = 0, b = 1`) already had this unit form. `:=` still parses as a reassignment, since it is not a declaration operator. TV is clean on this file. See INV154.
+// @expects parse: success
+// @expects errors: 0
+// @expects ast: body.1.body.0.statements.1.type = "VariableDeclaration"
+// @expects ast: body.1.body.0.statements.1.name = "isNew"
+//@version=6
+indicator("decl list", overlay = true)
+f() =>
+    var a = 0, isNew = false
+    var b = 0.0, scale = 2.0, label = "x"
+    isNew := true
+    a := isNew ? a + 1 : a
+    b + scale + a + str.length(label)
+plot(f())

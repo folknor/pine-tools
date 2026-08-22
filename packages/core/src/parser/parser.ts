@@ -364,6 +364,23 @@ export class Parser {
 							continue;
 						}
 					}
+					// Untyped unit: `var a = 0, isNew = false`. A `name = value`
+					// unit DECLARES `name` - `=` is Pine's declaration operator
+					// and `:=` its reassignment - so it must not fall through to
+					// the expression branch below, which built an
+					// AssignmentStatement and left the name undeclared for the
+					// rest of the scope. Typed lists already had this unit form
+					// (see the `isVarTypeKeyword` loop); the `var`-led list did
+					// not. The unit is typed from its own initializer, never from
+					// the leading unit's `var`/annotation. see INV154 / INV027
+					if (
+						this.check(TokenType.IDENTIFIER) &&
+						this.peekNext()?.type === TokenType.ASSIGN &&
+						this.peekNext()?.value === "="
+					) {
+						statements.push(this.variableDeclaration(null, undefined));
+						continue;
+					}
 					// A `[`-led unit is a tuple destructure - see the untyped
 					// comma loop / #46(c)
 					if (this.check(TokenType.LBRACKET)) {

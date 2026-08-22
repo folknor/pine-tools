@@ -259,3 +259,39 @@ export function qualifierProvenance(
 ): Provenance | null {
 	return qualifierProvenanceInternal(v, expr, version, policy, new Set());
 }
+
+/**
+ * `array.from(0, 0, 0)` in an `array<float>` context.
+ *
+ * `array.from` has both an `int`-element overload and an `int/float` one
+ * returning `array<float>`, and TV picks between them using the CONST-ness of
+ * the arguments, not their literal spelling: with every argument a const int
+ * the call widens to `array<float>`, and one non-const `int` argument stops it.
+ * Probed 2026-08-23 - `array<float> a = array.from(k, k, k)` with `int k = 0`
+ * is CE10173 "Cannot assign a value of the array<int> type", while
+ * `array.from(0, 0, 0)`, `array.from(0, 1 + 2)`, the same call as a `T.new`
+ * argument and as a `t.v :=` right-hand side are all clean. A single non-const
+ * argument mixed in (`array.from(0, k)`) errors. see INV155
+ *
+ * This is the collection form of the ordinary const-int-to-float promotion
+ * (`float x = 0`), so it is decided the same way - by the argument's provenance
+ * - rather than by testing for a Literal node.
+ */
+export function arrayFromWidensToFloat(
+	v: UnifiedPineValidator,
+	value: Expression,
+	valueType: string,
+	targetType: string,
+	version: string,
+): boolean {
+	if (TypeChecker.baseTypeName(valueType) !== "array<int>") return false;
+	if (TypeChecker.baseTypeName(targetType) !== "array<float>") return false;
+	if (value.type !== "CallExpression") return false;
+	const call = value as CallExpression;
+	if (memberChainName(call.callee) !== "array.from") return false;
+	if (call.arguments.length === 0) return false;
+	return call.arguments.every((arg) => {
+		const prov = qualifierProvenance(v, arg.value, version);
+		return prov?.qualifier === "const" && prov.base === "int";
+	});
+}

@@ -1,0 +1,17 @@
+// @test regression/array-from-const-int-widening
+// @description array.from has both an int-element overload and an int/float one returning array<float>, and TV picks between them by the CONST-ness of the arguments: all-const-int widens to array<float>, one non-const int argument does not. Probed 2026-08-23 - `array<float> a = array.from(k, k, k)` with `int k = 0` is CE10173 while array.from(0, 0, 0), array.from(0, 1 + 2), the same call as a T.new argument and as a `t.v :=` right-hand side are clean. We typed the call array<int> from the arguments alone and rejected every assignment. This is the collection form of the ordinary const-int-to-float promotion. See INV155.
+// @expects parse: success
+// @expects error: line=9, message=/Cannot assign a value of the "array<int>" type/
+// @expects errors: 1
+//@version=6
+indicator("array.from widening", overlay = true)
+type T
+    array<float> v
+int k = 0
+array<float> okLiterals = array.from(0, 0, 0)
+array<float> okConstExpr = array.from(0, 1 + 2)
+array<int> okInts = array.from(k, k)
+array<float> badNonConst = array.from(k, k)
+var T t = T.new(array.from(0, 0))
+t.v := array.from(0, 0, 0)
+plot(okLiterals.get(0) + okConstExpr.get(0) + okInts.get(0) + badNonConst.get(0) + t.v.get(0))

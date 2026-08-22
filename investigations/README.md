@@ -989,3 +989,30 @@ contradiction means re-measure, not "the earlier author was wrong."
   `selectedHTF`, not an LTF population. The rule no longer reads the argument.
   124 -> 193 corpus findings (17.2% -> 26.7% of v6 files), a judgement recorded
   in the notes rather than hidden in the number.
+- [INV153](INV153-lookahead-bias-split/notes.md) - the un-offset
+  `request.security` warning covered two different defects under one message
+  that fitted only one of them. `lookahead_on` with no offset reads the
+  requested period from its START, so on history it returns data that did not
+  exist yet; `lookahead_off` (written or defaulted) leaks nothing and only
+  repaints against realtime, and on a lower-timeframe request is not a defect at
+  all. Emitting the future-leak wording for both invited a remedy - add an
+  offset, switch to `lookahead_on` - that shifts every signal by one HTF bar,
+  and downstream that ran to ~60 unjustified conversions before being reverted.
+  Split into `LOOKAHEAD_BIAS` (23 corpus findings, 3.2% of v6 files) and a
+  reworded `REPAINTING_SECURITY` (170). `lookahead` still never exempts a call -
+  INV152 stands; it only selects which rule fires.
+- [INV154](INV154-decl-list-untyped-unit/notes.md) - a comma-separated
+  declaration list led by `var`/`varip`/`const` declared only its first name. A
+  bare `name = value` unit fell through to the expression branch and became an
+  `AssignmentStatement`, so `var a = 0, isNew = false` left `isNew` undeclared
+  for the rest of the scope - an undeclared-identifier error at the declaration
+  site and at every use, on a file TV calls clean. The typed comma loop already
+  had the unit form (INV027); the `var`-led one now does too, guarded on `=`
+  rather than `ASSIGN` so a `:=` unit still parses as a reassignment.
+- [INV155](INV155-array-from-const-widening/notes.md) - `array.from(0, 0, 0)`
+  assigned to an `array<float>` was rejected as `array<int>`. TV picks between
+  `array.from`'s `int` and `int/float` overloads by the CONST-ness of the
+  arguments, not their spelling: all-const-int widens (`1 + 2` included), one
+  non-const `int` argument does not, and the context can be a declaration, a
+  `:=` to a UDT field, or a `T.new` argument. It is the collection form of the
+  `float x = 0` promotion, so it is decided by the argument's qualifier.

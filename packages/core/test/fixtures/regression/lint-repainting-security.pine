@@ -1,11 +1,11 @@
 // @test regression/lint-repainting-security
-// @description REPAINTING_SECURITY: a request.security() whose expression carries no history offset is flagged, and the lookahead argument is not consulted at all. lookahead_off is the DEFAULT, so writing it out yields the identical program to omitting it - exempting it made the same call warn or not according to how its author spelled a no-op, which is why the explicit-lookahead_off line below now warns exactly like the bare one. lookahead_on never had an exemption. The exemptions that must stay silent are all about the expression itself: a history offset inside it, a history offset on the call, and a request that stays on the chart's timeframe. TV is silent on every line here (probed 2026-08-15, see INV144). See INV144, INV146, INV152.
+// @description A request.security() whose expression carries no history offset is flagged whatever the lookahead argument says - lookahead_off is the DEFAULT, so writing it out yields the identical program to omitting it, and exempting it made the same call warn or not according to how its author spelled a no-op. What lookahead decides is WHICH rule fires: lookahead_on with no offset reads the requested period from its START, so on history it returns data that did not exist yet (LOOKAHEAD_BIAS), while lookahead_off leaks nothing and merely repaints (REPAINTING_SECURITY). The exemptions that must stay silent are all about the expression itself: a history offset inside it, a history offset on the call, and a request that stays on the chart's timeframe. TV is silent on every line here (probed 2026-08-15, see INV144). See INV144, INV146, INV152, INV153.
 // @expects parse: success
 // @expects warnings: 4
 // @expects warning: line=3, message=/repaints/
-// @expects warning: line=4, message=/repaints/
+// @expects warning: line=4, message=/did not exist yet/
 // @expects warning: line=5, message=/repaints/
-// @expects warning: line=6, message=/repaints/
+// @expects warning: line=6, message=/did not exist yet/
 //@version=6
 indicator("repaint lint", overlay = true)
 bad = request.security(syminfo.tickerid, "D", close)

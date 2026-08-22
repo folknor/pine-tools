@@ -1,0 +1,16 @@
+// @test regression/lint-lookahead-bias
+// @description lookahead splits the un-offset request.security into two rules. lookahead_on with no offset returns the requested period's value from the START of the period, so on historical bars it reads data that did not exist yet - LOOKAHEAD_BIAS, fixed by adding the offset and keeping lookahead_on. lookahead_off, written or defaulted, leaks nothing (history settles on the period's final value) and only repaints against realtime - REPAINTING_SECURITY, and a lower-timeframe request needs no change at all. Emitting the future-leak wording for both invited a fix that shifts every signal by one HTF bar. Neither value ever exempts a call (INV152). TV is silent on every line. See INV153.
+// @expects parse: success
+// @expects warnings: 4
+// @expects warning: line=3, message=/did not exist yet/
+// @expects warning: line=4, message=/did not exist yet/
+// @expects warning: line=5, message=/repaints/
+// @expects warning: line=6, message=/repaints/
+//@version=6
+indicator("lookahead", overlay = true)
+leakNamed = request.security(syminfo.tickerid, "D", close, lookahead = barmerge.lookahead_on)
+leakPositional = request.security(syminfo.tickerid, "D", high, barmerge.gaps_off, barmerge.lookahead_on)
+repaintExplicit = request.security(syminfo.tickerid, "D", close, lookahead = barmerge.lookahead_off)
+repaintDefault = request.security(syminfo.tickerid, "D", close)
+okOffsetOn = request.security(syminfo.tickerid, "D", close[1], lookahead = barmerge.lookahead_on)
+plot(leakNamed + leakPositional + repaintExplicit + repaintDefault + okOffsetOn)
