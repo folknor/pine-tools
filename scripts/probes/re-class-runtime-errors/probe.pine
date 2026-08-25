@@ -1,0 +1,6 @@
+//@version=6
+indicator("re probes")
+plot(ta.sma(close, 0))
+plot(ta.sma(close, na))
+plot(ta.sma(close, 2000000))
+plot(ta.pivothigh(high, -1, 2))

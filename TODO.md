@@ -410,6 +410,118 @@ IDs so the two stay in sync.
   wants to say so at that line, which is the case neither a global flag nor an
   external filter covers.
 
+- **#67 - CE10059: `strategy.*` inside a `request.*()` argument
+  ([G009](gotchas/G009-tv-endpoint-misses-editor-only-gates.md)).** The Pine
+  editor rejects the entire `strategy.*` surface - mutating commands AND plain
+  variable reads - anywhere in a `request.*()` argument, with
+  `"strategy.X" cannot be used with any parameter of the "request.*()"
+  functions.` We are silent, and so is `--tv`. Adding the check is
+  straightforward (it is a namespace test on the argument subtree of any
+  `request.*` call, not a type rule), but it comes with an evidentiary problem
+  worth deciding BEFORE writing it: **neither pine-lint mode can verify it**,
+  so the check cannot be regression-tested against TV the way every other
+  check in this repo is. Its only oracle is piners' hand-captured editor
+  screenshots (`../piners/reference/fieldwork/runtime-oracles/README.md`,
+  2026-08-25, three probe variants). Decide whether we accept a check whose
+  authority is a third party's screenshot; if yes, it is small and high-value
+  (the corpus almost certainly carries carriers, since `--tv` never flagged
+  them). Probe kept at
+  `investigations/INV156-tail-qualifier-fold-through-returns/probes/ce10059-request-strategy.pine`.
+- **#68 - qualifier fold through a statement-form `if` return
+  ([INV156](investigations/INV156-tail-qualifier-fold-through-returns/notes.md)).**
+  A confirmed false negative, reported by piners and reproduced here
+  2026-08-25. `plot(close, title = f())` where `f`'s body tail is a
+  statement-form `if`/`else` passes clean; TV rejects it CE10123
+  (`series string` into a `const string` slot). Scope, measured rather than
+  assumed: `switch` and ternary tails ALREADY error correctly, and the return
+  type itself is right - the same `f()` in `f() + 1` is read as
+  `series string` - so this is not return-type inference and not a
+  `switch` bug. Something about the statement-form `if` tail suppresses the
+  const-qualifier ARGUMENT check specifically; establishing that mechanism is
+  step one (the G006 undetermined-type suppression is the shape it resembles,
+  and our own version of it is the first place to look). The regression
+  fixture lands with the fix, in the
+  `// @expects error: line=8, message="..."` form matching TV's wording in the
+  INV. Fixing it also un-masks the class for piners, whose parser corpus
+  cross-checks acceptance against our LOCAL validator and therefore stays
+  green whenever both sides wrongly accept.
+
+- **#69 - surface guaranteed RE-class runtime errors as `lint`-stage findings.**
+  TradingView's runtime-error banners for a set of argument domains its
+  *linter* says nothing about are captured as screenshots in
+  `scripts/probes/re-class-runtime-errors/tv-banners/` - **primary source held
+  in-repo**, eight banners from the 2026-08-25 chart session (the piners
+  fieldwork run; narrative at
+  `../piners/reference/fieldwork/runtime-oracles/README.md`). This is the only
+  oracle the rule can ever have: RE-class errors surface only on the chart
+  legend overlay, never in the editor and never through either pine-lint mode.
+  These scripts compile and then die on bar 0. Measured 2026-08-25, both
+  `pine-lint` local and `--tv` return **clean** on all four of:
+
+  ```pine
+  plot(ta.sma(close, 0))            // RE10001 "must be > 0"
+  plot(ta.sma(close, na))           // RE10003 "must not be na"
+  plot(ta.sma(close, 2000000))      // RE10004 "references too many historical
+                                    //          candles (2000000), the limit is 5000"
+  plot(ta.pivothigh(high, -1, 2))   // RE10001 "'leftbars' ... must be >= 0"
+  ```
+
+  A script that cannot survive its first bar, and neither validator says a
+  word. That is the INV001 case in its purest form, and it is exactly what the
+  `lint` stage exists for: code that COMPILES and is still wrong.
+
+  **Stage: `lint`, warning severity, one `rule` id.** Not the error channel -
+  TV compiles these, so an error would break the "errors mirror TV" invariant
+  and every finding would show up in `lint:failures` as a fake local-only false
+  positive. `find-real-failures.mjs` already drops the `lint` stage before
+  diffing (INV144), so this lands without touching the TV comparison at all.
+
+  **Decidability boundary - this is the whole design.** Flag only what is
+  statically known; never guess at a `series int`:
+  - IN: literal and const-folded arguments (`0`, `na`, `2000000`, `-1`,
+    `20 - 20`). Also `array.slice(a, 3, 1)` - an inverted constant range,
+    RE10044, currently clean locally.
+  - OUT: anything runtime-valued. `ta.sma(close, len)` where `len` is an
+    input or a series is undecidable and must stay silent - `input.int(14,
+    minval = 1)` is the overwhelmingly common corpus shape and a false
+    positive there would be the worst kind (see INV144's standing rule: an FP
+    in this channel is worse than a miss, because it teaches readers to ignore
+    the stage).
+  - OUT for now: out-of-bounds `array.slice`/`array.get` on a collection whose
+    size comes from flow (RE10045). Needs size tracking we do not have. The
+    empty-literal case (`array.new<float>(0)` then a non-empty slice) may be
+    worth a narrow cell later.
+  - Already covered elsewhere, do not duplicate: a FRACTIONAL length is caught
+    by the type layer today (`ta.sma(close, 2.5)` -> `literal float` into
+    `series int`), because Pine types the slot `series int`. No runtime rule
+    needed.
+
+  **The domain facts belong in pine-data, not the checker.** Per the
+  Data-vs-Syntax rule in AGENTS.md, "length must be > 0" and "leftbars must be
+  >= 0" are language facts and must land in `functions.json` (the param `min` /
+  `max` fields, which already exist - 32 occurrences today - and which nothing
+  in the checker currently reads). `ta.sma`'s `length` has no `min` today.
+  Note the banners state each domain outright and name the argument
+  ("Invalid value of the 'leftbars' argument (-1) ... It must be >= 0"), so
+  these facts are quoted from the platform rather than inferred - the strongest
+  form the #21 fact layer can take. So
+  the work is two-layered: a probe-backed `generate.ts` fact layer supplying
+  the domains (the #21 shape: fact + probe + date), then one checker rule that
+  reads them. Do not hardcode a table of per-function domains in the checker.
+
+  **Open question before building, worth settling first:** the RE10004 ceiling.
+  TV said "the limit is 5000" for `ta.sma`, but whether 5000 is per-call,
+  global, or interacts with `max_bars_back` is unestablished, and the banner
+  came from one capture on one script. The `> 0` / `>= 0` / `na` cells are
+  unambiguous and can land without it; the ceiling cell should not land on a
+  single data point.
+
+  **Gate:** per the `lint`-stage rules, sweep the corpus before landing -
+  `node investigations/INV144-semantic-lint-checks/count-lints.mjs`. A rule
+  that fires on real published scripts in the const-decidable cells is either a
+  genuine find (those scripts are broken) or a decidability bug; both need
+  looking at before it ships.
+
 ## Gotchas
 
 See [gotchas/README.md](gotchas/README.md) for the format and full
@@ -447,6 +559,20 @@ index.
   coercion - it aliases, so a float can be pushed through the alias into
   an array TV still types as `array<int>`. Keep our error. Probed
   2026-08-21.
+- [G010](gotchas/G010-re-class-errors-are-chart-only.md) - RE-class RUNTIME
+  errors reach neither pine-lint mode nor the editor, only the chart legend.
+  A runtime error wipes the script's whole log, and an unused invalid
+  construction never raises (dead-code elimination), so a probe must consume
+  its result. Banners held in
+  `scripts/probes/re-class-runtime-errors/tv-banners/`. Governs #69.
+- [G009](gotchas/G009-tv-endpoint-misses-editor-only-gates.md) - `--tv`
+  (`translate_light`) is not the validator the Pine editor runs. It does not
+  enforce the editor's contextual restrictions on `request.*()` arguments, so
+  `strategy.*` inside a `request.security` expression passes `--tv` clean and
+  is CE10059 in the editor. **`--tv` acceptance is not evidence of TV
+  acceptance for that class** - the first caveat that cuts in the accepting
+  direction, and the reason #67's check would be unverifiable by our own
+  tooling. Probed 2026-08-25.
 
 Authoritative per-occurrence list lives in
 `lint-reports/failures-by-category.json`. For every category below the JSON

@@ -1,0 +1,8 @@
+//@version=6
+indicator("tail qualifier direct")
+f() =>
+    if close > open
+        "a"
+    else
+        "b"
+plot(close, title = f())

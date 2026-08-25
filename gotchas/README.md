@@ -70,3 +70,18 @@ when TV's behavior diverged, with no stored probe to re-check it.
   coercion: it aliases, so a float can be pushed through the alias into an
   array TV still types as `array<int>`. Keep our error; a TV-clean corpus
   file may legitimately carry it
+- [G009](G009-tv-endpoint-misses-editor-only-gates.md) - `--tv`
+  (`translate_light`) is NOT the validator the Pine editor runs: it does not
+  enforce the editor's contextual restrictions on `request.*()` arguments, so
+  the whole `strategy.*` surface passes `--tv` clean while the editor rejects
+  it with CE10059. `--tv` ACCEPTANCE is not evidence of TV acceptance for that
+  class; only an editor capture adjudicates. Third caveat on the oracle after
+  G001/G002, and the first that cuts in the accepting direction
+- [G010](G010-re-class-errors-are-chart-only.md) - RE-class RUNTIME errors
+  (invalid TA length, negative pivot strength, out-of-range `array.slice`)
+  reach neither pine-lint mode nor the Pine editor - only the chart legend
+  overlay. A runtime error also WIPES the script's whole log output, so log
+  capture and error capture are mutually exclusive per run, and an UNUSED
+  invalid construction never raises at all because TV eliminates dead code (a
+  probe must consume its result or it proves nothing). Banner screenshots held
+  in `scripts/probes/re-class-runtime-errors/tv-banners/`; governs TODO #69

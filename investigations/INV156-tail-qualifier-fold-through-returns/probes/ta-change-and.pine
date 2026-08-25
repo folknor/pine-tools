@@ -1,0 +1,4 @@
+//@version=6
+indicator("change bool")
+c = ta.change(close) and close > open
+plot(c ? 1 : 0)

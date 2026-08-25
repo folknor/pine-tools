@@ -1,0 +1,7 @@
+//@version=6
+indicator("switch tail")
+g() =>
+    switch
+        close > open => "a"
+        => "b"
+plot(close, title = g())

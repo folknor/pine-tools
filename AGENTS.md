@@ -499,6 +499,12 @@ and returns TV's response instead. TradingView is the source of truth for Pine
 v6 *validity* - when our checker disagrees, TV (via `--tv`) wins. (But see the
 Methodology section above: TV *silence* is evidence, not authority.)
 
+**`--tv` is not the Pine editor.** It forwards to `translate_light`, which
+typechecks but does not enforce the editor's contextual restrictions on
+`request.*()` arguments - so a `--tv` clean verdict does not settle whether the
+editor accepts the script. See `gotchas/G009`. TradingView has at least two
+validation layers and `--tv` reaches the more permissive one.
+
 Usage (JSON on stdout, matching the pine-lint format):
 
 ```bash

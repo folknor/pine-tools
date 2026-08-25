@@ -1,0 +1,5 @@
+//@version=6
+indicator("ternary tail")
+h() =>
+    close > open ? "a" : "b"
+plot(close, title = h())

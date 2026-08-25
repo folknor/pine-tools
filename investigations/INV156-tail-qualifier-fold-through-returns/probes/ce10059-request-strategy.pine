@@ -1,0 +1,7 @@
+// See G009 - this probe is CLEAN through both pine-lint modes and is a
+// CE10059 compile error in the Pine editor. Kept here so the --tv half
+// stays re-runnable.
+//@version=6
+strategy("ce10059 probe")
+x = request.security(syminfo.tickerid, "60", strategy.position_size)
+plot(x)

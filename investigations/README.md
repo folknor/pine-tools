@@ -1016,3 +1016,13 @@ contradiction means re-measure, not "the earlier author was wrong."
   non-const `int` argument does not, and the context can be a declaration, a
   `:=` to a UDT field, or a `T.new` argument. It is the collection form of the
   `float x = 0` promotion, so it is decided by the argument's qualifier.
+- [INV156](INV156-tail-qualifier-fold-through-returns/notes.md) - two
+  cross-repo claims about our validator, adopted from the piners project's
+  2026-08-24 sweep. One reproduces: a user function whose body tail is a
+  statement-form `if` passes the const-qualifier ARGUMENT check
+  (`plot(close, title = f())` clean, TV CE10123), although the return itself
+  types correctly as `series string` everywhere else - `switch` and ternary
+  tails already error, so the gap is narrower than reported and is not a
+  return-type bug. The other does not reproduce: TV rejects
+  `ta.change(close) and ...` with exactly our CE10123, so their "we are right
+  and the oracle is wrong" example is wrong in our favour.
