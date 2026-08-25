@@ -6,11 +6,24 @@
 ## Why this was worth doing
 
 `ta.fixnan` was found because one eleven-line piners fixture happened to
-be run through pine-lint. That suggested the general case: the two
-projects' builtin catalogs are **independently derived** - pine-lint's is
-generated from TradingView's scraped reference, piners' is built from
-`po` - so they fail in different ways, and a disagreement between them is
-informative regardless of which side is wrong. TradingView settles it.
+be run through pine-lint. That suggested the general case: the two tools
+reach different conclusions from the same starting point, so a
+disagreement between them is informative regardless of which side is
+wrong. TradingView settles it.
+
+**Corrected 2026-08-25, after the first version of this report got the
+reason wrong.** It claimed the two catalogs are independently derived -
+ours scraped from the reference, piners' built from `po`. They are not.
+piners vendors this repo's `pine-data` snapshot, and it is byte-identical:
+`functions.json`, `variables.json`, `constants.json`, `types.json` and
+`keywords.json` all match by SHA-256 (`functions.json` is
+`ddb0dae9…c852d76` on both sides). Same data, same date.
+
+The real asymmetry is one layer up. pine-lint consumes that generated data
+directly, with nothing between it and the checker. piners maintains a
+hand-written registration table on top of it. That is a sharper diagnosis
+than the one this report started with, and it strengthens rather than
+weakens the conclusion - see the closing section.
 
 Nothing in piners was modified. This is a read-only sweep.
 
@@ -111,6 +124,13 @@ Whether each is a deliberate convenience extension or the same inverted
 registration is piners' call, not ours. 13 files under `crates/` mention
 one of the seven names.
 
+**Adjudicated by piners, 2026-08-25 (`85f0e16f`):** deliberate, with the
+rationale recorded at the registration site and a machine-readable list.
+The sharper framing above survived that check. One consequence they added,
+which this sweep did not reach: piners' own request-fold fixtures call
+`ta.hl2(high, low)`, so those tests exercise a shape no TradingView script
+can write.
+
 ### 5. Fixtures written in syntax TradingView rejects
 
 Not defects in the runtime, but worth knowing if any of these fixtures are
@@ -125,6 +145,27 @@ read as describing Pine:
 206 extracted fixtures use `=>` closure syntax. pine-lint rejects all
 three shapes too, at the same positions, differing only by the wording in
 finding 3.
+
+**This report under-framed this finding, and piners' reading of it is the
+better one (`85f0e16f`).** They re-confirmed all three against `--tv`
+independently rather than taking the report's word, and checked the
+opposite direction too: the vendored TradingView libraries are real
+platform code and use only the plain named form.
+
+The reason it outranks finding 4: a phantom NAME is one table row, while a
+phantom CONSTRUCT is a grammar carried by the parser, typechecker,
+importer and inliner at once. And a catalog gate that compares names -
+which is what a data-driven completeness check does - is structurally
+blind to the entire class, because there is no name to compare.
+
+They did not change the features, on the grounds that whether the superset
+is intended is a product decision and there is real machinery behind
+closures reaching the library export surface, so deliberate is at least as
+plausible as accreted. What they could establish is that the choice was
+never written down, and that at least one past reader took these for Pine:
+a standing item asked for closure capture semantics to be confirmed
+against the TradingView oracle, a question that has no answer because
+TradingView cannot parse the construct.
 
 ### Not findings
 
@@ -142,16 +183,32 @@ listed here only so the count is accounted for.
 The two tools' errors are **not correlated**, which is what makes this
 worth repeating. In this sweep pine-lint was wrong in ways piners is not
 (tuple destructuring, recovery cascades) and piners is wrong in ways
-pine-lint cannot be (a hand-registered name that TradingView lacks -
-pine-lint cannot invent one, because its catalog is generated from the
-reference and the reference has no such page).
+pine-lint cannot be (a registered name TradingView lacks).
 
-That also bounds each tool's blind spot. pine-lint's catalog is exactly as
-good as TradingView's documentation, and where the reference
-under-documents something we inherit that silently with no independent
-check. piners' catalog can encode a name the platform does not have. A
-disagreement between them is therefore evidence about one of the two, and
-`--tv` says which - agreement between them is evidence about neither.
+The reason is not different data - the snapshot is byte-identical, as
+above. It is that the two tools have different amounts of machinery
+between that data and their verdict:
+
+- **pine-lint has none.** The catalog is generated from the reference and
+  read directly, so it cannot invent a name that has no reference page.
+  It also cannot correct one: where the reference under-documents or
+  misnames something, we inherit that silently with no independent check,
+  and our blind spot is exactly the shape of TradingView's documentation.
+- **piners has an interpretation layer** - a hand-maintained registration
+  table, plus a parser, typechecker, importer and inliner that can accept
+  grammar the platform does not have. Every one of those can drift from
+  the shared data in a direction the data cannot detect.
+
+So the two blind spots are structurally different, which is the whole
+value of running one tool's fixtures through the other. A disagreement is
+evidence about one of them and `--tv` says which; agreement is evidence
+about neither, since both read the same catalog and would inherit the same
+documentation gap together.
+
+It also predicts where each tool's next defect will be found. Ours will
+come from the reference being wrong or thin. Theirs will come from the
+layer above the data - which is exactly what findings 4 and 5 are, one in
+the registration table and one in the grammar.
 
 ## Reproducing
 
