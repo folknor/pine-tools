@@ -917,6 +917,37 @@ export class UnifiedPineValidator {
 						code: stmtExpr.name === "break" ? "CE10135" : "CE10136",
 					});
 				}
+				// A bare `[...]` statement at TOP LEVEL is TV's
+				// `Mismatched input "end of line without line continuation"
+				// expecting set "="`, anchored one past the closing bracket:
+				// at statement start outside any block, TV commits to parsing
+				// the tuple as a DESTRUCTURING TARGET and then demands `=`.
+				//
+				// The discriminator is top-level vs in-a-block, NOT final vs
+				// non-final: TV takes a bare tuple statement anywhere inside a
+				// block (a `for` body included, which is never a return
+				// position) and rejects one at top level even as the script's
+				// last statement. `blockDepth` counts function bodies too, so
+				// zero here means genuinely top level.
+				//
+				// Keying on the STATEMENT is what keeps the legal destructuring
+				// `[a, b] = f()` clean - that parses as a tuple declaration,
+				// never as an ExpressionStatement, so it never reaches here.
+				// see INV160
+				if (
+					version === "6" &&
+					this.blockDepth === 0 &&
+					stmtExpr.type === "ArrayExpression"
+				) {
+					const arr = stmtExpr as ArrayExpression;
+					this.addError(
+						arr.line,
+						arr.column + 1,
+						1,
+						'Mismatched input "end of line without line continuation" expecting set "="',
+						DiagnosticSeverity.Error,
+					);
+				}
 				this.validateExpression(statement.expression, version);
 				break;
 			}
@@ -1762,17 +1793,32 @@ export class UnifiedPineValidator {
 			}
 
 			case "BinaryExpression":
+				// Only the LEFTMOST offender: this is a parse-class error and
+				// TV stops at the first one, so flagging both operands of
+				// `[a,b] == [a,b]` would put a record past TV's stop. see INV160
+				if (!this.rejectTupleInValuePosition(expr.left, version)) {
+					this.rejectTupleInValuePosition(expr.right, version);
+				}
 				this.validateExpression(expr.left, version);
 				this.validateExpression(expr.right, version);
 				validateBinaryExpression(this, expr, version);
 				break;
 
 			case "UnaryExpression":
+				this.rejectTupleInValuePosition(expr.argument, version);
 				this.validateExpression(expr.argument, version);
 				validateUnaryExpression(this, expr, version);
 				break;
 
 			case "TernaryExpression":
+				// The CONDITION only. A tuple in either BRANCH is TV's dedicated
+				// CE10163 ("Ternary operations cannot return tuples...") which
+				// INV127 probed and `validateTernaryExpression` already emits;
+				// flagging it here as a syntax error would both duplicate that
+				// and replace the better message. The condition is a plain
+				// value position and does get `Syntax error at input "["`
+				// (probed 2026-08-25). see INV160
+				this.rejectTupleInValuePosition(expr.condition, version);
 				this.validateExpression(expr.condition, version);
 				this.validateExpression(expr.consequent, version);
 				this.validateExpression(expr.alternate, version);
@@ -1887,6 +1933,33 @@ export class UnifiedPineValidator {
 				break;
 			}
 		}
+	}
+
+	/**
+	 * A `[...]` tuple in a VALUE position - an operator operand - is TV's
+	 * `Syntax error at input "["` at the bracket, the same message and anchor
+	 * as the declaration/assignment RHS cells (`x = [a,b]`, `var`, `varip`,
+	 * `:=`) that INV046 already covers. The bracket is not an expression
+	 * opener at all in Pine.
+	 *
+	 * Deliberately NOT called for call arguments or for expression statements:
+	 * `request.security(..., [a, b])` is legal, and so is a bare tuple
+	 * statement anywhere inside a block, `for` bodies included. see INV160
+	 */
+	private rejectTupleInValuePosition(
+		expr: Expression,
+		version: string,
+	): boolean {
+		if (version !== "6" || expr.type !== "ArrayExpression") return false;
+		const arr = expr as ArrayExpression;
+		this.addError(
+			arr.startLine ?? arr.line,
+			arr.startColumn ?? arr.column,
+			1,
+			'Syntax error at input "["',
+			DiagnosticSeverity.Error,
+		);
+		return true;
 	}
 
 	/** The qualifier a later `:=` raised this symbol to, if any. see INV157 */

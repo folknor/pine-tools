@@ -71,22 +71,81 @@ We are correct on everything else, including all six legal in-block cells
 and all four value-position cells (identical message AND column to TV on
 each).
 
-Tracked as TODO #75. **The trap for whoever implements it:** the
+### FIXED 2026-08-25
+
+Two checks, one per message, both keyed on the discriminator above rather
+than on tail-ness:
+
+- **Top-level statement.** An `ExpressionStatement` whose expression is an
+  `ArrayExpression` while `blockDepth === 0`. `blockDepth` counts function
+  bodies as well as `if`/loop blocks, so zero really is top level.
+  Anchored one past the closing bracket, which is where TV puts it.
+- **Value position.** `rejectTupleInValuePosition` on binary operands, the
+  unary operand and the ternary CONDITION, anchored at the bracket - the
+  same message and anchor as the declaration/assignment RHS cells INV046
+  already covered.
+
+Two things the implementation had to get right, both caught by tests
+rather than by reading:
+
+- **Ternary BRANCHES are not this error.** The first version flagged them
+  and turned `INV127-ternary-tuple-return` red: a tuple in a ternary
+  branch is TV's CE10163 ("Ternary operations cannot return tuples...")
+  which INV127 probed and `validateTernaryExpression` already emits.
+  Flagging it here both duplicated that and replaced the better message.
+  The ternary CONDITION is a plain value position and does get the syntax
+  error - probed separately, as was the unary operand, because neither
+  was in the original grid and guessing at them is exactly what this
+  investigation is about.
+- **Only the leftmost offender per expression.** `[a,b] == [a,b]` has two
+  offending operands; TV stops at the first, so reporting both puts a
+  record past TV's stop. The binary case flags `left`, and `right` only
+  if `left` was clean.
+
+Pinned by `packages/core/test/fixtures/regression/INV160-tuple-literal-positions.pine`,
+which carries every cell - six legal in-block positions, the three
+errors, and the legal destructuring that begins exactly like the
+top-level error and must stay clean. Mutation-verified per half:
+disabling the top-level check drops it to 2 errors, disabling the
+value-position check drops it to 1.
+
+Note `--tv` on that combined fixture reports only the FIRST error and
+stops, so it confirms the legal cells above the first error and nothing
+below; the per-cell TV adjudication is the isolated probes in `probes/`,
+each clean-diffed with `lint-batch --diff`.
+
+Corpus: `regression-check` 0 changed fixtures. As with the other
+additions this round that is no-regression only - no corpus file carries
+these shapes.
+
+Closed TODO #75.
+
+**The trap, which the fix had to avoid:** the
 top-level cells cannot key on "a bracket at statement start" - that is
 also how the LEGAL destructuring `[a, b] = f()` begins. The check has to
 key on the absence of a following `=`, which is exactly what TV's own
 message says it is doing.
 
-A second cell worth pinning at the same time, because `var` behaves
-differently there than everywhere else:
+A second cell, measured while fixing the three above and left OPEN as
+TODO #75's residual, because `var` behaves differently there than
+anywhere else:
 
 ```pine
-var [x, y] = [a, b]
+var [x, y] = f()
 ```
 
-TV: `""var"" cannot be used as a variable or function name.` - a
-different error from every other cell. So a `var`-qualified destructuring
-does not exist; the destructuring path is bare `[a, b] = ...` only.
+TV: ONE error, `""var"" cannot be used as a variable or function name.`
+at 5:1 - a third message, distinct from both of the above. `var` in that
+position is read as a variable NAME, so a var-qualified destructuring
+does not exist at all; the destructuring path is bare `[a, b] = ...`
+only.
+
+We reject it too, so nothing is missed, but with a generic
+`Expected variable name at line 5` four columns to the right AND two
+cascading `Undefined variable` errors on `x` and `y` - names whose only
+problem is the line above them. The cascade is the substantive half.
+Untouched here because it is a parser-shape question rather than a tuple
+POSITION question, and this investigation is about positions.
 
 ## Why the disjointness matters beyond this rule
 

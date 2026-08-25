@@ -503,27 +503,25 @@ IDs so the two stay in sync.
   genuine find (those scripts are broken) or a decidability bug; both need
   looking at before it ships.
 
-- **#75 - three tuple-literal positions we accept and TV rejects
-  ([INV160](investigations/INV160-tuple-literal-positions/notes.md)).** Three
-  false negatives, each `tv-only` in `lint-batch --diff`: a top-level bare
-  tuple as a NON-FINAL statement, the same as the FINAL statement, and a tuple
-  used as a sub-expression (`[a,b] == [a,b]`). The rule is not what INV046's
-  prose says ("only valid in return positions") - TV accepts a bare tuple
-  statement anywhere inside a block, `for` bodies included, which are never
-  return positions. The real discriminator is **top level vs inside a block**,
-  plus value position, and TV's two distinct messages track that split: a
-  top-level statement-start tuple gets `Mismatched input "end of line without
-  line continuation" expecting set "="` anchored at the tuple's END (TV parses
-  it as a destructuring target and wants `=`), while a value position gets
-  `Syntax error at input "["` at the bracket. **The trap:** the top-level
-  check cannot key on a bracket at statement start, because that is also how
-  the LEGAL `[a, b] = f()` destructuring begins - it has to key on the absence
-  of a following `=`. Pin `var [x, y] = [a, b]` at the same time; TV rejects it
-  with a THIRD message (`""var"" cannot be used as a variable or function
-  name.`), so a var-qualified destructuring does not exist. All ten legal
-  cells and all four value-position cells already match TV exactly, including
-  column, so the fix must be additive. Probes:
-  `investigations/INV160-tuple-literal-positions/probes/`.
+- **#75 (residual) - `var`-qualified destructuring: right verdict, wrong
+  message, plus a cascade
+  ([INV160](investigations/INV160-tuple-literal-positions/notes.md)).** The
+  three false negatives this item was filed for are FIXED. What is left is one
+  cell measured while fixing them. `var [x, y] = f()` is rejected by both
+  tools, so nothing is missed, but:
+
+  | | verdict |
+  |---|---|
+  | `--tv` | ONE error at 5:1 - `""var"" cannot be used as a variable or function name.` |
+  | us | THREE at 5:5 - `Expected variable name at line 5`, then `Undefined variable 'x'` and `'y'` |
+
+  So a var-qualified destructuring does not exist in Pine at all - `var` there
+  is read as a variable NAME - and our parser instead reports a generic
+  expected-name error four columns to the right and then cascades on the two
+  bindings it failed to declare. The cascade is the substantive half: two
+  errors on names whose only problem is the line above them. Note our message
+  also carries a redundant `at line 5` suffix in a diagnostic that already
+  carries a line number. `varip` should be checked with it.
 - **#74 (residual) - `currentTypeDocStr` is fabricated on union parameters
   ([INV159](investigations/INV159-polymorphic-return-from-rejected-arg/notes.md)).**
   The cascade half of this item is FIXED (a polymorphic return no longer

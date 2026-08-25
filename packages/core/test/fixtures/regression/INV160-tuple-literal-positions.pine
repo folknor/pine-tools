@@ -1,0 +1,40 @@
+// @test regression/INV160-tuple-literal-positions
+// @description Where a tuple literal is legal, cell by cell. The discriminator is TOP LEVEL vs INSIDE A BLOCK plus value position - NOT final vs non-final, which is what the machinery in both this checker and piners was built around. TV takes a bare tuple statement anywhere inside a block including a `for` body (never a return position), rejects one at top level even as the last statement, and rejects every value position. Its two messages differ and anchor differently: the top-level one at the END of the tuple (TV parses it as a destructuring target and demands `=`), the value-position one at the BRACKET. The legal cells matter as much as the errors - a fix keyed on "a bracket at statement start" would break the destructuring at the bottom, which is how the legal form begins. Ternary BRANCHES are excluded on purpose: those are CE10163 and belong to INV127. NOTE `--tv` on THIS file reports only the first error and then stops (G001), so it confirms the legal cells above it and nothing below; each error cell is adjudicated individually by the isolated probes in investigations/INV160-tuple-literal-positions/probes/, all `--tv` clean-diffed 2026-08-25. See INV160, TODO #75.
+// @expects parse: success
+// @expects errors: 3
+// @expects error: line=24, message=/expecting set "="/
+// @expects error: line=26, message=/Syntax error at input "\["/
+// @expects error: line=27, message=/Syntax error at input "\["/
+//@version=6
+indicator("tuple literal positions")
+a = 1
+b = 2
+
+// LEGAL: anywhere inside a block, final or not, and a `for` body is never a
+// return position.
+f() =>
+    for i = 0 to 1
+        [a, b]
+        a + b
+    [a, b]
+
+g() =>
+    switch
+        close > open => [a, b]
+        => [b, a]
+
+if close > open
+    [a, b]
+    a + b
+
+// ERROR: top level, even though this one is not the last statement.
+[a, b]
+
+c = [a, b] == [a, b]
+d = not [a, b]
+
+// LEGAL: the destructuring, which begins exactly like the error above and
+// must stay clean.
+[x, y] = f()
+[p, q] = g()
+plot(x + y + p + q + (c ? 1 : 0) + (d ? 1 : 0))

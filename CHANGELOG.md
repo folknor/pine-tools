@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+- Three tuple-literal positions TradingView rejects are now caught: a bare
+  `[a, b]` statement at top level (in ANY position, including as the script's
+  last statement), and a tuple used as a value - a binary or unary operand, or
+  a ternary condition. Both directions matter here, so the rule was measured
+  cell by cell rather than inferred: the discriminator is top level versus
+  inside a block, NOT final versus non-final, and TV accepts a bare tuple
+  statement anywhere inside a block including a `for` body, which is never a
+  return position. TV's two messages differ and anchor differently, and both
+  are reproduced exactly. Unaffected on purpose: the legal `[a, b] = f()`
+  destructuring, which begins exactly like the top-level error; tuples as call
+  arguments; and tuples in ternary BRANCHES, which are CE10163 (INV127) and
+  keep that better message. See INV160.
+
 - A function whose return type follows one of its arguments no longer takes
   that type from an argument the parameter REJECTS. `ta.range("x", 3)` was
   typed `string` (its return follows `source`), so the enclosing call checked a
