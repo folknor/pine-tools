@@ -1091,3 +1091,12 @@ contradiction means re-measure, not "the earlier author was wrong."
   unrelated type grounds and is clean on the READS, so the reads are the
   editor-only surface, and also the shape a script is likeliest to contain by
   accident. Zero corpus carriers, measured before building.
+- [INV162](INV162-argument-out-of-documented-range/notes.md) - new `lint`-stage
+  rule for a numeric literal outside the range its own parameter documents
+  (`color.rgb(300, 0, 0)`). TV compiles these, so it is a warning and the
+  message claims no runtime consequence - whether TV clamps or raises needs a
+  chart capture. Domains come from `functions.json` prose, so the rule reaches
+  exactly the 11 documented parameters and extends by adding DATA, which makes
+  TODO #69 a pipeline task rather than a checker one. Literals only,
+  boundaries legal, zero corpus findings - no false positives on real scripts,
+  and no demonstrated catch there either.

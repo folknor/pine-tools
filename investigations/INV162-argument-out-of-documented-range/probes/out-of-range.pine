@@ -1,0 +1,16 @@
+// `--tv` is CLEAN on this file (probed 2026-08-25) - TradingView compiles
+// every line. That is why the rule is a lint-stage warning and not an error.
+//
+//     pine-lint -H <this file>   -> 3 ARGUMENT_OUT_OF_RANGE warnings
+//     pine-lint --tv -H <file>   -> clean
+//
+// Whether TV clamps or raises at runtime is unmeasured; a chart capture would
+// be needed (G010), and the rule's message deliberately claims neither.
+//@version=6
+indicator("out of documented range")
+over = color.rgb(300, 0, 0)
+transp = color.new(color.red, 150)
+under = color.rgb(-1, 0, 0)
+plot(1, color = over)
+plot(2, color = transp)
+plot(3, color = under)

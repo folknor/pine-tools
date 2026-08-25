@@ -19,6 +19,7 @@
  * worse than a miss, because it teaches the reader to ignore the channel.
  */
 
+import { FUNCTIONS_BY_NAME } from "../../../../pine-data/v6";
 import { DiagnosticSeverity } from "../common/errors";
 import type {
 	AssignmentStatement,
@@ -75,6 +76,7 @@ export function runSemanticLints(ast: Program): SemanticWarning[] {
 		...checkRequestBudget(ctx),
 		...checkAccumulatorLifetime(ctx),
 		...checkEntryWithoutExit(ctx),
+		...checkArgumentOutOfRange(ctx),
 	].sort((a, b) => a.line - b.line || a.column - b.column);
 }
 
@@ -845,4 +847,88 @@ function hasReversingEntries(ctx: LintContext): boolean {
 	}
 
 	return long && short;
+}
+
+// ─────────────────────────────────────────────────────────
+// ARGUMENT_OUT_OF_RANGE
+// ─────────────────────────────────────────────────────────
+
+/**
+ * A numeric literal outside the range the REFERENCE documents for that
+ * parameter - `color.rgb(300, 0, 0)` where the docs say 0-255.
+ *
+ * TradingView compiles these (probed 2026-08-25: both `color.rgb(300, 0, 0)`
+ * and `color.new(color.red, 150)` are clean at `--tv`), so this is the `lint`
+ * stage's own charter - code that compiles and is still wrong - and never an
+ * error. Whether TV clamps or raises at runtime is unknown and deliberately
+ * not claimed by the message; the finding is that the author wrote a value
+ * their own reference excludes.
+ *
+ * Two properties keep the false-positive rate at zero by construction, which
+ * matters more here than coverage (INV144's standing rule for this channel):
+ *
+ * - **The domain is DATA, not a table here.** `min`/`max` come from
+ *   `functions.json`, parsed at generate-time from each parameter's own prose
+ *   (`parseNumericRange`). The checker carries no language facts, per the
+ *   Data-vs-Syntax rule, and a parameter with no documented range is silently
+ *   skipped - which is most of them: 11 parameters carry a range today.
+ * - **Only literals are decided.** A negated literal counts (`-1`); anything
+ *   else - an identifier, an input, an expression - is left alone, because a
+ *   runtime value cannot be shown to violate anything.
+ */
+function checkArgumentOutOfRange(ctx: LintContext): SemanticWarning[] {
+	const out: SemanticWarning[] = [];
+
+	for (const { call, name } of ctx.calls) {
+		const params = FUNCTIONS_BY_NAME.get(name)?.parameters;
+		if (!params) continue;
+
+		for (const [index, param] of params.entries()) {
+			const { min, max } = param;
+			if (min === undefined && max === undefined) continue;
+
+			const arg = argumentAt(call, param.name, index);
+			const value = numericLiteralValue(arg);
+			if (value === null) continue;
+			if (
+				(min === undefined || value >= min) &&
+				(max === undefined || value <= max)
+			) {
+				continue;
+			}
+
+			const range =
+				min !== undefined && max !== undefined
+					? `${min} to ${max}`
+					: min !== undefined
+						? `at least ${min}`
+						: `at most ${max}`;
+			out.push(
+				warn(
+					arg as { line: number; column: number },
+					String(value).length,
+					"ARGUMENT_OUT_OF_RANGE",
+					`'${name}' documents '${param.name}' as ${range}, but ${value} was passed. TradingView compiles this - the reference is what excludes it, so check the intended value.`,
+				),
+			);
+		}
+	}
+
+	return out;
+}
+
+/** A numeric literal's value, unary minus included. Null for anything else. */
+function numericLiteralValue(expr: Expression | undefined): number | null {
+	if (!expr) return null;
+	if (expr.type === "Literal") {
+		const value = (expr as Literal).value;
+		return typeof value === "number" ? value : null;
+	}
+	if (expr.type === "UnaryExpression") {
+		const unary = expr as { operator: string; argument: Expression };
+		if (unary.operator !== "-") return null;
+		const inner = numericLiteralValue(unary.argument);
+		return inner === null ? null : -inner;
+	}
+	return null;
 }

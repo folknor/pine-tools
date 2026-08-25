@@ -1,0 +1,31 @@
+// @test regression/INV162-argument-out-of-documented-range
+// @description A numeric LITERAL outside the range the reference documents for that parameter. TradingView compiles all of these (probed 2026-08-25: `color.rgb(300, 0, 0)` and `color.new(color.red, 150)` are both clean at `--tv`), so this is a `lint`-stage warning and never an error. The in-range cases carry the rule's whole false-positive story and are why the count is the assertion: the BOUNDARIES are legal and must stay silent, and a non-literal argument is undecidable and must stay silent too - a runtime value cannot be shown to violate anything. The domain is not a table in the checker: `min`/`max` come from functions.json, parsed at generate-time from each parameter's own prose, so a parameter with no documented range is skipped. See INV162, TODO #69.
+// @expects parse: success
+// @expects errors: 0
+// @expects warnings: 3
+// @expects warning: line=4, message=/documents 'red' as 0 to 255, but 300 was passed/
+// @expects warning: line=5, message=/documents 'transp' as 0 to 100, but 150 was passed/
+// @expects warning: line=6, message=/documents 'red' as 0 to 255, but -1 was passed/
+//@version=6
+indicator("argument out of documented range")
+
+over = color.rgb(300, 0, 0)
+transp = color.new(color.red, 150)
+under = color.rgb(-1, 0, 0)
+
+// In range, including both boundaries - must stay silent.
+lowEdge = color.rgb(0, 0, 0)
+highEdge = color.rgb(255, 255, 255)
+transpEdge = color.new(color.red, 100)
+
+// Not a literal, so not decidable - must stay silent whatever the input says.
+runtimeValue = input.int(999, "transparency")
+fromInput = color.new(color.red, runtimeValue)
+
+plot(1, color = over)
+plot(2, color = transp)
+plot(3, color = under)
+plot(4, color = lowEdge)
+plot(5, color = highEdge)
+plot(6, color = transpEdge)
+plot(7, color = fromInput)

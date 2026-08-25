@@ -95,10 +95,55 @@ qualifier and the member. Candidate rules and why each dies:
 
 So any change here fixes one family and regresses another, and the
 per-function table that would satisfy all of them is exactly what the
-Data-vs-Syntax rule in AGENTS.md forbids the checker to carry. Left as
-is deliberately. Reopen with a broader probe sweep - enough functions to
-separate the overload-ordering hypothesis from the widest-member one -
-not with a fourth guess.
+Data-vs-Syntax rule in AGENTS.md forbids the checker to carry.
+
+### The wider sweep, run 2026-08-25: there is no rule to derive
+
+The sweep this section asked for was run. **It settles the question in the
+negative, which is more useful than the rule it was looking for.**
+
+Ten functions, one `--tv` call (type errors do not stop at the first, so
+they batch):
+
+| function | merged param type | first overload | TV's `currentTypeDocStr` |
+|---|---|---|---|
+| `ta.sma` / `ema` / `wma` / `highest` / `stdev` / `change` | `series int/float` | none | `series float` |
+| `math.max` | `series int/float` | `const int` | `const int` |
+| `math.abs` | `series int/float` | `const int` | `simple int` |
+| `math.round` | `series int/float` | `const int/float` | `simple int` |
+| `nz` | `series int/float/color` | `simple color` | `simple int` |
+
+`math.abs` and `math.max` are the pair that kills every structural
+hypothesis: their overload SETS are identical up to arity, both start at
+`const int`, both have `simple int` at index 3 - and TV answers them
+differently. No function of our catalog data distinguishes them.
+
+Three further measurements bound what it could be:
+
+- **Stable.** A byte-identical re-run returned byte-identical answers, so
+  this is not the run-to-run flakiness of [G001](../../gotchas/G001-tv-pine-lint-not-spec.md).
+- **Argument-independent.** Passing a `literal bool` instead of a
+  `literal string` changes nothing, for any of them.
+- Therefore it is a **per-function, per-parameter CONSTANT** - data, not a
+  computation.
+
+Which relocates the problem entirely. It cannot be derived, and it cannot
+be scraped either, because the reference does not state it. It can only be
+PROBED, one `--tv` call per union parameter, and baked into the pipeline -
+exactly the shape of INV050's `required-params-probe.json`, which solved
+the same class of problem for parameter requiredness.
+
+Sized: **185 functions carry a union-typed parameter, 251 such parameters
+in total**, batchable at roughly ten per call, so about 25 TV calls. The
+hard part is not the sweep, it is that each probe must construct a call
+with exactly ONE deliberately-wrong argument and valid values for every
+other required parameter - 251 times, across functions whose other
+arguments are themselves unions, enums and handles. A sweep that gets that
+wrong bakes a bad string into `functions.json` where nothing will notice
+it, which is why this was left unbuilt rather than half-built.
+
+So the item is no longer "we do not know the rule". It is: **there is no
+rule; it is data; here is what collecting it costs.**
 
 The practical impact is bounded: the accept/reject verdict is right, the
 argument NAME is right, and only the expected-type noun is wrong, so a

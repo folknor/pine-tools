@@ -460,6 +460,16 @@ IDs so the two stay in sync.
     `series int`), because Pine types the slot `series int`. No runtime rule
     needed.
 
+  **The consuming rule already exists.** `ARGUMENT_OUT_OF_RANGE`
+  ([INV162](investigations/INV162-argument-out-of-documented-range/notes.md))
+  reads `min`/`max` off each parameter in `functions.json` and flags a
+  const-decidable literal outside it, on the `lint` stage. It covers the 11
+  parameters whose range the REFERENCE documents. So #69 reduces to getting
+  the captured RE domains into the catalog - once `length` carries `min: 1`
+  and `leftbars` carries `min: 0`, that rule picks them up with no code
+  change, and the decidability boundary, the boundary-value handling and the
+  literals-only rule are all already built and pinned.
+
   **The domain facts belong in pine-data, not the checker.** Per the
   Data-vs-Syntax rule in AGENTS.md, "length must be > 0" and "leftbars must be
   >= 0" are language facts and must land in `functions.json` (the param `min` /
@@ -505,6 +515,22 @@ IDs so the two stay in sync.
   overload-ordering from widest-member, not with a fourth guess. Impact is
   bounded: verdict and argument NAME are both right, only the target type
   reads wrong.
+
+  **Re-measured 2026-08-25 and the framing changed: there is no rule to
+  derive.** A ten-function sweep (table in the INV) shows the value is a
+  per-function, per-parameter CONSTANT - stable across identical re-runs, so
+  not G001 flakiness, and independent of the argument type passed. The pair
+  that kills every structural hypothesis is `math.abs` vs `math.max`:
+  identical overload sets up to arity, both starting `const int`, and TV
+  answers `simple int` and `const int` respectively. Nothing in our catalog
+  distinguishes them. So it cannot be derived, and the reference does not
+  state it, which leaves PROBING: one `--tv` call per union parameter, baked
+  into the pipeline as INV050's `required-params-probe.json` did for
+  requiredness. Sized at 185 functions / 251 parameters, ~25 batched calls.
+  The cost is not the sweep but building 251 calls that each carry exactly one
+  deliberately-wrong argument and valid values everywhere else; getting that
+  wrong bakes a bad string into `functions.json` where nothing would catch it.
+  Left unbuilt rather than half-built.
 - **#71 - user-function overloads are unmodelled
   ([INV157](investigations/INV157-blackbox-audit-adoption/notes.md), cluster
   B).** Pine lets a user function be declared more than once with different

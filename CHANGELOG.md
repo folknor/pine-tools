@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- New `lint`-stage rule `ARGUMENT_OUT_OF_RANGE`: a numeric literal outside the
+  range the reference documents for that parameter, such as
+  `color.rgb(300, 0, 0)` where the docs say 0-255. TradingView compiles these,
+  so it is a warning and never an error, and the message does not claim a
+  runtime consequence - whether TV clamps or raises is unmeasured. Only
+  literals are decided (a negated one counts); an identifier, an input or any
+  expression is left alone, and the range boundaries are legal. The domains
+  come from `functions.json`, parsed from each parameter's own prose, so the
+  rule covers exactly the 11 parameters the reference documents a range for and
+  extends by adding data rather than code. Zero findings across the corpus.
+  See INV162.
+
 - A qualified tuple destructuring (`var [x, y] = f()`, and the `varip` and
   `const` spellings) now reports one error instead of three. Pine has no such
   form, and all three were already rejected, but the parser gave up at the
