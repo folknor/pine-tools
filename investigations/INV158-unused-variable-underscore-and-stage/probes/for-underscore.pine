@@ -1,0 +1,9 @@
+// Control: `for _ = 1 to 20` is documented in the same manual section and is
+// ALREADY clean for us. The fix for underscore-discard.pine must not regress
+// this.
+//@version=6
+indicator("t")
+s = 0.0
+for _ = 1 to 20
+    s += 1
+plot(s)

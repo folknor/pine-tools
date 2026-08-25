@@ -1026,3 +1026,29 @@ contradiction means re-measure, not "the earlier author was wrong."
   return-type bug. The other does not reproduce: TV rejects
   `ta.change(close) and ...` with exactly our CE10123, so their "we are right
   and the oracle is wrong" example is wrong in our favour.
+- [INV157](INV157-blackbox-audit-adoption/notes.md) - adoption pass over
+  piners' 1027-file black-box audit. Four confirmed false negatives in our
+  validator, all found incidentally because the audit used us as a pre-filter:
+  the `simple` qualifier is not propagated into an argument check when a
+  binding turns `series` through a later `:=` or a loop mutation (2 probes,
+  TODO #70), and user-function OVERLOADS are unmodelled entirely, costing both
+  the identical-required-parameters collision rule and the resolution that
+  would give an overloaded call its return type (2 probes, TODO #71). Also
+  corrects G008: TV DOES check the `:=` position - the original probe was a
+  widening, which is the direction that passes - while the `map` store
+  position is unchecked outright. Five further claims from the audit were
+  measured and do not apply to us, including both of the two it named as
+  pine-lint defects.
+- [INV158](INV158-unused-variable-underscore-and-stage/notes.md) - adoption
+  pass over the two black-box findings files in `../strategies/`
+  (`PINE-LINT-BUGS.md`, `VALIDATOR-FINDINGS.md`; they overlap, and the latter
+  is the superset for our purposes). Their whole inherited backlog is closed
+  except one item, and the two they still list as OPEN (`LNT-06` analysis
+  warnings carrying no identifier, `LNT-07` the version gate losing to the
+  parser) were both fixed by INV146/INV148 after they measured. What remains
+  is `UNUSED_VARIABLE` firing on `_`, Pine's discard identifier, where no
+  workaround exists because naming the unwanted tuple legs produces more
+  warnings than it removes (TODO #72). Verifying it established a second,
+  structural finding: that rule sits on the TV-mirroring `analysis` stage
+  while TV emits no unused-variable warning at all, and it is the only rule in
+  that channel with no CW code (TODO #73).

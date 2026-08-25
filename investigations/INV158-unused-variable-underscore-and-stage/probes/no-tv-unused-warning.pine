@@ -1,0 +1,10 @@
+// Establishes that UNUSED_VARIABLE mirrors nothing: TV returns CLEAN on this
+// file, while we emit two analysis-stage warnings (4:5 and 6:9). A plain
+// top-level `unusedVar = close * 2` is likewise clean at TV.
+//@version=6
+indicator("t")
+f(x) =>
+    unusedLocal = x * 2
+    x + 1
+var int neverRead = 0
+plot(f(close))

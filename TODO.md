@@ -522,6 +522,79 @@ IDs so the two stay in sync.
   genuine find (those scripts are broken) or a decidability bug; both need
   looking at before it ships.
 
+- **#70 - propagate mutation-induced `series` into the argument qualifier check
+  ([INV157](investigations/INV157-blackbox-audit-adoption/notes.md), cluster
+  A).** A confirmed false negative. A binding that starts const or simple and
+  becomes `series` through a later `:=` is still read at its DECLARED qualifier
+  when it reaches a call site, so we accept
+  `n = 5` / `n := int(close)` /
+  `request.security(..., calc_bars_count = n)` where TV rejects it
+  (`series int` into a `simple int` slot). The same gap via loop mutation
+  (`sum := sum + i` inside a `for`) is the second probe. We already enforce the
+  `simple` qualifier in general (G007 / INV088), so the check is not missing -
+  its input is stale. We also already COMPUTE this fact for the consistency
+  warnings (INV115's conditional-const-reassign series state), so the likely
+  repair is feeding that state into the qualifier check rather than deriving it
+  twice. Probes: `investigations/INV157-blackbox-audit-adoption/probes/qual5.pine`,
+  `qual7.pine`.
+- **#71 - user-function overloads are unmodelled
+  ([INV157](investigations/INV157-blackbox-audit-adoption/notes.md), cluster
+  B).** Pine lets a user function be declared more than once with different
+  parameter types. We model none of it, which costs two confirmed false
+  negatives:
+  - **The collision rule.** Overloads with identical REQUIRED parameter lists
+    are illegal even when one adds optional parameters - TV: "The \"f\"
+    function has overloads with the same required parameters." Self-contained,
+    needs no resolution, and is the half to do first.
+  - **Resolution feeding the return type.** With `f(float x) => 1` and
+    `f(int x) => "int"`, `f(na)` selects the `float` overload, so
+    `string result = f(na)` is a type error. This needs real overload
+    selection - including TV's rule for which overload an `na` argument picks,
+    which our probe pins in one direction only - before the return type is
+    knowable. Do not start here.
+
+  Worth reading first: piners implemented this on 2026-08-23 and their notes
+  record the design (three-valued applicability, declaration-order tie-break, a
+  never-guess rule for arguments they cannot type, and an oracle-pinned
+  collision rule). Probes:
+  `investigations/INV157-blackbox-audit-adoption/probes/ov-optional-only.pine`,
+  `ov-na-decisive-rev.pine`.
+
+- **#72 - exempt `_` from UNUSED_VARIABLE
+  ([INV158](investigations/INV158-unused-variable-underscore-and-stage/notes.md)).**
+  `_` is Pine's discard identifier, not a badly-named variable - the manual
+  documents `[_, visibleHigh, visibleLow, _, _] = visChart.ohlcv()` and
+  `for _ = 1 to 20` - so warning on it is warning at the identifier for doing
+  its job. `[_, _, macdHist] = ta.macd(...)` warns locally and is clean at TV.
+  There is no workaround: naming the unwanted legs moves the warning onto those
+  names and produces MORE of them (`[_m, _sg, _h]` gives two where the correct
+  Pine gives one), so a clean file is unwritable, and the reporting repo treats
+  warnings as failures. The `for`-header form is already clean for us, so the
+  fix is scoped to tuple destructuring but should be written so the `for` case
+  cannot regress. Probes:
+  `investigations/INV158-unused-variable-underscore-and-stage/probes/`.
+- **#73 - UNUSED_VARIABLE is on the `analysis` stage, which mirrors TV; TV has
+  no such rule
+  ([INV158](investigations/INV158-unused-variable-underscore-and-stage/notes.md)).**
+  Measured 2026-08-25: TV returns clean on an unused local, an unused `var`,
+  and an unused top-level binding. And the rule's own output gives it away
+  without TV - pairing analysis-stage warnings with their codes yields
+  `{('CONDITIONAL_SERIES', 'CW10003'): 28, ('UNUSED_VARIABLE', None): 2}`.
+  Every other rule in that channel names a real CW code; this one cannot,
+  because there is nothing to mirror. Three consequences, none cosmetic:
+  `--no-lint` does not silence it (that flag drops the `lint` stage); it falls
+  outside #66's suppression design, which is scoped to "the five `lint`-stage
+  rules"; and it inflates the local-only warning column that this file already
+  calls unstable - the `C_*` unused-var churn named in the measurement note IS
+  this rule. Moving it to `lint` would fix all three at once, but weigh it
+  rather than assuming: `lint` rules are advisory by contract and an unused
+  variable is often a real typo, and the corpus impact is large enough that the
+  move needs a `lint:failures` re-run plus a figures update in the same
+  landing. Keep the general test the investigation names: an `analysis`-stage
+  diagnostic with no CW code is by definition not a mirror. (Separate and still
+  open regardless of stage: the AGENTS.md limitation that this rule reports
+  built-ins as unused.)
+
 ## Gotchas
 
 See [gotchas/README.md](gotchas/README.md) for the format and full
@@ -553,12 +626,16 @@ index.
 - [G007](gotchas/G007-tv-does-not-enforce-input-qualifier.md) - TV
   enforces the `simple` qualifier on arguments but NOT `input`. Do not add
   an input-qualifier check.
-- [G008](gotchas/G008-collection-reassignment-skips-element-check.md) - TV
-  element-type-checks a collection DECLARATION but not a `:=`
-  reassignment, and the acceptance is UNSOUND rather than a widening
-  coercion - it aliases, so a float can be pushed through the alias into
-  an array TV still types as `array<int>`. Keep our error. Probed
-  2026-08-21.
+- [G008](gotchas/G008-collection-reassignment-skips-element-check.md) - TV's
+  collection element check is POSITION-DEPENDENT: invariant in a declaration
+  with an initializer (rejects both directions), widening in a `:=` store
+  (int -> float accepted, float -> int rejected), and absent entirely for a
+  `map` in store position. The accepting cells are UNSOUND rather than a
+  widening coercion - it aliases, so a float can be pushed through the alias
+  into an array TV still types as `array<int>`. Keep our error. Probed
+  2026-08-21; **headline corrected 2026-08-25 (INV157)** - the original claim
+  that TV does not check `:=` at all was generalized from widening-only
+  probes.
 - [G010](gotchas/G010-re-class-errors-are-chart-only.md) - RE-class RUNTIME
   errors reach neither pine-lint mode nor the editor, only the chart legend.
   A runtime error wipes the script's whole log, and an unused invalid

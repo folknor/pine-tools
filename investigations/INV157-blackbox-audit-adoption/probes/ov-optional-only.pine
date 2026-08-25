@@ -1,0 +1,14 @@
+// From piners scratch/spar/ov-optional-only.pine. Two overloads whose
+// REQUIRED parameter lists are identical (`float x`); the second's extra
+// parameter is optional, so it cannot disambiguate. TV rejects at 7:2; we
+// are clean.
+//@version=6
+indicator("ov optional only")
+
+f(float x) =>
+    x + 1.0
+
+f(float x, float scale = 1.0) =>
+    x * scale
+
+plot(f(1.0))

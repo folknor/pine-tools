@@ -64,12 +64,15 @@ when TV's behavior diverged, with no stored probe to re-check it.
   `simple` qualifier on args (INV088) but NOT the `input` qualifier:
   series flows into `input`-typed params (plotshape style/show_last) with
   no error. Do not add an input-qualifier check - closes TODO #60 residual
-- [G008](G008-collection-reassignment-skips-element-check.md) - TV
-  element-type-checks a collection DECLARATION but not a `:=`
-  reassignment, and the acceptance is UNSOUND rather than a widening
-  coercion: it aliases, so a float can be pushed through the alias into an
-  array TV still types as `array<int>`. Keep our error; a TV-clean corpus
-  file may legitimately carry it
+- [G008](G008-collection-reassignment-skips-element-check.md) - TV's
+  collection element check is POSITION-DEPENDENT: invariant in a declaration
+  with an initializer, widening in a `:=` store (int -> float accepted,
+  float -> int rejected), and absent entirely for a `map` in store position.
+  The accepting cells are UNSOUND rather than a widening coercion: it aliases,
+  so a float can be pushed through the alias into an array TV still types as
+  `array<int>`. Keep our error; a TV-clean corpus file may legitimately carry
+  it. Headline corrected 2026-08-25 (INV157) - the original "TV does not check
+  `:=`" was generalized from widening-only probes
 - [G009](G009-tv-endpoint-misses-editor-only-gates.md) - `--tv`
   (`translate_light`) is NOT the validator the Pine editor runs: it does not
   enforce the editor's contextual restrictions on `request.*()` arguments, so

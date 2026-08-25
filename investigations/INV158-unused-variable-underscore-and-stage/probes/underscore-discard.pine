@@ -1,0 +1,6 @@
+// TV: clean. Us: 3:1 UNUSED_VARIABLE on '_'. `_` is Pine's discard
+// identifier - `po search "Using an underscore as an identifier"`.
+//@version=6
+indicator("t")
+[_, _, macdHist] = ta.macd(close, 12, 26, 9)
+plot(macdHist)

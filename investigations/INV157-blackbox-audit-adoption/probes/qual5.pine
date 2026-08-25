@@ -1,0 +1,8 @@
+// From piners scratch/spar/qual5.pine. TV rejects at 6:72 (calc_bars_count
+// wants simple int, `n` is series int after the `:=`); we are clean.
+//@version=6
+indicator("qual5")
+
+n = 5
+n := int(close)
+plot(request.security(syminfo.tickerid, "60", close, calc_bars_count = n))

@@ -1,0 +1,14 @@
+// From piners scratch/spar/ov-na-decisive-rev.pine. `f(na)` resolves to the
+// `float` overload, so the call returns const int and the `string result`
+// declaration is illegal. TV rejects at 10:1; we are clean.
+//@version=6
+indicator("na decisive overload reversed")
+
+f(float x) =>
+    1
+
+f(int x) =>
+    "int"
+
+string result = f(na)
+plotchar(result == "int")
