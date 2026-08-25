@@ -19,6 +19,10 @@
  * worse than a miss, because it teaches the reader to ignore the channel.
  */
 
+import type {
+	PineFunction,
+	PineParameter,
+} from "../../../../pine-data/schema/types";
 import { FUNCTIONS_BY_NAME } from "../../../../pine-data/v6";
 import { DiagnosticSeverity } from "../common/errors";
 import type {
@@ -854,40 +858,68 @@ function hasReversingEntries(ctx: LintContext): boolean {
 // ─────────────────────────────────────────────────────────
 
 /**
- * A numeric literal outside the range the REFERENCE documents for that
- * parameter - `color.rgb(300, 0, 0)` where the docs say 0-255.
+ * A literal argument outside the value domain of its parameter - either the
+ * range the REFERENCE documents (`color.rgb(300, 0, 0)` where the docs say
+ * 0-255) or the one TradingView enforces at RUNTIME (`ta.sma(close, 0)`,
+ * which compiles and then dies on bar 0).
  *
- * TradingView compiles these (probed 2026-08-25: both `color.rgb(300, 0, 0)`
- * and `color.new(color.red, 150)` are clean at `--tv`), so this is the `lint`
- * stage's own charter - code that compiles and is still wrong - and never an
- * error. Whether TV clamps or raises at runtime is unknown and deliberately
- * not claimed by the message; the finding is that the author wrote a value
- * their own reference excludes.
+ * Both cells belong on the `lint` stage rather than the error channel, but for
+ * different reasons, and the parameter's `rangeSource` is what tells them
+ * apart:
+ *
+ * - `"reference"` - TV compiles AND runs the value (probed 2026-08-25: both
+ *   `color.rgb(300, 0, 0)` and `color.new(color.red, 150)` are clean at
+ *   `--tv`). Whether TV clamps is unknown and deliberately not claimed; the
+ *   finding is that the author wrote a value their own reference excludes.
+ * - `"runtime"` - TV compiles the value and the script then fails on bar 0
+ *   with an RE-class error. An error here would be defensible on severity but
+ *   would break the "errors mirror TV" invariant, since neither pine-lint mode
+ *   says a word (see G010) and every finding would read as a local-only false
+ *   positive in `lint:failures`.
  *
  * Two properties keep the false-positive rate at zero by construction, which
  * matters more here than coverage (INV144's standing rule for this channel):
  *
- * - **The domain is DATA, not a table here.** `min`/`max` come from
- *   `functions.json`, parsed at generate-time from each parameter's own prose
- *   (`parseNumericRange`). The checker carries no language facts, per the
- *   Data-vs-Syntax rule, and a parameter with no documented range is silently
- *   skipped - which is most of them: 11 parameters carry a range today.
- * - **Only literals are decided.** A negated literal counts (`-1`); anything
- *   else - an identifier, an input, an expression - is left alone, because a
- *   runtime value cannot be shown to violate anything.
+ * - **The domain is DATA, not a table here.** `min`/`max`/`notNa` come from
+ *   `functions.json`: the documented ranges parsed at generate-time from each
+ *   parameter's own prose (`parseNumericRange`), the runtime ones merged in
+ *   from `pine-data/raw/v6/runtime-domains.json`, which transcribes captured
+ *   chart banners. The checker carries no language facts, per the
+ *   Data-vs-Syntax rule, and a parameter with no domain at all is silently
+ *   skipped - which is most of them.
+ * - **Only literals are decided.** A negated literal counts (`-1`) and a bare
+ *   `na` counts; anything else - an identifier, an input, an expression - is
+ *   left alone, because a runtime value cannot be shown to violate anything.
+ *   `ta.sma(close, len)` with `len = input.int(14, minval = 1)` is the
+ *   overwhelmingly common corpus shape and must stay silent.
  */
 function checkArgumentOutOfRange(ctx: LintContext): SemanticWarning[] {
 	const out: SemanticWarning[] = [];
 
 	for (const { call, name } of ctx.calls) {
-		const params = FUNCTIONS_BY_NAME.get(name)?.parameters;
-		if (!params) continue;
+		const fn = FUNCTIONS_BY_NAME.get(name);
+		if (!fn) continue;
+		const params = decidableParameters(fn, call);
 
 		for (const [index, param] of params.entries()) {
-			const { min, max } = param;
-			if (min === undefined && max === undefined) continue;
+			const { min, max, notNa } = param;
+			if (min === undefined && max === undefined && !notNa) continue;
 
 			const arg = argumentAt(call, param.name, index);
+			if (arg === undefined) continue;
+
+			if (notNa && arg.type === "Identifier" && arg.name === "na") {
+				out.push(
+					warn(
+						arg,
+						2,
+						"ARGUMENT_NA_AT_RUNTIME",
+						`'${name}' rejects na for '${param.name}' at runtime - this script compiles and then dies on bar 0. Nothing here is computed; pass a value, or guard the call.`,
+					),
+				);
+				continue;
+			}
+
 			const value = numericLiteralValue(arg);
 			if (value === null) continue;
 			if (
@@ -903,18 +935,84 @@ function checkArgumentOutOfRange(ctx: LintContext): SemanticWarning[] {
 					: min !== undefined
 						? `at least ${min}`
 						: `at most ${max}`;
+			// The two sources need different prose: the reference DOCUMENTS a
+			// range TV then happily runs outside of, while a runtime domain is
+			// documented nowhere and is fatal. Saying "documents" of a runtime
+			// bound would send the reader to a reference page that is silent.
+			const message =
+				param.rangeSource === "runtime"
+					? `'${name}' requires '${param.name}' ${range} at runtime, but ${value} was passed. This compiles and then fails on bar 0 - the script never produces a value.`
+					: `'${name}' documents '${param.name}' as ${range}, but ${value} was passed. TradingView compiles this - the reference is what excludes it, so check the intended value.`;
 			out.push(
 				warn(
 					arg as { line: number; column: number },
 					String(value).length,
 					"ARGUMENT_OUT_OF_RANGE",
-					`'${name}' documents '${param.name}' as ${range}, but ${value} was passed. TradingView compiles this - the reference is what excludes it, so check the intended value.`,
+					message,
 				),
 			);
 		}
 	}
 
 	return out;
+}
+
+/**
+ * The parameter list to decide THIS call against, which for an overloaded
+ * function is not the merged one.
+ *
+ * The merged `parameters` list is overload #0's order, and reading a later
+ * overload's call positionally against it maps arguments to the wrong
+ * parameters: `ta.pivothigh(high, -1, 2)` uses the (source, leftbars,
+ * rightbars) form, while the merged list starts at `leftbars` - so `high`
+ * lands on the bound and `-1` on an unbounded parameter. That is a missed
+ * finding here and a false positive one signature away, which this channel
+ * cannot afford.
+ *
+ * So: overloads are filtered to those the call could actually be, by arity and
+ * by named arguments, and a position is decided only where every surviving
+ * candidate AGREES on the parameter sitting there. Disagreement means we
+ * cannot tell which form was called, and an undecidable position is skipped
+ * rather than guessed. Returns an empty list when no overload fits.
+ */
+function decidableParameters(
+	fn: PineFunction,
+	call: CallExpression,
+): PineParameter[] {
+	if (!fn.overloads || fn.overloads.length < 2) return fn.parameters;
+
+	const positional = call.arguments.filter((a) => a.name === undefined).length;
+	const named = call.arguments
+		.map((a) => a.name)
+		.filter((n): n is string => n !== undefined);
+
+	const candidates = fn.overloads
+		.map((o) => o.parameters)
+		.filter(
+			(params) =>
+				positional <= params.length &&
+				named.every((n) => params.some((p) => p.name === n)),
+		);
+	if (candidates.length === 0) return [];
+
+	const [first, ...rest] = candidates;
+	return first.map((param, index) =>
+		rest.every((params) => sameDomain(params[index], param))
+			? param
+			: // A placeholder with no domain: the position exists but nothing
+				// about it is agreed, so nothing about it is decidable.
+				{ ...param, min: undefined, max: undefined, notNa: undefined },
+	);
+}
+
+function sameDomain(a: PineParameter | undefined, b: PineParameter): boolean {
+	return (
+		a !== undefined &&
+		a.name === b.name &&
+		a.min === b.min &&
+		a.max === b.max &&
+		a.notNa === b.notNa
+	);
 }
 
 /** A numeric literal's value, unary minus included. Null for anything else. */

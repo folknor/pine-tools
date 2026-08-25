@@ -1,0 +1,10 @@
+//@version=6
+indicator("p12 no required parameters on either side")
+
+f() =>
+    1.0
+
+f(int s = 1) =>
+    s * 2.0
+
+plot(f())

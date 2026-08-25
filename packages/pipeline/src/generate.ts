@@ -36,6 +36,7 @@ const REQUIRED_PARAMS_PROBE_FILE = path.join(
 	RAW_DIR,
 	"required-params-probe.json",
 );
+const RUNTIME_DOMAINS_FILE = path.join(RAW_DIR, "runtime-domains.json");
 
 // =============================================================================
 // TYPE DEFINITIONS
@@ -122,6 +123,12 @@ interface GeneratedFunction extends ReferenceProse {
 		allowedValues?: string[];
 		min?: number;
 		max?: number;
+		// Which source the bound came from: "reference" (documented prose - TV
+		// compiles AND runs the excluded value) or "runtime" (a captured
+		// RE-class banner - the script dies on bar 0). see TODO #69
+		rangeSource?: "reference" | "runtime";
+		// TV raises RE10003 at runtime when this parameter is na. see TODO #69
+		notNa?: true;
 	}>;
 	returns: string;
 	flags?: Record<string, unknown>;
@@ -135,6 +142,12 @@ interface GeneratedFunction extends ReferenceProse {
 			allowedValues?: string[];
 			min?: number;
 			max?: number;
+			// Which source the bound came from: "reference" (documented prose -
+			// TV compiles AND runs the excluded value) or "runtime" (a captured
+			// RE-class banner - the script dies on bar 0). see TODO #69
+			rangeSource?: "reference" | "runtime";
+			// TV raises RE10003 at runtime when this parameter is na. see TODO #69
+			notNa?: true;
 		}>;
 		returns: string;
 	}>;
@@ -505,6 +518,58 @@ function probedRequiredSet(fnName: string): Set<string> | undefined {
 	return new Set([...(r.required ?? []), ...(r.requiredAssumed ?? [])]);
 }
 
+// Argument domains TV enforces at RUNTIME and documents nowhere (TODO #69).
+// The reference prose is silent on them and BOTH pine-lint modes accept the
+// violating call, so the only oracle is the chart-legend banner - transcribed
+// in the probe file, images in scripts/probes/re-class-runtime-errors/. Facts
+// only, never extrapolation: a domain that plainly generalizes (ta.ema's
+// length, ta.pivotlow's leftbars) still needs its own capture. see G010
+interface RuntimeDomainFact {
+	function: string;
+	parameter: string;
+	min?: number;
+	max?: number;
+	notNa?: boolean;
+}
+const RUNTIME_DOMAINS: { facts: RuntimeDomainFact[] } = fs.existsSync(
+	RUNTIME_DOMAINS_FILE,
+)
+	? JSON.parse(fs.readFileSync(RUNTIME_DOMAINS_FILE, "utf-8"))
+	: { facts: [] };
+
+// The value constraints for one parameter, from both sources. A param is
+// either an enum or a numeric range, never both - skip the range scan when an
+// enum was found (its prose can contain stray digits). `rangeSource` tells a
+// consumer WHICH source a bound came from, because the two carry different
+// consequences: "reference" means the docs exclude the value while TV compiles
+// and runs it, "runtime" means the script dies on bar 0.
+function paramConstraints(fnName: string, paramName: string, desc: string) {
+	const allowedValues = parseAllowedValues(desc);
+	const documented = allowedValues ? undefined : parseNumericRange(desc);
+	let min = documented?.min;
+	let max = documented?.max;
+	let rangeSource: "reference" | "runtime" | undefined =
+		documented === undefined ? undefined : "reference";
+	let notNa: true | undefined;
+
+	for (const fact of RUNTIME_DOMAINS.facts) {
+		if (fact.function !== fnName || fact.parameter !== paramName) continue;
+		// The tighter bound wins whichever source it came from - both are real
+		// and a value has to satisfy both.
+		if (fact.min !== undefined && (min === undefined || fact.min > min)) {
+			min = fact.min;
+			rangeSource = "runtime";
+		}
+		if (fact.max !== undefined && (max === undefined || fact.max < max)) {
+			max = fact.max;
+			rangeSource = "runtime";
+		}
+		if (fact.notNa) notNa = true;
+	}
+
+	return { allowedValues, min, max, rangeSource, notNa };
+}
+
 // Requiredness for one merged param: the probe verdict when the function was
 // probed; otherwise the evidence-based prose fallback below. see INV050
 function isParamRequired(fnName: string, param: Parameter): boolean {
@@ -597,8 +662,6 @@ function buildOverloads(
 			parameters: names.map((n) => {
 				const m = merged.get(n);
 				const desc = m?.description || "";
-				const allowed = parseAllowedValues(desc);
-				const range = allowed ? undefined : parseNumericRange(desc);
 				return {
 					name: n,
 					type: m?.type ?? "unknown",
@@ -606,9 +669,7 @@ function buildOverloads(
 					// Every param listed in a hidden form is required in it.
 					required: true,
 					default: parseDefault(desc),
-					allowedValues: allowed,
-					min: range?.min,
-					max: range?.max,
+					...paramConstraints(fnName, n, desc),
 				};
 			}),
 			returns: detail.returns,
@@ -634,8 +695,6 @@ function buildOverloads(
 				// Prefer this overload's own captured description; fall back to the
 				// merged param's (overload #0's). see TODO #25
 				const desc = description || m?.description || "";
-				const allowed = parseAllowedValues(desc);
-				const range = allowed ? undefined : parseNumericRange(desc);
 				return {
 					name,
 					type,
@@ -648,9 +707,7 @@ function buildOverloads(
 						? isParamRequired(fnName, m)
 						: (probedRequiredSet(fnName)?.has(name) ?? true),
 					default: parseDefault(desc),
-					allowedValues: allowed,
-					min: range?.min,
-					max: range?.max,
+					...paramConstraints(fnName, name, desc),
 				};
 			}),
 			returns: parseReturnFromSignature(sig),
@@ -717,10 +774,6 @@ function generateFunctions(
 		const descByName = overloadDescriptions(detail);
 		const parameters = (detail.parameters || []).map((p) => {
 			const description = p.description || descByName.get(p.name) || "";
-			const allowed = parseAllowedValues(description);
-			// A param is either an enum or a numeric range, never both - skip the
-			// range scan when an enum was found (its prose can contain stray digits).
-			const range = allowed ? undefined : parseNumericRange(description);
 			return {
 				name: p.name,
 				type:
@@ -732,9 +785,7 @@ function generateFunctions(
 				required: isParamRequired(name, p),
 				// Parsed from the description prose (best-effort). see TODO #25
 				default: p.default ?? parseDefault(description),
-				allowedValues: allowed,
-				min: range?.min,
-				max: range?.max,
+				...paramConstraints(name, p.name, description),
 			};
 		});
 

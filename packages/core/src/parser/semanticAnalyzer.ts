@@ -226,6 +226,46 @@ export class SemanticAnalyzer {
 		return false;
 	}
 
+	/**
+	 * Whether the body's tail is series BECAUSE of a local it names.
+	 *
+	 * `tailIsSeries` reads the tail expression alone, against `seriesVars` -
+	 * which at collect time holds nothing about this body's own locals. So a
+	 * function returning its work through a variable read as NOT series-
+	 * returning while the identical function returning the call directly read as
+	 * series:
+	 *
+	 *     export f(float src, simple int len) =>
+	 *         out = ta.sma(src, len)
+	 *         out                        // <- was not series; `ta.sma(...)` was
+	 *
+	 * That gap suppressed CW10003 on `lib.f()` calls, since INV118 flags only
+	 * history-dependent exports that RETURN a series (the gate that exempts
+	 * side-effect builders). Found via the `robbatt/lib_no_delay/18` `sma`
+	 * export - a tv-only warning in the 2026-08-25 sweep. see INV167
+	 *
+	 * The local-series tracking is the same walk `tailDependsOnDerivedUntyped`
+	 * uses; only the question asked at the tail differs.
+	 */
+	private tailIsSeriesThroughLocals(body: Statement[]): boolean {
+		const tail = body[body.length - 1];
+		if (!tail) return false;
+		const expr =
+			tail.type === "ExpressionStatement"
+				? tail.expression
+				: tail.type === "ReturnStatement"
+					? tail.value
+					: undefined;
+		if (!expr) return false;
+
+		const localSeries = new Set<string>();
+		const derived = new Set<string>();
+		for (let i = 0; i < body.length - 1; i++) {
+			this.recordDerivedUntypedEffects(body[i], derived, localSeries);
+		}
+		return this.isSeriesishExpressionWithLocalSeries(expr, localSeries);
+	}
+
 	private tailDependsOnDerivedUntyped(
 		statements: Statement[],
 		untypedParams: Set<string>,
@@ -1775,7 +1815,10 @@ export class SemanticAnalyzer {
 					if (elemSeries) {
 						this.udfReturnTupleSeries.set(statement.name, elemSeries);
 					}
-					if (this.tailIsSeries(tail)) {
+					if (
+						this.tailIsSeries(tail) ||
+						this.tailIsSeriesThroughLocals(statement.body)
+					) {
 						this.udfReturnsSeries.add(statement.name);
 					}
 					const untypedParams = new Set(

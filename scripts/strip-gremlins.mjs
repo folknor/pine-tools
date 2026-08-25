@@ -23,10 +23,11 @@ const WRITE = process.argv.includes("--write");
 
 const ROOTS = [
 	"CLAUDE.md",
-	"TODO.md",
 	"README.md",
 	"CHANGELOG.md",
 	"LLM.md",
+	"notes",
+	"reference",
 	"gotchas",
 	"investigations",
 	"scripts",

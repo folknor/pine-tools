@@ -2,6 +2,41 @@
 
 ## Unreleased
 
+- Argument values TradingView enforces only at RUNTIME are now reported.
+  `ta.sma(close, 0)`, `ta.sma(close, na)` and `ta.pivothigh(high, -1, 2)`
+  compile at both validators and then kill the script on bar 0, producing no
+  values at all; they are now `lint`-stage warnings
+  (`ARGUMENT_OUT_OF_RANGE`, `ARGUMENT_NA_AT_RUNTIME`). The domains are data,
+  not code: they are transcribed from captured chart banners into
+  `pine-data/raw/v6/runtime-domains.json` and merged into `functions.json` at
+  generate-time, since RE-class errors reach neither pine-lint mode. Coverage
+  is deliberately the three captured facts - a domain that plainly generalizes
+  still needs its own capture. Only literals are decided; an input-driven
+  length stays silent. See INV164, G010.
+- Fixed: `ARGUMENT_OUT_OF_RANGE` read arguments positionally against the merged
+  parameter list, which is the first overload's order, so a call using another
+  overload's signature had its bounds checked against the wrong arguments.
+  Overloads are now narrowed by arity and named arguments, and a position is
+  decided only where every candidate agrees. See INV164.
+- New error: TradingView's CE10111, user-function overloads with the same
+  REQUIRED parameter types. `f(float x)` and `f(float x, float scale = 1.0)`
+  are illegal - an optional parameter cannot disambiguate a call that omits it
+  - and so are same-arity pairs whose full lists differ only in their
+  optionals. An untyped required parameter is undetermined and collides with
+  nothing. Twelve probes, zero disagreement with TradingView. See INV165.
+- `UNUSED_VARIABLE` moved from the `analysis` stage to `lint`. TradingView
+  emits nothing for an unused variable, and `analysis` means "TradingView says
+  this too" - so `--no-lint` now silences it, and it no longer inflates the
+  local-only warning column (which dropped from 1292 to 41). Routed by the
+  absence of a CW code rather than by rule name, so any future non-mirroring
+  warning lands there automatically. See INV166.
+- Fixed a missed CW10003: a library export that returns its work through a
+  local variable rather than the call itself was not recognised as
+  series-returning, which silently narrowed the gate deciding which exports are
+  history-dependent. Regenerating the library data added ~160 history-dependent
+  exports and removed none; the TradingView sweep afterwards went to zero
+  tv-only warnings with no new local-only ones. See INV167.
+
 - A type keyword may now be a destructured name, as it already could be a
   single declaration's name. `[line, signal, hist] = ta.macd(close, 12, 26, 9)`
   is accepted by TradingView and is idiomatic - those are MACD's own output

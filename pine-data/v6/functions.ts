@@ -1,7 +1,7 @@
 /**
  * Pine Script V6 Functions
  * Auto-generated from TradingView documentation
- * Generated: 2026-08-15T18:14:16.294Z
+ * Generated: 2026-08-25T10:11:33.012Z
  * Total: 475 functions
  */
 
@@ -4542,7 +4542,8 @@ export const FUNCTIONS: PineFunction[] = [
         "description": "Possible values are from 0 (not transparent) to 100 (invisible).",
         "required": true,
         "min": 0,
-        "max": 100
+        "max": 100,
+        "rangeSource": "reference"
       }
     ],
     "returns": "const color",
@@ -4561,7 +4562,8 @@ export const FUNCTIONS: PineFunction[] = [
             "description": "Possible values are from 0 (not transparent) to 100 (invisible).",
             "required": true,
             "min": 0,
-            "max": 100
+            "max": 100,
+            "rangeSource": "reference"
           }
         ],
         "returns": "const color"
@@ -4580,7 +4582,8 @@ export const FUNCTIONS: PineFunction[] = [
             "description": "Possible values are from 0 (not transparent) to 100 (invisible).",
             "required": true,
             "min": 0,
-            "max": 100
+            "max": 100,
+            "rangeSource": "reference"
           }
         ],
         "returns": "input color"
@@ -4599,7 +4602,8 @@ export const FUNCTIONS: PineFunction[] = [
             "description": "Possible values are from 0 (not transparent) to 100 (invisible).",
             "required": true,
             "min": 0,
-            "max": 100
+            "max": 100,
+            "rangeSource": "reference"
           }
         ],
         "returns": "simple color"
@@ -4618,7 +4622,8 @@ export const FUNCTIONS: PineFunction[] = [
             "description": "Possible values are from 0 (not transparent) to 100 (invisible).",
             "required": true,
             "min": 0,
-            "max": 100
+            "max": 100,
+            "rangeSource": "reference"
           }
         ],
         "returns": "series color"
@@ -4707,7 +4712,8 @@ export const FUNCTIONS: PineFunction[] = [
         "description": "Red color component. Possible values are from 0 to 255.",
         "required": true,
         "min": 0,
-        "max": 255
+        "max": 255,
+        "rangeSource": "reference"
       },
       {
         "name": "green",
@@ -4715,7 +4721,8 @@ export const FUNCTIONS: PineFunction[] = [
         "description": "Green color component. Possible values are from 0 to 255.",
         "required": true,
         "min": 0,
-        "max": 255
+        "max": 255,
+        "rangeSource": "reference"
       },
       {
         "name": "blue",
@@ -4723,7 +4730,8 @@ export const FUNCTIONS: PineFunction[] = [
         "description": "Blue color component. Possible values are from 0 to 255.",
         "required": true,
         "min": 0,
-        "max": 255
+        "max": 255,
+        "rangeSource": "reference"
       },
       {
         "name": "transp",
@@ -4731,7 +4739,8 @@ export const FUNCTIONS: PineFunction[] = [
         "description": "Optional. Color transparency. Possible values are from 0 (opaque) to 100 (invisible). Default value is 0.",
         "required": false,
         "min": 0,
-        "max": 100
+        "max": 100,
+        "rangeSource": "reference"
       }
     ],
     "returns": "const color",
@@ -4744,7 +4753,8 @@ export const FUNCTIONS: PineFunction[] = [
             "description": "Red color component. Possible values are from 0 to 255.",
             "required": true,
             "min": 0,
-            "max": 255
+            "max": 255,
+            "rangeSource": "reference"
           },
           {
             "name": "green",
@@ -4752,7 +4762,8 @@ export const FUNCTIONS: PineFunction[] = [
             "description": "Green color component. Possible values are from 0 to 255.",
             "required": true,
             "min": 0,
-            "max": 255
+            "max": 255,
+            "rangeSource": "reference"
           },
           {
             "name": "blue",
@@ -4760,7 +4771,8 @@ export const FUNCTIONS: PineFunction[] = [
             "description": "Blue color component. Possible values are from 0 to 255.",
             "required": true,
             "min": 0,
-            "max": 255
+            "max": 255,
+            "rangeSource": "reference"
           },
           {
             "name": "transp",
@@ -4768,7 +4780,8 @@ export const FUNCTIONS: PineFunction[] = [
             "description": "Optional. Color transparency. Possible values are from 0 (opaque) to 100 (invisible). Default value is 0.",
             "required": false,
             "min": 0,
-            "max": 100
+            "max": 100,
+            "rangeSource": "reference"
           }
         ],
         "returns": "const color"
@@ -4781,7 +4794,8 @@ export const FUNCTIONS: PineFunction[] = [
             "description": "Red color component. Possible values are from 0 to 255.",
             "required": true,
             "min": 0,
-            "max": 255
+            "max": 255,
+            "rangeSource": "reference"
           },
           {
             "name": "green",
@@ -4789,7 +4803,8 @@ export const FUNCTIONS: PineFunction[] = [
             "description": "Green color component. Possible values are from 0 to 255.",
             "required": true,
             "min": 0,
-            "max": 255
+            "max": 255,
+            "rangeSource": "reference"
           },
           {
             "name": "blue",
@@ -4797,7 +4812,8 @@ export const FUNCTIONS: PineFunction[] = [
             "description": "Blue color component. Possible values are from 0 to 255.",
             "required": true,
             "min": 0,
-            "max": 255
+            "max": 255,
+            "rangeSource": "reference"
           },
           {
             "name": "transp",
@@ -4805,7 +4821,8 @@ export const FUNCTIONS: PineFunction[] = [
             "description": "Optional. Color transparency. Possible values are from 0 (opaque) to 100 (invisible). Default value is 0.",
             "required": false,
             "min": 0,
-            "max": 100
+            "max": 100,
+            "rangeSource": "reference"
           }
         ],
         "returns": "input color"
@@ -4818,7 +4835,8 @@ export const FUNCTIONS: PineFunction[] = [
             "description": "Red color component. Possible values are from 0 to 255.",
             "required": true,
             "min": 0,
-            "max": 255
+            "max": 255,
+            "rangeSource": "reference"
           },
           {
             "name": "green",
@@ -4826,7 +4844,8 @@ export const FUNCTIONS: PineFunction[] = [
             "description": "Green color component. Possible values are from 0 to 255.",
             "required": true,
             "min": 0,
-            "max": 255
+            "max": 255,
+            "rangeSource": "reference"
           },
           {
             "name": "blue",
@@ -4834,7 +4853,8 @@ export const FUNCTIONS: PineFunction[] = [
             "description": "Blue color component. Possible values are from 0 to 255.",
             "required": true,
             "min": 0,
-            "max": 255
+            "max": 255,
+            "rangeSource": "reference"
           },
           {
             "name": "transp",
@@ -4842,7 +4862,8 @@ export const FUNCTIONS: PineFunction[] = [
             "description": "Optional. Color transparency. Possible values are from 0 (opaque) to 100 (invisible). Default value is 0.",
             "required": false,
             "min": 0,
-            "max": 100
+            "max": 100,
+            "rangeSource": "reference"
           }
         ],
         "returns": "simple color"
@@ -4855,7 +4876,8 @@ export const FUNCTIONS: PineFunction[] = [
             "description": "Red color component. Possible values are from 0 to 255.",
             "required": true,
             "min": 0,
-            "max": 255
+            "max": 255,
+            "rangeSource": "reference"
           },
           {
             "name": "green",
@@ -4863,7 +4885,8 @@ export const FUNCTIONS: PineFunction[] = [
             "description": "Green color component. Possible values are from 0 to 255.",
             "required": true,
             "min": 0,
-            "max": 255
+            "max": 255,
+            "rangeSource": "reference"
           },
           {
             "name": "blue",
@@ -4871,7 +4894,8 @@ export const FUNCTIONS: PineFunction[] = [
             "description": "Blue color component. Possible values are from 0 to 255.",
             "required": true,
             "min": 0,
-            "max": 255
+            "max": 255,
+            "rangeSource": "reference"
           },
           {
             "name": "transp",
@@ -4879,7 +4903,8 @@ export const FUNCTIONS: PineFunction[] = [
             "description": "Optional. Color transparency. Possible values are from 0 (opaque) to 100 (invisible). Default value is 0.",
             "required": false,
             "min": 0,
-            "max": 100
+            "max": 100,
+            "rangeSource": "reference"
           }
         ],
         "returns": "series color"
@@ -17397,7 +17422,8 @@ export const FUNCTIONS: PineFunction[] = [
         "required": false,
         "default": "50",
         "min": 1,
-        "max": 500
+        "max": 500,
+        "rangeSource": "reference"
       },
       {
         "name": "max_labels_count",
@@ -17406,7 +17432,8 @@ export const FUNCTIONS: PineFunction[] = [
         "required": false,
         "default": "50",
         "min": 1,
-        "max": 500
+        "max": 500,
+        "rangeSource": "reference"
       },
       {
         "name": "max_boxes_count",
@@ -17415,7 +17442,8 @@ export const FUNCTIONS: PineFunction[] = [
         "required": false,
         "default": "50",
         "min": 1,
-        "max": 500
+        "max": 500,
+        "rangeSource": "reference"
       },
       {
         "name": "calc_bars_count",
@@ -17452,7 +17480,8 @@ export const FUNCTIONS: PineFunction[] = [
         "required": false,
         "default": "50",
         "min": 1,
-        "max": 100
+        "max": 100,
+        "rangeSource": "reference"
       },
       {
         "name": "dynamic_requests",
@@ -18802,7 +18831,8 @@ export const FUNCTIONS: PineFunction[] = [
         "description": "A required parameter. The maximum drawdown value. It is specified either in money (base currency), or in percentage of maximum equity. For % of equity the range of allowed values is from 0 to 100.",
         "required": true,
         "min": 0,
-        "max": 100
+        "max": 100,
+        "rangeSource": "reference"
       },
       {
         "name": "type",
@@ -18865,7 +18895,8 @@ export const FUNCTIONS: PineFunction[] = [
         "description": "A required parameter. The maximum loss value. It is specified either in money (base currency), or in percentage of maximum intraday equity. For % of equity the range of allowed values is from 0 to 100.",
         "required": true,
         "min": 0,
-        "max": 100
+        "max": 100,
+        "rangeSource": "reference"
       },
       {
         "name": "type",
@@ -20563,7 +20594,9 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "leftbars",
         "type": "series int/float",
         "description": "Left strength.",
-        "required": true
+        "required": true,
+        "min": 0,
+        "rangeSource": "runtime"
       },
       {
         "name": "rightbars",
@@ -20589,7 +20622,9 @@ export const FUNCTIONS: PineFunction[] = [
             "name": "leftbars",
             "type": "series int/float",
             "description": "Left strength.",
-            "required": true
+            "required": true,
+            "min": 0,
+            "rangeSource": "runtime"
           },
           {
             "name": "rightbars",
@@ -20612,7 +20647,9 @@ export const FUNCTIONS: PineFunction[] = [
             "name": "leftbars",
             "type": "series int/float",
             "description": "Left strength.",
-            "required": true
+            "required": true,
+            "min": 0,
+            "rangeSource": "runtime"
           },
           {
             "name": "rightbars",
@@ -20970,7 +21007,10 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "length",
         "type": "series int",
         "description": "Number of bars (length).",
-        "required": true
+        "required": true,
+        "min": 1,
+        "rangeSource": "runtime",
+        "notNa": true
       }
     ],
     "returns": "series float",

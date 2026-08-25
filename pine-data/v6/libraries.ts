@@ -1583,18 +1583,26 @@ export const LIBRARY_HISTORY_DEPENDENT: Record<string, string[]> = {
     "rsiMA",
     "rsiVolume",
     "smi",
+    "smie",
     "stoch",
-    "ultimateOscillator"
+    "tsi",
+    "ultimateOscillator",
+    "wpr"
   ],
   "Bjorgum/BjCandlePatterns/2": [
     "wrap"
   ],
   "boitoki/Utilities/11": [
-    "QQE"
+    "QQE",
+    "qqe_func"
+  ],
+  "DevLucem/ZigLib/1": [
+    "zigzag"
   ],
   "HeWhoMustNotBeNamed/enhanced_ta/14": [
     "atr",
     "atrpercent",
+    "bb",
     "bbw",
     "bpercentb",
     "dc",
@@ -1604,6 +1612,8 @@ export const LIBRARY_HISTORY_DEPENDENT: Record<string, string[]> = {
     "kcw",
     "kpercentk",
     "ma",
+    "mbandoscillator",
+    "oscillator",
     "oscillatorRange"
   ],
   "HeWhoMustNotBeNamed/mZigzag/12": [
@@ -1611,9 +1621,13 @@ export const LIBRARY_HISTORY_DEPENDENT: Record<string, string[]> = {
     "calculateplain",
     "draw"
   ],
+  "HeWhoMustNotBeNamed/rzigzag/10": [
+    "draw"
+  ],
   "HeWhoMustNotBeNamed/ta/1": [
     "atr",
     "atrpercent",
+    "bb",
     "bbw",
     "bpercentb",
     "dc",
@@ -1623,7 +1637,21 @@ export const LIBRARY_HISTORY_DEPENDENT: Record<string, string[]> = {
     "kcw",
     "kpercentk",
     "ma",
+    "mbandoscillator",
+    "oscillator",
     "oscillatorRange"
+  ],
+  "HeWhoMustNotBeNamed/zigzag/14": [
+    "czigzag",
+    "drawczigzag",
+    "drawczigzag2",
+    "drawzigzag",
+    "zigzag"
+  ],
+  "HeWhoMustNotBeNamed/zigzag/5": [
+    "czigzag",
+    "drawzigzag",
+    "zigzag"
   ],
   "jason5480/external_input_utils/11": [
     "evalCond"
@@ -1639,15 +1667,34 @@ export const LIBRARY_HISTORY_DEPENDENT: Record<string, string[]> = {
     "vwma_back",
     "vwma_front"
   ],
+  "jason5480/two_ma_logic/11": [
+    "getDealConditions"
+  ],
   "jdehorty/KernelFunctions/2": [
     "gaussian",
     "locallyPeriodic",
-    "periodic"
+    "periodic",
+    "rationalQuadratic"
   ],
   "jdehorty/MLExtensions/2": [
+    "backtest",
+    "dualPoleFilter",
     "filter_adx",
+    "filter_volatility",
+    "n_adx",
     "n_cci",
-    "n_rsi"
+    "n_rsi",
+    "n_wt",
+    "normalizeDeriv",
+    "regime_filter",
+    "tanhTransform"
+  ],
+  "kaigouthro/hsvColor/15": [
+    "degree",
+    "stepHue"
+  ],
+  "LonesomeTheBlue/CreateAndShowZigzag/1": [
+    "getZigzag"
   ],
   "LonesomeTheBlue/DrawIndicatorOnTheChart/6": [
     "drawIndicator"
@@ -1655,9 +1702,11 @@ export const LIBRARY_HISTORY_DEPENDENT: Record<string, string[]> = {
   "loxx/loxxexpandedsourcetypes/4": [
     "habavemedbody",
     "habaverage",
+    "habclose",
     "habhigh",
     "hablow",
     "habmedian",
+    "habopen",
     "habtrendb",
     "habtrendbext",
     "habtypical",
@@ -1667,6 +1716,7 @@ export const LIBRARY_HISTORY_DEPENDENT: Record<string, string[]> = {
     "adxvma",
     "ahrma",
     "alxma",
+    "ama",
     "decycler",
     "dema",
     "dsema",
@@ -1676,6 +1726,8 @@ export const LIBRARY_HISTORY_DEPENDENT: Record<string, string[]> = {
     "hma",
     "ie2",
     "ilrs",
+    "instant",
+    "kama",
     "laguerre",
     "leader",
     "lsma",
@@ -1691,7 +1743,9 @@ export const LIBRARY_HISTORY_DEPENDENT: Record<string, string[]> = {
     "smoother",
     "super",
     "swma",
+    "t3",
     "tema",
+    "threepolebuttfilt",
     "threepolesss",
     "tma",
     "twopolebutter",
@@ -1702,83 +1756,185 @@ export const LIBRARY_HISTORY_DEPENDENT: Record<string, string[]> = {
     "zlagma",
     "zlagtema"
   ],
+  "LucF/ta/3": [
+    "divergenceChannel"
+  ],
   "PineCoders/ConditionalAverages/2": [
     "avgSince"
   ],
+  "PineCoders/lower_tf/4": [
+    "ltfStats"
+  ],
   "reees/TA/11": [
-    "div_bear"
+    "div_bear",
+    "div_bull"
   ],
   "reees/TA/85": [
     "div_bear",
+    "div_bull",
     "pat_xabcd",
     "pat_xabcdIncomplete"
   ],
   "reees/Utilities/5": [
     "print_series"
   ],
+  "RicardoSantos/FunctionZigZagMultipleMethods/1": [
+    "function"
+  ],
   "robbatt/lib_no_delay/18": [
+    "atr",
+    "bb",
     "dev",
+    "dvi",
+    "ehma",
     "get_ma",
+    "hma",
+    "linreg",
     "linreg_values",
     "macd",
-    "stdev"
+    "macd_custom",
+    "rma",
+    "rsi",
+    "sma",
+    "stc",
+    "stc_fast",
+    "stdev",
+    "stdev_fast",
+    "stoch",
+    "thma",
+    "vwma",
+    "wma"
   ],
   "robbatt/lib_profile/44": [
     "history"
   ],
+  "TFlab/FVGDetectorLibrary/3": [
+    "FVGDetector"
+  ],
   "TFlab/LiquidityFinderLibrary/1": [
     "LLF"
   ],
+  "TFlab/OrderBlockDrawing_TradingFinder/4": [
+    "OBDrawing"
+  ],
+  "TFlab/OrderBlockRefiner_TradingFinder/2": [
+    "OBRefiner"
+  ],
   "TradingView/ta/10": [
+    "aroon",
+    "donchian",
+    "ichimoku",
+    "kvo",
+    "requestVolumeDelta",
+    "rwi",
     "stochFull",
     "stochRsi",
+    "supertrend",
     "supertrend2",
-    "vStop2"
+    "trix",
+    "vStop",
+    "vStop2",
+    "vi",
+    "williamsFractal"
   ],
   "TradingView/ta/11": [
+    "aroon",
     "chandelier",
     "chandelier2",
+    "donchian",
+    "ichimoku",
+    "kvo",
+    "macd2",
     "pmo",
     "ppo",
     "ppo2",
+    "requestVolumeDelta",
+    "rwi",
     "specialK",
     "stochFull",
     "stochRsi",
+    "supertrend",
     "supertrend2",
     "trix",
-    "vStop2"
+    "vStop",
+    "vStop2",
+    "vi",
+    "williamsFractal"
   ],
   "TradingView/ta/12": [
+    "aroon",
     "chandelier",
     "chandelier2",
+    "donchian",
+    "ichimoku",
+    "kvo",
+    "macd2",
     "pmo",
     "ppo",
     "ppo2",
     "requestUpAndDownVolume",
+    "requestVolumeDelta",
+    "rwi",
     "specialK",
     "stochFull",
     "stochRsi",
+    "supertrend",
     "supertrend2",
     "trix",
-    "vStop2"
+    "vStop",
+    "vStop2",
+    "vi",
+    "williamsFractal"
   ],
   "TradingView/ta/7": [
+    "aroon",
+    "donchian",
+    "ichimoku",
+    "kvo",
+    "rwi",
     "stochFull",
     "stochRsi",
+    "supertrend",
     "supertrend2",
-    "vStop2"
+    "trix",
+    "vStop",
+    "vStop2",
+    "vi",
+    "williamsFractal"
   ],
   "TradingView/ta/8": [
+    "aroon",
+    "donchian",
+    "ichimoku",
+    "kvo",
+    "requestVolumeDelta",
+    "rwi",
     "stochFull",
     "stochRsi",
+    "supertrend",
     "supertrend2",
-    "vStop2"
+    "trix",
+    "vStop",
+    "vStop2",
+    "vi",
+    "williamsFractal"
   ],
   "TradingView/ta/9": [
+    "aroon",
+    "donchian",
+    "ichimoku",
+    "kvo",
+    "requestVolumeDelta",
+    "rwi",
     "stochFull",
     "stochRsi",
+    "supertrend",
     "supertrend2",
-    "vStop2"
+    "trix",
+    "vStop",
+    "vStop2",
+    "vi",
+    "williamsFractal"
   ],
   "ZenAndTheArtOfTrading/ZenLibrary/9": [
     "getMA",

@@ -1,0 +1,10 @@
+//@version=6
+indicator("p3 same required types, different parameter names")
+
+f(float a) =>
+    a + 1.0
+
+f(float b) =>
+    b * 2.0
+
+plot(f(1.0))

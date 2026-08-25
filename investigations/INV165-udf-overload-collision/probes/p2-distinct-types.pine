@@ -1,0 +1,10 @@
+//@version=6
+indicator("p2 distinct required types")
+
+f(float x) =>
+    x + 1.0
+
+f(int x) =>
+    x + 1
+
+plot(f(1.0))

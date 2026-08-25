@@ -1,0 +1,42 @@
+{
+  "_comment": "Argument-value domains TradingView enforces at RUNTIME (RE-class errors) and documents nowhere in the reference prose. Backs TODO #69. Each fact is transcribed from a chart-legend banner held in scripts/probes/re-class-runtime-errors/tv-banners/ - the images are the primary source, this file is the machine-readable transcription. NOT re-derivable from either pine-lint mode: RE-class errors reach neither (see gotchas/G010), so a fact may only be added here with a banner behind it. Consumed by packages/pipeline/src/generate.ts, which merges min/max/notNa into the affected parameter in pine-data/v6/functions.json.",
+  "measuredAt": "2026-08-25",
+  "chart": "BINANCE ETHUSDT.P 15m, 22678 bars",
+  "bannerDir": "scripts/probes/re-class-runtime-errors/tv-banners/",
+  "facts": [
+    {
+      "function": "ta.sma",
+      "parameter": "length",
+      "min": 1,
+      "code": "RE10001",
+      "probe": "plot(ta.sma(close, 0))",
+      "banner": "RE10001-sma-length-zero.png",
+      "quote": "Invalid value of the 'length' argument (0) in the \"sma\" function. It must be > 0."
+    },
+    {
+      "function": "ta.sma",
+      "parameter": "length",
+      "notNa": true,
+      "code": "RE10003",
+      "probe": "plot(ta.sma(close, na))",
+      "banner": "RE10003-sma-length-na.png",
+      "quote": "Invalid value of the 'length' argument in the \"sma\" function. It must not be na"
+    },
+    {
+      "function": "ta.pivothigh",
+      "parameter": "leftbars",
+      "min": 0,
+      "code": "RE10001",
+      "probe": "plot(ta.pivothigh(high, -1, 2))",
+      "banner": "RE10001-pivothigh-leftbars-negative.png",
+      "quote": "Invalid value of the 'leftbars' argument (-1) in the 'pivothigh' function. It must be >= 0."
+    }
+  ],
+  "_notAdded": {
+    "_comment": "Domains observed but deliberately NOT baked in, each with the reason. Removing an entry from here means new evidence arrived, not that someone changed their mind.",
+    "ta.sma.length.max": "RE10004 caps historical references at 5000, but that is ONE banner from ONE script and it is unestablished whether the ceiling is per-call, global, or interacts with max_bars_back. A max: 5000 here would flag every long-lookback call on an assumption. See TODO #69's open question.",
+    "ta.pivotlow.leftbars": "Symmetric with ta.pivothigh by every reasonable expectation - and expectation is exactly what this file does not record. Needs its own banner.",
+    "ta.ema/ta.rma/... .length": "The '> 0' domain almost certainly holds for every ta.* length parameter, but 'almost certainly' is what manufactured the retracted G002. One chart capture per function is the price of each row.",
+    "array.slice.index_from/index_to": "RE10044 (inverted constant range) is a relation BETWEEN two arguments, which the per-parameter min/max shape here cannot express. Banner captured (RE10044-slice-inverted-range.png); needs a cross-parameter fact shape first."
+  }
+}

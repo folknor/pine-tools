@@ -1,0 +1,10 @@
+//@version=6
+indicator("p8 same base type, different qualifier")
+
+f(simple int x) =>
+    x + 1
+
+f(series int x) =>
+    x + 2
+
+plot(f(2))

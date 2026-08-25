@@ -1,0 +1,13 @@
+//@version=6
+indicator("p6 three declarations, the first and third colliding")
+
+f(float x) =>
+    x + 1.0
+
+f(int x) =>
+    x + 1
+
+f(float x, int scale = 2) =>
+    x * scale
+
+plot(f(1.0))

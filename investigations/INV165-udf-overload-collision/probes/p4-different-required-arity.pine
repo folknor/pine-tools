@@ -1,0 +1,10 @@
+//@version=6
+indicator("p4 different required arity")
+
+f(float x) =>
+    x + 1.0
+
+f(float x, float y) =>
+    x + y
+
+plot(f(1.0))

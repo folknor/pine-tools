@@ -1,7 +1,7 @@
 /**
  * Pine Script V6 Annotations
  * Auto-generated from TradingView documentation
- * Generated: 2026-08-15T18:14:16.300Z
+ * Generated: 2026-08-25T10:11:33.017Z
  * Total: 10 annotations
  */
 

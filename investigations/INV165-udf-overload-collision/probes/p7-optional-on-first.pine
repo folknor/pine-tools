@@ -1,0 +1,10 @@
+//@version=6
+indicator("p7 the optional parameter is on the FIRST declaration")
+
+f(float x, int scale = 2) =>
+    x * scale
+
+f(float x) =>
+    x + 1.0
+
+plot(f(1.0))

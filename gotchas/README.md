@@ -6,7 +6,7 @@ Long-form `.md` files with as much context as we can muster, so future-
 us (or a future Claude) doesn't relearn the same lesson.
 
 A gotcha is **not** a known bug in our own code. Bugs we can fix go in
-[`../TODO.md`](../TODO.md) as work items. If you reach for a gotcha to
+[`../notes/todo.md`](../notes/todo.md) as work items. If you reach for a gotcha to
 describe something we control, ask: "could I fix this if I wanted to?"
 If yes, it's a TODO entry.
 

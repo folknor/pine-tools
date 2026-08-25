@@ -1,0 +1,10 @@
+//@version=6
+indicator("p11 required parameter untyped on one side, second adds an optional")
+
+f(x) =>
+    x + 1.0
+
+f(float y, float s = 2.0) =>
+    y * s
+
+plot(f(1.0))

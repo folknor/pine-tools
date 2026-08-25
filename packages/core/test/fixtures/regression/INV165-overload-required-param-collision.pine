@@ -1,0 +1,54 @@
+// @test regression/INV165-overload-required-param-collision
+// @description TV's CE10111: two user-function overloads whose REQUIRED parameter lists match are illegal however many OPTIONAL parameters either one adds, because an optional parameter cannot disambiguate a call that omits it. The arity comparison in INV091's same-arity check cannot see this: `f(float x)` / `f(float x, float scale = 1.0)` collide at different arities, and `g(float x, int s = 1)` / `g(float x, float t = 2.0)` collide at the SAME arity even though the full parameter lists differ. The silent halves carry the rule's false-positive story and are all TV-probed clean (INV165 p1/p2/p4/p5/p8/p10/p11): an UNTYPED required parameter is undetermined and collides with nothing, distinct required types are a legal overload, a differing required ARITY is a legal overload, and a qualifier difference (simple int vs series int) counts as a distinct type. Every line here was diffed against `pine-lint --tv` at zero disagreement, positions and wording included. See INV165, TODO #71.
+// @expects parse: success
+// @expects errors: 3
+// @expects error: line=6, message=/The "collideAcrossArity" function has overloads with the same required parameters/
+// @expects error: line=11, message=/The "collideSameArity" function has overloads with the same required parameters/
+// @expects error: line=16, message=/The "collideNoRequired" function has overloads with the same required parameters/
+//@version=6
+indicator("overload required-param collision")
+
+collideAcrossArity(float x) =>
+    x + 1.0
+collideAcrossArity(float x, float scale = 1.0) =>
+    x * scale
+
+collideSameArity(float x, int s = 1) =>
+    x * s
+collideSameArity(float x, float t = 2.0) =>
+    x + t
+
+collideNoRequired() =>
+    1.0
+collideNoRequired(int s = 1) =>
+    s * 2.0
+
+// Legal: distinct required types.
+distinctTypes(float x) =>
+    x + 1.0
+distinctTypes(int x) =>
+    x + 1
+
+// Legal: a differing required arity.
+distinctArity(float x) =>
+    x + 1.0
+distinctArity(float x, float y) =>
+    x + y
+
+// Legal: an untyped required parameter is undetermined and distinguishes
+// nothing, so it collides with nothing - including with an optional-bearing
+// sibling.
+undetermined(x) =>
+    x + 1.0
+undetermined(float y, float s = 2.0) =>
+    y * s
+
+// Legal: the qualifier is part of the type.
+qualifierDistinct(simple int x, int pad = 0) =>
+    x + pad
+qualifierDistinct(series int x) =>
+    x + 2
+
+plot(collideAcrossArity(1.0) + collideSameArity(1.0) + collideNoRequired())
+plot(distinctTypes(1.0) + distinctArity(1.0) + undetermined(1.0))
+plot(qualifierDistinct(2))

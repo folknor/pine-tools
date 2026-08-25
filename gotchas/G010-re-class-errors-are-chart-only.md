@@ -62,4 +62,8 @@ Consequences:
   argument). Those are the platform's own words about its own rule, and
   they are the strongest evidence this class admits.
 
-See TODO #69 for the rule this governs.
+The rule this governs was built on 2026-08-25 - see
+[INV164](../investigations/INV164-runtime-argument-domains/notes.md) and
+`notes/todo.md` #69 for what it covers and what it deliberately does not.
+The captured domains are transcribed in `pine-data/raw/v6/runtime-domains.json`,
+whose `_notAdded` block is the standing list of domains awaiting a capture.

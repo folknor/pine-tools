@@ -1,0 +1,28 @@
+// @test regression/INV164-runtime-argument-domains
+// @description Argument values TradingView COMPILES and then dies on at bar 0 (RE-class runtime errors). Both pine-lint modes are silent on every line here - the oracle is a set of chart-legend banners captured 2026-08-25 and held in scripts/probes/re-class-runtime-errors/tv-banners/, transcribed into pine-data/raw/v6/runtime-domains.json and merged into functions.json by generate.ts. The checker holds no table of domains; it reads `min`/`notNa` off the parameter, so this fixture also pins the fact layer. The silent cases carry the rule's false-positive story: `length` from an input is undecidable, the boundary values are legal, and a large-but-legal length is NOT flagged because the RE10004 ceiling is one data point (see TODO #69). ta.pivothigh pins the overload half - the call below uses the (source, leftbars, rightbars) form while the merged parameter list starts at `leftbars`, so a positional read against the merged list would blame the wrong argument. See INV164, TODO #69, G010.
+// @expects parse: success
+// @expects errors: 0
+// @expects warnings: 3
+// @expects warning: line=4, message=/'ta.sma' requires 'length' at least 1 at runtime, but 0 was passed/
+// @expects warning: line=5, message=/'ta.sma' rejects na for 'length' at runtime/
+// @expects warning: line=6, message=/'ta.pivothigh' requires 'leftbars' at least 0 at runtime, but -1 was passed/
+//@version=6
+indicator("runtime argument domains")
+
+plot(ta.sma(close, 0))
+plot(ta.sma(close, na))
+plot(ta.pivothigh(high, -1, 2))
+
+// Legal boundaries - must stay silent.
+plot(ta.sma(close, 1))
+plot(ta.pivothigh(high, 0, 2))
+
+// Undecidable: a runtime value cannot be shown to violate anything, and this
+// is the overwhelmingly common corpus shape.
+length = input.int(14, minval = 1)
+plot(ta.sma(close, length))
+
+// The RE10004 ceiling (5000 historical candles) is deliberately NOT baked in -
+// one banner from one script, and it is unestablished whether the limit is
+// per-call, global, or interacts with max_bars_back.
+plot(ta.sma(close, 2000000))

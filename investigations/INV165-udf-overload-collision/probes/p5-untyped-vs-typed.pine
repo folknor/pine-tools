@@ -1,0 +1,10 @@
+//@version=6
+indicator("p5 one untyped parameter against a typed one")
+
+f(x) =>
+    x + 1.0
+
+f(float y) =>
+    y * 2.0
+
+plot(f(1.0))

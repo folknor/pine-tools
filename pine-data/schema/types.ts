@@ -97,6 +97,27 @@ export interface PineParameter {
 	min?: number;
 	/** Inclusive upper bound of an accepted numeric range, when documented. */
 	max?: number;
+	/**
+	 * Where `min`/`max` came from, because the two carry different
+	 * consequences for a violating call:
+	 * - "reference": the parameter's own documented range. TradingView both
+	 *   compiles AND runs a value outside it (whether it clamps is unknown).
+	 * - "runtime": a domain TradingView enforces at runtime and documents
+	 *   nowhere. The call compiles and the script then dies on bar 0 with an
+	 *   RE-class error. Transcribed from captured chart banners in
+	 *   `pine-data/raw/v6/runtime-domains.json` — RE-class errors reach
+	 *   neither pine-lint mode (see gotchas/G010), so these facts cannot be
+	 *   re-derived by probing and must not be extrapolated to sibling
+	 *   functions. See TODO #69.
+	 * Absent when the parameter has no range at all.
+	 */
+	rangeSource?: "reference" | "runtime";
+	/**
+	 * TradingView raises RE10003 at runtime when this argument is `na`
+	 * ("It must not be na"). Same banner-only provenance as `rangeSource:
+	 * "runtime"` above. Absent unless captured.
+	 */
+	notNa?: true;
 }
 
 /**

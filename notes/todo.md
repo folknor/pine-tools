@@ -12,27 +12,39 @@ fixtures.
 Current counts live in `lint-reports/failures-by-category.json` -
 regenerate with `node scripts/find-real-failures.mjs` followed by
 `node scripts/categorize-failures.mjs`. Past investigations are
-indexed at [investigations/README.md](investigations/README.md)
-and are not duplicated here - TODO.md is for *pending* work only.
+indexed at [investigations/README.md](../investigations/README.md)
+and are not duplicated here - this file is for *pending* work only.
 
-Measurement note, 2026-08-15 (current state; earlier per-INV notes live in git
+(This file lived at `TODO.md` in the repository root until 2026-08-25, which
+is the name older investigation notes cite it by.)
+
+Measurement note, 2026-08-25 (current state; earlier per-INV notes live in git
 history and in each investigation, per G001 - they were dated point-in-time
 records, not standing facts).
 
-**Full TV sweep, 2026-08-15** (`lint:failures`, 748 v6 fixtures, commit
-`12c817a`): errors at **29 local-only / 0 tv-only / 1 same-position message
-pair**, and **warning tv-only 0**. That error window is byte-identical to the
-2026-06-28 sweep, across INV133-INV145 - thirteen investigations including five
-new error-emitting checks (INV139/140/141/142/143). The 29 are the three
-already-explained categories: 20 probe-backed CE10156 wrap TPs in 2 files, 8
-`bar index` mangle sites in 1 file, and 1 mangled ternary-wrap residue.
+**Full TV sweep, 2026-08-25** (`lint:failures`, 748 v6 fixtures, commit
+`cc9010b`): errors at **29 local-only / 0 tv-only / 1 same-position message
+pair**. The error window is **byte-identical to the 2026-08-15 and 2026-06-28
+sweeps**, now across INV133-INV166 - and the 29 are still the same three
+categories: 20 probe-backed CE10156 wrap TPs in 2 files, 8 `bar index` mangle
+sites in 1 file, and 1 mangled ternary-wrap residue.
 
-**Superseded for the error window by INV146-INV149 (2026-08-21).** The TV
-sweep above has NOT been re-run since; treat its 29/0/1 split as predating
-those four investigations. Two of them move it by construction: INV146's
-pre-v5 refusal and INV148's v6-only argument-name gate both change what a
-non-v6 fixture reports, and INV148 alone removed 445 error records across 79
-fixtures. Re-run `lint:failures` before quoting the split again.
+This retires the staleness caveat this file carried since INV146. That caveat
+predicted INV146's pre-v5 refusal and INV148's v6-only argument-name gate would
+move the split by construction; both change what NON-v6 fixtures report, and
+the split counts v6 fixtures only, so the window did not move.
+
+**warning local-only is now 41** (plus 47 past TV's stop), down from the 1292
+comparable figure of the 2026-08-15 sweep. Most of that collapse is INV166
+moving UNUSED_VARIABLE to the `lint` stage, which `find-real-failures.mjs`
+drops before diffing - the `C_*` unused-var churn named below as the dominant
+source of this column's instability is gone from it entirely. The column is
+worth reading again, with the G001 caveat below still standing.
+
+**warning tv-only is 0.** It read 1 mid-session - a CW10003 on a conditional
+library-member call - and INV167 fixed it the same day; the figures above are
+from the post-fix sweep, which also left warning local-only unchanged at 41.
+See #80.
 
 Two categories are now *expected* local-only and must not be read as
 over-strictness when that sweep happens - both are TV holes we deliberately do
@@ -41,10 +53,12 @@ check - unsound, TV lets a float into an `array<int>` through the alias) and
 G006's declaration extension (an untyped param makes TV discard an explicit
 `bool` annotation).
 
-The local baseline was re-snapshotted 2026-08-21 and now stands at 1879
-fixtures, **774 with errors, 7103 error records**, with
+The local baseline was re-snapshotted 2026-08-25 and now stands at 1879
+fixtures, **770 with errors, 7093 error records**, with
 `node scripts/regression-check.mjs` reporting a clean **0 changed fixtures / 0
-new error appearances**. The jump from the 2026-08-15 figures (621 / 16056) is
+new error appearances**. (The 2026-08-21 snapshot read 774 / 7103; the
+difference is INV163's two destructuring fixes, which collapse cascades.) The
+jump from the 2026-08-15 figures (621 / 16056) is
 INV146 plus INV148 and is fully accounted for: the pre-v5 refusal gives an
 error to 643 previously-clean legacy fixtures (+files), while replacing each
 file's v4 cascade with a single diagnostic (-records).
@@ -54,15 +68,14 @@ the on-disk baseline was still the 2026-06-28 one, 622/16057, and every run
 since carried the `2997d729…` v5 disappearance as a phantom changed fixture.
 Corrected 2026-08-15.)
 
-Full vitest: 458 passing.
+Full vitest: 472 passing.
 
-Warning local-only read 1423 raw on this sweep, of which **131 are `lint`-stage
-records** (116 REPAINTING_SECURITY + 15 ACCUMULATOR_LIFETIME) that TV can never
-emit by construction - so the comparable figure is **1292**.
-`find-real-failures.mjs` now drops the `lint` stage before diffing (see
-INV144), which is why the stored report for this particular sweep still
-contains them: the filter landed after it ran. The next sweep produces 1292
-natively.
+The 2026-08-15 sweep's warning local-only read 1423 raw, of which **131 were
+`lint`-stage records** (116 REPAINTING_SECURITY + 15 ACCUMULATOR_LIFETIME) that
+TV can never emit by construction - so the comparable figure then was **1292**.
+`find-real-failures.mjs` drops the `lint` stage before diffing (see INV144),
+which is why that stored report still contained them: the filter landed after
+it ran. The 2026-08-25 figure of 41 above is native.
 
 The `lint`-stage half of that split moved on 2026-08-23: INV151 removed 10
 REPAINTING_SECURITY false positives (offsets taken inside a helper) and INV152
@@ -89,15 +102,16 @@ changed parameters ONLY - `sort_field` on `array.binary_search`/`_leftmost`/
 inventory is unchanged at 876 items, and `variables`/`constants`/`types`/
 `operators`/`keywords` JSON came out byte-identical.
 
-**Warning local-only is NOT a stable metric** - do not read movement in it as
-signal (this is on top of the `lint`-stage adjustment above, which is a fixed
-offset rather than churn). It measured 1290 then 1310 on byte-identical
-same-day reruns, because
-`totalWarningLocalOnly` sums only the files TV also parsed, so one file
-flipping in or out of TV's unparseable set moves it by that file's whole
-warning count (G001; the candlestick `C_*` unused-var snippet, spread across
-~52 fixtures, dominates the churn). The correctness-meaningful invariants are
-the error split and warning tv-only.
+**Warning local-only was NOT a stable metric, and is now much closer to one.**
+The instability is structural: `totalWarningLocalOnly` sums only the files TV
+also parsed, so one file flipping in or out of TV's unparseable set moves it by
+that file's WHOLE warning count (G001). It measured 1290 then 1310 on
+byte-identical same-day reruns. The dominant churn source was the candlestick
+`C_*` unused-var snippet spread across ~52 fixtures - and INV166 took
+UNUSED_VARIABLE out of this column entirely, which is most of the drop to 41.
+The mechanism still stands (a big-warning file flipping still moves the number),
+so read movement carefully; the correctness-meaningful invariants remain the
+error split and warning tv-only.
 
 ## Pending follow-ups
 
@@ -158,13 +172,13 @@ IDs so the two stay in sync.
   parallel rich field, plus a capability check before sending markup.
 - **#41 - MemberExpression callee validation. CLOSED 2026-07-15.** Every slice
   landed; the trail is INV036/053/064/065/066/067/103/138/139/140 in the
-  [investigations index](investigations/README.md), not repeated here. Two
+  [investigations index](../investigations/README.md), not repeated here. Two
   cautions worth carrying forward, both learned the expensive way: slice (d)
   sat "OPEN, blocked behind robust receiver resolution" for a month after
   `a35bac7` fixed it, and slice (a) listed three gaps that #53 already
   contradicted in this same file - so re-verify a claim here before planning
   around it. The transitive-import successor is now CLOSED too
-  ([INV143](investigations/INV143-transitive-library-imports/notes.md)). The one
+  ([INV143](../investigations/INV143-transitive-library-imports/notes.md)). The one
   live successor is **#53(a)** (vendoring more libraries - a data gap, since the
   checker logic exists and simply has no export set to read; the 10
   license-excluded libs are deliberate policy). We emit CE10271 for an
@@ -222,11 +236,11 @@ IDs so the two stay in sync.
   tell us. The countermeasure is built and already paying (see the
   scripts table for the three pieces): the free check-site half,
   `audit-error-reachability.mjs`, whose first run yielded
-  [INV059](investigations/INV059-audit-reachability-round1/notes.md);
+  [INV059](../investigations/INV059-audit-reachability-round1/notes.md);
   and the mutation half, `mutate.mjs` + `mutation-run.mjs`, whose first
   real run (86 mutants) produced one survivor exposing a structural
   hole - see
-  [INV062](investigations/INV062-unresolved-call-args-unvalidated/notes.md).
+  [INV062](../investigations/INV062-unresolved-call-args-unvalidated/notes.md).
 
   Method essentials (for future operator work): mutate at the text
   level at lexer-located sites, ONE mutation per mutant; start from
@@ -342,26 +356,26 @@ IDs so the two stay in sync.
   and the "X by default" phrasing are deliberately unparsed (see
   `parse-default.ts`). Skip unless a consumer needs them.
 - **#61 (residual) - CW10003/4 consistency-warning precision.** A round of
-  precision work landed across [INV114](investigations/INV114-consistency-warning-precision/notes.md)
+  precision work landed across [INV114](../investigations/INV114-consistency-warning-precision/notes.md)
   (series-contagion through call args; untyped-param "undetermined" gate),
-  [INV115](investigations/INV115-conditional-reassign-series-state/notes.md)
+  [INV115](../investigations/INV115-conditional-reassign-series-state/notes.md)
   (conditional const-reassign = series state),
-  [INV116](investigations/INV116-method-call-history-dependence/notes.md)
+  [INV116](../investigations/INV116-method-call-history-dependence/notes.md)
   (history-dependent METHOD calls by bare name + undetermined-gate exclusion),
-  [INV117](investigations/INV117-consistency-fn-tail-rootcauses/notes.md)
+  [INV117](../investigations/INV117-consistency-fn-tail-rootcauses/notes.md)
   (the FN-tail root-cause map + the `[..] = f()` UDF tuple-return series
-  inference), and [INV118](investigations/INV118-library-history-dependence/notes.md)
+  inference), and [INV118](../investigations/INV118-library-history-dependence/notes.md)
   (CW10003 across the import boundary - derived per-export history-dependence,
   library member/typed-local resolution, a live-fetch override for CC-BY-NC
-  libs), and [INV129](investigations/INV129-sibling-na-seed-consistency/notes.md)
+  libs), and [INV129](../investigations/INV129-sibling-na-seed-consistency/notes.md)
   (the `47d21dbd` sibling `na(w[1])` seed false positive),
-  [INV130](investigations/INV130-undetermined-local-history/notes.md)
+  [INV130](../investigations/INV130-undetermined-local-history/notes.md)
   (`f1b6bd45` `draw_lbl` undetermined local history), and
-  [INV131](investigations/INV131-undetermined-udf-gate/notes.md)
+  [INV131](../investigations/INV131-undetermined-udf-gate/notes.md)
   (`25a4a7` `math.sum` under an undetermined UDF-result gate),
-  [INV132](investigations/INV132-bar-index-udf-history/notes.md)
+  [INV132](../investigations/INV132-bar-index-udf-history/notes.md)
   (`db76cf79` `FindST` via `bar_index[1]` UDF history), and
-  [INV133](investigations/INV133-udt-name-shadowing/notes.md)
+  [INV133](../investigations/INV133-udt-name-shadowing/notes.md)
   (UDT names in CW10013 shadowing and typed-declaration anchors). Net through
   INV133: warning tvOnly is 0, the `ta.sma`, `draw_lbl`, and `math.sum`
   local-only residuals are cleared, the `FindST` and CW10013 tv-only residuals
@@ -394,7 +408,7 @@ IDs so the two stay in sync.
   (`61a3a7`), the rest TV-error-stops / G005 phantoms.
 
 - **#66 - a suppression mechanism for the semantic lints
-  ([INV144](investigations/INV144-semantic-lint-checks/notes.md)).** The five
+  ([INV144](../investigations/INV144-semantic-lint-checks/notes.md)).** The
   `lint`-stage rules are advisory and, unlike everything else we emit, can be
   correct-but-unwanted: an author who knows their MTF dashboard repaints has no
   way to say so, and REPAINTING_SECURITY alone fires on 16.5% of the corpus's
@@ -410,94 +424,51 @@ IDs so the two stay in sync.
   wants to say so at that line, which is the case neither a global flag nor an
   external filter covers.
 
-- **#69 - surface guaranteed RE-class runtime errors as `lint`-stage findings.**
-  TradingView's runtime-error banners for a set of argument domains its
-  *linter* says nothing about are captured as screenshots in
-  `scripts/probes/re-class-runtime-errors/tv-banners/` - **primary source held
-  in-repo**, eight banners from the 2026-08-25 chart session (the piners
-  fieldwork run; narrative at
-  `../piners/reference/fieldwork/runtime-oracles/README.md`). This is the only
-  oracle the rule can ever have: RE-class errors surface only on the chart
-  legend overlay, never in the editor and never through either pine-lint mode.
-  These scripts compile and then die on bar 0. Measured 2026-08-25, both
-  `pine-lint` local and `--tv` return **clean** on all four of:
+  The stage now carries nine rules, not five: INV153 split LOOKAHEAD_BIAS out
+  of REPAINTING_SECURITY, INV162 added ARGUMENT_OUT_OF_RANGE, INV164 added
+  ARGUMENT_NA_AT_RUNTIME, and INV166 moved UNUSED_VARIABLE here - which
+  strengthens the case, since UNUSED_VARIABLE is the rule authors most often
+  want to silence at one line (a deliberately-unused binding).
 
-  ```pine
-  plot(ta.sma(close, 0))            // RE10001 "must be > 0"
-  plot(ta.sma(close, na))           // RE10003 "must not be na"
-  plot(ta.sma(close, 2000000))      // RE10004 "references too many historical
-                                    //          candles (2000000), the limit is 5000"
-  plot(ta.pivothigh(high, -1, 2))   // RE10001 "'leftbars' ... must be >= 0"
-  ```
+- **#69 (residual) - RE-class runtime domains. Three cells LANDED 2026-08-25
+  ([INV164](../investigations/INV164-runtime-argument-domains/notes.md)).**
+  `ta.sma`'s `length > 0` and `not na`, and `ta.pivothigh`'s `leftbars >= 0`,
+  now warn on the `lint` stage. The design this entry specified was built as
+  specified: the facts are DATA
+  (`pine-data/raw/v6/runtime-domains.json` -> `generate.ts` -> the parameter's
+  `min`/`notNa` in `functions.json`, with a `rangeSource` field so the checker
+  can word a runtime domain differently from a documented one), the checker
+  carries no per-function table, and INV162's existing rule consumes them.
+  Corpus gate: zero findings over 1879 fixtures. The banners remain the only
+  oracle - see [G010](../gotchas/G010-re-class-errors-are-chart-only.md).
 
-  A script that cannot survive its first bar, and neither validator says a
-  word. That is the INV001 case in its purest form, and it is exactly what the
-  `lint` stage exists for: code that COMPILES and is still wrong.
+  Building it surfaced and fixed a latent defect in INV162's rule: it read
+  arguments POSITIONALLY against the MERGED parameter list, which is overload
+  #0's order. `ta.pivothigh(high, -1, 2)` uses the (source, leftbars,
+  rightbars) form, so the bound landed on the wrong argument - a miss here and
+  a false positive one signature away. See INV164.
 
-  **Stage: `lint`, warning severity, one `rule` id.** Not the error channel -
-  TV compiles these, so an error would break the "errors mirror TV" invariant
-  and every finding would show up in `lint:failures` as a fake local-only false
-  positive. `find-real-failures.mjs` already drops the `lint` stage before
-  diffing (INV144), so this lands without touching the TV comparison at all.
-
-  **Decidability boundary - this is the whole design.** Flag only what is
-  statically known; never guess at a `series int`:
-  - IN: literal and const-folded arguments (`0`, `na`, `2000000`, `-1`,
-    `20 - 20`). Also `array.slice(a, 3, 1)` - an inverted constant range,
-    RE10044, currently clean locally.
-  - OUT: anything runtime-valued. `ta.sma(close, len)` where `len` is an
-    input or a series is undecidable and must stay silent - `input.int(14,
-    minval = 1)` is the overwhelmingly common corpus shape and a false
-    positive there would be the worst kind (see INV144's standing rule: an FP
-    in this channel is worse than a miss, because it teaches readers to ignore
-    the stage).
-  - OUT for now: out-of-bounds `array.slice`/`array.get` on a collection whose
-    size comes from flow (RE10045). Needs size tracking we do not have. The
-    empty-literal case (`array.new<float>(0)` then a non-empty slice) may be
-    worth a narrow cell later.
-  - Already covered elsewhere, do not duplicate: a FRACTIONAL length is caught
-    by the type layer today (`ta.sma(close, 2.5)` -> `literal float` into
-    `series int`), because Pine types the slot `series int`. No runtime rule
-    needed.
-
-  **The consuming rule already exists.** `ARGUMENT_OUT_OF_RANGE`
-  ([INV162](investigations/INV162-argument-out-of-documented-range/notes.md))
-  reads `min`/`max` off each parameter in `functions.json` and flags a
-  const-decidable literal outside it, on the `lint` stage. It covers the 11
-  parameters whose range the REFERENCE documents. So #69 reduces to getting
-  the captured RE domains into the catalog - once `length` carries `min: 1`
-  and `leftbars` carries `min: 0`, that rule picks them up with no code
-  change, and the decidability boundary, the boundary-value handling and the
-  literals-only rule are all already built and pinned.
-
-  **The domain facts belong in pine-data, not the checker.** Per the
-  Data-vs-Syntax rule in AGENTS.md, "length must be > 0" and "leftbars must be
-  >= 0" are language facts and must land in `functions.json` (the param `min` /
-  `max` fields, which already exist - 32 occurrences today - and which nothing
-  in the checker currently reads). `ta.sma`'s `length` has no `min` today.
-  Note the banners state each domain outright and name the argument
-  ("Invalid value of the 'leftbars' argument (-1) ... It must be >= 0"), so
-  these facts are quoted from the platform rather than inferred - the strongest
-  form the #21 fact layer can take. So
-  the work is two-layered: a probe-backed `generate.ts` fact layer supplying
-  the domains (the #21 shape: fact + probe + date), then one checker rule that
-  reads them. Do not hardcode a table of per-function domains in the checker.
-
-  **Open question before building, worth settling first:** the RE10004 ceiling.
-  TV said "the limit is 5000" for `ta.sma`, but whether 5000 is per-call,
-  global, or interacts with `max_bars_back` is unestablished, and the banner
-  came from one capture on one script. The `> 0` / `>= 0` / `na` cells are
-  unambiguous and can land without it; the ceiling cell should not land on a
-  single data point.
-
-  **Gate:** per the `lint`-stage rules, sweep the corpus before landing -
-  `node investigations/INV144-semantic-lint-checks/count-lints.mjs`. A rule
-  that fires on real published scripts in the const-decidable cells is either a
-  genuine find (those scripts are broken) or a decidability bug; both need
-  looking at before it ships.
+  **Remaining, and each needs evidence we cannot generate from this repo:**
+  - **Every other function's domain.** Coverage today is THREE facts. `length
+    > 0` on `ta.ema`/`ta.rma`/..., and `leftbars >= 0` on `ta.pivotlow`,
+    almost certainly hold - and "almost certainly" is what manufactured the
+    retracted G002. Each row costs one chart capture, since neither pine-lint
+    mode can see an RE-class error. The `_notAdded` block in
+    `runtime-domains.json` records each omission with its reason.
+  - **The RE10004 ceiling** (5000 historical candles). Still one banner from
+    one script; whether the limit is per-call, global, or interacts with
+    `max_bars_back` is unestablished. Deliberately not baked in - a `max: 5000`
+    would flag every long-lookback call on an assumption. This entry's original
+    open question, still open.
+  - **`array.slice`'s inverted constant range (RE10044).** Banner captured, but
+    it is a relation BETWEEN two arguments and the per-parameter `min`/`max`
+    shape cannot express it. Needs a cross-parameter fact shape first - the
+    `flags.argGroups` precedent (INV142) is the model.
+  - **Out-of-bounds `array.slice`/`array.get` (RE10045)** stays out of scope:
+    needs collection-size tracking we do not have.
 
 - **#74 (residual) - `currentTypeDocStr` is fabricated on union parameters
-  ([INV159](investigations/INV159-polymorphic-return-from-rejected-arg/notes.md)).**
+  ([INV159](../investigations/INV159-polymorphic-return-from-rejected-arg/notes.md)).**
   The cascade half of this item is FIXED (a polymorphic return no longer
   follows an argument its parameter rejects, so `plot(ta.range("x", 3))` is
   one error rather than two, matching TV). What remains is the expected-type
@@ -532,14 +503,19 @@ IDs so the two stay in sync.
   wrong bakes a bad string into `functions.json` where nothing would catch it.
   Left unbuilt rather than half-built.
 - **#71 - user-function overloads are unmodelled
-  ([INV157](investigations/INV157-blackbox-audit-adoption/notes.md), cluster
+  ([INV157](../investigations/INV157-blackbox-audit-adoption/notes.md), cluster
   B).** Pine lets a user function be declared more than once with different
-  parameter types. We model none of it, which costs two confirmed false
-  negatives:
-  - **The collision rule.** Overloads with identical REQUIRED parameter lists
-    are illegal even when one adds optional parameters - TV: "The \"f\"
-    function has overloads with the same required parameters." Self-contained,
-    needs no resolution, and is the half to do first.
+  parameter types. We now model the legality of the DECLARATIONS but nothing
+  about resolution:
+  - **The collision rule. DONE 2026-08-25
+    ([INV165](../investigations/INV165-udf-overload-collision/notes.md)).**
+    Overloads with identical REQUIRED parameter lists are illegal however many
+    optional parameters either side adds, and - not obvious from the starting
+    probe - this also catches SAME-arity pairs whose full lists differ
+    (`f(float x, int s = 1)` / `f(float x, float t = 2.0)`), so it had to run
+    before INV091's existing arity comparison rather than beside it. An untyped
+    required parameter is undetermined and collides with nothing. Twelve
+    probes, zero disagreement with TV including positions and wording.
   - **Resolution feeding the return type.** With `f(float x) => 1` and
     `f(int x) => "int"`, `f(na)` selects the `float` overload, so
     `string result = f(na)` is a type error. This needs real overload
@@ -551,56 +527,59 @@ IDs so the two stay in sync.
   record the design (three-valued applicability, declaration-order tie-break, a
   never-guess rule for arguments they cannot type, and an oracle-pinned
   collision rule). Probes:
-  `investigations/INV157-blackbox-audit-adoption/probes/ov-optional-only.pine`,
-  `ov-na-decisive-rev.pine`.
+  `investigations/INV157-blackbox-audit-adoption/probes/ov-na-decisive-rev.pine`,
+  and the twelve declaration-legality probes in
+  `investigations/INV165-udf-overload-collision/probes/`.
 
-- **#73 - UNUSED_VARIABLE is on the `analysis` stage, which mirrors TV; TV has
-  no such rule
-  ([INV158](investigations/INV158-unused-variable-underscore-and-stage/notes.md)).**
-  **The premise is not new and must not be re-derived: INV148 established on
-  2026-08-21 that this rule "mirrors nothing", and the comment at
-  `SemanticWarning.code` says so at the site.** INV148 answered the CODE
-  question - UNUSED_VARIABLE deliberately carries none, since inventing a CW
-  would hand consumers an identifier irreconcilable with TV - and did not ask
-  the STAGE question, which is all that is open here. Re-confirmed 2026-08-25:
-  TV returns clean on an unused local, an unused `var`, and an unused
-  top-level binding, and pairing analysis-stage warnings with their codes
-  yields `{('CONDITIONAL_SERIES', 'CW10003'): 28, ('UNUSED_VARIABLE', None): 2}`
-  - that `None` is INV148's deliberate design surfacing, not an oversight.
-  Three consequences, none cosmetic:
-  `--no-lint` does not silence it (that flag drops the `lint` stage); it falls
-  outside #66's suppression design, which is scoped to "the five `lint`-stage
-  rules"; and it inflates the local-only warning column that this file already
-  calls unstable - the `C_*` unused-var churn named in the measurement note IS
-  this rule. Moving it to `lint` would fix all three at once, but weigh it
-  rather than assuming: `lint` rules are advisory by contract and an unused
-  variable is often a real typo, and the corpus impact is large enough that the
-  move needs a `lint:failures` re-run plus a figures update in the same
-  landing. Keep the general test the investigation names: an `analysis`-stage
-  diagnostic with no CW code is by definition not a mirror. (Separate and still
-  open regardless of stage: the AGENTS.md limitation that this rule reports
-  built-ins as unused. The `_` half is CLOSED - see INV158.)
+- **#73 (residual) - UNUSED_VARIABLE moved to the `lint` stage 2026-08-25
+  ([INV166](../investigations/INV166-unused-variable-stage/notes.md)).** The
+  stage question is settled and the routing is structural rather than by rule
+  name: an `analysis`-stage diagnostic with no CW code mirrors nothing, so the
+  CLI routes by `code === undefined` and any future code-less warning lands on
+  `lint` automatically. All three consequences are fixed - `--no-lint` silences
+  it, it falls inside #66's suppression design, and it left the local-only
+  warning column (which dropped from 1292 to 41 on the same-day sweep).
+
+  **Still open, and unaffected by the stage:** this rule reports BUILT-INS as
+  unused (the limitation AGENTS.md records). The `_` half is CLOSED - see
+  INV158.
+
+- **#80 - CW10003 tv-only warning. FIXED 2026-08-25, same day it appeared
+  ([INV167](../investigations/INV167-library-export-series-tail/notes.md)).**
+  A conditional `ND.sma(close, 200)` on a vendored library export. INV118 flags
+  only history-dependent exports that RETURN a series, and the series test read
+  the tail EXPRESSION against `seriesVars` - which holds nothing about the
+  body's own locals at collect time, so an export returning its work through a
+  variable read as non-series while the identical export returning the call
+  directly read as series. Regenerating the library data added ~160
+  history-dependent exports and removed none; the sweep after it went to
+  **warning tv-only 0 with warning local-only unchanged at 41** - the FN gone
+  and no false positives bought with it.
+
+  Carry forward the class, not the case: the library gates are derived by
+  running our own analyzer over vendored source, so any under-detection in the
+  analyzer silently NARROWS a gate, and only a TV sweep can see it.
 
 ## Gotchas
 
-See [gotchas/README.md](gotchas/README.md) for the format and full
+See [gotchas/README.md](../gotchas/README.md) for the format and full
 index.
 
-- [G001](gotchas/G001-tv-pine-lint-not-spec.md) - TV's pine-lint is an
+- [G001](../gotchas/G001-tv-pine-lint-not-spec.md) - TV's pine-lint is an
   unreliable comparator, not a stable spec.
-- [G002](gotchas/G002-reference-underdocuments-accepted-types.md) -
+- [G002](../gotchas/G002-reference-underdocuments-accepted-types.md) -
   **RETRACTED 2026-06-02.** Claimed the linter accepts more than the
   reference documents (`nz`/`fixnan` bool/string, `int` bool, `plot.title`
   non-const); isolated `--tv` probes show TV flags all of them (CE10123).
   The `FUNCTION_PARAM_TYPE_OVERRIDES` it justified are invalid - see #28.
-- [G005](gotchas/G005-tv-diagnostic-position-conventions.md) - TV's
+- [G005](../gotchas/G005-tv-diagnostic-position-conventions.md) - TV's
   diagnostic position conventions: lines split at `\r\n`|`\r`|`\n`
   (so `\r\r\n` files double their line numbers), wrapped statements
   reported at logical-line columns (comment-stripped single-space
   join). Both probed 2026-06-04.
-- [G004](gotchas/G004-version-detection-leniency.md) - version detection
+- [G004](../gotchas/G004-version-detection-leniency.md) - version detection
   and declared-v4/v5 leniency (G003 intentionally unused).
-- [G006](gotchas/G006-undetermined-type-suppresses-arg-checks.md) - TV
+- [G006](../gotchas/G006-undetermined-type-suppresses-arg-checks.md) - TV
   skips ALL argument checks on a call containing an "undetermined type"
   argument (untyped UDF results), sibling args included - so a
   mutation-run `tv-accepts` can be a TV FN, and our CE10123 there is an
@@ -609,10 +588,10 @@ index.
   ta.pivothigh(len, len)` with untyped `len` types `ph` as "undetermined
   type", not `bool` - and the suppression is per-EXPRESSION, not
   per-function.
-- [G007](gotchas/G007-tv-does-not-enforce-input-qualifier.md) - TV
+- [G007](../gotchas/G007-tv-does-not-enforce-input-qualifier.md) - TV
   enforces the `simple` qualifier on arguments but NOT `input`. Do not add
   an input-qualifier check.
-- [G008](gotchas/G008-collection-reassignment-skips-element-check.md) - TV's
+- [G008](../gotchas/G008-collection-reassignment-skips-element-check.md) - TV's
   collection element check is POSITION-DEPENDENT: invariant in a declaration
   with an initializer (rejects both directions), widening in a `:=` store
   (int -> float accepted, float -> int rejected), and absent entirely for a
@@ -622,13 +601,13 @@ index.
   2026-08-21; **headline corrected 2026-08-25 (INV157)** - the original claim
   that TV does not check `:=` at all was generalized from widening-only
   probes.
-- [G010](gotchas/G010-re-class-errors-are-chart-only.md) - RE-class RUNTIME
+- [G010](../gotchas/G010-re-class-errors-are-chart-only.md) - RE-class RUNTIME
   errors reach neither pine-lint mode nor the editor, only the chart legend.
   A runtime error wipes the script's whole log, and an unused invalid
   construction never raises (dead-code elimination), so a probe must consume
   its result. Banners held in
   `scripts/probes/re-class-runtime-errors/tv-banners/`. Governs #69.
-- [G009](gotchas/G009-tv-endpoint-misses-editor-only-gates.md) - `--tv`
+- [G009](../gotchas/G009-tv-endpoint-misses-editor-only-gates.md) - `--tv`
   (`translate_light`) is not the validator the Pine editor runs. It does not
   enforce the editor's contextual restrictions on `request.*()` arguments, so
   `strategy.*` inside a `request.security` expression passes `--tv` clean and

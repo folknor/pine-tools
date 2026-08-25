@@ -70,7 +70,7 @@ the same artifact.
 10. **The standing references.** Every spec MUST cite, by path: this document
     (`reference/technical-implementation-spec.md`) as the contract it is
     written against; the document the spec was spawned from (the TODO source
-    naming the item - the `TODO.md` entry, or the `investigations/INV###` it
+    naming the item - the `notes/todo.md` entry, or the `investigations/INV###` it
     derives from); AND the standing obligations the work discharges -
     `CLAUDE.md` and `AGENTS.md`, specifically the **Methodology** section ("we
     aim to be MORE correct than TradingView's pine-lint"), the hard rules, and
@@ -85,7 +85,7 @@ the same artifact.
     minimum twice: before implementation (the baseline the keep/revert verdict
     will be read against - `pnpm run lint:snapshot`, and the current FP/FN
     counts in `lint-reports/failures-by-category.json` plus the dated
-    measurement paragraph in `TODO.md`) and after landing (the re-snapshot and
+    measurement paragraph in `notes/todo.md`) and after landing (the re-snapshot and
     the refreshed counts). A spec off every corpus-affecting path owes the
     ledger no update; it states that, and names the gate (a clean
     `pnpm run lint:regression`) whose unchanged result confirms neutrality.

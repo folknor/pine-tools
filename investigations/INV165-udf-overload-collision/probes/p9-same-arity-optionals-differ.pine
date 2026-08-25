@@ -1,0 +1,10 @@
+//@version=6
+indicator("p9 same arity, required lists equal, optionals differ in type")
+
+f(float x, int s = 1) =>
+    x * s
+
+f(float x, float t = 2.0) =>
+    x + t
+
+plot(f(1.0))

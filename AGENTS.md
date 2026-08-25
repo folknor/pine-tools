@@ -32,13 +32,15 @@ pnpm check            # Formatter + linter + assist (biome). Alias: pnpm lint
 
 ### Doc scope (where things go)
 
-- `TODO.md` is **pending work only** - things someone could pick up.
+- `notes/todo.md` is **pending work only** - things someone could pick up.
   Resolved/reverted items, past investigations, and indexes of completed
   work do NOT belong; those live in git log, `investigations/`, and
-  `gotchas/`. Link to the canonical home instead of copying.
+  `gotchas/`. Link to the canonical home instead of copying. (It lived at
+  `TODO.md` in the repository root until 2026-08-25; older investigation
+  notes refer to it by that name.)
 - `investigations/INV###` is **only** for lint/parser/lexer disagreements
   that come with a minimal `.pine` repro. Pipeline/data/scraper/architecture
-  work goes in `TODO.md`; unfixable TV or Pine-language quirks go in
+  work goes in `notes/todo.md`; unfixable TV or Pine-language quirks go in
   `gotchas/`.
 
 ---
@@ -102,7 +104,7 @@ For every concrete TV-vs-us discrepancy we choose to act on:
 2. **Open an investigation** under `investigations/INV###-name/` with
    `notes.md` and the repro file (or a pointer to the regression
    fixture). Sequential numbering, never reuse. Index entries live in
-   `investigations/README.md` and are surfaced in `TODO.md`.
+   `investigations/README.md` and are surfaced in `notes/todo.md`.
 
    **Every finding validated with `pine-lint --tv` MUST record, in the
    investigation, both:**
@@ -128,17 +130,17 @@ For every concrete TV-vs-us discrepancy we choose to act on:
 4. **Record side-knowledge as gotchas.** A gotcha is something *we
    can't fix* that we need to remember when working - Pine language
    quirks, TV linter behaviors, scraping anomalies in upstream docs.
-   It is *not* a known bug in our own code (those go in TODO.md as
+   It is *not* a known bug in our own code (those go in `notes/todo.md` as
    work items). Examples: "TV's parser flakes on multiline strings",
    "Pine v6 deprecates multiline string literals but still parses
    them". Add `gotchas/G###.md` with as much context as possible.
-   Index in `gotchas/README.md`, surfaced in `TODO.md`. The same `--tv`
+   Index in `gotchas/README.md`, surfaced in `notes/todo.md`. The same `--tv`
    rule as step 2 applies: any gotcha recording TV behavior must carry the
    exact probe `.pine` script(s) and TV's dated results.
 
 ### Indexes
 
-`TODO.md` carries two summary indexes (`gotchas/` and `investigations/`)
+`notes/todo.md` carries two summary indexes (`gotchas/` and `investigations/`)
 so a reader can scan the entire trail of decisions from one place.
 
 ---
@@ -333,6 +335,16 @@ param types + returns) alongside the merged view, and params carry `default`
 (literal or a magic sentinel like `CHART_SYMBOL`/`ARG:<name>`), `allowedValues`,
 and `min`/`max`. `types` includes `chart.point`'s fields; the opaque ID types
 have none.
+
+A parameter's `min`/`max` come from two sources and the `rangeSource` field says
+which, because the two mean different things: `"reference"` is the range the
+docs state, which TV compiles AND RUNS outside of, while `"runtime"` is a domain
+TV documents nowhere and enforces by killing the script on bar 0. The runtime
+ones (plus `notNa`) are merged in at generate-time from
+`pine-data/raw/v6/runtime-domains.json`, which transcribes captured chart
+banners - the only oracle they can have, since RE-class errors reach neither
+pine-lint mode (G010). **Never add a row there by analogy**: a domain without
+its own banner is a guess, and G002 is what guesses cost. See INV164.
 
 INTER-parameter requirements, which the per-param fields above cannot express,
 live in `flags.argGroups = { message, anyOf: string[][] }` - the call must
@@ -550,10 +562,18 @@ CW100xx warnings), and `lint`. The first three mirror TradingView. `lint` does
 not: it is our own semantic lints (`packages/core/src/analyzer/lint-semantic.ts`)
 for code that COMPILES and is still wrong - a repainting `request.security`, a
 `var` accumulator a loop re-adds to every bar, the plot / `request.*` budgets,
-an entry with no exit. TV is silent on all of them by design, so **do not treat
+an entry with no exit, an argument outside its documented or runtime-enforced
+range. TV is silent on all of them by design, so **do not treat
 a `lint`-stage finding as a TV disagreement**, and anything diffing us against
 TV should drop the stage wholesale. They are always warnings, never errors, and
 carry a `rule` id instead of a `CW` code. See INV144.
+
+**The stage is decided by the CW code, not by which module computed the
+diagnostic.** A SemanticAnalyzer warning with no CW code mirrors nothing, so it
+is routed to `lint` too - UNUSED_VARIABLE is the one such rule today, and any
+future code-less warning lands there automatically. The corollary is a rule
+worth keeping: **an `analysis`-stage diagnostic with no CW code is a bug.** See
+INV166.
 
 Two standing rules for that module: a false positive there is worse than a
 miss (it teaches readers to ignore the channel), and any new rule must be

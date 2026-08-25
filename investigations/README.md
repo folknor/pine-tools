@@ -1112,3 +1112,32 @@ contradiction means re-measure, not "the earlier author was wrong."
   skips validation once parsing fails, so the directive would be vacuous -
   caught by mutation, and it lives in a probe instead. Full sweep, including
   the findings pointing the other way, is `SWEEP-piners-tests-2026-08-25.md`.
+- [INV164](INV164-runtime-argument-domains/notes.md) - argument domains TV
+  enforces at RUNTIME and documents nowhere, turned into `lint`-stage findings
+  (TODO #69). `ta.sma(close, 0)` compiles at both validators and dies on bar 0;
+  the only oracle is a chart-legend banner, so the facts live in
+  `pine-data/raw/v6/runtime-domains.json` transcribing them and flow into
+  `functions.json` as `min`/`notNa` plus a `rangeSource` field the checker
+  words its message from. Three facts, and each new one costs a chart capture -
+  the `_notAdded` block records every omission with its reason, the RE10004
+  ceiling included. Surfaced a latent defect in INV162: it read arguments
+  positionally against the MERGED parameter list, which is overload #0's order.
+- [INV165](INV165-udf-overload-collision/notes.md) - TV's CE10111, user-function
+  overloads with the same REQUIRED parameter types (TODO #71's first half).
+  Twelve probes, zero disagreement with TV. Not an arity rule: it catches
+  same-arity pairs whose full lists differ (`f(float x, int s = 1)` /
+  `f(float x, float t = 2.0)`), so it runs before INV091's arity comparison; an
+  untyped required parameter is undetermined and collides with nothing; and TV
+  picks between two wordings by whether an optional exists, not by typing.
+- [INV166](INV166-unused-variable-stage/notes.md) - UNUSED_VARIABLE moves from
+  `analysis` to `lint` (TODO #73). Routed by the general test rather than by
+  rule name - an analysis-stage diagnostic with no CW code mirrors nothing - so
+  any future code-less warning lands on `lint` automatically. `--no-lint` now
+  silences it, #66's suppression design now covers it, and warning local-only
+  dropped from 1292 to 41.
+- [INV167](INV167-library-export-series-tail/notes.md) - a vendored library's
+  export read as non-series because its body returned through a LOCAL rather
+  than the call itself, silently narrowing INV118's CW10003 gate. One tv-only
+  warning in a sweep was the only visible symptom. The fix added ~160
+  history-dependent exports and removed none, taking warning tv-only to 0 with
+  warning local-only unchanged - a widening that bought no false positives.

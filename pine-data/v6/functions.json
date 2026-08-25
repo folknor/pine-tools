@@ -4530,7 +4530,8 @@
         "description": "Possible values are from 0 (not transparent) to 100 (invisible).",
         "required": true,
         "min": 0,
-        "max": 100
+        "max": 100,
+        "rangeSource": "reference"
       }
     ],
     "returns": "const color",
@@ -4549,7 +4550,8 @@
             "description": "Possible values are from 0 (not transparent) to 100 (invisible).",
             "required": true,
             "min": 0,
-            "max": 100
+            "max": 100,
+            "rangeSource": "reference"
           }
         ],
         "returns": "const color"
@@ -4568,7 +4570,8 @@
             "description": "Possible values are from 0 (not transparent) to 100 (invisible).",
             "required": true,
             "min": 0,
-            "max": 100
+            "max": 100,
+            "rangeSource": "reference"
           }
         ],
         "returns": "input color"
@@ -4587,7 +4590,8 @@
             "description": "Possible values are from 0 (not transparent) to 100 (invisible).",
             "required": true,
             "min": 0,
-            "max": 100
+            "max": 100,
+            "rangeSource": "reference"
           }
         ],
         "returns": "simple color"
@@ -4606,7 +4610,8 @@
             "description": "Possible values are from 0 (not transparent) to 100 (invisible).",
             "required": true,
             "min": 0,
-            "max": 100
+            "max": 100,
+            "rangeSource": "reference"
           }
         ],
         "returns": "series color"
@@ -4695,7 +4700,8 @@
         "description": "Red color component. Possible values are from 0 to 255.",
         "required": true,
         "min": 0,
-        "max": 255
+        "max": 255,
+        "rangeSource": "reference"
       },
       {
         "name": "green",
@@ -4703,7 +4709,8 @@
         "description": "Green color component. Possible values are from 0 to 255.",
         "required": true,
         "min": 0,
-        "max": 255
+        "max": 255,
+        "rangeSource": "reference"
       },
       {
         "name": "blue",
@@ -4711,7 +4718,8 @@
         "description": "Blue color component. Possible values are from 0 to 255.",
         "required": true,
         "min": 0,
-        "max": 255
+        "max": 255,
+        "rangeSource": "reference"
       },
       {
         "name": "transp",
@@ -4719,7 +4727,8 @@
         "description": "Optional. Color transparency. Possible values are from 0 (opaque) to 100 (invisible). Default value is 0.",
         "required": false,
         "min": 0,
-        "max": 100
+        "max": 100,
+        "rangeSource": "reference"
       }
     ],
     "returns": "const color",
@@ -4732,7 +4741,8 @@
             "description": "Red color component. Possible values are from 0 to 255.",
             "required": true,
             "min": 0,
-            "max": 255
+            "max": 255,
+            "rangeSource": "reference"
           },
           {
             "name": "green",
@@ -4740,7 +4750,8 @@
             "description": "Green color component. Possible values are from 0 to 255.",
             "required": true,
             "min": 0,
-            "max": 255
+            "max": 255,
+            "rangeSource": "reference"
           },
           {
             "name": "blue",
@@ -4748,7 +4759,8 @@
             "description": "Blue color component. Possible values are from 0 to 255.",
             "required": true,
             "min": 0,
-            "max": 255
+            "max": 255,
+            "rangeSource": "reference"
           },
           {
             "name": "transp",
@@ -4756,7 +4768,8 @@
             "description": "Optional. Color transparency. Possible values are from 0 (opaque) to 100 (invisible). Default value is 0.",
             "required": false,
             "min": 0,
-            "max": 100
+            "max": 100,
+            "rangeSource": "reference"
           }
         ],
         "returns": "const color"
@@ -4769,7 +4782,8 @@
             "description": "Red color component. Possible values are from 0 to 255.",
             "required": true,
             "min": 0,
-            "max": 255
+            "max": 255,
+            "rangeSource": "reference"
           },
           {
             "name": "green",
@@ -4777,7 +4791,8 @@
             "description": "Green color component. Possible values are from 0 to 255.",
             "required": true,
             "min": 0,
-            "max": 255
+            "max": 255,
+            "rangeSource": "reference"
           },
           {
             "name": "blue",
@@ -4785,7 +4800,8 @@
             "description": "Blue color component. Possible values are from 0 to 255.",
             "required": true,
             "min": 0,
-            "max": 255
+            "max": 255,
+            "rangeSource": "reference"
           },
           {
             "name": "transp",
@@ -4793,7 +4809,8 @@
             "description": "Optional. Color transparency. Possible values are from 0 (opaque) to 100 (invisible). Default value is 0.",
             "required": false,
             "min": 0,
-            "max": 100
+            "max": 100,
+            "rangeSource": "reference"
           }
         ],
         "returns": "input color"
@@ -4806,7 +4823,8 @@
             "description": "Red color component. Possible values are from 0 to 255.",
             "required": true,
             "min": 0,
-            "max": 255
+            "max": 255,
+            "rangeSource": "reference"
           },
           {
             "name": "green",
@@ -4814,7 +4832,8 @@
             "description": "Green color component. Possible values are from 0 to 255.",
             "required": true,
             "min": 0,
-            "max": 255
+            "max": 255,
+            "rangeSource": "reference"
           },
           {
             "name": "blue",
@@ -4822,7 +4841,8 @@
             "description": "Blue color component. Possible values are from 0 to 255.",
             "required": true,
             "min": 0,
-            "max": 255
+            "max": 255,
+            "rangeSource": "reference"
           },
           {
             "name": "transp",
@@ -4830,7 +4850,8 @@
             "description": "Optional. Color transparency. Possible values are from 0 (opaque) to 100 (invisible). Default value is 0.",
             "required": false,
             "min": 0,
-            "max": 100
+            "max": 100,
+            "rangeSource": "reference"
           }
         ],
         "returns": "simple color"
@@ -4843,7 +4864,8 @@
             "description": "Red color component. Possible values are from 0 to 255.",
             "required": true,
             "min": 0,
-            "max": 255
+            "max": 255,
+            "rangeSource": "reference"
           },
           {
             "name": "green",
@@ -4851,7 +4873,8 @@
             "description": "Green color component. Possible values are from 0 to 255.",
             "required": true,
             "min": 0,
-            "max": 255
+            "max": 255,
+            "rangeSource": "reference"
           },
           {
             "name": "blue",
@@ -4859,7 +4882,8 @@
             "description": "Blue color component. Possible values are from 0 to 255.",
             "required": true,
             "min": 0,
-            "max": 255
+            "max": 255,
+            "rangeSource": "reference"
           },
           {
             "name": "transp",
@@ -4867,7 +4891,8 @@
             "description": "Optional. Color transparency. Possible values are from 0 (opaque) to 100 (invisible). Default value is 0.",
             "required": false,
             "min": 0,
-            "max": 100
+            "max": 100,
+            "rangeSource": "reference"
           }
         ],
         "returns": "series color"
@@ -17385,7 +17410,8 @@
         "required": false,
         "default": "50",
         "min": 1,
-        "max": 500
+        "max": 500,
+        "rangeSource": "reference"
       },
       {
         "name": "max_labels_count",
@@ -17394,7 +17420,8 @@
         "required": false,
         "default": "50",
         "min": 1,
-        "max": 500
+        "max": 500,
+        "rangeSource": "reference"
       },
       {
         "name": "max_boxes_count",
@@ -17403,7 +17430,8 @@
         "required": false,
         "default": "50",
         "min": 1,
-        "max": 500
+        "max": 500,
+        "rangeSource": "reference"
       },
       {
         "name": "calc_bars_count",
@@ -17440,7 +17468,8 @@
         "required": false,
         "default": "50",
         "min": 1,
-        "max": 100
+        "max": 100,
+        "rangeSource": "reference"
       },
       {
         "name": "dynamic_requests",
@@ -18790,7 +18819,8 @@
         "description": "A required parameter. The maximum drawdown value. It is specified either in money (base currency), or in percentage of maximum equity. For % of equity the range of allowed values is from 0 to 100.",
         "required": true,
         "min": 0,
-        "max": 100
+        "max": 100,
+        "rangeSource": "reference"
       },
       {
         "name": "type",
@@ -18853,7 +18883,8 @@
         "description": "A required parameter. The maximum loss value. It is specified either in money (base currency), or in percentage of maximum intraday equity. For % of equity the range of allowed values is from 0 to 100.",
         "required": true,
         "min": 0,
-        "max": 100
+        "max": 100,
+        "rangeSource": "reference"
       },
       {
         "name": "type",
@@ -20551,7 +20582,9 @@
         "name": "leftbars",
         "type": "series int/float",
         "description": "Left strength.",
-        "required": true
+        "required": true,
+        "min": 0,
+        "rangeSource": "runtime"
       },
       {
         "name": "rightbars",
@@ -20577,7 +20610,9 @@
             "name": "leftbars",
             "type": "series int/float",
             "description": "Left strength.",
-            "required": true
+            "required": true,
+            "min": 0,
+            "rangeSource": "runtime"
           },
           {
             "name": "rightbars",
@@ -20600,7 +20635,9 @@
             "name": "leftbars",
             "type": "series int/float",
             "description": "Left strength.",
-            "required": true
+            "required": true,
+            "min": 0,
+            "rangeSource": "runtime"
           },
           {
             "name": "rightbars",
@@ -20958,7 +20995,10 @@
         "name": "length",
         "type": "series int",
         "description": "Number of bars (length).",
-        "required": true
+        "required": true,
+        "min": 1,
+        "rangeSource": "runtime",
+        "notNa": true
       }
     ],
     "returns": "series float",

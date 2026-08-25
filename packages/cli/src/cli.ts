@@ -40,8 +40,10 @@ Options:
                             flag code that COMPILES and is still wrong - a
                             repainting request.security(), a var accumulator a loop
                             re-adds to every bar, the plot/request budgets, an entry
-                            with no exit. TradingView reports none of them, so use
-                            this when you want its verdict and nothing else.
+                            with no exit, an argument outside its documented or
+                            runtime-enforced range, and unused variables.
+                            TradingView reports none of them, so use this when you
+                            want its verdict and nothing else.
   -H, --human               Human-readable output: one "file:line:col: severity: message"
                             line per finding plus a summary, instead of the JSON
                             payload. Exits 1 when there are errors. Works with --tv.
@@ -60,10 +62,12 @@ stage that produced it:
 
   syntax     lexer/parser errors
   type       the validator's type and semantic error pass
-  analysis   TradingView's own warnings (CW codes), mirrored
+  analysis   TradingView's own warnings, mirrored - every one carries the CW
+             code it mirrors
   lint       our semantic lints - warnings only, never errors, and the one
              stage TradingView has no counterpart for. Each carries a "rule"
-             id (e.g. REPAINTING_SECURITY) for filtering. See --no-lint.
+             id (e.g. REPAINTING_SECURITY) and no CW code, since there is
+             none to carry. See --no-lint.
 
 Warnings never affect the exit code; only errors do.`;
 
@@ -452,19 +456,32 @@ async function main() {
 			});
 
 		// Convert semantic warnings to pine-lint format (warnings). These come
-		// from the SemanticAnalyzer pass - the `analysis` stage.
+		// from the SemanticAnalyzer pass, which is MOSTLY the `analysis` stage -
+		// TV's own CW warnings, mirrored.
+		//
+		// The exception is routed to `lint` instead, by the general test rather
+		// than by rule name: an analysis-stage diagnostic with no CW code
+		// mirrors nothing, and the stage means "TradingView says this too".
+		// UNUSED_VARIABLE is the only such rule today (TV emits nothing at all
+		// for an unused variable, probed 2026-08-21 - INV148 deliberately gave
+		// it no code rather than inventing one). Leaving it on `analysis` put it
+		// beyond the reach of `--no-lint` and of #66's suppression design, and
+		// inflated the local-only warning column that the diffing scripts drop
+		// the `lint` stage from. see INV166, INV158
 		const semanticPineLintWarnings: PineLintError[] = semanticWarnings
-			.filter((w) => w.severity === DiagnosticSeverity.Warning)
+			.filter(
+				(w) =>
+					w.severity === DiagnosticSeverity.Warning && w.code !== undefined,
+			)
 			.map((w) => {
 				const start = mapSourcePosition({ line: w.line, column: w.column });
 				const end = mapSourcePosition({
 					line: w.line,
 					column: w.column + w.length,
 				});
-				// `rule` always, `code` when the warning mirrors a TV CW code.
-				// Without either, 122 of 140 corpus warnings were unfilterable
-				// except by matching prose. UNUSED_VARIABLE carries no code
-				// because TV emits nothing for it. see INV148
+				// `rule` always, plus the TV `code` this warning mirrors. Without
+				// either, 122 of 140 corpus warnings were unfilterable except by
+				// matching prose. see INV148
 				const out: PineLintError = {
 					start,
 					end,
@@ -479,20 +496,36 @@ async function main() {
 		// Our own semantic lints - the `lint` stage. The `rule` id rides along so
 		// a consumer can filter or suppress by rule instead of matching prose.
 		// see INV144
-		const lintPineLintWarnings: PineLintError[] = semanticLints.map((w) => {
-			const start = mapSourcePosition({ line: w.line, column: w.column });
-			const end = mapSourcePosition({
-				line: w.line,
-				column: w.column + w.length,
+		//
+		// Two sources feed it: the lint-semantic module, and the code-less
+		// SemanticAnalyzer warnings routed here above. `--no-lint` drops both,
+		// which is the point - the flag means "TradingView's verdict and nothing
+		// else", and a diagnostic TV never emits belongs on the same side of
+		// that switch wherever it was computed. see INV166
+		const lintPineLintWarnings: PineLintError[] = [
+			...(parsed.noLint
+				? []
+				: semanticWarnings.filter(
+						(w) =>
+							w.severity === DiagnosticSeverity.Warning && w.code === undefined,
+					)),
+			...semanticLints,
+		]
+			.sort((a, b) => a.line - b.line || a.column - b.column)
+			.map((w) => {
+				const start = mapSourcePosition({ line: w.line, column: w.column });
+				const end = mapSourcePosition({
+					line: w.line,
+					column: w.column + w.length,
+				});
+				return {
+					start,
+					end,
+					message: w.message,
+					stage: "lint" as const,
+					rule: w.rule,
+				};
 			});
-			return {
-				start,
-				end,
-				message: w.message,
-				stage: "lint" as const,
-				rule: w.rule,
-			};
-		});
 
 		// Combine all errors (lexer errors first, then parser, then validation)
 		//

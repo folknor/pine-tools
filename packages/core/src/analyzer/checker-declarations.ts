@@ -9,7 +9,11 @@
 import { LIBRARY_EXPORTS_BY_PATH, TYPE_NAMES } from "../../../../pine-data/v6";
 import { DiagnosticSeverity } from "../common/errors";
 import { TYPE_KEYWORDS } from "../constants/keywords";
-import type { FunctionDeclaration, Statement } from "../parser/ast";
+import type {
+	FunctionDeclaration,
+	FunctionParam,
+	Statement,
+} from "../parser/ast";
 import { mapToPineType } from "./builtins";
 import type { UnifiedPineValidator } from "./checker";
 import { type PineType, TypeChecker } from "./types";
@@ -331,6 +335,16 @@ export function checkFunctionRedefinition(
 	}
 	const cur = statement.params;
 	for (const prev of sigs) {
+		// TV's CE10111, which the arity comparison below cannot see: overloads
+		// whose REQUIRED parameter lists match are illegal however many optional
+		// parameters either one adds, so `f(float x)` and `f(float x, float
+		// scale = 1.0)` collide at different arities - and `f(float x, int s =
+		// 1)` and `f(float x, float t = 2.0)` collide at the SAME arity even
+		// though the full lists differ, which is why this runs first. An
+		// untyped required parameter is "undetermined" and collides with
+		// nothing (probed: p1/p5/p11 are all TV-clean), the same never-guess
+		// rule the same-arity check applies. see INV165
+		if (checkRequiredParamCollision(v, statement, prev, cur)) break;
 		if (prev.length !== cur.length) continue; // different arity -> legal
 		let distinct = false;
 		for (let i = 0; i < cur.length; i++) {
@@ -386,4 +400,68 @@ export function checkFunctionRedefinition(
 		break; // one error per redefinition
 	}
 	sigs.push(cur);
+}
+
+/**
+ * TV's CE10111 - two overloads with the same REQUIRED parameter types.
+ *
+ * Split out from the arity-based check above because it compares a different
+ * list: `f(float x)` and `f(float x, float scale = 1.0)` have different
+ * arities and are still illegal, since the optional parameter cannot
+ * disambiguate a call that omits it.
+ *
+ * Deliberately narrower than "required lists are equal" in two places, both
+ * probe-backed (INV165):
+ *
+ * - **Every required parameter must be TYPED on both sides.** An untyped one
+ *   is "undetermined" and collides with nothing - `f(x)` / `f(x, y = 1)` is
+ *   TV-clean, as is untyped-against-typed. This is the same never-guess rule
+ *   the same-arity check applies, and the reason this cannot simply compare
+ *   name-erased lists.
+ * - **At least one side must declare an optional parameter.** With no
+ *   optionals anywhere the required lists ARE the full lists, which is the
+ *   same-arity check's territory (CE10110/CE10112/CE10113); firing here too
+ *   would double-report.
+ *
+ * Returns whether it reported, so the caller stops at one error per
+ * declaration.
+ */
+function checkRequiredParamCollision(
+	v: UnifiedPineValidator,
+	statement: FunctionDeclaration,
+	prev: FunctionParam[],
+	cur: FunctionParam[],
+): boolean {
+	const required = (params: FunctionParam[]) =>
+		params.filter((p) => p.defaultValue === undefined);
+	const reqPrev = required(prev);
+	const reqCur = required(cur);
+
+	if (prev.length === reqPrev.length && cur.length === reqCur.length) {
+		return false; // no optionals: the same-arity check owns this case
+	}
+	if (reqPrev.length !== reqCur.length) return false;
+	if (![...reqPrev, ...reqCur].every((p) => p.typeAnnotation?.name != null)) {
+		return false; // an undetermined parameter distinguishes nothing
+	}
+	if (
+		reqCur.some(
+			(p, i) => p.typeAnnotation?.name !== reqPrev[i].typeAnnotation?.name,
+		)
+	) {
+		return false; // some required position has a distinct type
+	}
+
+	// TV anchors at the '(' after the name, same as the checks above.
+	v.addTemplateError({
+		line: statement.line,
+		column: statement.column + statement.name.length,
+		length: 1,
+		message:
+			'The "{functionName}" function has overloads with the same required parameters. The type of required parameters must be different in overloaded versions of functions.',
+		severity: DiagnosticSeverity.Error,
+		code: "CE10111",
+		ctx: { functionName: statement.name },
+	});
+	return true;
 }

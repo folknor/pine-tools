@@ -1,0 +1,10 @@
+//@version=6
+indicator("p10 required types differ, second adds an optional")
+
+f(float x) =>
+    x + 1.0
+
+f(int x, int s = 1) =>
+    x * s
+
+plot(f(1.0))
