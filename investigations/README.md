@@ -1081,3 +1081,13 @@ contradiction means re-measure, not "the earlier author was wrong."
   `parser_corpus_acceptance_matches_local_pine_lint` cross-check flags here
   and masked in INV156: its reliability depends on whether the two
   implementations' errors are correlated, and it never says which is right.
+- [INV161](INV161-strategy-in-request-argument/notes.md) - CE10059: the whole
+  `strategy.*` namespace is gated out of every `request.*()` argument,
+  commands and plain reads alike. The first check here whose oracle is NOT
+  `pine-lint --tv` but a hand-run Pine editor capture, accepted deliberately
+  after establishing that a CE-class artifact cannot exist in the
+  runtime-oracles protocol at all - no banner, no log, because the script
+  never runs. `--tv` splits on the cells: it rejects the void COMMANDS on
+  unrelated type grounds and is clean on the READS, so the reads are the
+  editor-only surface, and also the shape a script is likeliest to contain by
+  accident. Zero corpus carriers, measured before building.

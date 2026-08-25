@@ -9,6 +9,7 @@
 import { LIBRARY_EXPORTS_BY_PATH, TYPE_NAMES } from "../../../../pine-data/v6";
 import { DiagnosticSeverity } from "../common/errors";
 import type {
+	ArrayExpression,
 	BinaryExpression,
 	CallArgument,
 	CallExpression,
@@ -261,6 +262,10 @@ export function validateCallExpression(
 	// see INV082
 	for (const arg of call.arguments) {
 		if (!arg.skipSemanticValidation) v.validateExpression(arg.value, version);
+	}
+
+	if (version === "6" && functionName.startsWith("request.")) {
+		rejectStrategyInRequestArgument(v, call, functionName);
 	}
 
 	// NOTE: Complex callee expressions (e.g., chained calls like `foo().bar()`,
@@ -1555,6 +1560,100 @@ export function checkUnionArgs(
 
 // CE10123: a parameter that requires a compile-time constant received a
 // provably non-const argument. Our internal types drop the const/simple/input
+/**
+ * CE10059: the `strategy.*` namespace may not appear in ANY argument of a
+ * `request.*()` call.
+ *
+ * The whole surface is gated, mutating commands and plain variable READS
+ * alike - `strategy.entry`, `strategy.close` and a bare
+ * `strategy.position_size` read inside a `request.security` expression each
+ * produce this error.
+ *
+ * **Oracle, and it is unusual: the Pine EDITOR, captured by hand.** Three
+ * successive probe variants, 2026-08-25. `pine-lint --tv` passes all three
+ * CLEAN - `translate_light` typechecks without enforcing the editor's
+ * contextual restrictions on `request.*()` arguments - so this check cannot be
+ * regression-tested against `--tv`, and a clean `--tv` verdict here is not
+ * evidence of anything. See G009, which exists for exactly this caveat, and
+ * INV161.
+ *
+ * The anchor is the offending `strategy.*` reference. In all three probed
+ * variants the request ARGUMENT was the strategy reference itself, so the
+ * capture cannot distinguish "anchored at the argument" from "anchored at the
+ * reference"; they coincide. A nested use (`request.security(sym, tf,
+ * close + strategy.position_size)`) is where they would differ, and that shape
+ * is unprobed.
+ */
+function rejectStrategyInRequestArgument(
+	v: UnifiedPineValidator,
+	call: CallExpression,
+	functionName: string,
+): void {
+	for (const arg of call.arguments) {
+		const offender = findStrategyReference(arg.value);
+		if (!offender) continue;
+		v.addError(
+			offender.line,
+			offender.column,
+			offender.name.length,
+			`"${offender.name}" cannot be used with any parameter of the "${functionName.split(".")[0]}.*()" functions.`,
+			DiagnosticSeverity.Error,
+		);
+	}
+}
+
+/** The first `strategy.*` member reference anywhere in an expression tree. */
+function findStrategyReference(
+	expr: Expression | undefined,
+): { name: string; line: number; column: number } | null {
+	if (!expr) return null;
+	if (expr.type === "MemberExpression") {
+		const name = memberChainName(expr);
+		if (name?.startsWith("strategy.")) {
+			const m = expr as MemberExpression;
+			return {
+				name,
+				line: m.object.line || m.line,
+				column: m.object.column || m.column,
+			};
+		}
+	}
+	for (const child of expressionChildren(expr)) {
+		const found = findStrategyReference(child);
+		if (found) return found;
+	}
+	return null;
+}
+
+/** Sub-expressions of `expr`, for the CE10059 walk. */
+function expressionChildren(expr: Expression): Expression[] {
+	switch (expr.type) {
+		case "BinaryExpression":
+			return [expr.left, expr.right];
+		case "UnaryExpression":
+			return [expr.argument];
+		case "TernaryExpression":
+			return [expr.condition, expr.consequent, expr.alternate];
+		// The CALLEE first: `strategy.entry("L", strategy.long)` must be
+		// reported at `strategy.entry`, not at the inner `strategy.long` it
+		// happens to pass. Omitting the callee made the mutating-command
+		// variants - the two the capture cared most about - invisible.
+		case "CallExpression":
+			return [
+				(expr as CallExpression).callee,
+				...(expr as CallExpression).arguments.map((a) => a.value),
+			];
+		case "ArrayExpression":
+			return (expr as ArrayExpression).elements;
+		case "IndexExpression":
+			return [expr.object, expr.index];
+		case "MemberExpression":
+			return [(expr as MemberExpression).object];
+		default:
+			return [];
+	}
+}
+
 // True when `expr` is a bare identifier whose qualifier a `:=` raised to
 // series after its declaration. see INV157
 function isPromotedToSeries(

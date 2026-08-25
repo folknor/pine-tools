@@ -76,10 +76,27 @@ Two consequences for the methodology in `AGENTS.md`:
 - The standing rule "TV via `--tv` wins when we disagree" does not apply
   here in the accepting direction. `--tv` silence in this class is worth
   no more than TV silence generally: evidence, not authority.
-- Any check we add for these shapes (see TODO #67) is **unverifiable by
-  our own tooling**. Its only oracle is a hand-captured editor
-  screenshot, which is a different evidentiary standard from every other
-  check in the repo - closer to a gotcha than to a probe.
+- Any check we add for these shapes is **unverifiable by our own
+  tooling**. Its only oracle is a hand-run editor capture, a different
+  evidentiary standard from every other check in the repo - closer to a
+  gotcha than to a probe. We accepted that standard once, deliberately:
+  the CE10059 check landed as
+  [INV161](../investigations/INV161-strategy-in-request-argument/notes.md).
+
+**Refinement measured while building that check, 2026-08-25.** The blind
+spot is narrower than "`--tv` says nothing about CE10059". It does not
+treat the cells alike:
+
+| cell | `--tv` |
+|---|---|
+| a void `strategy.*` COMMAND in a request argument | rejects, but on ordinary type grounds (`void` into `series float`) |
+| a `strategy.*` READ (`strategy.position_size`, `strategy.equity`) | **clean** |
+
+So a mutating command is caught by the endpoint anyway, with a different
+and less specific message. The genuinely editor-only cells are the
+READS - which is also the shape a real script is likeliest to contain by
+accident, since reading `strategy.position_size` inside a request
+expression looks perfectly reasonable.
 
 The narrower reading is also worth keeping: TradingView has at least two
 validation layers, and the one we can reach is the more permissive of

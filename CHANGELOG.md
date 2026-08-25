@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- New error CE10059: the `strategy.*` namespace may not appear in any
+  `request.*()` argument - mutating commands and plain variable reads alike.
+  TradingView's Pine editor rejects the whole surface there; we were silent.
+  Note this check's oracle is a hand-run editor capture rather than
+  `pine-lint --tv`, which cannot see the rule: `--tv` rejects a void
+  `strategy.*` COMMAND in that position on ordinary type grounds, and is clean
+  on a READ such as `strategy.position_size`, which is precisely the shape a
+  script is likeliest to contain by accident. `strategy.*` anywhere outside a
+  request argument is unaffected. See INV161 and G009.
+
 - Three tuple-literal positions TradingView rejects are now caught: a bare
   `[a, b]` statement at top level (in ANY position, including as the script's
   last statement), and a tuple used as a value - a binary or unary operand, or

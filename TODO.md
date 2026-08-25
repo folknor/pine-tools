@@ -410,23 +410,6 @@ IDs so the two stay in sync.
   wants to say so at that line, which is the case neither a global flag nor an
   external filter covers.
 
-- **#67 - CE10059: `strategy.*` inside a `request.*()` argument
-  ([G009](gotchas/G009-tv-endpoint-misses-editor-only-gates.md)).** The Pine
-  editor rejects the entire `strategy.*` surface - mutating commands AND plain
-  variable reads - anywhere in a `request.*()` argument, with
-  `"strategy.X" cannot be used with any parameter of the "request.*()"
-  functions.` We are silent, and so is `--tv`. Adding the check is
-  straightforward (it is a namespace test on the argument subtree of any
-  `request.*` call, not a type rule), but it comes with an evidentiary problem
-  worth deciding BEFORE writing it: **neither pine-lint mode can verify it**,
-  so the check cannot be regression-tested against TV the way every other
-  check in this repo is. Its only oracle is piners' hand-captured editor
-  screenshots (`../piners/reference/fieldwork/runtime-oracles/README.md`,
-  2026-08-25, three probe variants). Decide whether we accept a check whose
-  authority is a third party's screenshot; if yes, it is small and high-value
-  (the corpus almost certainly carries carriers, since `--tv` never flagged
-  them). Probe kept at
-  `investigations/INV156-tail-qualifier-fold-through-returns/probes/ce10059-request-strategy.pine`.
 - **#69 - surface guaranteed RE-class runtime errors as `lint`-stage findings.**
   TradingView's runtime-error banners for a set of argument domains its
   *linter* says nothing about are captured as screenshots in

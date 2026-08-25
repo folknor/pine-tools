@@ -1,0 +1,21 @@
+// @test regression/INV161-strategy-in-request-argument
+// @description CE10059: the whole `strategy.*` surface is gated out of every `request.*()` argument - mutating commands AND plain variable reads alike. The oracle is a hand-run Pine EDITOR capture, 2026-08-25, over three probe variants (`strategy.entry`, `strategy.close`, a bare `strategy.position_size` read), each returning CE10059 at the expression argument. `pine-lint --tv` splits on these cells and neither half is a reason to change them: on the two VOID commands it rejects at the same positions but for an unrelated reason (void into a `series float` parameter), and on the two READS - which typecheck fine - it is CLEAN, because `translate_light` does not enforce the editor's contextual restrictions (G009). So the read cells are the ones only the editor can adjudicate, and a clean `--tv` verdict there is the known blind spot rather than evidence. Do NOT "fix" this fixture toward `--tv`. The controls at the bottom keep the check narrow: `strategy.*` outside a request argument is ordinary Pine. See INV161, G009.
+// @expects parse: success
+// @expects errors: 4
+// @expects error: line=4, message=/"strategy.entry" cannot be used with any parameter/
+// @expects error: line=5, message=/"strategy.close" cannot be used with any parameter/
+// @expects error: line=6, message=/"strategy.position_size" cannot be used with any parameter/
+// @expects error: line=7, message=/"strategy.equity" cannot be used with any parameter/
+//@version=6
+strategy("strategy in request argument")
+
+a = request.security(syminfo.tickerid, "60", strategy.entry("L", strategy.long))
+b = request.security(syminfo.tickerid, "60", strategy.close("L"))
+c = request.security(syminfo.tickerid, "60", strategy.position_size)
+d = request.security(syminfo.tickerid, "60", close + strategy.equity)
+
+// Controls: the same names outside a request argument are ordinary Pine.
+if strategy.position_size > 0
+    strategy.close("L")
+e = request.security(syminfo.tickerid, "60", ta.sma(close, 14))
+plot(a + b + c + d + e + strategy.equity)

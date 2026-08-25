@@ -1,0 +1,14 @@
+// The three editor-captured variants, reconstructed (the upstream probe was
+// deleted once it adjudicated). Each returned CE10059 in the Pine editor,
+// 2026-08-25.
+//
+// `--tv` does NOT reproduce the rule and must not be used to check this file:
+// it rejects the two void COMMANDS on ordinary type grounds (void into a
+// `series float` parameter) and is CLEAN on the READ, which is the cell only
+// the editor adjudicates. See G009, INV161.
+//@version=6
+strategy("ce10059 three variants")
+a = request.security(syminfo.tickerid, "60", strategy.entry("L", strategy.long))
+b = request.security(syminfo.tickerid, "60", strategy.close("L"))
+c = request.security(syminfo.tickerid, "60", strategy.position_size)
+plot(a + b + c)
