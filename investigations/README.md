@@ -1141,3 +1141,11 @@ contradiction means re-measure, not "the earlier author was wrong."
   warning in a sweep was the only visible symptom. The fix added ~160
   history-dependent exports and removed none, taking warning tv-only to 0 with
   warning local-only unchanged - a widening that bought no false positives.
+- [INV168](INV168-unused-variable-builtins/notes.md) - AGENTS.md's "reports
+  built-ins as unused" limitation DISPROVED (both implementations mark built-ins
+  used at define time, and the one the note named is unreachable from both
+  consumers). The sweep built to test it found the real defect: `IfExpression`
+  was the one `Expression` variant `analyzeExpression` never walked, so
+  identifiers read only inside an `x = if cond` branch were reported unused and
+  the branches escaped conditional scope. 652 UNUSED_VARIABLE false positives
+  removed; 9 TV-confirmed CW10003/CW10013/CW10018 warnings gained.

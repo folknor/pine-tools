@@ -1,0 +1,10 @@
+//@version=6
+indicator("p1")
+var aa = 10
+var bb = 5
+var cc = 7
+x = if aa > bb
+    cc
+else
+    aa
+plot(x)

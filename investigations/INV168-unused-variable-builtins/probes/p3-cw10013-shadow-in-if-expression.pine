@@ -1,0 +1,9 @@
+//@version=6
+indicator("p3")
+l = 10
+v = if close > open
+    l = 20
+    l
+else
+    l
+plot(v)

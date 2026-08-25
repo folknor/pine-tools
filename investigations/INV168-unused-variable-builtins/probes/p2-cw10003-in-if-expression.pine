@@ -1,0 +1,9 @@
+//@version=6
+indicator("p2")
+length = 20
+nzVolume = nz(volume)
+compIn = input.bool(true)
+cmf = if compIn and nzVolume > 0
+    ad = close == high and close == low or high == low ? 0 : (2 * close - low - high) / (high - low) * nzVolume
+    math.sum(ad, length) / math.sum(nzVolume, length)
+plot(cmf)

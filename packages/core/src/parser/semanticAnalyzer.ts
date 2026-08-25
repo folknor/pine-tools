@@ -14,6 +14,7 @@ import type {
 	ForInStatement,
 	ForStatement,
 	FunctionDeclaration,
+	IfExpression,
 	IfStatement,
 	Literal,
 	MemberExpression,
@@ -462,7 +463,7 @@ export class SemanticAnalyzer {
 				break;
 
 			case "IfStatement":
-				this.analyzeIfStatement(statement);
+				this.analyzeIfBranches(statement);
 				break;
 
 			case "ForStatement":
@@ -688,7 +689,17 @@ export class SemanticAnalyzer {
 		}
 	}
 
-	private analyzeIfStatement(statement: IfStatement): void {
+	/**
+	 * The shared walk for both if forms. `IfExpression` is the same node in
+	 * expression position - the parser builds it with the statement machinery
+	 * and re-tags it, so its branch arrays have IfStatement's shape (see the
+	 * AST's IfExpression comment). Walking only the statement form left every
+	 * identifier inside an `x = if cond` condition or branch invisible to usage
+	 * tracking (652 UNUSED_VARIABLE false positives across the corpus), and left
+	 * the branches outside conditional scope (missing CW10003/CW10013/CW10018).
+	 * see INV168
+	 */
+	private analyzeIfBranches(statement: IfStatement | IfExpression): void {
 		// The branches are conditional only when the CONDITION is series-
 		// qualified - `if inputBool` selects the same branch on every bar,
 		// so calls inside stay consistent (TV is silent there; probed -
@@ -872,6 +883,10 @@ export class SemanticAnalyzer {
 
 			case "SwitchExpression":
 				this.analyzeSwitchExpression(expr);
+				break;
+
+			case "IfExpression":
+				this.analyzeIfBranches(expr);
 				break;
 
 			case "Identifier":

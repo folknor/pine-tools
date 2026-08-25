@@ -36,6 +36,21 @@
   history-dependent. Regenerating the library data added ~160 history-dependent
   exports and removed none; the TradingView sweep afterwards went to zero
   tv-only warnings with no new local-only ones. See INV167.
+- Fixed: an if/else in EXPRESSION position (`x = if cond` and its branches) was
+  never walked by the semantic analyzer - it was the one expression form with
+  no case in the walker. Variables read only inside such a branch were reported
+  "declared but never used" (652 false positives across 2257 files), and the
+  branches escaped conditional-scope tracking, so a shadowing declaration, a
+  `[]` read of a branch-local, and a history-dependent call in a branch drew no
+  warning. The three resulting CW10013 / CW10018 / CW10003 additions were each
+  probe-confirmed against TradingView at the same position and wording. The
+  TradingView sweep afterwards left the error window byte-identical and took
+  local-only warnings from 41 to 12, tv-only still 0. See INV168.
+- Retracted a Known Limitation: the semantic analyzer does not report built-in
+  variables or keywords as unused, and the code path the note named cannot
+  reach a user at all. A 2257-file sweep found only correct warnings on
+  built-in names - user declarations that shadow one and are never read. See
+  INV168.
 
 - A type keyword may now be a destructured name, as it already could be a
   single declaration's name. `[line, signal, hist] = ta.macd(close, 12, 26, 9)`

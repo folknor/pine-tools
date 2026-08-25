@@ -34,7 +34,13 @@ predicted INV146's pre-v5 refusal and INV148's v6-only argument-name gate would
 move the split by construction; both change what NON-v6 fixtures report, and
 the split counts v6 fixtures only, so the window did not move.
 
-**warning local-only is now 41** (plus 47 past TV's stop), down from the 1292
+**warning local-only is now 12** (plus 47 past TV's stop), re-measured
+2026-08-25 after INV168 fixed the if-expression walk gap - the sweep that
+produced the 41 below ran before it. That sweep also re-confirmed the error
+window above unchanged and warning tv-only still 0, so the 29 records the fix
+removed cost no false positives. The 41 figure and its history are kept below
+because the collapse it describes is still the reason this column is readable
+at all. It was down from the 1292
 comparable figure of the 2026-08-15 sweep. Most of that collapse is INV166
 moving UNUSED_VARIABLE to the `lint` stage, which `find-real-failures.mjs`
 drops before diffing - the `C_*` unused-var churn named below as the dominant
@@ -44,7 +50,7 @@ worth reading again, with the G001 caveat below still standing.
 **warning tv-only is 0.** It read 1 mid-session - a CW10003 on a conditional
 library-member call - and INV167 fixed it the same day; the figures above are
 from the post-fix sweep, which also left warning local-only unchanged at 41.
-See #80.
+It is still 0 in the post-INV168 sweep. See #80.
 
 Two categories are now *expected* local-only and must not be read as
 over-strictness when that sweep happens - both are TV holes we deliberately do
@@ -68,7 +74,7 @@ the on-disk baseline was still the 2026-06-28 one, 622/16057, and every run
 since carried the `2997d729…` v5 disappearance as a phantom changed fixture.
 Corrected 2026-08-15.)
 
-Full vitest: 472 passing.
+Full vitest: 473 passing.
 
 The 2026-08-15 sweep's warning local-only read 1423 raw, of which **131 were
 `lint`-stage records** (116 REPAINTING_SECURITY + 15 ACCUMULATOR_LIFETIME) that
@@ -540,9 +546,44 @@ IDs so the two stay in sync.
   it, it falls inside #66's suppression design, and it left the local-only
   warning column (which dropped from 1292 to 41 on the same-day sweep).
 
-  **Still open, and unaffected by the stage:** this rule reports BUILT-INS as
-  unused (the limitation AGENTS.md records). The `_` half is CLOSED - see
-  INV158.
+  **The built-in half is CLOSED 2026-08-25 - the claim was false**
+  ([INV168](../investigations/INV168-unused-variable-builtins/notes.md)).
+  Built-ins are defined with `used: true`, the SemanticAnalyzer's copy of the
+  rule only ever sees user declarations, and the copy AGENTS.md named
+  (`checker.ts`) is unreachable - both consumers keep only ERRORS from
+  `validate()`. A 2257-file sweep found 15 warnings on built-in NAMES, all
+  correct (user declarations shadowing the name, genuinely never read). The
+  entry has been retracted in AGENTS.md rather than deleted. The `_` half was
+  already CLOSED by INV158.
+
+  Testing the claim found the real defect and fixed it: `IfExpression` was the
+  one `Expression` variant `analyzeExpression` never walked, so an
+  `x = if cond` subtree was invisible - **652 UNUSED_VARIABLE false positives**
+  across 2257 files, plus 9 missing CW10003/CW10013/CW10018 warnings (the
+  branches are a scope, and a series-gated one is conditional). All nine were
+  probe-confirmed against TV at the same positions and wording before landing.
+
+  **Still open - the `isCommonlyUsedVariable` whitelist.**
+  `checkUnusedVariables` silently drops the warning for 40 hardcoded names
+  (`ma`, `bb`, `c`, `col`, `up`, `len`, `src`, `show`, `plot`, ...), matched
+  case-insensitively. Its stated justification - that they "may appear unused
+  but are actually used by plots or external references" - does not hold: a
+  plotted variable's identifier appears in the plot call and is marked used,
+  and Pine has no external-reference mechanism for a local binding. The noise
+  it was papering over was the walk gap above, which is why `bb` was silent in
+  INV168's repro while `aa` and `cc` warned - an inconsistency no author could
+  predict. Removing it costs **+103 warnings over 2257 files** (33 new distinct
+  names), measured on the pre-fix build so that is an upper bound. Left as a
+  decision because it is a recall-versus-noise trade-off on the channel whose
+  contract says a false positive is worse than a miss.
+
+  **Also open, both recorded in INV168 and neither with a corpus carrier:**
+  `collectDeclarationsInStatement` does not descend into an `IfExpression`
+  init, so a binding declared inside a branch gets no series/undetermined
+  typing; and `checker.ts`'s `checkUnusedVariables` plus
+  `SymbolTable.getAllUnusedSymbols` / `Scope.getUnusedSymbols` are dead code
+  worth deleting, being the second implementation that kept the false
+  limitation alive.
 
 - **#80 - CW10003 tv-only warning. FIXED 2026-08-25, same day it appeared
   ([INV167](../investigations/INV167-library-export-series-tail/notes.md)).**

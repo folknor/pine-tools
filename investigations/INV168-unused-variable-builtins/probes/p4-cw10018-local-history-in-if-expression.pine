@@ -1,0 +1,8 @@
+//@version=6
+indicator("p4")
+v = if close > open
+    isOrderOpen = close > close[1]
+    isOrderOpen[1] ? 1 : 0
+else
+    0
+plot(v)

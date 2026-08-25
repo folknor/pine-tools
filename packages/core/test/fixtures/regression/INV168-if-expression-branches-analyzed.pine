@@ -1,0 +1,31 @@
+// @description An if-EXPRESSION's branches were never walked by the SemanticAnalyzer: `analyzeExpression` had no `IfExpression` case, so the whole subtree was invisible. Two consequences, both pinned here. (1) Identifiers read only inside a branch or its condition were never marked used, so `aa`/`cc` below were reported UNUSED_VARIABLE - a false positive on the one channel where a false positive is worse than a miss (652 of them across the corpus). (2) The branches are a scope, and a conditional one, so a shadowing declaration and a `[]` read of a branch-local draw TV's CW10013 / CW10018 - we emitted neither. Both warnings below match TV at the same positions and wording (pine-lint --tv, 2026-08-25; probes in investigations/INV168-unused-variable-builtins/). The fixture goes red in both directions: remove the IfExpression case and the two CW warnings vanish while two spurious unused-variable ones appear; disable UNUSED_VARIABLE and `spare` stops being reported. See INV168, TODO #73.
+// @expects errors: 0
+// @expects warnings: 3
+// @expects warning: line=18, message="Shadowing variable 'l' which exists in parent scope"
+// @expects warning: line=20, message="The variable 'isOrderOpen' is declared in local scope"
+// @expects warning: line=25, message="Variable 'spare' is declared but never used"
+//@version=6
+indicator("INV168")
+var aa = 10
+var zz = 5
+var cc = 7
+// aa/cc are read only inside an if-EXPRESSION. Before INV168 the branch
+// subtree was never walked for usage, so both were reported unused.
+x = if aa > zz
+    cc
+else
+    aa
+plot(x)
+// The other half of the same gap: an if-expression's branches ARE a scope
+// and a conditional one, so a shadowing declaration and a `[]` read of a
+// local declared there draw TV's CW10013 / CW10018.
+l = 10
+v = if close > open
+    l = 20
+    isOrderOpen = close > close[1]
+    isOrderOpen[1] ? l : 0
+else
+    l
+plot(v)
+// The rule must still fire on a genuine unused local.
+spare = 1
