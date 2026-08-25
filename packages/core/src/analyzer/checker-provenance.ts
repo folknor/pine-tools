@@ -6,6 +6,7 @@ import type {
 	FunctionDeclaration,
 	Identifier,
 	IfExpression,
+	IfStatement,
 	MemberExpression,
 	ReturnStatement,
 	Statement,
@@ -96,6 +97,68 @@ function joinProvenance(
 	return base && qualifier ? { base, qualifier } : null;
 }
 
+/**
+ * The qualifier of the value a BODY evaluates to.
+ *
+ * Mostly this is `returnExpression`'s single expression, but a body whose tail
+ * is a STATEMENT-form `if` has no single value expression, and that tail is how
+ * a user function returns a branch value:
+ *
+ * ```pine
+ * f() =>
+ *     if close > open
+ *         "a"
+ *     else
+ *         "b"
+ * ```
+ *
+ * TV types that `series string` - the qualifier comes from the CONDITION, not
+ * from the branches, which are both const here. So the join is over condition
+ * plus both branch values, exactly like the `IfExpression` and `Ternary` cases
+ * below; the difference is only that this shape reaches us as a statement.
+ * Recursive, so nested `if` tails fold too. A missing `else`, or a branch with
+ * no readable value, yields null (lenient). see INV156
+ */
+function bodyValueProvenance(
+	v: UnifiedPineValidator,
+	body: Statement[],
+	version: string,
+	policy: ProvenancePolicy,
+	seenUdfs: Set<string>,
+): Provenance | null {
+	const ret = returnExpression(body);
+	if (ret) {
+		return qualifierProvenanceInternal(v, ret, version, policy, seenUdfs);
+	}
+	const tail = body[body.length - 1];
+	if (tail?.type !== "IfStatement") return null;
+	const ifs = tail as IfStatement;
+	if (!ifs.alternate) return null;
+	const cons = bodyValueProvenance(
+		v,
+		ifs.consequent,
+		version,
+		policy,
+		seenUdfs,
+	);
+	const alt = bodyValueProvenance(v, ifs.alternate, version, policy, seenUdfs);
+	const cond = qualifierProvenanceInternal(
+		v,
+		ifs.condition,
+		version,
+		policy,
+		seenUdfs,
+	);
+	if (!cons || !alt || !cond) return null;
+	return {
+		base: cons.base,
+		qualifier: joinQualifier(
+			joinQualifier(cons.qualifier, alt.qualifier),
+			cond.qualifier,
+		),
+	};
+}
+
 function udfCallProvenance(
 	v: UnifiedPineValidator,
 	name: string,
@@ -108,10 +171,14 @@ function udfCallProvenance(
 	if (v.methodDeclaredNames.has(name)) return null;
 	const records = v.udfBodyRecords.get(name);
 	if (records?.length !== 1) return null;
-	const ret = returnExpression(records[0].body);
-	if (!ret) return null;
 	seenUdfs.add(name);
-	const prov = qualifierProvenanceInternal(v, ret, version, policy, seenUdfs);
+	const prov = bodyValueProvenance(
+		v,
+		records[0].body,
+		version,
+		policy,
+		seenUdfs,
+	);
 	seenUdfs.delete(name);
 	return prov;
 }

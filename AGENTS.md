@@ -81,6 +81,15 @@ For every concrete TV-vs-us discrepancy we choose to act on:
    wrong parse shape. AST directives support dot paths with numeric array
    indexes, `=`, `~= /regex/`, and `exists`. Warnings assert the
    SemanticAnalyzer channel (same as the CLI); validator warnings are stripped.
+
+   **`line=N` counts the fixture WITHOUT its `// @` directive lines.** The
+   harness consumes every leading `// @...` line and validates what remains,
+   so a fixture with seven directive lines reports an error the CLI puts at
+   line 14 as line 7. Ordinary `//` comments and blank lines are KEPT and do
+   count. Easiest not to compute it: run `pine-lint -H <fixture>`, then
+   subtract the directive-line count from each line it reports. A wrong `N`
+   fails as `Expected error not found` while the `errors: N` count still
+   passes, which reads like a message-match failure and is not one.
 2. **Open an investigation** under `investigations/INV###-name/` with
    `notes.md` and the repro file (or a pointer to the regression
    fixture). Sequential numbering, never reuse. Index entries live in

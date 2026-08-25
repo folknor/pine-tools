@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- A user function whose body TAIL is a statement-form `if` now carries a
+  qualifier, so `plot(close, title = f())` is caught when `f` ends in an
+  `if`/`else` under a series condition. TradingView rejects it (`series string`
+  into a `const string` slot) and we passed it - the dangerous direction. The
+  qualifier is the join of the CONDITION with both branch values, which is what
+  the ternary and `switch` forms already did; the statement form was the one
+  shape that reached neither, so the call had no qualifier at all rather than
+  the wrong one. The identical body under a const condition (`if 1 > 0`) stays
+  clean, and nested `if` tails fold too. See INV156.
+
 - A `:=` now raises a variable's qualifier for every later read, so passing a
   promoted variable to a `simple`-qualified parameter is caught. `n = 5` /
   `n := int(close)` / `request.security(..., calc_bars_count = n)` was accepted

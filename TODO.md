@@ -427,25 +427,6 @@ IDs so the two stay in sync.
   (the corpus almost certainly carries carriers, since `--tv` never flagged
   them). Probe kept at
   `investigations/INV156-tail-qualifier-fold-through-returns/probes/ce10059-request-strategy.pine`.
-- **#68 - qualifier fold through a statement-form `if` return
-  ([INV156](investigations/INV156-tail-qualifier-fold-through-returns/notes.md)).**
-  A confirmed false negative, reported by piners and reproduced here
-  2026-08-25. `plot(close, title = f())` where `f`'s body tail is a
-  statement-form `if`/`else` passes clean; TV rejects it CE10123
-  (`series string` into a `const string` slot). Scope, measured rather than
-  assumed: `switch` and ternary tails ALREADY error correctly, and the return
-  type itself is right - the same `f()` in `f() + 1` is read as
-  `series string` - so this is not return-type inference and not a
-  `switch` bug. Something about the statement-form `if` tail suppresses the
-  const-qualifier ARGUMENT check specifically; establishing that mechanism is
-  step one (the G006 undetermined-type suppression is the shape it resembles,
-  and our own version of it is the first place to look). The regression
-  fixture lands with the fix, in the
-  `// @expects error: line=8, message="..."` form matching TV's wording in the
-  INV. Fixing it also un-masks the class for piners, whose parser corpus
-  cross-checks acceptance against our LOCAL validator and therefore stays
-  green whenever both sides wrongly accept.
-
 - **#69 - surface guaranteed RE-class runtime errors as `lint`-stage findings.**
   TradingView's runtime-error banners for a set of argument domains its
   *linter* says nothing about are captured as screenshots in

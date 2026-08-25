@@ -86,13 +86,44 @@ green and the whole divergence class is masked. Their manual rule
 automated cross-check has no such escape. Fixing this on our side
 un-masks it on theirs.
 
-### Not fixed here
+### FIXED 2026-08-25
 
-Adoption only. No regression fixture is committed under
-`packages/core/test/fixtures/regression/` yet: the fixture asserts an
-error we do not emit, so it would land red. It goes in with the fix, as
-the `// @expects error: line=8, message="..."` form matching TV's CE10123
-wording above. Tracked as TODO #68.
+The suppression theory in the previous section was wrong in its guess at
+the mechanism, and the real cause is simpler. `udfCallProvenance` asked
+`returnExpression` for the body's single value expression, and
+`branchValue` yields the tail only when it is an `ExpressionStatement`.
+A statement-form `if` tail is an `IfStatement`, so it returned null, the
+UDF call had NO provenance at all, and the const-qualifier argument check
+skipped for want of a qualifier rather than because anything suppressed
+it. Nothing was suppressed; the qualifier was simply never computed.
+
+That also explains why the return TYPE was right all along: the type
+comes from a different path, and only the qualifier flows through
+provenance.
+
+`bodyValueProvenance` replaces that call. It handles the same cases and
+adds one: a tail that is a statement-form `if` folds to the join of the
+CONDITION with both branch values, recursively, so nested `if` tails work
+too. A missing `else`, or a branch with no readable value, still yields
+null.
+
+**The condition is the load-bearing half.** Both branches in the repro
+are const strings; TV types the call `series string` purely because the
+condition is series. The `IfExpression` and `TernaryExpression` cases
+already joined the condition the same way - the statement form was the
+one shape that never reached them.
+
+Pinned by `packages/core/test/fixtures/regression/INV156-tail-qualifier-fold.pine`,
+which `--tv` adjudicates directly (3 errors, clean on the const-condition
+cell). Four cells: a series-condition tail errors, the IDENTICAL shape
+under `if 1 > 0` stays clean, and the switch and ternary tails guard
+against regressing. Mutation-verified by dropping the condition from the
+join, which goes red on exactly the first cell.
+
+Corpus: `regression-check` 0 changed fixtures - no-regression only, since
+no corpus file carries the shape.
+
+Closed TODO #68.
 
 ## Finding 2 - `ta.change(...) and ...` DOES NOT REPRODUCE (their claim is wrong)
 

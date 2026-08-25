@@ -1,0 +1,37 @@
+// @test regression/INV156-tail-qualifier-fold
+// @description A user function whose body TAIL is a statement-form `if` returns the join of the CONDITION and both branch values, so a series condition makes the call `series` even when both branches are const. `plot`'s `title` is const-only, so cell (1) is TV's CE10123 and cell (2) - the identical shape under a const condition - must stay clean, which is what pins the qualifier to the condition rather than to a blanket promotion. Cells (3) and (4) already worked before the fix and guard the switch and ternary tails against regressing. All four adjudicated against `pine-lint --tv` 2026-08-25. See INV156, TODO #68.
+// @expects parse: success
+// @expects errors: 3
+// @expects error: line=10, message=/"series string".*"const string"/
+// @expects error: line=25, message=/"series string".*"const string"/
+// @expects error: line=30, message=/"series string".*"const string"/
+//@version=6
+indicator("tail qualifier fold")
+
+// (1) statement-form `if` tail under a SERIES condition -> series string
+seriesTail() =>
+    if close > open
+        "a"
+    else
+        "b"
+plot(close, title = seriesTail())
+
+// (2) the identical shape under a CONST condition -> stays const, clean
+constTail() =>
+    if 1 > 0
+        "a"
+    else
+        "b"
+plot(close, title = constTail())
+
+// (3) switch tail - correct before the fix, guard against regressing
+switchTail() =>
+    switch
+        close > open => "a"
+        => "b"
+plot(close, title = switchTail())
+
+// (4) ternary tail - correct before the fix, guard against regressing
+ternaryTail() =>
+    close > open ? "a" : "b"
+plot(close, title = ternaryTail())
