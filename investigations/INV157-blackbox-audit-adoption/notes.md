@@ -56,7 +56,67 @@ series state for the CW10003 consistency warnings. The likely repair is
 feeding that same state into the argument qualifier check rather than
 computing it twice.
 
-Tracked as TODO #70.
+### FIXED 2026-08-25 - and the rule is narrower than "a `:=` makes it series"
+
+Probing TV first turned out to matter, because three of the six cells
+would have been wrong under the obvious implementation. TV's rule, all
+probed 2026-08-25:
+
+| cell | TV |
+|---|---|
+| series RHS at top level (`n := int(close)`) | **promotes** |
+| const RHS inside a loop body (`sum := sum + 1`) | **promotes** |
+| const RHS under a series-gated `if` (`if close > open`) | **promotes** |
+| const RHS at top level (`n := 6`) | clean |
+| const RHS under a CONST-gated `if` (`if 1 > 0`) | clean |
+| read BEFORE the `:=`, same script | clean |
+
+Two consequences. The qualifier is **flow-sensitive, not a whole-script
+join** - moving the `:=` after the call clears the error - so promoting
+in statement order as the walk proceeds is the parity behaviour rather
+than an approximation of it. And the trigger is not the written value: a
+write that RUNS conditionally is series regardless of what it writes,
+which is why the loop and series-gate cells promote a plain `+ 1`. TV
+ignores the loop back edge too (a read textually before the `:=` inside
+the same loop body is clean).
+
+All six cells are pinned by
+`packages/core/test/fixtures/regression/INV157-qualifier-promoted-by-reassignment.pine`,
+which TV adjudicates directly: `--tv` on that fixture returns exactly the
+three expected errors and is silent on the three negative cells.
+Mutation-verified in both directions - disabling the context promotion
+drops it to 1 error, and making the gate unconditional adds a fourth on
+the const-gated cell.
+
+### The design constraint this ran into, worth knowing before touching it again
+
+The obvious implementation - write the promoted qualifier into
+`symbol.type` - **fails, and it fails loudly**: 11 fixtures went red with
+`operator +` reporting `series int` against an expected `const int` on
+loop accumulators.
+
+The reason is an invariant that is not written down anywhere: **symbol
+types are stored UNQUALIFIED and the qualifier is derived per read**, by
+`qualifierProvenance`. A qualified string in `symbol.type` is then read
+as a base type by everything downstream. `inferExpressionType` hands back
+`symbol.type` verbatim, so it feeds every operator and assignment check,
+not just the argument check that needed it.
+
+What landed instead keeps the promotion beside the symbol - a
+`WeakMap<Symbol, Qualifier>` keyed by the declaring scope's Symbol object
+(`lookup` walks to it, so a `:=` in a loop body promotes the declaration
+rather than a shadow that dies with the scope) - and consults it in
+exactly two places: `qualifierProvenance`, which is the qualifier
+authority, and the INV088 simple-qualifier argument check, which reads
+`inferExpressionType` and would otherwise never see it. Nothing else
+changes behaviour.
+
+Corpus: `regression-check` 0 changed fixtures. Read that as no-regression
+only, NOT as evidence the check works - no corpus file carries this
+shape, so the corpus supplies no positive evidence here. Same caveat
+class as INV141/142/143.
+
+Closed TODO #70.
 
 ### Cluster B - user-function overloads are unmodelled
 

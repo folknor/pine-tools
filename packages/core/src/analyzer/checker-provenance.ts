@@ -136,7 +136,16 @@ function qualifierProvenanceInternal(
 			}
 			const sym = v.symbolTable.lookup(name);
 			const symType = sym?.type as string | undefined;
-			const q = symType ? leadingQualifierOf(symType) : undefined;
+			const declared = symType ? leadingQualifierOf(symType) : undefined;
+			// A `:=` after the declaration raises the qualifier for every later
+			// read - `n = 5` / `n := int(close)` makes `n` a series int. The
+			// promotion is recorded beside the symbol, so join it in here
+			// rather than reading a qualifier off `symbol.type`. see INV157
+			const promoted = sym ? v.promotedQualifierFor(sym) : undefined;
+			const q =
+				declared && promoted
+					? joinQualifier(declared, promoted)
+					: (promoted ?? declared);
 			if (
 				sym?.kind === "variable" &&
 				q &&

@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+- A `:=` now raises a variable's qualifier for every later read, so passing a
+  promoted variable to a `simple`-qualified parameter is caught. `n = 5` /
+  `n := int(close)` / `request.security(..., calc_bars_count = n)` was accepted
+  locally and rejected by TradingView - the dangerous direction, since the file
+  passed here and failed at chart load. The rule is narrower than "a `:=` makes
+  it series", and the narrow parts are probed: it is FLOW-SENSITIVE, so the
+  same script with the `:=` moved after the call stays clean, and a write that
+  RUNS conditionally promotes regardless of what it writes, so a plain
+  `sum := sum + 1` inside a loop body or under a series-gated `if` promotes
+  while the identical write at top level, or under a const-gated `if`
+  (`if 1 > 0`), does not. All six cells are pinned by one fixture that
+  TradingView adjudicates directly. See INV157.
+
 - `_`, Pine's discard identifier, no longer produces warnings. Two rules fired
   on it: `UNUSED_VARIABLE` reported it as declared-but-never-used, and
   `SHADOW_VARIABLE` (CW10013) reported a second `_` as shadowing the first.

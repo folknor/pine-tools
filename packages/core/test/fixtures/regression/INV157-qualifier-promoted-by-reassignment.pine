@@ -1,0 +1,42 @@
+// @test regression/INV157-qualifier-promoted-by-reassignment
+// @description A `:=` raises a binding's qualifier for every LATER read, so a promoted variable passed to a `simple`-qualified parameter is TV's CE10123. Three cells warrant an error (probed 2026-08-25): a series RHS at top level, a const RHS inside a loop body, and a const RHS under a series-gated `if`. Three more must stay clean, and they are what pins the rule's shape: a const RHS at top level does NOT promote, a const-gated `if` does NOT promote, and TV is FLOW-SENSITIVE so a use that PRECEDES the `:=` is clean. The negative cells matter as much as the positive ones - promoting unconditionally would fire on all three. See INV157, TODO #70.
+// @expects parse: success
+// @expects errors: 3
+// @expects error: line=7, message=/"series int".*"simple int"/
+// @expects error: line=13, message=/"series int".*"simple int"/
+// @expects error: line=19, message=/"series int".*"simple int"/
+//@version=6
+indicator("qualifier promotion")
+
+// (1) series RHS at top level promotes
+promotedBySeries = 5
+promotedBySeries := int(close)
+plot(request.security(syminfo.tickerid, "60", close, calc_bars_count = promotedBySeries))
+
+// (2) const RHS inside a loop body promotes - the loop context is series
+promotedByLoop = 0
+for i = 0 to 5
+    promotedByLoop := promotedByLoop + 1
+plot(request.security(syminfo.tickerid, "60", close, calc_bars_count = promotedByLoop))
+
+// (3) const RHS under a SERIES-gated branch promotes
+promotedByGate = 5
+if close > open
+    promotedByGate := 6
+plot(request.security(syminfo.tickerid, "60", close, calc_bars_count = promotedByGate))
+
+// (4) const RHS at top level does NOT promote
+constReassigned = 5
+constReassigned := 6
+plot(request.security(syminfo.tickerid, "60", close, calc_bars_count = constReassigned))
+
+// (5) a CONST-gated branch does NOT promote
+constGated = 5
+if 1 > 0
+    constGated := 6
+plot(request.security(syminfo.tickerid, "60", close, calc_bars_count = constGated))
+
+// (6) flow-sensitive: the read precedes the promotion, so it is clean
+usedBeforePromotion = 5
+plot(request.security(syminfo.tickerid, "60", close, calc_bars_count = usedBeforePromotion))
+usedBeforePromotion := int(close)

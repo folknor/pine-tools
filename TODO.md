@@ -522,21 +522,30 @@ IDs so the two stay in sync.
   genuine find (those scripts are broken) or a decidability bug; both need
   looking at before it ships.
 
-- **#70 - propagate mutation-induced `series` into the argument qualifier check
-  ([INV157](investigations/INV157-blackbox-audit-adoption/notes.md), cluster
-  A).** A confirmed false negative. A binding that starts const or simple and
-  becomes `series` through a later `:=` is still read at its DECLARED qualifier
-  when it reaches a call site, so we accept
-  `n = 5` / `n := int(close)` /
-  `request.security(..., calc_bars_count = n)` where TV rejects it
-  (`series int` into a `simple int` slot). The same gap via loop mutation
-  (`sum := sum + i` inside a `for`) is the second probe. We already enforce the
-  `simple` qualifier in general (G007 / INV088), so the check is not missing -
-  its input is stale. We also already COMPUTE this fact for the consistency
-  warnings (INV115's conditional-const-reassign series state), so the likely
-  repair is feeding that state into the qualifier check rather than deriving it
-  twice. Probes: `investigations/INV157-blackbox-audit-adoption/probes/qual5.pine`,
-  `qual7.pine`.
+- **#74 - `ta.range` (and the source-polymorphic `ta.*` family) reports the
+  wrong parameter's type, then cascades.** Reported from the strategies repo,
+  reproduced 2026-08-25 on `plot(ta.range("x", 3))`:
+
+  | | verdict |
+  |---|---|
+  | us | `source`: `"literal string"` used but **`"simple int"`** expected, PLUS a second error on the enclosing `plot` |
+  | `--tv` | `source`: `"literal string"` used but **`"series float"`** expected - one error |
+
+  Two defects, and the accept/reject verdict is right in both tools, so this
+  is message accuracy rather than a missed error. (1) The expected type we
+  name for `source` is `simple int`, which matches NEITHER overload - the
+  catalog types it `series int/float` in the merged view and `series int` /
+  `series int/float` in the two overloads. We are naming some other
+  parameter's type, so a reader is sent to fix the wrong argument. (2) The
+  merged `returns` in `functions.json` is `series int`, the FIRST overload's
+  return, rather than the widest `series float`; that is what makes us type
+  the call `series int` and emit the bogus second error on `plot`. Fixing (2)
+  is a `generate.ts` question (which overload's return the merged view should
+  take), and it may not fix (1). Note `ta.change` and `ta.mode` are the other
+  two source-polymorphic functions and should be checked together. The
+  reporter keeps a live guard for this shape in their own suite
+  (`compile_rejects_string_source_for_polymorphic_ta_builtins`), so it is a
+  standing cross-repo comparison, not a one-off.
 - **#71 - user-function overloads are unmodelled
   ([INV157](investigations/INV157-blackbox-audit-adoption/notes.md), cluster
   B).** Pine lets a user function be declared more than once with different

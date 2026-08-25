@@ -1071,7 +1071,20 @@ export function validateFunctionArguments(
 			const param = signature.parameters[i];
 			if (!param.type || !isSimpleQualifiedParam(param.rawType)) continue;
 			const provided = providedArgs.get(param.name) ?? positionalArgs[i];
-			if (!provided || !isSeriesQualified(provided.type)) continue;
+			if (!provided) continue;
+			// A binding whose qualifier a later `:=` raised to series reads as
+			// its DECLARED type here, because symbol types are stored
+			// unqualified and `inferExpressionType` hands back exactly that.
+			// The promotion is consulted only at this check rather than folded
+			// into inference: making the inferred type series-qualified feeds
+			// every operator and assignment check too, which reports a promoted
+			// loop accumulator as `series int` against an expected `const int`.
+			// see INV157
+			if (
+				!isSeriesQualified(provided.type) &&
+				!isPromotedToSeries(v, provided.arg.value)
+			)
+				continue;
 			if (!TypeChecker.isAssignable(provided.type, param.type)) continue;
 			const desc = v.describeArgForTemplate(
 				provided.arg.value,
@@ -1542,6 +1555,17 @@ export function checkUnionArgs(
 
 // CE10123: a parameter that requires a compile-time constant received a
 // provably non-const argument. Our internal types drop the const/simple/input
+// True when `expr` is a bare identifier whose qualifier a `:=` raised to
+// series after its declaration. see INV157
+function isPromotedToSeries(
+	v: UnifiedPineValidator,
+	expr: Expression,
+): boolean {
+	if (expr.type !== "Identifier") return false;
+	const sym = v.symbolTable.lookup((expr as Identifier).name);
+	return sym ? v.promotedQualifierFor(sym) === "series" : false;
+}
+
 // qualifier (mapToPineType collapses them), so this reads the raw qualifier
 // from pine-data directly. Both the const-required set and the per-overload
 // return qualifiers are data-driven (see builtins.ts) and were verified

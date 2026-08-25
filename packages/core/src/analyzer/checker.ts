@@ -67,6 +67,7 @@ import {
 	ARRAY_ELEMENT_RETURN_METHODS,
 	ARRAY_SELF_RETURN_METHODS,
 	CE10123_TEMPLATE,
+	isSeriesQualified,
 	MAP_SELF_RETURN_METHODS,
 	MATRIX_ARRAY_RETURN_METHODS,
 	MATRIX_SELF_RETURN_METHODS,
@@ -97,6 +98,7 @@ import {
 	checkUdtFieldAccess,
 	resolveUdtFieldType,
 } from "./checker-udt";
+import { joinQualifier, leadingQualifierOf, type Qualifier } from "./qualifier";
 import { type Symbol as SymbolInfo, SymbolTable } from "./symbols";
 import { type PineType, TypeChecker } from "./types";
 
@@ -232,6 +234,13 @@ export class UnifiedPineValidator {
 	// are TV's CE10135/CE10136. Distinct from blockDepth, which also counts
 	// if-blocks (where break IS allowed if a loop encloses them). see INV092
 	private loopDepth = 0;
+	// Depth of enclosing SERIES-gated `if` branches, for the qualifier
+	// promotion in promoteAssignedQualifier. see INV157
+	private seriesGateDepth = 0;
+	// Qualifiers raised by a `:=` after declaration, keyed by the declaring
+	// scope's Symbol object. Kept beside the symbol rather than in
+	// `symbol.type`, which stores an UNQUALIFIED base. see INV157
+	private promotedQualifiers = new WeakMap<SymbolInfo, Qualifier>();
 	// Depth of enclosing user-defined function / method bodies. Pine forbids a
 	// function body reassigning a global scalar (TV's CE10088), and nothing else
 	// distinguishes "inside a UDF" - blockDepth also counts if/loop blocks, where
@@ -274,6 +283,7 @@ export class UnifiedPineValidator {
 		this.udfAmbiguousReturnNames.clear();
 		this.methodDeclaredNames.clear();
 		this.loopDepth = 0;
+		this.seriesGateDepth = 0;
 		this.functionDepth = 0;
 
 		// Pine v4 and below are not supported, and pine-data ships only v6
@@ -1058,6 +1068,14 @@ export class UnifiedPineValidator {
 				// on the leak (230 corpus records on v4/v5 files appeared
 				// under an ungated draft), so legacy keeps the flat model
 				// (G004). see INV037
+				// A `:=` under a SERIES-gated branch promotes its target to
+				// series even when the written value is const, because the
+				// branch may or may not run on a given bar. A const-gated
+				// branch does not: `if 1 > 0` / `n := 6` leaves `n` const at
+				// TV, while `if close > open` / `n := 6` makes it series (both
+				// probed 2026-08-25). see INV157
+				const seriesGated = isSeriesQualified(condType);
+				if (seriesGated) this.seriesGateDepth++;
 				const scopeBranches = version === "6";
 				if (scopeBranches) this.symbolTable.enterScope();
 				this.blockDepth++;
@@ -1086,6 +1104,7 @@ export class UnifiedPineValidator {
 					this.blockDepth--;
 					if (scopeBranches) this.symbolTable.exitScope();
 				}
+				if (seriesGated) this.seriesGateDepth--;
 				break;
 			}
 
@@ -1461,6 +1480,32 @@ export class UnifiedPineValidator {
 							DiagnosticSeverity.Error,
 						);
 					}
+				}
+
+				// A mutating write PROMOTES the target's qualifier for every
+				// later read: `n = 5` / `n := int(close)` makes `n` a
+				// `series int`, so passing it to a `simple int` parameter is
+				// TV's CE10123. Without this the symbol keeps its declaration
+				// qualifier forever and the INV088 simple-qualifier check reads
+				// a stale `const`.
+				//
+				// TV is FLOW-SENSITIVE here, not whole-script: the same script
+				// with the `:=` moved AFTER the call is clean, and so is a use
+				// that precedes the `:=` inside a loop body - TV ignores the
+				// back edge (both probed 2026-08-25). So promoting in statement
+				// order as the walk proceeds is the parity behaviour, not an
+				// approximation of it.
+				//
+				// Only the qualifier is rewritten: the strict-assign check above
+				// already governs whether the write is legal at all. see INV157
+				if (
+					statement.operator !== "=" &&
+					statement.target.type === "Identifier"
+				) {
+					this.promoteAssignedQualifier(
+						statement.target as Identifier,
+						valueType,
+					);
 				}
 				break;
 			}
@@ -1844,6 +1889,57 @@ export class UnifiedPineValidator {
 		}
 	}
 
+	/** The qualifier a later `:=` raised this symbol to, if any. see INV157 */
+	public promotedQualifierFor(symbol: SymbolInfo): Qualifier | undefined {
+		return this.promotedQualifiers.get(symbol);
+	}
+
+	/**
+	 * Raise a variable's recorded qualifier to the one just written into it.
+	 *
+	 * Called on `:=` and the compound operators, never on `=` (a declaration).
+	 * Only ever promotes - `joinQualifier` keeps the higher of the two - so a
+	 * `series` variable written with a const value stays `series`, which is
+	 * what TV does. The base type is preserved exactly as declared. see INV157
+	 */
+	private promoteAssignedQualifier(
+		target: Identifier,
+		valueType: PineType,
+	): void {
+		const symbol = this.symbolTable.lookup(target.name);
+		if (symbol?.kind !== "variable") return;
+		const symType = String(symbol.type);
+		// An untyped symbol has nothing to qualify, and a builtin seed (line 0)
+		// is not ours to rewrite.
+		if (symType === "unknown" || symbol.line === 0) return;
+		// A write that RUNS conditionally is series regardless of what was
+		// written: TV promotes on a const `sum := sum + 1` inside a loop body
+		// or a series-gated branch, and leaves the identical write alone at
+		// top level (probed 2026-08-25).
+		const written =
+			this.loopDepth > 0 || this.seriesGateDepth > 0
+				? "series"
+				: leadingQualifierOf(String(valueType));
+		if (!written) return;
+		// A stored type carries a qualifier only when the initializer had one
+		// (`n = int(close)` stores "series int", `n = 5` stores bare "int"), so
+		// an unqualified variable type is the const default.
+		const declared = leadingQualifierOf(symType) ?? "const";
+		const promoted = joinQualifier(declared, written);
+		if (promoted === declared) return;
+		// Recorded BESIDE the symbol, never written into `symbol.type`. Symbol
+		// types are stored unqualified and the qualifier is derived per read
+		// (that is what `qualifierProvenance` is for), so injecting a
+		// "series int" string there is read as a base type by everything
+		// downstream - it made `acc + 1` in a loop report `series int` against
+		// an expected `const int` across eleven fixtures.
+		//
+		// Keyed by the Symbol OBJECT, which `lookup` resolves in the declaring
+		// scope, so a `:=` inside a loop or branch body promotes the
+		// declaration rather than a shadow that dies with the scope.
+		this.promotedQualifiers.set(symbol, promoted);
+	}
+
 	private validateIdentifier(
 		identifier: Identifier,
 		fullMemberName?: string,
@@ -1971,6 +2067,11 @@ export class UnifiedPineValidator {
 		const base = TypeChecker.baseTypeName(t as string);
 		if (this.udtFieldTypes.has(base)) return base;
 		if (m) return `${m[1]} ${m[2]}`;
+		// Already carries a space-form qualifier ("series int"), so prefixing
+		// `bareQualifier` again would render "series series int". Types reach
+		// this renderer in both shapes - a qualifier survives on the symbol
+		// when the initializer had one, or when a `:=` promoted it. see INV157
+		if (/^(series|simple|input|const)\s/.test(t as string)) return t as string;
 		if (
 			t === "unknown" ||
 			t === "na" ||
