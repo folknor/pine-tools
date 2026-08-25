@@ -71,13 +71,32 @@ admission takes it to 12 errors). Finding 2 lives in
 `probes/tuple-reassignment.pine` with its expected CLI output written into
 the file. The harness limitation is in AGENTS.md.
 
-## 3. Parse-error wording. OPEN, TODO #79.
+## 3. Parse-error wording. FIXED.
 
-We say `Unexpected token: )`; TV says `Syntax error at input ")"`, same
-line and column, across ~40 files in the sweep. Accept/reject agrees
-throughout, so this is message alignment - the INV081/INV083-085 class -
-and it was left alone here because it is a rendering question rather than
-a parsing one, and the token varies while the template does not.
+We said `Unexpected token: )` where TV says `Syntax error at input ")"`,
+at the same line and column, across ~40 files in the sweep. Sampled
+against `--tv` before changing anything: every file agreed on the POSITION
+and differed only in this string.
+
+Two emission sites, both now using TV's template - the in-call unexpected
+token in `parseCallArguments`, whose neighbouring branch already used it
+(INV081), and the primary-expression fallback, which is where the sweep's
+closure cases actually landed. Fixing only the first left the sampled
+closure file unchanged, which is how the second was found.
+
+**TV has a SECOND template and these must not be merged.** Where its
+grammar has a specific expectation it says
+`Mismatched input "X" expecting set "Y"` instead - a top-level `[a, b]`
+wanting `=` (INV160), a tuple written with `:=` (INV044). Those have
+their own emitters and are deliberately untouched. A blanket rename of
+every parse message would have been wrong.
+
+Corpus: 52 fixtures changed, **873 messages reworded at the same
+position, 0 errors appeared or disappeared**. Almost all of those records
+sit past TV's stop point on mangled-source files (INV025), so TV does not
+adjudicate them either way; the measurable gain is on files where TV does
+reach, where the sampled message disagreements went to zero. Baseline
+re-snapshotted.
 
 ## Corpus
 

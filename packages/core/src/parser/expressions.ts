@@ -840,7 +840,19 @@ export class ExpressionParser {
 						lastArg.skipSemanticValidation = true;
 					}
 				} else {
-					message = `Unexpected token: ${current.value}`;
+					// Same template as the two-identifier case above, which INV081
+					// probed: an unexpected token inside a call is TV's
+					// `Syntax error at input "<token>"`, not wording of our own.
+					// Re-measured 2026-08-25 on the piners sweep - every sampled
+					// file agreed with TV on the POSITION and differed only here.
+					//
+					// NOTE this is the `Syntax error at input` family only. TV also
+					// has `Mismatched input "X" expecting set "Y"`, which it uses
+					// where its grammar has a specific expectation - a top-level
+					// `[a, b]` wanting `=`, or a tuple written with `:=`. Those have
+					// their own emission sites (INV160, INV044) and must not be
+					// folded into this one. see INV163
+					message = `Syntax error at input "${current.value}"`;
 				}
 				this.p.parserErrors.push({
 					line: current.line,
@@ -1044,6 +1056,13 @@ export class ExpressionParser {
 			};
 		}
 
-		throw new Error(`Unexpected token: ${this.p.peek().value}`);
+		// Nothing can start a primary expression here. TV's wording for that is
+		// `Syntax error at input "<token>"` at the same position - measured
+		// across the piners sweep, where every sampled file agreed with us on
+		// the POSITION and differed only in this string. Its other template,
+		// `Mismatched input "X" expecting set "Y"`, belongs to sites where its
+		// grammar has a specific expectation and has its own emitters
+		// (INV160, INV044); do not fold those into this one. see INV163
+		throw new Error(`Syntax error at input "${this.p.peek().value}"`);
 	}
 }

@@ -9,6 +9,14 @@
   with it, and left NOTHING in the statement declared, so a TradingView-clean
   file drew four errors including two about a name that never existed. One
   corpus script carried six of them and now agrees with TradingView exactly.
+- Parse errors now use TradingView's wording. `Unexpected token: )` becomes
+  `Syntax error at input ")"`, at the same position we already reported, from
+  both emission sites - the in-call unexpected token and the
+  primary-expression fallback. TradingView's other template,
+  `Mismatched input "X" expecting set "Y"`, is used where its grammar has a
+  specific expectation and is deliberately left alone: those sites already
+  match it. 873 messages reworded across the corpus with no error appearing or
+  disappearing.
 - `[a, b] := f()` no longer adds a redeclaration error per name. Tuple
   reassignment is not Pine and the error at the `:=` was already correct, but
   the invalid form was still re-declaring names the earlier `=` had introduced,

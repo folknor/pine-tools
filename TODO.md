@@ -496,13 +496,6 @@ IDs so the two stay in sync.
   genuine find (those scripts are broken) or a decidability bug; both need
   looking at before it ships.
 
-- **#79 - parse-error wording does not match TV's.** Same sweep, ~40 files. We
-  say `Unexpected token: )`; TV says `Syntax error at input ")"` at the same
-  line and column. Accept/reject agrees throughout, so this is message
-  alignment only - the INV081/INV083-085 class - and it is the lowest priority
-  of the three. Check first whether one shared rendering site covers all of
-  them, since the token varies (`)`, `>`, `<`, `:=`, `=>`, `.`) but the
-  template does not.
 - **#74 (residual) - `currentTypeDocStr` is fabricated on union parameters
   ([INV159](investigations/INV159-polymorphic-return-from-rejected-arg/notes.md)).**
   The cascade half of this item is FIXED (a polymorphic return no longer
