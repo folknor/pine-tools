@@ -140,12 +140,51 @@ position is read as a variable NAME, so a var-qualified destructuring
 does not exist at all; the destructuring path is bare `[a, b] = ...`
 only.
 
-We reject it too, so nothing is missed, but with a generic
-`Expected variable name at line 5` four columns to the right AND two
-cascading `Undefined variable` errors on `x` and `y` - names whose only
-problem is the line above them. The cascade is the substantive half.
-Untouched here because it is a parser-shape question rather than a tuple
-POSITION question, and this investigation is about positions.
+We used to reject it with a generic `Expected variable name at line 5`
+four columns to the right AND two cascading `Undefined variable` errors
+on `x` and `y` - names whose only problem is the line above them.
+
+**FIXED 2026-08-25.** `varDeclarationAfterKeyword` now recognises a `[`
+after `var`/`varip`, emits TV's message at the keyword, and then parses
+the destructuring anyway. The recovery is the substantive half: without
+it the names are never declared and every later use adds a record TV does
+not emit. Verified for `varip` against `--tv` at the same time, which was
+previously unprobed and behaves identically.
+
+**All three qualifiers, each with its own probed wording.** `const` takes
+the same recovery but a different message: TV reads `const [` as a TYPE
+ANNOTATION rather than a qualifier, so it fails at the first NAME with
+`Mismatched input "x" expecting set "]"` at that name's own column,
+never mentioning the keyword.
+
+| spelling | TV | anchor |
+|---|---|---|
+| `var [x, y] = f()` | `""var"" cannot be used as a variable or function name.` | the keyword |
+| `varip [x, y] = f()` | same, with `varip` | the keyword |
+| `const [x, y] = f()` | `Mismatched input "x" expecting set "]"` | the first NAME |
+
+All three now match to the column. The temptation to give `const` the
+`var` message would have been wrong in both wording and anchor, which is
+the reason the three cells were measured separately rather than assumed
+to be one rule with one diagnostic.
+
+### The fixture cannot pin the half that mattered
+
+Worth recording, because it looked pinned and was not. The two effects of
+this fix land in different channels: the MESSAGE is a parse error, the
+absent cascade is a VALIDATION effect. The fixture harness runs the
+validator only when there are zero parse errors, so on a `parse: fail`
+fixture an `// @expects errors: 0` directive is **vacuous** - it can never
+go red no matter what the validator would have done. The first version of
+the fixture carried exactly that directive and described it as "the real
+assertion".
+
+The CLI does not share the limitation - it validates regardless, which is
+how the cascade was visible in the first place. So the fixture pins the
+two parse errors (mutation-verified: disabling the branch loses both), and
+`probes/qualified-destructuring.pine` carries the cascade half with its
+expected `pine-lint -H` output written into the file. The harness fact is
+now in AGENTS.md beside the directive line-numbering one.
 
 ## Why the disjointness matters beyond this rule
 

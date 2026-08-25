@@ -90,6 +90,15 @@ For every concrete TV-vs-us discrepancy we choose to act on:
    subtract the directive-line count from each line it reports. A wrong `N`
    fails as `Expected error not found` while the `errors: N` count still
    passes, which reads like a message-match failure and is not one.
+
+   **A `parse: fail` fixture cannot assert anything about validation.** The
+   harness runs the validator only when there are zero parse errors, so on
+   such a fixture `// @expects errors: N` is vacuous - it can never go red,
+   whatever N is. The CLI does NOT behave this way: it validates regardless
+   and will happily emit an undefined-variable cascade behind a parse error.
+   So a fix whose point is suppressing that cascade cannot be pinned by a
+   fixture at all; pin the parse errors there and carry the validation half
+   in a probe with the expected `pine-lint -H` output written down.
 2. **Open an investigation** under `investigations/INV###-name/` with
    `notes.md` and the repro file (or a pointer to the regression
    fixture). Sequential numbering, never reuse. Index entries live in

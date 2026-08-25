@@ -1,0 +1,19 @@
+// @test regression/INV160-qualified-tuple-destructuring
+// @description Pine has no QUALIFIED tuple destructuring. TV reads the qualifier as the variable NAME and answers `""var"" cannot be used as a variable or function name.` at the keyword - ONE error, and none on the names (probed for both `var` and `varip`, 2026-08-25). WHAT THIS FIXTURE CANNOT ASSERT: the other half of the fix is that the parser recovers THROUGH the destructuring so the names stay declared, killing a two-record undefined-variable cascade the CLI used to emit. That cascade is a VALIDATION-channel effect, and this harness skips validation entirely once parsing fails, so an `errors: 0` directive here would be vacuous - it can never go red. The cascade half is verified by the CLI instead, via probes/qualified-destructuring.pine. `const` is here too but with a DIFFERENT message, which is the point of including it: TV reads `const [` as a type annotation rather than a qualifier, so it fails at the first NAME with `Mismatched input "e" expecting set "]"` at that name's own column, never mentioning the keyword. Both wordings are probed and neither may borrow the other's. See INV160.
+// @expects parse: fail
+// @expects error: line=7, message=/""var"" cannot be used as a variable or function name\./
+// @expects error: line=8, message=/""varip"" cannot be used as a variable or function name\./
+// @expects error: line=9, column=8, message=/Mismatched input "e" expecting set "\]"/
+//@version=6
+indicator("qualified tuple destructuring")
+
+f() =>
+    [1, 2]
+
+var [a, b] = f()
+varip [c, d] = f()
+const [e, g] = f()
+
+// The names must still be declared - a missing recovery shows up here as
+// undefined-variable errors, not at the declarations above.
+plot(a + b + c + d + e + g)

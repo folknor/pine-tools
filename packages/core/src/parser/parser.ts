@@ -1014,9 +1014,44 @@ export class Parser {
 	 * or user-defined incl. the namespaced `lib.MyType` form from an
 	 * import alias), then `name = expr`.
 	 */
-	private varDeclarationAfterKeyword(): AST.VariableDeclaration {
+	private varDeclarationAfterKeyword(): AST.Statement {
 		const keywordToken = this.previous();
 		const varKeyword = keywordToken.value as "var" | "varip" | "const";
+
+		// `var [a, b] = f()` - a QUALIFIED tuple destructuring, which Pine does
+		// not have. TV reads the qualifier as the variable NAME and answers
+		// `""var"" cannot be used as a variable or function name.` at the
+		// keyword - ONE error (probed 2026-08-25).
+		//
+		// Parsing on through `tupleDestructuring` is the point of handling it
+		// here rather than letting the identifier consume fail: without the
+		// recovery the names were never declared, so every later use became an
+		// undefined-variable error - two extra records on a file whose only
+		// fault is the qualifier, none of which TV emits.
+		//
+		// `const` takes the same recovery but a DIFFERENT message: TV reads
+		// `const [` as a type annotation rather than a qualifier, so it fails
+		// at the first NAME with `Mismatched input "x" expecting set "]"`
+		// (5:8 for `const [x, y]`, the name's own column) instead of naming the
+		// keyword. Both spellings are probed; neither borrows the other's
+		// wording. see INV160
+		if (this.check(TokenType.LBRACKET)) {
+			if (varKeyword === "const") {
+				const firstName = this.peekNext();
+				this.parserErrors.push({
+					line: firstName?.line ?? keywordToken.line,
+					column: firstName?.column ?? keywordToken.column,
+					message: `Mismatched input "${firstName?.value ?? ""}" expecting set "]"`,
+				});
+			} else {
+				this.parserErrors.push({
+					line: keywordToken.line,
+					column: keywordToken.column,
+					message: `""${varKeyword}"" cannot be used as a variable or function name.`,
+				});
+			}
+			return this.tupleDestructuring();
+		}
 
 		// `var const array<float> xs = ...` - a `const` qualifier may follow
 		// var/varip (TV accepts the combination). The persistence mode stays
@@ -1904,7 +1939,14 @@ export class Parser {
 		};
 		// const-led: `export const [type] name = ...`
 		if (this.match([TokenType.KEYWORD, ["const"]])) {
-			return asExportVar(this.varDeclarationAfterKeyword());
+			// `varDeclarationAfterKeyword` can return a TupleDeclaration on the
+			// var/varip destructuring recovery path. `const` is excluded from
+			// that branch by construction (TV answers `const [` with a
+			// different diagnostic), and this call has already matched `const`,
+			// so the cast is unreachable rather than unchecked. see INV160
+			return asExportVar(
+				this.varDeclarationAfterKeyword() as AST.VariableDeclaration,
+			);
 		}
 		// type-led: `export <type> name = ...` (only when the var shape
 		// `type name =` follows - guards against anything funkier).

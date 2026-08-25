@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- A qualified tuple destructuring (`var [x, y] = f()`, and the `varip` and
+  `const` spellings) now reports one error instead of three. Pine has no such
+  form, and all three were already rejected, but the parser gave up at the
+  bracket - so the names were never declared and every later use of them added
+  an undefined-variable error that TradingView does not emit. The parser now
+  recovers through the destructuring, which removes the cascade, and each
+  spelling carries TradingView's own wording: `var`/`varip` name the keyword
+  (`""var"" cannot be used as a variable or function name.`), while `const` is
+  read by TV as a type annotation and fails at the first NAME instead
+  (`Mismatched input "x" expecting set "]"`). Matched to the column in all
+  three. See INV160.
+
 - New error CE10059: the `strategy.*` namespace may not appear in any
   `request.*()` argument - mutating commands and plain variable reads alike.
   TradingView's Pine editor rejects the whole surface there; we were silent.

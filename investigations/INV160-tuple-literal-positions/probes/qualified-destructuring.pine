@@ -1,0 +1,22 @@
+// Pine has no QUALIFIED tuple destructuring. TV reads the qualifier as the
+// variable NAME: ONE error at the keyword, `""var"" cannot be used as a
+// variable or function name.`, and nothing on the names. Same for `varip`.
+//
+// This probe carries the half the regression fixture cannot. The fix has two
+// effects - the right message at the right column, AND recovering through the
+// destructuring so the names stay declared - and the second is only visible in
+// the VALIDATION channel, which the fixture harness skips entirely once
+// parsing fails. Before the fix the CLI emitted three errors here: the wrong
+// message at 5:5, plus `Undefined variable 'x'` and `'y'` at the plot below.
+//
+//     pine-lint -H <this file>     -> expect exactly 2 errors, both at col 1
+//
+// `const [x, y]` is NOT this shape - TV answers it with `Mismatched input "x"
+// expecting set "]"`, reading `const [` as a type annotation. Unhandled.
+//@version=6
+indicator("qualified destructuring")
+f() =>
+    [1, 2]
+var [x, y] = f()
+varip [p, q] = f()
+plot(x + y + p + q)
