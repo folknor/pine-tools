@@ -469,6 +469,53 @@ export interface ArgumentInfo {
 
 // Get the return type for a polymorphic function based on argument types.
 // Supports both positional and named arguments.
+/**
+ * Can the return-determining parameter actually ACCEPT this argument type?
+ *
+ * `returnTypeParam` makes a call's type follow one of its arguments, which is
+ * wrong when that argument is one the parameter rejects: `ta.range("x", 3)`
+ * (returnTypeParam = `source`) was typed `string`, so every enclosing call
+ * checked a string against its own parameter and reported a SECOND error.
+ * TradingView emits one error for that shape and says nothing about the
+ * enclosing call - the same shape as G006, where an argument TV cannot type
+ * silences the checks around it.
+ *
+ * Deliberately permissive: anything unresolved, absent or non-scalar returns
+ * true and propagates as before, so this only bites where the mismatch is
+ * unambiguous. see INV159
+ */
+function determiningTypeFitsParam(
+	functionName: string,
+	paramName: string,
+	determined: PineType,
+): boolean {
+	const param = FUNCTIONS_BY_NAME.get(functionName)?.parameters.find(
+		(p) => p.name === paramName,
+	);
+	if (!param?.type) return true;
+	const members = baseOfRawType(String(param.type))
+		.split("/")
+		.map((m) => m.trim());
+	// Only a CLEAN scalar union can be decided here. Several catalog types are
+	// prose rather than a type expression - `input`'s defval reads
+	// "const int/float/bool/string/color or source-type built-ins", which splits
+	// into a member "color or source-type built-ins" and would then reject a
+	// perfectly good color, mistyping every `input(#hex)` in the corpus (100 new
+	// errors in one file before this guard). Anything else stays permissive.
+	// (CONST_SCALAR_BASES is named for its use in const-param detection below,
+	// but it is just the scalar base set - reused rather than duplicated.)
+	if (!members.every((m) => CONST_SCALAR_BASES.has(m))) return true;
+	const argBase = baseOfRawType(String(determined));
+	if (argBase === "unknown" || argBase === "na" || argBase.includes("/")) {
+		return true;
+	}
+	if (members.includes(argBase)) return true;
+	// int/float widen into one another, matching the accept side of the
+	// union-argument check.
+	const numeric = argBase === "int" || argBase === "float";
+	return numeric && (members.includes("int") || members.includes("float"));
+}
+
 export function getPolymorphicReturnType(
 	functionName: string,
 	argTypes: PineType[],
@@ -534,7 +581,8 @@ export function getPolymorphicReturnType(
 		if (
 			determiningType &&
 			determiningType !== "unknown" &&
-			(determiningType as string) !== "type"
+			(determiningType as string) !== "type" &&
+			determiningTypeFitsParam(functionName, returnTypeParam, determiningType)
 		) {
 			return determiningType;
 		}

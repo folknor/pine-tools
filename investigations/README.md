@@ -1052,3 +1052,32 @@ contradiction means re-measure, not "the earlier author was wrong."
   structural finding: that rule sits on the TV-mirroring `analysis` stage
   while TV emits no unused-variable warning at all, and it is the only rule in
   that channel with no CW code (TODO #73).
+- [INV159](INV159-polymorphic-return-from-rejected-arg/notes.md) - a
+  `returnTypeParam` function took its return type from an argument its
+  parameter REJECTS, so `ta.range("x", 3)` was typed `string` and the
+  enclosing `plot` reported a second, bogus error where TV reports one. Fixed
+  by gating the propagation on the parameter actually accepting the type -
+  G006's shape, where an untypeable argument silences the checks around it.
+  The gate had to be made conservative first: splitting a catalog type on `/`
+  is wrong for the prose ones (`input`'s defval reads
+  `const int/float/bool/string/color or source-type built-ins`), which
+  mistyped every `input(#hex)` for 100 new corpus errors. The sibling
+  defect - `currentTypeDocStr` fabricated as `simple <first member>` - is
+  left OPEN with its probe table: four functions with the same union give
+  three different answers, and three candidate rules each fix one family
+  while regressing another.
+- [INV160](INV160-tuple-literal-positions/notes.md) - where a tuple literal is
+  legal, measured cell by cell with the piners project, which was re-measuring
+  its own PINE0312 at the same time. The discriminator is NOT
+  final-vs-non-final, which is what both tools' machinery was built around: it
+  is top level vs inside a block, plus value position. TV accepts a bare tuple
+  statement anywhere in a block including a `for` body (never a return
+  position), rejects one at top level even as the last statement, and rejects
+  every value position. Its two distinct messages track the split. We hold
+  three false NEGATIVES (both top-level cells and the sub-expression);
+  everything else matches TV to the column. The two tools fail in DISJOINT
+  directions on one rule - we are permissive in three cells, piners strict in
+  five, no overlap - which is why their
+  `parser_corpus_acceptance_matches_local_pine_lint` cross-check flags here
+  and masked in INV156: its reliability depends on whether the two
+  implementations' errors are correlated, and it never says which is right.

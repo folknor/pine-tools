@@ -1,0 +1,19 @@
+// @test regression/INV159-polymorphic-return-from-rejected-arg
+// @description A `returnTypeParam` function takes its return type from one of its arguments, which is wrong when that argument is one the parameter REJECTS: `ta.range("x", 3)` was typed `string`, so the enclosing `plot` checked a string against its own parameter and reported a SECOND error. TradingView emits exactly one error per bad call here and says nothing about the enclosing call, so the count is the assertion - three bad calls, three errors, adjudicated against `--tv` 2026-08-25. The valid calls below are the other half: their returns must still follow the source, so `ta.range(close, 3)` stays float-typed and its `plot` stays clean. See INV159, TODO #74.
+// @expects parse: success
+// @expects errors: 3
+// @expects error: line=4, message=/"literal string"/
+// @expects error: line=5, message=/"literal string"/
+// @expects error: line=6, message=/"literal string"/
+//@version=6
+indicator("polymorphic return from a rejected argument")
+
+plot(ta.range("x", 3))
+plot(ta.change("x"))
+plot(ta.mode("x", 3))
+
+// Controls: the polymorphic return must STILL follow a source the parameter
+// accepts, so these stay clean.
+plot(ta.range(close, 3))
+plot(ta.change(close))
+plot(ta.mode(close, 3))

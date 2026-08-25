@@ -503,30 +503,46 @@ IDs so the two stay in sync.
   genuine find (those scripts are broken) or a decidability bug; both need
   looking at before it ships.
 
-- **#74 - `ta.range` (and the source-polymorphic `ta.*` family) reports the
-  wrong parameter's type, then cascades.** Reported from the strategies repo,
-  reproduced 2026-08-25 on `plot(ta.range("x", 3))`:
-
-  | | verdict |
-  |---|---|
-  | us | `source`: `"literal string"` used but **`"simple int"`** expected, PLUS a second error on the enclosing `plot` |
-  | `--tv` | `source`: `"literal string"` used but **`"series float"`** expected - one error |
-
-  Two defects, and the accept/reject verdict is right in both tools, so this
-  is message accuracy rather than a missed error. (1) The expected type we
-  name for `source` is `simple int`, which matches NEITHER overload - the
-  catalog types it `series int/float` in the merged view and `series int` /
-  `series int/float` in the two overloads. We are naming some other
-  parameter's type, so a reader is sent to fix the wrong argument. (2) The
-  merged `returns` in `functions.json` is `series int`, the FIRST overload's
-  return, rather than the widest `series float`; that is what makes us type
-  the call `series int` and emit the bogus second error on `plot`. Fixing (2)
-  is a `generate.ts` question (which overload's return the merged view should
-  take), and it may not fix (1). Note `ta.change` and `ta.mode` are the other
-  two source-polymorphic functions and should be checked together. The
-  reporter keeps a live guard for this shape in their own suite
-  (`compile_rejects_string_source_for_polymorphic_ta_builtins`), so it is a
-  standing cross-repo comparison, not a one-off.
+- **#75 - three tuple-literal positions we accept and TV rejects
+  ([INV160](investigations/INV160-tuple-literal-positions/notes.md)).** Three
+  false negatives, each `tv-only` in `lint-batch --diff`: a top-level bare
+  tuple as a NON-FINAL statement, the same as the FINAL statement, and a tuple
+  used as a sub-expression (`[a,b] == [a,b]`). The rule is not what INV046's
+  prose says ("only valid in return positions") - TV accepts a bare tuple
+  statement anywhere inside a block, `for` bodies included, which are never
+  return positions. The real discriminator is **top level vs inside a block**,
+  plus value position, and TV's two distinct messages track that split: a
+  top-level statement-start tuple gets `Mismatched input "end of line without
+  line continuation" expecting set "="` anchored at the tuple's END (TV parses
+  it as a destructuring target and wants `=`), while a value position gets
+  `Syntax error at input "["` at the bracket. **The trap:** the top-level
+  check cannot key on a bracket at statement start, because that is also how
+  the LEGAL `[a, b] = f()` destructuring begins - it has to key on the absence
+  of a following `=`. Pin `var [x, y] = [a, b]` at the same time; TV rejects it
+  with a THIRD message (`""var"" cannot be used as a variable or function
+  name.`), so a var-qualified destructuring does not exist. All ten legal
+  cells and all four value-position cells already match TV exactly, including
+  column, so the fix must be additive. Probes:
+  `investigations/INV160-tuple-literal-positions/probes/`.
+- **#74 (residual) - `currentTypeDocStr` is fabricated on union parameters
+  ([INV159](investigations/INV159-polymorphic-return-from-rejected-arg/notes.md)).**
+  The cascade half of this item is FIXED (a polymorphic return no longer
+  follows an argument its parameter rejects, so `plot(ta.range("x", 3))` is
+  one error rather than two, matching TV). What remains is the expected-type
+  noun: we say `simple int`, TV says `series float`. Two corrections to the
+  original framing of this entry, both established while fixing it: the string
+  is NOT another parameter's type (`length` is `series int`), it is fabricated
+  by the union-argument check's hardcoded `` `simple ${members[0]}` ``; and
+  the merged `returns` being the first overload's is NOT what caused the
+  cascade. **Do not guess at a fix.** Four probes with the same `int/float`
+  union give three different answers - `ta.sma` -> `series float`, `math.max`
+  -> `const int`, `nz` -> `simple int` - and the INV notes kill three
+  candidate rules, each of which fixes one family and regresses another. The
+  per-function table that would satisfy all of them is what the Data-vs-Syntax
+  rule forbids. Reopen with a probe sweep wide enough to separate
+  overload-ordering from widest-member, not with a fourth guess. Impact is
+  bounded: verdict and argument NAME are both right, only the target type
+  reads wrong.
 - **#71 - user-function overloads are unmodelled
   ([INV157](investigations/INV157-blackbox-audit-adoption/notes.md), cluster
   B).** Pine lets a user function be declared more than once with different

@@ -1,0 +1,6 @@
+// The reported probe. Before the fix: 2 errors (the second on `plot`).
+// After: 1, matching --tv's count and position. The expected-type noun still
+// differs - we say "simple int", TV says "series float" - see the notes.
+//@version=6
+indicator("bad source")
+plot(ta.range("x", 3))

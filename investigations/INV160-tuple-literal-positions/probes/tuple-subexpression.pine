@@ -1,0 +1,9 @@
+// FN 3. TV: `Syntax error at input "["` anchored at the BRACKET - a different
+// message and anchor from the top-level statement cell, because here the
+// bracket is not a valid expression opener at all. We are clean.
+//@version=6
+indicator("subexpr")
+a = 1
+b = 2
+c = [a, b] == [a, b]
+plot(a)

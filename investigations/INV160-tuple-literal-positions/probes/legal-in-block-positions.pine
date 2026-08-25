@@ -1,0 +1,23 @@
+// The legal cells, which any fix must not break. TV accepts all of these and
+// so do we. Note the `for` body: a tuple statement there is never a return
+// position, which is what kills the "tuple literals are return positions"
+// description in INV046 and the tail-tracking machinery built on it.
+//@version=6
+indicator("legal in-block tuple positions")
+a = 1
+b = 2
+
+f() =>
+    for i = 0 to 1
+        [a, b]
+        a + b
+    [a, b]
+
+g() =>
+    switch
+        close > open => [a, b]
+        => [b, a]
+
+[x, y] = f()
+[p, q] = g()
+plot(x + y + p + q)

@@ -1,0 +1,11 @@
+// FN 1 and 2. TV: `Mismatched input "end of line without line continuation"
+// expecting set "="` anchored at the END of the tuple - it parses a top-level
+// `[...]` at statement start as a DESTRUCTURING TARGET and then wants `=`.
+// Errors whether the tuple is final or not; this probe is the non-final form.
+// We are clean.
+//@version=6
+indicator("toplevel nonfinal")
+a = 1
+b = 2
+[a, b]
+plot(a + b)

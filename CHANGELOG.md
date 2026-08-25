@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- A function whose return type follows one of its arguments no longer takes
+  that type from an argument the parameter REJECTS. `ta.range("x", 3)` was
+  typed `string` (its return follows `source`), so the enclosing call checked a
+  string against its own parameter and reported a second, bogus error -
+  `plot(ta.range("x", 3))` gave two errors where TradingView gives one, and the
+  extra one pointed at `plot` rather than at the actual mistake. Also affects
+  `ta.change` and `ta.mode`, the other source-polymorphic functions. The return
+  still follows any source the parameter accepts. See INV159.
+
 - A user function whose body TAIL is a statement-form `if` now carries a
   qualifier, so `plot(close, title = f())` is caught when `f` ends in an
   `if`/`else` under a series condition. TradingView rejects it (`series string`
