@@ -1,0 +1,13 @@
+// @test regression/INV158-underscore-discard-not-unused
+// @description `_` is Pine's discard identifier, reserved for MARKING a binding unused, and is the only way to drop part of a tuple - so UNUSED_VARIABLE must skip it. TV is clean on this shape (probed 2026-08-25). The unused `spare` below is deliberate and pins the other direction: the rule must still fire on a genuine unused local, so this fixture goes red both if the `_` exemption is removed (2 warnings) and if the rule is disabled outright (0 warnings). The `for _ = 1 to 2` header is the second documented discard position and must stay clean too. See INV158, TODO #72.
+// @expects parse: success
+// @expects errors: 0
+// @expects warnings: 1
+//@version=6
+indicator("underscore discard")
+[_, _, macdHist] = ta.macd(close, 12, 26, 9)
+total = 0.0
+for _ = 1 to 2
+    total += macdHist
+spare = close * 2
+plot(total)

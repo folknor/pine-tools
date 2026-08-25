@@ -83,14 +83,54 @@ two warnings where the correct Pine gives one. So a clean file is
 unwritable, and their repo treats warnings as failures.
 
 The exemption must cover `for` headers too - the same manual section
-documents `for _ = 1 to 20`. Measured here: that form is already clean
-for us (`probes/for-underscore.pine`), so the fix is scoped to tuple
-destructuring, but it should be written so the `for` case cannot
-regress.
+documents `for _ = 1 to 20`. In isolation that form was already clean for
+us (`probes/for-underscore.pine`), which is what hid the second bug.
 
-Their three carrier files: `indicators/composite/risk-ratio-valuation.pine`,
-`indicators/volatility/consolidation-range.pine`, and
-`library/libs/regression-toolkit.pine`. Tracked as TODO #72.
+### FIXED 2026-08-25, and the fixture found a second `_` defect
+
+`checkUnusedVariables` now skips `_`. Writing the regression fixture to
+cover BOTH documented discard positions in one file - a tuple destructure
+and a `for` header - immediately failed on a diagnostic nobody had
+reported:
+
+```
+[5:5] Shadowing variable '_' which exists in parent scope.
+      Did you want to use the ':=' operator instead of '=' ?
+```
+
+The `for _` shadows the tuple's `_`. Neither reporter hit this because it
+needs two discards in nested scopes in one file; each position alone is
+clean. It is the same defect in a different rule - `_` is MEANT to be
+re-bound, so a second one never shadows a first.
+
+Unlike UNUSED_VARIABLE, the shadowing rule mirrors a real TV warning
+(CW10013), so this needed a control rather than an assumption. TV agrees
+and special-cases the identifier:
+
+| shape | TV verdict |
+|---|---|
+| `[_, _, h] = ta.macd(...)` then `for _ = 1 to 2` | **clean** |
+| same structure with `a` instead of `_` | `Shadowing variable "a" which exists in parent scope...` |
+
+So the CW10013 path is live and TV's silence is specific to `_`. Both
+guards carry a `// see INV158` pointer at their sites.
+
+The fixture, `packages/core/test/fixtures/regression/INV158-underscore-discard-not-unused.pine`,
+asserts `warnings: 1` over a file containing both discard positions plus
+one genuinely unused local. That pins three things at once and is
+mutation-verified red on each: removing the unused-guard gives 2
+warnings, removing the shadow-guard gives 2, and disabling the rule
+outright would give 0.
+
+Verified against the reporter's own carriers:
+`indicators/composite/risk-ratio-valuation.pine` and
+`indicators/volatility/consolidation-range.pine` are now fully clean.
+`library/libs/regression-toolkit.pine` keeps one warning, on a genuinely
+unused `pVals` at line 666 - a real finding, not a discard.
+
+Corpus: `regression-check` 0 changed fixtures. Note that check covers the
+ERROR channel, so it establishes no error-side regression rather than
+measuring the warning change; the probes and the fixture carry that.
 
 ## The larger finding: UNUSED_VARIABLE is on the `analysis` stage, and TV has no such rule
 
@@ -99,7 +139,22 @@ AGENTS.md and INV144, `analysis` is the SemanticAnalyzer's TV-mirroring
 CW100xx channel: the first three stages mirror TradingView, and `lint` is
 the one channel that does not.
 
-TradingView emits nothing comparable. Measured 2026-08-25:
+**Correction, and it narrows this finding.** The first version of these
+notes presented "TradingView has no unused-variable warning" as a
+discovery. It is not - [INV148](../INV148-diagnostic-identity-and-v5-leniency/notes.md)
+established it on 2026-08-21 ("the rule mirrors nothing"), and the
+comment at `SemanticWarning.code` in
+`packages/core/src/parser/semanticAnalyzer.ts` says so at the site. What
+INV148 decided was the CODE question - UNUSED_VARIABLE deliberately gets
+none, because inventing a CW would hand consumers an identifier that can
+never be reconciled against TV. It did not consider the STAGE, and that
+is the only part still open here.
+
+So the `code: None` observation below is INV148's deliberate design
+showing up in the output, not evidence of an oversight. It is still the
+cleanest way to SEE the mismatch, which is why the probe is kept.
+
+Confirming the underlying fact independently, 2026-08-25:
 
 ```pine
 //@version=6
@@ -125,10 +180,10 @@ warning. Warnings do come through that endpoint in general - it returns
 TV's `transp` deprecation warning, for one - so the negative result is
 meaningful, but the editor has not been checked.
 
-### The rule's own output proves it, without needing TV at all
+### The mismatch is visible in our own output
 
-Running `VALIDATOR-FINDINGS.md`'s LNT-06 repro produced the decisive
-evidence. Pairing each `analysis`-stage warning with its code on
+Running `VALIDATOR-FINDINGS.md`'s LNT-06 repro shows it without needing
+TV. Pairing each `analysis`-stage warning with its code on
 `library/libs/regression-toolkit.pine`:
 
 ```
@@ -136,14 +191,21 @@ Counter({('CONDITIONAL_SERIES', 'CW10003'): 28, ('UNUSED_VARIABLE', None): 2})
 ```
 
 Every other rule on that stage carries a real TradingView CW code.
-UNUSED_VARIABLE carries `None`, because there is no CW code for it to
-carry. The stage is defined by mirroring TV's CW warnings, and this rule
-is the one member that cannot name the thing it mirrors.
+UNUSED_VARIABLE carries `None`, by INV148's decision, because there is no
+CW code for it to carry. The stage is defined by mirroring TV's CW
+warnings, and this rule is the one member that cannot name the thing it
+mirrors.
 
-That also gives a mechanical test for the whole class, which is worth
-keeping whatever is decided about this rule: **an `analysis`-stage
-diagnostic with no CW code is by definition not a mirror.** If any other
-rule ever answers `None` there, it is in the wrong channel too.
+The open question is therefore narrow and was never asked before: given
+that INV148 already concluded the rule mirrors nothing, does it belong in
+the mirroring channel? INV148 stopped at the code because the code was
+what its consumer complaint (LNT-06) was about.
+
+The `code` field also gives a mechanical test for the class, worth
+keeping whatever is decided here: **an `analysis`-stage diagnostic with
+no CW code is by definition not a mirror.** UNUSED_VARIABLE is the only
+one today. If another ever answers `None`, the same question applies to
+it.
 
 ### Why the stage matters
 

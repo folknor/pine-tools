@@ -531,6 +531,11 @@ export class SemanticAnalyzer {
 				"CW10011",
 			);
 		} else if (
+			// `_` is the discard identifier and is MEANT to be re-bound, so a
+			// second one never shadows a first. TV agrees and special-cases it:
+			// the same nested-scope shape warns for a normal name and is silent
+			// for `_` (probed 2026-08-25, control in INV158). see INV158
+			name !== "_" &&
 			this.scopeNames.length > 1 &&
 			this.scopeNames.slice(0, -1).some((frame) => frame.has(name))
 		) {
@@ -2278,6 +2283,14 @@ export class SemanticAnalyzer {
 
 	private checkUnusedVariables(): void {
 		for (const [variableName, pos] of this.declaredVariables) {
+			// `_` is Pine's discard identifier, not a name someone chose badly:
+			// the manual reserves it for MARKING a binding unused, and it is the
+			// only way to drop part of a tuple. Warning on it flags the
+			// identifier for doing its job, and there is no quieter spelling -
+			// naming the unwanted legs warns once per name instead. see INV158
+			if (variableName === "_") {
+				continue;
+			}
 			if (!this.usedVariables.has(variableName)) {
 				// Skip common variables that are often used for plotting or external reference
 				if (!this.isCommonlyUsedVariable(variableName)) {

@@ -560,28 +560,20 @@ IDs so the two stay in sync.
   `investigations/INV157-blackbox-audit-adoption/probes/ov-optional-only.pine`,
   `ov-na-decisive-rev.pine`.
 
-- **#72 - exempt `_` from UNUSED_VARIABLE
-  ([INV158](investigations/INV158-unused-variable-underscore-and-stage/notes.md)).**
-  `_` is Pine's discard identifier, not a badly-named variable - the manual
-  documents `[_, visibleHigh, visibleLow, _, _] = visChart.ohlcv()` and
-  `for _ = 1 to 20` - so warning on it is warning at the identifier for doing
-  its job. `[_, _, macdHist] = ta.macd(...)` warns locally and is clean at TV.
-  There is no workaround: naming the unwanted legs moves the warning onto those
-  names and produces MORE of them (`[_m, _sg, _h]` gives two where the correct
-  Pine gives one), so a clean file is unwritable, and the reporting repo treats
-  warnings as failures. The `for`-header form is already clean for us, so the
-  fix is scoped to tuple destructuring but should be written so the `for` case
-  cannot regress. Probes:
-  `investigations/INV158-unused-variable-underscore-and-stage/probes/`.
 - **#73 - UNUSED_VARIABLE is on the `analysis` stage, which mirrors TV; TV has
   no such rule
   ([INV158](investigations/INV158-unused-variable-underscore-and-stage/notes.md)).**
-  Measured 2026-08-25: TV returns clean on an unused local, an unused `var`,
-  and an unused top-level binding. And the rule's own output gives it away
-  without TV - pairing analysis-stage warnings with their codes yields
-  `{('CONDITIONAL_SERIES', 'CW10003'): 28, ('UNUSED_VARIABLE', None): 2}`.
-  Every other rule in that channel names a real CW code; this one cannot,
-  because there is nothing to mirror. Three consequences, none cosmetic:
+  **The premise is not new and must not be re-derived: INV148 established on
+  2026-08-21 that this rule "mirrors nothing", and the comment at
+  `SemanticWarning.code` says so at the site.** INV148 answered the CODE
+  question - UNUSED_VARIABLE deliberately carries none, since inventing a CW
+  would hand consumers an identifier irreconcilable with TV - and did not ask
+  the STAGE question, which is all that is open here. Re-confirmed 2026-08-25:
+  TV returns clean on an unused local, an unused `var`, and an unused
+  top-level binding, and pairing analysis-stage warnings with their codes
+  yields `{('CONDITIONAL_SERIES', 'CW10003'): 28, ('UNUSED_VARIABLE', None): 2}`
+  - that `None` is INV148's deliberate design surfacing, not an oversight.
+  Three consequences, none cosmetic:
   `--no-lint` does not silence it (that flag drops the `lint` stage); it falls
   outside #66's suppression design, which is scoped to "the five `lint`-stage
   rules"; and it inflates the local-only warning column that this file already
@@ -593,7 +585,7 @@ IDs so the two stay in sync.
   landing. Keep the general test the investigation names: an `analysis`-stage
   diagnostic with no CW code is by definition not a mirror. (Separate and still
   open regardless of stage: the AGENTS.md limitation that this rule reports
-  built-ins as unused.)
+  built-ins as unused. The `_` half is CLOSED - see INV158.)
 
 ## Gotchas
 

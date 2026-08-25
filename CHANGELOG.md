@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+- `_`, Pine's discard identifier, no longer produces warnings. Two rules fired
+  on it: `UNUSED_VARIABLE` reported it as declared-but-never-used, and
+  `SHADOW_VARIABLE` (CW10013) reported a second `_` as shadowing the first.
+  The manual reserves `_` for *marking* a binding unused and it is the only way
+  to drop part of a tuple, so both were warning at the identifier for doing its
+  job - and there was no quieter spelling, since naming the unwanted legs
+  (`[_m, _sg, _h]`) warns once per name and produces more warnings than it
+  removes. TradingView is clean on both shapes; for the shadowing rule, which
+  unlike `UNUSED_VARIABLE` mirrors a real TV warning, a control confirmed TV
+  emits CW10013 for an ordinary name in the identical nested-scope structure
+  and stays silent for `_`. The shadowing half was not reported by anyone - it
+  needs two discards in nested scopes in one file, and surfaced only when the
+  regression fixture covered both documented discard positions at once. Real
+  unused variables and ordinary shadowing are unaffected. See INV158.
+
 - New error CE10088: a user-defined function or method may not reassign a
   global variable. TradingView rejects it and we accepted it silently, so a
   file passed locally and then failed at chart load - the dangerous direction.
