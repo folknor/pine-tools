@@ -1,0 +1,21 @@
+// `[a, b, box] := f()` is not Pine. TV reports exactly ONE error, at the `:=`:
+//
+//     Mismatched input ":=" expecting set "="
+//
+// We report the same defect at the same position with our own wording (see
+// TODO #79 for that), and used to add one `"<name>" is already defined` per
+// name on top - the invalid form was still re-declaring names the earlier `=`
+// had introduced. TradingView emits none of those.
+//
+//     pine-lint -H <this file>   -> exactly 1 error, at the `:=`
+//
+// This lives in a probe rather than a regression fixture because the cascade
+// is a VALIDATION effect behind a PARSE error, and the fixture harness skips
+// validation once parsing fails - an `errors: N` directive there is vacuous
+// and cannot go red. Verified by mutation: suppressing the fix leaves the
+// fixture green. See AGENTS.md on that harness limitation.
+//@version=6
+indicator("tuple reassignment")
+[a, b, box] = ta.macd(close, 12, 26, 9)
+[a, b, box] := ta.macd(close, 12, 26, 9)
+plot(a + b + box)

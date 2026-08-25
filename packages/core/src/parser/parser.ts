@@ -937,10 +937,28 @@ export class Parser {
 		const names: string[] = [];
 		if (!this.check(TokenType.RBRACKET)) {
 			do {
-				const nameToken = this.consume(
-					TokenType.IDENTIFIER,
-					"Expected variable name in tuple",
-				);
+				// A type keyword can BE a destructured name, exactly as it can
+				// be a single declaration's name (`var color color = na`, see
+				// INV031). `[line, signal, hist] = ta.macd(...)` is idiomatic -
+				// those are MACD's own output names - and TV accepts it. The
+				// lookahead is what keeps this narrow: a type keyword here is a
+				// name only when the next token ends the element, so `[line,` and
+				// `[..., line]` take it while anything else still errors.
+				//
+				// Without this the first such name failed the consume, the whole
+				// destructuring threw, and NOTHING in it was declared - four
+				// errors on a TV-clean file, the last two on names whose only
+				// fault was appearing after `line`. see INV163
+				const typeKeywordAsName =
+					this.isVarTypeKeyword() &&
+					(this.peekNext()?.type === TokenType.COMMA ||
+						this.peekNext()?.type === TokenType.RBRACKET);
+				const nameToken = typeKeywordAsName
+					? this.advance()
+					: this.consume(
+							TokenType.IDENTIFIER,
+							"Expected variable name in tuple",
+						);
 				names.push(nameToken.value);
 			} while (this.match(TokenType.COMMA));
 		}
@@ -975,7 +993,8 @@ export class Parser {
 		// flag the reassignment form. Reported only after the whole
 		// tuple statement parsed, so a backtracking caller that discards
 		// this parse can't leave a spurious error behind.
-		if (assignToken.value === ":=") {
+		const isReassignment = assignToken.value === ":=";
+		if (isReassignment) {
 			this.parserErrors.push({
 				line: assignToken.line,
 				column: assignToken.column,
@@ -1003,6 +1022,7 @@ export class Parser {
 			type: "TupleDeclaration",
 			names,
 			init,
+			isReassignment,
 			line: startToken.line,
 			column: startToken.column,
 		};

@@ -114,6 +114,14 @@ export interface TupleDeclaration extends ASTNode {
 	type: "TupleDeclaration";
 	names: string[];
 	init: Expression;
+	/**
+	 * Written with `:=` rather than `=`. Not valid Pine - the parser has
+	 * already reported it - and the node is kept only so the checker can type
+	 * the elements. The names are NOT re-declared for it, which is what stops
+	 * a redeclaration cascade on names the earlier `=` already introduced.
+	 * see INV163
+	 */
+	isReassignment?: boolean;
 }
 
 export interface FunctionDeclaration extends ASTNode {

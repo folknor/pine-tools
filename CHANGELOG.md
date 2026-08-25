@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+- A type keyword may now be a destructured name, as it already could be a
+  single declaration's name. `[line, signal, hist] = ta.macd(close, 12, 26, 9)`
+  is accepted by TradingView and is idiomatic - those are MACD's own output
+  names - but the first such name failed to parse, took the whole destructuring
+  with it, and left NOTHING in the statement declared, so a TradingView-clean
+  file drew four errors including two about a name that never existed. One
+  corpus script carried six of them and now agrees with TradingView exactly.
+- `[a, b] := f()` no longer adds a redeclaration error per name. Tuple
+  reassignment is not Pine and the error at the `:=` was already correct, but
+  the invalid form was still re-declaring names the earlier `=` had introduced,
+  turning TradingView's single error into three. A genuine duplicate
+  declaration still errors. See INV163.
+
 - New `lint`-stage rule `ARGUMENT_OUT_OF_RANGE`: a numeric literal outside the
   range the reference documents for that parameter, such as
   `color.rgb(300, 0, 0)` where the docs say 0-255. TradingView compiles these,

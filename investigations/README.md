@@ -1100,3 +1100,15 @@ contradiction means re-measure, not "the earlier author was wrong."
   TODO #69 a pipeline task rather than a checker one. Literals only,
   boundaries legal, zero corpus findings - no false positives on real scripts,
   and no demonstrated catch there either.
+- [INV163](INV163-piners-fixture-sweep/notes.md) - two false positives found by
+  sweeping 938 Pine snippets out of piners' Rust tests and adjudicating every
+  cluster against `--tv`. A TYPE KEYWORD as a destructured name
+  (`[line, signal, hist] = ta.macd(...)`, idiomatic and TV-clean) failed the
+  consume, threw the whole destructuring and left nothing declared - four
+  errors, six of them on one real corpus script which now diffs clean. And
+  `[a, b] := f()` re-declared names the earlier `=` had introduced, turning
+  TV's one error into three. The cascade half could not be pinned by a
+  fixture: it is a validation effect behind a parse error, and the harness
+  skips validation once parsing fails, so the directive would be vacuous -
+  caught by mutation, and it lives in a probe instead. Full sweep, including
+  the findings pointing the other way, is `SWEEP-piners-tests-2026-08-25.md`.

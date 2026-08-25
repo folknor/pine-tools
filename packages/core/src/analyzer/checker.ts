@@ -855,7 +855,15 @@ export class UnifiedPineValidator {
 					// declarations: a later `m = ...` is CE10095, and so is a
 					// duplicate name WITHIN one tuple (`[a, a] = ...`) - both
 					// anchored at the statement start (probed). see INV035
-					checkRedeclaration(this, name, tupleDecl, version);
+					//
+					// Except for the `:=` form, which is not a declaration at
+					// all: the parser has already reported it, and re-declaring
+					// its names added an "already defined" record for EVERY name
+					// the earlier `=` introduced - two extra errors TV does not
+					// emit on top of the one it does. see INV163
+					if (!tupleDecl.isReassignment) {
+						checkRedeclaration(this, name, tupleDecl, version);
+					}
 				}
 				const elementTypes = inferTupleElementTypes(this, tupleDecl, version);
 				defineTupleVariables(this, tupleDecl, elementTypes);

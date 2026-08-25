@@ -1,0 +1,12 @@
+// @test regression/INV163-tuple-destructuring-shapes
+// @description A TYPE KEYWORD may be a destructured name, exactly as it may be a single declaration's name (INV031's `var color color = na`). `[line, signal, hist] = ta.macd(...)` is TV-clean and about as idiomatic as Pine gets, those being MACD's own output names - we used to fail the consume on `line`, throw the whole destructuring, and declare NOTHING in it, so a TV-clean file drew four errors: two undeclared-identifier records and two more on a name that never existed. A real corpus script carried six of them (`bf691eef...`, `[color, trend_line, trend] = market_structure()`) and now diffs clean against TV. Both positions are covered because the lookahead that admits the keyword has to work at a comma AND at the closing bracket. The sibling fix from the same sweep - suppressing the redeclaration cascade on `[a, b] := f()` - is NOT here: that is a validation effect behind a parse error, and this harness skips validation once parsing fails, so a directive for it would be vacuous. It lives in investigations/INV163-piners-fixture-sweep/probes/. See INV163, TODO #77.
+// @expects parse: success
+// @expects errors: 0
+// @expects warnings: 0
+//@version=6
+indicator("type keywords as destructured names")
+
+[line, signal, hist] = ta.macd(close, 12, 26, 9)
+[a, b, box] = ta.macd(close, 12, 26, 9)
+
+plot(hist + line + signal + a + b + box)

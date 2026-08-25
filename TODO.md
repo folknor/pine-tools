@@ -496,27 +496,6 @@ IDs so the two stay in sync.
   genuine find (those scripts are broken) or a decidability bug; both need
   looking at before it ships.
 
-- **#77 - a type-keyword name breaks a whole tuple destructuring.** A false
-  positive, found by the 2026-08-25 sweep of piners' test fixtures
-  (`SWEEP-piners-tests-2026-08-25.md`).
-  `[line, signal, hist] = ta.macd(close, 12, 26, 9)` is CLEAN at `--tv` and
-  gives us four errors: `Undeclared identifier "line"`, then `"signal"`, then
-  `Undefined variable 'hist'` at both uses. `line` is a type keyword, and TV
-  permits type keywords as variable names - which `variableDeclaration`
-  already special-cases (INV031's `var color color = na`) but
-  `tupleDestructuring` does not, so the first such name breaks the statement
-  and NOTHING in it gets declared. Swapping `line` for `a` is clean, which
-  isolates it. Worth doing first of the three: the shape is idiomatic, since
-  MACD's outputs are conventionally named `line`/`signal`/`hist`.
-- **#78 - tuple reassignment cascades two redeclaration errors.** Same sweep.
-  `[a, b] := f()` after `[a, b] = f()` gets one error from TV
-  (`Mismatched input ":=" expecting set "="` at the `:=`) and three from us:
-  the same error at the same position with our own wording, PLUS
-  `"a" is already defined` and `"b" is already defined` at column 1. The
-  verdict and the real error's position are right; the two redeclaration
-  records are recovery noise - the parse error leaves the recovery
-  re-declaring names that already exist. Same shape as the qualified-
-  destructuring cascade fixed in INV160, and probably the same repair.
 - **#79 - parse-error wording does not match TV's.** Same sweep, ~40 files. We
   say `Unexpected token: )`; TV says `Syntax error at input ")"` at the same
   line and column. Accept/reject agrees throughout, so this is message
