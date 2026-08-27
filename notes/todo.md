@@ -22,21 +22,36 @@ Measurement note, 2026-08-25 (current state; earlier per-INV notes live in git
 history and in each investigation, per G001 - they were dated point-in-time
 records, not standing facts).
 
-**Full TV sweep, 2026-08-25** (`lint:failures`, 748 v6 fixtures, commit
-`cc9010b`): errors at **29 local-only / 0 tv-only / 1 same-position message
-pair**. The error window is **byte-identical to the 2026-08-15 and 2026-06-28
-sweeps**, now across INV133-INV166 - and the 29 are still the same three
-categories: 20 probe-backed CE10156 wrap TPs in 2 files, 8 `bar index` mangle
-sites in 1 file, and 1 mangled ternary-wrap residue.
+**Full TV sweep, 2026-08-27** (`lint:failures`, 748 v6 fixtures, commit
+`27a0538`): errors at **29 local-only / 0 tv-only / 1 same-position message
+pair**. The error window is **byte-identical to the 2026-08-25, 2026-08-15 and
+2026-06-28 sweeps**, now across INV133-INV171 - and the 29 are still the same
+three categories: 20 probe-backed CE10156 wrap TPs in 2 files, 8 `bar index`
+mangle sites in 1 file, and 1 mangled ternary-wrap residue.
+
+This is the sweep that gates the three landings of 2026-08-27, and it is the
+only gate that could have caught them: INV169 (positional after named) and
+INV170 (a built-in const/variable called as a function) each ADD an error
+class, and INV171 reworded 194 union diagnostics - yet local-only did not
+move, tv-only stayed 0, and warning tv-only stayed 0. Note what that does and
+does not establish: the corpus contains none of those three shapes, so this
+confirms **no false positives were introduced**, not that the new rules fire
+anywhere in it. The fixtures carry the positive evidence.
+
+The 1 same-position pair is NOT a wording disagreement and must not be read as
+one: TV answers `Cannot read properties of undefined (reading 'pinePos')` on
+that line - a translator crash, the G002 trap shape - against our enum
+field-type error. Pre-existing and unrelated to INV171's rewording.
 
 This retires the staleness caveat this file carried since INV146. That caveat
 predicted INV146's pre-v5 refusal and INV148's v6-only argument-name gate would
 move the split by construction; both change what NON-v6 fixtures report, and
 the split counts v6 fixtures only, so the window did not move.
 
-**warning local-only is now 12** (plus 47 past TV's stop), re-measured
-2026-08-25 after INV168 fixed the if-expression walk gap - the sweep that
-produced the 41 below ran before it. That sweep also re-confirmed the error
+**warning local-only is 12** (plus 47 past TV's stop), first measured
+2026-08-25 after INV168 fixed the if-expression walk gap and **re-confirmed
+unchanged by the 2026-08-27 sweep** (local warnings 431, TV warnings 376) -
+the sweep that produced the 41 below ran before that fix. That sweep also re-confirmed the error
 window above unchanged and warning tv-only still 0, so the 29 records the fix
 removed cost no false positives. The 41 figure and its history are kept below
 because the collapse it describes is still the reason this column is readable
@@ -340,9 +355,33 @@ IDs so the two stay in sync.
   both directions - deleting the shadow-only declaration is clean, deleting it
   with a bare use present is a real CE10272 - by the re-runnable probes in
   `scripts/probes/mutate-delete-decl/`.
-  **Remaining:** periodically
-  re-run the dry-run as the corpus/operators grow and TV-verify any new
-  `local-accepts`.
+  **2026-08-27 re-run: still a clean 0 `local-accepts`** - 18,978 mutants over
+  the same 697 both-clean fixtures, all `killed-local`, no TV spend. That
+  covers INV133-INV171, today's two new error classes included.
+
+  **Read it as a REGRESSION GATE, not a discovery run**, because the pool and
+  the operator set are both unchanged: same 697 fixtures, same seven
+  operators, therefore the identical 18,978 mutants as the 2026-08-03 run. It
+  establishes that we still kill everything we used to kill. It cannot find a
+  new gap, and re-running it unchanged never will.
+
+  **Remaining, and it is now the operator set rather than the schedule.**
+  Discovery needs a new taxonomy row, and #48's own method note says why:
+  design operators around TV's error taxonomy, not around our existing checks,
+  because that is how you find gaps we have NO check for. Two rows are
+  conspicuously missing and both were added to the checker on 2026-08-27, so
+  neither has ever been mutation-tested:
+
+  - **positional-after-named** (INV169) - move a named argument earlier in an
+    existing call so a later positional one follows it.
+  - **member-called-as-function** (INV170) - append `(...)` to a built-in
+    constant or variable reference.
+
+  Those two matter more than the schedule because the corpus contains neither
+  shape, so mutation is the ONLY layer that can exercise them - the same
+  blind spot #81 and #74 both hit, where a 0-changed corpus gate meant
+  nothing. Also still open: re-run when the corpus itself grows (the
+  both-clean pool has sat at 697 across every run so far).
 - **#52 - fixture-coverage build-out (the census target list).**
   `scripts/fixture-coverage.mjs` parses every corpus + test fixture and
   cross-references the JSON catalog to list entries referenced in zero
@@ -635,7 +674,24 @@ IDs so the two stay in sync.
   branches are a scope, and a series-gated one is conditional). All nine were
   probe-confirmed against TV at the same positions and wording before landing.
 
-  **Still open - the `isCommonlyUsedVariable` whitelist.**
+  **The `isCommonlyUsedVariable` whitelist is REMOVED 2026-08-27**, and the
+  framing below (kept because the correction is the point) was wrong on the
+  decisive question. It is not a recall-versus-noise trade-off: the list
+  suppressed by NAME unconditionally, after usage tracking had already marked
+  used variables as used, so every warning it removed was a TRUE positive.
+  The "false positive is worse than a miss" contract never applied, and that
+  mischaracterization is the only reason this sat open as a judgement call
+  instead of being measured.
+
+  Re-measured post-INV168 the cost is **+9 warnings over 1879 fixtures**, not
+  +103 - that figure was taken on the pre-fix build where the walk gap
+  inflated unused reporting generally. All nine hand-verified genuinely
+  unused, including two that needed a closer look: one whose 27 other `sma`
+  occurrences are all `ta.sma(...)` (a word-boundary search matches after the
+  dot), and one whose only other mention is inside a string literal. Pinned by
+  `INV168-no-name-whitelist-for-unused.pine`, mutation-verified red.
+
+  **The superseded framing:**
   `checkUnusedVariables` silently drops the warning for 40 hardcoded names
   (`ma`, `bb`, `c`, `col`, `up`, `len`, `src`, `show`, `plot`, ...), matched
   case-insensitively. Its stated justification - that they "may appear unused

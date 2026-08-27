@@ -1,0 +1,18 @@
+// @description UNUSED_VARIABLE suppressed 40 hardcoded names (ma, bb, c, col, up, len, src, show, plot, ...) matched case-insensitively, justified as names that "may appear unused but are actually used by plots or external references". The justification was false in both halves: a plotted variable's identifier appears in the plot call and usage tracking marks it used, and Pine has no external-reference mechanism for a local binding. The list suppressed by NAME regardless of use, so every warning it removed was a TRUE positive - removing it is not a recall-versus-noise trade-off at all. Lines 3-7 carry whitelisted names that are genuinely never read, including `MA` for the case-insensitive match; each must warn. Lines 8-9 are the controls and carry whitelisted names too - the distinction under test is USE, not spelling - one read through a plot call and one through ordinary arithmetic; both must stay silent, which is exactly what the old justification claimed the list was needed for. See INV168, TODO #73.
+// @expects errors: 0
+// @expects warnings: 5
+// @expects warning: line=3, message=/Variable 'src' is declared but never used/
+// @expects warning: line=4, message=/Variable 'len' is declared but never used/
+// @expects warning: line=5, message=/Variable 'c' is declared but never used/
+// @expects warning: line=6, message=/Variable 'MA' is declared but never used/
+// @expects warning: line=7, message=/Variable 'show' is declared but never used/
+//@version=6
+indicator("INV168 whitelist")
+src = close
+len = 14
+c = 1
+MA = ta.sma(close, 14)
+show = true
+source = close
+period = 20
+plot(ta.ema(source, period))

@@ -57,6 +57,15 @@
   position and wording, with the unconditional-`:=` control clean on both
   sides. No corpus carrier (warning channel unchanged at 2073 records over 1879
   fixtures), so a mutation-verified fixture is what holds it. See INV168.
+- `UNUSED_VARIABLE` no longer exempts 40 hardcoded variable names (`ma`, `bb`,
+  `c`, `col`, `up`, `len`, `src`, `show`, ...), which it had matched
+  case-insensitively on the reasoning that such names "may appear unused but
+  are actually used by plots or external references". Neither half holds: a
+  plotted variable's identifier appears in the plot call and is marked used,
+  and Pine has no external-reference mechanism for a local binding. The list
+  suppressed by name regardless of use, so every warning it hid was a real
+  one. Costs +9 warnings over 1879 corpus fixtures, each hand-verified
+  genuinely unused. See INV168.
 - The expected-type noun in a union-typed parameter's CE10123 is now
   TradingView's own. It had been fabricated as `simple <first union member>`,
   which was wrong on 194 of the 201 union parameters in the catalog -

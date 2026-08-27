@@ -2395,83 +2395,32 @@ export class SemanticAnalyzer {
 				continue;
 			}
 			if (!this.usedVariables.has(variableName)) {
-				// Skip common variables that are often used for plotting or external reference
-				if (!this.isCommonlyUsedVariable(variableName)) {
-					this.addWarning(
-						pos.line,
-						pos.column,
-						variableName.length,
-						`Variable '${variableName}' is declared but never used`,
-						DiagnosticSeverity.Warning,
-						"UNUSED_VARIABLE",
-					);
-				}
+				this.addWarning(
+					pos.line,
+					pos.column,
+					variableName.length,
+					`Variable '${variableName}' is declared but never used`,
+					DiagnosticSeverity.Warning,
+					"UNUSED_VARIABLE",
+				);
 			}
 		}
 	}
 
-	/**
-	 * Check if a variable name is commonly used in Pine Script.
-	 *
-	 * NOTE: This list is intentionally hardcoded (not from pine-data) because:
-	 * 1. These are UX heuristics for "unused variable" warnings, not API data
-	 * 2. Common variable naming patterns are not in TradingView docs
-	 * 3. These reduce noise from false positive "unused" warnings on plot variables
-	 *
-	 * The list includes common indicator names (ma, rsi, macd), color variables,
-	 * boolean flags, and input parameter names that may appear unused but are
-	 * actually used by plots or external references.
-	 */
-	private isCommonlyUsedVariable(name: string): boolean {
-		const commonVariables = new Set([
-			// Common plot variables
-			"ma",
-			"sma",
-			"ema",
-			"wma",
-			"rsi",
-			"macd",
-			"bb",
-			"atr",
-			"cci",
-			"stoch",
-			// Common color variables
-			"color",
-			"col",
-			"c",
-			"bullish",
-			"bearish",
-			"up",
-			"down",
-			"buy",
-			"sell",
-			// Common boolean variables
-			"show",
-			"display",
-			"plot",
-			"draw",
-			"enable",
-			"disable",
-			// Common input variables (might be used externally)
-			"src",
-			"source",
-			"len",
-			"length",
-			"period",
-			"mult",
-			"multiplier",
-			// Special Pine Script variables
-			"close",
-			"open",
-			"high",
-			"low",
-			"volume",
-			"time",
-			"bar_index",
-		]);
-
-		return commonVariables.has(name.toLowerCase());
-	}
+	// isCommonlyUsedVariable is DELETED, not disabled. It suppressed
+	// UNUSED_VARIABLE for 40 hardcoded names (ma, bb, c, col, up, len, src,
+	// show, plot, ...) matched case-insensitively, justified as names that
+	// "may appear unused but are actually used by plots or external
+	// references". That justification does not hold: a plotted variable's
+	// identifier appears in the plot call and usage tracking marks it used,
+	// and Pine has no external-reference mechanism for a local binding. It
+	// suppressed by NAME regardless of use, so every warning it removed was a
+	// TRUE positive. The noise it was really papering over was INV168's
+	// if-expression walk gap - which is why `bb` was silent while `aa` and
+	// `cc` warned, an inconsistency no author could predict. Removing it cost
+	// +9 warnings over 1879 fixtures, every one hand-verified genuinely unused
+	// (the pre-fix estimate of +103 was mostly that walk gap, not this list).
+	// see INV168
 
 	private addWarning(
 		line: number,

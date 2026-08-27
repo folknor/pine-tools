@@ -190,6 +190,45 @@ recall-versus-noise trade-off on the one channel whose contract says a false
 positive is worse than a miss, and the argument for removing it is much
 stronger now that the FP class it was masking is gone. Tracked in TODO #73.
 
+### REMOVED 2026-08-27, and the framing above was wrong
+
+**It was never a recall-versus-noise trade-off.** The list suppressed by NAME
+unconditionally - usage tracking has already marked genuinely-used variables
+as used before `isCommonlyUsedVariable` is consulted - so every warning it
+removed was on a binding that really is never read. Removing it adds TRUE
+positives, not false ones, and the "a false positive is worse than a miss"
+contract has no purchase here. That mischaracterization is the only reason
+this sat open for two days as a judgement call; it was an ordinary
+measurement.
+
+**Re-measured post-fix, and the +103 was mostly the walk gap.** Over the 1879
+corpus fixtures the delta is **+9**, across 8 distinct names
+(`sma`x2, `length`, `buy`, `ema`, `c`, `rsi`, `src`, `multiplier`). The +103
+figure in the section above was taken on the PRE-fix build, where the
+IfExpression walk gap was inflating unused-variable reporting generally; it
+was an upper bound and it was a loose one.
+
+**All nine hand-verified genuinely unused**, not assumed:
+
+- Seven have zero other mentions of the identifier anywhere in the file.
+- `sma = ON` (`8439b23…:156`) has 27 other `sma` occurrences and every one is
+  `ta.sma(...)` - the builtin, not the local. A word-boundary search matches
+  after the dot, which is a trap worth naming for the next person doing this.
+- `buy = low + atr` (`4d78be7…:1032`) has one other occurrence, inside a
+  string literal (`'Display internal buy and sell activity'`).
+
+`checkUnusedVariables` now warns whenever a declared name is unused, and the
+function is deleted rather than left unreferenced.
+
+Pinned by
+`packages/core/test/fixtures/regression/INV168-no-name-whitelist-for-unused.pine`,
+mutation-verified red (5 warnings -> 0 with the list restored). Its controls
+deliberately carry whitelisted names too - `source` and `period`, both read -
+because the distinction under test is USE, not spelling. Writing it turned up
+one more thing worth keeping: `plot = true` does NOT warn, because a later
+`plot(...)` call marks the name used. That is correct, and it is a small live
+example of the very mechanism the list's justification denied.
+
 ## The collect-side twin, FIXED 2026-08-27
 
 The lead recorded here as "also noted, not fixed" turned out to be the same

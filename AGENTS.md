@@ -385,8 +385,28 @@ extraction - NOT the offline re-derivation. Skipping `reextract:dom` reverts the
 variadic `overloadArgs` (e.g. `math.max` → empty) and per-overload descriptions
 to the cache's pre-fix state; skipping `reextract:sections` drops every
 catalog's `returnsDescription`/`remarks`/`seeAlso`. The standard refresh is:
-`crawl` → `scrape` → `reextract:dom` → `reextract:sections` → `generate` →
-`install:cli` → `regression-check`.
+`crawl` → `scrape` → `reextract:dom` → `reextract:sections` →
+**the two probe `--retry` passes** → `generate` → `install:cli` →
+`regression-check`.
+
+**The two probe passes belong BEFORE `generate`, because `generate` is what
+merges them**, and both are no-ops unless the catalog gained something:
+
+```bash
+node scripts/probe-required-params.mjs --retry     # requiredness (INV050)
+node scripts/probe-union-type-nouns.mjs --retry    # union expected-type nouns (INV171)
+```
+
+They are the only network steps outside the scrape itself, and on an unchanged
+catalog they make no TV calls at all (verified 2026-08-27: the union-noun
+`--retry` reported `probing 0 functions` and rewrote only its own timestamp),
+so running them on every refresh costs nothing. Skipping them is
+silent rather than loud: a newly-scraped function simply carries no probed
+requiredness (falling back to prose evidence) and no `expectedTypeNoun` on its
+union parameters (falling back to the checker's `simple <first member>`, which
+the sweep measured as wrong 194 times out of 201). Nothing fails; the data is
+just quietly less true, which is exactly the failure mode the WARNING above
+exists for.
 
 Note: `scrape` now also DOM-mirrors variables and constants (under
 `var__<name>`/`const__<name>`) and operators (`op__<hex-slug>`), not just
