@@ -1,9 +1,9 @@
 // @test regression/INV138-collection-receiver-method-call
-// @description An unknown member on an array/map/matrix receiver is TV's CE10271 "method or method reference" (probed p09, 2026-07-15). Collections DO carry builtin methods, but they are exactly their namespace's catalog functions - `id.get(i)` and `array.get(id, i)` are the same entry - so validity is a catalog lookup rather than a hardcoded per-collection method table. This is INV065's residual slice (b). See investigations/INV138-scalar-receiver-method-calls/notes.md.
+// @description An unknown member on an array/map/matrix receiver is TV's CE10271 "method or method reference" (probed p09, 2026-07-15). Collections DO carry builtin methods, but they are exactly their namespace's catalog functions - `id.get(i)` and `array.get(id, i)` are the same entry - so validity is a catalog lookup rather than a hardcoded per-collection method table. This is INV065's residual slice (b). See investigations/INV138-scalar-receiver-method-calls/notes.md. COLUMN CORRECTED 2026-08-27: these assertions pinned the RECEIVER start, but TV anchors the method form at the DOT - re-measured against --tv on this fixture's own source, and on 17 further cells in INV173's grid, every one of which agrees. The old columns were locking in a bug, and no sweep caught it because the corpus carries none of this shape. See INV173.
 // @expects parse: success
-// @expects error: line=6, column=1, message="Could not find method or method reference 'arr.pushx'"
-// @expects error: line=7, column=1, message="Could not find method or method reference 'm.putx'"
-// @expects error: line=8, column=1, message="Could not find method or method reference 'mx.setx'"
+// @expects error: line=6, column=4, message="Could not find method or method reference 'arr.pushx'"
+// @expects error: line=7, column=2, message="Could not find method or method reference 'm.putx'"
+// @expects error: line=8, column=3, message="Could not find method or method reference 'mx.setx'"
 //@version=6
 indicator("x")
 arr = array.new<float>(0)

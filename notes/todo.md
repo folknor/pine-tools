@@ -188,45 +188,59 @@ IDs so the two stay in sync.
   open: the CE10165 cascade TV emits at every call site of a function whose
   default was rejected. Evidence for both is in the INV.
 
-  The original finding, kept because it is the argument for #48's operators:
+  How it was found, kept because it is the argument for #48's operators: the
+  new `member-called-as-function` operator, on its first run, spliced
+  `text.align_right(1)` into a corpus fixture's function signature - a
+  parameter default rather than a call argument - and we accepted the whole
+  file.
 
-  found by the new `member-called-as-function` mutation operator on its first
-  run - the mutant spliced `text.align_right(1)` into a function signature's
-  default rather than a call argument, and we accepted the whole file.
+  Nothing walked parameter defaults at all, so neither the default
+  expression's own validity (the CE10271 went unreported there while the
+  identical call in argument position was caught) nor any of TradingView's
+  rules about what a default may be were checked. The grid found FOUR codes,
+  not the two the first pass guessed at. Probed 2026-08-27:
 
-  We validate nothing in a parameter default: not the expression's own
-  validity (the CE10271 above went unreported there while the identical call
-  in argument position IS caught), and not the two rules TV has about what a
-  default may be at all. Probed 2026-08-27:
+  The full 20-cell table, the four messages verbatim, and the two anchors live
+  in INV172 and are NOT duplicated here - it is a settled measurement, and a
+  stale copy in this file is something a later reader would act on. Re-run it
+  with `node investigations/INV172-udf-parameter-defaults/probes/grid.mjs`
+  (add `--local` for our side).
 
-  | default | TV |
-  |---|---|
-  | `f(int x, y = math.max(1, 2)) => x` | **CE10133** |
-  | `f(int x, y = 1 + 2) => x` | **CE10134** |
-  | `f(int x, y = close) => x` | clean |
-  | `f(int x, y = color.red) => x` | clean |
-  | `f(int x, y = 5) => x` | clean |
-  | `f(int x, y = "a") => x` | clean |
+  The one thing worth repeating outside the INV, because it is what a
+  reimplementation would get wrong: **read the codes off the expression's
+  SHAPE, never off the messages.** CE10133 says "cannot be a function,
+  variable or calculation" while TV accepts `close`; CE10132 says "a type's
+  field" while firing on a plain function parameter.
 
-  - CE10133 `The default value cannot be a function, variable or calculation.`
-  - CE10134 `The default value assigned to a parameter must be either a
-    literal value (e.g., "5") or a built-in variable (e.g., "close").`
+- **#82 - the CE10271 method-form shadowing leniency. Anchor half FIXED,
+  leniency half OPEN
+  ([INV173](../investigations/INV173-namespace-shadow-method-calls/notes.md)).**
 
-  **Read the two codes off the SHAPE, not off the wording**, which is the trap
-  here: CE10133's message names "variable" but TV plainly ACCEPTS `y = close`,
-  and CE10134's message is the one that describes the real rule. A call gets
-  10133 and an operator expression gets 10134; both anchor at the PARAMETER
-  (3:10), not at the offending expression. Before implementing, probe the
-  shapes this grid does not cover - unary minus, a ternary, a parenthesised
-  literal, an array literal, a user-variable reference (as opposed to a
-  built-in one), and a UDF call - because "calculation" versus "function" is
-  doing real work in choosing the code and six cells do not pin it.
+  **(b) the anchor is DONE.** TV anchors the method form at the DOT, measured
+  across 17 cells; we anchored at the receiver. Fixed at both emission sites,
+  and it exposed **four existing fixtures pinning the wrong column** - each
+  re-probed against `--tv` on its own source before its assertion was touched,
+  never fitted to the new code. Lesson recorded in the INV: a `column=`
+  assertion is a claim about TradingView and needs its own probe.
 
-- **#82 - two CE10271 method-form disagreements, found 2026-08-27 by INV170's
-  leftover probe. Both PRE-EXISTING** (the `collectionReceiver` branch is
-  INV138/INV065-b, untouched by INV170) **and neither carried by the corpus**,
-  which is why every sweep has been silent on them - warning tv-only and the
-  error window both stayed clean.
+  **(a) the leniency is still OPEN, and is deliberately not fixed.** We emit
+  CE10271 where TV is silent - a false positive on the ERROR channel - when
+  the receiver shadows one of `color`, `label`, `line`, `box`, `table`,
+  `linefill` or `strategy`. Three hypotheses are dead (see the INV): it is not
+  "shadows a namespace" (`math` does and errors), not "is a type name"
+  (`string` is and errors), not the intersection (`polyline` is both and
+  errors, `strategy` is neither-quite and is clean), and TV does not re-type
+  the shadowed variable either. **The lenient set is not derivable from the
+  catalog**, so the tempting hardcoded list is exactly the table of language
+  facts the Data-vs-Syntax rule forbids. Two real options, both costed in the
+  INV: suppress on any catalog-name shadow (derivable, trades FP for FN), or
+  probe the name set and bake it into pine-data (the INV050/INV171 pattern,
+  and the architecturally correct one).
+
+  The original filing follows. Both halves are PRE-EXISTING (the
+  `collectionReceiver` branch is INV138/INV065-b, untouched by INV170) **and
+  neither is carried by the corpus**, which is why every sweep has been silent
+  on them - warning tv-only and the error window both stayed clean.
 
   **(a) A receiver whose name is BOTH a type and a namespace is a false
   positive.** Probed 2026-08-27, all `//@version=6` with `indicator("t")`:

@@ -443,9 +443,14 @@ export function validateCallExpression(
 				KNOWN_NAMESPACE_PREFIXES.has(nsPath) &&
 				!GENERIC_FUNCTION_BASES.has(functionName)
 			) {
+				// The two forms anchor DIFFERENTLY at TV, measured across 17
+				// erroring cells in INV173's grid: the FUNCTION form at the
+				// name's first character, the METHOD form at the DOT. We
+				// anchored both at the chain start, so every method-form
+				// diagnostic sat `rootName.length` columns to the left of TV's.
 				v.addError(
 					call.line,
-					call.column,
+					scalarShadow ? call.column + rootName.length : call.column,
 					functionName.length,
 					scalarShadow
 						? `Could not find method or method reference '${functionName}'`
@@ -520,9 +525,10 @@ export function validateCallExpression(
 				(scalarReceiver || collectionReceiver) &&
 				!importedMethodMayExist(v, memberName)
 			) {
+				// Anchored at the DOT, matching TV's method form. see INV173
 				v.addError(
 					call.line,
-					call.column,
+					call.column + rootName.length,
 					functionName.length,
 					`Could not find method or method reference '${functionName}'`,
 					DiagnosticSeverity.Error,

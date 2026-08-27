@@ -57,6 +57,11 @@
   position and wording, with the unconditional-`:=` control clean on both
   sides. No corpus carrier (warning channel unchanged at 2073 records over 1879
   fixtures), so a mutation-verified fixture is what holds it. See INV168.
+- Fixed: `Could not find method or method reference` was anchored at the
+  receiver where TradingView anchors it at the dot, so every method-form
+  CE10271 sat one receiver-name's width to the left of TradingView's column.
+  Measured on 17 cells. Four regression fixtures had pinned the wrong column
+  and were re-probed against TradingView before being corrected. See INV173.
 - New errors: a user-function or method parameter's DEFAULT value is now
   validated. Nothing walked parameter defaults before, so neither the default
   expression's own validity nor TradingView's rules about what a default may

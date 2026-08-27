@@ -1,8 +1,8 @@
 // @test regression/INV065-shadowed-scalar-member
-// @description A scalar local (string param) shadowing a builtin namespace name does NOT suppress the undefined-member check: scalars carry no builtin methods, so ns.member(...) with an unknown member is TV's CE10271 "method or method reference" even when shadowed (probed p01/p06/p07, 2026-06-19). See investigations/INV065-shadow-gate-oversuppresses-member-calls/notes.md.
+// @description A scalar local (string param) shadowing a builtin namespace name does NOT suppress the undefined-member check: scalars carry no builtin methods, so ns.member(...) with an unknown member is TV's CE10271 "method or method reference" even when shadowed (probed p01/p06/p07, 2026-06-19). See investigations/INV065-shadow-gate-oversuppresses-member-calls/notes.md. COLUMN CORRECTED 2026-08-27: these assertions pinned the RECEIVER start, but TV anchors the method form at the DOT - re-measured against --tv on this fixture's own source, and on 17 further cells in INV173's grid, every one of which agrees. The old columns were locking in a bug, and no sweep caught it because the corpus carries none of this shape. See INV173.
 // @expects parse: success
-// @expects error: line=9, column=5, message="Could not find method or method reference 'timeframe.changex'"
-// @expects error: line=11, column=5, message="Could not find method or method reference 'str.trimx'"
+// @expects error: line=9, column=14, message="Could not find method or method reference 'timeframe.changex'"
+// @expects error: line=11, column=8, message="Could not find method or method reference 'str.trimx'"
 //@version=6
 indicator("x")
 // A SCALAR local (string param) shadows the builtin namespace name. Scalars

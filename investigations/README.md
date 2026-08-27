@@ -1191,6 +1191,16 @@ contradiction means re-measure, not "the earlier author was wrong."
   `--local` mode reproduces TV's column cell for cell. Includes a TV hole we
   deliberately match (`-userVar` is clean while `userVar` is CE10132). UDT
   field defaults share the rule and are scoped out with the evidence taken.
+- [INV173](INV173-namespace-shadow-method-calls/notes.md) - an 18-name grid
+  over TODO #82. **The method form of CE10271 anchors at the DOT**, measured
+  on 17 erroring cells; we anchored at the receiver, and fixing it exposed
+  FOUR existing fixtures that had pinned the wrong column (each re-probed
+  against `--tv` on its own source before being corrected, never fitted to the
+  new code). The other half - TV going silent when the receiver shadows
+  `color`/`label`/`line`/`box`/`table`/`linefill`/`strategy` - is a real false
+  positive on the error channel and is NOT fixed: three hypotheses are dead
+  and the lenient set is not derivable from the catalog, so a hardcoded list
+  would be the table of language facts Data-vs-Syntax forbids.
 - [INV171](INV171-union-type-noun-probe/notes.md) - the union expected-type
   noun sweep TODO #74 specified and INV159 left unbuilt.
   `scripts/probe-union-type-nouns.mjs` measures **201 of 202 union parameters

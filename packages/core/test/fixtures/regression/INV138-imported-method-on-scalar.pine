@@ -1,7 +1,7 @@
 // @test regression/INV138-imported-method-on-scalar
-// @description A library's exported method is callable UNQUALIFIED on a receiver of its first param's type, so `x.add(2.0)` is legal for a `float x` once RicardoSantos/MathOperator/2 (which declares `export method add(float value_a, float value_b)`) is imported - TV accepts it and rejects the identical call without the import (probed p02 vs p04, 2026-07-15). The Manual documents only namespace-qualified library access, so this is TV-authority over prose. A typo'd member stays CE10271 because it is in no imported export set. See investigations/INV138-scalar-receiver-method-calls/notes.md.
+// @description A library's exported method is callable UNQUALIFIED on a receiver of its first param's type, so `x.add(2.0)` is legal for a `float x` once RicardoSantos/MathOperator/2 (which declares `export method add(float value_a, float value_b)`) is imported - TV accepts it and rejects the identical call without the import (probed p02 vs p04, 2026-07-15). The Manual documents only namespace-qualified library access, so this is TV-authority over prose. A typo'd member stays CE10271 because it is in no imported export set. See investigations/INV138-scalar-receiver-method-calls/notes.md. COLUMN CORRECTED 2026-08-27: these assertions pinned the RECEIVER start, but TV anchors the method form at the DOT - re-measured against --tv on this fixture's own source, and on 17 further cells in INV173's grid, every one of which agrees. The old columns were locking in a bug, and no sweep caught it because the corpus carries none of this shape. See INV173.
 // @expects parse: success
-// @expects error: line=7, column=6, message="Could not find method or method reference 'x.addx'"
+// @expects error: line=7, column=7, message="Could not find method or method reference 'x.addx'"
 //@version=6
 indicator("x")
 import RicardoSantos/MathOperator/2 as mo

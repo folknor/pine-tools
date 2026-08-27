@@ -1,8 +1,8 @@
 // @test regression/INV138-scalar-receiver-method-call
-// @description A method call on a plain SCALAR receiver whose name is not a builtin namespace (`x.abs()`, `s.length()`) is TV's CE10271 "method or method reference": scalars carry no builtin methods, so only a user method or an imported library's exported method can legitimize the call, and neither exists here (probed p05, 2026-07-15). This is INV065's residual slice (c) - it left these silent because the receiver is not in KNOWN_NAMESPACE_PREFIXES. See investigations/INV138-scalar-receiver-method-calls/notes.md.
+// @description A method call on a plain SCALAR receiver whose name is not a builtin namespace (`x.abs()`, `s.length()`) is TV's CE10271 "method or method reference": scalars carry no builtin methods, so only a user method or an imported library's exported method can legitimize the call, and neither exists here (probed p05, 2026-07-15). This is INV065's residual slice (c) - it left these silent because the receiver is not in KNOWN_NAMESPACE_PREFIXES. See investigations/INV138-scalar-receiver-method-calls/notes.md. COLUMN CORRECTED 2026-08-27: these assertions pinned the RECEIVER start, but TV anchors the method form at the DOT - re-measured against --tv on this fixture's own source, and on 17 further cells in INV173's grid, every one of which agrees. The old columns were locking in a bug, and no sweep caught it because the corpus carries none of this shape. See INV173.
 // @expects parse: success
-// @expects error: line=3, column=15, message="Could not find method or method reference 'x.abs'"
-// @expects error: line=5, column=16, message="Could not find method or method reference 's.length'"
+// @expects error: line=3, column=16, message="Could not find method or method reference 'x.abs'"
+// @expects error: line=5, column=17, message="Could not find method or method reference 's.length'"
 //@version=6
 indicator("x")
 f(float x) => x.abs()

@@ -119,11 +119,43 @@ pins two constants, two variables, and both controls in one file.
 Mutation-verified red: with the fix reverted it reports 0 errors instead of 4,
 failing the count and all four individual assertions.
 
-## Left open
+## Left open - PROBED the same day, and the guess in this section was wrong
 
 The collection-receiver and scalar-receiver guards elsewhere in the same
-function keep their own `NAMESPACE_PROPERTIES` exemptions. Those sit behind
-`userShadowed`, which the probe above shows is the branch where the exemption
-is RIGHT, so they are correct as they stand - but only the `color`/scalar case
-was measured. A user variable shadowing a namespace and then calling a
-COLLECTION member on it was not probed and is not pinned.
+function keep their own `NAMESPACE_PROPERTIES` exemptions, behind
+`userShadowed`. The first version of this section reasoned that because the
+`color`/scalar probe showed the exemption is RIGHT on the shadowed branch,
+those guards "are correct as they stand", and left the collection case
+unprobed.
+
+**Probing it 2026-08-27 confirmed the exemption and found a FALSE POSITIVE
+sitting next to it**, which the inference had no way to reach:
+
+| receiver decl | call | TV | us |
+|---|---|---|---|
+| `color = array.new<float>(3, 1.0)` | `color.red(1)` | clean | clean |
+| `color = array.new<float>(3, 1.0)` | `color.pushx(2.0)` | **clean** | **CE10271** |
+| `label = array.new<float>(3, 1.0)` | `label.pushx(2.0)` | **clean** | **CE10271** |
+| `math = array.new<float>(3, 1.0)` | `math.pushx(2.0)` | CE10271 | CE10271 |
+| `arr = array.new<float>(3, 1.0)` | `arr.pushx(2.0)` | CE10271 | CE10271 |
+| `string = "abc"` | `string.foo()` | CE10271 | CE10271 |
+
+So the exemption cell IS right, and the guard around it is not: the
+discriminant is neither "shadows a namespace" (`math` does and still errors)
+nor "is a type name" (`string` is and still errors) but the INTERSECTION -
+`color` and `label` are both, and those are exactly the lenient cells.
+
+The false positive is PRE-EXISTING, not introduced by INV170: the
+`collectionReceiver` branch is INV138 / INV065-b and this investigation did
+not touch it. A second observation from the same probes, unresolved: TV
+appears to anchor the METHOD form at the DOT while we anchor at the receiver
+(`arr.pushx` is TV `4:4` vs our `4:1`), though the FUNCTION form agrees.
+
+Both are filed as TODO #82 with the full table. Deliberately not fixed here -
+six cells kill the two single-property hypotheses but do not pin the rule, and
+`line`, `box` and `table` (the other names in that class) are unprobed.
+
+**The lesson, which is the reason this section is kept rather than replaced:**
+an untested guard was described as correct on the strength of an adjacent
+measurement. The adjacent measurement was sound and the inference from it was
+not. Probe the cell you are claiming, not its neighbour.
