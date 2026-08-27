@@ -1180,6 +1180,17 @@ contradiction means re-measure, not "the earlier author was wrong."
   tests plus a 0-changed regression-check both passed while it manufactured a
   false positive on a shadowed namespace (where TV goes clean). The corpus
   carries neither shape.
+- [INV172](INV172-udf-parameter-defaults/notes.md) - UDF parameter DEFAULTS
+  were never walked at all, so neither the default expression's own validity
+  nor TV's rules about what a default may BE were checked. Found by the new
+  `member-called-as-function` mutation operator on its first run, on a shape
+  the corpus cannot contain. Four codes, picked by the expression's SHAPE
+  because the messages mislead - CE10133 says "cannot be a function, variable
+  or calculation" while TV accepts `close`, and CE10132 says "a type's field"
+  while firing on a plain parameter. 20-cell probe grid, re-runnable, whose
+  `--local` mode reproduces TV's column cell for cell. Includes a TV hole we
+  deliberately match (`-userVar` is clean while `userVar` is CE10132). UDT
+  field defaults share the rule and are scoped out with the evidence taken.
 - [INV171](INV171-union-type-noun-probe/notes.md) - the union expected-type
   noun sweep TODO #74 specified and INV159 left unbuilt.
   `scripts/probe-union-type-nouns.mjs` measures **201 of 202 union parameters

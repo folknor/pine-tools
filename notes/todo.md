@@ -175,11 +175,24 @@ IDs so the two stay in sync.
   them. When a rule's shapes are absent from the corpus, the corpus gate is not
   evidence and the probe is the whole verification.
 
-- **#83 - UDF parameter DEFAULTS are never checked. Two missing error classes,
-  found 2026-08-27 by the new `member-called-as-function` mutation operator on
-  its first run** - the mutant spliced `text.align_right(1)` into a function
-  signature's default rather than a call argument, and we accepted the whole
-  file.
+- **#83 - UDF parameter defaults. FIXED for FUNCTION and METHOD parameters
+  2026-08-27 ([INV172](../investigations/INV172-udf-parameter-defaults/notes.md)).**
+  All four codes land with TV's wording and anchors, verified cell-for-cell by
+  a re-runnable 20-cell grid whose `--local` mode reproduces TV's column
+  exactly. The mutation pool went 5,188/1-survivor to 5,189 killed.
+
+  **Still open: UDT FIELD defaults**, which share the rule and are probed but
+  not implemented - `int b = userVar` is CE10132 at the expression, but
+  `float c = 1 + 2` anchors CE10134 at the FIELD declaration rather than at a
+  parameter name, so it is a second implementation and not a shared call. Also
+  open: the CE10165 cascade TV emits at every call site of a function whose
+  default was rejected. Evidence for both is in the INV.
+
+  The original finding, kept because it is the argument for #48's operators:
+
+  found by the new `member-called-as-function` mutation operator on its first
+  run - the mutant spliced `text.align_right(1)` into a function signature's
+  default rather than a call argument, and we accepted the whole file.
 
   We validate nothing in a parameter default: not the expression's own
   validity (the CE10271 above went unreported there while the identical call

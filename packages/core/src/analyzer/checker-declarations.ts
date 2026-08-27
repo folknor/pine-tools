@@ -10,8 +10,10 @@ import { LIBRARY_EXPORTS_BY_PATH, TYPE_NAMES } from "../../../../pine-data/v6";
 import { DiagnosticSeverity } from "../common/errors";
 import { TYPE_KEYWORDS } from "../constants/keywords";
 import type {
+	Expression,
 	FunctionDeclaration,
 	FunctionParam,
+	Identifier,
 	Statement,
 } from "../parser/ast";
 import { mapToPineType } from "./builtins";
@@ -242,6 +244,119 @@ export function checkParamTypeAnnotations(
 			`"${base}" is not a valid type keyword.`,
 			DiagnosticSeverity.Error,
 		);
+	}
+}
+
+// A UDF parameter DEFAULT may only be a literal or a BUILT-IN reference.
+// TradingView splits the rejections across four codes, and they must be
+// picked by the expression's SHAPE rather than by the messages, which are
+// unreliable: CE10133 says "cannot be a function, variable or calculation"
+// while TV plainly ACCEPTS `y = close`, and CE10132 says "a type's field"
+// while firing on a plain function parameter. Probed 2026-08-27, 28 cells -
+// see investigations/INV172-udf-parameter-defaults/probes/grid.mjs.
+//
+//   user variable        CE10132  anchored at the EXPRESSION
+//   any call             CE10133  anchored at the PARAMETER NAME
+//   binary/ternary/cmp   CE10134  anchored at the PARAMETER NAME
+//   bare `na`, untyped   CE10169  anchored at the PARAMETER NAME
+//
+// Accepted, and each measured rather than assumed: every literal including a
+// negative one, a parenthesised literal, a built-in variable (`close`), a
+// built-in constant (`color.red`, `text.align_right`), and `na` when the
+// parameter IS typed (`int y = na`).
+//
+// UNARY expressions are accepted WHATEVER they wrap - `-userVar` is clean at
+// TV while the bare `userVar` is CE10132. That is almost certainly a hole in
+// TV's own rule, and we deliberately reproduce it rather than "fix" it:
+// flagging there would reject scripts TradingView compiles. see INV172
+function defaultValueViolation(
+	v: UnifiedPineValidator,
+	expr: Expression,
+	typed: boolean,
+): { code: string; message: string; atExpression: boolean } | null {
+	switch (expr.type) {
+		case "Literal":
+			return null;
+		case "UnaryExpression":
+			return null; // TV does not look inside one - see the note above
+		case "CallExpression":
+			return {
+				code: "CE10133",
+				message:
+					"The default value cannot be a function, variable or calculation.",
+				atExpression: false,
+			};
+		case "BinaryExpression":
+		case "TernaryExpression":
+			return {
+				code: "CE10134",
+				message:
+					'The default value assigned to a parameter must be either a literal value (e.g., "5") or a built-in variable (e.g., "close").',
+				atExpression: false,
+			};
+		case "Identifier": {
+			const name = (expr as Identifier).name;
+			if (name === "na") {
+				// `na` is fine once the parameter states its type - TV's own
+				// message says so and the probe confirms `int y = na` is clean.
+				return typed
+					? null
+					: {
+							code: "CE10169",
+							message:
+								'"na" cannot be used as the default value if the parameter\'s type is not defined. Use "<type> <parameterName> = na" instead',
+							atExpression: false,
+						};
+			}
+			// A BUILT-IN variable or constant is allowed; a user one is not.
+			// Built-ins are defined at line 0 by initializeBuiltins, which is
+			// the same test the rest of the checker uses to tell them apart.
+			const sym = v.symbolTable.lookup(name);
+			if (!sym || sym.line === 0) return null;
+			return {
+				code: "CE10132",
+				message: `Cannot use "${name}" as the default value of a type's field. The default value cannot be a function, variable or calculation.`,
+				atExpression: true,
+			};
+		}
+		case "MemberExpression":
+			// `color.red`, `text.align_right` - a built-in namespaced constant.
+			// A member of a USER value cannot appear here (a default is
+			// evaluated before any user value exists), so nothing to split.
+			return null;
+		default:
+			// ArrayExpression, IndexExpression, IfExpression, SwitchExpression -
+			// unprobed as defaults, so accepted. A miss on an unmeasured shape
+			// beats inventing a code for it; each is one probe away whenever
+			// someone wants them. see INV172
+			return null;
+	}
+}
+
+export function checkParamDefaults(
+	v: UnifiedPineValidator,
+	params: FunctionParam[],
+	version: string,
+): void {
+	if (version !== "6") return;
+	for (const param of params) {
+		if (!param.defaultValue) continue;
+		if (param.line === undefined || param.column === undefined) continue;
+		const hit = defaultValueViolation(
+			v,
+			param.defaultValue,
+			!!param.typeAnnotation,
+		);
+		if (!hit) continue;
+		const atExpr = hit.atExpression;
+		v.addTemplateError({
+			line: atExpr ? param.defaultValue.line : param.line,
+			column: atExpr ? param.defaultValue.column : param.column,
+			length: atExpr ? 0 : param.name.length,
+			message: hit.message,
+			severity: DiagnosticSeverity.Error,
+			code: hit.code,
+		});
 	}
 }
 

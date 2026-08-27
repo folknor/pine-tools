@@ -57,6 +57,16 @@
   position and wording, with the unconditional-`:=` control clean on both
   sides. No corpus carrier (warning channel unchanged at 2073 records over 1879
   fixtures), so a mutation-verified fixture is what holds it. See INV168.
+- New errors: a user-function or method parameter's DEFAULT value is now
+  validated. Nothing walked parameter defaults before, so neither the default
+  expression's own validity nor TradingView's rules about what a default may
+  be were checked - `f(int x, y = math.max(1, 2))` passed silently. All four
+  of TradingView's codes are reported with its wording and anchors: CE10132 (a
+  user variable), CE10133 (a call), CE10134 (a calculation) and CE10169 (a
+  bare `na` on an untyped parameter). Literals, parenthesised and negative
+  forms, built-in variables and constants, and `na` on a TYPED parameter stay
+  accepted, each measured rather than assumed. UDT field defaults share the
+  rule and are not yet covered. See INV172.
 - `UNUSED_VARIABLE` no longer exempts 40 hardcoded variable names (`ma`, `bb`,
   `c`, `col`, `up`, `len`, `src`, `show`, ...), which it had matched
   case-insensitively on the reasoning that such names "may appear unused but

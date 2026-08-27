@@ -49,6 +49,7 @@ import {
 	checkBuiltinShadowDeclaration,
 	checkExportedParamsTypified,
 	checkFunctionRedefinition,
+	checkParamDefaults,
 	checkParamTypeAnnotations,
 	checkRedeclaration,
 	checkTypeAnnotationName,
@@ -1010,6 +1011,7 @@ export class UnifiedPineValidator {
 				this.blockDepth++;
 
 				checkParamTypeAnnotations(this, statement.params, version);
+				checkParamDefaults(this, statement.params, version);
 				checkExportedParamsTypified(
 					this,
 					statement.isExport,
@@ -1596,6 +1598,7 @@ export class UnifiedPineValidator {
 				this.blockDepth++;
 
 				checkParamTypeAnnotations(this, statement.params, version);
+				checkParamDefaults(this, statement.params, version);
 				checkExportedParamsTypified(
 					this,
 					statement.isExport,

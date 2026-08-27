@@ -1,0 +1,30 @@
+// @description A UDF parameter DEFAULT was never validated at all - not the expression's own validity, and not TV's rules about what a default may be. Found by the member-called-as-function mutation operator on its first run: it spliced a call into a function SIGNATURE's default rather than a call argument and we accepted the file whole. TV splits the rejections across FOUR codes which must be picked by the expression's SHAPE, because the messages mislead: CE10133 says "cannot be a function, variable or calculation" while TV plainly ACCEPTS `close`, and CE10132 says "a type's field" while firing on a plain function parameter. The accepted forms on lines 6-14 are each measured, not assumed - literals including a negative one, a parenthesised literal, a built-in variable, a built-in constant, and `na` once the parameter is TYPED. Line 16 is the deliberate TV-parity oddity: `-userVar` is clean at TV while the bare `userVar` on line 19 is CE10132, so TV does not look inside a unary expression; we reproduce that hole rather than "fix" it, because flagging there would reject scripts TradingView compiles. All 20 cells probed via the grid in investigations/INV172-udf-parameter-defaults/probes/. See INV172, TODO #83.
+// @expects errors: 5
+// @expects error: line=18, column=11, message=/"na" cannot be used as the default value if the parameter's type is not defined/
+// @expects error: line=19, column=15, message=/Cannot use "userVar" as the default value of a type's field/
+// @expects error: line=20, column=11, message=/The default value cannot be a function, variable or calculation/
+// @expects error: line=21, column=11, message=/must be either a literal value \(e\.g\., "5"\) or a built-in variable/
+// @expects error: line=22, column=11, message=/The default value cannot be a function, variable or calculation/
+//@version=6
+indicator("INV172")
+userVar = 42
+userFn(int a) => a + 1
+// Accepted: literals, parenthesised and negative forms.
+a1(int x, y = 5) => x
+a2(int x, y = -5) => x
+a3(int x, y = (5)) => x
+a4(int x, y = "s") => x
+// Accepted: built-in variable and built-in namespaced constant.
+a5(int x, y = close) => x
+a6(int x, y = text.align_right) => x
+// Accepted: `na` once the parameter states its type.
+a7(int x, int y = na) => x
+// Accepted at TV, and therefore here: a unary expression is not looked into.
+a8(int x, y = -userVar) => x
+// Rejected, one per code.
+b1(int x, y = na) => x
+b2(int x, y = userVar) => x
+b3(int x, y = math.max(1, 2)) => x
+b4(int x, y = 1 + 2) => x
+b5(int x, y = userFn(1)) => x
+plot(a1(1) + a2(1) + a3(1) + a5(1) + a7(1) + a8(1))
