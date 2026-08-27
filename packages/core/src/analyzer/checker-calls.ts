@@ -406,11 +406,21 @@ export function validateCallExpression(
 			// a non-builtin symbol, line !== 0 - its members we cannot
 			// resolve). A member that IS a known builtin (function via the
 			// signature lookup above, or a const/variable in
-			// NAMESPACE_PROPERTIES) is left alone: calling a built-in variable
-			// like `ta.tr(...)` is TV-silent, and calling a const like
-			// `color.red(...)` IS a TV error but the const-vs-variable split
-			// is murky, so we conservatively skip all known members - we never
-			// want a false positive on a real member.
+			// NAMESPACE_PROPERTIES) used to be left alone too, on the reasoning
+			// that calling a built-in variable like `ta.tr(...)` is TV-silent
+			// while calling a const like `color.red(...)` IS a TV error, and
+			// that the const-vs-variable split was too murky to act on.
+			//
+			// That premise was wrong, and the `ta.tr` example is what made it
+			// look right: `ta.tr` is ALSO a function (`ta.tr(handle_na)`), so
+			// it is TV-silent for being a real call, not for being a variable.
+			// It never reaches here - the signature lookup above claims it.
+			// The split is therefore not const-vs-variable at all, it is
+			// simply "is there a function of this name", which is the lookup
+			// that already failed to get us here. Probed 2026-08-27: a const
+			// (`color.red`, `math.pi`, `strategy.long`) and a variable
+			// (`syminfo.tickerid`, `barstate.isfirst`) called as functions BOTH
+			// draw TV's CE10271, identically worded. see INV170
 			const scalarShadow =
 				userShadowed &&
 				!!objSym &&
@@ -418,11 +428,18 @@ export function validateCallExpression(
 					TypeChecker.baseTypeName(objSym.type as string),
 				) &&
 				!v.declaredFunctionNames.has(memberName);
+			// The NAMESPACE_PROPERTIES exemption survives on the SHADOWED
+			// branch only, and that asymmetry is measured rather than assumed:
+			// with a user `color = "abc"` in scope, `color.red(1)` is CLEAN at
+			// TV, while the same call with the namespace unshadowed is CE10271.
+			// So shadowing a namespace really does change the verdict, and
+			// dropping the exemption wholesale manufactures a false positive
+			// the corpus does not carry. Probed 2026-08-27. see INV170
 			if (
-				(!userShadowed || scalarShadow) &&
+				(!userShadowed ||
+					(scalarShadow && !(functionName in NAMESPACE_PROPERTIES))) &&
 				!v.importedNamespaces.has(rootName) &&
 				KNOWN_NAMESPACE_PREFIXES.has(nsPath) &&
-				!(functionName in NAMESPACE_PROPERTIES) &&
 				!GENERIC_FUNCTION_BASES.has(functionName)
 			) {
 				v.addError(

@@ -57,6 +57,15 @@
   position and wording, with the unconditional-`:=` control clean on both
   sides. No corpus carrier (warning channel unchanged at 2073 records over 1879
   fixtures), so a mutation-verified fixture is what holds it. See INV168.
+- New error: calling a built-in namespace member that is not a function -
+  a constant (`math.pi(2)`, `color.red(1)`) or a variable
+  (`syminfo.tickerid(3)`, `barstate.isfirst(1)`) - now reports TradingView's
+  CE10271 instead of passing silently. The check had been suppressed on the
+  reasoning that the constant-versus-variable split was too murky to act on;
+  it is not a split at all, only "is there a function of this name". A member
+  that IS also a function (`ta.tr`) is unaffected, and a namespace shadowed by
+  a user variable stays clean, matching TradingView in both directions. See
+  INV170.
 - New error: a positional argument after a named one, which TradingView rejects
   as `Syntax error after the argument for "<name>"`. We accepted it silently,
   even though the union-argument checker already recognised the shape well

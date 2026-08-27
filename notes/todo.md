@@ -142,9 +142,23 @@ IDs so the two stay in sync.
   carry, not the case: INV016's union-argument check already recognised this
   shape and SUPPRESSED its type checks on it, citing "TV's own error" - an
   error nothing emitted. **A suppression that names a diagnostic is a claim that
-  the diagnostic exists; grep for the emitter before trusting it.** Worth a
-  sweep of the other `continue`-with-a-reason sites in `checker-calls.ts` for
-  the same shape, which nobody has done.
+  the diagnostic exists; grep for the emitter before trusting it.**
+
+  **The sweep it asked for is DONE 2026-08-27
+  ([INV170](../investigations/INV170-builtin-member-called-as-function/notes.md)).**
+  One more instance across the checker and parser - a built-in constant or
+  variable called as a function was TV's CE10271 and we were silent, on a
+  stated reason (a murky const-vs-variable split) that was false. Everything
+  else held up, so the anti-pattern is rare rather than systemic and this does
+  not need to become a standing chore.
+
+  Carry the gate lesson, which cost a near-miss: the first version of that fix
+  passed the full suite AND a 0-changed `regression-check` over 1879 fixtures
+  while manufacturing a false positive. **Neither shape exists in the corpus**,
+  so a clean regression-check there was equally consistent with "no false
+  positives" and "this rule is untested". Only a hand-written probe separated
+  them. When a rule's shapes are absent from the corpus, the corpus gate is not
+  evidence and the probe is the whole verification.
 
 - **#20 - refine INV012 with a context-aware synchronize.** Current
   `synchronize()` skips to the next column-1 statement after a parse

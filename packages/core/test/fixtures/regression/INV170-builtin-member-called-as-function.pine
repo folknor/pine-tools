@@ -1,0 +1,21 @@
+// @description Calling a built-in namespace MEMBER that is not a function - a constant (math.pi, color.red) or a variable (syminfo.tickerid, barstate.isfirst) - is TV's CE10271, and we were silent. The suppression's stated reason was that calling a variable is TV-silent while calling a const is a TV error, and that the const-vs-variable split was too murky to act on. The premise was wrong: its own example, ta.tr, is ALSO a real function (ta.tr(handle_na)), so it is silent for being a valid call, not for being a variable - it never reaches this path at all. The split is just "is there a function of this name", which is the lookup that already failed. Line 10 is the control that proves ta.tr is unaffected. Line 12 is the control that matters most: with the namespace SHADOWED by a user variable, TV goes CLEAN, so the exemption is correct there and dropping it wholesale manufactures a false positive - which the first attempt at this fix did, and the corpus did not catch because it carries neither shape. All six verdicts probed against TV 2026-08-27. See INV170.
+// @expects errors: 4
+// @expects error: line=4, column=5, message=/Could not find function or function reference 'math\.pi'/
+// @expects error: line=5, column=5, message=/Could not find function or function reference 'color\.red'/
+// @expects error: line=6, column=5, message=/Could not find function or function reference 'syminfo\.tickerid'/
+// @expects error: line=7, column=5, message=/Could not find function or function reference 'barstate\.isfirst'/
+//@version=6
+indicator("INV170")
+// Two constants and two variables, none of them a function.
+a = math.pi(2)
+b = color.red(1)
+c = syminfo.tickerid(3)
+d = barstate.isfirst(1)
+plot(a, title = c, color = b, show_last = d ? 1 : 2)
+// Control: ta.tr IS a function, so this is an ordinary call and must not be
+// touched by the rule - it never reaches the CE10271 path.
+plot(ta.tr(true))
+// Control: shadowing the namespace with a user variable makes TV accept the
+// very same member call, so this must stay clean.
+color = "abc"
+plot(close, title = color.red(1))

@@ -1167,3 +1167,16 @@ contradiction means re-measure, not "the earlier author was wrong."
   conventions (one error per call, at the first offending positional, citing
   the named argument immediately preceding it). One new corpus error over 1879
   fixtures, TV-confirmed a true positive on a minimized repro.
+- [INV170](INV170-builtin-member-called-as-function/notes.md) - the sweep INV169
+  asked for (TODO #81), over every skip-with-a-reason site in the checker and
+  parser that makes a claim about TV. **One more instance**, and the rest hold
+  up, so the anti-pattern is rare rather than systemic. The instance: a built-in
+  namespace member that is not a function (`math.pi(2)`, `color.red(1)`,
+  `syminfo.tickerid(3)`, `barstate.isfirst(1)`) called as one is TV's CE10271
+  and we were silent. The stated reason - a murky const-vs-variable split - was
+  false, and its own `ta.tr` example is why it looked right: `ta.tr` is ALSO a
+  function, so it is silent for being a valid call and never reaches the path.
+  Also a lesson about gates: the first fix dropped the exemption wholesale, and
+  tests plus a 0-changed regression-check both passed while it manufactured a
+  false positive on a shadowed namespace (where TV goes clean). The corpus
+  carries neither shape.
