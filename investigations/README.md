@@ -1156,3 +1156,14 @@ contradiction means re-measure, not "the earlier author was wrong."
   propagation, so a `:=` to an outer `var` under a series-gated if-expression
   now draws its TV-confirmed CW10003. The dead second copy of the rule
   (`checker.ts`, `getAllUnusedSymbols`, `getUnusedSymbols`) is deleted.
+- [INV169](INV169-positional-after-named-argument/notes.md) - adoption pass over
+  the pine-lint parity item in `../broadarrow/notes/todo.md`. Two of its three
+  claims were already closed by INV142 (they are one rule, not two); the third
+  reproduced: a positional argument after a named one, which TV rejects as a
+  syntax error, was never reported. The shape was already KNOWN - INV016's
+  union-argument check recognised it well enough to SUPPRESS its own type
+  checks, but nothing emitted the error that suppression cites. Fixed in the
+  parser, since TV raises it for user functions too. Four probes pin the
+  conventions (one error per call, at the first offending positional, citing
+  the named argument immediately preceding it). One new corpus error over 1879
+  fixtures, TV-confirmed a true positive on a minimized repro.

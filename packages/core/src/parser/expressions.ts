@@ -882,6 +882,36 @@ export class ExpressionParser {
 		}
 		this.p.parenDepth--; // Decrement depth when closing parenthesis
 
+		// A positional argument after a named one. TV calls this a syntax error
+		// and raises it for BUILT-INS AND USER FUNCTIONS ALIKE, which is why it
+		// belongs here rather than in the builtin argument checker - the checker
+		// only knew to SUPPRESS its type checks on this shape (see INV016), so
+		// nothing ever reported it. Probed 2026-08-27, four shapes: TV anchors
+		// exactly ONE error per call, at the FIRST offending positional, and
+		// names the named argument IMMEDIATELY PRECEDING it - so two trailing
+		// positionals still give one error, and a named argument after the
+		// offending positional does not change which name is cited. see INV169
+		//
+		// Skipped on a call the recovery above already tore open: the argument
+		// list is unreliable there, and TV has anchored its own error at the
+		// mangle instead.
+		if (!recovered && !tornAtBoundary) {
+			let lastNamed: string | undefined;
+			for (const arg of args) {
+				if (arg.name) {
+					lastNamed = arg.name;
+					continue;
+				}
+				if (lastNamed === undefined) continue;
+				this.p.parserErrors.push({
+					line: arg.value.line,
+					column: arg.value.column,
+					message: `Syntax error after the argument for "${lastNamed}". Arguments without their parameter name cannot be used after arguments with parameter names.`,
+				});
+				break;
+			}
+		}
+
 		const callExpr: AST.CallExpression = {
 			type: "CallExpression",
 			callee,

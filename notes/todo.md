@@ -59,7 +59,17 @@ check - unsound, TV lets a float into an `array<int>` through the alias) and
 G006's declaration extension (an untyped param makes TV discard an explicit
 `bool` annotation).
 
-The local baseline was re-snapshotted 2026-08-25 and now stands at 1879
+Re-snapshotted 2026-08-27 after INV169: **1879 fixtures, 770 with errors, 7094
+error records** (+1). The added record is the new positional-after-named error
+on `13a7451...pine`, adjudicated a true positive against TV on a minimized
+repro before the baseline moved - the file's own `--tv` call returns
+`validation failed` rather than a verdict, so it settles nothing. The error
+window against TV therefore reads one higher until the next `lint:failures`
+sweep re-measures it; the record is ours-and-correct, not a new disagreement.
+(The baseline file itself is gitignored, so a fresh checkout must re-run
+`pnpm run lint:snapshot` to get these numbers.)
+
+The previous baseline, for the history below: re-snapshotted 2026-08-25 at 1879
 fixtures, **770 with errors, 7093 error records**, with
 `node scripts/regression-check.mjs` reporting a clean **0 changed fixtures / 0
 new error appearances**. (The 2026-08-21 snapshot read 774 / 7103; the
@@ -124,6 +134,17 @@ error split and warning tv-only.
 Open work items, each either deferred from an investigation or queued
 as a discrete next step. Sequential numbering matches the task-tool
 IDs so the two stay in sync.
+
+- **#81 - positional-after-named. FIXED 2026-08-27
+  ([INV169](../investigations/INV169-positional-after-named-argument/notes.md)),
+  adopted from `../broadarrow/notes/todo.md`.** Raised in the parser rather than
+  the builtin checker, since TV raises it for user functions too. The lesson to
+  carry, not the case: INV016's union-argument check already recognised this
+  shape and SUPPRESSED its type checks on it, citing "TV's own error" - an
+  error nothing emitted. **A suppression that names a diagnostic is a claim that
+  the diagnostic exists; grep for the emitter before trusting it.** Worth a
+  sweep of the other `continue`-with-a-reason sites in `checker-calls.ts` for
+  the same shape, which nobody has done.
 
 - **#20 - refine INV012 with a context-aware synchronize.** Current
   `synchronize()` skips to the next column-1 statement after a parse

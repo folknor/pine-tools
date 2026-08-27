@@ -1,0 +1,29 @@
+// @description A positional argument after a named one is TV's "Syntax error after the argument for X". We never reported it, although the builtin argument checker already recognised the shape well enough to SUPPRESS its own type checks on it (INV016) - a rule that only ever suppresses guarantees silence. Emitted from the parser rather than the checker because TV raises it for USER functions too (line 13 below), which the builtin checker knows nothing about. Four conventions pinned, each probed against TV 2026-08-27: exactly ONE error per call however many positionals trail (line 7), anchored at the FIRST offending positional, citing the named argument IMMEDIATELY PRECEDING it - so a later named argument does not change the cited name (line 11) and an earlier one does (line 9). The wrapped case anchors at the argument's own line/column, which is what makes column 1 of a continuation line correct rather than a degenerate default. Correctly-ordered calls at the end must stay clean. See INV169.
+// @expects parse: fail
+// @expects errors: 6
+// @expects error: line=6, column=26, message=/Syntax error after the argument for "title"\. Arguments without their parameter name cannot be used after arguments with parameter names\./
+// @expects error: line=7, column=26, message=/argument for "title"/
+// @expects error: line=9, column=45, message=/argument for "color"/
+// @expects error: line=11, column=26, message=/argument for "title"/
+// @expects error: line=13, column=18, message=/argument for "b"/
+// @expects error: line=16, column=1, message=/argument for "x"/
+//@version=6
+indicator("INV169")
+f(a, b, c) => a + b + c
+x = 1.0
+// One trailing positional, then two - still one error each.
+plot(close, title = "t", 2)
+plot(close, title = "t", 2, 3)
+// The cited name is the LAST named argument before the offender...
+plot(close, title = "t", color = color.red, 2)
+// ...and a named argument AFTER the offender does not change it.
+plot(close, title = "t", 2, color = color.red)
+// TV raises the same error on a user function.
+plot(f(1, b = 2, 3))
+// Wrapped: the anchor is the argument's own position, column 1 of line 16.
+y = f(1, 1, x = na ? 2.0 : x,
+3)
+plot(y)
+// Controls - correct ordering must stay silent, all-positional and all-named.
+plot(close, "ok")
+plot(close, title = "ok", color = color.red)

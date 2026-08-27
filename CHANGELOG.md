@@ -57,6 +57,14 @@
   position and wording, with the unconditional-`:=` control clean on both
   sides. No corpus carrier (warning channel unchanged at 2073 records over 1879
   fixtures), so a mutation-verified fixture is what holds it. See INV168.
+- New error: a positional argument after a named one, which TradingView rejects
+  as `Syntax error after the argument for "<name>"`. We accepted it silently,
+  even though the union-argument checker already recognised the shape well
+  enough to suppress its own type checks on it - so the only rule that knew
+  about it was one that could only stay quiet. Raised from the parser, because
+  TradingView raises it for user-defined functions too. One error per call, at
+  the first offending positional, naming the named argument immediately before
+  it; all four conventions probed against TradingView. See INV169.
 - Removed dead code: a second, unreachable copy of the unused-variable rule in
   `checker.ts`, with `SymbolTable.getAllUnusedSymbols` and
   `Scope.getUnusedSymbols`. It emitted warnings into a channel both consumers
