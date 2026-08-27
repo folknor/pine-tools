@@ -1903,6 +1903,51 @@ export class SemanticAnalyzer {
 				childUndeterminedConditional,
 			);
 		}
+
+		// An `x = if cond` puts a BLOCK in EXPRESSION position, and the
+		// recursion above only yields child STATEMENTS - so a binding declared
+		// inside one of those branches was never collected, and got no
+		// series/undetermined typing from the gate above it. The gate is the
+		// IfExpression's OWN condition, not the enclosing statement's. This is
+		// the collect-side twin of the analyzeIfBranches walk gap. see INV168
+		const initExpr = this.statementInitExpression(statement);
+		if (initExpr?.type === "IfExpression") {
+			const gateSeries =
+				childConditional || this.isSeriesishExpression(initExpr.condition);
+			const gateUndetermined =
+				childUndeterminedConditional ||
+				this.isUndeterminedGate(initExpr.condition);
+			for (const child of [
+				...initExpr.consequent,
+				...(initExpr.alternate ?? []),
+			]) {
+				this.collectDeclarationsInStatement(
+					child,
+					gateSeries,
+					gateUndetermined,
+				);
+			}
+		}
+	}
+
+	/**
+	 * The expression a statement binds or evaluates, for walkers that need to
+	 * reach a block sitting in expression position (an `if` used as a value).
+	 * Only the direct positions - Pine's `if`-as-expression is a tail form, so
+	 * it cannot appear nested inside a larger expression.
+	 */
+	private statementInitExpression(
+		statement: Statement,
+	): Expression | undefined {
+		switch (statement.type) {
+			case "VariableDeclaration":
+			case "TupleDeclaration":
+				return statement.init ?? undefined;
+			case "AssignmentStatement":
+				return statement.value;
+			default:
+				return undefined;
+		}
 	}
 
 	/**

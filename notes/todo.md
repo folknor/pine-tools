@@ -577,13 +577,23 @@ IDs so the two stay in sync.
   decision because it is a recall-versus-noise trade-off on the channel whose
   contract says a false positive is worse than a miss.
 
-  **Also open, both recorded in INV168 and neither with a corpus carrier:**
-  `collectDeclarationsInStatement` does not descend into an `IfExpression`
-  init, so a binding declared inside a branch gets no series/undetermined
-  typing; and `checker.ts`'s `checkUnusedVariables` plus
-  `SymbolTable.getAllUnusedSymbols` / `Scope.getUnusedSymbols` are dead code
-  worth deleting, being the second implementation that kept the false
-  limitation alive.
+  **Both of the remaining INV168 leads are CLOSED 2026-08-27.**
+  `collectDeclarationsInStatement` now descends into an `IfExpression` init -
+  the collect-side twin of the analyze-side walk gap, since `childStatements`
+  yields an `IfStatement`'s branches but an `IfExpression` sits in expression
+  position. INV168 predicted this was a harmless miss; half of it was not. As
+  well as making UNUSED_VARIABLE reachable inside such a branch, it restores
+  series-conditional propagation, so a `:=` to an outer `var` under a
+  series-gated if-expression marks that variable series - a **missing CW10003
+  on the TV-mirroring channel**, probe-confirmed against TV at the same
+  position and wording, with the unconditional-`:=` control clean on both
+  sides. The dead second implementation (`checker.ts`'s
+  `checkUnusedVariables`, `SymbolTable.getAllUnusedSymbols`,
+  `Scope.getUnusedSymbols`) is deleted.
+
+  Corpus carries neither, as INV168 found: `regression-check` 0 changed and
+  the warning channel unchanged at 2073 records over 1879 fixtures. Pinned by
+  `INV168-if-expression-init-declarations.pine`, mutation-verified red.
 
 - **#80 - CW10003 tv-only warning. FIXED 2026-08-25, same day it appeared
   ([INV167](../investigations/INV167-library-export-series-tail/notes.md)).**

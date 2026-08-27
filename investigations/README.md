@@ -1148,4 +1148,11 @@ contradiction means re-measure, not "the earlier author was wrong."
   was the one `Expression` variant `analyzeExpression` never walked, so
   identifiers read only inside an `x = if cond` branch were reported unused and
   the branches escaped conditional scope. 652 UNUSED_VARIABLE false positives
-  removed; 9 TV-confirmed CW10003/CW10013/CW10018 warnings gained.
+  removed; 9 TV-confirmed CW10003/CW10013/CW10018 warnings gained. **Extended
+  2026-08-27:** the same gap in the second walker - declaration collection
+  recursed through child STATEMENTS, so an `x = if cond` branch was collected
+  by nothing. Recorded here as a harmless lead and it was not: as well as
+  making UNUSED_VARIABLE reachable there, it restores series-conditional
+  propagation, so a `:=` to an outer `var` under a series-gated if-expression
+  now draws its TV-confirmed CW10003. The dead second copy of the rule
+  (`checker.ts`, `getAllUnusedSymbols`, `getUnusedSymbols`) is deleted.

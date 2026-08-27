@@ -46,6 +46,22 @@
   probe-confirmed against TradingView at the same position and wording. The
   TradingView sweep afterwards left the error window byte-identical and took
   local-only warnings from 41 to 12, tv-only still 0. See INV168.
+- Fixed the same walk gap in the second walker: declaration collection also
+  stopped at an if/else in expression position, since it recursed through child
+  STATEMENTS and an `x = if cond` puts a block in an expression slot. Nothing
+  declared inside such a branch was collected, so an unused binding there was
+  never reported, and - the half that matters - the branches propagated no
+  series-conditional context, so a `:=` to an outer `var` under a series-gated
+  if-expression left that variable const-qualified and the discriminant it
+  later fed drew no CW10003. Probe-confirmed against TradingView at the same
+  position and wording, with the unconditional-`:=` control clean on both
+  sides. No corpus carrier (warning channel unchanged at 2073 records over 1879
+  fixtures), so a mutation-verified fixture is what holds it. See INV168.
+- Removed dead code: a second, unreachable copy of the unused-variable rule in
+  `checker.ts`, with `SymbolTable.getAllUnusedSymbols` and
+  `Scope.getUnusedSymbols`. It emitted warnings into a channel both consumers
+  discard, and it was the copy the retracted Known Limitation below named. See
+  INV168.
 - Retracted a Known Limitation: the semantic analyzer does not report built-in
   variables or keywords as unused, and the code path the note named cannot
   reach a user at all. A 2257-file sweep found only correct warnings on

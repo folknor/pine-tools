@@ -190,14 +190,88 @@ recall-versus-noise trade-off on the one channel whose contract says a false
 positive is worse than a miss, and the argument for removing it is much
 stronger now that the FP class it was masking is gone. Tracked in TODO #73.
 
-## Also noted, not fixed
+## The collect-side twin, FIXED 2026-08-27
 
-- `collectDeclarationsInStatement` does not descend into an `IfExpression`
-  init either, so a declaration made inside an if-expression branch is never
-  collected. Harmless for UNUSED_VARIABLE (a name that is never collected is
-  never warned about), but it also means such a binding gets no series /
-  undetermined typing. No corpus carrier surfaced; recorded as a lead.
-- `checker.ts`'s `checkUnusedVariables` and `SymbolTable.getAllUnusedSymbols`
-  / `Scope.getUnusedSymbols` are unreachable from both consumers (see above).
-  Deleting them would remove the second implementation that kept the false
-  limitation alive. Not done here to keep this change to one behavior.
+The lead recorded here as "also noted, not fixed" turned out to be the same
+gap in the second walker, and one of its two consequences was a real false
+negative rather than the harmless miss this note predicted.
+
+`collectDeclarationsInStatement` recursed only through `childStatements`,
+which yields the branch arrays of an `IfStatement` but knows nothing about an
+`IfExpression` - that node lives in a `VariableDeclaration.init`,
+`TupleDeclaration.init` or `AssignmentStatement.value`, all expression
+positions. So no declaration inside an `x = if cond` branch was ever
+collected.
+
+Two consequences, and the second is the one this note got wrong:
+
+1. **UNUSED_VARIABLE could not fire inside such a branch.** As predicted, a
+   silent miss: a name never collected is never warned about.
+2. **The branches propagated no series-conditional context.** A `:=` to an
+   OUTER `var` performed under a SERIES-gated if-expression did not mark that
+   variable series, so the discriminant it later feeds did not make a `ta.*`
+   call conditional. That is a missing CW10003 - the TV-mirroring channel, so
+   a genuine false negative, not a typing detail.
+
+### TV verification
+
+Probed 2026-08-27. TV emits the warning at the same position and wording:
+
+```pine
+//@version=6
+indicator("t")
+var int state = 0
+x = if close > open
+    state := 1
+    1.0
+else
+    0.0
+y = state == 1 ? ta.sma(close, 14) : 0.0
+plot(x + y)
+```
+
+| | verdict |
+|---|---|
+| us, before | clean |
+| us, after | `9:18: warning: [CONDITIONAL_SERIES] The function 'ta.sma' should be called on each calculation...` |
+| `pine-lint --tv` | `9:18: warning: The function "ta.sma" should be called on each calculation...` |
+
+Control, confirming we did not simply start always-warning - the same `:=`
+run unconditionally, where INV115's rule says a `var` reassigned to a const
+stays const:
+
+```pine
+//@version=6
+indicator("t")
+var int state = 0
+state := 1
+y = state == 1 ? ta.sma(close, 14) : 0.0
+plot(y)
+```
+
+Clean on both, before and after.
+
+### Corpus gates
+
+`regression-check` 0 changed fixtures. The warning channel is **unchanged at
+2073 records over 1879 fixtures** on identical before/after runs of
+`scripts/lint-batch.mjs` - the corpus carries no instance of either
+consequence, which is why the original lead surfaced with no carrier. The
+fixture is therefore the only thing holding this.
+
+### Regression fixture
+
+`packages/core/test/fixtures/regression/INV168-if-expression-init-declarations.pine`
+pins both consequences in one file and was mutation-verified red: with the
+IfExpression-init recursion removed the file reports 0 warnings instead of 2,
+failing both the count and each individual assertion.
+
+## Also fixed 2026-08-27: the dead second implementation
+
+`checker.ts`'s `checkUnusedVariables` and `SymbolTable.getAllUnusedSymbols` /
+`Scope.getUnusedSymbols` are deleted. They were unreachable from both
+consumers (each keeps only ERRORS from `validate()`, and these pushed
+Warnings), and they were the second implementation of the rule that kept the
+false built-in limitation alive - the copy AGENTS.md named when it recorded
+the claim this investigation retracted. `Scope.getAllSymbols` stays; it has
+other callers.

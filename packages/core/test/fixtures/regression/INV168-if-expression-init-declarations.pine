@@ -1,0 +1,17 @@
+// @description The COLLECT-side twin of INV168's analyze-side gap, and the second half of TODO #73. `collectDeclarationsInStatement` recursed only through child STATEMENTS (`childStatements`), but an `x = if cond` puts a block in EXPRESSION position - so nothing declared inside those branches was ever collected. Two consequences, both pinned here. (1) A binding declared and never read inside a branch was invisible to UNUSED_VARIABLE, a silent miss (`neverRead` below). (2) The branches never propagated series-conditional context, so a `:=` to an outer `var` under a SERIES gate did not mark that variable series - and the discriminant it later feeds did not make the `ta.sma` call conditional. TV emits that CW10003 at the same position and wording (`pine-lint --tv`, 2026-08-27), and stays silent on the control where the same `:=` runs unconditionally - so this was a true false negative, not a new false positive. The fixture goes red both ways: remove the IfExpression-init recursion and both warnings vanish. See INV168, TODO #73.
+// @expects errors: 0
+// @expects warnings: 2
+// @expects warning: line=6, message="Variable 'neverRead' is declared but never used"
+// @expects warning: line=11, message="The function 'ta.sma' should be called on each calculation"
+//@version=6
+indicator("INV168-collect")
+
+var int state = 0
+x = if close > open
+    neverRead = close * 2
+    state := 1
+    1.0
+else
+    0.0
+y = state == 1 ? ta.sma(close, 14) : 0.0
+plot(x + y)

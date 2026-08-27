@@ -391,11 +391,6 @@ export class UnifiedPineValidator {
 			this.validateStatement(statement, version);
 		}
 
-		// Check for unused variables (only for v6)
-		if (version === "6") {
-			this.checkUnusedVariables();
-		}
-
 		return this.errors;
 	}
 
@@ -2768,19 +2763,6 @@ export class UnifiedPineValidator {
 
 		this.expressionTypes.set(expr, type);
 		return type;
-	}
-
-	private checkUnusedVariables(): void {
-		const unused = this.symbolTable.getAllUnusedSymbols();
-		for (const symbol of unused) {
-			this.addError(
-				symbol.line,
-				symbol.column,
-				symbol.name.length,
-				`Variable '${symbol.name}' is declared but never used`,
-				DiagnosticSeverity.Warning,
-			);
-		}
 	}
 
 	// NOTE: canPromoteType was removed as redundant with TypeChecker.isAssignable()

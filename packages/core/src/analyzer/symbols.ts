@@ -73,10 +73,6 @@ export class Scope {
 		];
 	}
 
-	getUnusedSymbols(): Symbol[] {
-		return this.getAllSymbols().filter((s) => !s.used && s.kind === "variable");
-	}
-
 	markUsed(name: string): void {
 		const symbol = this.symbols.get(name) ?? this.methods.get(name);
 		if (symbol) {
@@ -230,10 +226,6 @@ export class SymbolTable {
 
 	getGlobalScope(): Scope {
 		return this.globalScope;
-	}
-
-	getAllUnusedSymbols(): Symbol[] {
-		return this.globalScope.getUnusedSymbols();
 	}
 
 	getScopeDepth(): number {
