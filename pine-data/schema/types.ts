@@ -118,6 +118,20 @@ export interface PineParameter {
 	 * "runtime"` above. Absent unless captured.
 	 */
 	notNa?: true;
+	/**
+	 * For a UNION-typed parameter ("series int/float"), the expected-type noun
+	 * TradingView quotes in its CE10123 message ("...but a `series float` is
+	 * expected"). It is NOT derivable from the union and must not be guessed:
+	 * `series int/float` alone draws five different answers across the
+	 * catalog, `int/string` splits evenly between `int` and `string`, and
+	 * `math.*` draws six answers for that one doc type — nothing distinguishes
+	 * `math.abs` from `math.ceil` from `math.max`. Probe-measured per
+	 * function+parameter by `scripts/probe-union-type-nouns.mjs` into
+	 * `pine-data/raw/v6/union-type-nouns-probe.json` and merged at
+	 * generate-time. Absent for a non-union parameter, and for the one union
+	 * parameter the sweep could not construct a call for. See INV171.
+	 */
+	expectedTypeNoun?: string;
 }
 
 /**

@@ -1,7 +1,7 @@
 /**
  * Pine Script V6 Functions
  * Auto-generated from TradingView documentation
- * Generated: 2026-08-25T10:11:33.012Z
+ * Generated: 2026-08-27T08:13:10.951Z
  * Total: 475 functions
  */
 
@@ -196,14 +196,16 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "val",
         "type": "series int/float/string",
         "description": "The target value to locate in the array. If the array contains elements of the \"int\" or \"float\" type, the function searches the elements for the value directly. If the array contains elements of a user-defined type, the function searches for the value in the specified \"int\" or \"float\" field from the objects referenced by the array's elements.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "sort_field",
         "type": "const int/string",
         "description": "Optional. If the array contains elements of a user-defined type, this parameter specifies which of the type's fields the function uses to search the elements. The function can search the array using any of the type's \"int\" or \"float\" fields. An \"int\" sort_field argument specifies a field by its index, where 0 refers to the first field in the type declaration. A \"string\" argument specifies a field by its name. For correct results, the array's elements must be sorted in ascending order by the specified field. The default is 0.",
         "required": false,
-        "default": "0"
+        "default": "0",
+        "expectedTypeNoun": "const int"
       }
     ],
     "returns": "series int",
@@ -279,14 +281,16 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "val",
         "type": "series int/float/string",
         "description": "The target value to locate in the array. If the array contains elements of the \"int\" or \"float\" type, the function searches the elements for the value directly. If the array contains elements of a user-defined type, the function searches for the value in the specified \"int\" or \"float\" field from the objects referenced by the array's elements.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "sort_field",
         "type": "const int/string",
         "description": "Optional. If the array contains elements of a user-defined type, this parameter specifies which of the type's fields the function uses to search the elements. The function can search the array using any of the type's \"int\" or \"float\" fields. An \"int\" sort_field argument specifies a field by its index, where 0 refers to the first field in the type declaration. A \"string\" argument specifies a field by its name. For correct results, the array's elements must be sorted in ascending order by the specified field. The default is 0.",
         "required": false,
-        "default": "0"
+        "default": "0",
+        "expectedTypeNoun": "const int"
       }
     ],
     "returns": "series int",
@@ -363,14 +367,16 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "val",
         "type": "series int/float/string",
         "description": "The target value to locate in the array. If the array contains elements of the \"int\" or \"float\" type, the function searches the elements for the value directly. If the array contains elements of a user-defined type, the function searches for the value in the specified \"int\" or \"float\" field from the objects referenced by the array's elements.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "sort_field",
         "type": "const int/string",
         "description": "Optional. If the array contains elements of a user-defined type, this parameter specifies which of the type's fields the function uses to search the elements. The function can search the array using any of the type's \"int\" or \"float\" fields. An \"int\" sort_field argument specifies a field by its index, where 0 refers to the first field in the type declaration. A \"string\" argument specifies a field by its name. For correct results, the array's elements must be sorted in ascending order by the specified field. The default is 0.",
         "required": false,
-        "default": "0"
+        "default": "0",
+        "expectedTypeNoun": "const int"
       }
     ],
     "returns": "series int",
@@ -1512,7 +1518,8 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "series int/float",
         "description": "Initial value of all array elements. Optional. The default is 'na'.",
         "required": false,
-        "default": "na"
+        "default": "na",
+        "expectedTypeNoun": "series float"
       }
     ],
     "returns": "array<float>",
@@ -1734,7 +1741,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "percentage",
         "type": "series int/float",
         "description": "The percentage of values that must be equal or less than the returned value.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       }
     ],
     "returns": "series float",
@@ -1800,7 +1808,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "percentage",
         "type": "series int/float",
         "description": "The percentage of values that must be equal or less than the returned value.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       }
     ],
     "returns": "series float",
@@ -2260,7 +2269,8 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "const int/string",
         "description": "If the id collection contains elements of a user-defined type, this parameter specifies which of the type's fields the function uses to sort the elements. The function can sort elements using any field of the type \"int\", \"float\", or \"string\". An \"int\" sort_field argument specifies a field by its index, where 0 refers to the first field in the type declaration. A \"string\" argument specifies a field by its name. Optional. The default is 0.",
         "required": false,
-        "default": "0"
+        "default": "0",
+        "expectedTypeNoun": "const int"
       }
     ],
     "returns": "void",
@@ -2343,7 +2353,8 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "const int/string",
         "description": "If the id collection contains elements of a user-defined type, this parameter specifies which of the type's fields the function uses to sort the elements. The function can sort elements using any field of the type \"int\", \"float\", or \"string\". An \"int\" sort_field argument specifies a field by its index, where 0 refers to the first field in the type declaration. A \"string\" argument specifies a field by its name. Optional. The default is 0.",
         "required": false,
-        "default": "0"
+        "default": "0",
+        "expectedTypeNoun": "const int"
       }
     ],
     "returns": "array<int>",
@@ -2821,7 +2832,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "x",
         "type": "series int/float/bool",
         "description": "The value to convert to the specified type, usually na.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "const bool"
       }
     ],
     "returns": "const bool",
@@ -3106,7 +3118,8 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "series int/string",
         "description": "Optional. Size of the box's text. The size can be any positive integer, or one of the size.* built-in constant strings. The constant strings and their equivalent integer values are: size.auto (0), size.tiny (8), size.small (10), size.normal (14), size.large (20), size.huge (36). The default value is size.auto or 0.",
         "required": false,
-        "default": "size.auto"
+        "default": "size.auto",
+        "expectedTypeNoun": "series string"
       },
       {
         "name": "text_color",
@@ -3669,7 +3682,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "bottom",
         "type": "series int/float",
         "description": "Price value of the bottom border.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       }
     ],
     "returns": "void",
@@ -3774,7 +3788,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "top",
         "type": "series int/float",
         "description": "Price value of the top border.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       }
     ],
     "returns": "void",
@@ -3831,7 +3846,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "bottom",
         "type": "series int/float",
         "description": "Price value of the bottom border.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       }
     ],
     "returns": "void",
@@ -4011,7 +4027,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "text_size",
         "type": "series int/string",
         "description": "Size of the box's text. The size can be any positive integer, or one of the size.* built-in constant strings. The constant strings and their equivalent integer values are: size.auto (0), size.tiny (8), size.small (10), size.normal (14), size.large (20), size.huge (36).",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series string"
       }
     ],
     "returns": "void",
@@ -4102,7 +4119,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "top",
         "type": "series int/float",
         "description": "Price value of the top border.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       }
     ],
     "returns": "void",
@@ -4205,7 +4223,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "price",
         "type": "series int/float",
         "description": "The y-coordinate of the point.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       }
     ],
     "returns": "chart.point",
@@ -4227,7 +4246,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "price",
         "type": "series int/float",
         "description": "The y-coordinate of the point.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       }
     ],
     "returns": "chart.point",
@@ -4255,7 +4275,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "price",
         "type": "series int/float",
         "description": "The y-coordinate of the point.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       }
     ],
     "returns": "chart.point",
@@ -4275,7 +4296,8 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "series int/float",
         "description": "The y-coordinate of the point. Optional. The default is close.",
         "required": false,
-        "default": "close"
+        "default": "close",
+        "expectedTypeNoun": "series float"
       }
     ],
     "returns": "chart.point",
@@ -4425,19 +4447,22 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "value",
         "type": "series int/float",
         "description": "Value to calculate the position-dependent color.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "bottom_value",
         "type": "series int/float",
         "description": "Bottom position value corresponding to bottom_color.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "top_value",
         "type": "series int/float",
         "description": "Top position value corresponding to top_color.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "bottom_color",
@@ -4543,7 +4568,8 @@ export const FUNCTIONS: PineFunction[] = [
         "required": true,
         "min": 0,
         "max": 100,
-        "rangeSource": "reference"
+        "rangeSource": "reference",
+        "expectedTypeNoun": "const float"
       }
     ],
     "returns": "const color",
@@ -4713,7 +4739,8 @@ export const FUNCTIONS: PineFunction[] = [
         "required": true,
         "min": 0,
         "max": 255,
-        "rangeSource": "reference"
+        "rangeSource": "reference",
+        "expectedTypeNoun": "const float"
       },
       {
         "name": "green",
@@ -4722,7 +4749,8 @@ export const FUNCTIONS: PineFunction[] = [
         "required": true,
         "min": 0,
         "max": 255,
-        "rangeSource": "reference"
+        "rangeSource": "reference",
+        "expectedTypeNoun": "const float"
       },
       {
         "name": "blue",
@@ -4731,7 +4759,8 @@ export const FUNCTIONS: PineFunction[] = [
         "required": true,
         "min": 0,
         "max": 255,
-        "rangeSource": "reference"
+        "rangeSource": "reference",
+        "expectedTypeNoun": "const float"
       },
       {
         "name": "transp",
@@ -4740,7 +4769,8 @@ export const FUNCTIONS: PineFunction[] = [
         "required": false,
         "min": 0,
         "max": 100,
-        "rangeSource": "reference"
+        "rangeSource": "reference",
+        "expectedTypeNoun": "const float"
       }
     ],
     "returns": "const color",
@@ -5352,7 +5382,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series int/float/color",
         "description": "Source used for the calculation.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       }
     ],
     "returns": "series color",
@@ -5412,7 +5443,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "x",
         "type": "series int/float",
         "description": "The value to convert to the specified type, usually na.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "const float"
       }
     ],
     "returns": "const float",
@@ -5631,7 +5663,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "price",
         "type": "input int/float",
         "description": "Price value at which the object will be rendered. Required argument.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "input float"
       },
       {
         "name": "title",
@@ -6538,7 +6571,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "defval",
         "type": "const int/float",
         "description": "Determines the default value of the input variable proposed in the script's \"Settings/Inputs\" tab, from where script users can change it. When a list of values is used with the options parameter, the value must be one of them.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "const float"
       },
       {
         "name": "title",
@@ -7052,7 +7086,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "defval",
         "type": "const int/float",
         "description": "Determines the default value of the input variable proposed in the script's \"Settings/Inputs\" tab, from where the user can change it.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "const float"
       },
       {
         "name": "title",
@@ -7729,7 +7764,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "x",
         "type": "series int/float",
         "description": "The value to convert to the specified type, usually na.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple int"
       }
     ],
     "returns": "const int",
@@ -8001,7 +8037,8 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "series int/string",
         "description": "Optional. Size of the label. Accepts a positive int value or one of the built-in size.* constants. The constants and their equivalent numeric sizes are: size.auto (0), size.tiny (~7), size.small (~10), size.normal (12), size.large (18), size.huge (24). The default value is size.normal, which represents the numeric size of 12.",
         "required": false,
-        "default": "size.normal"
+        "default": "size.normal",
+        "expectedTypeNoun": "series string"
       },
       {
         "name": "textalign",
@@ -8421,7 +8458,8 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "series int/string",
         "description": "Size of the label. Accepts a positive int value or one of the built-in size.* constants. The constants and their equivalent numeric sizes are: size.auto (0), size.tiny (~7), size.small (~10), size.normal (12), size.large (18), size.huge (24). The default value is size.normal, which represents the numeric size of 12.",
         "required": true,
-        "default": "size.normal"
+        "default": "size.normal",
+        "expectedTypeNoun": "series string"
       }
     ],
     "returns": "void",
@@ -8729,7 +8767,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "y",
         "type": "series int/float",
         "description": "New price of the label position.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       }
     ],
     "returns": "void",
@@ -8753,7 +8792,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "y",
         "type": "series int/float",
         "description": "New price of the label position.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       }
     ],
     "returns": "void",
@@ -9512,7 +9552,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "y",
         "type": "series int/float",
         "description": "Price.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       }
     ],
     "returns": "void",
@@ -9542,7 +9583,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "y",
         "type": "series int/float",
         "description": "Price.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       }
     ],
     "returns": "void",
@@ -9566,7 +9608,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "y",
         "type": "series int/float",
         "description": "Price.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       }
     ],
     "returns": "void",
@@ -9590,7 +9633,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "y",
         "type": "series int/float",
         "description": "Price.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       }
     ],
     "returns": "void",
@@ -10274,7 +10318,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "number",
         "type": "series int/float",
         "description": "The number to use in the calculation.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple int"
       }
     ],
     "returns": "const int",
@@ -10384,7 +10429,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "angle",
         "type": "series int/float",
         "description": "The value, in radians, to use in the calculation.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple float"
       }
     ],
     "returns": "const float",
@@ -10446,7 +10492,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "angle",
         "type": "series int/float",
         "description": "The value, in radians, to use in the calculation.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple float"
       }
     ],
     "returns": "const float",
@@ -10508,7 +10555,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "angle",
         "type": "series int/float",
         "description": "The value, in radians, to use in the calculation.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple float"
       }
     ],
     "returns": "const float",
@@ -10570,13 +10618,15 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "number0",
         "type": "series int/float",
         "description": "A sequence of numbers to use in the calculation.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple float"
       },
       {
         "name": "number1",
         "type": "series int/float",
         "description": "A sequence of numbers to use in the calculation.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple float"
       }
     ],
     "returns": "simple float",
@@ -10638,7 +10688,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "number",
         "type": "series int/float",
         "description": "The number to round.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple int"
       }
     ],
     "returns": "const int",
@@ -10704,7 +10755,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "angle",
         "type": "series int/float",
         "description": "Angle, in radians.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple float"
       }
     ],
     "returns": "const float",
@@ -10766,7 +10818,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "number",
         "type": "series int/float",
         "description": "The number to use in the calculation.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple float"
       }
     ],
     "returns": "const float",
@@ -10831,7 +10884,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "number",
         "type": "series int/float",
         "description": "The number to round.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple int"
       }
     ],
     "returns": "const int",
@@ -10897,7 +10951,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "number",
         "type": "series int/float",
         "description": "The number to use in the calculation.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple float"
       }
     ],
     "returns": "const float",
@@ -10962,7 +11017,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "number",
         "type": "series int/float",
         "description": "The number to use in the calculation.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple float"
       }
     ],
     "returns": "const float",
@@ -11027,13 +11083,15 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "number0",
         "type": "series int/float",
         "description": "A sequence of numbers to use in the calculation.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "const int"
       },
       {
         "name": "number1",
         "type": "series int/float",
         "description": "A sequence of numbers to use in the calculation.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "const int"
       }
     ],
     "returns": "const int",
@@ -11198,13 +11256,15 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "number0",
         "type": "series int/float",
         "description": "A sequence of numbers to use in the calculation.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "const int"
       },
       {
         "name": "number1",
         "type": "series int/float",
         "description": "A sequence of numbers to use in the calculation.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "const int"
       }
     ],
     "returns": "const int",
@@ -11369,13 +11429,15 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "base",
         "type": "series int/float",
         "description": "Specify the base to use.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "const float"
       },
       {
         "name": "exponent",
         "type": "series int/float",
         "description": "Specifies the exponent.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "const float"
       }
     ],
     "returns": "const float",
@@ -11469,14 +11531,16 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "series int/float",
         "description": "The lower bound of the range of random values. The value is not included in the range. The default is 0.",
         "required": false,
-        "default": "0"
+        "default": "0",
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "max",
         "type": "series int/float",
         "description": "The upper bound of the range of random values. The value is not included in the range. The default is 1.",
         "required": false,
-        "default": "1"
+        "default": "1",
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "seed",
@@ -11498,7 +11562,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "number",
         "type": "series int/float",
         "description": "The value to be rounded.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple int"
       },
       {
         "name": "precision",
@@ -11639,7 +11704,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "number",
         "type": "series int/float",
         "description": "The value to be rounded.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple float"
       }
     ],
     "returns": "simple float",
@@ -11684,7 +11750,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "number",
         "type": "series int/float",
         "description": "The number to use in the calculation.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple float"
       }
     ],
     "returns": "const float",
@@ -11749,7 +11816,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "angle",
         "type": "series int/float",
         "description": "Angle, in radians.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple float"
       }
     ],
     "returns": "const float",
@@ -11811,7 +11879,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "number",
         "type": "series int/float",
         "description": "The number to use in the calculation.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple float"
       }
     ],
     "returns": "const float",
@@ -11876,7 +11945,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series int/float",
         "description": "Series of values to process.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "length",
@@ -11909,7 +11979,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "angle",
         "type": "series int/float",
         "description": "Angle, in radians.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple float"
       }
     ],
     "returns": "const float",
@@ -11971,7 +12042,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "radians",
         "type": "series int/float",
         "description": "Angle in radians.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       }
     ],
     "returns": "series float",
@@ -11987,7 +12059,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "degrees",
         "type": "series int/float",
         "description": "Angle in degrees.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       }
     ],
     "returns": "series float",
@@ -13664,7 +13737,8 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "const int/string",
         "description": "If the id collection contains elements of a user-defined type, this parameter specifies which of the type's fields the function uses to sort the elements. The function can sort elements using any field of the type \"int\", \"float\", or \"string\". An \"int\" sort_field argument specifies a field by its index, where 0 refers to the first field in the type declaration. A \"string\" argument specifies a field by its name. Optional. The default is 0.",
         "required": false,
-        "default": "0"
+        "default": "0",
+        "expectedTypeNoun": "const int"
       }
     ],
     "returns": "void",
@@ -14178,13 +14252,15 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series int/float/color",
         "description": "The source series to process.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple int"
       },
       {
         "name": "replacement",
         "type": "series int/float/color",
         "description": "Optional. The value the function uses to replace na values in the source series. The default depends on the source type: 0 for \"int\", 0.0 for \"float\", or #00000000 for \"color\".",
-        "required": false
+        "required": false,
+        "expectedTypeNoun": "simple int"
       }
     ],
     "returns": "simple color",
@@ -14314,7 +14390,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "series",
         "type": "series int/float",
         "description": "Series of data to be plotted. Required argument.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "title",
@@ -14363,7 +14440,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "histbase",
         "type": "input int/float",
         "description": "The price value used as the reference level when rendering plot with plot.style_histogram, plot.style_columns or plot.style_area style. Default is 0.0.",
-        "required": false
+        "required": false,
+        "expectedTypeNoun": "input float"
       },
       {
         "name": "offset",
@@ -14464,7 +14542,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "series",
         "type": "series int/float",
         "description": "Series of data to be plotted as arrows. Required argument.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "title",
@@ -14581,25 +14660,29 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "open",
         "type": "series int/float",
         "description": "Open series of data to be used as open values of bars. Required argument.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "high",
         "type": "series int/float",
         "description": "High series of data to be used as high values of bars. Required argument.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "low",
         "type": "series int/float",
         "description": "Low series of data to be used as low values of bars. Required argument.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "close",
         "type": "series int/float",
         "description": "Close series of data to be used as close values of bars. Required argument.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "title",
@@ -14688,25 +14771,29 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "open",
         "type": "series int/float",
         "description": "Open series of data to be used as open values of candles. Required argument.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "high",
         "type": "series int/float",
         "description": "High series of data to be used as high values of candles. Required argument.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "low",
         "type": "series int/float",
         "description": "Low series of data to be used as low values of candles. Required argument.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "close",
         "type": "series int/float",
         "description": "Close series of data to be used as close values of candles. Required argument.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "title",
@@ -14807,7 +14894,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "series",
         "type": "series int/float/bool",
         "description": "Series of data to be plotted as shapes. Series is treated as a series of boolean values for all location values except location.absolute. Required argument.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series bool"
       },
       {
         "name": "title",
@@ -14951,7 +15039,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "series",
         "type": "series int/float/bool",
         "description": "Series of data to be plotted as shapes. Series is treated as a series of boolean values for all location values except location.absolute. Required argument.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series bool"
       },
       {
         "name": "title",
@@ -15502,14 +15591,16 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "simple int/float",
         "description": "Optional. The percentage of each footprint's total volume to use for calculating the value area (VA). The default is 70.",
         "required": false,
-        "default": "70"
+        "default": "70",
+        "expectedTypeNoun": "simple float"
       },
       {
         "name": "imbalance_percent",
         "type": "simple int/float",
         "description": "Optional. The percentage difference in volume for detecting row imbalances. Scripts can use volume_row IDs retrieved from the returned footprint object in calls to volume_row.has_buy_imbalance() and volume_row.has_sell_imbalance() to identify imbalanced rows. A row is imbalanced if its \"buy\" volume exceeds the \"sell\" volume of the row below it by the specified percentage, or if its \"sell\" volume exceeds the \"buy\" volume of the row above it by the percentage. The default is 300.",
         "required": false,
-        "default": "300"
+        "default": "300",
+        "expectedTypeNoun": "simple float"
       }
     ],
     "returns": "footprint",
@@ -17340,14 +17431,16 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "const int/float",
         "description": "The default quantity to trade, in units determined by the argument used with the default_qty_type parameter. This setting can also be changed in the strategy's \"Settings/Properties\" tab. Optional. The default is 1.",
         "required": false,
-        "default": "1"
+        "default": "1",
+        "expectedTypeNoun": "const float"
       },
       {
         "name": "initial_capital",
         "type": "const int/float",
         "description": "The amount of funds initially available for the strategy to trade, in units of currency. Optional. The default is 1000000.",
         "required": false,
-        "default": "1000000"
+        "default": "1000000",
+        "expectedTypeNoun": "const float"
       },
       {
         "name": "currency",
@@ -17375,7 +17468,8 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "const int/float",
         "description": "Commission applied to the strategy's orders in units determined by the argument passed to the commission_type parameter. This setting can also be changed in the strategy's \"Settings/Properties\" tab. Optional. The default is 0.",
         "required": false,
-        "default": "0"
+        "default": "0",
+        "expectedTypeNoun": "const float"
       },
       {
         "name": "process_orders_on_close",
@@ -17399,14 +17493,16 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "const int/float",
         "description": "Margin long is the percentage of the purchase price of a security that must be covered by cash or collateral for long positions. Must be a non-negative number. The logic used to simulate margin calls is explained in the Help Center. This setting can also be changed in the strategy's \"Settings/Properties\" tab. Optional. If the value is 0, the strategy does not enforce any limits on position size. The default is 100, in which case the strategy only uses its own funds and the long positions cannot be margin called.",
         "required": false,
-        "default": "100"
+        "default": "100",
+        "expectedTypeNoun": "const float"
       },
       {
         "name": "margin_short",
         "type": "const int/float",
         "description": "Margin short is the percentage of the purchase price of a security that must be covered by cash or collateral for short positions. Must be a non-negative number. The logic used to simulate margin calls is explained in the Help Center. This setting can also be changed in the strategy's \"Settings/Properties\" tab. Optional. If the value is 0, the strategy does not enforce any limits on position size. The default is 100, in which case the strategy only uses its own funds. Note that even with no margin used, short positions can be margin called if the loss exceeds available funds.",
         "required": false,
-        "default": "100"
+        "default": "100",
+        "expectedTypeNoun": "const float"
       },
       {
         "name": "explicit_plot_zorder",
@@ -17457,7 +17553,8 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "const int/float",
         "description": "The risk-free rate of return is the annual percentage change in the value of an investment with minimal or zero risk. It is used to calculate the Sharpe and Sortino ratios. Optional. The default is 2.",
         "required": false,
-        "default": "2"
+        "default": "2",
+        "expectedTypeNoun": "const float"
       },
       {
         "name": "use_bar_magnifier",
@@ -17571,14 +17668,16 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "series int/float",
         "description": "Optional. The number of contracts/lots/shares/units to close when an exit order fills. If specified, the command uses this value instead of qty_percent to determine the order size. The default is na, which means the order size depends on the qty_percent value.",
         "required": false,
-        "default": "na"
+        "default": "na",
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "qty_percent",
         "type": "series int/float",
         "description": "Optional. A value between 0 and 100 representing the percentage of the open trade quantity to close when an exit order fills. The percentage calculation depends on the total size of the open trades with the id entry identifier. The command ignores this parameter if the qty value is not na. The default is 100.",
         "required": false,
-        "default": "100"
+        "default": "100",
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "alert_message",
@@ -18062,7 +18161,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "value",
         "type": "series int/float",
         "description": "The value to be converted.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       }
     ],
     "returns": "series float",
@@ -18085,7 +18185,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "value",
         "type": "series int/float",
         "description": "The value to be converted.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       }
     ],
     "returns": "series float",
@@ -18107,7 +18208,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "fill_price",
         "type": "series int/float",
         "description": "The fill price for which to calculate the default order quantity.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       }
     ],
     "returns": "series float",
@@ -18143,21 +18245,24 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "series int/float",
         "description": "Optional. The number of contracts/shares/lots/units in the resulting open trade when the order fills. The default is na, which means that the command uses the default_qty_type and default_qty_value parameters of the strategy() declaration statement to determine the quantity.",
         "required": false,
-        "default": "na"
+        "default": "na",
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "limit",
         "type": "series int/float",
         "description": "Optional. The limit price of the order. If specified, the command creates a limit or stop-limit order, depending on whether the stop value is also specified. The default is na, which means the resulting order is not of the limit or stop-limit type.",
         "required": false,
-        "default": "na"
+        "default": "na",
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "stop",
         "type": "series int/float",
         "description": "Optional. The stop price of the order. If specified, the command creates a stop or stop-limit order, depending on whether the limit value is also specified. The default is na, which means the resulting order is not of the stop or stop-limit type.",
         "required": false,
-        "default": "na"
+        "default": "na",
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "oca_name",
@@ -18228,63 +18333,72 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "series int/float",
         "description": "Optional. The number of contracts/lots/shares/units to close when an exit order fills. If specified, the command uses this value instead of qty_percent to determine the order size. The exit orders reserve this quantity from the position, meaning other calls to this command cannot close this portion until the strategy fills or cancels those orders. The default is na, which means the order size depends on the qty_percent value.",
         "required": false,
-        "default": "na"
+        "default": "na",
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "qty_percent",
         "type": "series int/float",
         "description": "Optional. A value between 0 and 100 representing the percentage of the open trade quantity to close when an exit order fills. The exit orders reserve this percentage from the applicable open trades, meaning other calls to this command cannot close this portion until the strategy fills or cancels those orders. The percentage calculation depends on the total size of the applicable open trades without considering the reserved amount from other strategy.exit() calls. The command ignores this parameter if the qty value is not na. The default is 100.",
         "required": false,
-        "default": "100"
+        "default": "100",
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "profit",
         "type": "series int/float",
         "description": "Optional. The take-profit distance, expressed in ticks. If specified, the command creates a limit order to exit the trade profit ticks away from the entry price in the favorable direction. The order executes at the calculated price or a better value. If this parameter and limit are not na, the command places a take-profit order only at the price level expected to trigger an exit first. The default is na.",
         "required": false,
-        "default": "na"
+        "default": "na",
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "limit",
         "type": "series int/float",
         "description": "Optional. The take-profit price. If this parameter and profit are not na, the command places a take-profit order only at the price level expected to trigger an exit first. The default is na.",
         "required": false,
-        "default": "na"
+        "default": "na",
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "loss",
         "type": "series int/float",
         "description": "Optional. The stop-loss distance, expressed in ticks. If specified, the command creates a stop order to exit the trade loss ticks away from the entry price in the unfavorable direction. The order executes at the calculated price or a worse value. If this parameter and stop are not na, the command places a stop-loss order only at the price level expected to trigger an exit first. The default is na.",
         "required": false,
-        "default": "na"
+        "default": "na",
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "stop",
         "type": "series int/float",
         "description": "Optional. The stop-loss price. If this parameter and loss are not na, the command places a stop-loss order only at the price level expected to trigger an exit first. The default is na.",
         "required": false,
-        "default": "na"
+        "default": "na",
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "trail_price",
         "type": "series int/float",
         "description": "Optional. The price of the trailing stop activation level. If the value is more favorable than the entry price, the command creates a trailing stop when the market price reaches that value. If less favorable than the entry price, the command creates the trailing stop immediately when the current market price is equal to or more favorable than the value. If this parameter and trail_points are not na, the command sets the activation level using the value expected to activate the stop first. The default is na.",
         "required": false,
-        "default": "na"
+        "default": "na",
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "trail_points",
         "type": "series int/float",
         "description": "Optional. The trailing stop activation distance, expressed in ticks. If the value is positive, the command creates a trailing stop order when the market price moves trail_points ticks away from the trade's entry price in the favorable direction. If the value is negative, the command creates the trailing stop immediately when the market price is equal to or more favorable than the level trail_points ticks away from the entry price in the unfavorable direction. The default is na.",
         "required": false,
-        "default": "na"
+        "default": "na",
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "trail_offset",
         "type": "series int/float",
         "description": "Optional. The trailing stop offset. When the market price reaches the activation level determined by the trail_price or trail_points parameter, or exceeds the level in the favorable direction, the command creates a trailing stop with an initial value trail_offset ticks away from that level in the unfavorable direction. After activation, the trailing stop moves toward the market price each time the trade's profit reaches a better value, maintaining the specified distance behind the best price. The default is na.",
         "required": false,
-        "default": "na"
+        "default": "na",
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "oca_name",
@@ -18707,21 +18821,24 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "series int/float",
         "description": "Optional. The number of contracts/shares/lots/units to trade when the order fills. The default is na, which means that the command uses the default_qty_type and default_qty_value parameters of the strategy() declaration statement to determine the quantity.",
         "required": false,
-        "default": "na"
+        "default": "na",
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "limit",
         "type": "series int/float",
         "description": "Optional. The limit price of the order. If specified, the command creates a limit or stop-limit order, depending on whether the stop value is also specified. The default is na, which means the resulting order is not of the limit or stop-limit type.",
         "required": false,
-        "default": "na"
+        "default": "na",
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "stop",
         "type": "series int/float",
         "description": "Optional. The stop price of the order. If specified, the command creates a stop or stop-limit order, depending on whether the limit value is also specified. The default is na, which means the resulting order is not of the stop or stop-limit type.",
         "required": false,
-        "default": "na"
+        "default": "na",
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "oca_name",
@@ -18832,7 +18949,8 @@ export const FUNCTIONS: PineFunction[] = [
         "required": true,
         "min": 0,
         "max": 100,
-        "rangeSource": "reference"
+        "rangeSource": "reference",
+        "expectedTypeNoun": "simple float"
       },
       {
         "name": "type",
@@ -18896,7 +19014,8 @@ export const FUNCTIONS: PineFunction[] = [
         "required": true,
         "min": 0,
         "max": 100,
-        "rangeSource": "reference"
+        "rangeSource": "reference",
+        "expectedTypeNoun": "simple float"
       },
       {
         "name": "type",
@@ -18935,7 +19054,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "contracts",
         "type": "simple int/float",
         "description": "A required parameter. Maximum number of contracts/shares/lots/units in a position.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple float"
       }
     ],
     "returns": "void",
@@ -19127,7 +19247,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "series",
         "type": "series int/float",
         "description": "Series of values to process.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "length",
@@ -19139,13 +19260,15 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "offset",
         "type": "simple int/float",
         "description": "Controls tradeoff between smoothness (closer to 1) and responsiveness (closer to 0).",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple float"
       },
       {
         "name": "sigma",
         "type": "simple int/float",
         "description": "Changes the smoothness of ALMA. The larger sigma the smoother ALMA.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple float"
       },
       {
         "name": "floor",
@@ -19239,7 +19362,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "series",
         "type": "series int/float",
         "description": "Series of values to process.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "length",
@@ -19251,7 +19375,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "mult",
         "type": "simple int/float",
         "description": "Standard deviation factor.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple float"
       }
     ],
     "returns": "[series float, series float, series float]",
@@ -19279,7 +19404,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "series",
         "type": "series int/float",
         "description": "Series of values to process.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "length",
@@ -19291,7 +19417,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "mult",
         "type": "simple int/float",
         "description": "Standard deviation factor.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple float"
       }
     ],
     "returns": "series float",
@@ -19319,7 +19446,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series int/float",
         "description": "Series of values to process.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "length",
@@ -19345,7 +19473,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series int/float/bool",
         "description": "Source series.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "length",
@@ -19436,7 +19565,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "series",
         "type": "series int/float",
         "description": "Series of values to process.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "length",
@@ -19470,7 +19600,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series int/float",
         "description": "Series of values to process.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "length",
@@ -19502,13 +19633,15 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source1",
         "type": "series int/float",
         "description": "Source series.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "source2",
         "type": "series int/float",
         "description": "Target series.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "length",
@@ -19537,13 +19670,15 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source1",
         "type": "series int/float",
         "description": "First data series.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "source2",
         "type": "series int/float",
         "description": "Second data series.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       }
     ],
     "returns": "series bool",
@@ -19565,13 +19700,15 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source1",
         "type": "series int/float",
         "description": "First data series.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "source2",
         "type": "series int/float",
         "description": "Second data series.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       }
     ],
     "returns": "series bool",
@@ -19590,13 +19727,15 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source1",
         "type": "series int/float",
         "description": "First data series.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "source2",
         "type": "series int/float",
         "description": "Second data series.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       }
     ],
     "returns": "series bool",
@@ -19615,7 +19754,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series int/float",
         "description": "Source used for the calculation.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       }
     ],
     "returns": "series float",
@@ -19637,7 +19777,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series int/float",
         "description": "Series of values to process.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "length",
@@ -19703,7 +19844,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series int/float",
         "description": "Series of values to process.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "length",
@@ -19740,7 +19882,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series int/float",
         "description": "Series of values to process.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "length",
@@ -19769,7 +19912,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series int/float",
         "description": "Series of values to process.",
-        "required": false
+        "required": false,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "length",
@@ -19832,7 +19976,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series int/float",
         "description": "Series of values to process.",
-        "required": false
+        "required": false,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "length",
@@ -19895,7 +20040,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series int/float",
         "description": "Series of values to process.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "length",
@@ -19931,7 +20077,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "series",
         "type": "series int/float",
         "description": "Series of values to process.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "length",
@@ -19943,7 +20090,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "mult",
         "type": "simple int/float",
         "description": "Standard deviation factor.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple float"
       },
       {
         "name": "useTrueRange",
@@ -19977,7 +20125,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "series",
         "type": "series int/float",
         "description": "Series of values to process.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "length",
@@ -19989,7 +20138,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "mult",
         "type": "simple int/float",
         "description": "Standard deviation factor.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple float"
       },
       {
         "name": "useTrueRange",
@@ -20024,7 +20174,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series int/float",
         "description": "Source series.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "length",
@@ -20056,7 +20207,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series int/float",
         "description": "Series of values to process.",
-        "required": false
+        "required": false,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "length",
@@ -20119,7 +20271,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series int/float",
         "description": "Series of values to process.",
-        "required": false
+        "required": false,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "length",
@@ -20182,7 +20335,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series int/float",
         "description": "Series of values to process.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "fastlen",
@@ -20228,7 +20382,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series int/float",
         "description": "Source used for the calculation.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       }
     ],
     "returns": "series float",
@@ -20247,7 +20402,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series int/float",
         "description": "Series of values to process.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "length",
@@ -20310,7 +20466,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "series",
         "type": "series int/float",
         "description": "Series of values to process.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "length",
@@ -20343,7 +20500,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series int/float",
         "description": "Source used for the calculation.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       }
     ],
     "returns": "series float",
@@ -20362,7 +20520,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series int/float",
         "description": "Series of values to process.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "length",
@@ -20425,7 +20584,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series int/float",
         "description": "Series of values to process.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "length",
@@ -20454,7 +20614,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series int/float",
         "description": "Series of values to process (source).",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "length",
@@ -20466,7 +20627,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "percentage",
         "type": "simple int/float",
         "description": "Percentage, a number from range 0..100.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple float"
       }
     ],
     "returns": "series float",
@@ -20489,7 +20651,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series int/float",
         "description": "Series of values to process (source).",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "length",
@@ -20501,7 +20664,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "percentage",
         "type": "simple int/float",
         "description": "Percentage, a number from range 0..100.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple float"
       }
     ],
     "returns": "series float",
@@ -20524,7 +20688,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series int/float",
         "description": "Series of values to process.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "length",
@@ -20596,13 +20761,15 @@ export const FUNCTIONS: PineFunction[] = [
         "description": "Left strength.",
         "required": true,
         "min": 0,
-        "rangeSource": "runtime"
+        "rangeSource": "runtime",
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "rightbars",
         "type": "series int/float",
         "description": "Right strength.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "source",
@@ -20677,13 +20844,15 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "leftbars",
         "type": "series int/float",
         "description": "Left strength.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "rightbars",
         "type": "series int/float",
         "description": "Right strength.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "source",
@@ -20754,7 +20923,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series int/float",
         "description": "Series of values to process.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "length",
@@ -20817,7 +20987,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series int/float",
         "description": "Series of values to process.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "length",
@@ -20842,7 +21013,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series int/float",
         "description": "Series of values to process.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "length",
@@ -20871,7 +21043,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series int/float",
         "description": "Series of values to process.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "length",
@@ -20909,7 +21082,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series int/float",
         "description": "Series of values to process.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "length",
@@ -20935,7 +21109,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series int/float",
         "description": "Series of values to process.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "length",
@@ -20967,19 +21142,22 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "start",
         "type": "simple int/float",
         "description": "Start.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple float"
       },
       {
         "name": "inc",
         "type": "simple int/float",
         "description": "Increment.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple float"
       },
       {
         "name": "max",
         "type": "simple int/float",
         "description": "Maximum.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple float"
       }
     ],
     "returns": "series float",
@@ -21001,7 +21179,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series int/float",
         "description": "Series of values to process.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "length",
@@ -21041,7 +21220,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series int/float",
         "description": "Series of values to process.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "length",
@@ -21081,19 +21261,22 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series int/float",
         "description": "Source series.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "high",
         "type": "series int/float",
         "description": "Series of high.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "low",
         "type": "series int/float",
         "description": "Series of low.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "length",
@@ -21122,7 +21305,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "factor",
         "type": "series int/float",
         "description": "The multiplier by which the ATR will get multiplied.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "atrPeriod",
@@ -21153,7 +21337,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series int/float",
         "description": "Source series.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       }
     ],
     "returns": "series float",
@@ -21208,7 +21393,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series int/float",
         "description": "Source series.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "short_length",
@@ -21246,7 +21432,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series int/float/bool/color",
         "description": "The value to be returned from the bar where the condition is met.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "occurrence",
@@ -21376,7 +21563,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series int/float",
         "description": "Series of values to process.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "length",
@@ -21413,7 +21601,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series int/float",
         "description": "Source used for the VWAP calculation.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "anchor",
@@ -21426,7 +21615,8 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "series int/float",
         "description": "If specified, the function will calculate the standard deviation bands based on the main VWAP series and return a [vwap, upper_band, lower_band] tuple. The upper_band/lower_band values are calculated using the VWAP to which the standard deviation multiplied by this argument is added/subtracted. Optional. The default is na, in which case the function returns a single value, not a tuple.",
         "required": false,
-        "default": "na"
+        "default": "na",
+        "expectedTypeNoun": "series float"
       }
     ],
     "returns": "series float",
@@ -21496,7 +21686,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series int/float",
         "description": "Series of values to process.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "length",
@@ -21533,7 +21724,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series int/float",
         "description": "Series of values to process.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series float"
       },
       {
         "name": "length",
@@ -21646,13 +21838,15 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "width",
         "type": "series int/float",
         "description": "The width of the cell as a % of the indicator's visual space. Optional. By default, auto-adjusts the width based on the text inside the cell. Value 0 has the same effect.",
-        "required": false
+        "required": false,
+        "expectedTypeNoun": "series int"
       },
       {
         "name": "height",
         "type": "series int/float",
         "description": "The height of the cell as a % of the indicator's visual space. Optional. By default, auto-adjusts the height based on the text inside of the cell. Value 0 has the same effect.",
-        "required": false
+        "required": false,
+        "expectedTypeNoun": "series int"
       },
       {
         "name": "text_color",
@@ -21690,7 +21884,8 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "series int/string",
         "description": "Size of the object. The size can be any positive integer, or one of the size.* built-in constant strings. The constant strings and their equivalent integer values are: size.auto (0), size.tiny (8), size.small (10), size.normal (14), size.large (20), size.huge (36). The default value is size.normal or 14.",
         "required": false,
-        "default": "size.normal"
+        "default": "size.normal",
+        "expectedTypeNoun": "series string"
       },
       {
         "name": "bgcolor",
@@ -21815,7 +22010,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "height",
         "type": "series int/float",
         "description": "The height of the cell as a % of the chart window. Passing 0 auto-adjusts the height based on the text inside of the cell.",
-        "required": false
+        "required": false,
+        "expectedTypeNoun": "series int"
       }
     ],
     "returns": "void",
@@ -22092,7 +22288,8 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "series int/string",
         "description": "Size of the object. The size can be any positive integer, or one of the size.* built-in constant strings. The constant strings and their equivalent integer values are: size.auto (0), size.tiny (8), size.small (10), size.normal (14), size.large (20), size.huge (36). The default value is size.normal or 14.",
         "required": false,
-        "default": "size.normal"
+        "default": "size.normal",
+        "expectedTypeNoun": "series string"
       }
     ],
     "returns": "void",
@@ -22229,7 +22426,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "width",
         "type": "series int/float",
         "description": "The width of the cell as a % of the chart window. Passing 0 auto-adjusts the width based on the text inside of the cell.",
-        "required": false
+        "required": false,
+        "expectedTypeNoun": "series int"
       }
     ],
     "returns": "void",
@@ -22788,7 +22986,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "reversal",
         "type": "simple int/float",
         "description": "Reversal amount (absolute price value).",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple float"
       },
       {
         "name": "param",
@@ -23437,7 +23636,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "param",
         "type": "series int/float",
         "description": "Represents the ticker's \"ATR length\" value if the style value is \"ATR\", \"Box size\" value if the style is \"Traditional\", or \"Percentage\" value if the style is \"PercentageLTP\".",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple float"
       },
       {
         "name": "reversal",
@@ -23578,7 +23778,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "param",
         "type": "series int/float",
         "description": "Represents the ticker's \"ATR length\" value if the style value is \"ATR\", \"Box size\" value if the style is \"Traditional\", or \"Percentage\" value if the style is \"PercentageLTP\".",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple float"
       },
       {
         "name": "request_wicks",

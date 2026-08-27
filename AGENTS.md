@@ -405,6 +405,22 @@ scraper); re-run the sweep only when the catalog gains functions (`--retry`
 re-probes just unsettled/new entries) - functions absent from it fall back to
 prose evidence at generate-time.
 
+**A union parameter's expected-type NOUN is probe data too.** The string TV
+quotes in CE10123 ("...but a `series float` is expected") for a parameter typed
+`series int/float` is not derivable from that union: the same doc type draws
+five different answers across the catalog, `int/string` splits evenly between
+`int` and `string`, and `math.*` alone draws six answers - nothing distinguishes
+`math.abs` from `math.ceil` from `math.max`. It is measured per
+function+parameter into `pine-data/raw/v6/union-type-nouns-probe.json` by
+`scripts/probe-union-type-nouns.mjs` (one call per parameter carrying exactly
+one deliberately-wrong argument) and merged into each parameter's
+`expectedTypeNoun` at generate-time. Same lifecycle as the requiredness probe:
+it lives in `raw/` but no scrape produces it, and `--retry` re-probes only
+unsettled entries. A parameter with no measured noun keeps the checker's
+fallback - **do not extrapolate a neighbour's answer onto it**, and do not
+"simplify" the seven parameters whose measured noun happens to equal the old
+`simple <first member>` fabrication; they agree by coincidence. See INV171.
+
 ### Re-running type logic WITHOUT scraping
 
 **Be sparing with `scrape` - it hits TradingView's site.** Most type work does

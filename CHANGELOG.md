@@ -57,6 +57,15 @@
   position and wording, with the unconditional-`:=` control clean on both
   sides. No corpus carrier (warning channel unchanged at 2073 records over 1879
   fixtures), so a mutation-verified fixture is what holds it. See INV168.
+- The expected-type noun in a union-typed parameter's CE10123 is now
+  TradingView's own. It had been fabricated as `simple <first union member>`,
+  which was wrong on 194 of the 201 union parameters in the catalog -
+  `ta.sma(source = true)` said `simple int` where TradingView says
+  `series float`. The noun is not derivable from the union, so it is measured
+  per function+parameter into `pine-data/raw/v6/union-type-nouns-probe.json`
+  and merged into `functions.json` at generate-time; the checker reads it and
+  carries no table of its own. Verdicts and argument names are unchanged - only
+  the quoted type was ever wrong. See INV171.
 - New error: calling a built-in namespace member that is not a function -
   a constant (`math.pi(2)`, `color.red(1)`) or a variable
   (`syminfo.tickerid(3)`, `barstate.isfirst(1)`) - now reports TradingView's

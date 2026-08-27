@@ -43,6 +43,7 @@ import {
 	positionalConstParam,
 	positionalParamUnionMembers,
 	resolveCallReturnRaw,
+	unionParamExpectedNoun,
 	unionParamInfo,
 } from "./builtins";
 import type { UnifiedPineValidator } from "./checker";
@@ -1566,7 +1567,15 @@ export function checkUnionArgs(
 					argDisplayName: paramInfo?.name ?? arg.name ?? String(positionalNum),
 					argUserFriendlyRepresentation: desc.repr,
 					argumentType: desc.typeStr,
-					currentTypeDocStr: `simple ${members[0]}`,
+					// TV's own noun where the sweep measured one, and the old
+					// fabrication only where it did not. `simple <first member>`
+					// was wrong on 194 of the 201 measured parameters - it is
+					// kept solely so an unprobed parameter still renders
+					// something, not because it is a rule. see INV171
+					currentTypeDocStr:
+						(paramInfo?.name
+							? unionParamExpectedNoun(functionName, paramInfo.name)
+							: undefined) ?? `simple ${members[0]}`,
 					funId: functionName,
 					typePostfix: "",
 				},

@@ -563,11 +563,23 @@ IDs so the two stay in sync.
   generated from the catalog with fixtures for the collection/drawing-ID
   leading arguments.
 
-  **What remains is consuming it**, and it is a separate landing from the
-  measurement: `generate.ts` merges the noun onto each parameter in
-  `functions.json` (per Data-vs-Syntax the checker must not carry the table),
-  then `checkUnionArgs` reads it instead of fabricating. That rewords 194
-  diagnostics, so it needs a fixture and a baseline move of its own.
+  **CONSUMED the same day**, as its own commit: `generate.ts` merges the noun
+  onto each parameter as `expectedTypeNoun` and `checkUnionArgs` reads it, so
+  the checker carries no table. Only a `status: "ok"` probe contributes; every
+  other status is an absence of evidence and keeps the fallback rather than
+  inheriting a neighbour's answer. **#74 is closed** apart from the residual
+  below.
+
+  Residual, and it needs overload resolution rather than more probing:
+  `math.max(true, 1)` draws `const int` at TV and nothing from us, because
+  `checkUnionArgs` skips positional checking on overloaded functions (INV016's
+  deliberate conservatism - positional-to-parameter indices are ambiguous
+  across overloads). The noun for it is already measured and in the data.
+
+  Note for whoever reads the gates: `regression-check` was 0 changed, and that
+  is not evidence here. The corpus passes no wrong-base scalars to union
+  parameters, so it exercises none of this - the same "corpus proves nothing"
+  shape as #81 above. The fixture is the pin.
 - **#71 - user-function overloads are unmodelled
   ([INV157](../investigations/INV157-blackbox-audit-adoption/notes.md), cluster
   B).** Pine lets a user function be declared more than once with different

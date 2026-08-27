@@ -141,14 +141,45 @@ differently for each. **So the value is a per-function, per-parameter constant
 and the probe file is the only possible source**, exactly as requiredness was
 in INV050.
 
-## Not done here, deliberately
+## Consuming it - LANDED the same day, as a second commit
 
-Consuming it. The data is captured and self-describing, but nothing reads it
-yet: wiring means `generate.ts` merging the noun into each parameter in
-`functions.json` (the Data-vs-Syntax rule - the checker must not carry its own
-table), then `checkUnionArgs` reading it instead of fabricating. That changes
-the wording of 194 diagnostics, so it wants its own regression baseline move
-and a fixture, and it is a separate landing from the measurement.
+`generate.ts` merges the measured noun onto each parameter as
+`expectedTypeNoun` (schema documented in `pine-data/schema/types.ts`), and
+`checkUnionArgs` reads it through `unionParamExpectedNoun`. Per the
+Data-vs-Syntax rule the checker carries no table of its own.
 
-The seven that already agree must not be special-cased on the way in - they
-agree by coincidence, not by rule.
+Only a probe that answered FOR THAT PARAMETER contributes: `status: "ok"`
+alone. Every other status is an absence of evidence, and such a parameter
+keeps the old fabrication as a fallback rather than inheriting a neighbour's
+answer. **The seven that already agree are not special-cased** - they agree by
+coincidence, and nothing in the code treats them differently.
+
+### Verification
+
+All 201 nouns land in `functions.json`, and the diff is 201 additions plus
+trailing-comma churn - nothing else drifted. `index.ts` kept its
+`export * from "./libraries"` line, the INV142 trap.
+
+Three shapes, each a different qualifier AND member from one another, all
+byte-identical to TV:
+
+| call | before | after / TV |
+|---|---|---|
+| `ta.sma(source = true, length = 5)` | simple int | **series float** |
+| `math.pow(base = true, exponent = 2.0)` | simple int | **const float** |
+| `label.new(..., size = true)` | simple int | **series string** |
+
+`regression-check`: 0 changed fixtures. That is not evidence of much and
+should not be read as such - the corpus does not pass wrong-base scalars to
+union parameters, so it exercises none of this. The fixture is the pin, and it
+is mutation-verified red on exactly the three changed lines while the
+agreeing control stays green.
+
+### One pre-existing gap this made visible, NOT fixed here
+
+`math.max(true, 1)` draws `const int` at TV and nothing from us: `checkUnionArgs`
+skips positional checking on overloaded functions (INV016's deliberate
+conservatism, since positional-to-parameter indices are ambiguous across
+overloads). The noun for it IS measured and sitting in the data, so closing
+that gap needs overload resolution, not more probing. Deliberately not asserted
+in the fixture.

@@ -37,6 +37,7 @@ const REQUIRED_PARAMS_PROBE_FILE = path.join(
 	"required-params-probe.json",
 );
 const RUNTIME_DOMAINS_FILE = path.join(RAW_DIR, "runtime-domains.json");
+const UNION_TYPE_NOUNS_FILE = path.join(RAW_DIR, "union-type-nouns-probe.json");
 
 // =============================================================================
 // TYPE DEFINITIONS
@@ -129,6 +130,9 @@ interface GeneratedFunction extends ReferenceProse {
 		rangeSource?: "reference" | "runtime";
 		// TV raises RE10003 at runtime when this parameter is na. see TODO #69
 		notNa?: true;
+		// The expected-type noun TV quotes in CE10123 for a UNION-typed
+		// parameter. Probe-measured, not derivable from the union. see INV171
+		expectedTypeNoun?: string;
 	}>;
 	returns: string;
 	flags?: Record<string, unknown>;
@@ -537,6 +541,36 @@ const RUNTIME_DOMAINS: { facts: RuntimeDomainFact[] } = fs.existsSync(
 	? JSON.parse(fs.readFileSync(RUNTIME_DOMAINS_FILE, "utf-8"))
 	: { facts: [] };
 
+// The expected-type NOUN TradingView quotes in CE10123 for a union-typed
+// parameter ("An argument of X was used but a <noun> is expected"). It is not
+// derivable from the union: `series int/float` alone answers five different
+// nouns, and `math.*` answers six for that one doc type, so nothing in the
+// catalog distinguishes math.abs from math.ceil from math.max. Probed per
+// function+parameter by scripts/probe-union-type-nouns.mjs, and merged here
+// rather than tabled in the checker, per the Data-vs-Syntax rule. see INV171
+interface UnionNounEntry {
+	status: string;
+	tvNoun?: string | null;
+}
+const UNION_TYPE_NOUNS: Record<string, UnionNounEntry> = fs.existsSync(
+	UNION_TYPE_NOUNS_FILE,
+)
+	? (JSON.parse(fs.readFileSync(UNION_TYPE_NOUNS_FILE, "utf-8")).results ?? {})
+	: {};
+
+// Only a probe that answered FOR THIS PARAMETER contributes. Every other
+// status (mismatched-arg, other-error, unprobeable, no-verdict) is an absence
+// of evidence, and a parameter with no measured noun keeps the checker's
+// existing fallback rather than inheriting a neighbour's answer.
+function probedUnionNoun(
+	fnName: string,
+	paramName: string,
+): string | undefined {
+	const entry = UNION_TYPE_NOUNS[`${fnName}.${paramName}`];
+	if (entry?.status !== "ok") return undefined;
+	return entry.tvNoun ?? undefined;
+}
+
 // The value constraints for one parameter, from both sources. A param is
 // either an enum or a numeric range, never both - skip the range scan when an
 // enum was found (its prose can contain stray digits). `rangeSource` tells a
@@ -568,6 +602,16 @@ function paramConstraints(fnName: string, paramName: string, desc: string) {
 	}
 
 	return { allowedValues, min, max, rangeSource, notNa };
+}
+
+// Everything a parameter carries beyond its scraped fields: the value
+// constraints above plus the probed CE10123 noun.
+function paramFacts(fnName: string, paramName: string, desc: string) {
+	const expectedTypeNoun = probedUnionNoun(fnName, paramName);
+	return {
+		...paramConstraints(fnName, paramName, desc),
+		...(expectedTypeNoun ? { expectedTypeNoun } : {}),
+	};
 }
 
 // Requiredness for one merged param: the probe verdict when the function was
@@ -785,7 +829,7 @@ function generateFunctions(
 				required: isParamRequired(name, p),
 				// Parsed from the description prose (best-effort). see TODO #25
 				default: p.default ?? parseDefault(description),
-				...paramConstraints(name, p.name, description),
+				...paramFacts(name, p.name, description),
 			};
 		});
 

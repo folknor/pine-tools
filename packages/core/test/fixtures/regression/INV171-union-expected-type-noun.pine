@@ -1,0 +1,14 @@
+// @description The expected-type NOUN in a union parameter's CE10123 is read from probe-measured pine-data instead of being fabricated as `simple <first member>`, which was wrong on 194 of the 201 measured parameters. The noun is not derivable: all three unions below are `series int/float` or `series int/string`, and TV answers a different qualifier AND member for each - `series float`, `const float`, `series string`. Every line matches TV byte-for-byte (pine-lint --tv, 2026-08-27). Line 6 is the control that must NOT move: nz is one of the seven parameters whose measured noun happens to equal the old fabrication, so it still reads `simple int` - by coincidence, not by rule, and it must never be special-cased. Not asserted here, because it is a separate pre-existing gap: `math.max(true, 1)` draws `const int` at TV and nothing from us, since checkUnionArgs skips positional checking on overloaded functions (INV016). See INV171, TODO #74.
+// @expects parse: success
+// @expects errors: 4
+// @expects error: line=3, message=/argument of "literal bool" type was used but a "series float"/
+// @expects error: line=4, message=/argument of "literal bool" type was used but a "const float"/
+// @expects error: line=5, message=/argument of "literal bool" type was used but a "series string"/
+// @expects error: line=6, message=/argument of "series bool" type was used but a "simple int"/
+//@version=6
+indicator("INV171")
+a = ta.sma(source = true, length = 5)
+b = math.pow(base = true, exponent = 2.0)
+lbl = label.new(chart.point.from_index(0, 0.0), size = true)
+plot(nz(close > open) ? 1 : 0)
+plot(close + a + b)

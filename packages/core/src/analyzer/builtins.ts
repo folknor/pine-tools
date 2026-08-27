@@ -901,6 +901,22 @@ export function unionParamInfo(
 	return fallback;
 }
 
+// The expected-type noun TV quotes in CE10123 for a union-typed parameter.
+// Read from pine-data, never computed: the noun is not derivable from the
+// union (`series int/float` alone draws five different answers, and `math.*`
+// draws six for that one doc type), so it is probe-measured per
+// function+parameter and merged at generate-time. Undefined for a parameter
+// the sweep could not reach, whose caller keeps its own fallback. see INV171
+export function unionParamExpectedNoun(
+	functionName: string,
+	paramName: string,
+): string | undefined {
+	const p = FUNCTIONS_BY_NAME.get(functionName)?.parameters.find(
+		(x) => x.name === paramName,
+	);
+	return (p as { expectedTypeNoun?: string } | undefined)?.expectedTypeNoun;
+}
+
 // Qualifier + base of a built-in VARIABLE (close -> series/float,
 // syminfo.tickerid -> simple/string). Used to decide whether a bare/member
 // reference is a non-const argument. Undefined for non-builtins.
