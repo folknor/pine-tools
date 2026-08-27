@@ -543,6 +543,31 @@ IDs so the two stay in sync.
   deliberately-wrong argument and valid values everywhere else; getting that
   wrong bakes a bad string into `functions.json` where nothing would catch it.
   Left unbuilt rather than half-built.
+
+  **The sweep is BUILT and CAPTURED 2026-08-27
+  ([INV171](../investigations/INV171-union-type-noun-probe/notes.md)).**
+  `scripts/probe-union-type-nouns.mjs` ->
+  `pine-data/raw/v6/union-type-nouns-probe.json`. It measured **201 of 202
+  union parameters across 141 functions** - the real census, smaller than the
+  185/251 estimated above - with only `footprint.get_row_by_price` out of
+  reach (its leading argument needs a chart-context `request.footprint`).
+  **194 disagree with our fabricated noun; the 7 that agree do so by
+  coincidence and must not be special-cased.**
+
+  The no-rule conclusion is now measured rather than inferred from ten
+  functions: `series int/float` alone answers five different nouns, a `series`
+  doc union answers three different qualifiers, `int/string` splits 6/6 on the
+  member, and `math.*` gives six answers for one doc type. Two costs came in
+  lower than this entry assumed: TV's first-error stop is PARSE-only, so type
+  probes batch (201 probes, 141 calls), and the "251 hand-built calls" are
+  generated from the catalog with fixtures for the collection/drawing-ID
+  leading arguments.
+
+  **What remains is consuming it**, and it is a separate landing from the
+  measurement: `generate.ts` merges the noun onto each parameter in
+  `functions.json` (per Data-vs-Syntax the checker must not carry the table),
+  then `checkUnionArgs` reads it instead of fabricating. That rewords 194
+  diagnostics, so it needs a fixture and a baseline move of its own.
 - **#71 - user-function overloads are unmodelled
   ([INV157](../investigations/INV157-blackbox-audit-adoption/notes.md), cluster
   B).** Pine lets a user function be declared more than once with different

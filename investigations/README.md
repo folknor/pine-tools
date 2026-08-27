@@ -1180,3 +1180,15 @@ contradiction means re-measure, not "the earlier author was wrong."
   tests plus a 0-changed regression-check both passed while it manufactured a
   false positive on a shadowed namespace (where TV goes clean). The corpus
   carries neither shape.
+- [INV171](INV171-union-type-noun-probe/notes.md) - the union expected-type
+  noun sweep TODO #74 specified and INV159 left unbuilt.
+  `scripts/probe-union-type-nouns.mjs` measures **201 of 202 union parameters
+  across 141 functions** into `pine-data/raw/v6/union-type-nouns-probe.json`.
+  **194 disagree with our fabricated `simple <first member>`**, and there is
+  no rule to derive: `series int/float` alone answers five different nouns, a
+  `series` doc union answers three different qualifiers, and `int/string`
+  splits 6/6 on the member. `math.*` gives six answers for one doc type. The
+  probe batches because TV's first-error stop is parse-only (measured, not
+  assumed), and its load-bearing control is attributing each CE10123 by
+  `ctx.argDisplayName` - without it the pilot recorded `user_type` as
+  `sort_field`'s noun. Captured but NOT yet consumed.

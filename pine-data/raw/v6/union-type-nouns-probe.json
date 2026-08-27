@@ -1,0 +1,3041 @@
+{
+	"description": "TV-probed expected-type noun (CE10123 currentTypeDocStr) per union-typed parameter. One deliberately-wrong argument per parameter; the noun cannot be derived from the catalog. See INV171, TODO #74.",
+	"probedAt": "2026-08-27T07:55:50.762Z",
+	"tool": "scripts/probe-union-type-nouns.mjs",
+	"results": {
+		"footprint.get_row_by_price.price": {
+			"fn": "footprint.get_row_by_price",
+			"param": "price",
+			"docType": "series int/float",
+			"ourNoun": "simple int",
+			"status": "unbuildable-lead"
+		},
+		"array.binary_search.val": {
+			"fn": "array.binary_search",
+			"param": "val",
+			"docType": "series int/float/string",
+			"members": [
+				"int",
+				"float",
+				"string"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "val",
+			"agrees": false,
+			"probe": "probe_3 = array.binary_search(fx_af, val = true)",
+			"status": "ok"
+		},
+		"array.binary_search.sort_field": {
+			"fn": "array.binary_search",
+			"param": "sort_field",
+			"docType": "const int/string",
+			"members": [
+				"int",
+				"string"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "const int",
+			"tvArgName": "sort_field",
+			"agrees": false,
+			"probe": "probe_4 = array.binary_search(fx_af, 1, sort_field = true)",
+			"status": "ok"
+		},
+		"array.new_float.initial_value": {
+			"fn": "array.new_float",
+			"param": "initial_value",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "initial_value",
+			"agrees": false,
+			"probe": "probe_2 = array.new_float(initial_value = \"probe\")",
+			"status": "ok"
+		},
+		"array.binary_search_leftmost.val": {
+			"fn": "array.binary_search_leftmost",
+			"param": "val",
+			"docType": "series int/float/string",
+			"members": [
+				"int",
+				"float",
+				"string"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "val",
+			"agrees": false,
+			"probe": "probe_3 = array.binary_search_leftmost(fx_af, val = true)",
+			"status": "ok"
+		},
+		"array.binary_search_leftmost.sort_field": {
+			"fn": "array.binary_search_leftmost",
+			"param": "sort_field",
+			"docType": "const int/string",
+			"members": [
+				"int",
+				"string"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "const int",
+			"tvArgName": "sort_field",
+			"agrees": false,
+			"probe": "probe_4 = array.binary_search_leftmost(fx_af, 1, sort_field = true)",
+			"status": "ok"
+		},
+		"array.binary_search_rightmost.val": {
+			"fn": "array.binary_search_rightmost",
+			"param": "val",
+			"docType": "series int/float/string",
+			"members": [
+				"int",
+				"float",
+				"string"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "val",
+			"agrees": false,
+			"probe": "probe_3 = array.binary_search_rightmost(fx_af, val = true)",
+			"status": "ok"
+		},
+		"array.binary_search_rightmost.sort_field": {
+			"fn": "array.binary_search_rightmost",
+			"param": "sort_field",
+			"docType": "const int/string",
+			"members": [
+				"int",
+				"string"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "const int",
+			"tvArgName": "sort_field",
+			"agrees": false,
+			"probe": "probe_4 = array.binary_search_rightmost(fx_af, 1, sort_field = true)",
+			"status": "ok"
+		},
+		"array.percentile_nearest_rank.percentage": {
+			"fn": "array.percentile_nearest_rank",
+			"param": "percentage",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "percentage",
+			"agrees": false,
+			"probe": "probe_3 = array.percentile_nearest_rank(fx_af, percentage = \"probe\")",
+			"status": "ok"
+		},
+		"array.sort_indices.sort_field": {
+			"fn": "array.sort_indices",
+			"param": "sort_field",
+			"docType": "const int/string",
+			"members": [
+				"int",
+				"string"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "const int",
+			"tvArgName": "sort_field",
+			"agrees": false,
+			"probe": "probe_3 = array.sort_indices(fx_af, sort_field = true)",
+			"status": "ok"
+		},
+		"array.percentile_linear_interpolation.percentage": {
+			"fn": "array.percentile_linear_interpolation",
+			"param": "percentage",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "percentage",
+			"agrees": false,
+			"probe": "probe_3 = array.percentile_linear_interpolation(fx_af, percentage = \"probe\")",
+			"status": "ok"
+		},
+		"array.sort.sort_field": {
+			"fn": "array.sort",
+			"param": "sort_field",
+			"docType": "const int/string",
+			"members": [
+				"int",
+				"string"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "const int",
+			"tvArgName": "sort_field",
+			"agrees": false,
+			"probe": "probe_3 = array.sort(fx_af, sort_field = true)",
+			"status": "ok"
+		},
+		"bool.x": {
+			"fn": "bool",
+			"param": "x",
+			"docType": "series int/float/bool",
+			"members": [
+				"int",
+				"float",
+				"bool"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "const bool",
+			"tvArgName": "x",
+			"agrees": false,
+			"probe": "probe_2 = bool(x = \"probe\")",
+			"status": "ok"
+		},
+		"box.set_bottom.bottom": {
+			"fn": "box.set_bottom",
+			"param": "bottom",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "bottom",
+			"agrees": false,
+			"probe": "probe_3 = box.set_bottom(fx_box, bottom = \"probe\")",
+			"status": "ok"
+		},
+		"box.new.text_size": {
+			"fn": "box.new",
+			"param": "text_size",
+			"docType": "series int/string",
+			"members": [
+				"int",
+				"string"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series string",
+			"tvArgName": "text_size",
+			"agrees": false,
+			"probe": "probe_3 = box.new(fx_pt, fx_pt, text_size = true)",
+			"status": "ok"
+		},
+		"box.set_lefttop.top": {
+			"fn": "box.set_lefttop",
+			"param": "top",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "top",
+			"agrees": false,
+			"probe": "probe_3 = box.set_lefttop(fx_box, 1, top = \"probe\")",
+			"status": "ok"
+		},
+		"box.set_rightbottom.bottom": {
+			"fn": "box.set_rightbottom",
+			"param": "bottom",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "bottom",
+			"agrees": false,
+			"probe": "probe_3 = box.set_rightbottom(fx_box, 1, bottom = \"probe\")",
+			"status": "ok"
+		},
+		"box.set_text_size.text_size": {
+			"fn": "box.set_text_size",
+			"param": "text_size",
+			"docType": "series int/string",
+			"members": [
+				"int",
+				"string"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series string",
+			"tvArgName": "text_size",
+			"agrees": false,
+			"probe": "probe_3 = box.set_text_size(fx_box, text_size = true)",
+			"status": "ok"
+		},
+		"box.set_top.top": {
+			"fn": "box.set_top",
+			"param": "top",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "top",
+			"agrees": false,
+			"probe": "probe_3 = box.set_top(fx_box, top = \"probe\")",
+			"status": "ok"
+		},
+		"chart.point.from_time.price": {
+			"fn": "chart.point.from_time",
+			"param": "price",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "price",
+			"agrees": false,
+			"probe": "probe_2 = chart.point.from_time(1, price = \"probe\")",
+			"status": "ok"
+		},
+		"chart.point.from_index.price": {
+			"fn": "chart.point.from_index",
+			"param": "price",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "price",
+			"agrees": false,
+			"probe": "probe_2 = chart.point.from_index(1, price = \"probe\")",
+			"status": "ok"
+		},
+		"chart.point.new.price": {
+			"fn": "chart.point.new",
+			"param": "price",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "price",
+			"agrees": false,
+			"probe": "probe_2 = chart.point.new(1, 1, price = \"probe\")",
+			"status": "ok"
+		},
+		"chart.point.now.price": {
+			"fn": "chart.point.now",
+			"param": "price",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "price",
+			"agrees": false,
+			"probe": "probe_2 = chart.point.now(price = \"probe\")",
+			"status": "ok"
+		},
+		"color.from_gradient.value": {
+			"fn": "color.from_gradient",
+			"param": "value",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "value",
+			"agrees": false,
+			"probe": "probe_2 = color.from_gradient(value = \"probe\", bottom_value = 1, top_value = 1, bottom_color = color.red, top_color = color.red)",
+			"status": "ok"
+		},
+		"color.from_gradient.bottom_value": {
+			"fn": "color.from_gradient",
+			"param": "bottom_value",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "bottom_value",
+			"agrees": false,
+			"probe": "probe_3 = color.from_gradient(1, bottom_value = \"probe\", top_value = 1, bottom_color = color.red, top_color = color.red)",
+			"status": "ok"
+		},
+		"color.from_gradient.top_value": {
+			"fn": "color.from_gradient",
+			"param": "top_value",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "top_value",
+			"agrees": false,
+			"probe": "probe_4 = color.from_gradient(1, 1, top_value = \"probe\", bottom_color = color.red, top_color = color.red)",
+			"status": "ok"
+		},
+		"color.rgb.red": {
+			"fn": "color.rgb",
+			"param": "red",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "const float",
+			"tvArgName": "red",
+			"agrees": false,
+			"probe": "probe_2 = color.rgb(red = \"probe\", green = 1, blue = 1)",
+			"status": "ok"
+		},
+		"color.rgb.green": {
+			"fn": "color.rgb",
+			"param": "green",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "const float",
+			"tvArgName": "green",
+			"agrees": false,
+			"probe": "probe_3 = color.rgb(1, green = \"probe\", blue = 1)",
+			"status": "ok"
+		},
+		"color.rgb.blue": {
+			"fn": "color.rgb",
+			"param": "blue",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "const float",
+			"tvArgName": "blue",
+			"agrees": false,
+			"probe": "probe_4 = color.rgb(1, 1, blue = \"probe\")",
+			"status": "ok"
+		},
+		"color.rgb.transp": {
+			"fn": "color.rgb",
+			"param": "transp",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "const float",
+			"tvArgName": "transp",
+			"agrees": false,
+			"probe": "probe_5 = color.rgb(1, 1, 1, transp = \"probe\")",
+			"status": "ok"
+		},
+		"color.new.transp": {
+			"fn": "color.new",
+			"param": "transp",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "const float",
+			"tvArgName": "transp",
+			"agrees": false,
+			"probe": "probe_2 = color.new(color.red, transp = \"probe\")",
+			"status": "ok"
+		},
+		"fixnan.source": {
+			"fn": "fixnan",
+			"param": "source",
+			"docType": "series int/float/color",
+			"members": [
+				"int",
+				"float",
+				"color"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "source",
+			"agrees": false,
+			"probe": "probe_2 = fixnan(source = \"probe\")",
+			"status": "ok"
+		},
+		"input.float.defval": {
+			"fn": "input.float",
+			"param": "defval",
+			"docType": "const int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "const float",
+			"tvArgName": "defval",
+			"agrees": false,
+			"probe": "probe_2 = input.float(defval = \"probe\")",
+			"status": "ok"
+		},
+		"hline.price": {
+			"fn": "hline",
+			"param": "price",
+			"docType": "input int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "input float",
+			"tvArgName": "price",
+			"agrees": false,
+			"probe": "probe_2 = hline(price = \"probe\")",
+			"status": "ok"
+		},
+		"float.x": {
+			"fn": "float",
+			"param": "x",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "const float",
+			"tvArgName": "x",
+			"agrees": false,
+			"probe": "probe_2 = float(x = \"probe\")",
+			"status": "ok"
+		},
+		"input.price.defval": {
+			"fn": "input.price",
+			"param": "defval",
+			"docType": "const int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "const float",
+			"tvArgName": "defval",
+			"agrees": false,
+			"probe": "probe_2 = input.price(defval = \"probe\")",
+			"status": "ok"
+		},
+		"label.new.size": {
+			"fn": "label.new",
+			"param": "size",
+			"docType": "series int/string",
+			"members": [
+				"int",
+				"string"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series string",
+			"tvArgName": "size",
+			"agrees": false,
+			"probe": "probe_3 = label.new(fx_pt, size = true)",
+			"status": "ok"
+		},
+		"int.x": {
+			"fn": "int",
+			"param": "x",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple int",
+			"tvArgName": "x",
+			"agrees": true,
+			"probe": "probe_2 = int(x = \"probe\")",
+			"status": "ok"
+		},
+		"label.set_size.size": {
+			"fn": "label.set_size",
+			"param": "size",
+			"docType": "series int/string",
+			"members": [
+				"int",
+				"string"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series string",
+			"tvArgName": "size",
+			"agrees": false,
+			"probe": "probe_3 = label.set_size(fx_lbl, size = true)",
+			"status": "ok"
+		},
+		"label.set_y.y": {
+			"fn": "label.set_y",
+			"param": "y",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "y",
+			"agrees": false,
+			"probe": "probe_3 = label.set_y(fx_lbl, y = \"probe\")",
+			"status": "ok"
+		},
+		"label.set_xy.y": {
+			"fn": "label.set_xy",
+			"param": "y",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "y",
+			"agrees": false,
+			"probe": "probe_3 = label.set_xy(fx_lbl, 1, y = \"probe\")",
+			"status": "ok"
+		},
+		"line.set_xy2.y": {
+			"fn": "line.set_xy2",
+			"param": "y",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "y",
+			"agrees": false,
+			"probe": "probe_3 = line.set_xy2(fx_line, 1, y = \"probe\")",
+			"status": "ok"
+		},
+		"line.set_y1.y": {
+			"fn": "line.set_y1",
+			"param": "y",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "y",
+			"agrees": false,
+			"probe": "probe_3 = line.set_y1(fx_line, y = \"probe\")",
+			"status": "ok"
+		},
+		"line.set_xy1.y": {
+			"fn": "line.set_xy1",
+			"param": "y",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "y",
+			"agrees": false,
+			"probe": "probe_3 = line.set_xy1(fx_line, 1, y = \"probe\")",
+			"status": "ok"
+		},
+		"line.set_y2.y": {
+			"fn": "line.set_y2",
+			"param": "y",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "y",
+			"agrees": false,
+			"probe": "probe_3 = line.set_y2(fx_line, y = \"probe\")",
+			"status": "ok"
+		},
+		"math.abs.number": {
+			"fn": "math.abs",
+			"param": "number",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple int",
+			"tvArgName": "number",
+			"agrees": true,
+			"probe": "probe_2 = math.abs(number = \"probe\")",
+			"status": "ok"
+		},
+		"math.acos.angle": {
+			"fn": "math.acos",
+			"param": "angle",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple float",
+			"tvArgName": "angle",
+			"agrees": false,
+			"probe": "probe_2 = math.acos(angle = \"probe\")",
+			"status": "ok"
+		},
+		"math.asin.angle": {
+			"fn": "math.asin",
+			"param": "angle",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple float",
+			"tvArgName": "angle",
+			"agrees": false,
+			"probe": "probe_2 = math.asin(angle = \"probe\")",
+			"status": "ok"
+		},
+		"math.avg.number0": {
+			"fn": "math.avg",
+			"param": "number0",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple float",
+			"tvArgName": "number_0",
+			"agrees": false,
+			"probe": "probe_2 = math.avg(\"probe\")",
+			"status": "ok"
+		},
+		"math.avg.number1": {
+			"fn": "math.avg",
+			"param": "number1",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple float",
+			"tvArgName": "number_1",
+			"agrees": false,
+			"probe": "probe_3 = math.avg(1, \"probe\")",
+			"status": "ok"
+		},
+		"math.atan.angle": {
+			"fn": "math.atan",
+			"param": "angle",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple float",
+			"tvArgName": "angle",
+			"agrees": false,
+			"probe": "probe_2 = math.atan(angle = \"probe\")",
+			"status": "ok"
+		},
+		"math.ceil.number": {
+			"fn": "math.ceil",
+			"param": "number",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple int",
+			"tvArgName": "number",
+			"agrees": true,
+			"probe": "probe_2 = math.ceil(number = \"probe\")",
+			"status": "ok"
+		},
+		"math.exp.number": {
+			"fn": "math.exp",
+			"param": "number",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple float",
+			"tvArgName": "number",
+			"agrees": false,
+			"probe": "probe_2 = math.exp(number = \"probe\")",
+			"status": "ok"
+		},
+		"math.cos.angle": {
+			"fn": "math.cos",
+			"param": "angle",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple float",
+			"tvArgName": "angle",
+			"agrees": false,
+			"probe": "probe_2 = math.cos(angle = \"probe\")",
+			"status": "ok"
+		},
+		"math.floor.number": {
+			"fn": "math.floor",
+			"param": "number",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple int",
+			"tvArgName": "number",
+			"agrees": true,
+			"probe": "probe_2 = math.floor(number = \"probe\")",
+			"status": "ok"
+		},
+		"math.log10.number": {
+			"fn": "math.log10",
+			"param": "number",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple float",
+			"tvArgName": "number",
+			"agrees": false,
+			"probe": "probe_2 = math.log10(number = \"probe\")",
+			"status": "ok"
+		},
+		"math.log.number": {
+			"fn": "math.log",
+			"param": "number",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple float",
+			"tvArgName": "number",
+			"agrees": false,
+			"probe": "probe_2 = math.log(number = \"probe\")",
+			"status": "ok"
+		},
+		"math.max.number0": {
+			"fn": "math.max",
+			"param": "number0",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "const int",
+			"tvArgName": "number_0",
+			"agrees": false,
+			"probe": "probe_2 = math.max(\"probe\")",
+			"status": "ok"
+		},
+		"math.max.number1": {
+			"fn": "math.max",
+			"param": "number1",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "const int",
+			"tvArgName": "number_1",
+			"agrees": false,
+			"probe": "probe_3 = math.max(1, \"probe\")",
+			"status": "ok"
+		},
+		"math.min.number0": {
+			"fn": "math.min",
+			"param": "number0",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "const int",
+			"tvArgName": "number_0",
+			"agrees": false,
+			"probe": "probe_2 = math.min(\"probe\")",
+			"status": "ok"
+		},
+		"math.min.number1": {
+			"fn": "math.min",
+			"param": "number1",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "const int",
+			"tvArgName": "number_1",
+			"agrees": false,
+			"probe": "probe_3 = math.min(1, \"probe\")",
+			"status": "ok"
+		},
+		"math.pow.base": {
+			"fn": "math.pow",
+			"param": "base",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "const float",
+			"tvArgName": "base",
+			"agrees": false,
+			"probe": "probe_2 = math.pow(base = \"probe\", exponent = 1)",
+			"status": "ok"
+		},
+		"math.pow.exponent": {
+			"fn": "math.pow",
+			"param": "exponent",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "const float",
+			"tvArgName": "exponent",
+			"agrees": false,
+			"probe": "probe_3 = math.pow(1, exponent = \"probe\")",
+			"status": "ok"
+		},
+		"math.random.min": {
+			"fn": "math.random",
+			"param": "min",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "min",
+			"agrees": false,
+			"probe": "probe_2 = math.random(min = \"probe\")",
+			"status": "ok"
+		},
+		"math.random.max": {
+			"fn": "math.random",
+			"param": "max",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "max",
+			"agrees": false,
+			"probe": "probe_3 = math.random(max = \"probe\")",
+			"status": "ok"
+		},
+		"math.round.number": {
+			"fn": "math.round",
+			"param": "number",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple int",
+			"tvArgName": "number",
+			"agrees": true,
+			"probe": "probe_2 = math.round(number = \"probe\")",
+			"status": "ok"
+		},
+		"math.round_to_mintick.number": {
+			"fn": "math.round_to_mintick",
+			"param": "number",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple float",
+			"tvArgName": "number",
+			"agrees": false,
+			"probe": "probe_2 = math.round_to_mintick(number = \"probe\")",
+			"status": "ok"
+		},
+		"math.sign.number": {
+			"fn": "math.sign",
+			"param": "number",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple float",
+			"tvArgName": "number",
+			"agrees": false,
+			"probe": "probe_2 = math.sign(number = \"probe\")",
+			"status": "ok"
+		},
+		"math.sin.angle": {
+			"fn": "math.sin",
+			"param": "angle",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple float",
+			"tvArgName": "angle",
+			"agrees": false,
+			"probe": "probe_2 = math.sin(angle = \"probe\")",
+			"status": "ok"
+		},
+		"math.sqrt.number": {
+			"fn": "math.sqrt",
+			"param": "number",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple float",
+			"tvArgName": "number",
+			"agrees": false,
+			"probe": "probe_2 = math.sqrt(number = \"probe\")",
+			"status": "ok"
+		},
+		"math.sum.source": {
+			"fn": "math.sum",
+			"param": "source",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "source",
+			"agrees": false,
+			"probe": "probe_2 = math.sum(source = \"probe\", length = 1)",
+			"status": "ok"
+		},
+		"math.tan.angle": {
+			"fn": "math.tan",
+			"param": "angle",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple float",
+			"tvArgName": "angle",
+			"agrees": false,
+			"probe": "probe_2 = math.tan(angle = \"probe\")",
+			"status": "ok"
+		},
+		"math.toradians.degrees": {
+			"fn": "math.toradians",
+			"param": "degrees",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "degrees",
+			"agrees": false,
+			"probe": "probe_2 = math.toradians(degrees = \"probe\")",
+			"status": "ok"
+		},
+		"math.todegrees.radians": {
+			"fn": "math.todegrees",
+			"param": "radians",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "radians",
+			"agrees": false,
+			"probe": "probe_2 = math.todegrees(radians = \"probe\")",
+			"status": "ok"
+		},
+		"nz.source": {
+			"fn": "nz",
+			"param": "source",
+			"docType": "series int/float/color",
+			"members": [
+				"int",
+				"float",
+				"color"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple int",
+			"tvArgName": "source",
+			"agrees": true,
+			"probe": "probe_2 = nz(source = \"probe\")",
+			"status": "ok"
+		},
+		"nz.replacement": {
+			"fn": "nz",
+			"param": "replacement",
+			"docType": "series int/float/color",
+			"members": [
+				"int",
+				"float",
+				"color"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple int",
+			"tvArgName": "replacement",
+			"agrees": true,
+			"probe": "probe_3 = nz(1, replacement = \"probe\")",
+			"status": "ok"
+		},
+		"matrix.sort.sort_field": {
+			"fn": "matrix.sort",
+			"param": "sort_field",
+			"docType": "const int/string",
+			"members": [
+				"int",
+				"string"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "const int",
+			"tvArgName": "sort_field",
+			"agrees": false,
+			"probe": "probe_3 = matrix.sort(fx_mx, sort_field = true)",
+			"status": "ok"
+		},
+		"plot.series": {
+			"fn": "plot",
+			"param": "series",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "series",
+			"agrees": false,
+			"probe": "probe_2 = plot(series = \"probe\")",
+			"status": "ok"
+		},
+		"plot.histbase": {
+			"fn": "plot",
+			"param": "histbase",
+			"docType": "input int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "input float",
+			"tvArgName": "histbase",
+			"agrees": false,
+			"probe": "probe_3 = plot(1, histbase = \"probe\")",
+			"status": "ok"
+		},
+		"plotbar.open": {
+			"fn": "plotbar",
+			"param": "open",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "open",
+			"agrees": false,
+			"probe": "probe_2 = plotbar(open = \"probe\", high = 1, low = 1, close = 1)",
+			"status": "ok"
+		},
+		"plotbar.high": {
+			"fn": "plotbar",
+			"param": "high",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "high",
+			"agrees": false,
+			"probe": "probe_3 = plotbar(1, high = \"probe\", low = 1, close = 1)",
+			"status": "ok"
+		},
+		"plotbar.low": {
+			"fn": "plotbar",
+			"param": "low",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "low",
+			"agrees": false,
+			"probe": "probe_4 = plotbar(1, 1, low = \"probe\", close = 1)",
+			"status": "ok"
+		},
+		"plotbar.close": {
+			"fn": "plotbar",
+			"param": "close",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "close",
+			"agrees": false,
+			"probe": "probe_5 = plotbar(1, 1, 1, close = \"probe\")",
+			"status": "ok"
+		},
+		"plotarrow.series": {
+			"fn": "plotarrow",
+			"param": "series",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "series",
+			"agrees": false,
+			"probe": "probe_2 = plotarrow(series = \"probe\")",
+			"status": "ok"
+		},
+		"plotcandle.open": {
+			"fn": "plotcandle",
+			"param": "open",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "open",
+			"agrees": false,
+			"probe": "probe_2 = plotcandle(open = \"probe\", high = 1, low = 1, close = 1)",
+			"status": "ok"
+		},
+		"plotcandle.high": {
+			"fn": "plotcandle",
+			"param": "high",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "high",
+			"agrees": false,
+			"probe": "probe_3 = plotcandle(1, high = \"probe\", low = 1, close = 1)",
+			"status": "ok"
+		},
+		"plotcandle.low": {
+			"fn": "plotcandle",
+			"param": "low",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "low",
+			"agrees": false,
+			"probe": "probe_4 = plotcandle(1, 1, low = \"probe\", close = 1)",
+			"status": "ok"
+		},
+		"plotcandle.close": {
+			"fn": "plotcandle",
+			"param": "close",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "close",
+			"agrees": false,
+			"probe": "probe_5 = plotcandle(1, 1, 1, close = \"probe\")",
+			"status": "ok"
+		},
+		"plotchar.series": {
+			"fn": "plotchar",
+			"param": "series",
+			"docType": "series int/float/bool",
+			"members": [
+				"int",
+				"float",
+				"bool"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series bool",
+			"tvArgName": "series",
+			"agrees": false,
+			"probe": "probe_2 = plotchar(series = \"probe\")",
+			"status": "ok"
+		},
+		"plotshape.series": {
+			"fn": "plotshape",
+			"param": "series",
+			"docType": "series int/float/bool",
+			"members": [
+				"int",
+				"float",
+				"bool"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series bool",
+			"tvArgName": "series",
+			"agrees": false,
+			"probe": "probe_2 = plotshape(series = \"probe\")",
+			"status": "ok"
+		},
+		"request.footprint.va_percent": {
+			"fn": "request.footprint",
+			"param": "va_percent",
+			"docType": "simple int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple float",
+			"tvArgName": "va_percent",
+			"agrees": false,
+			"probe": "probe_2 = request.footprint(1, va_percent = \"probe\")",
+			"status": "ok"
+		},
+		"request.footprint.imbalance_percent": {
+			"fn": "request.footprint",
+			"param": "imbalance_percent",
+			"docType": "simple int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple float",
+			"tvArgName": "imbalance_percent",
+			"agrees": false,
+			"probe": "probe_3 = request.footprint(1, imbalance_percent = \"probe\")",
+			"status": "ok"
+		},
+		"strategy.close.qty": {
+			"fn": "strategy.close",
+			"param": "qty",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "qty",
+			"agrees": false,
+			"probe": "probe_2 = strategy.close(\"x\", qty = \"probe\")",
+			"status": "ok"
+		},
+		"strategy.close.qty_percent": {
+			"fn": "strategy.close",
+			"param": "qty_percent",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "qty_percent",
+			"agrees": false,
+			"probe": "probe_3 = strategy.close(\"x\", qty_percent = \"probe\")",
+			"status": "ok"
+		},
+		"strategy.default_qty_value": {
+			"fn": "strategy",
+			"param": "default_qty_value",
+			"docType": "const int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "const float",
+			"tvArgName": "default_qty_value",
+			"agrees": false,
+			"probe": "probe_2 = strategy(\"x\", default_qty_value = \"probe\")",
+			"status": "ok"
+		},
+		"strategy.initial_capital": {
+			"fn": "strategy",
+			"param": "initial_capital",
+			"docType": "const int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "const float",
+			"tvArgName": "initial_capital",
+			"agrees": false,
+			"probe": "probe_3 = strategy(\"x\", initial_capital = \"probe\")",
+			"status": "ok"
+		},
+		"strategy.commission_value": {
+			"fn": "strategy",
+			"param": "commission_value",
+			"docType": "const int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "const float",
+			"tvArgName": "commission_value",
+			"agrees": false,
+			"probe": "probe_4 = strategy(\"x\", commission_value = \"probe\")",
+			"status": "ok"
+		},
+		"strategy.margin_long": {
+			"fn": "strategy",
+			"param": "margin_long",
+			"docType": "const int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "const float",
+			"tvArgName": "margin_long",
+			"agrees": false,
+			"probe": "probe_5 = strategy(\"x\", margin_long = \"probe\")",
+			"status": "ok"
+		},
+		"strategy.margin_short": {
+			"fn": "strategy",
+			"param": "margin_short",
+			"docType": "const int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "const float",
+			"tvArgName": "margin_short",
+			"agrees": false,
+			"probe": "probe_6 = strategy(\"x\", margin_short = \"probe\")",
+			"status": "ok"
+		},
+		"strategy.risk_free_rate": {
+			"fn": "strategy",
+			"param": "risk_free_rate",
+			"docType": "const int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "const float",
+			"tvArgName": "risk_free_rate",
+			"agrees": false,
+			"probe": "probe_7 = strategy(\"x\", risk_free_rate = \"probe\")",
+			"status": "ok"
+		},
+		"strategy.convert_to_account.value": {
+			"fn": "strategy.convert_to_account",
+			"param": "value",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "value",
+			"agrees": false,
+			"probe": "probe_2 = strategy.convert_to_account(value = \"probe\")",
+			"status": "ok"
+		},
+		"strategy.default_entry_qty.fill_price": {
+			"fn": "strategy.default_entry_qty",
+			"param": "fill_price",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "fill_price",
+			"agrees": false,
+			"probe": "probe_2 = strategy.default_entry_qty(fill_price = \"probe\")",
+			"status": "ok"
+		},
+		"strategy.convert_to_symbol.value": {
+			"fn": "strategy.convert_to_symbol",
+			"param": "value",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "value",
+			"agrees": false,
+			"probe": "probe_2 = strategy.convert_to_symbol(value = \"probe\")",
+			"status": "ok"
+		},
+		"strategy.exit.qty": {
+			"fn": "strategy.exit",
+			"param": "qty",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "qty",
+			"agrees": false,
+			"probe": "probe_2 = strategy.exit(\"x\", qty = \"probe\")",
+			"status": "ok"
+		},
+		"strategy.exit.qty_percent": {
+			"fn": "strategy.exit",
+			"param": "qty_percent",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "qty_percent",
+			"agrees": false,
+			"probe": "probe_3 = strategy.exit(\"x\", qty_percent = \"probe\")",
+			"status": "ok"
+		},
+		"strategy.exit.profit": {
+			"fn": "strategy.exit",
+			"param": "profit",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "profit",
+			"agrees": false,
+			"probe": "probe_4 = strategy.exit(\"x\", profit = \"probe\")",
+			"status": "ok"
+		},
+		"strategy.exit.limit": {
+			"fn": "strategy.exit",
+			"param": "limit",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "limit",
+			"agrees": false,
+			"probe": "probe_5 = strategy.exit(\"x\", limit = \"probe\")",
+			"status": "ok"
+		},
+		"strategy.exit.loss": {
+			"fn": "strategy.exit",
+			"param": "loss",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "loss",
+			"agrees": false,
+			"probe": "probe_6 = strategy.exit(\"x\", loss = \"probe\")",
+			"status": "ok"
+		},
+		"strategy.exit.stop": {
+			"fn": "strategy.exit",
+			"param": "stop",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "stop",
+			"agrees": false,
+			"probe": "probe_7 = strategy.exit(\"x\", stop = \"probe\")",
+			"status": "ok"
+		},
+		"strategy.exit.trail_price": {
+			"fn": "strategy.exit",
+			"param": "trail_price",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "trail_price",
+			"agrees": false,
+			"probe": "probe_8 = strategy.exit(\"x\", trail_price = \"probe\")",
+			"status": "ok"
+		},
+		"strategy.exit.trail_points": {
+			"fn": "strategy.exit",
+			"param": "trail_points",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "trail_points",
+			"agrees": false,
+			"probe": "probe_9 = strategy.exit(\"x\", trail_points = \"probe\")",
+			"status": "ok"
+		},
+		"strategy.exit.trail_offset": {
+			"fn": "strategy.exit",
+			"param": "trail_offset",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "trail_offset",
+			"agrees": false,
+			"probe": "probe_10 = strategy.exit(\"x\", trail_offset = \"probe\")",
+			"status": "ok"
+		},
+		"strategy.entry.qty": {
+			"fn": "strategy.entry",
+			"param": "qty",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "qty",
+			"agrees": false,
+			"probe": "probe_2 = strategy.entry(\"x\", strategy.long, qty = \"probe\")",
+			"status": "ok"
+		},
+		"strategy.entry.limit": {
+			"fn": "strategy.entry",
+			"param": "limit",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "limit",
+			"agrees": false,
+			"probe": "probe_3 = strategy.entry(\"x\", strategy.long, limit = \"probe\")",
+			"status": "ok"
+		},
+		"strategy.entry.stop": {
+			"fn": "strategy.entry",
+			"param": "stop",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "stop",
+			"agrees": false,
+			"probe": "probe_4 = strategy.entry(\"x\", strategy.long, stop = \"probe\")",
+			"status": "ok"
+		},
+		"strategy.order.qty": {
+			"fn": "strategy.order",
+			"param": "qty",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "qty",
+			"agrees": false,
+			"probe": "probe_2 = strategy.order(\"x\", strategy.long, qty = \"probe\")",
+			"status": "ok"
+		},
+		"strategy.order.limit": {
+			"fn": "strategy.order",
+			"param": "limit",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "limit",
+			"agrees": false,
+			"probe": "probe_3 = strategy.order(\"x\", strategy.long, limit = \"probe\")",
+			"status": "ok"
+		},
+		"strategy.order.stop": {
+			"fn": "strategy.order",
+			"param": "stop",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "stop",
+			"agrees": false,
+			"probe": "probe_4 = strategy.order(\"x\", strategy.long, stop = \"probe\")",
+			"status": "ok"
+		},
+		"strategy.risk.max_position_size.contracts": {
+			"fn": "strategy.risk.max_position_size",
+			"param": "contracts",
+			"docType": "simple int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple float",
+			"tvArgName": "contracts",
+			"agrees": false,
+			"probe": "probe_2 = strategy.risk.max_position_size(contracts = \"probe\")",
+			"status": "ok"
+		},
+		"strategy.risk.max_intraday_loss.value": {
+			"fn": "strategy.risk.max_intraday_loss",
+			"param": "value",
+			"docType": "simple int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple float",
+			"tvArgName": "value",
+			"agrees": false,
+			"probe": "probe_2 = strategy.risk.max_intraday_loss(value = \"probe\", type = \"x\")",
+			"status": "ok"
+		},
+		"strategy.risk.max_drawdown.value": {
+			"fn": "strategy.risk.max_drawdown",
+			"param": "value",
+			"docType": "simple int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple float",
+			"tvArgName": "value",
+			"agrees": false,
+			"probe": "probe_2 = strategy.risk.max_drawdown(value = \"probe\", type = \"x\")",
+			"status": "ok"
+		},
+		"ta.alma.series": {
+			"fn": "ta.alma",
+			"param": "series",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "series",
+			"agrees": false,
+			"probe": "probe_2 = ta.alma(series = \"probe\", length = 1, offset = 1, sigma = 1)",
+			"status": "ok"
+		},
+		"ta.alma.offset": {
+			"fn": "ta.alma",
+			"param": "offset",
+			"docType": "simple int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple float",
+			"tvArgName": "offset",
+			"agrees": false,
+			"probe": "probe_3 = ta.alma(1, 1, offset = \"probe\", sigma = 1)",
+			"status": "ok"
+		},
+		"ta.alma.sigma": {
+			"fn": "ta.alma",
+			"param": "sigma",
+			"docType": "simple int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple float",
+			"tvArgName": "sigma",
+			"agrees": false,
+			"probe": "probe_4 = ta.alma(1, 1, 1, sigma = \"probe\")",
+			"status": "ok"
+		},
+		"ta.bb.series": {
+			"fn": "ta.bb",
+			"param": "series",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "series",
+			"agrees": false,
+			"probe": "probe_2 = ta.bb(series = \"probe\", length = 1, mult = 1)",
+			"status": "ok"
+		},
+		"ta.bb.mult": {
+			"fn": "ta.bb",
+			"param": "mult",
+			"docType": "simple int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple float",
+			"tvArgName": "mult",
+			"agrees": false,
+			"probe": "probe_3 = ta.bb(1, 1, mult = \"probe\")",
+			"status": "ok"
+		},
+		"ta.change.source": {
+			"fn": "ta.change",
+			"param": "source",
+			"docType": "series int/float/bool",
+			"members": [
+				"int",
+				"float",
+				"bool"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "source",
+			"agrees": false,
+			"probe": "probe_2 = ta.change(source = \"probe\")",
+			"status": "ok"
+		},
+		"ta.bbw.series": {
+			"fn": "ta.bbw",
+			"param": "series",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "series",
+			"agrees": false,
+			"probe": "probe_2 = ta.bbw(series = \"probe\", length = 1, mult = 1)",
+			"status": "ok"
+		},
+		"ta.bbw.mult": {
+			"fn": "ta.bbw",
+			"param": "mult",
+			"docType": "simple int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple float",
+			"tvArgName": "mult",
+			"agrees": false,
+			"probe": "probe_3 = ta.bbw(1, 1, mult = \"probe\")",
+			"status": "ok"
+		},
+		"ta.cci.source": {
+			"fn": "ta.cci",
+			"param": "source",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "source",
+			"agrees": false,
+			"probe": "probe_2 = ta.cci(source = \"probe\", length = 1)",
+			"status": "ok"
+		},
+		"ta.cmo.series": {
+			"fn": "ta.cmo",
+			"param": "series",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "series",
+			"agrees": false,
+			"probe": "probe_2 = ta.cmo(series = \"probe\", length = 1)",
+			"status": "ok"
+		},
+		"ta.correlation.source1": {
+			"fn": "ta.correlation",
+			"param": "source1",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "source1",
+			"agrees": false,
+			"probe": "probe_2 = ta.correlation(source1 = \"probe\", source2 = 1, length = 1)",
+			"status": "ok"
+		},
+		"ta.correlation.source2": {
+			"fn": "ta.correlation",
+			"param": "source2",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "source2",
+			"agrees": false,
+			"probe": "probe_3 = ta.correlation(1, source2 = \"probe\", length = 1)",
+			"status": "ok"
+		},
+		"ta.cross.source1": {
+			"fn": "ta.cross",
+			"param": "source1",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "source1",
+			"agrees": false,
+			"probe": "probe_2 = ta.cross(source1 = \"probe\", source2 = 1)",
+			"status": "ok"
+		},
+		"ta.cross.source2": {
+			"fn": "ta.cross",
+			"param": "source2",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "source2",
+			"agrees": false,
+			"probe": "probe_3 = ta.cross(1, source2 = \"probe\")",
+			"status": "ok"
+		},
+		"ta.cog.source": {
+			"fn": "ta.cog",
+			"param": "source",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "source",
+			"agrees": false,
+			"probe": "probe_2 = ta.cog(source = \"probe\", length = 1)",
+			"status": "ok"
+		},
+		"ta.crossover.source1": {
+			"fn": "ta.crossover",
+			"param": "source1",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "source1",
+			"agrees": false,
+			"probe": "probe_2 = ta.crossover(source1 = \"probe\", source2 = 1)",
+			"status": "ok"
+		},
+		"ta.crossover.source2": {
+			"fn": "ta.crossover",
+			"param": "source2",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "source2",
+			"agrees": false,
+			"probe": "probe_3 = ta.crossover(1, source2 = \"probe\")",
+			"status": "ok"
+		},
+		"ta.crossunder.source1": {
+			"fn": "ta.crossunder",
+			"param": "source1",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "source1",
+			"agrees": false,
+			"probe": "probe_2 = ta.crossunder(source1 = \"probe\", source2 = 1)",
+			"status": "ok"
+		},
+		"ta.crossunder.source2": {
+			"fn": "ta.crossunder",
+			"param": "source2",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "source2",
+			"agrees": false,
+			"probe": "probe_3 = ta.crossunder(1, source2 = \"probe\")",
+			"status": "ok"
+		},
+		"ta.dev.source": {
+			"fn": "ta.dev",
+			"param": "source",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "source",
+			"agrees": false,
+			"probe": "probe_2 = ta.dev(source = \"probe\", length = 1)",
+			"status": "ok"
+		},
+		"ta.cum.source": {
+			"fn": "ta.cum",
+			"param": "source",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "source",
+			"agrees": false,
+			"probe": "probe_2 = ta.cum(source = \"probe\")",
+			"status": "ok"
+		},
+		"ta.ema.source": {
+			"fn": "ta.ema",
+			"param": "source",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "source",
+			"agrees": false,
+			"probe": "probe_2 = ta.ema(source = \"probe\", length = 1)",
+			"status": "ok"
+		},
+		"ta.falling.source": {
+			"fn": "ta.falling",
+			"param": "source",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "source",
+			"agrees": false,
+			"probe": "probe_2 = ta.falling(source = \"probe\", length = 1)",
+			"status": "ok"
+		},
+		"ta.highest.source": {
+			"fn": "ta.highest",
+			"param": "source",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "source",
+			"agrees": false,
+			"probe": "probe_2 = ta.highest(source = \"probe\", length = 1)",
+			"status": "ok"
+		},
+		"ta.highestbars.source": {
+			"fn": "ta.highestbars",
+			"param": "source",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "source",
+			"agrees": false,
+			"probe": "probe_2 = ta.highestbars(source = \"probe\", length = 1)",
+			"status": "ok"
+		},
+		"ta.hma.source": {
+			"fn": "ta.hma",
+			"param": "source",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "source",
+			"agrees": false,
+			"probe": "probe_2 = ta.hma(source = \"probe\", length = 1)",
+			"status": "ok"
+		},
+		"ta.kc.series": {
+			"fn": "ta.kc",
+			"param": "series",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "series",
+			"agrees": false,
+			"probe": "probe_2 = ta.kc(series = \"probe\", length = 1, mult = 1)",
+			"status": "ok"
+		},
+		"ta.kc.mult": {
+			"fn": "ta.kc",
+			"param": "mult",
+			"docType": "simple int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple float",
+			"tvArgName": "mult",
+			"agrees": false,
+			"probe": "probe_3 = ta.kc(1, 1, mult = \"probe\")",
+			"status": "ok"
+		},
+		"ta.lowest.source": {
+			"fn": "ta.lowest",
+			"param": "source",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "source",
+			"agrees": false,
+			"probe": "probe_2 = ta.lowest(source = \"probe\", length = 1)",
+			"status": "ok"
+		},
+		"ta.kcw.series": {
+			"fn": "ta.kcw",
+			"param": "series",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "series",
+			"agrees": false,
+			"probe": "probe_2 = ta.kcw(series = \"probe\", length = 1, mult = 1)",
+			"status": "ok"
+		},
+		"ta.kcw.mult": {
+			"fn": "ta.kcw",
+			"param": "mult",
+			"docType": "simple int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple float",
+			"tvArgName": "mult",
+			"agrees": false,
+			"probe": "probe_3 = ta.kcw(1, 1, mult = \"probe\")",
+			"status": "ok"
+		},
+		"ta.linreg.source": {
+			"fn": "ta.linreg",
+			"param": "source",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "source",
+			"agrees": false,
+			"probe": "probe_2 = ta.linreg(source = \"probe\", length = 1, offset = 1)",
+			"status": "ok"
+		},
+		"ta.lowestbars.source": {
+			"fn": "ta.lowestbars",
+			"param": "source",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "source",
+			"agrees": false,
+			"probe": "probe_2 = ta.lowestbars(source = \"probe\", length = 1)",
+			"status": "ok"
+		},
+		"ta.macd.source": {
+			"fn": "ta.macd",
+			"param": "source",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "source",
+			"agrees": false,
+			"probe": "probe_2 = ta.macd(source = \"probe\", fastlen = 1, slowlen = 1, siglen = 1)",
+			"status": "ok"
+		},
+		"ta.median.source": {
+			"fn": "ta.median",
+			"param": "source",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "source",
+			"agrees": false,
+			"probe": "probe_2 = ta.median(source = \"probe\", length = 1)",
+			"status": "ok"
+		},
+		"ta.max.source": {
+			"fn": "ta.max",
+			"param": "source",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "source",
+			"agrees": false,
+			"probe": "probe_2 = ta.max(source = \"probe\")",
+			"status": "ok"
+		},
+		"ta.mfi.series": {
+			"fn": "ta.mfi",
+			"param": "series",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "series",
+			"agrees": false,
+			"probe": "probe_2 = ta.mfi(series = \"probe\", length = 1)",
+			"status": "ok"
+		},
+		"ta.min.source": {
+			"fn": "ta.min",
+			"param": "source",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "source",
+			"agrees": false,
+			"probe": "probe_2 = ta.min(source = \"probe\")",
+			"status": "ok"
+		},
+		"ta.mode.source": {
+			"fn": "ta.mode",
+			"param": "source",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "source",
+			"agrees": false,
+			"probe": "probe_2 = ta.mode(source = \"probe\", length = 1)",
+			"status": "ok"
+		},
+		"ta.mom.source": {
+			"fn": "ta.mom",
+			"param": "source",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "source",
+			"agrees": false,
+			"probe": "probe_2 = ta.mom(source = \"probe\", length = 1)",
+			"status": "ok"
+		},
+		"ta.percentile_linear_interpolation.source": {
+			"fn": "ta.percentile_linear_interpolation",
+			"param": "source",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "source",
+			"agrees": false,
+			"probe": "probe_2 = ta.percentile_linear_interpolation(source = \"probe\", length = 1, percentage = 1)",
+			"status": "ok"
+		},
+		"ta.percentile_linear_interpolation.percentage": {
+			"fn": "ta.percentile_linear_interpolation",
+			"param": "percentage",
+			"docType": "simple int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple float",
+			"tvArgName": "percentage",
+			"agrees": false,
+			"probe": "probe_3 = ta.percentile_linear_interpolation(1, 1, percentage = \"probe\")",
+			"status": "ok"
+		},
+		"ta.percentile_nearest_rank.source": {
+			"fn": "ta.percentile_nearest_rank",
+			"param": "source",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "source",
+			"agrees": false,
+			"probe": "probe_2 = ta.percentile_nearest_rank(source = \"probe\", length = 1, percentage = 1)",
+			"status": "ok"
+		},
+		"ta.percentile_nearest_rank.percentage": {
+			"fn": "ta.percentile_nearest_rank",
+			"param": "percentage",
+			"docType": "simple int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple float",
+			"tvArgName": "percentage",
+			"agrees": false,
+			"probe": "probe_3 = ta.percentile_nearest_rank(1, 1, percentage = \"probe\")",
+			"status": "ok"
+		},
+		"ta.pivothigh.leftbars": {
+			"fn": "ta.pivothigh",
+			"param": "leftbars",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "leftbars",
+			"agrees": false,
+			"probe": "probe_2 = ta.pivothigh(leftbars = \"probe\", rightbars = 1)",
+			"status": "ok"
+		},
+		"ta.pivothigh.rightbars": {
+			"fn": "ta.pivothigh",
+			"param": "rightbars",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "rightbars",
+			"agrees": false,
+			"probe": "probe_3 = ta.pivothigh(1, rightbars = \"probe\")",
+			"status": "ok"
+		},
+		"ta.pivotlow.leftbars": {
+			"fn": "ta.pivotlow",
+			"param": "leftbars",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "leftbars",
+			"agrees": false,
+			"probe": "probe_2 = ta.pivotlow(leftbars = \"probe\", rightbars = 1)",
+			"status": "ok"
+		},
+		"ta.pivotlow.rightbars": {
+			"fn": "ta.pivotlow",
+			"param": "rightbars",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "rightbars",
+			"agrees": false,
+			"probe": "probe_3 = ta.pivotlow(1, rightbars = \"probe\")",
+			"status": "ok"
+		},
+		"ta.percentrank.source": {
+			"fn": "ta.percentrank",
+			"param": "source",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "source",
+			"agrees": false,
+			"probe": "probe_2 = ta.percentrank(source = \"probe\", length = 1)",
+			"status": "ok"
+		},
+		"ta.rci.source": {
+			"fn": "ta.rci",
+			"param": "source",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "source",
+			"agrees": false,
+			"probe": "probe_2 = ta.rci(source = \"probe\", length = 1)",
+			"status": "ok"
+		},
+		"ta.rising.source": {
+			"fn": "ta.rising",
+			"param": "source",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "source",
+			"agrees": false,
+			"probe": "probe_2 = ta.rising(source = \"probe\", length = 1)",
+			"status": "ok"
+		},
+		"ta.range.source": {
+			"fn": "ta.range",
+			"param": "source",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "source",
+			"agrees": false,
+			"probe": "probe_2 = ta.range(source = \"probe\", length = 1)",
+			"status": "ok"
+		},
+		"ta.rma.source": {
+			"fn": "ta.rma",
+			"param": "source",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "source",
+			"agrees": false,
+			"probe": "probe_2 = ta.rma(source = \"probe\", length = 1)",
+			"status": "ok"
+		},
+		"ta.rsi.source": {
+			"fn": "ta.rsi",
+			"param": "source",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "source",
+			"agrees": false,
+			"probe": "probe_2 = ta.rsi(source = \"probe\", length = 1)",
+			"status": "ok"
+		},
+		"ta.sar.start": {
+			"fn": "ta.sar",
+			"param": "start",
+			"docType": "simple int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple float",
+			"tvArgName": "start",
+			"agrees": false,
+			"probe": "probe_2 = ta.sar(start = \"probe\", inc = 1, max = 1)",
+			"status": "ok"
+		},
+		"ta.sar.inc": {
+			"fn": "ta.sar",
+			"param": "inc",
+			"docType": "simple int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple float",
+			"tvArgName": "inc",
+			"agrees": false,
+			"probe": "probe_3 = ta.sar(1, inc = \"probe\", max = 1)",
+			"status": "ok"
+		},
+		"ta.sar.max": {
+			"fn": "ta.sar",
+			"param": "max",
+			"docType": "simple int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple float",
+			"tvArgName": "max",
+			"agrees": false,
+			"probe": "probe_4 = ta.sar(1, 1, max = \"probe\")",
+			"status": "ok"
+		},
+		"ta.roc.source": {
+			"fn": "ta.roc",
+			"param": "source",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "source",
+			"agrees": false,
+			"probe": "probe_2 = ta.roc(source = \"probe\", length = 1)",
+			"status": "ok"
+		},
+		"ta.sma.source": {
+			"fn": "ta.sma",
+			"param": "source",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "source",
+			"agrees": false,
+			"probe": "probe_2 = ta.sma(source = \"probe\", length = 1)",
+			"status": "ok"
+		},
+		"ta.stdev.source": {
+			"fn": "ta.stdev",
+			"param": "source",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "source",
+			"agrees": false,
+			"probe": "probe_2 = ta.stdev(source = \"probe\", length = 1)",
+			"status": "ok"
+		},
+		"ta.swma.source": {
+			"fn": "ta.swma",
+			"param": "source",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "source",
+			"agrees": false,
+			"probe": "probe_2 = ta.swma(source = \"probe\")",
+			"status": "ok"
+		},
+		"ta.supertrend.factor": {
+			"fn": "ta.supertrend",
+			"param": "factor",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "factor",
+			"agrees": false,
+			"probe": "probe_2 = ta.supertrend(factor = \"probe\", atrPeriod = 1)",
+			"status": "ok"
+		},
+		"ta.stoch.source": {
+			"fn": "ta.stoch",
+			"param": "source",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "source",
+			"agrees": false,
+			"probe": "probe_2 = ta.stoch(source = \"probe\", high = 1, low = 1, length = 1)",
+			"status": "ok"
+		},
+		"ta.stoch.high": {
+			"fn": "ta.stoch",
+			"param": "high",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "high",
+			"agrees": false,
+			"probe": "probe_3 = ta.stoch(1, high = \"probe\", low = 1, length = 1)",
+			"status": "ok"
+		},
+		"ta.stoch.low": {
+			"fn": "ta.stoch",
+			"param": "low",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "low",
+			"agrees": false,
+			"probe": "probe_4 = ta.stoch(1, 1, low = \"probe\", length = 1)",
+			"status": "ok"
+		},
+		"ta.tsi.source": {
+			"fn": "ta.tsi",
+			"param": "source",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "source",
+			"agrees": false,
+			"probe": "probe_2 = ta.tsi(source = \"probe\", short_length = 1, long_length = 1)",
+			"status": "ok"
+		},
+		"ta.valuewhen.source": {
+			"fn": "ta.valuewhen",
+			"param": "source",
+			"docType": "series int/float/bool/color",
+			"members": [
+				"int",
+				"float",
+				"bool",
+				"color"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "source",
+			"agrees": false,
+			"probe": "probe_2 = ta.valuewhen(true, source = \"probe\", occurrence = 1)",
+			"status": "ok"
+		},
+		"ta.vwap.source": {
+			"fn": "ta.vwap",
+			"param": "source",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "source",
+			"agrees": false,
+			"probe": "probe_2 = ta.vwap(source = \"probe\")",
+			"status": "ok"
+		},
+		"ta.vwap.stdev_mult": {
+			"fn": "ta.vwap",
+			"param": "stdev_mult",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "stdev_mult",
+			"agrees": false,
+			"probe": "probe_3 = ta.vwap(1, stdev_mult = \"probe\")",
+			"status": "ok"
+		},
+		"ta.variance.source": {
+			"fn": "ta.variance",
+			"param": "source",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "source",
+			"agrees": false,
+			"probe": "probe_2 = ta.variance(source = \"probe\", length = 1)",
+			"status": "ok"
+		},
+		"ta.wma.source": {
+			"fn": "ta.wma",
+			"param": "source",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "source",
+			"agrees": false,
+			"probe": "probe_2 = ta.wma(source = \"probe\", length = 1)",
+			"status": "ok"
+		},
+		"ta.vwma.source": {
+			"fn": "ta.vwma",
+			"param": "source",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "source",
+			"agrees": false,
+			"probe": "probe_2 = ta.vwma(source = \"probe\", length = 1)",
+			"status": "ok"
+		},
+		"table.cell.width": {
+			"fn": "table.cell",
+			"param": "width",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series int",
+			"tvArgName": "width",
+			"agrees": false,
+			"probe": "probe_3 = table.cell(fx_tbl, 1, 1, width = \"probe\")",
+			"status": "ok"
+		},
+		"table.cell.height": {
+			"fn": "table.cell",
+			"param": "height",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series int",
+			"tvArgName": "height",
+			"agrees": false,
+			"probe": "probe_4 = table.cell(fx_tbl, 1, 1, height = \"probe\")",
+			"status": "ok"
+		},
+		"table.cell.text_size": {
+			"fn": "table.cell",
+			"param": "text_size",
+			"docType": "series int/string",
+			"members": [
+				"int",
+				"string"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series string",
+			"tvArgName": "text_size",
+			"agrees": false,
+			"probe": "probe_5 = table.cell(fx_tbl, 1, 1, text_size = true)",
+			"status": "ok"
+		},
+		"table.cell_set_height.height": {
+			"fn": "table.cell_set_height",
+			"param": "height",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series int",
+			"tvArgName": "height",
+			"agrees": false,
+			"probe": "probe_3 = table.cell_set_height(fx_tbl, 1, 1, height = \"probe\")",
+			"status": "ok"
+		},
+		"table.cell_set_text_size.text_size": {
+			"fn": "table.cell_set_text_size",
+			"param": "text_size",
+			"docType": "series int/string",
+			"members": [
+				"int",
+				"string"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series string",
+			"tvArgName": "text_size",
+			"agrees": false,
+			"probe": "probe_3 = table.cell_set_text_size(fx_tbl, 1, 1, text_size = true)",
+			"status": "ok"
+		},
+		"table.cell_set_width.width": {
+			"fn": "table.cell_set_width",
+			"param": "width",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series int",
+			"tvArgName": "width",
+			"agrees": false,
+			"probe": "probe_3 = table.cell_set_width(fx_tbl, 1, 1, width = \"probe\")",
+			"status": "ok"
+		},
+		"ticker.kagi.reversal": {
+			"fn": "ticker.kagi",
+			"param": "reversal",
+			"docType": "simple int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple float",
+			"tvArgName": "reversal",
+			"agrees": false,
+			"probe": "probe_2 = ticker.kagi(\"x\", reversal = \"probe\")",
+			"status": "ok"
+		},
+		"ticker.pointfigure.param": {
+			"fn": "ticker.pointfigure",
+			"param": "param",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple float",
+			"tvArgName": "param",
+			"agrees": false,
+			"probe": "probe_2 = ticker.pointfigure(\"x\", hl, ATR, param = \"probe\", reversal = 1)",
+			"status": "ok"
+		},
+		"ticker.renko.param": {
+			"fn": "ticker.renko",
+			"param": "param",
+			"docType": "series int/float",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple float",
+			"tvArgName": "param",
+			"agrees": false,
+			"probe": "probe_2 = ticker.renko(\"x\", ATR, param = \"probe\")",
+			"status": "ok"
+		}
+	}
+}
