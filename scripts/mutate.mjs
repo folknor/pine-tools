@@ -53,6 +53,19 @@ const KNOWN_NAMES = new Set([
 	...CONSTANTS.map((c) => c.name),
 ]);
 
+// Dotted catalog CONSTANTS and VARIABLES that are NOT also functions - the
+// members TradingView rejects when called (`color.red(1)`, `math.pi(2)`,
+// `syminfo.tickerid(3)`). The exclusion is the whole point: `ta.tr` is a
+// variable AND a function (`ta.tr(handle_na)`), so calling it is a VALID call
+// and mutating it would produce a mutant TV accepts - a wasted probe, and the
+// exact confusion that kept INV170's gap hidden behind a "murky
+// const-vs-variable split" that never existed. see INV170
+const NON_FUNCTION_MEMBERS = new Set(
+	[...CONSTANTS.map((c) => c.name), ...VARIABLES.map((v) => v.name)].filter(
+		(n) => n.includes(".") && !FN_BY_NAME.has(n),
+	),
+);
+
 // Every dotted catalog name's prefix - `extend` (from `extend.none`), `color`,
 // `math`, `ta`, ... Derived from the data rather than listed here so it tracks
 // the catalog. Used by delete-decl to tell a shadowing declaration apart from a
@@ -312,6 +325,104 @@ export const OPERATORS = {
 							splice(source, from, from + arg.nameTok.value.length, typo),
 					});
 				}
+			}
+			return sites;
+		},
+	},
+
+	// Name the FIRST positional argument of an all-positional call, so the
+	// second positional argument now follows a named one. TV rejects that
+	// ordering outright (CE10157) for builtins and user functions alike.
+	//
+	// The variadic guard is load-bearing rather than tidiness: TV refuses
+	// keyword arguments on a variadic function with CE10119 ("Functions that
+	// accept a variable number of arguments cannot accept keyword arguments"),
+	// so a math.max mutant would be rejected for the WRONG reason and count as
+	// killed while proving nothing about the ordering rule. Measured in INV171,
+	// which hit exactly that on math.max/min/avg.
+	//
+	// Overloaded functions are skipped for the usual reason: the
+	// positional-to-parameter mapping is ambiguous across signatures, so the
+	// name we would splice in may not be the parameter that position fills.
+	// see INV169
+	"positional-after-named": {
+		expectedClass: "CE10157",
+		describe: "name the first argument so a later positional one follows it",
+		findSites(ctx) {
+			const sites = [];
+			for (const call of findCalls(ctx)) {
+				const fn = FN_BY_NAME.get(call.name);
+				if (!fn) continue;
+				if ((fn.overloads ?? []).length > 0) continue;
+				if (fn.flags?.variadic) continue;
+				// Need at least two arguments and none already named, so the
+				// mutation introduces the ordering violation rather than
+				// depending on one the source already had.
+				if (call.args.length < 2) continue;
+				if (call.args.some((a) => a.named)) continue;
+				const paramName = fn.parameters?.[0]?.name;
+				if (!paramName) continue;
+				const { tokens, offsetOf, source } = ctx;
+				const first = tokens[call.args[0].start];
+				const from = offsetOf(first);
+				sites.push({
+					line: first.line,
+					col: first.column,
+					desc: `${call.name}(${paramName} = ... , <positional>) - positional after named`,
+					apply: () => splice(source, from, from, `${paramName} = `),
+				});
+			}
+			return sites;
+		},
+	},
+
+	// Call a builtin namespaced CONSTANT or VARIABLE as if it were a function
+	// (`color.red` -> `color.red(1)`). TV answers CE10271 "Could not find
+	// function or function reference", because the predicate is simply whether
+	// a FUNCTION of that name exists - which is why a member that is also a
+	// function (ta.tr, both a variable and ta.tr(handle_na)) must be excluded
+	// rather than mutated into a valid call. see INV170
+	"member-called-as-function": {
+		expectedClass: "CE10271",
+		describe: "call a builtin namespaced constant or variable as a function",
+		findSites(ctx) {
+			const sites = [];
+			const { tokens, offsetOf, source } = ctx;
+			for (let i = 0; i < tokens.length; i++) {
+				// A chain may START at a KEYWORD, not just an IDENTIFIER: the
+				// namespaces that are also TYPE names - color, line, label, box,
+				// table - lex as KEYWORD, and they hold most of the interesting
+				// constants (`color.red`). Requiring IDENTIFIER here silently
+				// skipped every `color.*` site, which is the whole point of the
+				// operator.
+				const startsChain =
+					tokens[i].type === "IDENTIFIER" || tokens[i].type === "KEYWORD";
+				if (!startsChain) continue;
+				if (tokens[i - 1]?.type === "DOT") continue; // don't start mid-chain
+				let j = i;
+				const chain = [tokens[i]];
+				while (
+					tokens[j + 1]?.type === "DOT" &&
+					(tokens[j + 2]?.type === "IDENTIFIER" ||
+						tokens[j + 2]?.type === "KEYWORD")
+				) {
+					chain.push(tokens[j + 2]);
+					j += 2;
+				}
+				if (chain.length < 2) continue;
+				const name = chain.map((t) => t.value).join(".");
+				if (!NON_FUNCTION_MEMBERS.has(name)) continue;
+				// Already a call, or being assigned to - leave it alone.
+				if (tokens[j + 1]?.type === "LPAREN") continue;
+				if (tokens[j + 1]?.type === "ASSIGN") continue;
+				const last = chain[chain.length - 1];
+				const end = offsetOf(last) + last.value.length;
+				sites.push({
+					line: last.line,
+					col: last.column,
+					desc: `${name} -> ${name}(1)`,
+					apply: () => splice(source, end, end, "(1)"),
+				});
 			}
 			return sites;
 		},

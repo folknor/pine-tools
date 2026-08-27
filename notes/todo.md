@@ -175,6 +175,80 @@ IDs so the two stay in sync.
   them. When a rule's shapes are absent from the corpus, the corpus gate is not
   evidence and the probe is the whole verification.
 
+- **#83 - UDF parameter DEFAULTS are never checked. Two missing error classes,
+  found 2026-08-27 by the new `member-called-as-function` mutation operator on
+  its first run** - the mutant spliced `text.align_right(1)` into a function
+  signature's default rather than a call argument, and we accepted the whole
+  file.
+
+  We validate nothing in a parameter default: not the expression's own
+  validity (the CE10271 above went unreported there while the identical call
+  in argument position IS caught), and not the two rules TV has about what a
+  default may be at all. Probed 2026-08-27:
+
+  | default | TV |
+  |---|---|
+  | `f(int x, y = math.max(1, 2)) => x` | **CE10133** |
+  | `f(int x, y = 1 + 2) => x` | **CE10134** |
+  | `f(int x, y = close) => x` | clean |
+  | `f(int x, y = color.red) => x` | clean |
+  | `f(int x, y = 5) => x` | clean |
+  | `f(int x, y = "a") => x` | clean |
+
+  - CE10133 `The default value cannot be a function, variable or calculation.`
+  - CE10134 `The default value assigned to a parameter must be either a
+    literal value (e.g., "5") or a built-in variable (e.g., "close").`
+
+  **Read the two codes off the SHAPE, not off the wording**, which is the trap
+  here: CE10133's message names "variable" but TV plainly ACCEPTS `y = close`,
+  and CE10134's message is the one that describes the real rule. A call gets
+  10133 and an operator expression gets 10134; both anchor at the PARAMETER
+  (3:10), not at the offending expression. Before implementing, probe the
+  shapes this grid does not cover - unary minus, a ternary, a parenthesised
+  literal, an array literal, a user-variable reference (as opposed to a
+  built-in one), and a UDF call - because "calculation" versus "function" is
+  doing real work in choosing the code and six cells do not pin it.
+
+- **#82 - two CE10271 method-form disagreements, found 2026-08-27 by INV170's
+  leftover probe. Both PRE-EXISTING** (the `collectionReceiver` branch is
+  INV138/INV065-b, untouched by INV170) **and neither carried by the corpus**,
+  which is why every sweep has been silent on them - warning tv-only and the
+  error window both stayed clean.
+
+  **(a) A receiver whose name is BOTH a type and a namespace is a false
+  positive.** Probed 2026-08-27, all `//@version=6` with `indicator("t")`:
+
+  | receiver decl | call | TV | us |
+  |---|---|---|---|
+  | `color = array.new<float>(3, 1.0)` | `color.pushx(2.0)` | **clean** | CE10271 |
+  | `label = array.new<float>(3, 1.0)` | `label.pushx(2.0)` | **clean** | CE10271 |
+  | `math = array.new<float>(3, 1.0)` | `math.pushx(2.0)` | CE10271 | CE10271 |
+  | `arr = array.new<float>(3, 1.0)` | `arr.pushx(2.0)` | CE10271 | CE10271 |
+  | `string = "abc"` | `string.foo()` | CE10271 | CE10271 |
+
+  The discriminant is not "shadows a namespace" (`math` shadows one and still
+  errors) and not "is a type name" (`string` is one and still errors) - it is
+  the INTERSECTION: `color` and `label` are both, and those are exactly the
+  lenient cells. `line`, `box` and `table` are the other names in that class
+  and are unprobed. Do not fix on this table alone: five cells is enough to
+  kill the two single-property hypotheses, not enough to pin the rule, and
+  the mechanism (probably TV resolving the member against the TYPE's static
+  surface and going undetermined) is a guess.
+
+  **(b) The method form's ANCHOR may differ.** On the same probes TV anchors
+  CE10271 at the DOT and we anchor at the receiver: `arr.pushx(2.0)` is TV
+  `4:4` against our `4:1`, `math.pushx` TV `4:5` vs our `4:1`,
+  `string.foo()` in `x = string.foo()` TV `4:11` vs our `4:5`. Note this is
+  the METHOD form only - the FUNCTION form agrees (unshadowed
+  `x = color.red(1)` is `3:5` on both, INV170). INV138 records probing p09/p10
+  for this family, so check whether it measured positions before assuming a
+  general mismatch; if it did and they agreed, something narrower is going on
+  and that is itself the finding.
+
+  Worth doing together, since (b) would otherwise be re-measured while fixing
+  (a). Both want their own investigation with a proper probe grid, not a
+  patch on this table.
+
 - **#20 - refine INV012 with a context-aware synchronize.** Current
   `synchronize()` skips to the next column-1 statement after a parse
   error. Correct in aggregate (−1270 cascade FPs across the corpus)
@@ -365,7 +439,27 @@ IDs so the two stay in sync.
   establishes that we still kill everything we used to kill. It cannot find a
   new gap, and re-running it unchanged never will.
 
-  **Remaining, and it is now the operator set rather than the schedule.**
+  **Both operators BUILT 2026-08-27, and the first run produced a SURVIVOR** -
+  the first since 2026-08-03, and it validates the whole "new taxonomy rows,
+  not a re-run schedule" argument. `positional-after-named` (CE10157) and
+  `member-called-as-function` (CE10271) generated 5,189 mutants over the same
+  697 both-clean fixtures; 5,188 killed, 1 `local-accepts`, TV-adjudicated a
+  real gap. See #83.
+
+  Two implementation notes worth keeping, both of which silently cost sites
+  until fixed:
+  - The variadic guard on `positional-after-named` is load-bearing, not
+    tidiness: TV refuses keyword arguments on a variadic function with
+    CE10119, so a `math.max` mutant would be rejected for the WRONG reason and
+    counted as killed while proving nothing (INV171 hit exactly this).
+  - `member-called-as-function` must accept a KEYWORD as a chain start, not
+    just an IDENTIFIER. The namespaces that are also TYPE names - `color`,
+    `line`, `label`, `box`, `table` - lex as KEYWORD and hold most of the
+    interesting constants, so requiring IDENTIFIER skipped every `color.*`
+    site. It also excludes members that are ALSO functions (`ta.tr`), or the
+    mutant would be a valid call.
+
+  **Remaining, and it is still the operator set rather than the schedule.**
   Discovery needs a new taxonomy row, and #48's own method note says why:
   design operators around TV's error taxonomy, not around our existing checks,
   because that is how you find gaps we have NO check for. Two rows are
