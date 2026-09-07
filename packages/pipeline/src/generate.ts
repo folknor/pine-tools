@@ -415,11 +415,11 @@ function getFunctionFlags(name: string): Record<string, unknown> | undefined {
 		"array.stdev": "element",
 		"array.variance": "element",
 		"math.abs": "numeric",
-		"math.sign": "numeric",
 		"math.max": "numeric",
 		"math.min": "numeric",
-		"math.avg": "numeric",
-		"math.sum": "numeric",
+		// math.sign/avg/sum are NOT input-following: every overload returns
+		// float (only the qualifier follows the argument), so `int x =
+		// math.sign(0)` is a TV error that "numeric" masked. see INV174
 		// math.round/floor/ceil are NOT input-following: the 1-arg forms
 		// return int regardless of the argument's base type (only the
 		// qualifier follows; see their per-overload returns in pine-data).

@@ -1,0 +1,17 @@
+// @test regression/INV174-math-float-only-polymorphic
+// @description math.sign / math.avg / math.sum return float under EVERY overload (only the qualifier follows the argument), so binding them to an int declaration is TV's CE10123-class "Cannot assign". They were flagged "numeric" (input-following) in the polymorphic map alongside math.abs/max/min, which genuinely follow the argument, so an int argument typed the result int and the error was masked. abs/max/min stay clean. Probed 2026-09-07 via pine-lint --tv, see INV174.
+// @expects parse: success
+// @expects error: line=3, message=/Cannot assign a value of the "const float" type to the "r1" variable/
+// @expects error: line=4, message=/Cannot assign a value of the ".* float" type to the "r2" variable/
+// @expects error: line=5, message=/Cannot assign a value of the "series float" type to the "r3" variable/
+// @expects errors: 3
+
+//@version=6
+indicator("INV174-math-float-only-polymorphic")
+int r1 = math.sign(0)
+int r2 = math.avg(1, 2)
+int r3 = math.sum(1, 2)
+int a = math.abs(-2)
+int b = math.max(1, 2)
+int c = math.min(1, 2)
+plot(r1 + r2 + r3 + a + b + c)

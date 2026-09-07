@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+- Fixed a missed error under `//@version=5`: a line wrapped INSIDE
+  parentheses that continues at an indent that is a multiple of 4 (0, 4, 8,
+  a tab) is rejected by TradingView with "end of line without line
+  continuation", anchored at the wrapped line's end. v6 has no such
+  restriction and the manual documents only v6, so bracketed wraps had been
+  left free-form for every version. A comment-only line in between is
+  ignored, as TradingView does. Twelve probes; the 47 affected corpus
+  fixtures are all v5 and every TradingView verdict among the 18 re-checked
+  matched. See INV176.
+- Fixed: a float VARIABLE or float expression in an `int` parameter slot
+  (`ta.sma(close, close)`, a `float len = 14.0` passed as a length) was
+  accepted; TradingView rejects a float there under every qualifier. Only a
+  float LITERAL was caught before. The check is now widened to any
+  float-typed argument, including the positional slot of an overloaded
+  function when every overload types it int (`ta.highest`). See INV175.
+- Fixed: `int r = math.sign(0)`, `math.avg(...)` and `math.sum(...)` were
+  accepted. The three were listed as input-following alongside `math.abs`,
+  `math.max` and `math.min`, but return float under every overload, so the
+  int argument typed the result int. Data fix in the generator. See INV174.
 - Argument values TradingView enforces only at RUNTIME are now reported.
   `ta.sma(close, 0)`, `ta.sma(close, na)` and `ta.pivothigh(high, -1, 2)`
   compile at both validators and then kill the script on bar 0, producing no

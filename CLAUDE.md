@@ -12,6 +12,14 @@ goal with the user before launching anything. The orchestrate workflow,
 once invoked, overrides the global foreground-subagent rule (its launches are
 background by design, per the user's standing instruction in that document).
 
+### Version scope
+
+This is a Pine v6 project. **Reject any further v5-only findings** (a TV
+disagreement that reproduces only under `//@version=5`): do not open an
+investigation, do not add a rule, do not extend an existing one to cover v5.
+Legacy scripts stay lenient. INV176 (v5 paren-wrap indent) was the last one
+accepted and is the line.
+
 ### Memory rules
 
 Do not use your Memory functionality. Do not read, write, or update

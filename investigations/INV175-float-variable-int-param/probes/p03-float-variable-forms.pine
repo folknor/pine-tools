@@ -1,0 +1,8 @@
+//@version=6
+indicator("t")
+float lenF = 14.0
+simple float lenS = input.float(10.0) * 2
+x = ta.sma(close, lenF)
+y = ta.sma(close, lenS)
+z = ta.sma(close, close * 2)
+plot(x + y + z)

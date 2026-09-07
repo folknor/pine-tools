@@ -1,0 +1,4 @@
+//@version=6
+indicator("t")
+float a = ta.highest(high, close)
+plot(a)

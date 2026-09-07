@@ -1,0 +1,4 @@
+//@version=6
+indicator("t")
+int r3 = math.sum(1, 2)
+plot(r3)

@@ -91,6 +91,14 @@ export class Lexer {
 		line: number;
 		column: number;
 	}> = [];
+	// v5 ONLY: a line wrapped inside ( ) still may not continue at an indent
+	// that is a multiple of 4 (tabs count 4). v6 lifted that restriction for
+	// parenthesised wraps, and the manual documents only the v6 rule, so the
+	// v5 case is invisible from the docs. TV reports CE10156 anchored at the
+	// EOL of the line being wrapped; a comment-only line in between is
+	// ignored. Set at a line break while a `(` is open, consumed by the next
+	// line's first real token. see INV176
+	private pendingParenWrap: { line: number; column: number } | null = null;
 
 	constructor(source: string) {
 		this.source = source;
@@ -356,6 +364,16 @@ export class Lexer {
 	private handleLineBreak(): void {
 		if (this.bracketDepth === 0) {
 			this.addToken(TokenType.NEWLINE, "\n", 1);
+			this.pendingParenWrap = null;
+		} else if (
+			this.detectedVersion === "5" &&
+			this.openBrackets[this.openBrackets.length - 1]?.char === "("
+		) {
+			// `this.column` is already past the line-break character, so the
+			// EOL (TV's anchor) is one column back. see INV176
+			this.pendingParenWrap = { line: this.line, column: this.column - 1 };
+		} else {
+			this.pendingParenWrap = null;
 		}
 		this.line++;
 		this.column = 1;
@@ -832,6 +850,25 @@ export class Lexer {
 			this.atLineStart
 		) {
 			this.atLineStart = false;
+			// A comment-only line neither trips nor clears the v5 paren-wrap
+			// rule (probed: TV ignores it). A closer on its own line draws a
+			// different TV wording at a joined-line anchor and is left alone.
+			// see INV176
+			if (this.pendingParenWrap && type !== TokenType.COMMENT) {
+				if (
+					this.currentIndent % 4 === 0 &&
+					type !== TokenType.RPAREN &&
+					type !== TokenType.RBRACKET
+				) {
+					this.lexerErrors.push({
+						line: this.pendingParenWrap.line,
+						column: this.pendingParenWrap.column,
+						message:
+							'Syntax error at input "end of line without line continuation"',
+					});
+				}
+				this.pendingParenWrap = null;
+			}
 		}
 
 		this.tokens.push({

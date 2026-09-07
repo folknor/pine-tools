@@ -1196,17 +1196,23 @@ export function validateFunctionArguments(
 		}
 	}
 
-	// CE10123: a FLOAT LITERAL in an `int` param slot. TV narrows strictly
-	// (float->int is rejected, though int->float widens), but isAssignable treats
-	// int<->float bidirectionally, so the main loop misses `ta.sma(close, 14.5)`
-	// and `array.new<int>(2.5)` (the latter also positional-bypassed as a generic).
-	// Scoped to a float LITERAL into a cleanly int-typed param: unambiguous - a
-	// literal is never series, so no overlap with the INV088 simple-qualifier
-	// check - and it runs regardless of the overload/generic positional bypass.
-	// Positional args are skipped on real-overload functions (ambiguous slots);
-	// named args are always safe. A float VARIABLE stays lenient (our float
-	// inference for those is the shakier path). see INV107
+	// CE10123: a FLOAT in an `int` param slot. TV narrows strictly (float->int
+	// is rejected whatever the qualifier, though int->float widens), but
+	// isAssignable treats int<->float bidirectionally, so the main loop misses
+	// `ta.sma(close, 14.5)` and `array.new<int>(2.5)` (the latter also
+	// positional-bypassed as a generic). Originally scoped to a float LITERAL
+	// (INV107); widened to any float-typed argument once TV was probed
+	// rejecting `ta.sma(close, close)`, a const/simple float variable and a
+	// float expression alike (INV175). Runs regardless of the overload/generic
+	// positional bypass. A positional arg on a real-overload function is checked
+	// only when EVERY overload that has that slot types it int (ta.highest's
+	// `length` is int in both of its overloads; its slot 0 is source-or-length
+	// and stays skipped); named args are always safe. A series arg into a
+	// `simple int` slot is INV088's (same wording, one report). see INV107, INV175
 	if (checkArgTypes) {
+		const overloadSigs = hasOverloadSignatures(functionName)
+			? getOverloadSignatures(functionName)
+			: null;
 		for (let i = 0; i < signature.parameters.length; i++) {
 			const param = signature.parameters[i];
 			if (
@@ -1216,11 +1222,37 @@ export function validateFunctionArguments(
 			) {
 				continue;
 			}
-			const provided =
-				providedArgs.get(param.name) ??
-				(hasOverloadSignatures(functionName) ? undefined : positionalArgs[i]);
-			if (provided?.arg.value.type !== "Literal") continue;
+			let provided = providedArgs.get(param.name);
+			if (!provided && positionalArgs[i]) {
+				const slotIsIntEverywhere =
+					overloadSigs === null ||
+					overloadSigs.every((ov) => {
+						const p = ov.parameters[i];
+						return (
+							!p ||
+							(!!p.type &&
+								p.type !== "unknown" &&
+								TypeChecker.baseTypeName(String(p.type)) === "int")
+						);
+					});
+				if (slotIsIntEverywhere) provided = positionalArgs[i];
+			}
+			if (!provided) continue;
 			if (TypeChecker.baseTypeName(String(provided.type)) !== "float") continue;
+			// A series arg into a const / simple / input slot is already one
+			// report from the qualifier passes (INV088 for `simple`, INV014's
+			// checkConstArgs for `const`/`input`) with the identical wording;
+			// TV emits one error there, so this pass yields. see INV175
+			const paramQualifier = (param.rawType ?? "").trim().split(/\s+/)[0];
+			if (
+				(paramQualifier === "const" ||
+					paramQualifier === "simple" ||
+					paramQualifier === "input") &&
+				(isSeriesQualified(provided.type) ||
+					isPromotedToSeries(v, provided.arg.value))
+			) {
+				continue;
+			}
 			const desc = v.describeArgForTemplate(
 				provided.arg.value,
 				provided.type,

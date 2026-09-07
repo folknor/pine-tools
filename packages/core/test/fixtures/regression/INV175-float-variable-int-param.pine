@@ -1,0 +1,19 @@
+// @test regression/INV175-float-variable-int-param
+// @description A float VARIABLE or float EXPRESSION in an `int` param slot is TV's CE10123, exactly like the float literal INV107 pinned - TV narrows strictly under every qualifier (const, simple and series float all rejected). INV107 had scoped the check to a literal and left variables as a follow-up; this widens it. `ta.highest`'s length is checked positionally because every overload types that slot int. An int variable, a literal int, and an explicit int() cast stay clean. Probed 2026-09-07 via pine-lint --tv, see INV175.
+// @expects parse: success
+// @expects error: line=4, column=19, message=/Cannot call "ta.sma" with argument "length"="lenF"\. An argument of ".* float" type was used but a "series int"/
+// @expects error: line=5, column=19, message=/Cannot call "ta.sma" with argument "length"="close"\. An argument of "series float" type/
+// @expects error: line=6, column=22, message=/Cannot call "ta.highest" with argument "length"="close"/
+// @expects errors: 3
+
+//@version=6
+indicator("INV175-float-variable-int-param")
+float lenF = 14.0
+x = ta.sma(close, lenF)
+y = ta.sma(close, close)
+z = ta.highest(high, close)
+int lenI = 14
+ok1 = ta.sma(close, lenI)
+ok2 = ta.highest(high, 5)
+ok3 = ta.sma(close, int(close))
+plot(x + y + z + ok1 + ok2 + ok3)

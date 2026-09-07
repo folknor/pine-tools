@@ -10620,8 +10620,7 @@
     "returns": "simple float",
     "flags": {
       "variadic": true,
-      "minArgs": 2,
-      "polymorphic": "numeric"
+      "minArgs": 2
     },
     "overloads": [
       {
@@ -11743,9 +11742,6 @@
       }
     ],
     "returns": "const float",
-    "flags": {
-      "polymorphic": "numeric"
-    },
     "overloads": [
       {
         "parameters": [
@@ -11947,7 +11943,6 @@
     "flags": {
       "variadic": true,
       "minArgs": 1,
-      "polymorphic": "numeric",
       "historyDependent": true
     },
     "returnsDescription": "Sum of source for length bars back.",

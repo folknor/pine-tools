@@ -1,0 +1,5 @@
+//@version=5
+indicator("t", overlay = true)
+[a, b] = [close,
+    open]
+plot(a + b)

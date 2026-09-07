@@ -1,0 +1,4 @@
+//@version=5
+indicator("t", overlay = true)
+bgcolor(bar_index > 5 ? color.new(color.green, 95) :
+bar_index > 9 ? color.new(color.red, 95) : na)

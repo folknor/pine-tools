@@ -212,6 +212,27 @@ IDs so the two stay in sync.
   variable or calculation" while TV accepts `close`; CE10132 says "a type's
   field" while firing on a plain function parameter.
 
+- **#84 - residuals from the 2026-09-07 adoption of three findings from
+  `../strategies/` (INV174, INV175, INV176).** The errors land; what is left
+  is wording and anchors:
+  - The argument's qualifier NOUN for a bare user float variable in an int
+    slot: TV says `const float` for `float len = 14.0` and `simple float` for
+    an input product, we say `series float` for both. Symbol types are stored
+    unqualified and provenance has nothing for a bare scalar user variable
+    ([INV175](../investigations/INV175-float-variable-int-param/notes.md)).
+    The same store is why `int r = math.avg(1, 2)` reads `const float` where
+    TV says `simple float`
+    ([INV174](../investigations/INV174-math-float-only-polymorphic/notes.md)).
+  - `ta.highest`'s `length` is `series int` in both scraped overloads and TV
+    quotes `simple int`. A G002-shape data disagreement; the INV171 noun probe
+    covers union parameters only. Do not patch the data by hand.
+  - v5 paren-wrap violations past a statement's FIRST line: TV anchors in
+    joined-line coordinates (statement's first line, columns accumulated over
+    the trimmed wrapped lines plus a joining space each), we anchor at the
+    offending line's EOL. A closer alone on a multiple-of-4 line draws a
+    different TV wording and is deliberately not emitted
+    ([INV176](../investigations/INV176-v5-paren-wrap-multiple-of-4/notes.md)).
+
 - **#82 - the CE10271 method-form shadowing leniency. Anchor half FIXED,
   leniency half OPEN
   ([INV173](../investigations/INV173-namespace-shadow-method-calls/notes.md)).**

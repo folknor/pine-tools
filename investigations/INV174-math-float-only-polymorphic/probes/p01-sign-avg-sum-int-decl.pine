@@ -1,0 +1,4 @@
+//@version=6
+indicator("t")
+int r1 = math.sign(0)
+plot(r1)

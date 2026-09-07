@@ -1,0 +1,6 @@
+//@version=6
+indicator("t")
+int a = math.abs(-2)
+int b = math.max(1, 2)
+int c = math.min(1, 2)
+plot(a + b + c)

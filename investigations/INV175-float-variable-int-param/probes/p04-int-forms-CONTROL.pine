@@ -1,0 +1,10 @@
+//@version=6
+indicator("t")
+int lenI = 14
+l = ta.barssince(close > open)
+a = ta.sma(close, lenI)
+b = ta.sma(close, l)
+c = ta.sma(close, int(close))
+d = ta.sma(close, math.round(close))
+e = ta.highest(high, 5)
+plot(a + b + c + d + e)

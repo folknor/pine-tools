@@ -1213,3 +1213,28 @@ contradiction means re-measure, not "the earlier author was wrong."
   assumed), and its load-bearing control is attributing each CE10123 by
   `ctx.argDisplayName` - without it the pilot recorded `user_type` as
   `sort_field`'s noun. Captured but NOT yet consumed.
+- [INV174](INV174-math-float-only-polymorphic/notes.md) - `math.sign`,
+  `math.avg` and `math.sum` were flagged input-following ("numeric") in the
+  polymorphic map beside abs/max/min, which genuinely are; those three return
+  float under every overload, so `int r = math.sign(0)` - a TV error - was
+  clean. Three lines removed from the map, the data already said so. Found
+  by piners refusing a probe that linted clean here (`../strategies/
+  VALIDATOR-FINDINGS.md` LNT-10).
+- [INV175](INV175-float-variable-int-param/notes.md) - INV107's residual:
+  a float VARIABLE or expression in an int slot (`ta.sma(close, close)`,
+  `float len = 14.0` as a length) was clean; TV rejects a float under every
+  qualifier. The four `ta.*` functions that did catch it caught the
+  series-ness (INV088), not the float-ness. Widened to any float-typed
+  argument, with the positional slot on an overloaded function checked only
+  when every overload types it int, and a yield to the qualifier passes so
+  the INV124 shape reports once. (LNT-11 in the same file.)
+- [INV176](INV176-v5-paren-wrap-multiple-of-4/notes.md) - **under
+  `//@version=5` a wrap INSIDE parentheses may not continue at a
+  multiple-of-4 indent**; v6 lifted that and the manual documents only v6,
+  which is why INV017/INV042 left bracketed wraps free-form and why the
+  source finding sat "disproved" for weeks (every minimal repro was retyped
+  as v6). Twelve probes; a lexer rule gated to v5. 2632 corpus appearances
+  over 47 v5 fixtures, 18 of them sent to TV: six exact-position matches,
+  two where TV reports the same violation in joined-line coordinates, ten
+  lexer-abort files with no verdict, zero TV-clean. (PINE-LINT-BUGS.md
+  finding 8.)

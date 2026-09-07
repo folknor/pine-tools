@@ -1,0 +1,5 @@
+//@version=5
+indicator("t", overlay = true)
+plot(close,
+    // a comment at indent 4
+  color = color.red)

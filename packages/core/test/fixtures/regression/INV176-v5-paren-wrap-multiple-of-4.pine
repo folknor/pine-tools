@@ -1,0 +1,17 @@
+// @test regression/INV176-v5-paren-wrap-multiple-of-4
+// @description Under //@version=5 a line wrapped INSIDE parentheses still may not continue at an indent that is a multiple of 4 (0, 4, 8, ... and a tab counts 4); v6 lifted that restriction and the manual documents only the v6 rule. TV rejects with CE10156 anchored at the EOL of the line being wrapped. A comment-only line in between is ignored, and a non-multiple-of-4 continuation stays clean. Probed 2026-09-07 via pine-lint --tv, see INV176.
+// @expects parse: fail
+// @expects error: line=3, column=53, message=/end of line without line continuation/
+// @expects error: line=5, column=12, message=/end of line without line continuation/
+
+//@version=5
+indicator("INV176 v5 paren wrap", overlay = true)
+bgcolor(bar_index > 5 ? color.new(color.green, 95) :
+        bar_index > 9 ? color.new(color.red, 95) : na)
+plot(close,
+    color = color.red)
+plot(close,
+  linewidth = 2)
+plot(close,
+    // a comment line at indent 4 does not count
+  linewidth = 3)
