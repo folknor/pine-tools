@@ -25,6 +25,7 @@ export type Statement =
 	| ForStatement
 	| ForInStatement
 	| WhileStatement
+	| OnceStatement
 	| ReturnStatement
 	| TypeDeclaration
 	| EnumDeclaration
@@ -193,6 +194,18 @@ export interface WhileStatement extends ASTNode {
 export interface ReturnStatement extends ASTNode {
 	type: "ReturnStatement";
 	value: Expression;
+}
+
+// `once [<condition>]` + block (Pine v6, added by TV in August 2026): runs
+// its block on the first CLOSED bar where the condition holds and never
+// again. Side effects only - it returns no value (TV rejects `x = once ...`
+// and `y = f()` where f's tail is a once), and it takes no else. The
+// condition is optional (defaults to true). `once` is a CONTEXTUAL keyword:
+// `once = 1` / `int once = 1` stay valid identifiers. see INV177
+export interface OnceStatement extends ASTNode {
+	type: "OnceStatement";
+	condition?: Expression;
+	body: Statement[];
 }
 
 export type Expression =

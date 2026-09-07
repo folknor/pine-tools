@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+- New statement: the `once [<condition>]` conditional structure TradingView
+  added in August 2026. It parses, its block is a local bar-conditional scope
+  (so `plot` inside it is the local-scope error and a `ta.*` call inside it
+  draws CW10003, both as TradingView reports), a non-bool condition is
+  CE10101 with blockName "once", assigning it (`x = once ...`) draws
+  TradingView's dedicated message at the `once` token, a user function whose
+  tail is a `once` is void when assigned, and an `else` after it is a syntax
+  error. `once` stays a valid identifier (`once = 1`), matching TradingView.
+  Eighteen probes. See INV177.
+- Fixed the crawler: the reference's `#kw_` TOC links were never classified,
+  so keywords came only from a hardcoded regex over code samples and a
+  keyword TradingView adds could never reach the catalog - `once` was missed
+  by two crawls. `keywords.json` now carries `once` (with TradingView's
+  description and remarks) and `for...in`. The Pine manual mirror was
+  refreshed at the same time. See INV177.
 - Fixed a missed error under `//@version=5`: a line wrapped INSIDE
   parentheses that continues at an indent that is a multiple of 4 (0, 4, 8,
   a tab) is rejected by TradingView with "end of line without line

@@ -313,7 +313,10 @@ export class ASTExtractor {
 					);
 				}
 				this.walkStatements(forInStmt.body, variables, scopeId);
-			} else if (stmt.type === "WhileStatement") {
+			} else if (
+				stmt.type === "WhileStatement" ||
+				stmt.type === "OnceStatement"
+			) {
 				const loopStmt = stmt as { body: Statement[] };
 				this.walkStatements(loopStmt.body, variables, scopeId);
 			} else if (stmt.type === "SequenceStatement") {

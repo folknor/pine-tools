@@ -1,0 +1,7 @@
+//@version=6
+indicator("t")
+once = 1
+var int n = 0
+once close > open
+    n := once
+plot(n)

@@ -19,6 +19,7 @@ import type {
 	Literal,
 	MemberExpression,
 	MethodDeclaration,
+	OnceStatement,
 	Program,
 	Statement,
 	SwitchExpression,
@@ -475,6 +476,10 @@ export class SemanticAnalyzer {
 				this.analyzeWhileStatement(statement);
 				break;
 
+			case "OnceStatement":
+				this.analyzeOnceStatement(statement);
+				break;
+
 			case "AssignmentStatement":
 				this.analyzeAssignmentStatement(statement);
 				break;
@@ -798,6 +803,27 @@ export class SemanticAnalyzer {
 
 		// Exit conditional scope
 		this.exitConditionalScope();
+	}
+
+	// A `once` block runs on ONE bar (the first closed bar where its condition
+	// holds) and never again, so it is a conditional scope whatever its
+	// condition's qualifier - TV emits CW10003 for a `ta.sma` call inside
+	// `once close > open` (probed 2026-09-07, INV177 p15). The no-condition
+	// form is the same scope (it still runs on exactly one bar). see INV177
+	private analyzeOnceStatement(statement: OnceStatement): void {
+		if (statement.condition) {
+			this.analyzeExpression(statement.condition);
+		}
+		this.enterConditionalScope("block");
+		try {
+			this.withScopeFrame(() => {
+				for (const stmt of statement.body) {
+					this.analyzeStatement(stmt);
+				}
+			});
+		} finally {
+			this.exitConditionalScope();
+		}
 	}
 
 	// NOTE: there is deliberately no rule for reassignment inside conditional
@@ -1886,8 +1912,11 @@ export class SemanticAnalyzer {
 		// if/else (incl. lowered `else if`) or while marks its target series.
 		// A for/for-in body is deterministic per bar, so it does NOT induce
 		// series on a const reassignment (only a series VALUE does). see INV115
+		// A `once` body is bar-conditional by construction (it runs on one bar),
+		// so it induces series on a `:=` whatever its condition. see INV177
 		const childConditional =
 			inSeriesConditional ||
+			statement.type === "OnceStatement" ||
 			((statement.type === "IfStatement" ||
 				statement.type === "WhileStatement") &&
 				this.isSeriesishExpression(statement.condition));
@@ -2240,6 +2269,8 @@ export class SemanticAnalyzer {
 				return [statement.condition];
 			case "WhileStatement":
 				return [statement.condition];
+			case "OnceStatement":
+				return statement.condition ? [statement.condition] : [];
 			case "ForStatement":
 				return [
 					statement.from,
@@ -2374,6 +2405,7 @@ export class SemanticAnalyzer {
 			case "ForStatement":
 			case "ForInStatement":
 			case "WhileStatement":
+			case "OnceStatement":
 				return statement.body;
 			case "IfStatement":
 				return [...statement.consequent, ...(statement.alternate ?? [])];

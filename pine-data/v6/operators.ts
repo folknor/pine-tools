@@ -1,7 +1,7 @@
 /**
  * Pine Script V6 Operators
  * Auto-generated from TradingView documentation
- * Generated: 2026-09-07T04:46:37.661Z
+ * Generated: 2026-09-07T05:14:01.510Z
  * Total: 21 operators
  *
  * Reference data only: operators are grammar the parser hardcodes (see the

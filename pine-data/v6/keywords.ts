@@ -1,8 +1,8 @@
 /**
  * Pine Script V6 Keywords
  * Auto-generated from TradingView documentation
- * Generated: 2026-09-07T04:46:37.661Z
- * Total: 28 keywords
+ * Generated: 2026-09-07T05:14:01.510Z
+ * Total: 30 keywords
  */
 
 /**
@@ -21,6 +21,7 @@ export const KEYWORDS: Set<string> = new Set([
   "export",
   "false",
   "for",
+  "for...in",
   "if",
   "import",
   "indicator",
@@ -28,6 +29,7 @@ export const KEYWORDS: Set<string> = new Set([
   "method",
   "na",
   "not",
+  "once",
   "or",
   "return",
   "strategy",

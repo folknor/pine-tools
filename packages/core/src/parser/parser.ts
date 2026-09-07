@@ -260,6 +260,13 @@ export class Parser {
 			return this.whileStatement();
 		}
 
+		// `once [<condition>]` block (v6, August 2026). Contextual: `once` lexes
+		// as an IDENTIFIER and only the statement shape enters here. see INV177
+		if (this.looksLikeOnceStatement()) {
+			this.advance();
+			return this.onceStatement();
+		}
+
 		// Return statement
 		if (this.match([TokenType.KEYWORD, ["return"]])) {
 			return this.returnStatement();
@@ -1649,6 +1656,131 @@ export class Parser {
 			from,
 			to,
 			step,
+			body,
+			line: startToken.line,
+			column: startToken.column,
+		};
+	}
+
+	/**
+	 * Whether the current token opens a `once` STATEMENT rather than a use of a
+	 * variable named `once`. TV accepts `once = 1` and `int once = 1` (probed
+	 * 2026-09-07), so the word is contextual, exactly like `method` (INV051)
+	 * and `switch` (#46d). A statement is `once` followed by a newline (no
+	 * condition) or by something that can START an expression - an identifier,
+	 * a literal, `(`, `not`, `na` ... - while an identifier use is followed by
+	 * an assignment, an operator, `[`, `.`, `,`, or a closer. `once(cond)` with
+	 * no space is the statement at TV (probe p16). A leading `-` is read as a
+	 * binary minus (identifier use): `once -x` as a statement is not a shape
+	 * anyone writes. see INV177
+	 */
+	public looksLikeOnceStatement(): boolean {
+		if (!this.check(TokenType.IDENTIFIER) || this.peek().value !== "once") {
+			return false;
+		}
+		const next = this.peekNext();
+		if (!next) return false;
+		switch (next.type) {
+			case TokenType.NEWLINE: {
+				// `once` alone at end of line is the no-condition statement only
+				// when an indented block follows; `n := once` (a variable read,
+				// probe p18) is followed by a line at the same or lesser indent.
+				let i = this.current + 1;
+				while (this.tokens[i]?.type === TokenType.NEWLINE) i++;
+				const after = this.tokens[i];
+				if (!after || after.type === TokenType.EOF) return false;
+				return (after.indent ?? 0) > this.currentLineIndent();
+			}
+			case TokenType.IDENTIFIER:
+			case TokenType.NUMBER:
+			case TokenType.STRING:
+			case TokenType.LPAREN:
+				return true;
+			case TokenType.KEYWORD:
+				// `once not x`, `once na(x)`, `once true`; never `once and ...`.
+				return next.value !== "and" && next.value !== "or";
+			case TokenType.LOGICAL:
+				return next.value === "not";
+			default:
+				return false;
+		}
+	}
+
+	// Indent of the line the current token sits on (the lexer stamps indent
+	// only on a line's first token). see INV177
+	private currentLineIndent(): number {
+		return this.currentLineIndentOf(this.peek());
+	}
+
+	private currentLineIndentOf(token: Token): number {
+		let i = this.tokens.indexOf(token);
+		if (i < 0) return token.indent ?? 0;
+		while (i > 0 && this.tokens[i - 1]?.line === token.line) i--;
+		return this.tokens[i]?.indent ?? 0;
+	}
+
+	// Public so ExpressionParser can consume a `once` that landed in
+	// expression position (`x = once cond` ...) after reporting TV's error
+	// for it. see INV177
+	public onceStatement(): AST.OnceStatement {
+		const startToken = this.previous();
+		let condition: AST.Expression | undefined;
+		// The token right after the condition's FIRST token - TV's anchor when
+		// the block is missing (below).
+		const secondCondToken = this.tokens[this.current + 1];
+		if (!this.check(TokenType.NEWLINE) && !this.check(TokenType.EOF)) {
+			condition = this.parseSingleLineExpression(startToken.line);
+		}
+
+		while (this.check(TokenType.NEWLINE)) {
+			this.advance();
+		}
+
+		const onceIndent =
+			startToken.indent ?? this.currentLineIndentOf(startToken);
+		const body = this.parseIndentedBlock(startToken.line, onceIndent, true);
+
+		// No indented block: TV reads the line as an expression statement and
+		// fails at the token after the condition's first operand (`once close
+		// > open` / unindented next line -> 'Syntax error at input ">"' at the
+		// `>`, probed p17). A single-token condition has no such anchor and is
+		// left alone. see INV177
+		if (
+			body.length === 0 &&
+			condition &&
+			secondCondToken &&
+			secondCondToken.line === startToken.line &&
+			secondCondToken.type !== TokenType.NEWLINE
+		) {
+			this.parserErrors.push({
+				line: secondCondToken.line,
+				column: secondCondToken.column,
+				message: `Syntax error at input "${secondCondToken.value}"`,
+			});
+		}
+
+		// `once` takes no else. TV: 'Syntax error at input "new line"' at
+		// column 1 of the `else` line (probed p04). The else block is consumed
+		// so it does not shred the statements after it.
+		if (
+			this.check([TokenType.KEYWORD, ["else"]]) &&
+			(this.peek().indent ?? onceIndent) === onceIndent
+		) {
+			const elseToken = this.advance();
+			this.parserErrors.push({
+				line: elseToken.line,
+				column: 1,
+				message: 'Syntax error at input "new line"',
+			});
+			while (this.check(TokenType.NEWLINE)) {
+				this.advance();
+			}
+			this.parseIndentedBlock(elseToken.line, elseToken.indent ?? onceIndent);
+		}
+
+		return {
+			type: "OnceStatement",
+			condition,
 			body,
 			line: startToken.line,
 			column: startToken.column,

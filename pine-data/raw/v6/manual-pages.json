@@ -1,8 +1,8 @@
 {
   "metadata": {
     "source": "https://www.tradingview.com/pine-script-docs/welcome/",
-    "scrapedAt": "2026-08-15T18:15:37.398Z",
-    "pageCount": 76
+    "scrapedAt": "2026-09-07T05:19:11.123Z",
+    "pageCount": 77
   },
   "pages": [
     {
@@ -368,6 +368,13 @@
       "section": "errors",
       "url": "https://www.tradingview.com/pine-script-docs/errors/CE10101/",
       "cacheFile": "errors__CE10101.html"
+    },
+    {
+      "path": "errors/CE10117",
+      "title": "CE10117",
+      "section": "errors",
+      "url": "https://www.tradingview.com/pine-script-docs/errors/CE10117/",
+      "cacheFile": "errors__CE10117.html"
     },
     {
       "path": "errors/CW10003",

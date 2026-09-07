@@ -1,6 +1,6 @@
 {
 	"description": "TV-probed expected-type noun (CE10123 currentTypeDocStr) per union-typed parameter. One deliberately-wrong argument per parameter; the noun cannot be derived from the catalog. See INV171, TODO #74.",
-	"probedAt": "2026-08-27T07:55:50.762Z",
+	"probedAt": "2026-09-07T05:13:13.666Z",
 	"tool": "scripts/probe-union-type-nouns.mjs",
 	"results": {
 		"footprint.get_row_by_price.price": {

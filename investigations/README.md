@@ -1238,3 +1238,14 @@ contradiction means re-measure, not "the earlier author was wrong."
   two where TV reports the same violation in joined-line coordinates, ten
   lexer-abort files with no verdict, zero TV-clean. (PINE-LINT-BUGS.md
   finding 8.)
+- [INV177](INV177-once-conditional-structure/notes.md) - **the `once`
+  conditional structure TV added in August 2026 was invisible to the
+  pipeline**: the crawler never read the reference's `#kw_` TOC links
+  (tallied as "unclassified", 16 of them) and harvested keywords with a
+  hardcoded regex, so a keyword TV adds could never be discovered. Crawler
+  fixed, keyword scraped, manual mirror refreshed. Eighteen probes pin the
+  grammar: `once` is CONTEXTUAL (`once = 1` is clean), the block has no value
+  (dedicated TV wording at the `once` token; a once-tailed function is void)
+  and no else, `plot` inside is the local-scope error, and a `ta.*` call
+  inside draws CW10003. Implemented end to end - parser, checker, analyzer,
+  lint and fixpoint walkers - with 16 of 18 probes matching TV exactly.

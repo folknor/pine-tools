@@ -1,6 +1,6 @@
 {
 	"description": "TV-probed required params per function: zero-arg call, required set = TV's CE10165 enumeration. See INV050.",
-	"probedAt": "2026-06-07T13:44:00.976Z",
+	"probedAt": "2026-09-07T05:13:12.663Z",
 	"tool": "scripts/probe-required-params.mjs",
 	"results": {
 		"array.abs": {

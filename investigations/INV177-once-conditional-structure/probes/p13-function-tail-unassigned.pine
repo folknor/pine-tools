@@ -1,0 +1,7 @@
+//@version=6
+indicator("t")
+f() =>
+    once close > open
+        label.new(bar_index, high, "x")
+f()
+plot(close)

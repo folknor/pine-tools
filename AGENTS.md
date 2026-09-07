@@ -148,7 +148,7 @@ so a reader can scan the entire trail of decisions from one place.
 ## Architecture: Data vs Syntax
 
 **Hardcoded in parser** (grammar fundamentals):
-- Keywords: `if`, `else`, `for`, `while`, `var`, `varip`, `return`, `import`, `export`, `method`
+- Keywords: `if`, `else`, `for`, `while`, `var`, `varip`, `return`, `import`, `export`, `method`, `once` (contextual - see INV177)
 - Operators: `+`, `-`, `*`, `/`, `and`, `or`, `not`, `?:`
 - Type keywords: `int`, `float`, `bool`, `string`, `color`, `array`, `matrix`, `map`
 

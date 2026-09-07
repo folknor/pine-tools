@@ -1,0 +1,9 @@
+//@version=6
+indicator("t")
+var int n = 0
+once close > open
+    n := 1
+    n := n + 1
+once (close > open) and (bar_index > 5)
+    n := 5
+plot(n)

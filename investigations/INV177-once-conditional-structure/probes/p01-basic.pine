@@ -1,0 +1,6 @@
+//@version=6
+indicator("t")
+var label lb = na
+once close > open
+    lb := label.new(bar_index, high, "first up bar")
+plot(close)

@@ -1,0 +1,10 @@
+//@version=6
+indicator("t")
+var int n = 0
+if bar_index > 10
+    once close > open
+        n := n + 1
+for i = 0 to 2
+    once i == 1
+        n := n + 10
+plot(n)

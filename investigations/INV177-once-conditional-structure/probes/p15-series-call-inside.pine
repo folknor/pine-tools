@@ -1,0 +1,8 @@
+//@version=6
+indicator("t")
+var float m = na
+once close > open
+    m := ta.sma(close, 5)
+    once bar_index > 3
+        m := m + 1
+plot(m)

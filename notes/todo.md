@@ -43,6 +43,15 @@ one: TV answers `Cannot read properties of undefined (reading 'pinePos')` on
 that line - a translator crash, the G002 trap shape - against our enum
 field-type error. Pre-existing and unrelated to INV171's rewording.
 
+**Re-run 2026-09-07 after INV174-INV176 landed (commit `a6a7e7b`): byte-identical
+again** - 29 local-only / 0 tv-only / 1 same-position pair, warning local-only
+12 (47 past TV's stop), warning tv-only 0. TV-unparseable read 5 rather than 4
+(`05c3078b...` joined the four known ones - transient, per the open-questions
+note below). Same caveat as above: INV174/INV175 add v6 error classes the
+corpus does not carry, so this proves no false positives, not coverage; the
+fixtures carry the positive evidence. INV177 (`once`) landed after this run
+and is likewise absent from the corpus (it predates the keyword).
+
 This retires the staleness caveat this file carried since INV146. That caveat
 predicted INV146's pre-v5 refusal and INV148's v6-only argument-name gate would
 move the split by construction; both change what NON-v6 fixtures report, and
@@ -73,6 +82,11 @@ not match, each pinned by a fixture: G008 (collection `:=` skips the element
 check - unsound, TV lets a float into an `array<int>` through the alias) and
 G006's declaration extension (an untyped param makes TV discard an explicit
 `bool` annotation).
+
+Re-snapshotted 2026-09-07 after INV176's v5 paren-wrap rule: **1879 fixtures,
+773 with errors, 9726 error records** (+3 files, +2632 records - all one
+message on 47 v5 fixtures, 18 of them TV-verified; see INV176), and again the
+same day after INV177 (`once`), which changed one mangled v5 file by one record.
 
 Re-snapshotted 2026-08-27 after INV169: **1879 fixtures, 770 with errors, 7094
 error records** (+1). The added record is the new positional-after-named error
@@ -510,17 +524,22 @@ IDs so the two stay in sync.
   **Remaining, and it is still the operator set rather than the schedule.**
   Discovery needs a new taxonomy row, and #48's own method note says why:
   design operators around TV's error taxonomy, not around our existing checks,
-  because that is how you find gaps we have NO check for. Two rows are
-  conspicuously missing and both were added to the checker on 2026-08-27, so
-  neither has ever been mutation-tested:
+  because that is how you find gaps we have NO check for. (An earlier version
+  of this paragraph listed positional-after-named and
+  member-called-as-function as the missing rows; both were built the same
+  day, above.) Rows added to the checker since and never mutation-tested:
 
-  - **positional-after-named** (INV169) - move a named argument earlier in an
-    existing call so a later positional one follows it.
-  - **member-called-as-function** (INV170) - append `(...)` to a built-in
-    constant or variable reference.
+  - **float-into-int-slot** (INV175) - replace an int-typed argument with a
+    float variable or `close`, on any builtin whose slot is int in every
+    overload.
+  - **int-declaration-of-a-float-return** (INV174) - `int x = math.avg(...)`
+    and kin.
+  - **once-assignment / once-else** (INV177) - splice a `once` block into an
+    assignment or follow an existing `once` with `else`; the corpus contains
+    no `once` at all, so the pool cannot carry these until it grows.
 
-  Those two matter more than the schedule because the corpus contains neither
-  shape, so mutation is the ONLY layer that can exercise them - the same
+  Those matter more than the schedule because the corpus contains none of the
+  shapes, so mutation is the ONLY layer that can exercise them - the same
   blind spot #81 and #74 both hit, where a 0-changed corpus gate meant
   nothing. Also still open: re-run when the corpus itself grows (the
   both-clean pool has sat at 697 across every run so far).

@@ -311,6 +311,10 @@ function statementExpressions(statement: Statement): Expression[] {
 			return [(statement as { collection: Expression }).collection];
 		case "WhileStatement":
 			return [(statement as { condition: Expression }).condition];
+		case "OnceStatement": {
+			const cond = (statement as { condition?: Expression }).condition;
+			return cond ? [cond] : [];
+		}
 		default:
 			return [];
 	}

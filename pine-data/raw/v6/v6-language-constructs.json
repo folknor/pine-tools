@@ -1,25 +1,23 @@
 {
   "metadata": {
-    "extractedAt": "2026-08-15T18:02:59.414Z",
+    "extractedAt": "2026-09-07T05:01:29.726Z",
     "source": "https://www.tradingview.com/pine-script-reference/v6/",
-    "totalItems": 876,
+    "totalItems": 878,
     "extractionMethod": "dynamic_discovery",
     "discoveryStats": {
-      "tocItemsFound": 941,
-      "codeBlocksAnalyzed": 2870,
+      "tocItemsFound": 942,
+      "codeBlocksAnalyzed": 2885,
       "variablesDiscovered": 161,
       "functionsDiscovered": 475,
       "constantsDiscovered": 239,
       "typesDiscovered": 20,
-      "keywordsDiscovered": 25,
+      "keywordsDiscovered": 27,
       "operatorsDiscovered": 21
     },
-    "unclassifiedPrefixes": {
-      "kw": 15
-    }
+    "unclassifiedPrefixes": {}
   },
   "keywords": {
-    "count": 25,
+    "count": 27,
     "items": [
       "and",
       "break",
@@ -33,11 +31,13 @@
       "export",
       "false",
       "for",
+      "for...in",
       "if",
       "import",
       "method",
       "na",
       "not",
+      "once",
       "or",
       "return",
       "switch",

@@ -185,6 +185,7 @@ function statementBlocks(stmt: Statement): Statement[][] {
 		case "ForStatement":
 		case "ForInStatement":
 		case "WhileStatement":
+		case "OnceStatement":
 		case "FunctionDeclaration":
 		case "MethodDeclaration":
 			return [stmt.body];
@@ -209,6 +210,8 @@ function statementExpressions(stmt: Statement): Expression[] {
 		case "IfStatement":
 		case "WhileStatement":
 			return [stmt.condition];
+		case "OnceStatement":
+			return stmt.condition ? [stmt.condition] : [];
 		case "ForStatement":
 			return stmt.step ? [stmt.from, stmt.to, stmt.step] : [stmt.from, stmt.to];
 		case "ForInStatement":

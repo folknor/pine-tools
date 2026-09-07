@@ -529,6 +529,17 @@ export class UnifiedPineValidator {
 		}
 	}
 
+	// Whether a call names a user function (every overload) whose body ends
+	// in a `once` block - a void call at TV. see INV177
+	private isOnceTailUdfCall(call: CallExpression): boolean {
+		if (call.callee.type !== "Identifier") return false;
+		const records = this.udfBodyRecords.get((call.callee as Identifier).name);
+		if (!records || records.length === 0) return false;
+		return records.every(
+			(r) => r.body[r.body.length - 1]?.type === "OnceStatement",
+		);
+	}
+
 	private recordUdfBody(statement: FunctionDeclaration): void {
 		let records = this.udfBodyRecords.get(statement.name);
 		if (!records) {
@@ -647,10 +658,14 @@ export class UnifiedPineValidator {
 				// to anything) and missed this for all 127 void builtins; the
 				// census surfaced the matrix.* block that exposed it.
 				// see INV055
+				// A user function whose TAIL is a `once` block is void too: TV
+				// rejects `y = f()` for such an f with the same CE10098 wording,
+				// anchored at the declaration (probed 2026-09-07). see INV177
 				if (
 					version === "6" &&
 					statement.init?.type === "CallExpression" &&
-					isVoidCall(this, statement.init as CallExpression, version)
+					(isVoidCall(this, statement.init as CallExpression, version) ||
+						this.isOnceTailUdfCall(statement.init as CallExpression))
 				) {
 					const init = statement.init as CallExpression;
 					const startLine = statement.startLine ?? statement.line;
@@ -1281,6 +1296,45 @@ export class UnifiedPineValidator {
 				this.symbolTable.exitScope();
 				this.blockDepth--;
 				this.loopDepth--;
+				break;
+			}
+
+			case "OnceStatement": {
+				// Same CE10101 shape as if/while, blockName "once", anchored at the
+				// condition (probed `once close`, 2026-09-07). The block is a local
+				// scope (plot inside is TV's local-scope error - probed) and it is
+				// always series-gated: it runs on one bar, so a `:=` inside makes
+				// its target series whatever the condition's qualifier. see INV177
+				if (statement.condition) {
+					this.validateExpression(statement.condition, version);
+					const onceCondType = this.inferExpressionType(
+						statement.condition,
+						version,
+					);
+					if (!boolContextOk(onceCondType, version)) {
+						this.addError(
+							statement.condition.line || statement.line,
+							statement.condition.column || statement.column,
+							10,
+							'The condition of the "once" statement must evaluate to a "bool" value.',
+							DiagnosticSeverity.Error,
+						);
+					}
+				}
+				this.seriesGateDepth++;
+				this.symbolTable.enterScope();
+				this.blockDepth++;
+				this.pushDeclScope();
+				for (const stmt of statement.body) {
+					this.collectDeclarations(stmt, version);
+				}
+				for (const stmt of statement.body) {
+					this.validateStatement(stmt, version);
+				}
+				this.popDeclScope();
+				this.blockDepth--;
+				this.symbolTable.exitScope();
+				this.seriesGateDepth--;
 				break;
 			}
 

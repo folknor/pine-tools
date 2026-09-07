@@ -1,0 +1,16 @@
+// @test regression/INV177-once-syntax-errors
+// @description A `once` block has no value and no else. TV rejects `x = once cond` with a dedicated message anchored at the `once` token, and an `else` after a once block with 'Syntax error at input "new line"' at column 1 of the else line. Both blocks are still consumed so the rest of the file parses. Probed 2026-09-07, see INV177.
+// @expects parse: fail
+// @expects error: line=4, column=5, message=/A `once` statement cannot return a value or be assigned to a variable/
+// @expects error: line=8, column=1, message=/Syntax error at input "new line"/
+
+//@version=6
+indicator("INV177 once syntax")
+var int n = 0
+x = once close > open
+    1
+once close > open
+    n := 3
+else
+    n := 4
+plot(n + x)

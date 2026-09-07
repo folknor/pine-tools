@@ -202,6 +202,13 @@ export async function crawlPineScriptReference(): Promise<CrawlResult> {
 						// constructs hold the accurate documented set rather than the
 						// garbage a code-block regex produced (`=-`, `><`, `=|:=`, …).
 						allDiscoveredItems.operators.add(text);
+					} else if (href.includes("#kw_")) {
+						// Keywords are documented under `#kw_` too. Until 2026-09-07 they
+						// were only harvested by the hardcoded code-block regex below, so
+						// the TOC's own `kw_` links were tallied as "unclassified" (16 of
+						// them) and a keyword TV ADDED could never be discovered - `once`
+						// (August 2026) was invisible to two crawls. See INV177.
+						allDiscoveredItems.keywords.add(text);
 					} else {
 						const m = href.match(/#([a-z]+)_/i);
 						if (m) {

@@ -1,0 +1,9 @@
+//@version=6
+indicator("t")
+var float lvl = na
+once close > open
+    unusedLocal = 3
+    lvl := high
+    lvl2 = lvl[1]
+    lvl := lvl2
+plot(lvl)

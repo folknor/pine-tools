@@ -1025,6 +1025,30 @@ export class ExpressionParser {
 			};
 		}
 
+		// A `once` block in EXPRESSION position (`x = once cond` ...). TV's
+		// dedicated error, anchored at the `once` token (probed 2026-09-07);
+		// the block is still consumed so the file parses on, and the value is
+		// `na` so nothing downstream reports a second time. see INV177
+		if (this.p.looksLikeOnceStatement()) {
+			const tok = this.p.advance();
+			this.p.parserErrors.push({
+				line: tok.line,
+				column: tok.column,
+				message:
+					"A `once` statement cannot return a value or be assigned to a variable. Convert the statement to an equivalent `if` or `switch` structure to return a usable result.",
+			});
+			this.p.onceStatement();
+			// A typed placeholder (not `na`, which draws its own CE10097 on the
+			// untyped declaration) so TV's single error stays single.
+			return {
+				type: "Literal",
+				value: 0,
+				raw: "0",
+				line: tok.line,
+				column: tok.column,
+			};
+		}
+
 		// Identifier
 		if (this.p.match(TokenType.IDENTIFIER) || this.p.match(TokenType.KEYWORD)) {
 			const token = this.p.previous();
