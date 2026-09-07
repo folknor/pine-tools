@@ -1,0 +1,28 @@
+// @test regression/INV178-udt-field-defaults
+// @description What a UDT FIELD default may be - the field half of INV172's parameter rule, re-measured on the field shape (23-cell grid + 4 probes, 2026-09-07). A user variable is CE10132 at the expression; any call (builtin, user, cast, a collection or UDT constructor) is CE10133 and any calculation is CE10134, both anchored at the FIELD's own start (the type keyword, or `varip` when present). Literals, negative literals, built-in variables and constants, typed `na`, and a unary over a user variable (TV's own hole, reproduced) stay clean. See INV178.
+// @expects parse: success
+// @expects error: line=13, column=13, message=/Cannot use "userVar" as the default value of a type's field/
+// @expects error: line=14, column=5, message=/The default value assigned to a parameter must be either a literal value/
+// @expects error: line=15, column=5, message=/The default value cannot be a function, variable or calculation/
+// @expects error: line=16, column=5, message=/The default value cannot be a function, variable or calculation/
+// @expects errors: 4
+
+//@version=6
+indicator("INV178 udt field defaults")
+userVar = 42
+type P
+    int x = 0
+type T
+    int a = 5
+    float b = -1.5
+    string c = "s"
+    color d = color.red
+    float e = close
+    int f = na
+    int g = userVar
+    float h = 1 + 2
+    varip int i = math.max(1, 2)
+    P p = P.new()
+    int j = -userVar
+t = T.new()
+plot(t.a + t.g)

@@ -1,0 +1,9 @@
+//@version=6
+indicator("t")
+type P
+    int x = 0
+type T
+    int a = 1
+    P b = P.new()
+t = T.new()
+plot(t.a)

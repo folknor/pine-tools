@@ -195,12 +195,19 @@ IDs so the two stay in sync.
   a re-runnable 20-cell grid whose `--local` mode reproduces TV's column
   exactly. The mutation pool went 5,188/1-survivor to 5,189 killed.
 
-  **Still open: UDT FIELD defaults**, which share the rule and are probed but
-  not implemented - `int b = userVar` is CE10132 at the expression, but
-  `float c = 1 + 2` anchors CE10134 at the FIELD declaration rather than at a
-  parameter name, so it is a second implementation and not a shared call. Also
-  open: the CE10165 cascade TV emits at every call site of a function whose
-  default was rejected. Evidence for both is in the INV.
+  **UDT FIELD defaults: FIXED 2026-09-07
+  ([INV178](../investigations/INV178-udt-field-defaults/notes.md)).** The
+  rule turned out to be a shared call after all - `defaultValueViolation`
+  decides both - with the anchor being the only field-specific fact (the
+  field line's first token, `varip` included). A 23-cell field grid plus
+  four probes match cell for cell, including the shape real code reaches for
+  (`array<int> xs = array.new<int>()` is CE10133) and the absence of any
+  constructor call-site cascade. The parser now parses every field default
+  as an expression rather than keeping bare literals only.
+
+  **Still open: the CE10165 cascade** TV emits at every call site of a
+  FUNCTION whose default was rejected (fields have no such cascade, probed).
+  Evidence is in INV172.
 
   How it was found, kept because it is the argument for #48's operators: the
   new `member-called-as-function` operator, on its first run, spliced

@@ -70,10 +70,17 @@ export interface TypeField {
 	typeAnnotation?: TypeAnnotation;
 	line?: number;
 	column?: number;
-	// Literal default (`int x = 1.5`), captured so the checker can type-check it
-	// against the field type (CE10170). Only literal defaults are captured;
-	// non-literal defaults stay undefined. see INV094
+	// The default expression (`int x = 1.5`, `int y = userVar`). Originally only
+	// literals were captured (CE10170 type check, INV094); every default is
+	// parsed now so the checker can apply TV's what-may-a-default-BE rule to
+	// fields too. see INV178
 	defaultValue?: Expression;
+	// Column of the field line's first token (the type, or `varip`) - TV's
+	// anchor for CE10133/CE10134 on a field. see INV178
+	startColumn?: number;
+	// Parser-internal: token index of a non-literal default awaiting a full
+	// expression parse; cleared before the field is emitted. see INV178
+	defaultStartIndex?: number;
 }
 
 export interface EnumDeclaration extends ASTNode {

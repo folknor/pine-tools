@@ -1249,3 +1249,12 @@ contradiction means re-measure, not "the earlier author was wrong."
   and no else, `plot` inside is the local-scope error, and a `ta.*` call
   inside draws CW10003. Implemented end to end - parser, checker, analyzer,
   lint and fixpoint walkers - with 16 of 18 probes matching TV exactly.
+- [INV178](INV178-udt-field-defaults/notes.md) - the INV172 residual: UDT
+  FIELD defaults. The parser kept only bare-literal defaults, so `int b =
+  userVar`, `float c = 1 + 2` and `array<int> xs = array.new<int>()` in a
+  `type` body were silently accepted. A 23-cell grid plus four probes show
+  the parameter rule transfers whole (CE10132 at the expression, CE10133 /
+  CE10134 at the field line's FIRST token - `varip` when present), that a
+  collection or UDT constructor is a call like any other, and that there is
+  no call-site cascade. Every default is now parsed as an expression and the
+  one shared `defaultValueViolation` rule decides; 23 of 23 cells match.

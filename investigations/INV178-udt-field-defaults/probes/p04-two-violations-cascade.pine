@@ -1,0 +1,10 @@
+//@version=6
+indicator("t")
+userVar = 42
+type T
+    int a = 1
+    int b = userVar
+    float c = 1 + 2
+t = T.new()
+u = T.new(1, 2, 3.0)
+plot(t.a + u.a)

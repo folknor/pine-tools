@@ -1,0 +1,7 @@
+//@version=6
+indicator("t")
+type T
+    int a = 1
+    varip float b = math.max(1, 2)
+t = T.new()
+plot(t.a)

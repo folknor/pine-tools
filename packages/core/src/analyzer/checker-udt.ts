@@ -17,6 +17,7 @@ import type {
 } from "../parser/ast";
 import { KNOWN_NAMESPACES } from "./builtins";
 import type { UnifiedPineValidator } from "./checker";
+import { defaultValueViolation } from "./checker-declarations";
 import { elementArgAssignable, memberChainName } from "./checker-helpers";
 import { type PineType, TypeChecker } from "./types";
 
@@ -226,6 +227,26 @@ export function checkTypeFieldDefaults(
 	if (version !== "6" || !statement.fields) return;
 	for (const field of statement.fields) {
 		if (!field.defaultValue || !field.typeAnnotation) continue;
+		// What a field default may BE - the same rule and codes as a UDF
+		// parameter default (INV172), re-measured on the field shape: CE10132
+		// (user variable) at the expression, CE10133 (any call) and CE10134
+		// (a calculation) at the FIELD's own start rather than a parameter
+		// name. Fields are always typed, so the untyped-`na` case cannot
+		// arise. 23-cell grid, 2026-09-07. see INV178
+		const shape = defaultValueViolation(v, field.defaultValue, true);
+		if (shape) {
+			v.addTemplateError({
+				line: field.line ?? statement.line,
+				column: shape.atExpression
+					? field.defaultValue.column
+					: (field.startColumn ?? field.column ?? statement.column),
+				length: 0,
+				message: shape.message,
+				severity: DiagnosticSeverity.Error,
+				code: shape.code,
+			});
+			continue;
+		}
 		const fb = TypeChecker.baseTypeName(field.typeAnnotation.name);
 		if (fb !== "int" && fb !== "float" && fb !== "bool" && fb !== "string") {
 			continue; // color/array/map/UDT field defaults -> lenient

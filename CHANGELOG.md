@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- New errors: a user-defined type's FIELD default is now validated the way a
+  function parameter's default already was (INV172). A user variable is
+  CE10132 at the expression; any call, including a collection or UDT
+  constructor such as `array.new<int>()`, is CE10133; any calculation is
+  CE10134; both of the latter anchor at the field line's first token, as
+  TradingView does. Nothing had parsed a non-literal field default before,
+  so all of these were silently accepted. 23-cell grid plus four probes, all
+  matching. See INV178.
 - New statement: the `once [<condition>]` conditional structure TradingView
   added in August 2026. It parses, its block is a local bar-conditional scope
   (so `plot` inside it is the local-scope error and a `ta.*` call inside it

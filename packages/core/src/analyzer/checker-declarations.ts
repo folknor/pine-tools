@@ -269,7 +269,7 @@ export function checkParamTypeAnnotations(
 // TV while the bare `userVar` is CE10132. That is almost certainly a hole in
 // TV's own rule, and we deliberately reproduce it rather than "fix" it:
 // flagging there would reject scripts TradingView compiles. see INV172
-function defaultValueViolation(
+export function defaultValueViolation(
 	v: UnifiedPineValidator,
 	expr: Expression,
 	typed: boolean,

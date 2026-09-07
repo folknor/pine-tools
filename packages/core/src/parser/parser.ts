@@ -2214,7 +2214,20 @@ export class Parser {
 						currentToken.indent === bodyIndent
 					) {
 						const field = this.scanTypeFieldAtCurrent();
-						if (field) fields.push(field);
+						if (field) {
+							// A default that is not a bare literal is parsed as a full
+							// expression from its first token; the loop resumes after
+							// it. see INV178
+							if (field.defaultStartIndex !== undefined) {
+								this.current = field.defaultStartIndex;
+								field.defaultValue = this.parseSingleLineExpression(
+									currentToken.line,
+								);
+								this.current--; // the trailing advance() below re-consumes
+							}
+							field.defaultStartIndex = undefined;
+							fields.push(field);
+						}
 					}
 
 					// Enum field values must be STRING literals - TV's CE10125
@@ -2336,13 +2349,26 @@ export class Parser {
 			});
 		}
 		// Capture a LITERAL default (`int x = 1.5`) so the checker can type-check
-		// it against the field type (CE10170). Non-literal defaults stay
-		// undefined - left lenient. see INV094
+		// it against the field type (CE10170, INV094). Any OTHER default is
+		// handed back by index for the caller to parse as an expression, so the
+		// what-may-a-default-BE rule reaches fields. see INV178
 		let defaultValue: AST.Expression | undefined;
+		let defaultStartIndex: number | undefined;
 		const eqTok = this.tokens[i + 1];
 		const valTok = this.tokens[i + 2];
 		if (eqTok?.type === TokenType.ASSIGN && eqTok.value === "=" && valTok) {
-			if (valTok.type === TokenType.NUMBER) {
+			const afterVal = this.tokens[i + 3];
+			const bareLiteral =
+				(valTok.type === TokenType.NUMBER ||
+					valTok.type === TokenType.STRING ||
+					valTok.type === TokenType.BOOL) &&
+				(!afterVal ||
+					afterVal.type === TokenType.NEWLINE ||
+					afterVal.type === TokenType.EOF ||
+					afterVal.type === TokenType.COMMENT);
+			if (!bareLiteral && valTok.type !== TokenType.NEWLINE) {
+				defaultStartIndex = i + 2;
+			} else if (valTok.type === TokenType.NUMBER) {
 				defaultValue = {
 					type: "Literal",
 					value: Number(valTok.value),
@@ -2374,6 +2400,8 @@ export class Parser {
 			line: fieldToken.line,
 			column: fieldToken.column,
 			defaultValue,
+			defaultStartIndex,
+			startColumn: this.tokens[this.current]?.column,
 		};
 	}
 
