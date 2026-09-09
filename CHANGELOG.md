@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Corrected anchor (v5 only): the paren-wrap continuation error is reported in
+  TradingView's joined-line coordinates - the statement's first line, columns
+  accumulated over each line from there - instead of at the offending line's
+  own EOL. The two coincide for a single-line statement, so only wraps past a
+  statement's first line move. Adjudicated over all 39 affected corpus files:
+  4 agree with TradingView, 0 disagree, and 35 have TradingView's parse stage
+  pre-empted by a lexer error, so they give no verdict either way. The rule
+  remains gated to `//@version=5` and no v6 file is affected. See INV176.
+
 - Corrected wording: the expected-type noun a CE10123 quotes for a PLAIN
   (non-union) parameter is now probe-measured rather than taken from the
   parameter's documented type. `ta.highest(high, "x")` says `simple int` is

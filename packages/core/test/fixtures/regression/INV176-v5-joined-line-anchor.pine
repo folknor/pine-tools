@@ -1,0 +1,14 @@
+// @test regression/INV176-v5-joined-line-anchor
+// @description INV176's anchor residual. TradingView reports the v5 paren-wrap error in JOINED-LINE coordinates - the statement's first line, columns accumulated over each line from there with leading whitespace stripped and one joining space added per line - while we anchored at the offending line's own EOL. The two coincide whenever the statement is one line long, which is why every INV176 probe agreed and only two corpus files did not. Line 3 is the multi-line case: the statement starts at line 3, the violating wrap is at the end of line 4, and TV says 3:25 (13+1 for `a = 1 == 2 or`, then 10+1 for `(3 < 4 and`) - matched byte for byte, probed 2026-09-09. Line 6 is the control that must NOT move, a single-line statement whose joined anchor is its own EOL. The continuation indent on line 4 is 2 deliberately: a multiple-of-4 there would also trip the depth-0 wrap rule and TV would report that one first instead. See INV176.
+// @expects parse: fail
+// @expects error: line=3, message=/^Syntax error at input "end of line without line continuation"$/
+// @expects error: line=6, message=/^Syntax error at input "end of line without line continuation"$/
+// @expects errors: 2
+//@version=5
+indicator("t")
+a = 1 == 2 or
+  (3 < 4 and
+    5 < 6)
+c = math.max(1,
+    2)
+plot(a ? c : 0)

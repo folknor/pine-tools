@@ -263,12 +263,17 @@ IDs so the two stay in sync.
   - TV renders a float literal argument as `1` where we render `1.0` in
     `argUserFriendlyRepresentation` (`str.length(1.0)`, seen while measuring
     INV183). Cosmetic, unmeasured beyond that one case.
-  - v5 paren-wrap violations past a statement's FIRST line: TV anchors in
-    joined-line coordinates (statement's first line, columns accumulated over
-    the trimmed wrapped lines plus a joining space each), we anchor at the
-    offending line's EOL. A closer alone on a multiple-of-4 line draws a
-    different TV wording and is deliberately not emitted
-    ([INV176](../investigations/INV176-v5-paren-wrap-multiple-of-4/notes.md)).
+  - ~~v5 paren-wrap violations past a statement's FIRST line.~~ **FIXED
+    2026-09-09
+    ([INV176](../investigations/INV176-v5-paren-wrap-multiple-of-4/notes.md),
+    anchor residual).** The lexer walks BACK from the offending line over
+    continuation lines - a purely textual test - rather than tracking the
+    statement start forward, which is what the original entry had judged
+    impossible without the parser. Adjudicated over all 39 affected corpus
+    files: 4 agree with TV, 0 disagree, 35 have TV pre-empted by a lexer error
+    and give no verdict. Strictly v5-gated; all 39 are v5 and no v6 file moved.
+  - Still open in INV176: a closer alone on a multiple-of-4 line draws a
+    different TV wording and is deliberately not emitted.
 
 - **#85 - residuals from the 2026-09-09 adoption of findings 9, 10 and 11 from
   `../strategies/`

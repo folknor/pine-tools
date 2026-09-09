@@ -360,6 +360,46 @@ export class Lexer {
 		}
 	}
 
+	/**
+	 * TV reports the v5 paren-wrap error in JOINED-LINE coordinates: the
+	 * statement's first line, with columns accumulated over each line from
+	 * there to the offending one - leading whitespace stripped, one joining
+	 * space added per line. Our own anchor is the offending line's EOL, which
+	 * is the same point whenever the statement is one line long (every probe in
+	 * INV176 except two corpus files).
+	 *
+	 * The statement's start is recovered by walking BACK over continuation
+	 * lines rather than by tracking it: a NEWLINE IS emitted after a trailing
+	 * operator at depth 0 (`x = a or` / `    (b and` / `    c)` - the shape
+	 * both outlier files have), so the lexer's newline bookkeeping does not
+	 * know where the statement began. A line whose trimmed text ends in an
+	 * operator, comma or opener cannot end a statement, which is a purely
+	 * textual test needing no token state.
+	 *
+	 * v5-gated by its only caller. see INV176
+	 */
+	private joinedWrapAnchor(pending: { line: number; column: number }): {
+		line: number;
+		column: number;
+	} {
+		const lineText = (n: number): string =>
+			this.source.split("\n")[n - 1] ?? "";
+		const continues = (n: number): boolean => {
+			const t = lineText(n)
+				.replace(/\/\/.*$/, "")
+				.trimEnd();
+			return /(?:[+\-*/%?:,=<>([{]|\b(?:and|or|not)|=>|:=)$/.test(t);
+		};
+		let start = pending.line;
+		while (start > 1 && continues(start - 1)) start--;
+		if (start === pending.line) return pending;
+		let column = 0;
+		for (let n = start; n <= pending.line; n++) {
+			column += lineText(n).replace(/^\s+/, "").length + 1;
+		}
+		return { line: start, column };
+	}
+
 	// Shared by the "\n" and lone-"\r" cases in scanToken. see G005.
 	private handleLineBreak(): void {
 		if (this.bracketDepth === 0) {
@@ -860,9 +900,10 @@ export class Lexer {
 					type !== TokenType.RPAREN &&
 					type !== TokenType.RBRACKET
 				) {
+					const anchor = this.joinedWrapAnchor(this.pendingParenWrap);
 					this.lexerErrors.push({
-						line: this.pendingParenWrap.line,
-						column: this.pendingParenWrap.column,
+						line: anchor.line,
+						column: anchor.column,
 						message:
 							'Syntax error at input "end of line without line continuation"',
 					});

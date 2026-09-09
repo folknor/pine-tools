@@ -98,14 +98,47 @@ clean, v4 is refused by the version gate before any of this matters.
   this triage.
 - Full suite green (482).
 
-## Residual
+## The anchor residual - CLOSED 2026-09-09
 
-- **Anchor for a violation past the statement's first line.** TV reports in
-  joined-line coordinates (above); we report the offending line's EOL. Same
-  error, same wording, different line:column in that case. Matching it would
-  need the lexer to know where a statement starts, which only the parser
-  knows for depth-0 trailing-operator wraps (`x = a or` / `    (b and` /
-  `    c)`, the 35b1f993 shape).
+TV reports in joined-line coordinates: the statement's first line, columns
+accumulated over each line from there with leading whitespace stripped and one
+joining space added per line. We anchored at the offending line's own EOL,
+which is the same point whenever the statement is one line long - hence every
+probe above agreeing and only two corpus files not.
+
+The original entry said matching it "would need the lexer to know where a
+statement starts, which only the parser knows". That was the right diagnosis of
+the obstacle and the wrong conclusion about the remedy: a NEWLINE *is* emitted
+after a trailing operator at depth 0 (verified with `debug:tokens`), so the
+lexer's newline bookkeeping genuinely cannot say where the statement began -
+but it does not have to track it forward. `joinedWrapAnchor` walks BACK from the
+offending line while the previous line's trimmed text ends in an operator, comma
+or opener, which is a purely textual test needing no token state at all.
+
+Adjudicated over the whole affected population, not just the two known files.
+`check-joined-anchor.mjs` (in this directory) re-runs it:
+
+| | files |
+|---|--:|
+| **AGREE** with TV | 4 |
+| **DISAGREE** | 0 |
+| TV pre-empted by a lexer error - no verdict | 35 |
+
+The 35 are the same population this investigation triaged the first time: TV's
+parse stage never runs on a file whose lexer aborts on a broken string or a
+stray `{`, so its silence is not a verdict. Zero disagreements among the files
+that can adjudicate, `35b1f993` and `a7e4bc81` included (95:114 and 102:114,
+both exact).
+
+Fixture: `regression/INV176-v5-joined-line-anchor.pine`, with a single-line
+statement as the control that must not move.
+
+**Still v5-gated.** The anchor is computed inside `pendingParenWrap`'s only
+consumer, which `handleLineBreak` sets only when `detectedVersion === "5"`, so
+none of this is reachable from v6. Confirmed empirically too: all 39 corpus
+files whose anchors moved are v5, none v6.
+
+## Residual
 - **A closer alone on a multiple-of-4 line** (p08/p09) draws
   `Mismatched input 'end of line without line continuation' expecting ')'`
   at a joined-line anchor. Deliberately not emitted: the wording and anchor
