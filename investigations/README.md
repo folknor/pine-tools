@@ -1258,3 +1258,32 @@ contradiction means re-measure, not "the earlier author was wrong."
   collection or UDT constructor is a call like any other, and that there is
   no call-site cascade. Every default is now parsed as an expression and the
   one shared `defaultValueViolation` rule decides; 23 of 23 cells match.
+- [INV179](INV179-reserved-words-binding/notes.md) - reserved words accepted in
+  binding positions (finding 9 from ../strategies). A 343-probe `--tv` sweep -
+  49 candidate words across seven binding positions - measures the set TV
+  refuses to bind at exactly 22 words. It matches no list we held: `do` is in
+  it and is not a Pine v6 construct at all, while `const`, `na`, `type`,
+  `enum`, `method`, `once`, `case` and `default` are not, though several sit in
+  RESERVED_KEYWORDS. `from` is not reserved either - TV accepts it and echoes
+  it back in a signature, and the report's `span(float from, float to)`
+  rejection is TV blaming `from`'s column for `to`'s offence. Parameter names
+  and UDT fields now carry the check; the same check inside the SPECULATIVE
+  `parseFunctionParams` put 1343 errors on `and`/`or`/`not` across 260 corpus
+  files, so it lives in the committed declaration instead. The sweep also
+  measured ~60 probes in the opposite direction, where we reject and TV accepts.
+- [INV180](INV180-for-by-unused/notes.md) - UNUSED_VARIABLE ignored the `by`
+  operand of a `for` header (finding 10 from ../strategies), so every
+  variable-stride loop reported its stride as unused. `analyzeForStatement`
+  walked `from` and `to` but not `step` - a single missing edge, confirmed by
+  `statementExpressions` in the same file already listing it.
+- [INV181](INV181-na-bool-argument/notes.md) - `na()` accepted a bool (finding
+  11 from ../strategies). The catalog was right; two layers each declined to
+  act on it. `checkOverloadResolvedArgs` scored a MIXED union - scalars
+  alongside containers - as "cannot tell", so na's second overload resolved
+  with zero mismatches and the call read as clean. A scalar argument cannot be
+  a label or an array, so only the scalar members can accept it; both overloads
+  then mismatch, and a tie in which EVERY candidate mismatches now reports,
+  worded after the first overload as TV words it. The `simple float` noun is
+  probe data: the INV171 census only saw merged unions, so it never looked at
+  an overloaded function's `unknown` parameter - widening it took the census
+  from 201 to 381 and remeasured 297 nouns.

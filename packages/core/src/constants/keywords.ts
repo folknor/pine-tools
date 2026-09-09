@@ -117,6 +117,55 @@ export const VAR_TYPE_KEYWORDS = [
 ] as const;
 
 /**
+ * Names TradingView refuses in a BINDING position - a parameter name, a UDT
+ * field, a variable, a function name, a loop counter. Answered with
+ * `""<name>"" cannot be used as a variable or function name.`
+ *
+ * MEASURED, not reasoned about: a 343-probe `pine-lint --tv` sweep over 49
+ * candidate words across seven binding positions (INV179, 2026-09-09). The set
+ * is not any list we already held, in either direction:
+ *
+ *  - `do` is in it and is not a Pine v6 construct at all, so it is not a lexer
+ *    keyword here and never was - which is exactly why it was accepted
+ *    everywhere.
+ *  - `to`, `by`, `in` and `as` are in it. They are contextual loop/import
+ *    words, so the parser reads them as names outside their clause.
+ *  - `const`, `na`, `type`, `enum`, `method`, `once`, `case` and `default` are
+ *    NOT in it - TV accepts all of them as names - even though several sit in
+ *    RESERVED_KEYWORDS below. The two lists answer different questions and
+ *    must not be merged.
+ *  - `from` is NOT in it. The report this came from named `from` alongside
+ *    `to`, but TV accepts `f(float from)` and even echoes the parameter back in
+ *    the signature. The `span(float from, float to)` rejection it was inferred
+ *    from is TV blaming `from`'s column for `to`'s offence, which is the
+ *    position-blaming G001 warns about.
+ */
+export const TV_RESERVED_BINDING_NAMES = new Set([
+	"and",
+	"as",
+	"break",
+	"by",
+	"continue",
+	"do",
+	"else",
+	"export",
+	"false",
+	"for",
+	"if",
+	"import",
+	"in",
+	"not",
+	"or",
+	"return",
+	"switch",
+	"to",
+	"true",
+	"var",
+	"varip",
+	"while",
+]);
+
+/**
  * Reserved keywords for symbol table initialization.
  * These prevent user variables from shadowing language constructs.
  */

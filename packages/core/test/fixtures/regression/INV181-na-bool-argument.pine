@@ -1,0 +1,9 @@
+// @test regression/INV181-na-bool-argument
+// @description `na()` rejects a bool. Neither overload accepts one (`simple int/float` and `series int/float/color/string/label/...`), but the MERGED parameter is typed "unknown", so hasOverloads bypassed positional checking and checkOverloadResolvedArgs scored the mixed union as "cannot tell" - both overloads came back clean and the call went unreported. A scalar argument cannot be a label or an array, so only a mixed union's SCALAR members can accept one; both overloads then mismatch, and TV words the error after the first. The noun `simple float` is probe-measured (INV171), not the union's first member. Line 5 is the control: na(<float>) must stay clean. Probed 2026-09-09 via pine-lint --tv. See INV181.
+// @expects parse: success
+// @expects error: line=4, message=/Cannot call "na" with argument "x"="gt".*"series bool".*"simple float"/
+// @expects errors: 1
+//@version=6
+indicator("INV181 na bool argument")
+bool gt = close > open
+plot(na(gt) ? 1 : na(close[1]) ? 2 : 3)

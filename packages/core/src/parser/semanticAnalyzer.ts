@@ -750,6 +750,13 @@ export class SemanticAnalyzer {
 		if ("to" in statement) {
 			this.analyzeExpression(statement.to);
 		}
+		// The `by` operand is a reference like the other two. Omitting it made
+		// every variable-stride loop report its stride as UNUSED_VARIABLE while
+		// `from`/`to` operands counted normally - a single missing edge in the
+		// walk, not a general blindness to loop headers. see INV180
+		if ("step" in statement && statement.step) {
+			this.analyzeExpression(statement.step);
+		}
 		if ("collection" in statement) {
 			this.analyzeExpression(statement.collection);
 		}

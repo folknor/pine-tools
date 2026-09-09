@@ -1,0 +1,5 @@
+//@version=6
+indicator("t")
+f(float to) =>
+    to * 2
+plot(f(close))

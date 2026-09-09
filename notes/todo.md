@@ -254,6 +254,31 @@ IDs so the two stay in sync.
     different TV wording and is deliberately not emitted
     ([INV176](../investigations/INV176-v5-paren-wrap-multiple-of-4/notes.md)).
 
+- **#85 - residuals from the 2026-09-09 adoption of findings 9, 10 and 11 from
+  `../strategies/`
+  ([INV179](../investigations/INV179-reserved-words-binding/notes.md),
+  [INV180](../investigations/INV180-for-by-unused/notes.md),
+  [INV181](../investigations/INV181-na-bool-argument/notes.md)).** 10 and 11 are
+  closed outright. What is left is all from INV179's sweep, whose per-probe
+  results are in `probe.json` so none of this needs re-measuring:
+  - `else`, `break`, `continue` in an ASSIGN position (`else = 1.0`). TV
+    answers `Syntax error at input {value}` there, not the reserved-name
+    message - a different diagnostic from a different part of its grammar.
+    Left rather than approximated with the wrong wording.
+  - `do` as a function name, a plain variable, or a `for` counter. These flow
+    through the general declaration paths, not the two binding sites INV179
+    fixed. `do` in a parameter or a UDT field is done.
+  - **The opposite direction, and it is the bigger number: ~60 probes where WE
+    reject and TV accepts.** Most visibly every base type as a function name
+    (`float(float x) =>`), and `const`, `na`, `type`, `enum`, `method`, `once`,
+    `case`, `default` as ordinary names - several of which sit in
+    `RESERVED_KEYWORDS`, which is a DIFFERENT question from what TV refuses to
+    bind and should not be merged with `TV_RESERVED_BINDING_NAMES`. Worth its
+    own investigation.
+  - Two TV inconsistencies in the safe direction, recorded and left alone: TV
+    accepts `for return in ...` and `for do in ...` while rejecting both words
+    in `for x = 0 to 5`.
+
 - **#82 - the CE10271 method-form shadowing leniency. Anchor half FIXED,
   leniency half OPEN
   ([INV173](../investigations/INV173-namespace-shadow-method-calls/notes.md)).**
@@ -782,6 +807,17 @@ IDs so the two stay in sync.
   `checkUnionArgs` skips positional checking on overloaded functions (INV016's
   deliberate conservatism - positional-to-parameter indices are ambiguous
   across overloads). The noun for it is already measured and in the data.
+
+  **Still open after INV181 (2026-09-09), which moved the neighbouring case.**
+  `na(<bool>)` now reports, via overload RESOLUTION in
+  `checkOverloadResolvedArgs` rather than via `checkUnionArgs` - a mixed union
+  is no longer scored as undecidable for a scalar argument, and a tie in which
+  every candidate mismatches now reports. `math.max(true, 1)` is still silent
+  (re-checked 2026-09-09), so it is variadic arity rather than the mixed-union
+  hole that keeps it out. The noun census was widened at the same time to see
+  an overloaded function's `unknown` merged parameter, taking it from 201 to
+  381 parameters with 353 measured - so if the resolution half is fixed, the
+  wording half is already in the data.
 
   Note for whoever reads the gates: `regression-check` was 0 changed, and that
   is not evidence here. The corpus passes no wrong-base scalars to union

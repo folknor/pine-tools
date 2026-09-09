@@ -1,0 +1,16 @@
+// @test regression/INV180-for-by-unused-variable
+// @description The `by` operand of a `for` header counts as a reference for UNUSED_VARIABLE. analyzeForStatement walked `from` and `to` but not `step`, so every variable-stride loop reported its stride as unused - a warning TV does not raise, which under a warnings-are-failures policy made such loops unlintable. `lo`/`hi`/`stride` occupy the three loop slots so a regression can only be in the slot that broke; `neverRead` is the control that must STILL warn, so the fix cannot pass by silencing the rule. Probed 2026-09-09 via pine-lint --tv (TV clean on the loop). See INV180.
+// @expects parse: success
+// @expects errors: 0
+// @expects warning: line=6, message=/Variable 'neverRead' is declared but never used/
+// @expects warnings: 1
+//@version=6
+indicator("INV180 for by unused variable")
+int lo = 0
+int hi = 5
+int stride = input.int(1, "Step")
+int neverRead = 42
+float n = 0.0
+for i = lo to hi by stride
+    n += i
+plot(n)

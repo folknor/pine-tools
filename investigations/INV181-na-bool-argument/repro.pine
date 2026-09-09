@@ -1,0 +1,4 @@
+//@version=6
+indicator("t")
+bool gt = close > open
+plot(na(gt) ? 1 : 2)

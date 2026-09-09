@@ -1,7 +1,7 @@
 /**
  * Pine Script V6 Functions
  * Auto-generated from TradingView documentation
- * Generated: 2026-09-07T05:14:01.505Z
+ * Generated: 2026-09-09T04:24:47.679Z
  * Total: 475 functions
  */
 
@@ -1123,7 +1123,8 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "series int",
         "description": "The nth greatest value to return, where zero is the greatest. Optional. The default is zero.",
         "required": false,
-        "default": "0"
+        "default": "0",
+        "expectedTypeNoun": "series int"
       }
     ],
     "returns": "series float",
@@ -1248,7 +1249,8 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "series int",
         "description": "The nth smallest value to return, where zero is the smallest. Optional. The default is zero.",
         "required": false,
-        "default": "0"
+        "default": "0",
+        "expectedTypeNoun": "series int"
       }
     ],
     "returns": "series float",
@@ -1875,7 +1877,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "index",
         "type": "series int",
         "description": "The index of the element for which the percentile rank should be calculated.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series int"
       }
     ],
     "returns": "series float",
@@ -2483,7 +2486,8 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "series bool",
         "description": "Determines which estimate should be used. Optional. The default is true.",
         "required": false,
-        "default": "true"
+        "default": "true",
+        "expectedTypeNoun": "series bool"
       }
     ],
     "returns": "series float",
@@ -2640,7 +2644,8 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "series bool",
         "description": "Determines which estimate should be used. Optional. The default is true.",
         "required": false,
-        "default": "true"
+        "default": "true",
+        "expectedTypeNoun": "series bool"
       }
     ],
     "returns": "series float",
@@ -3047,27 +3052,31 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "top_left",
         "type": "chart.point",
         "description": "A chart.point object that specifies the top-left corner location of the box.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "chart.point"
       },
       {
         "name": "bottom_right",
         "type": "chart.point",
         "description": "A chart.point object that specifies the bottom-right corner location of the box.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "chart.point"
       },
       {
         "name": "border_color",
         "type": "series color",
         "description": "Color of the four borders. Optional. The default is color.blue.",
         "required": false,
-        "default": "color.blue"
+        "default": "color.blue",
+        "expectedTypeNoun": "series color"
       },
       {
         "name": "border_width",
         "type": "series int",
         "description": "Width of the four borders, in pixels. Optional. The default is 1 pixel.",
         "required": false,
-        "default": "1"
+        "default": "1",
+        "expectedTypeNoun": "series int"
       },
       {
         "name": "border_style",
@@ -3079,14 +3088,16 @@ export const FUNCTIONS: PineFunction[] = [
           "line.style_solid",
           "line.style_dotted",
           "line.style_dashed"
-        ]
+        ],
+        "expectedTypeNoun": "series string"
       },
       {
         "name": "extend",
         "type": "series string",
         "description": "When extend.none is used, the horizontal borders start at the left border and end at the right border. With extend.left or extend.right, the horizontal borders are extended indefinitely to the left or right of the box, respectively. With extend.both, the horizontal borders are extended on both sides. Optional. The default value is extend.none.",
         "required": false,
-        "default": "extend.none"
+        "default": "extend.none",
+        "expectedTypeNoun": "series string"
       },
       {
         "name": "xloc",
@@ -3097,21 +3108,24 @@ export const FUNCTIONS: PineFunction[] = [
         "allowedValues": [
           "xloc.bar_index",
           "xloc.bar_time"
-        ]
+        ],
+        "expectedTypeNoun": "series string"
       },
       {
         "name": "bgcolor",
         "type": "series color",
         "description": "Background color of the box. Optional. The default is color.blue.",
         "required": false,
-        "default": "color.blue"
+        "default": "color.blue",
+        "expectedTypeNoun": "series color"
       },
       {
         "name": "text",
         "type": "series string",
         "description": "The text to be displayed inside the box. Optional. The default is empty string.",
         "required": false,
-        "default": ""
+        "default": "",
+        "expectedTypeNoun": "series string"
       },
       {
         "name": "text_size",
@@ -3126,7 +3140,8 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "series color",
         "description": "The color of the text. Optional. The default is color.black.",
         "required": false,
-        "default": "color.black"
+        "default": "color.black",
+        "expectedTypeNoun": "series color"
       },
       {
         "name": "text_halign",
@@ -3138,7 +3153,8 @@ export const FUNCTIONS: PineFunction[] = [
           "text.align_left",
           "text.align_center",
           "text.align_right"
-        ]
+        ],
+        "expectedTypeNoun": "series string"
       },
       {
         "name": "text_valign",
@@ -3150,7 +3166,8 @@ export const FUNCTIONS: PineFunction[] = [
           "text.align_top",
           "text.align_center",
           "text.align_bottom"
-        ]
+        ],
+        "expectedTypeNoun": "series string"
       },
       {
         "name": "text_wrap",
@@ -3161,7 +3178,8 @@ export const FUNCTIONS: PineFunction[] = [
         "allowedValues": [
           "text.wrap_none",
           "text.wrap_auto"
-        ]
+        ],
+        "expectedTypeNoun": "series string"
       },
       {
         "name": "text_font_family",
@@ -3172,14 +3190,16 @@ export const FUNCTIONS: PineFunction[] = [
         "allowedValues": [
           "font.family_default",
           "font.family_monospace"
-        ]
+        ],
+        "expectedTypeNoun": "series string"
       },
       {
         "name": "force_overlay",
         "type": "const bool",
         "description": "If true, the drawing will display on the main chart pane, even when the script occupies a separate pane. Optional. The default is false.",
         "required": false,
-        "default": "false"
+        "default": "false",
+        "expectedTypeNoun": "const bool"
       },
       {
         "name": "text_formatting",
@@ -4312,7 +4332,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "x",
         "type": "series color",
         "description": "The value to convert to the specified type, usually na.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "const color"
       }
     ],
     "returns": "const color",
@@ -4382,7 +4403,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "color",
         "type": "series color",
         "description": "Color.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series color"
       }
     ],
     "returns": "const float",
@@ -4494,7 +4516,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "color",
         "type": "series color",
         "description": "Color.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series color"
       }
     ],
     "returns": "const float",
@@ -4559,7 +4582,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "color",
         "type": "series color",
         "description": "Color to apply transparency to.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "const color"
       },
       {
         "name": "transp",
@@ -4671,7 +4695,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "color",
         "type": "series color",
         "description": "Color.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series color"
       }
     ],
     "returns": "const float",
@@ -4956,7 +4981,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "color",
         "type": "series color",
         "description": "Color.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series color"
       }
     ],
     "returns": "const float",
@@ -6578,37 +6604,43 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "title",
         "type": "const string",
         "description": "Title of the input. If not specified, the variable name is used as the input's title. If the title is specified, but it is empty, the name will be an empty string.",
-        "required": false
+        "required": false,
+        "expectedTypeNoun": "const string"
       },
       {
         "name": "options",
         "type": "tuple of const int/float values: [val1, val2, ...]",
         "description": "A list of options to choose from a dropdown menu, separated by commas and enclosed in square brackets: [val1, val2, ...]. When using this parameter, the minval, maxval and step parameters cannot be used.",
-        "required": false
+        "required": false,
+        "expectedTypeNoun": "[const float...]"
       },
       {
         "name": "tooltip",
         "type": "const string",
         "description": "The string that will be shown to the user when hovering over the tooltip icon.",
-        "required": false
+        "required": false,
+        "expectedTypeNoun": "const string"
       },
       {
         "name": "inline",
         "type": "const string",
         "description": "Combines all the input calls using the same argument in one line. The string used as an argument is not displayed. It is only used to identify inputs belonging to the same line.",
-        "required": false
+        "required": false,
+        "expectedTypeNoun": "const string"
       },
       {
         "name": "group",
         "type": "const string",
         "description": "Creates a header above all inputs using the same group argument string. The string is also used as the header's text.",
-        "required": false
+        "required": false,
+        "expectedTypeNoun": "const string"
       },
       {
         "name": "confirm",
         "type": "const bool",
         "description": "If true, then user will be asked to confirm input value before indicator is added to chart. Default value is false.",
-        "required": false
+        "required": false,
+        "expectedTypeNoun": "const bool"
       },
       {
         "name": "display",
@@ -6628,7 +6660,8 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "input bool",
         "description": "Optional. Specifies whether users can change the value of the input in the script's \"Settings/Inputs\" tab. The script can use this parameter to set the state of the input based on the values of other inputs. If true, users can change the value of the input. If false, the input is grayed out, and users cannot change the value. The default is true.",
         "required": false,
-        "default": "true"
+        "default": "true",
+        "expectedTypeNoun": "input bool"
       },
       {
         "name": "minval",
@@ -6640,7 +6673,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "maxval",
         "type": "unknown",
         "description": "Maximum possible value of the input variable. Optional.",
-        "required": false
+        "required": false,
+        "expectedTypeNoun": "const float"
       },
       {
         "name": "step",
@@ -6829,43 +6863,50 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "defval",
         "type": "const int",
         "description": "Determines the default value of the input variable proposed in the script's \"Settings/Inputs\" tab, from where script users can change it. When a list of values is used with the options parameter, the value must be one of them.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "const int"
       },
       {
         "name": "title",
         "type": "const string",
         "description": "Title of the input. If not specified, the variable name is used as the input's title. If the title is specified, but it is empty, the name will be an empty string.",
-        "required": false
+        "required": false,
+        "expectedTypeNoun": "const string"
       },
       {
         "name": "options",
         "type": "tuple of const int values: [val1, val2, ...]",
         "description": "A list of options to choose from a dropdown menu, separated by commas and enclosed in square brackets: [val1, val2, ...]. When using this parameter, the minval, maxval and step parameters cannot be used.",
-        "required": false
+        "required": false,
+        "expectedTypeNoun": "[const int...]"
       },
       {
         "name": "tooltip",
         "type": "const string",
         "description": "The string that will be shown to the user when hovering over the tooltip icon.",
-        "required": false
+        "required": false,
+        "expectedTypeNoun": "const string"
       },
       {
         "name": "inline",
         "type": "const string",
         "description": "Combines all the input calls using the same argument in one line. The string used as an argument is not displayed. It is only used to identify inputs belonging to the same line.",
-        "required": false
+        "required": false,
+        "expectedTypeNoun": "const string"
       },
       {
         "name": "group",
         "type": "const string",
         "description": "Creates a header above all inputs using the same group argument string. The string is also used as the header's text.",
-        "required": false
+        "required": false,
+        "expectedTypeNoun": "const string"
       },
       {
         "name": "confirm",
         "type": "const bool",
         "description": "If true, then user will be asked to confirm input value before indicator is added to chart. Default value is false.",
-        "required": false
+        "required": false,
+        "expectedTypeNoun": "const bool"
       },
       {
         "name": "display",
@@ -6885,7 +6926,8 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "input bool",
         "description": "Optional. Specifies whether users can change the value of the input in the script's \"Settings/Inputs\" tab. The script can use this parameter to set the state of the input based on the values of other inputs. If true, users can change the value of the input. If false, the input is grayed out, and users cannot change the value. The default is true.",
         "required": false,
-        "default": "true"
+        "default": "true",
+        "expectedTypeNoun": "input bool"
       },
       {
         "name": "minval",
@@ -6897,7 +6939,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "maxval",
         "type": "unknown",
         "description": "Maximum possible value of the input variable. Optional.",
-        "required": false
+        "required": false,
+        "expectedTypeNoun": "const int"
       },
       {
         "name": "step",
@@ -7962,13 +8005,15 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "point",
         "type": "chart.point",
         "description": "A chart.point object that specifies the label's location.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "chart.point"
       },
       {
         "name": "text",
         "type": "series string",
         "description": "Label text. Default is empty string.",
-        "required": false
+        "required": false,
+        "expectedTypeNoun": "series string"
       },
       {
         "name": "xloc",
@@ -7978,7 +8023,8 @@ export const FUNCTIONS: PineFunction[] = [
         "allowedValues": [
           "xloc.bar_index",
           "xloc.bar_time"
-        ]
+        ],
+        "expectedTypeNoun": "series string"
       },
       {
         "name": "yloc",
@@ -7989,13 +8035,15 @@ export const FUNCTIONS: PineFunction[] = [
           "yloc.price",
           "yloc.abovebar",
           "yloc.belowbar"
-        ]
+        ],
+        "expectedTypeNoun": "series string"
       },
       {
         "name": "color",
         "type": "series color",
         "description": "Color of the label border and arrow",
-        "required": false
+        "required": false,
+        "expectedTypeNoun": "series color"
       },
       {
         "name": "style",
@@ -8024,13 +8072,15 @@ export const FUNCTIONS: PineFunction[] = [
           "label.style_square",
           "label.style_diamond",
           "label.style_text_outline"
-        ]
+        ],
+        "expectedTypeNoun": "series string"
       },
       {
         "name": "textcolor",
         "type": "series color",
         "description": "Text color.",
-        "required": false
+        "required": false,
+        "expectedTypeNoun": "series color"
       },
       {
         "name": "size",
@@ -8049,13 +8099,15 @@ export const FUNCTIONS: PineFunction[] = [
           "text.align_left",
           "text.align_center",
           "text.align_right"
-        ]
+        ],
+        "expectedTypeNoun": "series string"
       },
       {
         "name": "tooltip",
         "type": "series string",
         "description": "Hover to see tooltip label.",
-        "required": false
+        "required": false,
+        "expectedTypeNoun": "series string"
       },
       {
         "name": "text_font_family",
@@ -8066,14 +8118,16 @@ export const FUNCTIONS: PineFunction[] = [
         "allowedValues": [
           "font.family_default",
           "font.family_monospace"
-        ]
+        ],
+        "expectedTypeNoun": "series string"
       },
       {
         "name": "force_overlay",
         "type": "const bool",
         "description": "If true, the drawing will display on the main chart pane, even when the script occupies a separate pane. Optional. The default is false.",
         "required": false,
-        "default": "false"
+        "default": "false",
+        "expectedTypeNoun": "const bool"
       },
       {
         "name": "text_formatting",
@@ -9048,13 +9102,15 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "first_point",
         "type": "chart.point",
         "description": "A chart.point object that specifies the line's starting coordinate.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "chart.point"
       },
       {
         "name": "second_point",
         "type": "chart.point",
         "description": "A chart.point object that specifies the line's ending coordinate.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "chart.point"
       },
       {
         "name": "xloc",
@@ -9064,19 +9120,22 @@ export const FUNCTIONS: PineFunction[] = [
         "allowedValues": [
           "xloc.bar_index",
           "xloc.bar_time"
-        ]
+        ],
+        "expectedTypeNoun": "series string"
       },
       {
         "name": "extend",
         "type": "series string",
         "description": "If extend=extend.none, draws segment starting at point (x1, y1) and ending at point (x2, y2). If extend is equal to extend.right or extend.left, draws a ray starting at point (x1, y1) or (x2, y2), respectively. If extend=extend.both, draws a straight line that goes through these points. Default value is extend.none.",
-        "required": false
+        "required": false,
+        "expectedTypeNoun": "series string"
       },
       {
         "name": "color",
         "type": "series color",
         "description": "Line color.",
-        "required": false
+        "required": false,
+        "expectedTypeNoun": "series color"
       },
       {
         "name": "style",
@@ -9090,20 +9149,23 @@ export const FUNCTIONS: PineFunction[] = [
           "line.style_arrow_left",
           "line.style_arrow_right",
           "line.style_arrow_both"
-        ]
+        ],
+        "expectedTypeNoun": "series string"
       },
       {
         "name": "width",
         "type": "series int",
         "description": "Line width in pixels.",
-        "required": false
+        "required": false,
+        "expectedTypeNoun": "series int"
       },
       {
         "name": "force_overlay",
         "type": "const bool",
         "description": "If true, the drawing will display on the main chart pane, even when the script occupies a separate pane. Optional. The default is false.",
         "required": false,
-        "default": "false"
+        "default": "false",
+        "expectedTypeNoun": "const bool"
       },
       {
         "name": "x1",
@@ -9771,7 +9833,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "message",
         "type": "series string",
         "description": "Log message.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series string"
       },
       {
         "name": "formatString",
@@ -9849,7 +9912,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "message",
         "type": "series string",
         "description": "Log message.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series string"
       },
       {
         "name": "formatString",
@@ -9927,7 +9991,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "message",
         "type": "series string",
         "description": "Log message.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series string"
       },
       {
         "name": "formatString",
@@ -11568,7 +11633,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "precision",
         "type": "series int",
         "description": "Optional argument. Decimal places to which number will be rounded. When no argument is supplied, rounding is to the nearest integer.",
-        "required": false
+        "required": false,
+        "expectedTypeNoun": "simple int"
       }
     ],
     "returns": "const int",
@@ -13715,7 +13781,8 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "series int",
         "description": "Index of the column whose sorted values determine the new order of rows. Optional. The default value is 0.",
         "required": false,
-        "default": "0"
+        "default": "0",
+        "expectedTypeNoun": "series int"
       },
       {
         "name": "order",
@@ -14200,7 +14267,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "x",
         "type": "unknown",
         "description": "Value to be tested.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple float"
       }
     ],
     "returns": "simple bool",
@@ -15973,13 +16041,15 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series string",
         "description": "Source string.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "const string"
       },
       {
         "name": "str",
         "type": "series string",
         "description": "The substring to search for.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "const string"
       }
     ],
     "returns": "const bool",
@@ -16055,13 +16125,15 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series string",
         "description": "Source string.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "const string"
       },
       {
         "name": "str",
         "type": "series string",
         "description": "The substring to search for.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "const string"
       }
     ],
     "returns": "const bool",
@@ -16252,7 +16324,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "string",
         "type": "series string",
         "description": "Source string.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "const string"
       }
     ],
     "returns": "const int",
@@ -16303,7 +16376,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series string",
         "description": "String to be converted.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "const string"
       }
     ],
     "returns": "const string",
@@ -16357,13 +16431,15 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series string",
         "description": "Source string.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple string"
       },
       {
         "name": "regex",
         "type": "series string",
         "description": "The regular expression to which this string is to be matched.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple string"
       }
     ],
     "returns": "simple string",
@@ -16423,13 +16499,15 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series string",
         "description": "Source string.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "const string"
       },
       {
         "name": "str",
         "type": "series string",
         "description": "The substring to search for.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "const string"
       }
     ],
     "returns": "const int",
@@ -16504,20 +16582,23 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series string",
         "description": "String to repeat.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "const string"
       },
       {
         "name": "repeat",
         "type": "series int",
         "description": "Number of times to repeat the source string. Must be greater than or equal to 0.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "const int"
       },
       {
         "name": "separator",
         "type": "series string",
         "description": "String to inject between repeated values. Optional. The default is empty string.",
         "required": false,
-        "default": ""
+        "default": "",
+        "expectedTypeNoun": "const string"
       }
     ],
     "returns": "const string",
@@ -16634,25 +16715,29 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series string",
         "description": "Source string.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "const string"
       },
       {
         "name": "target",
         "type": "series string",
         "description": "String to be replaced.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "const string"
       },
       {
         "name": "replacement",
         "type": "series string",
         "description": "String to be inserted instead of the target string.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "const string"
       },
       {
         "name": "occurrence",
         "type": "series int",
         "description": "N-th occurrence of the target string to replace. Indexing starts at 0 for the first match. Optional. Default value is 0.",
-        "required": false
+        "required": false,
+        "expectedTypeNoun": "const int"
       }
     ],
     "returns": "const string",
@@ -16764,19 +16849,22 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series string",
         "description": "Source string.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple string"
       },
       {
         "name": "target",
         "type": "series string",
         "description": "String to be replaced.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple string"
       },
       {
         "name": "replacement",
         "type": "series string",
         "description": "String to be substituted for each occurrence of target string.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple string"
       }
     ],
     "returns": "simple string",
@@ -16862,13 +16950,15 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series string",
         "description": "Source string.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "const string"
       },
       {
         "name": "str",
         "type": "series string",
         "description": "The substring to search for.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "const string"
       }
     ],
     "returns": "const bool",
@@ -16940,20 +17030,23 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series string",
         "description": "Source string from which to extract the substring.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "const string"
       },
       {
         "name": "begin_pos",
         "type": "series int",
         "description": "The beginning position of the extracted substring. It is inclusive (the extracted substring includes the character at that position).",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "const int"
       },
       {
         "name": "end_pos",
         "type": "series int",
         "description": "The ending position. It is exclusive (the extracted string does NOT include that position's character). Optional. The default is the length of the source string.",
         "required": false,
-        "default": "SOURCE_LENGTH"
+        "default": "SOURCE_LENGTH",
+        "expectedTypeNoun": "const int"
       }
     ],
     "returns": "const string",
@@ -17052,7 +17145,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "string",
         "type": "series string",
         "description": "String containing the representation of an integer or floating point value.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series string"
       }
     ],
     "returns": "const float",
@@ -17209,7 +17303,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series string",
         "description": "String to trim.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "const string"
       }
     ],
     "returns": "const string",
@@ -17274,7 +17369,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "series string",
         "description": "String to be converted.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "const string"
       }
     ],
     "returns": "const string",
@@ -19070,7 +19166,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "x",
         "type": "series string",
         "description": "The value to convert to the specified type, usually na.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "const string"
       }
     ],
     "returns": "const string",
@@ -19140,7 +19237,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "symbol",
         "type": "series string",
         "description": "Symbol. Note that the symbol should be passed with a prefix. For example: \"NASDAQ:AAPL\" instead of \"AAPL\".",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple string"
       }
     ],
     "returns": "simple string",
@@ -19191,7 +19289,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "symbol",
         "type": "series string",
         "description": "Symbol. Note that the symbol should be passed with a prefix. For example: \"NASDAQ:AAPL\" instead of \"AAPL\".",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple string"
       }
     ],
     "returns": "simple string",
@@ -19476,7 +19575,8 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "series int",
         "description": "How far the past source value is offset from the current one, in bars. Optional. The default is 1.",
         "required": false,
-        "default": "1"
+        "default": "1",
+        "expectedTypeNoun": "series int"
       }
     ],
     "returns": "series int",
@@ -19914,7 +20014,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "length",
         "type": "series int",
         "description": "Number of bars (length).",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple int"
       }
     ],
     "returns": "series float",
@@ -19978,7 +20079,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "length",
         "type": "series int",
         "description": "Number of bars (length).",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple int"
       }
     ],
     "returns": "series int",
@@ -20209,7 +20311,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "length",
         "type": "series int",
         "description": "Number of bars (length).",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple int"
       }
     ],
     "returns": "series float",
@@ -20273,7 +20376,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "length",
         "type": "series int",
         "description": "Number of bars back.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple int"
       }
     ],
     "returns": "series int",
@@ -20404,7 +20508,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "length",
         "type": "series int",
         "description": "Number of bars (length).",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series int"
       }
     ],
     "returns": "series int",
@@ -20522,7 +20627,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "length",
         "type": "series int",
         "description": "Number of bars (length).",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series int"
       }
     ],
     "returns": "series int",
@@ -20770,7 +20876,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "unknown",
         "description": "An optional parameter. Data series to calculate the value. 'High' by default.",
-        "required": false
+        "required": false,
+        "expectedTypeNoun": "series float"
       }
     ],
     "returns": "series float",
@@ -20853,7 +20960,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "source",
         "type": "unknown",
         "description": "An optional parameter. Data series to calculate the value. 'Low' by default.",
-        "required": false
+        "required": false,
+        "expectedTypeNoun": "series float"
       }
     ],
     "returns": "series float",
@@ -20925,7 +21033,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "length",
         "type": "series int",
         "description": "Number of bars (length).",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series int"
       }
     ],
     "returns": "series int",
@@ -21421,7 +21530,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "condition",
         "type": "series bool",
         "description": "The condition to search for.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "series bool"
       },
       {
         "name": "source",
@@ -21434,7 +21544,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "occurrence",
         "type": "simple int",
         "description": "The occurrence of the condition. The numbering starts from 0 and goes back in time, so '0' is the most recent occurrence of condition, '1' is the second most recent and so forth. Must be an integer >= 0.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple int"
       }
     ],
     "returns": "series color",
@@ -21603,7 +21714,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "anchor",
         "type": "series bool",
         "description": "The condition that triggers the reset of VWAP calculations. When true, calculations reset; when false, calculations proceed using the values accumulated since the previous reset. Optional. The default is equivalent to passing timeframe.change() with \"1D\" as its argument.",
-        "required": false
+        "required": false,
+        "expectedTypeNoun": "series bool"
       },
       {
         "name": "stdev_mult",
@@ -22862,7 +22974,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "symbol",
         "type": "series string",
         "description": "Symbol ticker identifier.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple string"
       }
     ],
     "returns": "simple string",
@@ -22914,13 +23027,15 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "from_tickerid",
         "type": "series string",
         "description": "The ticker ID to inherit modifiers from.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple string"
       },
       {
         "name": "symbol",
         "type": "series string",
         "description": "The symbol to construct the new ticker ID for.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple string"
       }
     ],
     "returns": "simple string",
@@ -22975,7 +23090,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "symbol",
         "type": "series string",
         "description": "Symbol ticker identifier.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple string"
       },
       {
         "name": "reversal",
@@ -22988,7 +23104,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "param",
         "type": "unknown",
         "description": "Represents the ticker's \"ATR length\" value if the style value is \"ATR\", \"Reversal amount\" value if the style is \"Traditional\", or \"Percentage\" value if the style is \"PercentageLTP\".",
-        "required": false
+        "required": false,
+        "expectedTypeNoun": "simple float"
       },
       {
         "name": "style",
@@ -23119,13 +23236,15 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "symbol",
         "type": "series string",
         "description": "Symbol ticker identifier.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple string"
       },
       {
         "name": "number_of_lines",
         "type": "series int",
         "description": "Number of line.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple int"
       }
     ],
     "returns": "simple string",
@@ -23189,7 +23308,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "tickerid",
         "type": "series string",
         "description": "Symbol name with exchange prefix, e.g. 'BATS:MSFT', 'NASDAQ:MSFT' or tickerid with session and adjustment from the ticker.new() function.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple string"
       },
       {
         "name": "session",
@@ -23200,7 +23320,8 @@ export const FUNCTIONS: PineFunction[] = [
           "session.regular",
           "session.extended",
           "syminfo.session"
-        ]
+        ],
+        "expectedTypeNoun": "simple string"
       },
       {
         "name": "adjustment",
@@ -23211,7 +23332,8 @@ export const FUNCTIONS: PineFunction[] = [
           "adjustment.none",
           "adjustment.splits",
           "adjustment.dividends"
-        ]
+        ],
+        "expectedTypeNoun": "simple string"
       },
       {
         "name": "backadjustment",
@@ -23387,13 +23509,15 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "prefix",
         "type": "series string",
         "description": "Exchange prefix. For example: 'BATS', 'NYSE', 'NASDAQ'. Exchange prefix of main series is syminfo.prefix.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple string"
       },
       {
         "name": "ticker",
         "type": "series string",
         "description": "Ticker name. For example 'AAPL', 'MSFT', 'EURUSD'. Ticker name of the main series is syminfo.ticker.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple string"
       },
       {
         "name": "session",
@@ -23404,7 +23528,8 @@ export const FUNCTIONS: PineFunction[] = [
           "session.regular",
           "session.extended",
           "syminfo.session"
-        ]
+        ],
+        "expectedTypeNoun": "simple string"
       },
       {
         "name": "adjustment",
@@ -23415,7 +23540,8 @@ export const FUNCTIONS: PineFunction[] = [
           "adjustment.none",
           "adjustment.splits",
           "adjustment.dividends"
-        ]
+        ],
+        "expectedTypeNoun": "simple string"
       },
       {
         "name": "backadjustment",
@@ -23604,7 +23730,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "symbol",
         "type": "series string",
         "description": "Symbol ticker identifier.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple string"
       },
       {
         "name": "source",
@@ -23614,7 +23741,8 @@ export const FUNCTIONS: PineFunction[] = [
         "allowedValues": [
           "hl",
           "close"
-        ]
+        ],
+        "expectedTypeNoun": "simple string"
       },
       {
         "name": "style",
@@ -23625,7 +23753,8 @@ export const FUNCTIONS: PineFunction[] = [
           "ATR",
           "Traditional",
           "PercentageLTP"
-        ]
+        ],
+        "expectedTypeNoun": "simple string"
       },
       {
         "name": "param",
@@ -23638,7 +23767,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "reversal",
         "type": "series int",
         "description": "Reversal amount.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple int"
       }
     ],
     "returns": "simple string",
@@ -23756,7 +23886,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "symbol",
         "type": "series string",
         "description": "Symbol ticker identifier.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple string"
       },
       {
         "name": "style",
@@ -23767,7 +23898,8 @@ export const FUNCTIONS: PineFunction[] = [
           "ATR",
           "Traditional",
           "PercentageLTP"
-        ]
+        ],
+        "expectedTypeNoun": "simple string"
       },
       {
         "name": "param",
@@ -23781,7 +23913,8 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "series bool",
         "description": "Specifies if wick values are returned for Renko bricks. When true, high and low values requested from a symbol using the ticker formed by this function will include wick values when they are present. When false, high and low will always be equal to either open or close. Optional. The default is false. A detailed explanation of how Renko wicks are calculated can be found in our Help Center.",
         "required": false,
-        "default": "false"
+        "default": "false",
+        "expectedTypeNoun": "simple bool"
       },
       {
         "name": "source",
@@ -23792,7 +23925,8 @@ export const FUNCTIONS: PineFunction[] = [
         "allowedValues": [
           "Close",
           "OHLC"
-        ]
+        ],
+        "expectedTypeNoun": "simple string"
       }
     ],
     "returns": "simple string",
@@ -23916,7 +24050,8 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "series string",
         "description": "A ticker ID to be converted into its standard form. Optional. The default is syminfo.tickerid.",
         "required": false,
-        "default": "syminfo.tickerid"
+        "default": "syminfo.tickerid",
+        "expectedTypeNoun": "simple string"
       }
     ],
     "returns": "simple string",
@@ -23963,27 +24098,31 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "timeframe",
         "type": "series string",
         "description": "The timeframe of the timestamp calculation. If the value is an empty string, the function uses the script's main timeframe.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple string"
       },
       {
         "name": "session",
         "type": "series string",
         "description": "Optional. The session string for filtering times. The function returns a timestamp if the time is in the specified session, or na if the time is outside the session. If the argument is an empty string, the function uses the default, which is the symbol's session.",
-        "required": false
+        "required": false,
+        "expectedTypeNoun": "simple string"
       },
       {
         "name": "bars_back",
         "type": "series int",
         "description": "Optional. The bar offset on the script's main timeframe. If the value is positive, the function finds the bar that is N bars before the current bar on the main timeframe, then retrieves the timestamp of the corresponding bar on the timeframe specified by the timeframe argument. If the value is a negative number from -1 to -500, the function calculates the expected timestamp of the timeframe bar corresponding to N bars after the current bar on the main timeframe. The default is 0.",
         "required": false,
-        "default": "0"
+        "default": "0",
+        "expectedTypeNoun": "simple int"
       },
       {
         "name": "timeframe_bars_back",
         "type": "series int",
         "description": "Optional. The additional bar offset on the timeframe specified by the timeframe argument. If the value is positive, the function retrieves the timestamp of the bar that is N timeframe bars before the one corresponding to the bars_back offset. If the value is a negative number from -1 to -500, the function calculates the expected timestamp of the timeframe bar that is N timeframe bars after the one corresponding to the bars_back offset. The default is 0.",
         "required": false,
-        "default": "0"
+        "default": "0",
+        "expectedTypeNoun": "series int"
       },
       {
         "name": "timezone",
@@ -24085,27 +24224,31 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "timeframe",
         "type": "series string",
         "description": "The timeframe of the timestamp calculation. If the value is an empty string, the function uses the script's main timeframe.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple string"
       },
       {
         "name": "session",
         "type": "series string",
         "description": "Optional. The session string for filtering times. The function returns a timestamp if the time is in the specified session, or na if the time is outside the session. If the argument is an empty string, the function uses the default, which is the symbol's session.",
-        "required": false
+        "required": false,
+        "expectedTypeNoun": "simple string"
       },
       {
         "name": "bars_back",
         "type": "series int",
         "description": "Optional. The bar offset on the script's main timeframe. If the value is positive, the function finds the bar that is N bars before the current bar on the main timeframe, then retrieves the timestamp of the corresponding bar on the timeframe specified by the timeframe argument. If the value is a negative number from -1 to -500, the function calculates the expected timestamp of the timeframe bar corresponding to N bars after the current bar on the main timeframe. The default is 0.",
         "required": false,
-        "default": "0"
+        "default": "0",
+        "expectedTypeNoun": "simple int"
       },
       {
         "name": "timeframe_bars_back",
         "type": "series int",
         "description": "Optional. The additional bar offset on the timeframe specified by the timeframe argument. If the value is positive, the function retrieves the timestamp of the bar that is N timeframe bars before the one corresponding to the bars_back offset. If the value is a negative number from -1 to -500, the function calculates the expected timestamp of the timeframe bar that is N timeframe bars after the one corresponding to the bars_back offset. The default is 0.",
         "required": false,
-        "default": "0"
+        "default": "0",
+        "expectedTypeNoun": "series int"
       },
       {
         "name": "timezone",
@@ -24225,7 +24368,8 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "seconds",
         "type": "series int",
         "description": "The number of seconds in the timeframe.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "simple int"
       }
     ],
     "returns": "simple string",
@@ -24275,7 +24419,8 @@ export const FUNCTIONS: PineFunction[] = [
         "type": "series string",
         "description": "Timeframe string in timeframe string specifications format. Optional. The default is timeframe.period.",
         "required": false,
-        "default": "timeframe.period"
+        "default": "timeframe.period",
+        "expectedTypeNoun": "simple string"
       }
     ],
     "returns": "simple int",
@@ -24325,43 +24470,50 @@ export const FUNCTIONS: PineFunction[] = [
         "name": "dateString",
         "type": "const string",
         "description": "A string containing the date and, optionally, the time and time zone. Its format must comply with either the IETF RFC 2822 or ISO 8601 standards (\"DD MMM YYYY hh:mm:ss ±hhmm\" or \"YYYY-MM-DDThh:mm:ss±hh:mm\", so \"20 Feb 2020\" or \"2020-02-20\"). If no time is supplied, \"00:00\" is used. If no time zone is supplied, GMT+0 will be used. Note that this diverges from the usual behavior of the function where it returns time in the exchange's timezone.",
-        "required": true
+        "required": true,
+        "expectedTypeNoun": "const string"
       },
       {
         "name": "year",
         "type": "unknown",
         "description": "Year.",
-        "required": false
+        "required": false,
+        "expectedTypeNoun": "simple int"
       },
       {
         "name": "month",
         "type": "unknown",
         "description": "Month.",
-        "required": false
+        "required": false,
+        "expectedTypeNoun": "simple int"
       },
       {
         "name": "day",
         "type": "unknown",
         "description": "Day.",
-        "required": false
+        "required": false,
+        "expectedTypeNoun": "simple int"
       },
       {
         "name": "hour",
         "type": "unknown",
         "description": "(Optional argument) Hour. Default is 0.",
-        "required": false
+        "required": false,
+        "expectedTypeNoun": "simple int"
       },
       {
         "name": "minute",
         "type": "unknown",
         "description": "(Optional argument) Minute. Default is 0.",
-        "required": false
+        "required": false,
+        "expectedTypeNoun": "simple int"
       },
       {
         "name": "second",
         "type": "unknown",
         "description": "(Optional argument) Second. Default is 0.",
-        "required": false
+        "required": false,
+        "expectedTypeNoun": "simple int"
       },
       {
         "name": "timezone",

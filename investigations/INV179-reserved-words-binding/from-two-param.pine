@@ -1,0 +1,7 @@
+//@version=6
+indicator("Reserved Param")
+
+span(float from, float to) =>
+    math.abs(to - from)
+
+plot(span(low, high))

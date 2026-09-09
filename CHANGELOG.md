@@ -2,6 +2,36 @@
 
 ## Unreleased
 
+- New errors: a word TradingView refuses to bind is now rejected as a function
+  or method PARAMETER name and as a user-defined type FIELD name -
+  `f(float to) => ...` was accepted clean and is TradingView's `""to"" cannot
+  be used as a variable or function name.` The set is measured, not assumed: a
+  343-probe `--tv` sweep over 49 candidate words and seven binding positions
+  puts it at 22 words, and it matches no list we already held. `do` is in it
+  and is not a Pine v6 construct at all, which is why it was accepted in every
+  position; `const`, `na`, `type`, `enum`, `method`, `once`, `case` and
+  `default` are not in it, though several sit in `RESERVED_KEYWORDS`, a
+  different question. `from` is not reserved either - TradingView accepts it
+  and echoes it back in a signature, and the report that named it was reading
+  TradingView blame `from`'s column for `to`'s offence. The error anchors at
+  the NAME and parsing continues, so the binding survives and its uses do not
+  cascade. See INV179.
+- New error: `na()` no longer accepts a bool. Neither overload takes one, but
+  the merged parameter is typed `unknown`, so positional checking was skipped
+  and the overload resolver scored the mixed `int/float/color/string/label/...`
+  union as undecidable - the call resolved clean. A scalar argument cannot be
+  a label or an array, so only a mixed union's scalar members can accept one;
+  both overloads then mismatch, and a tie in which every candidate mismatches
+  now reports, worded after the first overload as TradingView words it. The
+  expected-type noun (`simple float`) is probe data, and the INV171 census had
+  to be widened to see an overloaded function's `unknown` parameter at all:
+  201 union parameters became 381, of which 353 are now measured. See INV181.
+- Fixed a false warning: the `by` operand of a `for` header counts as a
+  reference, so a variable-stride loop no longer reports its stride as
+  UNUSED_VARIABLE. `analyzeForStatement` walked `from` and `to` but not
+  `step`. TradingView is silent here, and under a warnings-are-failures policy
+  the warning made such loops unlintable. See INV180.
+
 - New errors: a user-defined type's FIELD default is now validated the way a
   function parameter's default already was (INV172). A user variable is
   CE10132 at the expression; any call, including a collection or UDT

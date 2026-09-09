@@ -1,6 +1,6 @@
 {
 	"description": "TV-probed expected-type noun (CE10123 currentTypeDocStr) per union-typed parameter. One deliberately-wrong argument per parameter; the noun cannot be derived from the catalog. See INV171, TODO #74.",
-	"probedAt": "2026-09-07T05:13:13.666Z",
+	"probedAt": "2026-09-09T04:22:15.125Z",
 	"tool": "scripts/probe-union-type-nouns.mjs",
 	"results": {
 		"footprint.get_row_by_price.price": {
@@ -221,7 +221,7 @@
 			"tvNoun": "series string",
 			"tvArgName": "text_size",
 			"agrees": false,
-			"probe": "probe_3 = box.new(fx_pt, fx_pt, text_size = true)",
+			"probe": "probe_12 = box.new(fx_pt, fx_pt, text_size = true)",
 			"status": "ok"
 		},
 		"box.set_lefttop.top": {
@@ -461,7 +461,7 @@
 			"tvNoun": "const float",
 			"tvArgName": "transp",
 			"agrees": false,
-			"probe": "probe_2 = color.new(color.red, transp = \"probe\")",
+			"probe": "probe_3 = color.new(color.red, transp = \"probe\")",
 			"status": "ok"
 		},
 		"fixnan.source": {
@@ -552,7 +552,7 @@
 			"tvNoun": "series string",
 			"tvArgName": "size",
 			"agrees": false,
-			"probe": "probe_3 = label.new(fx_pt, size = true)",
+			"probe": "probe_10 = label.new(fx_pt, size = true)",
 			"status": "ok"
 		},
 		"int.x": {
@@ -1154,7 +1154,7 @@
 			"tvNoun": "const int",
 			"tvArgName": "sort_field",
 			"agrees": false,
-			"probe": "probe_3 = matrix.sort(fx_mx, sort_field = true)",
+			"probe": "probe_4 = matrix.sort(fx_mx, sort_field = true)",
 			"status": "ok"
 		},
 		"plot.series": {
@@ -2824,7 +2824,7 @@
 			"tvNoun": "series float",
 			"tvArgName": "source",
 			"agrees": false,
-			"probe": "probe_2 = ta.valuewhen(true, source = \"probe\", occurrence = 1)",
+			"probe": "probe_3 = ta.valuewhen(true, source = \"probe\", occurrence = 1)",
 			"status": "ok"
 		},
 		"ta.vwap.source": {
@@ -2854,7 +2854,7 @@
 			"tvNoun": "series float",
 			"tvArgName": "stdev_mult",
 			"agrees": false,
-			"probe": "probe_3 = ta.vwap(1, stdev_mult = \"probe\")",
+			"probe": "probe_4 = ta.vwap(1, stdev_mult = \"probe\")",
 			"status": "ok"
 		},
 		"ta.variance.source": {
@@ -3004,7 +3004,7 @@
 			"tvNoun": "simple float",
 			"tvArgName": "reversal",
 			"agrees": false,
-			"probe": "probe_2 = ticker.kagi(\"x\", reversal = \"probe\")",
+			"probe": "probe_3 = ticker.kagi(\"x\", reversal = \"probe\")",
 			"status": "ok"
 		},
 		"ticker.pointfigure.param": {
@@ -3019,7 +3019,7 @@
 			"tvNoun": "simple float",
 			"tvArgName": "param",
 			"agrees": false,
-			"probe": "probe_2 = ticker.pointfigure(\"x\", hl, ATR, param = \"probe\", reversal = 1)",
+			"probe": "probe_5 = ticker.pointfigure(\"x\", hl, ATR, param = \"probe\", reversal = 1)",
 			"status": "ok"
 		},
 		"ticker.renko.param": {
@@ -3034,7 +3034,2462 @@
 			"tvNoun": "simple float",
 			"tvArgName": "param",
 			"agrees": false,
-			"probe": "probe_2 = ticker.renko(\"x\", ATR, param = \"probe\")",
+			"probe": "probe_4 = ticker.renko(\"x\", ATR, param = \"probe\")",
+			"status": "ok"
+		},
+		"array.from.arg0": {
+			"fn": "array.from",
+			"param": "arg0",
+			"docType": "unknown",
+			"ourNoun": "simple string",
+			"status": "unprobeable"
+		},
+		"array.from.arg1": {
+			"fn": "array.from",
+			"param": "arg1",
+			"docType": "unknown",
+			"ourNoun": "simple string",
+			"status": "unprobeable"
+		},
+		"fill.color": {
+			"fn": "fill",
+			"param": "color",
+			"docType": "series color",
+			"ourNoun": "simple color",
+			"status": "unbuildable-lead"
+		},
+		"fill.title": {
+			"fn": "fill",
+			"param": "title",
+			"docType": "const string",
+			"ourNoun": "simple string",
+			"status": "unbuildable-lead"
+		},
+		"fill.editable": {
+			"fn": "fill",
+			"param": "editable",
+			"docType": "input bool",
+			"ourNoun": "simple bool",
+			"status": "unbuildable-lead"
+		},
+		"fill.fillgaps": {
+			"fn": "fill",
+			"param": "fillgaps",
+			"docType": "const bool",
+			"ourNoun": "simple bool",
+			"status": "unbuildable-lead"
+		},
+		"fill.display": {
+			"fn": "fill",
+			"param": "display",
+			"docType": "input plot_simple_display",
+			"ourNoun": "simple bool",
+			"status": "unbuildable-lead"
+		},
+		"fill.plot2": {
+			"fn": "fill",
+			"param": "plot2",
+			"docType": "unknown",
+			"ourNoun": "simple bool",
+			"status": "unbuildable-lead"
+		},
+		"fill.show_last": {
+			"fn": "fill",
+			"param": "show_last",
+			"docType": "unknown",
+			"ourNoun": "simple bool",
+			"status": "unbuildable-lead"
+		},
+		"input.title": {
+			"fn": "input",
+			"param": "title",
+			"docType": "const string",
+			"ourNoun": "simple string",
+			"status": "unbuildable-lead"
+		},
+		"input.tooltip": {
+			"fn": "input",
+			"param": "tooltip",
+			"docType": "const string",
+			"ourNoun": "simple string",
+			"status": "unbuildable-lead"
+		},
+		"input.inline": {
+			"fn": "input",
+			"param": "inline",
+			"docType": "const string",
+			"ourNoun": "simple string",
+			"status": "unbuildable-lead"
+		},
+		"input.group": {
+			"fn": "input",
+			"param": "group",
+			"docType": "const string",
+			"ourNoun": "simple string",
+			"status": "unbuildable-lead"
+		},
+		"input.active": {
+			"fn": "input",
+			"param": "active",
+			"docType": "input bool",
+			"ourNoun": "simple bool",
+			"status": "unbuildable-lead"
+		},
+		"matrix.pow.power": {
+			"fn": "matrix.pow",
+			"param": "power",
+			"docType": "series int",
+			"ourNoun": "simple int",
+			"status": "unbuildable-lead"
+		},
+		"str.format.formatString": {
+			"fn": "str.format",
+			"param": "formatString",
+			"docType": "series string",
+			"ourNoun": "simple string",
+			"status": "unbuildable-lead"
+		},
+		"str.tostring.format": {
+			"fn": "str.tostring",
+			"param": "format",
+			"docType": "series string",
+			"ourNoun": "simple string",
+			"status": "unbuildable-lead"
+		},
+		"array.min.nth": {
+			"fn": "array.min",
+			"param": "nth",
+			"docType": "series int",
+			"members": [
+				"int"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series int",
+			"tvArgName": "nth",
+			"agrees": false,
+			"probe": "probe_3 = array.min(fx_af, nth = \"probe\")",
+			"status": "ok"
+		},
+		"array.max.nth": {
+			"fn": "array.max",
+			"param": "nth",
+			"docType": "series int",
+			"members": [
+				"int"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series int",
+			"tvArgName": "nth",
+			"agrees": false,
+			"probe": "probe_3 = array.max(fx_af, nth = \"probe\")",
+			"status": "ok"
+		},
+		"array.stdev.biased": {
+			"fn": "array.stdev",
+			"param": "biased",
+			"docType": "series bool",
+			"members": [
+				"bool"
+			],
+			"ourNoun": "simple bool",
+			"tvNoun": "series bool",
+			"tvArgName": "biased",
+			"agrees": false,
+			"probe": "probe_3 = array.stdev(fx_af, biased = \"probe\")",
+			"status": "ok"
+		},
+		"array.variance.biased": {
+			"fn": "array.variance",
+			"param": "biased",
+			"docType": "series bool",
+			"members": [
+				"bool"
+			],
+			"ourNoun": "simple bool",
+			"tvNoun": "series bool",
+			"tvArgName": "biased",
+			"agrees": false,
+			"probe": "probe_3 = array.variance(fx_af, biased = \"probe\")",
+			"status": "ok"
+		},
+		"array.percentrank.index": {
+			"fn": "array.percentrank",
+			"param": "index",
+			"docType": "series int",
+			"members": [
+				"int"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series int",
+			"tvArgName": "index",
+			"agrees": false,
+			"probe": "probe_3 = array.percentrank(fx_af, index = \"probe\")",
+			"status": "ok"
+		},
+		"box.new.top_left": {
+			"fn": "box.new",
+			"param": "top_left",
+			"docType": "chart.point",
+			"members": [
+				"int"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "chart.point",
+			"tvArgName": "top_left",
+			"agrees": false,
+			"probe": "probe_3 = box.new(top_left = \"probe\", bottom_right = fx_pt)",
+			"status": "ok"
+		},
+		"box.new.bottom_right": {
+			"fn": "box.new",
+			"param": "bottom_right",
+			"docType": "chart.point",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "chart.point",
+			"tvArgName": "bottom_right",
+			"agrees": false,
+			"probe": "probe_4 = box.new(fx_pt, bottom_right = \"probe\")",
+			"status": "ok"
+		},
+		"box.new.border_color": {
+			"fn": "box.new",
+			"param": "border_color",
+			"docType": "series color",
+			"members": [
+				"color",
+				"int"
+			],
+			"ourNoun": "simple color",
+			"tvNoun": "series color",
+			"tvArgName": "border_color",
+			"agrees": false,
+			"probe": "probe_5 = box.new(fx_pt, fx_pt, border_color = \"probe\")",
+			"status": "ok"
+		},
+		"box.new.border_width": {
+			"fn": "box.new",
+			"param": "border_width",
+			"docType": "series int",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series int",
+			"tvArgName": "border_width",
+			"agrees": false,
+			"probe": "probe_6 = box.new(fx_pt, fx_pt, border_width = \"probe\")",
+			"status": "ok"
+		},
+		"box.new.border_style": {
+			"fn": "box.new",
+			"param": "border_style",
+			"docType": "series string",
+			"members": [
+				"string",
+				"color"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "series string",
+			"tvArgName": "border_style",
+			"agrees": false,
+			"probe": "probe_7 = box.new(fx_pt, fx_pt, border_style = true)",
+			"status": "ok"
+		},
+		"box.new.extend": {
+			"fn": "box.new",
+			"param": "extend",
+			"docType": "series string",
+			"members": [
+				"string",
+				"int"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "series string",
+			"tvArgName": "extend",
+			"agrees": false,
+			"probe": "probe_8 = box.new(fx_pt, fx_pt, extend = true)",
+			"status": "ok"
+		},
+		"box.new.xloc": {
+			"fn": "box.new",
+			"param": "xloc",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "series string",
+			"tvArgName": "xloc",
+			"agrees": false,
+			"probe": "probe_9 = box.new(fx_pt, fx_pt, xloc = true)",
+			"status": "ok"
+		},
+		"box.new.bgcolor": {
+			"fn": "box.new",
+			"param": "bgcolor",
+			"docType": "series color",
+			"members": [
+				"color",
+				"string"
+			],
+			"ourNoun": "simple color",
+			"tvNoun": "series color",
+			"tvArgName": "bgcolor",
+			"agrees": false,
+			"probe": "probe_10 = box.new(fx_pt, fx_pt, bgcolor = true)",
+			"status": "ok"
+		},
+		"box.new.text": {
+			"fn": "box.new",
+			"param": "text",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "series string",
+			"tvArgName": "text",
+			"agrees": false,
+			"probe": "probe_11 = box.new(fx_pt, fx_pt, text = true)",
+			"status": "ok"
+		},
+		"box.new.text_color": {
+			"fn": "box.new",
+			"param": "text_color",
+			"docType": "series color",
+			"members": [
+				"color",
+				"string"
+			],
+			"ourNoun": "simple color",
+			"tvNoun": "series color",
+			"tvArgName": "text_color",
+			"agrees": false,
+			"probe": "probe_13 = box.new(fx_pt, fx_pt, text_color = true)",
+			"status": "ok"
+		},
+		"box.new.text_halign": {
+			"fn": "box.new",
+			"param": "text_halign",
+			"docType": "series string",
+			"members": [
+				"string",
+				"int"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "series string",
+			"tvArgName": "text_halign",
+			"agrees": false,
+			"probe": "probe_14 = box.new(fx_pt, fx_pt, text_halign = true)",
+			"status": "ok"
+		},
+		"box.new.text_valign": {
+			"fn": "box.new",
+			"param": "text_valign",
+			"docType": "series string",
+			"members": [
+				"string",
+				"color"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "series string",
+			"tvArgName": "text_valign",
+			"agrees": false,
+			"probe": "probe_15 = box.new(fx_pt, fx_pt, text_valign = true)",
+			"status": "ok"
+		},
+		"box.new.text_wrap": {
+			"fn": "box.new",
+			"param": "text_wrap",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "series string",
+			"tvArgName": "text_wrap",
+			"agrees": false,
+			"probe": "probe_16 = box.new(fx_pt, fx_pt, text_wrap = true)",
+			"status": "ok"
+		},
+		"box.new.text_font_family": {
+			"fn": "box.new",
+			"param": "text_font_family",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "series string",
+			"tvArgName": "text_font_family",
+			"agrees": false,
+			"probe": "probe_17 = box.new(fx_pt, fx_pt, text_font_family = true)",
+			"status": "ok"
+		},
+		"box.new.force_overlay": {
+			"fn": "box.new",
+			"param": "force_overlay",
+			"docType": "const bool",
+			"members": [
+				"bool",
+				"string"
+			],
+			"ourNoun": "simple bool",
+			"tvNoun": "const bool",
+			"tvArgName": "force_overlay",
+			"agrees": false,
+			"probe": "probe_18 = box.new(fx_pt, fx_pt, force_overlay = color.red)",
+			"status": "ok"
+		},
+		"box.new.text_formatting": {
+			"fn": "box.new",
+			"param": "text_formatting",
+			"docType": "series text_format",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"probe": "probe_19 = box.new(fx_pt, fx_pt, text_formatting = true)",
+			"errors": [
+				{
+					"code": "CE10068",
+					"message": "Invalid argument \"{argumentName}\" in \"{funName}\" call. Possible values: [{possibleValues}]"
+				}
+			],
+			"status": "other-error"
+		},
+		"box.new.left": {
+			"fn": "box.new",
+			"param": "left",
+			"docType": "unknown",
+			"members": [
+				"bool"
+			],
+			"ourNoun": "simple bool",
+			"probe": "probe_20 = box.new(fx_pt, fx_pt, left = \"probe\")",
+			"errors": [
+				{
+					"code": "CE10120",
+					"message": "The \"{signature}\" function does not have an argument with the name \"{name}\""
+				}
+			],
+			"status": "other-error"
+		},
+		"color.x": {
+			"fn": "color",
+			"param": "x",
+			"docType": "series color",
+			"members": [
+				"color"
+			],
+			"ourNoun": "simple color",
+			"tvNoun": "const color",
+			"tvArgName": "x",
+			"agrees": false,
+			"probe": "probe_2 = color(x = \"probe\")",
+			"status": "ok"
+		},
+		"color.g.color": {
+			"fn": "color.g",
+			"param": "color",
+			"docType": "series color",
+			"members": [
+				"color"
+			],
+			"ourNoun": "simple color",
+			"tvNoun": "series color",
+			"tvArgName": "color",
+			"agrees": false,
+			"probe": "probe_2 = color.g(color = \"probe\")",
+			"status": "ok"
+		},
+		"color.b.color": {
+			"fn": "color.b",
+			"param": "color",
+			"docType": "series color",
+			"members": [
+				"color"
+			],
+			"ourNoun": "simple color",
+			"tvNoun": "series color",
+			"tvArgName": "color",
+			"agrees": false,
+			"probe": "probe_2 = color.b(color = \"probe\")",
+			"status": "ok"
+		},
+		"color.new.color": {
+			"fn": "color.new",
+			"param": "color",
+			"docType": "series color",
+			"members": [
+				"color"
+			],
+			"ourNoun": "simple color",
+			"tvNoun": "const color",
+			"tvArgName": "color",
+			"agrees": false,
+			"probe": "probe_2 = color.new(color = \"probe\", transp = 1)",
+			"status": "ok"
+		},
+		"color.r.color": {
+			"fn": "color.r",
+			"param": "color",
+			"docType": "series color",
+			"members": [
+				"color"
+			],
+			"ourNoun": "simple color",
+			"tvNoun": "series color",
+			"tvArgName": "color",
+			"agrees": false,
+			"probe": "probe_2 = color.r(color = \"probe\")",
+			"status": "ok"
+		},
+		"color.t.color": {
+			"fn": "color.t",
+			"param": "color",
+			"docType": "series color",
+			"members": [
+				"color"
+			],
+			"ourNoun": "simple color",
+			"tvNoun": "series color",
+			"tvArgName": "color",
+			"agrees": false,
+			"probe": "probe_2 = color.t(color = \"probe\")",
+			"status": "ok"
+		},
+		"input.defval": {
+			"fn": "input",
+			"param": "defval",
+			"docType": "const int/float/bool/string/color or source-type built-ins",
+			"members": [
+				"int",
+				"float",
+				"bool",
+				"string"
+			],
+			"ourNoun": "simple int",
+			"probe": "probe_2 = input(defval = color.red)",
+			"status": "no-error"
+		},
+		"input.int.defval": {
+			"fn": "input.int",
+			"param": "defval",
+			"docType": "const int",
+			"members": [
+				"int"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "const int",
+			"tvArgName": "defval",
+			"agrees": false,
+			"probe": "probe_2 = input.int(defval = \"probe\")",
+			"status": "ok"
+		},
+		"input.int.title": {
+			"fn": "input.int",
+			"param": "title",
+			"docType": "const string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "const string",
+			"tvArgName": "title",
+			"agrees": false,
+			"probe": "probe_3 = input.int(1, title = true)",
+			"status": "ok"
+		},
+		"input.int.options": {
+			"fn": "input.int",
+			"param": "options",
+			"docType": "tuple of const int values: [val1, val2, ...]",
+			"members": [
+				"int"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "[const int...]",
+			"tvArgName": "options",
+			"agrees": false,
+			"probe": "probe_4 = input.int(1, options = \"probe\")",
+			"status": "ok"
+		},
+		"input.int.tooltip": {
+			"fn": "input.int",
+			"param": "tooltip",
+			"docType": "const string",
+			"members": [
+				"string",
+				"int"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "const string",
+			"tvArgName": "tooltip",
+			"agrees": false,
+			"probe": "probe_5 = input.int(1, tooltip = true)",
+			"status": "ok"
+		},
+		"input.int.inline": {
+			"fn": "input.int",
+			"param": "inline",
+			"docType": "const string",
+			"members": [
+				"string",
+				"int"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "const string",
+			"tvArgName": "inline",
+			"agrees": false,
+			"probe": "probe_6 = input.int(1, inline = true)",
+			"status": "ok"
+		},
+		"input.int.group": {
+			"fn": "input.int",
+			"param": "group",
+			"docType": "const string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "const string",
+			"tvArgName": "group",
+			"agrees": false,
+			"probe": "probe_7 = input.int(1, group = true)",
+			"status": "ok"
+		},
+		"input.int.confirm": {
+			"fn": "input.int",
+			"param": "confirm",
+			"docType": "const bool",
+			"members": [
+				"bool",
+				"string"
+			],
+			"ourNoun": "simple bool",
+			"tvNoun": "const bool",
+			"tvArgName": "confirm",
+			"agrees": false,
+			"probe": "probe_8 = input.int(1, confirm = color.red)",
+			"status": "ok"
+		},
+		"input.int.display": {
+			"fn": "input.int",
+			"param": "display",
+			"docType": "const plot_display",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"probe": "probe_9 = input.int(1, display = true)",
+			"errors": [
+				{
+					"code": "CE10068",
+					"message": "Invalid argument \"{argumentName}\" in \"{funName}\" call. Possible values: [{possibleValues}]"
+				}
+			],
+			"status": "other-error"
+		},
+		"input.int.active": {
+			"fn": "input.int",
+			"param": "active",
+			"docType": "input bool",
+			"members": [
+				"bool"
+			],
+			"ourNoun": "simple bool",
+			"tvNoun": "input bool",
+			"tvArgName": "active",
+			"agrees": false,
+			"probe": "probe_10 = input.int(1, active = \"probe\")",
+			"status": "ok"
+		},
+		"input.int.maxval": {
+			"fn": "input.int",
+			"param": "maxval",
+			"docType": "unknown",
+			"members": [
+				"bool"
+			],
+			"ourNoun": "simple bool",
+			"tvNoun": "const int",
+			"tvArgName": "maxval",
+			"agrees": false,
+			"probe": "probe_11 = input.int(1, maxval = \"probe\")",
+			"status": "ok"
+		},
+		"input.float.title": {
+			"fn": "input.float",
+			"param": "title",
+			"docType": "const string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "const string",
+			"tvArgName": "title",
+			"agrees": false,
+			"probe": "probe_3 = input.float(1, title = true)",
+			"status": "ok"
+		},
+		"input.float.options": {
+			"fn": "input.float",
+			"param": "options",
+			"docType": "tuple of const int/float values: [val1, val2, ...]",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "[const float...]",
+			"tvArgName": "options",
+			"agrees": false,
+			"probe": "probe_4 = input.float(1, options = \"probe\")",
+			"status": "ok"
+		},
+		"input.float.tooltip": {
+			"fn": "input.float",
+			"param": "tooltip",
+			"docType": "const string",
+			"members": [
+				"string",
+				"int",
+				"float"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "const string",
+			"tvArgName": "tooltip",
+			"agrees": false,
+			"probe": "probe_5 = input.float(1, tooltip = true)",
+			"status": "ok"
+		},
+		"input.float.inline": {
+			"fn": "input.float",
+			"param": "inline",
+			"docType": "const string",
+			"members": [
+				"string",
+				"int",
+				"float"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "const string",
+			"tvArgName": "inline",
+			"agrees": false,
+			"probe": "probe_6 = input.float(1, inline = true)",
+			"status": "ok"
+		},
+		"input.float.group": {
+			"fn": "input.float",
+			"param": "group",
+			"docType": "const string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "const string",
+			"tvArgName": "group",
+			"agrees": false,
+			"probe": "probe_7 = input.float(1, group = true)",
+			"status": "ok"
+		},
+		"input.float.confirm": {
+			"fn": "input.float",
+			"param": "confirm",
+			"docType": "const bool",
+			"members": [
+				"bool",
+				"string"
+			],
+			"ourNoun": "simple bool",
+			"tvNoun": "const bool",
+			"tvArgName": "confirm",
+			"agrees": false,
+			"probe": "probe_8 = input.float(1, confirm = color.red)",
+			"status": "ok"
+		},
+		"input.float.display": {
+			"fn": "input.float",
+			"param": "display",
+			"docType": "const plot_display",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"probe": "probe_9 = input.float(1, display = true)",
+			"errors": [
+				{
+					"code": "CE10068",
+					"message": "Invalid argument \"{argumentName}\" in \"{funName}\" call. Possible values: [{possibleValues}]"
+				}
+			],
+			"status": "other-error"
+		},
+		"input.float.active": {
+			"fn": "input.float",
+			"param": "active",
+			"docType": "input bool",
+			"members": [
+				"bool"
+			],
+			"ourNoun": "simple bool",
+			"tvNoun": "input bool",
+			"tvArgName": "active",
+			"agrees": false,
+			"probe": "probe_10 = input.float(1, active = \"probe\")",
+			"status": "ok"
+		},
+		"input.float.maxval": {
+			"fn": "input.float",
+			"param": "maxval",
+			"docType": "unknown",
+			"members": [
+				"bool"
+			],
+			"ourNoun": "simple bool",
+			"tvNoun": "const float",
+			"tvArgName": "maxval",
+			"agrees": false,
+			"probe": "probe_11 = input.float(1, maxval = \"probe\")",
+			"status": "ok"
+		},
+		"label.new.point": {
+			"fn": "label.new",
+			"param": "point",
+			"docType": "chart.point",
+			"members": [
+				"int"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "chart.point",
+			"tvArgName": "point",
+			"agrees": false,
+			"probe": "probe_3 = label.new(point = \"probe\")",
+			"status": "ok"
+		},
+		"label.new.text": {
+			"fn": "label.new",
+			"param": "text",
+			"docType": "series string",
+			"members": [
+				"string",
+				"int",
+				"float"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "series string",
+			"tvArgName": "text",
+			"agrees": false,
+			"probe": "probe_4 = label.new(fx_pt, text = true)",
+			"status": "ok"
+		},
+		"label.new.xloc": {
+			"fn": "label.new",
+			"param": "xloc",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "series string",
+			"tvArgName": "xloc",
+			"agrees": false,
+			"probe": "probe_5 = label.new(fx_pt, xloc = true)",
+			"status": "ok"
+		},
+		"label.new.yloc": {
+			"fn": "label.new",
+			"param": "yloc",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "series string",
+			"tvArgName": "yloc",
+			"agrees": false,
+			"probe": "probe_6 = label.new(fx_pt, yloc = true)",
+			"status": "ok"
+		},
+		"label.new.color": {
+			"fn": "label.new",
+			"param": "color",
+			"docType": "series color",
+			"members": [
+				"color",
+				"string"
+			],
+			"ourNoun": "simple color",
+			"tvNoun": "series color",
+			"tvArgName": "color",
+			"agrees": false,
+			"probe": "probe_7 = label.new(fx_pt, color = true)",
+			"status": "ok"
+		},
+		"label.new.style": {
+			"fn": "label.new",
+			"param": "style",
+			"docType": "series string",
+			"members": [
+				"string",
+				"color"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "series string",
+			"tvArgName": "style",
+			"agrees": false,
+			"probe": "probe_8 = label.new(fx_pt, style = true)",
+			"status": "ok"
+		},
+		"label.new.textcolor": {
+			"fn": "label.new",
+			"param": "textcolor",
+			"docType": "series color",
+			"members": [
+				"color",
+				"string"
+			],
+			"ourNoun": "simple color",
+			"tvNoun": "series color",
+			"tvArgName": "textcolor",
+			"agrees": false,
+			"probe": "probe_9 = label.new(fx_pt, textcolor = true)",
+			"status": "ok"
+		},
+		"label.new.textalign": {
+			"fn": "label.new",
+			"param": "textalign",
+			"docType": "series string",
+			"members": [
+				"string",
+				"int"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "series string",
+			"tvArgName": "textalign",
+			"agrees": false,
+			"probe": "probe_11 = label.new(fx_pt, textalign = true)",
+			"status": "ok"
+		},
+		"label.new.tooltip": {
+			"fn": "label.new",
+			"param": "tooltip",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "series string",
+			"tvArgName": "tooltip",
+			"agrees": false,
+			"probe": "probe_12 = label.new(fx_pt, tooltip = true)",
+			"status": "ok"
+		},
+		"label.new.text_font_family": {
+			"fn": "label.new",
+			"param": "text_font_family",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "series string",
+			"tvArgName": "text_font_family",
+			"agrees": false,
+			"probe": "probe_13 = label.new(fx_pt, text_font_family = true)",
+			"status": "ok"
+		},
+		"label.new.force_overlay": {
+			"fn": "label.new",
+			"param": "force_overlay",
+			"docType": "const bool",
+			"members": [
+				"bool",
+				"string"
+			],
+			"ourNoun": "simple bool",
+			"tvNoun": "const bool",
+			"tvArgName": "force_overlay",
+			"agrees": false,
+			"probe": "probe_14 = label.new(fx_pt, force_overlay = color.red)",
+			"status": "ok"
+		},
+		"label.new.text_formatting": {
+			"fn": "label.new",
+			"param": "text_formatting",
+			"docType": "series text_format",
+			"members": [
+				"bool"
+			],
+			"ourNoun": "simple bool",
+			"probe": "probe_15 = label.new(fx_pt, text_formatting = \"probe\")",
+			"errors": [
+				{
+					"code": "CE10068",
+					"message": "Invalid argument \"{argumentName}\" in \"{funName}\" call. Possible values: [{possibleValues}]"
+				}
+			],
+			"status": "other-error"
+		},
+		"line.new.first_point": {
+			"fn": "line.new",
+			"param": "first_point",
+			"docType": "chart.point",
+			"members": [
+				"int"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "chart.point",
+			"tvArgName": "first_point",
+			"agrees": false,
+			"probe": "probe_3 = line.new(first_point = \"probe\", second_point = fx_pt)",
+			"status": "ok"
+		},
+		"line.new.second_point": {
+			"fn": "line.new",
+			"param": "second_point",
+			"docType": "chart.point",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "chart.point",
+			"tvArgName": "second_point",
+			"agrees": false,
+			"probe": "probe_4 = line.new(fx_pt, second_point = \"probe\")",
+			"status": "ok"
+		},
+		"line.new.xloc": {
+			"fn": "line.new",
+			"param": "xloc",
+			"docType": "series string",
+			"members": [
+				"string",
+				"int"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "series string",
+			"tvArgName": "xloc",
+			"agrees": false,
+			"probe": "probe_5 = line.new(fx_pt, fx_pt, xloc = true)",
+			"status": "ok"
+		},
+		"line.new.extend": {
+			"fn": "line.new",
+			"param": "extend",
+			"docType": "series string",
+			"members": [
+				"string",
+				"int",
+				"float"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "series string",
+			"tvArgName": "extend",
+			"agrees": false,
+			"probe": "probe_6 = line.new(fx_pt, fx_pt, extend = true)",
+			"status": "ok"
+		},
+		"line.new.color": {
+			"fn": "line.new",
+			"param": "color",
+			"docType": "series color",
+			"members": [
+				"color",
+				"string"
+			],
+			"ourNoun": "simple color",
+			"tvNoun": "series color",
+			"tvArgName": "color",
+			"agrees": false,
+			"probe": "probe_7 = line.new(fx_pt, fx_pt, color = true)",
+			"status": "ok"
+		},
+		"line.new.style": {
+			"fn": "line.new",
+			"param": "style",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "series string",
+			"tvArgName": "style",
+			"agrees": false,
+			"probe": "probe_8 = line.new(fx_pt, fx_pt, style = true)",
+			"status": "ok"
+		},
+		"line.new.width": {
+			"fn": "line.new",
+			"param": "width",
+			"docType": "series int",
+			"members": [
+				"int",
+				"color"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series int",
+			"tvArgName": "width",
+			"agrees": false,
+			"probe": "probe_9 = line.new(fx_pt, fx_pt, width = \"probe\")",
+			"status": "ok"
+		},
+		"line.new.force_overlay": {
+			"fn": "line.new",
+			"param": "force_overlay",
+			"docType": "const bool",
+			"members": [
+				"bool",
+				"string"
+			],
+			"ourNoun": "simple bool",
+			"tvNoun": "const bool",
+			"tvArgName": "force_overlay",
+			"agrees": false,
+			"probe": "probe_10 = line.new(fx_pt, fx_pt, force_overlay = color.red)",
+			"status": "ok"
+		},
+		"line.new.x1": {
+			"fn": "line.new",
+			"param": "x1",
+			"docType": "unknown",
+			"members": [
+				"int"
+			],
+			"ourNoun": "simple int",
+			"probe": "probe_11 = line.new(fx_pt, fx_pt, x1 = \"probe\")",
+			"errors": [
+				{
+					"code": "CE10120",
+					"message": "The \"{signature}\" function does not have an argument with the name \"{name}\""
+				}
+			],
+			"status": "other-error"
+		},
+		"line.new.y1": {
+			"fn": "line.new",
+			"param": "y1",
+			"docType": "unknown",
+			"members": [
+				"bool"
+			],
+			"ourNoun": "simple bool",
+			"probe": "probe_12 = line.new(fx_pt, fx_pt, y1 = \"probe\")",
+			"errors": [
+				{
+					"code": "CE10120",
+					"message": "The \"{signature}\" function does not have an argument with the name \"{name}\""
+				}
+			],
+			"status": "other-error"
+		},
+		"math.round.precision": {
+			"fn": "math.round",
+			"param": "precision",
+			"docType": "series int",
+			"members": [
+				"int"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple int",
+			"tvArgName": "precision",
+			"agrees": true,
+			"probe": "probe_3 = math.round(1, precision = \"probe\")",
+			"status": "ok"
+		},
+		"log.error.message": {
+			"fn": "log.error",
+			"param": "message",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "series string",
+			"tvArgName": "message",
+			"agrees": false,
+			"probe": "probe_2 = log.error(true)",
+			"status": "ok"
+		},
+		"matrix.sort.column": {
+			"fn": "matrix.sort",
+			"param": "column",
+			"docType": "series int",
+			"members": [
+				"int"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series int",
+			"tvArgName": "column",
+			"agrees": false,
+			"probe": "probe_3 = matrix.sort(fx_mx, column = \"probe\")",
+			"status": "ok"
+		},
+		"log.warning.message": {
+			"fn": "log.warning",
+			"param": "message",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "series string",
+			"tvArgName": "message",
+			"agrees": false,
+			"probe": "probe_2 = log.warning(true)",
+			"status": "ok"
+		},
+		"log.info.message": {
+			"fn": "log.info",
+			"param": "message",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "series string",
+			"tvArgName": "message",
+			"agrees": false,
+			"probe": "probe_2 = log.info(true)",
+			"status": "ok"
+		},
+		"na.x": {
+			"fn": "na",
+			"param": "x",
+			"docType": "unknown",
+			"members": [
+				"int",
+				"float",
+				"color",
+				"string"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple float",
+			"tvArgName": "x",
+			"agrees": false,
+			"probe": "probe_2 = na(x = true)",
+			"status": "ok"
+		},
+		"str.contains.source": {
+			"fn": "str.contains",
+			"param": "source",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "const string",
+			"tvArgName": "source",
+			"agrees": false,
+			"probe": "probe_2 = str.contains(source = true, str = \"x\")",
+			"status": "ok"
+		},
+		"str.contains.str": {
+			"fn": "str.contains",
+			"param": "str",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "const string",
+			"tvArgName": "str",
+			"agrees": false,
+			"probe": "probe_3 = str.contains(\"x\", str = true)",
+			"status": "ok"
+		},
+		"str.lower.source": {
+			"fn": "str.lower",
+			"param": "source",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "const string",
+			"tvArgName": "source",
+			"agrees": false,
+			"probe": "probe_2 = str.lower(source = true)",
+			"status": "ok"
+		},
+		"str.match.source": {
+			"fn": "str.match",
+			"param": "source",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "simple string",
+			"tvArgName": "source",
+			"agrees": true,
+			"probe": "probe_2 = str.match(source = true, regex = \"x\")",
+			"status": "ok"
+		},
+		"str.match.regex": {
+			"fn": "str.match",
+			"param": "regex",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "simple string",
+			"tvArgName": "regex",
+			"agrees": true,
+			"probe": "probe_3 = str.match(\"x\", regex = true)",
+			"status": "ok"
+		},
+		"str.endswith.source": {
+			"fn": "str.endswith",
+			"param": "source",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "const string",
+			"tvArgName": "source",
+			"agrees": false,
+			"probe": "probe_2 = str.endswith(source = true, str = \"x\")",
+			"status": "ok"
+		},
+		"str.endswith.str": {
+			"fn": "str.endswith",
+			"param": "str",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "const string",
+			"tvArgName": "str",
+			"agrees": false,
+			"probe": "probe_3 = str.endswith(\"x\", str = true)",
+			"status": "ok"
+		},
+		"str.length.string": {
+			"fn": "str.length",
+			"param": "string",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "const string",
+			"tvArgName": "string",
+			"agrees": false,
+			"probe": "probe_2 = str.length(string = true)",
+			"status": "ok"
+		},
+		"str.pos.source": {
+			"fn": "str.pos",
+			"param": "source",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "const string",
+			"tvArgName": "source",
+			"agrees": false,
+			"probe": "probe_2 = str.pos(source = true, str = \"x\")",
+			"status": "ok"
+		},
+		"str.pos.str": {
+			"fn": "str.pos",
+			"param": "str",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "const string",
+			"tvArgName": "str",
+			"agrees": false,
+			"probe": "probe_3 = str.pos(\"x\", str = true)",
+			"status": "ok"
+		},
+		"str.repeat.source": {
+			"fn": "str.repeat",
+			"param": "source",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "const string",
+			"tvArgName": "source",
+			"agrees": false,
+			"probe": "probe_2 = str.repeat(source = true, repeat = 1)",
+			"status": "ok"
+		},
+		"str.repeat.repeat": {
+			"fn": "str.repeat",
+			"param": "repeat",
+			"docType": "series int",
+			"members": [
+				"int"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "const int",
+			"tvArgName": "repeat",
+			"agrees": false,
+			"probe": "probe_3 = str.repeat(\"x\", repeat = \"probe\")",
+			"status": "ok"
+		},
+		"str.repeat.separator": {
+			"fn": "str.repeat",
+			"param": "separator",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "const string",
+			"tvArgName": "separator",
+			"agrees": false,
+			"probe": "probe_4 = str.repeat(\"x\", 1, separator = true)",
+			"status": "ok"
+		},
+		"str.replace_all.source": {
+			"fn": "str.replace_all",
+			"param": "source",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "simple string",
+			"tvArgName": "source",
+			"agrees": true,
+			"probe": "probe_2 = str.replace_all(source = true, target = \"x\", replacement = \"x\")",
+			"status": "ok"
+		},
+		"str.replace_all.target": {
+			"fn": "str.replace_all",
+			"param": "target",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "simple string",
+			"tvArgName": "target",
+			"agrees": true,
+			"probe": "probe_3 = str.replace_all(\"x\", target = true, replacement = \"x\")",
+			"status": "ok"
+		},
+		"str.replace_all.replacement": {
+			"fn": "str.replace_all",
+			"param": "replacement",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "simple string",
+			"tvArgName": "replacement",
+			"agrees": true,
+			"probe": "probe_4 = str.replace_all(\"x\", \"x\", replacement = true)",
+			"status": "ok"
+		},
+		"str.replace.source": {
+			"fn": "str.replace",
+			"param": "source",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "const string",
+			"tvArgName": "source",
+			"agrees": false,
+			"probe": "probe_2 = str.replace(source = true, target = \"x\", replacement = \"x\")",
+			"status": "ok"
+		},
+		"str.replace.target": {
+			"fn": "str.replace",
+			"param": "target",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "const string",
+			"tvArgName": "target",
+			"agrees": false,
+			"probe": "probe_3 = str.replace(\"x\", target = true, replacement = \"x\")",
+			"status": "ok"
+		},
+		"str.replace.replacement": {
+			"fn": "str.replace",
+			"param": "replacement",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "const string",
+			"tvArgName": "replacement",
+			"agrees": false,
+			"probe": "probe_4 = str.replace(\"x\", \"x\", replacement = true)",
+			"status": "ok"
+		},
+		"str.replace.occurrence": {
+			"fn": "str.replace",
+			"param": "occurrence",
+			"docType": "series int",
+			"members": [
+				"int"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "const int",
+			"tvArgName": "occurrence",
+			"agrees": false,
+			"probe": "probe_5 = str.replace(\"x\", \"x\", \"x\", occurrence = \"probe\")",
+			"status": "ok"
+		},
+		"str.substring.source": {
+			"fn": "str.substring",
+			"param": "source",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "const string",
+			"tvArgName": "source",
+			"agrees": false,
+			"probe": "probe_2 = str.substring(source = true, begin_pos = 1)",
+			"status": "ok"
+		},
+		"str.substring.begin_pos": {
+			"fn": "str.substring",
+			"param": "begin_pos",
+			"docType": "series int",
+			"members": [
+				"int"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "const int",
+			"tvArgName": "begin_pos",
+			"agrees": false,
+			"probe": "probe_3 = str.substring(\"x\", begin_pos = \"probe\")",
+			"status": "ok"
+		},
+		"str.substring.end_pos": {
+			"fn": "str.substring",
+			"param": "end_pos",
+			"docType": "series int",
+			"members": [
+				"int"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "const int",
+			"tvArgName": "end_pos",
+			"agrees": false,
+			"probe": "probe_4 = str.substring(\"x\", 1, end_pos = \"probe\")",
+			"status": "ok"
+		},
+		"str.tonumber.string": {
+			"fn": "str.tonumber",
+			"param": "string",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "series string",
+			"tvArgName": "string",
+			"agrees": false,
+			"probe": "probe_2 = str.tonumber(string = true)",
+			"status": "ok"
+		},
+		"str.trim.source": {
+			"fn": "str.trim",
+			"param": "source",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "const string",
+			"tvArgName": "source",
+			"agrees": false,
+			"probe": "probe_2 = str.trim(source = true)",
+			"status": "ok"
+		},
+		"str.startswith.source": {
+			"fn": "str.startswith",
+			"param": "source",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "const string",
+			"tvArgName": "source",
+			"agrees": false,
+			"probe": "probe_2 = str.startswith(source = true, str = \"x\")",
+			"status": "ok"
+		},
+		"str.startswith.str": {
+			"fn": "str.startswith",
+			"param": "str",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "const string",
+			"tvArgName": "str",
+			"agrees": false,
+			"probe": "probe_3 = str.startswith(\"x\", str = true)",
+			"status": "ok"
+		},
+		"string.x": {
+			"fn": "string",
+			"param": "x",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "const string",
+			"tvArgName": "x",
+			"agrees": false,
+			"probe": "probe_2 = string(x = true)",
+			"status": "ok"
+		},
+		"str.upper.source": {
+			"fn": "str.upper",
+			"param": "source",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "const string",
+			"tvArgName": "source",
+			"agrees": false,
+			"probe": "probe_2 = str.upper(source = true)",
+			"status": "ok"
+		},
+		"syminfo.ticker.symbol": {
+			"fn": "syminfo.ticker",
+			"param": "symbol",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "simple string",
+			"tvArgName": "symbol",
+			"agrees": true,
+			"probe": "probe_2 = syminfo.ticker(symbol = true)",
+			"status": "ok"
+		},
+		"syminfo.prefix.symbol": {
+			"fn": "syminfo.prefix",
+			"param": "symbol",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "simple string",
+			"tvArgName": "symbol",
+			"agrees": true,
+			"probe": "probe_2 = syminfo.prefix(symbol = true)",
+			"status": "ok"
+		},
+		"ta.change.length": {
+			"fn": "ta.change",
+			"param": "length",
+			"docType": "series int",
+			"members": [
+				"int"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series int",
+			"tvArgName": "length",
+			"agrees": false,
+			"probe": "probe_3 = ta.change(1, length = \"probe\")",
+			"status": "ok"
+		},
+		"ta.highest.length": {
+			"fn": "ta.highest",
+			"param": "length",
+			"docType": "series int",
+			"members": [
+				"int"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple int",
+			"tvArgName": "length",
+			"agrees": true,
+			"probe": "probe_3 = ta.highest(length = \"probe\")",
+			"status": "ok"
+		},
+		"ta.lowest.length": {
+			"fn": "ta.lowest",
+			"param": "length",
+			"docType": "series int",
+			"members": [
+				"int"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple int",
+			"tvArgName": "length",
+			"agrees": true,
+			"probe": "probe_3 = ta.lowest(length = \"probe\")",
+			"status": "ok"
+		},
+		"ta.highestbars.length": {
+			"fn": "ta.highestbars",
+			"param": "length",
+			"docType": "series int",
+			"members": [
+				"int"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple int",
+			"tvArgName": "length",
+			"agrees": true,
+			"probe": "probe_3 = ta.highestbars(length = \"probe\")",
+			"status": "ok"
+		},
+		"ta.mode.length": {
+			"fn": "ta.mode",
+			"param": "length",
+			"docType": "series int",
+			"members": [
+				"int"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series int",
+			"tvArgName": "length",
+			"agrees": false,
+			"probe": "probe_3 = ta.mode(1, length = \"probe\")",
+			"status": "ok"
+		},
+		"ta.pivothigh.source": {
+			"fn": "ta.pivothigh",
+			"param": "source",
+			"docType": "unknown",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "source",
+			"agrees": false,
+			"probe": "probe_4 = ta.pivothigh(1, 1, source = \"probe\")",
+			"status": "ok"
+		},
+		"ta.median.length": {
+			"fn": "ta.median",
+			"param": "length",
+			"docType": "series int",
+			"members": [
+				"int"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series int",
+			"tvArgName": "length",
+			"agrees": false,
+			"probe": "probe_3 = ta.median(1, length = \"probe\")",
+			"status": "ok"
+		},
+		"ta.lowestbars.length": {
+			"fn": "ta.lowestbars",
+			"param": "length",
+			"docType": "series int",
+			"members": [
+				"int"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple int",
+			"tvArgName": "length",
+			"agrees": true,
+			"probe": "probe_3 = ta.lowestbars(length = \"probe\")",
+			"status": "ok"
+		},
+		"ta.pivotlow.source": {
+			"fn": "ta.pivotlow",
+			"param": "source",
+			"docType": "unknown",
+			"members": [
+				"int",
+				"float"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series float",
+			"tvArgName": "source",
+			"agrees": false,
+			"probe": "probe_4 = ta.pivotlow(1, 1, source = \"probe\")",
+			"status": "ok"
+		},
+		"ta.range.length": {
+			"fn": "ta.range",
+			"param": "length",
+			"docType": "series int",
+			"members": [
+				"int"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series int",
+			"tvArgName": "length",
+			"agrees": false,
+			"probe": "probe_3 = ta.range(1, length = \"probe\")",
+			"status": "ok"
+		},
+		"ta.valuewhen.condition": {
+			"fn": "ta.valuewhen",
+			"param": "condition",
+			"docType": "series bool",
+			"members": [
+				"bool"
+			],
+			"ourNoun": "simple bool",
+			"tvNoun": "series bool",
+			"tvArgName": "condition",
+			"agrees": false,
+			"probe": "probe_2 = ta.valuewhen(condition = \"probe\", source = 1, occurrence = 1)",
+			"status": "ok"
+		},
+		"ta.valuewhen.occurrence": {
+			"fn": "ta.valuewhen",
+			"param": "occurrence",
+			"docType": "simple int",
+			"members": [
+				"int"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple int",
+			"tvArgName": "occurrence",
+			"agrees": true,
+			"probe": "probe_4 = ta.valuewhen(true, 1, occurrence = \"probe\")",
+			"status": "ok"
+		},
+		"ta.vwap.anchor": {
+			"fn": "ta.vwap",
+			"param": "anchor",
+			"docType": "series bool",
+			"members": [
+				"bool"
+			],
+			"ourNoun": "simple bool",
+			"tvNoun": "series bool",
+			"tvArgName": "anchor",
+			"agrees": false,
+			"probe": "probe_3 = ta.vwap(1, anchor = \"probe\")",
+			"status": "ok"
+		},
+		"ticker.inherit.from_tickerid": {
+			"fn": "ticker.inherit",
+			"param": "from_tickerid",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "simple string",
+			"tvArgName": "from_tickerid",
+			"agrees": true,
+			"probe": "probe_2 = ticker.inherit(from_tickerid = true, symbol = \"x\")",
+			"status": "ok"
+		},
+		"ticker.inherit.symbol": {
+			"fn": "ticker.inherit",
+			"param": "symbol",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "simple string",
+			"tvArgName": "symbol",
+			"agrees": true,
+			"probe": "probe_3 = ticker.inherit(\"x\", symbol = true)",
+			"status": "ok"
+		},
+		"ticker.heikinashi.symbol": {
+			"fn": "ticker.heikinashi",
+			"param": "symbol",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "simple string",
+			"tvArgName": "symbol",
+			"agrees": true,
+			"probe": "probe_2 = ticker.heikinashi(symbol = true)",
+			"status": "ok"
+		},
+		"ticker.kagi.symbol": {
+			"fn": "ticker.kagi",
+			"param": "symbol",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "simple string",
+			"tvArgName": "symbol",
+			"agrees": true,
+			"probe": "probe_2 = ticker.kagi(symbol = true, reversal = 1)",
+			"status": "ok"
+		},
+		"ticker.kagi.param": {
+			"fn": "ticker.kagi",
+			"param": "param",
+			"docType": "unknown",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "simple float",
+			"tvArgName": "param",
+			"agrees": false,
+			"probe": "probe_4 = ticker.kagi(\"x\", 1, param = true)",
+			"status": "ok"
+		},
+		"ticker.linebreak.symbol": {
+			"fn": "ticker.linebreak",
+			"param": "symbol",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "simple string",
+			"tvArgName": "symbol",
+			"agrees": true,
+			"probe": "probe_2 = ticker.linebreak(symbol = true, number_of_lines = 1)",
+			"status": "ok"
+		},
+		"ticker.linebreak.number_of_lines": {
+			"fn": "ticker.linebreak",
+			"param": "number_of_lines",
+			"docType": "series int",
+			"members": [
+				"int"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple int",
+			"tvArgName": "number_of_lines",
+			"agrees": true,
+			"probe": "probe_3 = ticker.linebreak(\"x\", number_of_lines = \"probe\")",
+			"status": "ok"
+		},
+		"ticker.modify.tickerid": {
+			"fn": "ticker.modify",
+			"param": "tickerid",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "simple string",
+			"tvArgName": "tickerid",
+			"agrees": true,
+			"probe": "probe_2 = ticker.modify(tickerid = true)",
+			"status": "ok"
+		},
+		"ticker.modify.session": {
+			"fn": "ticker.modify",
+			"param": "session",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "simple string",
+			"tvArgName": "session",
+			"agrees": true,
+			"probe": "probe_3 = ticker.modify(\"x\", session = true)",
+			"status": "ok"
+		},
+		"ticker.modify.adjustment": {
+			"fn": "ticker.modify",
+			"param": "adjustment",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "simple string",
+			"tvArgName": "adjustment",
+			"agrees": true,
+			"probe": "probe_4 = ticker.modify(\"x\", adjustment = true)",
+			"status": "ok"
+		},
+		"ticker.new.prefix": {
+			"fn": "ticker.new",
+			"param": "prefix",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "simple string",
+			"tvArgName": "prefix",
+			"agrees": true,
+			"probe": "probe_2 = ticker.new(prefix = true, ticker = \"x\")",
+			"status": "ok"
+		},
+		"ticker.new.ticker": {
+			"fn": "ticker.new",
+			"param": "ticker",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "simple string",
+			"tvArgName": "ticker",
+			"agrees": true,
+			"probe": "probe_3 = ticker.new(\"x\", ticker = true)",
+			"status": "ok"
+		},
+		"ticker.new.session": {
+			"fn": "ticker.new",
+			"param": "session",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "simple string",
+			"tvArgName": "session",
+			"agrees": true,
+			"probe": "probe_4 = ticker.new(\"x\", \"x\", session = true)",
+			"status": "ok"
+		},
+		"ticker.new.adjustment": {
+			"fn": "ticker.new",
+			"param": "adjustment",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "simple string",
+			"tvArgName": "adjustment",
+			"agrees": true,
+			"probe": "probe_5 = ticker.new(\"x\", \"x\", adjustment = true)",
+			"status": "ok"
+		},
+		"ticker.pointfigure.symbol": {
+			"fn": "ticker.pointfigure",
+			"param": "symbol",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "simple string",
+			"tvArgName": "symbol",
+			"agrees": true,
+			"probe": "probe_2 = ticker.pointfigure(symbol = true, source = hl, style = ATR, param = 1, reversal = 1)",
+			"status": "ok"
+		},
+		"ticker.pointfigure.source": {
+			"fn": "ticker.pointfigure",
+			"param": "source",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "simple string",
+			"tvArgName": "source",
+			"agrees": true,
+			"probe": "probe_3 = ticker.pointfigure(\"x\", source = true, style = ATR, param = 1, reversal = 1)",
+			"status": "ok"
+		},
+		"ticker.pointfigure.style": {
+			"fn": "ticker.pointfigure",
+			"param": "style",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "simple string",
+			"tvArgName": "style",
+			"agrees": true,
+			"probe": "probe_4 = ticker.pointfigure(\"x\", hl, style = true, param = 1, reversal = 1)",
+			"status": "ok"
+		},
+		"ticker.pointfigure.reversal": {
+			"fn": "ticker.pointfigure",
+			"param": "reversal",
+			"docType": "series int",
+			"members": [
+				"int"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple int",
+			"tvArgName": "reversal",
+			"agrees": true,
+			"probe": "probe_6 = ticker.pointfigure(\"x\", hl, ATR, 1, reversal = \"probe\")",
+			"status": "ok"
+		},
+		"ticker.renko.symbol": {
+			"fn": "ticker.renko",
+			"param": "symbol",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "simple string",
+			"tvArgName": "symbol",
+			"agrees": true,
+			"probe": "probe_2 = ticker.renko(symbol = true, style = ATR, param = 1)",
+			"status": "ok"
+		},
+		"ticker.renko.style": {
+			"fn": "ticker.renko",
+			"param": "style",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "simple string",
+			"tvArgName": "style",
+			"agrees": true,
+			"probe": "probe_3 = ticker.renko(\"x\", style = true, param = 1)",
+			"status": "ok"
+		},
+		"ticker.renko.request_wicks": {
+			"fn": "ticker.renko",
+			"param": "request_wicks",
+			"docType": "series bool",
+			"members": [
+				"bool"
+			],
+			"ourNoun": "simple bool",
+			"tvNoun": "simple bool",
+			"tvArgName": "request_wicks",
+			"agrees": true,
+			"probe": "probe_5 = ticker.renko(\"x\", ATR, 1, request_wicks = \"probe\")",
+			"status": "ok"
+		},
+		"ticker.renko.source": {
+			"fn": "ticker.renko",
+			"param": "source",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "simple string",
+			"tvArgName": "source",
+			"agrees": true,
+			"probe": "probe_6 = ticker.renko(\"x\", ATR, 1, source = true)",
+			"status": "ok"
+		},
+		"time.timeframe": {
+			"fn": "time",
+			"param": "timeframe",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "simple string",
+			"tvArgName": "timeframe",
+			"agrees": true,
+			"probe": "probe_2 = time(timeframe = true)",
+			"status": "ok"
+		},
+		"time.session": {
+			"fn": "time",
+			"param": "session",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "simple string",
+			"tvArgName": "session",
+			"agrees": true,
+			"probe": "probe_3 = time(\"x\", session = true)",
+			"status": "ok"
+		},
+		"time.bars_back": {
+			"fn": "time",
+			"param": "bars_back",
+			"docType": "series int",
+			"members": [
+				"int",
+				"string"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple int",
+			"tvArgName": "bars_back",
+			"agrees": true,
+			"probe": "probe_4 = time(\"x\", bars_back = true)",
+			"status": "ok"
+		},
+		"time.timeframe_bars_back": {
+			"fn": "time",
+			"param": "timeframe_bars_back",
+			"docType": "series int",
+			"members": [
+				"int"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series int",
+			"tvArgName": "timeframe_bars_back",
+			"agrees": false,
+			"probe": "probe_5 = time(\"x\", timeframe_bars_back = \"probe\")",
+			"status": "ok"
+		},
+		"time.timezone": {
+			"fn": "time",
+			"param": "timezone",
+			"docType": "unknown",
+			"members": [
+				"int"
+			],
+			"ourNoun": "simple int",
+			"probe": "probe_6 = time(\"x\", timezone = \"probe\")",
+			"errors": [
+				{
+					"code": "CE10120",
+					"message": "The \"{signature}\" function does not have an argument with the name \"{name}\""
+				}
+			],
+			"status": "other-error"
+		},
+		"ticker.standard.symbol": {
+			"fn": "ticker.standard",
+			"param": "symbol",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "simple string",
+			"tvArgName": "symbol",
+			"agrees": true,
+			"probe": "probe_2 = ticker.standard(symbol = true)",
+			"status": "ok"
+		},
+		"time_close.timeframe": {
+			"fn": "time_close",
+			"param": "timeframe",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "simple string",
+			"tvArgName": "timeframe",
+			"agrees": true,
+			"probe": "probe_2 = time_close(timeframe = true)",
+			"status": "ok"
+		},
+		"time_close.session": {
+			"fn": "time_close",
+			"param": "session",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "simple string",
+			"tvArgName": "session",
+			"agrees": true,
+			"probe": "probe_3 = time_close(\"x\", session = true)",
+			"status": "ok"
+		},
+		"time_close.bars_back": {
+			"fn": "time_close",
+			"param": "bars_back",
+			"docType": "series int",
+			"members": [
+				"int",
+				"string"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple int",
+			"tvArgName": "bars_back",
+			"agrees": true,
+			"probe": "probe_4 = time_close(\"x\", bars_back = true)",
+			"status": "ok"
+		},
+		"time_close.timeframe_bars_back": {
+			"fn": "time_close",
+			"param": "timeframe_bars_back",
+			"docType": "series int",
+			"members": [
+				"int"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "series int",
+			"tvArgName": "timeframe_bars_back",
+			"agrees": false,
+			"probe": "probe_5 = time_close(\"x\", timeframe_bars_back = \"probe\")",
+			"status": "ok"
+		},
+		"time_close.timezone": {
+			"fn": "time_close",
+			"param": "timezone",
+			"docType": "unknown",
+			"members": [
+				"int"
+			],
+			"ourNoun": "simple int",
+			"probe": "probe_6 = time_close(\"x\", timezone = \"probe\")",
+			"errors": [
+				{
+					"code": "CE10120",
+					"message": "The \"{signature}\" function does not have an argument with the name \"{name}\""
+				}
+			],
+			"status": "other-error"
+		},
+		"timeframe.from_seconds.seconds": {
+			"fn": "timeframe.from_seconds",
+			"param": "seconds",
+			"docType": "series int",
+			"members": [
+				"int"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple int",
+			"tvArgName": "seconds",
+			"agrees": true,
+			"probe": "probe_2 = timeframe.from_seconds(seconds = \"probe\")",
+			"status": "ok"
+		},
+		"timeframe.in_seconds.timeframe": {
+			"fn": "timeframe.in_seconds",
+			"param": "timeframe",
+			"docType": "series string",
+			"members": [
+				"string"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "simple string",
+			"tvArgName": "timeframe",
+			"agrees": true,
+			"probe": "probe_2 = timeframe.in_seconds(timeframe = true)",
+			"status": "ok"
+		},
+		"timestamp.dateString": {
+			"fn": "timestamp",
+			"param": "dateString",
+			"docType": "const string",
+			"members": [
+				"string",
+				"int"
+			],
+			"ourNoun": "simple string",
+			"tvNoun": "const string",
+			"tvArgName": "dateString",
+			"agrees": false,
+			"probe": "probe_2 = timestamp(dateString = true)",
+			"status": "ok"
+		},
+		"timestamp.year": {
+			"fn": "timestamp",
+			"param": "year",
+			"docType": "unknown",
+			"members": [
+				"int"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple int",
+			"tvArgName": "year",
+			"agrees": true,
+			"probe": "probe_3 = timestamp(\"x\", year = \"probe\")",
+			"status": "ok"
+		},
+		"timestamp.month": {
+			"fn": "timestamp",
+			"param": "month",
+			"docType": "unknown",
+			"members": [
+				"int"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple int",
+			"tvArgName": "month",
+			"agrees": true,
+			"probe": "probe_4 = timestamp(\"x\", month = \"probe\")",
+			"status": "ok"
+		},
+		"timestamp.day": {
+			"fn": "timestamp",
+			"param": "day",
+			"docType": "unknown",
+			"members": [
+				"int"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple int",
+			"tvArgName": "day",
+			"agrees": true,
+			"probe": "probe_5 = timestamp(\"x\", day = \"probe\")",
+			"status": "ok"
+		},
+		"timestamp.hour": {
+			"fn": "timestamp",
+			"param": "hour",
+			"docType": "unknown",
+			"members": [
+				"int"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple int",
+			"tvArgName": "hour",
+			"agrees": true,
+			"probe": "probe_6 = timestamp(\"x\", hour = \"probe\")",
+			"status": "ok"
+		},
+		"timestamp.minute": {
+			"fn": "timestamp",
+			"param": "minute",
+			"docType": "unknown",
+			"members": [
+				"int"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple int",
+			"tvArgName": "minute",
+			"agrees": true,
+			"probe": "probe_7 = timestamp(\"x\", minute = \"probe\")",
+			"status": "ok"
+		},
+		"timestamp.second": {
+			"fn": "timestamp",
+			"param": "second",
+			"docType": "unknown",
+			"members": [
+				"int"
+			],
+			"ourNoun": "simple int",
+			"tvNoun": "simple int",
+			"tvArgName": "second",
+			"agrees": true,
+			"probe": "probe_8 = timestamp(\"x\", second = \"probe\")",
 			"status": "ok"
 		}
 	}

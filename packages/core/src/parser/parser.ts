@@ -3,7 +3,11 @@
 // ExpressionParser class; Parser owns an instance and forwards to it
 // via the 11 one-line delegators below.
 
-import { TYPE_KEYWORDS, VAR_TYPE_KEYWORDS } from "../constants/keywords";
+import {
+	TV_RESERVED_BINDING_NAMES,
+	TYPE_KEYWORDS,
+	VAR_TYPE_KEYWORDS,
+} from "../constants/keywords";
 import type * as AST from "./ast";
 import { ExpressionParser } from "./expressions";
 import { Lexer, type LexerError, type Token, TokenType } from "./lexer";
@@ -1838,6 +1842,10 @@ export class Parser {
 		//        y + 1
 		const body: AST.Statement[] = [];
 
+		// The declaration is committed by the time we are here (the `=>` has
+		// been consumed), so the parameter names can be judged. see INV179
+		this.checkReservedParamNames(params);
+
 		// Skip newlines after the => token
 		while (this.check(TokenType.NEWLINE)) {
 			this.advance();
@@ -2277,6 +2285,40 @@ export class Parser {
 		} as AST.TypeDeclaration | AST.EnumDeclaration;
 	}
 
+	/**
+	 * Record TV's reserved-name error if `name` is one TradingView refuses to
+	 * bind. No-op otherwise, so callers can call it unconditionally at any
+	 * binding site. The doubled quotes are TV's own rendering, not a typo.
+	 * see INV179
+	 */
+	private reservedBindingNameError(name: string, tok: Token | undefined): void {
+		if (!tok || !TV_RESERVED_BINDING_NAMES.has(name)) return;
+		this.parserErrors.push({
+			line: tok.line,
+			column: tok.column,
+			message: `""${name}"" cannot be used as a variable or function name.`,
+		});
+	}
+
+	/**
+	 * Reserved names in a parameter list. Called only once a declaration is
+	 * COMMITTED - `parseFunctionParams` itself is speculative, so the same
+	 * check there fires on ordinary call arguments. TV keeps parsing after
+	 * this error, and so do we: the parameter stays declared, which keeps its
+	 * uses in the body from cascading into undefined-variable errors TV never
+	 * emits. see INV179
+	 */
+	private checkReservedParamNames(params: AST.FunctionParam[]): void {
+		for (const p of params) {
+			if (!TV_RESERVED_BINDING_NAMES.has(p.name)) continue;
+			this.parserErrors.push({
+				line: p.nameLine ?? p.line ?? 0,
+				column: p.nameColumn ?? p.column ?? 0,
+				message: `""${p.name}"" cannot be used as a variable or function name.`,
+			});
+		}
+	}
+
 	private scanTypeFieldAtCurrent(): AST.TypeField | null {
 		let i = this.current;
 		let typeName: string | undefined;
@@ -2348,6 +2390,11 @@ export class Parser {
 					'The keywords "var" cannot be used in a type declaration. Use them when declaring variables of that type.',
 			});
 		}
+		// A reserved name as a FIELD name. Deferred past the trailing-name check
+		// for the same reason the qualifier error is: this scanner runs on every
+		// body-indent line, and a non-field line must not draw it. The field is
+		// kept, so its uses do not cascade into "Object has no field". see INV179
+		this.reservedBindingNameError(fieldToken.value, fieldToken);
 		// Capture a LITERAL default (`int x = 1.5`) so the checker can type-check
 		// it against the field type (CE10170, INV094). Any OTHER default is
 		// handed back by index for the caller to parse as an expression, so the
@@ -2473,6 +2520,11 @@ export class Parser {
 		// Parse method body - same logic as function body
 		const body: AST.Statement[] = [];
 		const line = nameToken.line;
+
+		// Committed past the `=>`, so the parameter names can be judged; a
+		// method has its own body loop and does not go through
+		// functionDeclaration. see INV179
+		this.checkReservedParamNames(params);
 
 		// Skip newlines after the => token
 		while (this.check(TokenType.NEWLINE)) {
@@ -3300,6 +3352,9 @@ export class Parser {
 
 			let typeAnnotation: AST.TypeAnnotation | undefined;
 			let paramName: string;
+			// The token the NAME came from - TV anchors the reserved-name error
+			// at the name, not at the type that precedes it. see INV179
+			let nameTok: Token | undefined;
 
 			// The param's first token - if a type annotation results, this is
 			// where it starts (TV anchors CE10149 there). see INV033
@@ -3429,15 +3484,18 @@ export class Parser {
 				// Next token should be the parameter name (identifier or keyword used as name)
 				// Keywords like 'type', 'color', 'string' etc. can be used as param names
 				if (this.check(TokenType.IDENTIFIER)) {
+					nameTok = this.peek();
 					paramName = this.advance().value;
 				} else if (this.check(TokenType.KEYWORD)) {
 					// Keyword used as parameter name (e.g., string type, color color)
+					nameTok = this.peek();
 					paramName = this.advance().value;
 				} else {
 					throw new Error("Expected parameter name after type");
 				}
 			} else if (this.check(TokenType.KEYWORD)) {
 				// Keyword used as parameter name (e.g., color = color.white, type = "SMA")
+				nameTok = this.peek();
 				paramName = this.advance().value;
 			} else {
 				// First token should be identifier (could be type or param name)
@@ -3477,12 +3535,22 @@ export class Parser {
 						line: paramStartTok?.line,
 						column: paramStartTok?.column,
 					};
+					nameTok = this.peek();
 					paramName = this.advance().value;
 				} else {
 					// First identifier is the parameter name
+					nameTok = firstIdent;
 					paramName = firstIdent.value;
 				}
 			}
+
+			// The NAME's own position travels with the param so the committed
+			// declaration can anchor the reserved-name error there. It is NOT
+			// reported here: this function also runs SPECULATIVELY, on any
+			// `name(...)` the parser is still deciding about, and a call like
+			// `f(quarters or eighths)` reads as a `<type> <name>` pair whose
+			// "name" is `or`. Reporting from inside the speculation put 1343
+			// errors on `and`/`or`/`not` across 260 corpus files. see INV179
 
 			let defaultValue: AST.Expression | undefined;
 			if (this.match(TokenType.ASSIGN)) {
@@ -3495,6 +3563,8 @@ export class Parser {
 				defaultValue,
 				line: paramStartTok?.line,
 				column: paramStartTok?.column,
+				nameLine: nameTok?.line,
+				nameColumn: nameTok?.column,
 			});
 
 			// Skip newlines after parameter (before comma or closing paren)

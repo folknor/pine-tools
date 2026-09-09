@@ -91,6 +91,34 @@ function scalarUnionMembers(raw) {
 	return members.every((m) => SCALAR_BASES.has(m)) ? members : null;
 }
 
+// The checker also derives a union for a MERGED param typed "unknown", by
+// taking the scalar bases the overloads accept at that index
+// (overloadPositionalScalarMembers in analyzer/builtins.ts, INV181). Those
+// parameters need a measured noun for the same reason the merged unions do, so
+// the census has to see them too - `na`'s `x` is the motivating case.
+function overloadScalarMembersFor(fn, index) {
+	if (!Array.isArray(fn.overloads) || fn.overloads.length < 2) return null;
+	const union = new Set();
+	let considered = 0;
+	for (const ov of fn.overloads) {
+		const p = ov.parameters?.[index];
+		if (!p) continue;
+		const base = baseOfRawType(p.type);
+		if (!base || base === "unknown") return null;
+		let depth = 0;
+		for (const ch of base) {
+			if (ch === "<") depth++;
+			else if (ch === ">") depth--;
+			else if (ch === "/" && depth > 0) return null;
+		}
+		considered++;
+		for (const m of base.split("/").map((s) => s.trim()))
+			if (SCALAR_BASES.has(m)) union.add(m);
+	}
+	if (considered === 0 || union.size === 0) return null;
+	return [...union];
+}
+
 // ---------------------------------------------------------------------------
 // Argument construction.
 // ---------------------------------------------------------------------------
@@ -228,7 +256,8 @@ const targets = [];
 for (const fn of functions) {
 	if (!Array.isArray(fn.parameters)) continue;
 	fn.parameters.forEach((p, index) => {
-		const members = scalarUnionMembers(p.type);
+		const members =
+			scalarUnionMembers(p.type) ?? overloadScalarMembersFor(fn, index);
 		if (!members) return;
 		const wrong = wrongArgFor(members);
 		const lead = leadingArgs(fn, index);

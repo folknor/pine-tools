@@ -1,0 +1,9 @@
+//@version=6
+indicator("t")
+int stride = input.int(1, "Step")
+int lo = 0
+int hi = 5
+int n = 0
+for i = lo to hi by stride
+    n += 1
+plot(n)

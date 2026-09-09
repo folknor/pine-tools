@@ -713,6 +713,29 @@ function checkOverloadResolvedArgs(
 					? 1
 					: -1;
 			}
+			// A MIXED union - scalars alongside containers/drawing IDs, e.g.
+			// na's `int/float/color/string/label/line/box/array<>/...`. Treating
+			// it as "cannot tell" made every such overload score zero mismatches,
+			// which is why na(<bool>) resolved cleanly and went unreported. A
+			// clearly-scalar argument cannot be a label or an array, so only the
+			// scalar members can accept it; a non-scalar argument stays neutral,
+			// since the container members are the ones we cannot reason about.
+			// see INV181
+			const scalarMembers = raw
+				.split("/")
+				.map((m) => m.trim())
+				.filter((m) => SCALAR_BASE_TYPES.has(m));
+			if (
+				raw.includes("/") &&
+				scalarMembers.length > 0 &&
+				isScalarArg(argType)
+			) {
+				return scalarMembers.some((m) =>
+					TypeChecker.isAssignable(argType, m as PineType),
+				)
+					? 1
+					: -1;
+			}
 			return 0;
 		}
 		return TypeChecker.isAssignable(argType, param.type) ? 1 : -1;
@@ -751,9 +774,18 @@ function checkOverloadResolvedArgs(
 			tie = true;
 		}
 	}
-	// Resolved cleanly (no mismatch in the selected overload) or ambiguously
-	// (two overloads tie at the best score) -> stay lenient.
-	if (bestS.mm === 0 || tie) return;
+	// Resolved cleanly (no mismatch in the selected overload) -> lenient.
+	if (bestS.mm === 0) return;
+	// A tie normally means we cannot say WHICH overload the call meant, so
+	// naming a parameter from either would be a guess. The exception is a tie in
+	// which EVERY candidate mismatches: the call is then wrong under all of
+	// them, so the only open question is wording, and TV words it after the
+	// first overload. na(<bool>) is that case - both overloads reject a bool.
+	// see INV181
+	if (tie) {
+		if (!candidates.every((ov) => score(ov).mm > 0)) return;
+		best = candidates[0];
+	}
 
 	// Only the legacy params the merged signature dropped to "unknown" are ours
 	// to report (clean merged params are covered by the named-arg loop / INV107),
@@ -764,7 +796,13 @@ function checkOverloadResolvedArgs(
 	};
 	const reportable = (param: ParameterInfo): boolean => {
 		const raw = param.rawType ? baseOf(String(param.rawType)) : "";
-		return SCALAR_BASE_TYPES.has(raw) || isScalarUnionRaw(raw);
+		if (SCALAR_BASE_TYPES.has(raw) || isScalarUnionRaw(raw)) return true;
+		// A mixed union is reportable too now that classify can mismatch against
+		// one - the message quotes a measured noun, not the union. see INV181
+		return (
+			raw.includes("/") &&
+			raw.split("/").some((m) => SCALAR_BASE_TYPES.has(m.trim()))
+		);
 	};
 	const report = (
 		value: Expression,
@@ -772,6 +810,20 @@ function checkOverloadResolvedArgs(
 		param: ParameterInfo,
 	): void => {
 		const desc = v.describeArgForTemplate(value, argType, version);
+		const raw = param.rawType ? baseOf(String(param.rawType)) : "";
+		// A union parameter has no single doc type to quote, so it takes the
+		// probe-measured noun like every other union CE10123 does, with the same
+		// `simple <first member>` fallback where the sweep never reached it. A
+		// non-union param keeps its own doc type, which is already exact
+		// ("series int" for line.new's x1). see INV171 / INV181
+		const scalarMembers = raw
+			.split("/")
+			.map((m) => m.trim())
+			.filter((m) => SCALAR_BASE_TYPES.has(m));
+		const docStr = raw.includes("/")
+			? (unionParamExpectedNoun(functionName, param.name) ??
+				`simple ${scalarMembers[0] ?? raw.split("/")[0].trim()}`)
+			: (param.rawType ?? String(param.type));
 		v.addTemplateError({
 			line: value.line,
 			column: value.column,
@@ -783,7 +835,7 @@ function checkOverloadResolvedArgs(
 				argDisplayName: param.name,
 				argUserFriendlyRepresentation: desc.repr,
 				argumentType: desc.typeStr,
-				currentTypeDocStr: param.rawType ?? String(param.type),
+				currentTypeDocStr: docStr,
 				funId: functionName,
 				typePostfix: "",
 			},
@@ -803,6 +855,11 @@ function checkOverloadResolvedArgs(
 		const param = best.parameters.find((p) => p.name === name);
 		if (!param || classify(prov.type, param) >= 0) continue;
 		if (!reportable(param) || !mergedLossy(name)) continue;
+		// checkUnionArgs already reports NAMED args against the merged union,
+		// for overloaded functions too - only its POSITIONAL half bows out. So a
+		// named arg whose merged param is a readable union belongs to it, and
+		// reporting here as well double-fires (label.new's `size`). see INV181
+		if (namedParamUnionMembers(functionName, name)) continue;
 		report(prov.arg.value, prov.type, param);
 		return;
 	}
@@ -1542,7 +1599,8 @@ export function validateFunctionArguments(
 // only flags a KNOWN scalar base that's absent from the union (int/float are
 // interchangeable); unknown/na/non-scalar args are left alone, so no FPs.
 // Positional checking is skipped for overloaded funcs (ambiguous positions),
-// matching the main loop. see INV016.
+// matching the main loop; checkOverloadResolvedArgs covers those instead, and
+// covering them HERE as well double-reports. see INV016 / INV181.
 export function checkUnionArgs(
 	v: UnifiedPineValidator,
 	call: CallExpression,

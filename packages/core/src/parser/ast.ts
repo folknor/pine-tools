@@ -149,6 +149,11 @@ export interface FunctionParam {
 	// functions args should be typified" at the untyped param. see INV052
 	line?: number;
 	column?: number;
+	// Position of the param's NAME token, which is the type's when there is no
+	// annotation and differs from it when there is. TV anchors the
+	// reserved-name error at the name. see INV179
+	nameLine?: number;
+	nameColumn?: number;
 }
 
 export interface TypeAnnotation {
