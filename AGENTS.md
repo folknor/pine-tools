@@ -394,19 +394,20 @@ merges them**, and both are no-ops unless the catalog gained something:
 
 ```bash
 node scripts/probe-required-params.mjs --retry     # requiredness (INV050)
-node scripts/probe-union-type-nouns.mjs --retry    # union expected-type nouns (INV171)
+node scripts/probe-param-type-nouns.mjs --retry    # expected-type nouns (INV171, INV183)
 ```
 
 They are the only network steps outside the scrape itself, and on an unchanged
-catalog they make no TV calls at all (verified 2026-08-27: the union-noun
+catalog they make no TV calls at all (verified 2026-08-27: the noun
 `--retry` reported `probing 0 functions` and rewrote only its own timestamp),
 so running them on every refresh costs nothing. Skipping them is
 silent rather than loud: a newly-scraped function simply carries no probed
 requiredness (falling back to prose evidence) and no `expectedTypeNoun` on its
-union parameters (falling back to the checker's `simple <first member>`, which
-the sweep measured as wrong 194 times out of 201). Nothing fails; the data is
-just quietly less true, which is exactly the failure mode the WARNING above
-exists for.
+parameters - a union one then falls back to the checker's
+`simple <first member>` (measured wrong 194 times out of 201) and a plain one
+to its documented type (measured wrong 93 times out of 637). Nothing fails; the
+data is just quietly less true, which is exactly the failure mode the WARNING
+above exists for.
 
 Note: `scrape` now also DOM-mirrors variables and constants (under
 `var__<name>`/`const__<name>`) and operators (`op__<hex-slug>`), not just
@@ -425,21 +426,35 @@ scraper); re-run the sweep only when the catalog gains functions (`--retry`
 re-probes just unsettled/new entries) - functions absent from it fall back to
 prose evidence at generate-time.
 
-**A union parameter's expected-type NOUN is probe data too.** The string TV
-quotes in CE10123 ("...but a `series float` is expected") for a parameter typed
-`series int/float` is not derivable from that union: the same doc type draws
-five different answers across the catalog, `int/string` splits evenly between
-`int` and `string`, and `math.*` alone draws six answers - nothing distinguishes
-`math.abs` from `math.ceil` from `math.max`. It is measured per
-function+parameter into `pine-data/raw/v6/union-type-nouns-probe.json` by
-`scripts/probe-union-type-nouns.mjs` (one call per parameter carrying exactly
+**A parameter's expected-type NOUN is probe data too - union or not.** The
+string TV quotes in CE10123 ("...but a `series float` is expected") is not
+derivable from the catalog, for two different reasons depending on the shape:
+
+- **A UNION parameter has no single doc type to quote.** `series int/float`
+  draws five different answers across the catalog, `int/string` splits evenly
+  between `int` and `string`, and `math.*` alone draws six answers - nothing
+  distinguishes `math.abs` from `math.ceil` from `math.max`. See INV171.
+- **A PLAIN parameter has one, and TV disagrees with it 15% of the time.** Of
+  637 measured, 93 differ from the documented type: `ta.highest`'s `length` is
+  `series int` in both scraped overloads and TV says `simple int`, and the
+  `str.*` family is documented `series string` while TV answers `simple string`
+  or `const string` per function. This is the G002 shape - the reference
+  under-documents the compiler - so the doc type is a fallback, not an answer.
+  See INV183.
+
+Both are measured per function+parameter into
+`pine-data/raw/v6/param-type-nouns-probe.json` by
+`scripts/probe-param-type-nouns.mjs` (one call per parameter carrying exactly
 one deliberately-wrong argument) and merged into each parameter's
-`expectedTypeNoun` at generate-time. Same lifecycle as the requiredness probe:
-it lives in `raw/` but no scrape produces it, and `--retry` re-probes only
-unsettled entries. A parameter with no measured noun keeps the checker's
-fallback - **do not extrapolate a neighbour's answer onto it**, and do not
-"simplify" the seven parameters whose measured noun happens to equal the old
-`simple <first member>` fabrication; they agree by coincidence. See INV171.
+`expectedTypeNoun` at generate-time. The noun is a per-parameter CONSTANT,
+independent of the argument passed - that is what makes it bakeable, and it was
+verified for both shapes rather than assumed.
+
+Same lifecycle as the requiredness probe: it lives in `raw/` but no scrape
+produces it, and `--retry` re-probes only unsettled entries. A parameter with no
+measured noun keeps the checker's fallback - **do not extrapolate a neighbour's
+answer onto it**, and do not "simplify" the parameters whose measured noun
+happens to equal the fallback; they agree by coincidence.
 
 ### Re-running type logic WITHOUT scraping
 

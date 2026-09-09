@@ -29,7 +29,7 @@
 // - A union covering every scalar base has no wrong argument to give and is
 //   recorded `unprobeable` rather than guessed at.
 //
-// Writes pine-data/raw/v6/union-type-nouns-probe.json: per function+parameter
+// Writes pine-data/raw/v6/param-type-nouns-probe.json: per function+parameter
 // the exact probe line, TV's raw error, the extracted noun, and a status:
 //   ok             CE10123 for THIS parameter (ctx.argDisplayName matches),
 //                  noun extracted
@@ -43,10 +43,10 @@
 //   no-verdict    TV call failed (transient - retry)
 //
 // Usage:
-//   node scripts/probe-union-type-nouns.mjs --census        # offline, no TV
-//   node scripts/probe-union-type-nouns.mjs --limit 10      # pilot
-//   node scripts/probe-union-type-nouns.mjs                 # full sweep
-//   node scripts/probe-union-type-nouns.mjs --retry         # unsettled only
+//   node scripts/probe-param-type-nouns.mjs --census        # offline, no TV
+//   node scripts/probe-param-type-nouns.mjs --limit 10      # pilot
+//   node scripts/probe-param-type-nouns.mjs                 # full sweep
+//   node scripts/probe-param-type-nouns.mjs --retry         # unsettled only
 // Concurrency 4 (same etiquette as find-real-failures.mjs).
 
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
@@ -57,7 +57,7 @@ import { dirname, join } from "node:path";
 
 const execFileP = promisify(execFile);
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const OUT = join(root, "pine-data/raw/v6/union-type-nouns-probe.json");
+const OUT = join(root, "pine-data/raw/v6/param-type-nouns-probe.json");
 
 const functions = JSON.parse(
 	readFileSync(join(root, "pine-data/v6/functions.json"), "utf8"),
@@ -89,6 +89,17 @@ function scalarUnionMembers(raw) {
 	if (!base.includes("/")) return null;
 	const members = base.split("/").map((s) => s.trim());
 	return members.every((m) => SCALAR_BASES.has(m)) ? members : null;
+}
+
+// A PLAIN scalar parameter - no union at all, e.g. `ta.highest`'s
+// `series int` length. The noun is unmeasured for these too and TV disagrees
+// with the reference on some of them (`ta.highest` draws `simple int`,
+// `str.length` draws `const string`), which is the same G002 shape the union
+// sweep was built for. Returned as a one-member list so the rest of the census
+// treats it identically. see INV183
+function plainScalarMember(raw) {
+	const base = baseOfRawType(raw);
+	return SCALAR_BASES.has(base) ? [base] : null;
 }
 
 // The checker also derives a union for a MERGED param typed "unknown", by
@@ -257,7 +268,9 @@ for (const fn of functions) {
 	if (!Array.isArray(fn.parameters)) continue;
 	fn.parameters.forEach((p, index) => {
 		const members =
-			scalarUnionMembers(p.type) ?? overloadScalarMembersFor(fn, index);
+			scalarUnionMembers(p.type) ??
+			overloadScalarMembersFor(fn, index) ??
+			plainScalarMember(p.type);
 		if (!members) return;
 		const wrong = wrongArgFor(members);
 		const lead = leadingArgs(fn, index);
@@ -535,7 +548,7 @@ writeFileSync(
 			description:
 				"TV-probed expected-type noun (CE10123 currentTypeDocStr) per union-typed parameter. One deliberately-wrong argument per parameter; the noun cannot be derived from the catalog. See INV171, TODO #74.",
 			probedAt: new Date().toISOString(),
-			tool: "scripts/probe-union-type-nouns.mjs",
+			tool: "scripts/probe-param-type-nouns.mjs",
 			results,
 		},
 		null,

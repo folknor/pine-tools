@@ -71,7 +71,7 @@ home.
 
 ### The noun had to be measured, and the probe had to be widened to see it
 
-`scripts/probe-union-type-nouns.mjs` selected its targets by asking
+`scripts/probe-param-type-nouns.mjs` selected its targets by asking
 `scalarUnionMembers(p.type)` of the MERGED parameter - so a parameter typed
 `unknown`, which is every overloaded function's, was invisible to it. The
 census now also derives members from the OVERLOADS, mirroring what the checker

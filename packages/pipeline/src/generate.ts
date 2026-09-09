@@ -37,7 +37,7 @@ const REQUIRED_PARAMS_PROBE_FILE = path.join(
 	"required-params-probe.json",
 );
 const RUNTIME_DOMAINS_FILE = path.join(RAW_DIR, "runtime-domains.json");
-const UNION_TYPE_NOUNS_FILE = path.join(RAW_DIR, "union-type-nouns-probe.json");
+const PARAM_TYPE_NOUNS_FILE = path.join(RAW_DIR, "param-type-nouns-probe.json");
 
 // =============================================================================
 // TYPE DEFINITIONS
@@ -546,27 +546,27 @@ const RUNTIME_DOMAINS: { facts: RuntimeDomainFact[] } = fs.existsSync(
 // derivable from the union: `series int/float` alone answers five different
 // nouns, and `math.*` answers six for that one doc type, so nothing in the
 // catalog distinguishes math.abs from math.ceil from math.max. Probed per
-// function+parameter by scripts/probe-union-type-nouns.mjs, and merged here
+// function+parameter by scripts/probe-param-type-nouns.mjs, and merged here
 // rather than tabled in the checker, per the Data-vs-Syntax rule. see INV171
-interface UnionNounEntry {
+interface ParamNounEntry {
 	status: string;
 	tvNoun?: string | null;
 }
-const UNION_TYPE_NOUNS: Record<string, UnionNounEntry> = fs.existsSync(
-	UNION_TYPE_NOUNS_FILE,
+const PARAM_TYPE_NOUNS: Record<string, ParamNounEntry> = fs.existsSync(
+	PARAM_TYPE_NOUNS_FILE,
 )
-	? (JSON.parse(fs.readFileSync(UNION_TYPE_NOUNS_FILE, "utf-8")).results ?? {})
+	? (JSON.parse(fs.readFileSync(PARAM_TYPE_NOUNS_FILE, "utf-8")).results ?? {})
 	: {};
 
 // Only a probe that answered FOR THIS PARAMETER contributes. Every other
 // status (mismatched-arg, other-error, unprobeable, no-verdict) is an absence
 // of evidence, and a parameter with no measured noun keeps the checker's
 // existing fallback rather than inheriting a neighbour's answer.
-function probedUnionNoun(
+function probedParamNoun(
 	fnName: string,
 	paramName: string,
 ): string | undefined {
-	const entry = UNION_TYPE_NOUNS[`${fnName}.${paramName}`];
+	const entry = PARAM_TYPE_NOUNS[`${fnName}.${paramName}`];
 	if (entry?.status !== "ok") return undefined;
 	return entry.tvNoun ?? undefined;
 }
@@ -607,7 +607,7 @@ function paramConstraints(fnName: string, paramName: string, desc: string) {
 // Everything a parameter carries beyond its scraped fields: the value
 // constraints above plus the probed CE10123 noun.
 function paramFacts(fnName: string, paramName: string, desc: string) {
-	const expectedTypeNoun = probedUnionNoun(fnName, paramName);
+	const expectedTypeNoun = probedParamNoun(fnName, paramName);
 	return {
 		...paramConstraints(fnName, paramName, desc),
 		...(expectedTypeNoun ? { expectedTypeNoun } : {}),

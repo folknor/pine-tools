@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+- Corrected wording: the expected-type noun a CE10123 quotes for a PLAIN
+  (non-union) parameter is now probe-measured rather than taken from the
+  parameter's documented type. `ta.highest(high, "x")` says `simple int` is
+  expected, not `series int`, and `str.length(1.0)` says `const string`, not
+  `series string`. The reference under-documents the compiler here: of 637
+  plain parameters measured, 93 disagree with their doc type, concentrated in
+  the `str.*` family. The noun is a per-parameter constant independent of the
+  argument passed, which is what makes it bakeable, and that was verified
+  rather than assumed. `scripts/probe-union-type-nouns.mjs` and
+  `pine-data/raw/v6/union-type-nouns-probe.json` are renamed
+  `probe-param-type-nouns.mjs` / `param-type-nouns-probe.json`, since they now
+  cover every scalar parameter; the standard refresh sequence in AGENTS.md is
+  updated to match. See INV183.
+
 - Corrected wording: the type QUALIFIER quoted for a user variable in a
   CE10123 / CE10173 is now the one its declaration gives it, instead of a
   hardcoded `series`. `float len = 14.0` reads `const float`, an

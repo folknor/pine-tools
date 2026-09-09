@@ -248,14 +248,21 @@ IDs so the two stay in sync.
     re-deriving are tabulated in the INV: `var` does not escalate, an
     annotation beats the initializer, a typed parameter is `series`, and the
     qualifier is the one in force where the value is USED.
-  - **The expected-type NOUN on NON-union parameters.** `ta.highest`'s `length`
-    is `series int` in both scraped overloads and TV quotes `simple int`;
-    `str.length`'s `string` is `series string` and TV quotes `const string`
-    (found while fixing INV182). So this is not one function but a general
-    gap: the INV171 probe measures the noun for UNION parameters only, and the
-    same G002-shape reference-vs-compiler disagreement exists for plain ones.
-    The answer is a second probe in INV171's shape, not a hand patch - do not
-    edit the data by hand.
+  - ~~The expected-type NOUN on NON-union parameters.~~ **FIXED 2026-09-09
+    ([INV183](../investigations/INV183-plain-param-expected-noun/notes.md)).**
+    It was general, not one function: **93 of 637 plain parameters (15%)
+    disagree with their documented type**, concentrated in `str.*` (documented
+    `series string` throughout, TV answers `simple` or `const` per function).
+    The INV171 probe's census now accepts a plain scalar as a one-member list,
+    taking it from 381 parameters to 946; the checker's four `param.rawType`
+    sites go through `expectedNounFor`. Probe and data renamed
+    `probe-param-type-nouns.mjs` / `param-type-nouns-probe.json`, since
+    "union" stopped describing them. NOTE the corpus cannot verify this - it
+    holds no type error on any affected parameter - so the evidence is the
+    sweep and the fixture.
+  - TV renders a float literal argument as `1` where we render `1.0` in
+    `argUserFriendlyRepresentation` (`str.length(1.0)`, seen while measuring
+    INV183). Cosmetic, unmeasured beyond that one case.
   - v5 paren-wrap violations past a statement's FIRST line: TV anchors in
     joined-line coordinates (statement's first line, columns accumulated over
     the trimmed wrapped lines plus a joining space each), we anchor at the
@@ -786,8 +793,8 @@ IDs so the two stay in sync.
 
   **The sweep is BUILT and CAPTURED 2026-08-27
   ([INV171](../investigations/INV171-union-type-noun-probe/notes.md)).**
-  `scripts/probe-union-type-nouns.mjs` ->
-  `pine-data/raw/v6/union-type-nouns-probe.json`. It measured **201 of 202
+  `scripts/probe-param-type-nouns.mjs` ->
+  `pine-data/raw/v6/param-type-nouns-probe.json`. It measured **201 of 202
   union parameters across 141 functions** - the real census, smaller than the
   185/251 estimated above - with only `footprint.get_row_by_price` out of
   reach (its leading argument needs a chart-context `request.footprint`).

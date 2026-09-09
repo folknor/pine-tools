@@ -1203,8 +1203,8 @@ contradiction means re-measure, not "the earlier author was wrong."
   would be the table of language facts Data-vs-Syntax forbids.
 - [INV171](INV171-union-type-noun-probe/notes.md) - the union expected-type
   noun sweep TODO #74 specified and INV159 left unbuilt.
-  `scripts/probe-union-type-nouns.mjs` measures **201 of 202 union parameters
-  across 141 functions** into `pine-data/raw/v6/union-type-nouns-probe.json`.
+  `scripts/probe-param-type-nouns.mjs` measures **201 of 202 union parameters
+  across 141 functions** into `pine-data/raw/v6/param-type-nouns-probe.json`.
   **194 disagree with our fabricated `simple <first member>`**, and there is
   no rule to derive: `series int/float` alone answers five different nouns, a
   `series` doc union answers three different qualifiers, and `int/string`
@@ -1300,3 +1300,14 @@ contradiction means re-measure, not "the earlier author was wrong."
   appears or disappears, and the 20 corpus messages that changed are
   corrections, two re-probed against TV. Also corrected a fixture whose
   "no TV disagreement" note had only ever been checked for the base type.
+- [INV183](INV183-plain-param-expected-noun/notes.md) - the expected-type noun
+  for PLAIN parameters. Filed in todo #84 as one function (`ta.highest`'s
+  `length`); measuring it showed **93 of 637 plain parameters disagree with
+  their documented type**, concentrated in `str.*`. INV171's census could not
+  see them because it asked for a `/` in the type; it now accepts a plain
+  scalar as a one-member list (381 parameters to 946). Verified first that the
+  noun is a per-parameter CONSTANT independent of the argument, since a noun
+  that varied could not be baked at all. Probe and data renamed to
+  `probe-param-type-nouns.mjs` / `param-type-nouns-probe.json`. The corpus
+  cannot verify this one - it holds no type error on any affected parameter -
+  so a green regression-check means "no regression", not "confirmed".

@@ -15,13 +15,18 @@ verdict and the argument NAME are both right; only the noun reads wrong.
 
 ## The probe
 
-`scripts/probe-union-type-nouns.mjs`, modelled on INV050's
+`scripts/probe-param-type-nouns.mjs`, modelled on INV050's
 `probe-required-params.mjs`. One call per union parameter carrying exactly one
 deliberately wrong argument - a scalar base outside the union - with valid
 values everywhere else; TV answers CE10123 whose `ctx.currentTypeDocStr` is
 the noun.
 
-Output: `pine-data/raw/v6/union-type-nouns-probe.json`.
+Output: `pine-data/raw/v6/param-type-nouns-probe.json`.
+
+**Both were named `*union-type-nouns*` when this investigation landed** and were
+renamed on 2026-09-09, when INV183 widened the sweep from union parameters to
+every scalar parameter and "union" stopped describing it. The paths above are
+the current ones so the pointers resolve; git history has the originals.
 
 Modes: `--census` (offline, no TV), `--dry <fn>` (print one generated script),
 `--limit N` (pilot), `--retry` (unsettled only).

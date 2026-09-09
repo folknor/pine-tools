@@ -1,0 +1,11 @@
+// @test regression/INV183-plain-param-expected-noun
+// @description The expected-type NOUN for a PLAIN (non-union) parameter is probe-measured, not taken from the parameter's documented type. The reference under-documents the compiler here - the G002 shape - on 93 of the 637 plain parameters measured: every one below is documented `series` and TradingView quotes `simple` or `const`. The noun is a per-parameter constant independent of the argument passed, which is what makes it bakeable; verified on str.match with const and series arguments. All four lines match pine-lint --tv byte for byte, probed 2026-09-09. See INV183.
+// @expects parse: success
+// @expects error: line=3, message=/"ta.highest" with argument "length".*but a "simple int"  is expected/
+// @expects error: line=3, message=/"math.round" with argument "precision".*but a "simple int"  is expected/
+// @expects error: line=3, message=/"str.length" with argument "string".*but a "const string"  is expected/
+// @expects error: line=3, message=/"str.match" with argument "source".*but a "simple string"  is expected/
+// @expects errors: 4
+//@version=6
+indicator("INV183 plain param expected noun")
+plot(ta.highest(high, "x") + math.round(1.5, "x") + str.length(1.0) + str.length(str.match(1.0, "a")))

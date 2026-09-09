@@ -20,6 +20,7 @@ import type {
 	UnaryExpression,
 } from "../parser/ast";
 import {
+	expectedNounFor,
 	type FunctionSignature,
 	GENERIC_FUNCTION_BASES,
 	getArgGroups,
@@ -39,11 +40,11 @@ import {
 	NAMESPACE_PROPERTIES,
 	namedParamUnionMembers,
 	type ParameterInfo,
+	paramExpectedNoun,
 	paramRequiresConst,
 	positionalConstParam,
 	positionalParamUnionMembers,
 	resolveCallReturnRaw,
-	unionParamExpectedNoun,
 	unionParamInfo,
 } from "./builtins";
 import type { UnifiedPineValidator } from "./checker";
@@ -811,19 +812,23 @@ function checkOverloadResolvedArgs(
 	): void => {
 		const desc = v.describeArgForTemplate(value, argType, version);
 		const raw = param.rawType ? baseOf(String(param.rawType)) : "";
-		// A union parameter has no single doc type to quote, so it takes the
-		// probe-measured noun like every other union CE10123 does, with the same
-		// `simple <first member>` fallback where the sweep never reached it. A
-		// non-union param keeps its own doc type, which is already exact
-		// ("series int" for line.new's x1). see INV171 / INV181
+		// Both shapes take the probe-measured noun where the sweep reached it.
+		// They differ only in the fallback: a union has no single doc type to
+		// quote, so it falls back to the `simple <first member>` fabrication,
+		// while a plain parameter falls back to its own doc type - which is
+		// usually but NOT always what TV says. see INV171 / INV181 / INV183
 		const scalarMembers = raw
 			.split("/")
 			.map((m) => m.trim())
 			.filter((m) => SCALAR_BASE_TYPES.has(m));
 		const docStr = raw.includes("/")
-			? (unionParamExpectedNoun(functionName, param.name) ??
+			? (paramExpectedNoun(functionName, param.name) ??
 				`simple ${scalarMembers[0] ?? raw.split("/")[0].trim()}`)
-			: (param.rawType ?? String(param.type));
+			: expectedNounFor(
+					functionName,
+					param.name,
+					param.rawType ?? String(param.type),
+				);
 		v.addTemplateError({
 			line: value.line,
 			column: value.column,
@@ -1188,7 +1193,11 @@ export function validateFunctionArguments(
 					argDisplayName: param.name,
 					argUserFriendlyRepresentation: desc.repr,
 					argumentType: desc.typeStr,
-					currentTypeDocStr: param.rawType ?? String(param.type),
+					currentTypeDocStr: expectedNounFor(
+						functionName,
+						param.name,
+						param.rawType ?? String(param.type),
+					),
 					funId: functionName,
 					typePostfix: "",
 				},
@@ -1326,7 +1335,11 @@ export function validateFunctionArguments(
 					argDisplayName: param.name,
 					argUserFriendlyRepresentation: desc.repr,
 					argumentType: desc.typeStr,
-					currentTypeDocStr: param.rawType ?? String(param.type),
+					currentTypeDocStr: expectedNounFor(
+						functionName,
+						param.name,
+						param.rawType ?? String(param.type),
+					),
 					funId: functionName,
 					typePostfix: "",
 				},
@@ -1416,7 +1429,11 @@ export function validateFunctionArguments(
 							argDisplayName: param.name,
 							argUserFriendlyRepresentation: desc.repr,
 							argumentType: desc.typeStr,
-							currentTypeDocStr: param.rawType ?? String(param.type),
+							currentTypeDocStr: expectedNounFor(
+								functionName,
+								param.name,
+								param.rawType ?? String(param.type),
+							),
 							funId: functionName,
 							typePostfix: "",
 						},
@@ -1455,7 +1472,11 @@ export function validateFunctionArguments(
 							argDisplayName: param.name,
 							argUserFriendlyRepresentation: desc.repr,
 							argumentType: desc.typeStr,
-							currentTypeDocStr: param.rawType ?? String(param.type),
+							currentTypeDocStr: expectedNounFor(
+								functionName,
+								param.name,
+								param.rawType ?? String(param.type),
+							),
 							funId: functionName,
 							typePostfix: "",
 						},
@@ -1670,7 +1691,7 @@ export function checkUnionArgs(
 					// something, not because it is a rule. see INV171
 					currentTypeDocStr:
 						(paramInfo?.name
-							? unionParamExpectedNoun(functionName, paramInfo.name)
+							? paramExpectedNoun(functionName, paramInfo.name)
 							: undefined) ?? `simple ${members[0]}`,
 					funId: functionName,
 					typePostfix: "",

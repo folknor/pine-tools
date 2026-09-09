@@ -907,7 +907,7 @@ export function unionParamInfo(
 // draws six for that one doc type), so it is probe-measured per
 // function+parameter and merged at generate-time. Undefined for a parameter
 // the sweep could not reach, whose caller keeps its own fallback. see INV171
-export function unionParamExpectedNoun(
+export function paramExpectedNoun(
 	functionName: string,
 	paramName: string,
 ): string | undefined {
@@ -915,6 +915,30 @@ export function unionParamExpectedNoun(
 		(x) => x.name === paramName,
 	);
 	return (p as { expectedTypeNoun?: string } | undefined)?.expectedTypeNoun;
+}
+
+/**
+ * The expected-type noun to quote in a CE10123 for a PLAIN (non-union)
+ * parameter: the probe-measured one where the sweep reached it, else the
+ * parameter's own documented type.
+ *
+ * A plain parameter needs this for the same reason a union one does. The
+ * reference under-documents the compiler here (the G002 shape): of 637 plain
+ * parameters measured, 93 disagree with their doc type - `ta.highest`'s
+ * `length` is `series int` in both scraped overloads and TV quotes
+ * `simple int`, and the `str.*` family is documented `series string` while TV
+ * quotes `simple string` or `const string` depending on the function. The noun
+ * is a per-parameter constant, independent of the argument passed (probed on
+ * `str.match` with const and series arguments, and across nine arguments of
+ * differing qualifier on `str.length`), which is what makes it bakeable.
+ * see INV183
+ */
+export function expectedNounFor(
+	functionName: string,
+	paramName: string,
+	docType: string | undefined,
+): string {
+	return paramExpectedNoun(functionName, paramName) ?? docType ?? "";
 }
 
 // Qualifier + base of a built-in VARIABLE (close -> series/float,
