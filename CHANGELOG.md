@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+- Corrected wording: the type QUALIFIER quoted for a user variable in a
+  CE10123 / CE10173 is now the one its declaration gives it, instead of a
+  hardcoded `series`. `float len = 14.0` reads `const float`, an
+  `input.float()` product reads `input float`, `float x = close` still reads
+  `series float`, and `int r = math.avg(1, 2)` reads `simple float` rather
+  than `const float`. The qualifier is the subject of these errors, so this
+  is not cosmetic: `series` versus `const` is the difference between
+  "restructure this" and "it is already constant, the call is simply wrong".
+  Measured by a 29-case `--tv` sweep, which went 19 disagreements to 0.
+  Four rules that are not guessable: `var`/`varip` do NOT escalate to series,
+  an explicit annotation beats the initializer, a typed function parameter IS
+  series, and the qualifier is flow-sensitive - the one in force where the
+  value is used, so a `:=` below a read does not change the read. Rendering
+  only: no error appears or disappears, and the 20 corpus messages that
+  changed are corrections. See INV182.
+
 - New errors: a word TradingView refuses to bind is now rejected as a function
   or method PARAMETER name and as a user-defined type FIELD name -
   `f(float to) => ...` was accepted clean and is TradingView's `""to"" cannot

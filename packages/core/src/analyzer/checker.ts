@@ -27,6 +27,7 @@ import type {
 	TernaryExpression,
 	TupleDeclaration,
 	UnaryExpression,
+	VariableDeclaration,
 } from "../parser/ast";
 import {
 	type ArgumentInfo,
@@ -78,6 +79,7 @@ import {
 } from "./checker-helpers";
 import {
 	arrayFromWidensToFloat,
+	qualifierProvenance,
 	type UdfBodyRecord,
 } from "./checker-provenance";
 import {
@@ -242,6 +244,10 @@ export class UnifiedPineValidator {
 	// scope's Symbol object. Kept beside the symbol rather than in
 	// `symbol.type`, which stores an UNQUALIFIED base. see INV157
 	private promotedQualifiers = new WeakMap<SymbolInfo, Qualifier>();
+	// The qualifier each variable's DECLARATION gave it, for CE10123 rendering.
+	// Keyed by the Symbol object like promotedQualifiers, and separate from it
+	// because the two join rather than override. see INV182
+	private declaredQualifiers = new WeakMap<SymbolInfo, Qualifier>();
 	// Depth of enclosing user-defined function / method bodies. Pine forbids a
 	// function body reassigning a global scalar (TV's CE10088), and nothing else
 	// distinguishes "inside a UDF" - blockDepth also counts if/loop blocks, where
@@ -752,6 +758,7 @@ export class UnifiedPineValidator {
 				}
 
 				this.symbolTable.define(symbol);
+				this.recordDeclaredQualifier(symbol, statement, version);
 
 				// Then validate the initialization expression
 				if (statement.init) {
@@ -790,7 +797,7 @@ export class UnifiedPineValidator {
 									startLine,
 									startColumn,
 									span,
-									`Cannot assign a value of the "${TypeChecker.renderQualifiedType(initType)}" type to the "${statement.name}" variable. The variable is declared with the "${declRendered}" type.`,
+									`Cannot assign a value of the "${TypeChecker.renderQualifiedType(initType, this.initQualifierFor(statement.init, version))}" type to the "${statement.name}" variable. The variable is declared with the "${declRendered}" type.`,
 									DiagnosticSeverity.Error,
 								);
 							}
@@ -2022,6 +2029,94 @@ export class UnifiedPineValidator {
 		return true;
 	}
 
+	/**
+	 * The qualifier to RENDER for a bare user variable in a CE10123, or
+	 * undefined to leave the caller's default in place.
+	 *
+	 * Read exactly the way `promoteAssignedQualifier` already reads it: the
+	 * stored type carries a qualifier only when the initializer had one
+	 * (`x = int(close)` stores "series float", `x = 14.0` stores bare "float"),
+	 * so an unqualified type IS the const case rather than an unknown one. The
+	 * `:=` promotion is joined on top, and because it is recorded when the
+	 * assignment is VISITED, a read that precedes the assignment in source
+	 * order correctly sees the un-promoted qualifier - TV is flow-sensitive
+	 * here too (`x = 14.0; use(x); x := close` reports const, probed).
+	 *
+	 * Rendering `series` for all of these was the whole defect: the qualifier
+	 * is the SUBJECT of this error class, and `series` versus `const` is the
+	 * difference between "restructure this" and "it is already constant, the
+	 * call is simply wrong".
+	 *
+	 * PARAMETERS are excluded deliberately - TV reports `series float` for a
+	 * typed parameter (`f(float p)`), so the unqualified-means-const reading
+	 * does not transfer to them. see INV182
+	 */
+	private userSymbolQualifier(sym: SymbolInfo): Qualifier | undefined {
+		const declared = this.declaredQualifiers.get(sym);
+		// Nothing recorded - a parameter, or a declaration shape
+		// `recordDeclaredQualifier` could not read. Returning undefined keeps
+		// the caller's default, which is what TV reports for a typed parameter
+		// (`f(float p)` renders `series float`, probed), so the absence is a
+		// correct answer here and not merely a safe one.
+		if (!declared) return undefined;
+		const promoted = this.promotedQualifiers.get(sym);
+		return promoted ? joinQualifier(declared, promoted) : declared;
+	}
+
+	/**
+	 * The qualifier to quote for an INITIALIZER whose inferred type came back
+	 * bare, in CE10173. `const` is only right for a literal or a const
+	 * expression; a builtin call carries its selected overload's qualifier and
+	 * TV quotes that. see INV182
+	 */
+	private initQualifierFor(
+		init: Expression | null | undefined,
+		version: string,
+	): string {
+		if (!init) return "const";
+		const prov = qualifierProvenance(this, init, version, {
+			trustUdfAndUserVars: true,
+		});
+		return prov?.qualifier ?? "const";
+	}
+
+	/**
+	 * Record the qualifier a variable's DECLARATION gives it, for CE10123
+	 * rendering. Symbol types are stored unqualified - the comment on
+	 * `promoteAssignedQualifier` about a stored "series int" describes the
+	 * promotion path, not the declaration path - so without this the qualifier
+	 * of `float x = close` is unrecoverable at the call site, which is what
+	 * INV175 recorded as its residual.
+	 *
+	 * An explicit qualifier on the annotation WINS over the initializer:
+	 * `simple float x = input.float(1) * 2` is `simple float` at TV even though
+	 * the initializer alone is `input float`. Otherwise the initializer's own
+	 * provenance decides, through the existing lattice - so a literal is const,
+	 * a builtin carries its catalog qualifier, `input.*` is input, and an
+	 * operator expression joins its operands.
+	 *
+	 * `var` and `varip` deliberately do NOT escalate: `var float x = 14.0` is
+	 * `const float` at TV, which is worth stating because persistence across
+	 * bars looks like it should imply series and does not. see INV182
+	 */
+	private recordDeclaredQualifier(
+		symbol: SymbolInfo,
+		statement: VariableDeclaration,
+		version: string,
+	): void {
+		const annotated = statement.typeAnnotation
+			? leadingQualifierOf(statement.typeAnnotation.name)
+			: undefined;
+		const q =
+			annotated ??
+			(statement.init
+				? qualifierProvenance(this, statement.init, version, {
+						trustUdfAndUserVars: true,
+					})?.qualifier
+				: undefined);
+		if (q) this.declaredQualifiers.set(symbol, q);
+	}
+
 	/** The qualifier a later `:=` raised this symbol to, if any. see INV157 */
 	public promotedQualifierFor(symbol: SymbolInfo): Qualifier | undefined {
 		return this.promotedQualifiers.get(symbol);
@@ -2266,7 +2361,9 @@ export class UnifiedPineValidator {
 						? this.symbolTable.lookup((expr as Identifier).name)
 						: undefined;
 				const bareQualifier =
-					sym && sym.line !== 0 ? bareIdentifierQualifier : "const";
+					sym && sym.line !== 0
+						? (this.userSymbolQualifier(sym) ?? bareIdentifierQualifier)
+						: "const";
 				return {
 					repr: name || "?",
 					typeStr: qualified ?? this.renderTvType(inferred, bareQualifier),

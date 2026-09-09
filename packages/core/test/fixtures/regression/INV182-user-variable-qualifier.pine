@@ -1,0 +1,28 @@
+// @test regression/INV182-user-variable-qualifier
+// @description The qualifier CE10123 quotes for a bare user variable is the one its DECLARATION gives it, not a hardcoded "series". Symbol types are stored unqualified, so the initializer's qualifier was unrecoverable at the call site and every user variable rendered "series" - the defect INV175 filed as its residual. The qualifier is the SUBJECT of this error class, so this was not a wording nit: "series" versus "const" is the difference between "restructure this" and "it is already constant, the call is simply wrong". Each line below is a distinct rule from the 29-case pine-lint --tv sweep of 2026-09-09, all 29 of which now agree. Note `var` does NOT escalate (c3) - persistence across bars looks like it should imply series and does not - that an explicit annotation BEATS the initializer (s1: simple wins over input), and that the rule is FLOW-SENSITIVE: p1 and p2 have identical declarations and identical `:= close` promotions, and differ only in whether the read precedes the promotion, which is what TV does too. Only the ARGUMENT half of each message is asserted; the expected half reads `series string` here against TV's `const string`, which is the separate expected-type-noun gap tracked in todo #84 and deliberately not pinned by this fixture. See INV182.
+// @expects parse: success
+// @expects error: line=12, message=/"c1". An argument of "const float" type/
+// @expects error: line=12, message=/"c2". An argument of "const bool" type/
+// @expects error: line=12, message=/"c3". An argument of "const float" type/
+// @expects error: line=12, message=/"i1". An argument of "input float" type/
+// @expects error: line=12, message=/"s1". An argument of "simple float" type/
+// @expects error: line=12, message=/"s2". An argument of "simple float" type/
+// @expects error: line=12, message=/"r1". An argument of "series float" type/
+// @expects error: line=12, message=/"p1". An argument of "const float" type/
+// @expects error: line=15, message=/"p2". An argument of "series float" type/
+// @expects errors: 9
+//@version=6
+indicator("INV182 user variable qualifier")
+float c1 = 14.0 * 2
+bool c2 = 2.0 > 1.0
+var float c3 = 14.0
+float i1 = input.float(1.0) * 2
+simple float s1 = input.float(1.0) * 2
+float s2 = syminfo.mintick
+float r1 = close
+float p1 = 14.0
+float p2 = 14.0
+plot(str.length(c1) + str.length(c2) + str.length(c3) + str.length(i1) + str.length(s1) + str.length(s2) + str.length(r1) + str.length(p1))
+p1 := close
+p2 := close
+plot(str.length(p2))

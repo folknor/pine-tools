@@ -236,17 +236,26 @@ IDs so the two stay in sync.
 - **#84 - residuals from the 2026-09-07 adoption of three findings from
   `../strategies/` (INV174, INV175, INV176).** The errors land; what is left
   is wording and anchors:
-  - The argument's qualifier NOUN for a bare user float variable in an int
-    slot: TV says `const float` for `float len = 14.0` and `simple float` for
-    an input product, we say `series float` for both. Symbol types are stored
-    unqualified and provenance has nothing for a bare scalar user variable
-    ([INV175](../investigations/INV175-float-variable-int-param/notes.md)).
-    The same store is why `int r = math.avg(1, 2)` reads `const float` where
-    TV says `simple float`
-    ([INV174](../investigations/INV174-math-float-only-polymorphic/notes.md)).
-  - `ta.highest`'s `length` is `series int` in both scraped overloads and TV
-    quotes `simple int`. A G002-shape data disagreement; the INV171 noun probe
-    covers union parameters only. Do not patch the data by hand.
+  - ~~The argument's qualifier NOUN for a bare user variable.~~ **FIXED
+    2026-09-09
+    ([INV182](../investigations/INV182-user-variable-qualifier/notes.md)),
+    both halves.** A 29-case `--tv` sweep went 19 disagreements to 0. The
+    qualifier now comes from the DECLARATION (annotation if any, else the
+    initializer's provenance), joined with the existing `:=` promotion, which
+    makes it flow-sensitive as TV is. `int r = math.avg(1, 2)` reads
+    `simple float` too, since CE10173 now quotes the initializer's provenance
+    instead of defaulting a bare type to `const`. Four rules worth not
+    re-deriving are tabulated in the INV: `var` does not escalate, an
+    annotation beats the initializer, a typed parameter is `series`, and the
+    qualifier is the one in force where the value is USED.
+  - **The expected-type NOUN on NON-union parameters.** `ta.highest`'s `length`
+    is `series int` in both scraped overloads and TV quotes `simple int`;
+    `str.length`'s `string` is `series string` and TV quotes `const string`
+    (found while fixing INV182). So this is not one function but a general
+    gap: the INV171 probe measures the noun for UNION parameters only, and the
+    same G002-shape reference-vs-compiler disagreement exists for plain ones.
+    The answer is a second probe in INV171's shape, not a hand patch - do not
+    edit the data by hand.
   - v5 paren-wrap violations past a statement's FIRST line: TV anchors in
     joined-line coordinates (statement's first line, columns accumulated over
     the trimmed wrapped lines plus a joining space each), we anchor at the

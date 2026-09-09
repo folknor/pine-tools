@@ -416,15 +416,26 @@ export namespace TypeChecker {
 	}
 
 	// Render a type the way TV's CE10173 declaration message does:
-	// "series<float>" -> "series float"; a bare base (literal/const
-	// expression) -> "const float"; na -> "simple na". see INV032
-	export function renderQualifiedType(type: PineType): string {
+	// "series<float>" -> "series float"; a bare base -> `bareQualifier`;
+	// na -> "simple na". see INV032
+	//
+	// `bareQualifier` exists because "const" is only the right default for a
+	// LITERAL or const expression. A builtin call's result carries its selected
+	// overload's qualifier, and TV quotes that: `math.avg(1, 2)` is
+	// `simple float` at TV, because math.avg's weakest overload is
+	// `(simple int/float, simple int/float) -> simple float` and there is no
+	// const one to pick. Callers that can resolve the initializer's provenance
+	// pass it; the const default stands for everything else. see INV182
+	export function renderQualifiedType(
+		type: PineType,
+		bareQualifier: string = "const",
+	): string {
 		const t = type as string;
 		if (isNaType(t as PineType)) return "simple na";
 		const m = t.match(/^(series|simple|const|input)<(.+)>$/);
 		if (m) return `${m[1]} ${m[2]}`;
 		if (/^(series|simple|const|input)\s/.test(t)) return t;
-		return `const ${t}`;
+		return `${bareQualifier} ${t}`;
 	}
 
 	// Infer type from literal value. `raw` is the source lexeme: a JS

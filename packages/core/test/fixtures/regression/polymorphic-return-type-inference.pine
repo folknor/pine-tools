@@ -1,9 +1,9 @@
 // @test regression/polymorphic-return-type-inference
-// @description Locks in the element-polymorphic / returnTypeParam return-type inference for functions the fixture-coverage census flagged as having dedicated checker logic but ZERO fixture coverage (array.mode, array.variance via flags.polymorphic="element"; ta.range via flags.returnTypeParam="source"). Verified correct against TV's documented overloads 2026-06-10 (array<int>->int, array<int/float>->float; ta.range series int->int / int-or-float->float). The bool-typed declaration is just a reveal vehicle - assigning the call result to a bool surfaces the inferred base type in the error, so a regression that collapsed int->float (or to unknown) would change these messages. Not an INV: no TV disagreement, this guards an already-correct path.
-// @expects error: line=5, message=/"const int" type to the "m1"/
-// @expects error: line=6, message=/"const float" type to the "m2"/
-// @expects error: line=7, message=/"const int" type to the "v1"/
-// @expects error: line=8, message=/"const float" type to the "v2"/
+// @description Locks in the element-polymorphic / returnTypeParam return-type inference for functions the fixture-coverage census flagged as having dedicated checker logic but ZERO fixture coverage (array.mode, array.variance via flags.polymorphic="element"; ta.range via flags.returnTypeParam="source"). The BASE types were verified against TV's documented overloads 2026-06-10 (array<int>->int, array<int/float>->float; ta.range series int->int / int-or-float->float) and are unchanged. The bool-typed declaration is just a reveal vehicle - assigning the call result to a bool surfaces the inferred type in the error, so a regression that collapsed int->float (or to unknown) would change these messages. QUALIFIERS CORRECTED 2026-09-09: these four read "const" until INV182, and that was never measured - the note below said "no TV disagreement" on the strength of the documented overloads, which state a base and not a qualifier. Probed individually with pine-lint --tv (TV stops after one CE10173, so one script per line): all four are "series", matching what we now emit. See INV182.
+// @expects error: line=5, message=/"series int" type to the "m1"/
+// @expects error: line=6, message=/"series float" type to the "m2"/
+// @expects error: line=7, message=/"series int" type to the "v1"/
+// @expects error: line=8, message=/"series float" type to the "v2"/
 // @expects error: line=9, message=/"series float" type to the "r1"/
 //@version=6
 indicator("t")

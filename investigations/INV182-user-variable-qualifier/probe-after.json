@@ -1,0 +1,237 @@
+{
+  "date": "2026-09-09T05:30:17.870Z",
+  "rows": [
+    {
+      "name": "literal-float",
+      "src": "//@version=6\nindicator(\"x\")\nfloat x = 14.0\nplot(str.length(x))\n",
+      "tv": "const float",
+      "local": "const float",
+      "agree": true,
+      "tvUsable": true
+    },
+    {
+      "name": "literal-int",
+      "src": "//@version=6\nindicator(\"x\")\nint x = 14\nplot(str.length(x))\n",
+      "tv": "const int",
+      "local": "const int",
+      "agree": true,
+      "tvUsable": true
+    },
+    {
+      "name": "literal-bool",
+      "src": "//@version=6\nindicator(\"x\")\nbool x = true\nplot(str.length(x))\n",
+      "tv": "const bool",
+      "local": "const bool",
+      "agree": true,
+      "tvUsable": true
+    },
+    {
+      "name": "literal-float-untyped",
+      "src": "//@version=6\nindicator(\"x\")\nx = 14.0\nplot(str.length(x))\n",
+      "tv": "const float",
+      "local": "const float",
+      "agree": true,
+      "tvUsable": true
+    },
+    {
+      "name": "literal-arith",
+      "src": "//@version=6\nindicator(\"x\")\nfloat x = 14.0 * 2\nplot(str.length(x))\n",
+      "tv": "const float",
+      "local": "const float",
+      "agree": true,
+      "tvUsable": true
+    },
+    {
+      "name": "literal-na",
+      "src": "//@version=6\nindicator(\"x\")\nfloat x = na\nplot(str.length(x))\n",
+      "tv": "simple float",
+      "local": "simple float",
+      "agree": true,
+      "tvUsable": true
+    },
+    {
+      "name": "annot-const",
+      "src": "//@version=6\nindicator(\"x\")\nconst float x = 14.0\nplot(str.length(x))\n",
+      "tv": "const float",
+      "local": "const float",
+      "agree": true,
+      "tvUsable": true
+    },
+    {
+      "name": "annot-simple",
+      "src": "//@version=6\nindicator(\"x\")\nsimple float x = 14.0\nplot(str.length(x))\n",
+      "tv": "simple float",
+      "local": "simple float",
+      "agree": true,
+      "tvUsable": true
+    },
+    {
+      "name": "annot-series",
+      "src": "//@version=6\nindicator(\"x\")\nseries float x = 14.0\nplot(str.length(x))\n",
+      "tv": "series float",
+      "local": "series float",
+      "agree": true,
+      "tvUsable": true
+    },
+    {
+      "name": "var-literal",
+      "src": "//@version=6\nindicator(\"x\")\nvar float x = 14.0\nplot(str.length(x))\n",
+      "tv": "const float",
+      "local": "const float",
+      "agree": true,
+      "tvUsable": true
+    },
+    {
+      "name": "varip-literal",
+      "src": "//@version=6\nindicator(\"x\")\nvarip float x = 14.0\nplot(str.length(x))\n",
+      "tv": "const float",
+      "local": "const float",
+      "agree": true,
+      "tvUsable": true
+    },
+    {
+      "name": "from-series-builtin",
+      "src": "//@version=6\nindicator(\"x\")\nfloat x = close\nplot(str.length(x))\n",
+      "tv": "series float",
+      "local": "series float",
+      "agree": true,
+      "tvUsable": true
+    },
+    {
+      "name": "from-simple-builtin",
+      "src": "//@version=6\nindicator(\"x\")\nfloat x = syminfo.mintick\nplot(str.length(x))\n",
+      "tv": "simple float",
+      "local": "simple float",
+      "agree": true,
+      "tvUsable": true
+    },
+    {
+      "name": "from-int-builtin",
+      "src": "//@version=6\nindicator(\"x\")\nint x = bar_index\nplot(str.length(x))\n",
+      "tv": "series int",
+      "local": "series int",
+      "agree": true,
+      "tvUsable": true
+    },
+    {
+      "name": "from-input",
+      "src": "//@version=6\nindicator(\"x\")\nfloat x = input.float(1.0)\nplot(str.length(x))\n",
+      "tv": "input float",
+      "local": "input float",
+      "agree": true,
+      "tvUsable": true
+    },
+    {
+      "name": "from-input-arith",
+      "src": "//@version=6\nindicator(\"x\")\nfloat x = input.float(1.0) * 2\nplot(str.length(x))\n",
+      "tv": "input float",
+      "local": "input float",
+      "agree": true,
+      "tvUsable": true
+    },
+    {
+      "name": "from-input-annot-simple",
+      "src": "//@version=6\nindicator(\"x\")\nsimple float x = input.float(1.0) * 2\nplot(str.length(x))\n",
+      "tv": "simple float",
+      "local": "simple float",
+      "agree": true,
+      "tvUsable": true
+    },
+    {
+      "name": "from-const-call",
+      "src": "//@version=6\nindicator(\"x\")\nfloat x = math.max(1.0, 2.0)\nplot(str.length(x))\n",
+      "tv": "const float",
+      "local": "const float",
+      "agree": true,
+      "tvUsable": true
+    },
+    {
+      "name": "from-series-call",
+      "src": "//@version=6\nindicator(\"x\")\nfloat x = ta.sma(close, 5)\nplot(str.length(x))\n",
+      "tv": "series float",
+      "local": "series float",
+      "agree": true,
+      "tvUsable": true
+    },
+    {
+      "name": "ternary-const",
+      "src": "//@version=6\nindicator(\"x\")\nfloat x = true ? 1.0 : 2.0\nplot(str.length(x))\n",
+      "tv": "const float",
+      "local": "const float",
+      "agree": true,
+      "tvUsable": true
+    },
+    {
+      "name": "ternary-series",
+      "src": "//@version=6\nindicator(\"x\")\nfloat x = close > open ? 1.0 : 2.0\nplot(str.length(x))\n",
+      "tv": "series float",
+      "local": "series float",
+      "agree": true,
+      "tvUsable": true
+    },
+    {
+      "name": "compare-builtins",
+      "src": "//@version=6\nindicator(\"x\")\nbool x = close > open\nplot(str.length(x))\n",
+      "tv": "series bool",
+      "local": "series bool",
+      "agree": true,
+      "tvUsable": true
+    },
+    {
+      "name": "compare-consts",
+      "src": "//@version=6\nindicator(\"x\")\nbool x = 2.0 > 1.0\nplot(str.length(x))\n",
+      "tv": "const bool",
+      "local": "const bool",
+      "agree": true,
+      "tvUsable": true
+    },
+    {
+      "name": "reassign-const",
+      "src": "//@version=6\nindicator(\"x\")\nfloat x = 14.0\nx := 15.0\nplot(str.length(x))\n",
+      "tv": "const float",
+      "local": "const float",
+      "agree": true,
+      "tvUsable": true
+    },
+    {
+      "name": "reassign-series",
+      "src": "//@version=6\nindicator(\"x\")\nfloat x = 14.0\nx := close\nplot(str.length(x))\n",
+      "tv": "series float",
+      "local": "series float",
+      "agree": true,
+      "tvUsable": true
+    },
+    {
+      "name": "reassign-series-conditional",
+      "src": "//@version=6\nindicator(\"x\")\nfloat x = 14.0\nif bar_index > 5\n    x := close\nplot(str.length(x))\n",
+      "tv": "series float",
+      "local": "series float",
+      "agree": true,
+      "tvUsable": true
+    },
+    {
+      "name": "reassign-after-read",
+      "src": "//@version=6\nindicator(\"x\")\nfloat x = 14.0\nplot(str.length(x))\nx := close\n",
+      "tv": "const float",
+      "local": "const float",
+      "agree": true,
+      "tvUsable": true
+    },
+    {
+      "name": "param-typed",
+      "src": "//@version=6\nindicator(\"x\")\nf(float p) =>\n    str.length(p)\nplot(f(14.0))\n",
+      "tv": "series float",
+      "local": "series float",
+      "agree": true,
+      "tvUsable": true
+    },
+    {
+      "name": "param-untyped",
+      "src": "//@version=6\nindicator(\"x\")\nf(p) =>\n    str.length(p)\nplot(f(14.0))\n",
+      "tv": null,
+      "local": null,
+      "agree": false,
+      "tvUsable": true
+    }
+  ]
+}

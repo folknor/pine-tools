@@ -1287,3 +1287,16 @@ contradiction means re-measure, not "the earlier author was wrong."
   probe data: the INV171 census only saw merged unions, so it never looked at
   an overloaded function's `unknown` parameter - widening it took the census
   from 201 to 381 and remeasured 297 nouns.
+- [INV182](INV182-user-variable-qualifier/notes.md) - the qualifier CE10123
+  quotes for a bare user variable was hardcoded `series`, so `float len = 14.0`
+  read `series float` where TV says `const float`. The qualifier is the SUBJECT
+  of this error class, not decoration. A 29-case `--tv` sweep (19 disagreements
+  to 0) establishes the rules: `var`/`varip` do NOT escalate, an explicit
+  annotation beats the initializer, a typed parameter IS `series`, and the
+  qualifier is flow-sensitive - the one in force where the value is used. Fixed
+  by recording the declaration's qualifier beside the symbol and joining it with
+  the existing `:=` promotion; CE10173 likewise stopped defaulting a bare type
+  to `const`, which is the `math.avg(1, 2)` half. Rendering only - no error
+  appears or disappears, and the 20 corpus messages that changed are
+  corrections, two re-probed against TV. Also corrected a fixture whose
+  "no TV disagreement" note had only ever been checked for the base type.
