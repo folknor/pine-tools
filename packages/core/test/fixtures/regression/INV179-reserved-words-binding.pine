@@ -1,10 +1,10 @@
 // @test regression/INV179-reserved-words-binding
-// @description Words TradingView refuses to bind are rejected in a parameter position and as a UDT field name. `to`/`by`/`in`/`as` are contextual loop/import words the parser otherwise reads as ordinary names, and `do` is reserved by TV without being a Pine v6 construct at all, so it was accepted everywhere. The binding NAME carries the error, not the type in front of it. Controls that must stay clean: `from` is NOT reserved (TV accepts it and echoes it back in the signature - the report this came from misread TV blaming `from`'s column for `to`'s offence), and neither are `type`, `na` or `const`. Measured by a 343-probe pine-lint --tv sweep, 2026-09-09. See INV179.
+// @description Words TradingView refuses to bind are rejected in a parameter position and as a UDT field name. `to`/`by`/`in`/`as` are contextual loop/import words the parser otherwise reads as ordinary names, and `do` is reserved by TV without being a Pine v6 construct at all, so it was accepted everywhere. The binding NAME carries the error, not the type in front of it. The QUOTING is per-site and is TradingView's own inconsistency: the parameter site fills its CE10150 ctx with the name already quoted, rendering `""to""`, while the field site fills it bare, rendering `"in"` - so the field assertion is anchored at `^` to pin the single pair rather than matching inside a doubled one. Controls that must stay clean: `from` is NOT reserved (TV accepts it and echoes it back in the signature - the report this came from misread TV blaming the FIRST parameter's column for `to`'s offence), and neither are `type`, `na` or `const`. Measured by a 343-probe pine-lint --tv sweep, 2026-09-09. See INV179.
 // @expects parse: fail
-// @expects error: line=3, message=/""to"" cannot be used as a variable or function name./
-// @expects error: line=3, message=/""by"" cannot be used as a variable or function name./
-// @expects error: line=7, message=/""do"" cannot be used as a variable or function name./
-// @expects error: line=10, message=/""in"" cannot be used as a variable or function name./
+// @expects error: line=3, message=/^""to"" cannot be used as a variable or function name.$/
+// @expects error: line=3, message=/^""by"" cannot be used as a variable or function name.$/
+// @expects error: line=7, message=/^""do"" cannot be used as a variable or function name.$/
+// @expects error: line=10, message=/^"in" cannot be used as a variable or function name.$/
 // @expects errors: 4
 //@version=6
 indicator("INV179 reserved words binding")

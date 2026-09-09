@@ -126,9 +126,28 @@ with a worse message. It is not. Probed 2026-09-09:
 
 `from` alone is fine in every one of the seven positions, and TV will even name
 it in a signature. The rejection appears only when `to` is also present, so the
-offence is `to`'s and TV reports it at `from`'s column. That is the
-blame-the-wrong-token behaviour the methodology section already warns about
-(G001), landing on a word that looked guilty by association.
+offence is `to`'s.
+
+**The rule is stronger than "TV reported it at `from`'s column", and the
+stronger form is what to remember.** Putting a word that is not reserved in the
+first slot draws the error onto that word instead:
+
+```
+span(float a, float to)  ->  TV: 3:12: Syntax error at input "a"
+```
+
+`a` is at column 12. So **TV anchors this parse cascade at the FIRST parameter,
+whichever word occupies it** - it is not that `from` is treated specially, it is
+that `from` happened to be first. Stating it as "`from`'s column" reads as a
+fact about `from` and would not have predicted the `a` result.
+
+This is the blame-the-wrong-token behaviour the methodology section warns about
+(G001), landing on a word that looked guilty by association. The cheap guard is
+a second probe that swaps the parameter order; it costs one call and settles it.
+
+(Credit where due: the swap probe is `../strategies`' own, from the round that
+re-verified this fix. Our sweep established `from` was innocent by testing it
+alone; theirs established what TV was actually pointing at.)
 
 ## Fix
 
@@ -160,19 +179,72 @@ must-stay-clean controls.
 ## After
 
 The sweep re-run against the fixed build is `probe-after.json` (2026-09-09,
-same four controls, all passing). **35 gaps became 7, with nothing newly
-opened and nothing we used to reject stopping** - the whole `us only` column is
-byte-identical between the two runs, so the fix moved only what it aimed at.
+same four controls, all passing).
 
-The 28 closed: `if`, `else`, `for`, `while`, `break`, `continue`, `return`,
-`switch`, `do`, `var`, `varip`, `export`, `import`, `as`, `in`, `to`, `by`,
-`and`, `or`, `not` as UDT fields, and `else`, `break`, `continue`, `do`, `as`,
-`in`, `to`, `by` as parameters.
+The first pass took **35 gaps to 7**. The second pass, below, took it to **3**:
 
-The 7 that remain are the two families below.
+```
+remaining: else/assign, break/assign, continue/assign
+newly opened: none
+we stopped rejecting: none
+```
 
-Also verified: `pnpm test` 488 pass, `node scripts/regression-check.mjs` 0
+Both passes moved only what they aimed at - the `us only` column is
+byte-identical across all three runs, so nothing was closed by becoming
+stricter somewhere unrelated. The 3 that remain are one family: the assign
+position, where TV answers with a different diagnostic entirely (see below).
+
+Also verified: `pnpm test` 489 pass, `node scripts/regression-check.mjs` 0
 changed fixtures over 1879.
+
+## Second pass (2026-09-09, after `../strategies` re-verified)
+
+Three corrections and additions, all from re-probing rather than reasoning.
+
+**The message is CE10150 and carries a ctx.** We emitted the prose with no
+`code` and no `ctx`, so a consumer had to pattern-match the string;
+`../strategies`' `differential.tsv` reads `ctx`. `ParserError` now carries
+optional `code`/`ctx` and the CLI passes them through the way it already did
+for validation errors. This is the first coded syntax-stage diagnostic.
+
+**TV's quoting is per-site, and we had it wrong in one place.** TV's template is
+`"{keyword}" cannot be used as a variable or function name.` and it fills
+`keyword` inconsistently:
+
+| Site | TV ctx | TV renders |
+|---|---|---|
+| parameter | `"\"to\""` | `""to""` |
+| UDT field | `"in"` | `"in"` |
+| assignment / `var` / function name / `for` counter | `"do"` | `"do"` |
+
+Only the parameter site doubles. Our UDT field error had been copying the
+parameter site's doubled form, so it was wrong from the day it landed - the
+first pass verified the PARAMETER wording against TV and assumed the field site
+matched. Both now mirror their own site. The fixtures anchor with `^...$`,
+because an unanchored `/"in" cannot/` matches inside `""in""` and would have
+passed either way - which is exactly how the mistake survived the first pass.
+
+**The four remaining `do` sites are closed.** Plain assignment, `var`
+declaration, function name and counted `for` all now report at TV's position
+with TV's wording. The check is guarded on the token being an IDENTIFIER rather
+than on the name being `do`: every other reserved word is in `LEXER_KEYWORDS`,
+arrives as a KEYWORD token, and has already failed the surrounding parse with
+TV's own wording, so checking again would double-report. `do` is the only word
+TV reserves that Pine v6 does not use, so it is the only one that lexes as an
+ordinary identifier. The guard states the property instead of the name, so a
+word added to the set later behaves correctly whichever way it lexes.
+
+The counted-`for` check is deferred past the for-in branch on purpose: TV
+rejects `for do = 0 to 5` and accepts `for do in xs`. Fixture:
+`INV179-do-declaration-sites.pine`, whose `for do in` line is the control.
+
+**Note on a scope claim worth not inheriting.** `../strategies` reports zero
+remaining gaps across 41 candidate words in three binding positions. That is
+consistent with these measurements and still misses `do`, because a candidate
+list derived from Pine's keyword set structurally cannot contain a word Pine
+does not define. `do` gapped in six of seven positions here precisely because
+it is absent from every such list, including ours before this investigation.
+**A reserved-word sweep has to include words the language does not have.**
 
 ## Not fixed here, and why
 
@@ -180,14 +252,13 @@ changed fixtures over 1879.
   `Syntax error at input {value}` there, not the reserved-name message - a
   different diagnostic from a different part of its grammar. Left open rather
   than approximated with the wrong wording.
-- **`do` as a function name / plain variable / `for` counter.** These flow
-  through the general declaration paths rather than the two binding sites
-  above. `do` in a parameter or a field is fixed; the rest is open.
 - **The `us only` column - roughly 60 probes where WE reject and TV accepts.**
   That is the opposite direction and outside this finding, but it is real and
   large, most visibly every base type as a function name (`float(float x) =>`)
   and `const`/`na`/`type`/`enum` as ordinary names. Worth its own
   investigation; recorded here so the measurement is not lost.
-- **Two TV inconsistencies, both in the safe direction.** TV accepts
-  `for return in ...` and `for do in ...` while rejecting the same words in
-  `for x = 0 to 5`. We reject both. Left alone.
+- **One TV inconsistency, in the safe direction.** TV accepts
+  `for return in ...` while rejecting `return` in `for x = 0 to 5`. We reject
+  both. Left alone. (The matching `for do in ...` leniency IS mirrored, since
+  the `do` check had to be written from scratch and could simply be placed
+  after the for-in branch.)

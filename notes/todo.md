@@ -264,10 +264,9 @@ IDs so the two stay in sync.
   - `else`, `break`, `continue` in an ASSIGN position (`else = 1.0`). TV
     answers `Syntax error at input {value}` there, not the reserved-name
     message - a different diagnostic from a different part of its grammar.
-    Left rather than approximated with the wrong wording.
-  - `do` as a function name, a plain variable, or a `for` counter. These flow
-    through the general declaration paths, not the two binding sites INV179
-    fixed. `do` in a parameter or a UDT field is done.
+    Left rather than approximated with the wrong wording. **This is now the
+    only remaining gap of the 35 the sweep found**; the four `do` declaration
+    sites closed in INV179's second pass on 2026-09-09.
   - **The opposite direction, and it is the bigger number: ~60 probes where WE
     reject and TV accepts.** Most visibly every base type as a function name
     (`float(float x) =>`), and `const`, `na`, `type`, `enum`, `method`, `once`,

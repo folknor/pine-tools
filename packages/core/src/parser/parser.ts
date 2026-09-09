@@ -16,6 +16,12 @@ export interface ParserError {
 	line: number;
 	column: number;
 	message: string;
+	// TV's error code and template context, where we mirror a coded TV error.
+	// Most syntax errors have neither (TV sends them uncoded too); a consumer
+	// filters on `code` and reads substitution values from `ctx` rather than
+	// pattern-matching the prose. see INV179
+	code?: string;
+	ctx?: Record<string, string>;
 }
 
 // TV's CE10156 wording for a `=>` function/method definition found in a
@@ -665,6 +671,10 @@ export class Parser {
 							throw new Error(NESTED_FUNC_DEF_ERROR);
 						}
 						this.advance(); // consume =>
+						// Committed: the `=>` is consumed, so this is a
+						// definition and the NAME can be judged. Before the
+						// arrow it is still possibly a call. see INV179
+						this.reservedDeclarationName(nameToken);
 						// It's a function definition!
 						return this.functionDeclaration(
 							nameToken.value,
@@ -1281,6 +1291,10 @@ export class Parser {
 				? this.advance()
 				: this.consume(TokenType.IDENTIFIER, "Expected variable name");
 
+		// Covers both `do = 1.0` and `var float do = 1.0`; the qualified form
+		// routes through here too. see INV179
+		this.reservedDeclarationName(token);
+
 		let init: AST.Expression | null = null;
 		if (this.match(TokenType.ASSIGN)) {
 			this.skipWrapContinuationNewline();
@@ -1582,6 +1596,7 @@ export class Parser {
 			this.advance();
 		}
 
+		const iteratorToken = this.peek();
 		const iterator = this.consumeIteratorName("Expected iterator variable");
 
 		// Check for "for x in collection" syntax
@@ -1610,6 +1625,12 @@ export class Parser {
 		}
 
 		this.consume(TokenType.ASSIGN, 'Expected "=" in for loop');
+
+		// Deferred past the `in` branch above on purpose: TV rejects
+		// `for do = 0 to 5` and ACCEPTS `for do in xs`, so only the counted
+		// form is judged. see INV179
+		this.reservedDeclarationName(iteratorToken);
+
 		const from = this.expression();
 		this.match([TokenType.KEYWORD, ["to"]]); // optional 'to' keyword
 		const to = this.expression();
@@ -2286,18 +2307,48 @@ export class Parser {
 	}
 
 	/**
-	 * Record TV's reserved-name error if `name` is one TradingView refuses to
-	 * bind. No-op otherwise, so callers can call it unconditionally at any
-	 * binding site. The doubled quotes are TV's own rendering, not a typo.
-	 * see INV179
+	 * Record TV's CE10150 if `name` is one TradingView refuses to bind. No-op
+	 * otherwise, so callers can call it unconditionally at any binding site.
+	 *
+	 * TV's template is `"{keyword}" cannot be used as a variable or function
+	 * name.` and it fills `keyword` INCONSISTENTLY: the parameter site passes
+	 * the name already quoted (ctx `"\"to\""`, rendering `""to""`), every other
+	 * site passes it bare (ctx `"do"`, rendering `"do"`). Probed at all six
+	 * sites 2026-09-09. Parity is the target, so `quoted` mirrors the quirk per
+	 * site rather than picking one and being wrong half the time. see INV179
 	 */
-	private reservedBindingNameError(name: string, tok: Token | undefined): void {
+	private reservedBindingNameError(
+		name: string,
+		tok: Token | undefined,
+		quoted: boolean,
+	): void {
 		if (!tok || !TV_RESERVED_BINDING_NAMES.has(name)) return;
+		const keyword = quoted ? `"${name}"` : name;
 		this.parserErrors.push({
 			line: tok.line,
 			column: tok.column,
-			message: `""${name}"" cannot be used as a variable or function name.`,
+			message: `"${keyword}" cannot be used as a variable or function name.`,
+			code: "CE10150",
+			ctx: { keyword },
 		});
+	}
+
+	/**
+	 * A reserved name reaching a general declaration site - a plain assignment,
+	 * a `var` declaration, a function name, a `for` counter.
+	 *
+	 * Guarded on IDENTIFIER deliberately. Every reserved word except `do` is in
+	 * `LEXER_KEYWORDS`, so it arrives here as a KEYWORD token and has already
+	 * failed the surrounding parse with TV's own wording - checking it again
+	 * would double-report. `do` is the one word TradingView reserves that is
+	 * not a Pine v6 construct, so it lexes as an ordinary identifier and is the
+	 * only one that reaches a binding site silently. The guard states that
+	 * rather than naming `do`, so a future word added to the set behaves
+	 * correctly whichever way it lexes. see INV179
+	 */
+	private reservedDeclarationName(tok: Token | undefined): void {
+		if (!tok || tok.type !== TokenType.IDENTIFIER) return;
+		this.reservedBindingNameError(tok.value, tok, false);
 	}
 
 	/**
@@ -2311,10 +2362,13 @@ export class Parser {
 	private checkReservedParamNames(params: AST.FunctionParam[]): void {
 		for (const p of params) {
 			if (!TV_RESERVED_BINDING_NAMES.has(p.name)) continue;
+			const keyword = `"${p.name}"`;
 			this.parserErrors.push({
 				line: p.nameLine ?? p.line ?? 0,
 				column: p.nameColumn ?? p.column ?? 0,
-				message: `""${p.name}"" cannot be used as a variable or function name.`,
+				message: `"${keyword}" cannot be used as a variable or function name.`,
+				code: "CE10150",
+				ctx: { keyword },
 			});
 		}
 	}
@@ -2394,7 +2448,7 @@ export class Parser {
 		// for the same reason the qualifier error is: this scanner runs on every
 		// body-indent line, and a non-field line must not draw it. The field is
 		// kept, so its uses do not cascade into "Object has no field". see INV179
-		this.reservedBindingNameError(fieldToken.value, fieldToken);
+		this.reservedBindingNameError(fieldToken.value, fieldToken, false);
 		// Capture a LITERAL default (`int x = 1.5`) so the checker can type-check
 		// it against the field type (CE10170, INV094). Any OTHER default is
 		// handed back by index for the caller to parse as an expression, so the

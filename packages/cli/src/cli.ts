@@ -422,16 +422,21 @@ async function main() {
 			};
 		});
 
-		// Convert parser errors to pine-lint format
+		// Convert parser errors to pine-lint format. Preserve optional
+		// `code`/`ctx` for the few syntax errors that mirror a CODED TV error,
+		// the same way the validation branch below does. see INV179
 		const parserPineLintErrors: PineLintError[] = parserErrors.map((e) => {
 			const start = mapSourcePosition({ line: e.line, column: e.column });
 			const end = mapSourcePosition({ line: e.line, column: e.column + 1 });
-			return {
+			const out: PineLintError = {
 				start,
 				end,
 				message: e.message,
 				stage: "syntax",
 			};
+			if (e.code !== undefined) out.code = e.code;
+			if (e.ctx !== undefined) out.ctx = e.ctx;
+			return out;
 		});
 
 		// Convert validation errors to pine-lint format (only errors, not warnings).

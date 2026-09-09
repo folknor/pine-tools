@@ -15,7 +15,20 @@
   and echoes it back in a signature, and the report that named it was reading
   TradingView blame `from`'s column for `to`'s offence. The error anchors at
   the NAME and parsing continues, so the binding survives and its uses do not
-  cascade. See INV179.
+  cascade. `do` is also rejected as a plain variable, a `var` declaration, a
+  function name and a counted-`for` counter - though NOT as a `for ... in`
+  iterator, which TradingView accepts. 35 measured gaps are now 3, all three
+  being the assign position, where TradingView answers with a different
+  diagnostic that is deliberately not approximated. See INV179.
+- The reserved-name error carries TradingView's `CE10150` code and its `ctx`,
+  so a consumer filters on a field instead of pattern-matching prose. This is
+  the first coded `syntax`-stage diagnostic; `ParserError` gained optional
+  `code`/`ctx` and the CLI passes them through as it already did for the
+  `type` stage. The quoting in the message is per-site because TradingView's
+  own is: it fills the template's `keyword` already-quoted at the parameter
+  site (rendering `""to""`) and bare everywhere else (rendering `"in"`). Our
+  UDT-field error had been using the parameter site's doubled form and was
+  wrong; both now mirror their own site. See INV179.
 - New error: `na()` no longer accepts a bool. Neither overload takes one, but
   the merged parameter is typed `unknown`, so positional checking was skipped
   and the overload resolver scored the mixed `int/float/color/string/label/...`

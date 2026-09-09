@@ -1,0 +1,21 @@
+// @test regression/INV179-do-declaration-sites
+// @description `do` in the four general declaration sites - plain assignment, `var` declaration, function name, counted `for`. It is the one word TradingView reserves that is not a Pine v6 construct, so it is absent from LEXER_KEYWORDS, lexes as an ordinary identifier, and was the only reserved word able to reach a binding site silently. All four render with a SINGLE quote pair, unlike the parameter site, which is why every assertion is anchored. Each message and position matches pine-lint --tv byte for byte, probed 2026-09-09 (3:1, 3:11, 3:1, 4:5 in the one-site-per-script probes). The `for do in` at line 9 is the control that must draw NO reserved-name error and is not an oversight: TradingView rejects `for do = 0 to 5` and ACCEPTS `for do in xs`, so the check is deferred past the for-in branch deliberately. Redeclaring `do` also draws "already defined" from the validator, which this fixture cannot see - a parse:fail fixture skips validation - so the count below is parse errors only. See INV179.
+// @expects parse: fail
+// @expects error: line=3, message=/^"do" cannot be used as a variable or function name.$/
+// @expects error: line=4, message=/^"do" cannot be used as a variable or function name.$/
+// @expects error: line=5, message=/^"do" cannot be used as a variable or function name.$/
+// @expects error: line=8, message=/^"do" cannot be used as a variable or function name.$/
+// @expects errors: 4
+//@version=6
+indicator("INV179 do declaration sites")
+do = 1.0
+var float do = 2.0
+do(float x) =>
+    x * 2
+float n = 0.0
+for do = 0 to 5
+    n += do
+float m = 0.0
+for do in array.from(1.0, 2.0)
+    m += do
+plot(n + m)

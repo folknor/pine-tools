@@ -1,5 +1,5 @@
 {
-  "date": "2026-09-09T04:33:20.476Z",
+  "date": "2026-09-09T05:21:57.433Z",
   "rows": [
     {
       "word": "if",
@@ -22,7 +22,7 @@
         "rejected": true,
         "errors": [
           {
-            "code": null,
+            "code": "CE10150",
             "message": "\"\"if\"\" cannot be used as a variable or function name."
           },
           {
@@ -226,8 +226,8 @@
         "rejected": true,
         "errors": [
           {
-            "code": null,
-            "message": "\"\"if\"\" cannot be used as a variable or function name."
+            "code": "CE10150",
+            "message": "\"if\" cannot be used as a variable or function name."
           }
         ]
       },
@@ -254,7 +254,7 @@
         "rejected": true,
         "errors": [
           {
-            "code": null,
+            "code": "CE10150",
             "message": "\"\"else\"\" cannot be used as a variable or function name."
           }
         ]
@@ -433,8 +433,8 @@
         "rejected": true,
         "errors": [
           {
-            "code": null,
-            "message": "\"\"else\"\" cannot be used as a variable or function name."
+            "code": "CE10150",
+            "message": "\"else\" cannot be used as a variable or function name."
           }
         ]
       },
@@ -461,7 +461,7 @@
         "rejected": true,
         "errors": [
           {
-            "code": null,
+            "code": "CE10150",
             "message": "\"\"for\"\" cannot be used as a variable or function name."
           },
           {
@@ -645,8 +645,8 @@
         "rejected": true,
         "errors": [
           {
-            "code": null,
-            "message": "\"\"for\"\" cannot be used as a variable or function name."
+            "code": "CE10150",
+            "message": "\"for\" cannot be used as a variable or function name."
           }
         ]
       },
@@ -673,7 +673,7 @@
         "rejected": true,
         "errors": [
           {
-            "code": null,
+            "code": "CE10150",
             "message": "\"\"while\"\" cannot be used as a variable or function name."
           },
           {
@@ -865,8 +865,8 @@
         "rejected": true,
         "errors": [
           {
-            "code": null,
-            "message": "\"\"while\"\" cannot be used as a variable or function name."
+            "code": "CE10150",
+            "message": "\"while\" cannot be used as a variable or function name."
           }
         ]
       },
@@ -893,7 +893,7 @@
         "rejected": true,
         "errors": [
           {
-            "code": null,
+            "code": "CE10150",
             "message": "\"\"break\"\" cannot be used as a variable or function name."
           }
         ]
@@ -1072,8 +1072,8 @@
         "rejected": true,
         "errors": [
           {
-            "code": null,
-            "message": "\"\"break\"\" cannot be used as a variable or function name."
+            "code": "CE10150",
+            "message": "\"break\" cannot be used as a variable or function name."
           }
         ]
       },
@@ -1100,7 +1100,7 @@
         "rejected": true,
         "errors": [
           {
-            "code": null,
+            "code": "CE10150",
             "message": "\"\"continue\"\" cannot be used as a variable or function name."
           }
         ]
@@ -1279,8 +1279,8 @@
         "rejected": true,
         "errors": [
           {
-            "code": null,
-            "message": "\"\"continue\"\" cannot be used as a variable or function name."
+            "code": "CE10150",
+            "message": "\"continue\" cannot be used as a variable or function name."
           }
         ]
       },
@@ -1307,7 +1307,7 @@
         "rejected": true,
         "errors": [
           {
-            "code": null,
+            "code": "CE10150",
             "message": "\"\"return\"\" cannot be used as a variable or function name."
           },
           {
@@ -1476,8 +1476,8 @@
         "rejected": true,
         "errors": [
           {
-            "code": null,
-            "message": "\"\"return\"\" cannot be used as a variable or function name."
+            "code": "CE10150",
+            "message": "\"return\" cannot be used as a variable or function name."
           }
         ]
       },
@@ -1504,7 +1504,7 @@
         "rejected": true,
         "errors": [
           {
-            "code": null,
+            "code": "CE10150",
             "message": "\"\"switch\"\" cannot be used as a variable or function name."
           },
           {
@@ -1688,8 +1688,8 @@
         "rejected": true,
         "errors": [
           {
-            "code": null,
-            "message": "\"\"switch\"\" cannot be used as a variable or function name."
+            "code": "CE10150",
+            "message": "\"switch\" cannot be used as a variable or function name."
           }
         ]
       },
@@ -2038,7 +2038,7 @@
         "rejected": true,
         "errors": [
           {
-            "code": null,
+            "code": "CE10150",
             "message": "\"\"do\"\" cannot be used as a variable or function name."
           }
         ]
@@ -2063,10 +2063,15 @@
       },
       "local": {
         "usable": true,
-        "rejected": false,
-        "errors": []
+        "rejected": true,
+        "errors": [
+          {
+            "code": "CE10150",
+            "message": "\"do\" cannot be used as a variable or function name."
+          }
+        ]
       },
-      "gap": true
+      "gap": false
     },
     {
       "word": "do",
@@ -2086,10 +2091,15 @@
       },
       "local": {
         "usable": true,
-        "rejected": false,
-        "errors": []
+        "rejected": true,
+        "errors": [
+          {
+            "code": "CE10150",
+            "message": "\"do\" cannot be used as a variable or function name."
+          }
+        ]
       },
-      "gap": true
+      "gap": false
     },
     {
       "word": "do",
@@ -2109,10 +2119,15 @@
       },
       "local": {
         "usable": true,
-        "rejected": false,
-        "errors": []
+        "rejected": true,
+        "errors": [
+          {
+            "code": "CE10150",
+            "message": "\"do\" cannot be used as a variable or function name."
+          }
+        ]
       },
-      "gap": true
+      "gap": false
     },
     {
       "word": "do",
@@ -2132,10 +2147,15 @@
       },
       "local": {
         "usable": true,
-        "rejected": false,
-        "errors": []
+        "rejected": true,
+        "errors": [
+          {
+            "code": "CE10150",
+            "message": "\"do\" cannot be used as a variable or function name."
+          }
+        ]
       },
-      "gap": true
+      "gap": false
     },
     {
       "word": "do",
@@ -2174,8 +2194,8 @@
         "rejected": true,
         "errors": [
           {
-            "code": null,
-            "message": "\"\"do\"\" cannot be used as a variable or function name."
+            "code": "CE10150",
+            "message": "\"do\" cannot be used as a variable or function name."
           }
         ]
       },
@@ -2202,7 +2222,7 @@
         "rejected": true,
         "errors": [
           {
-            "code": null,
+            "code": "CE10150",
             "message": "\"\"var\"\" cannot be used as a variable or function name."
           },
           {
@@ -2386,8 +2406,8 @@
         "rejected": true,
         "errors": [
           {
-            "code": null,
-            "message": "\"\"var\"\" cannot be used as a variable or function name."
+            "code": "CE10150",
+            "message": "\"var\" cannot be used as a variable or function name."
           }
         ]
       },
@@ -2414,7 +2434,7 @@
         "rejected": true,
         "errors": [
           {
-            "code": null,
+            "code": "CE10150",
             "message": "\"\"varip\"\" cannot be used as a variable or function name."
           },
           {
@@ -2598,8 +2618,8 @@
         "rejected": true,
         "errors": [
           {
-            "code": null,
-            "message": "\"\"varip\"\" cannot be used as a variable or function name."
+            "code": "CE10150",
+            "message": "\"varip\" cannot be used as a variable or function name."
           }
         ]
       },
@@ -3393,7 +3413,7 @@
         "rejected": true,
         "errors": [
           {
-            "code": null,
+            "code": "CE10150",
             "message": "\"\"export\"\" cannot be used as a variable or function name."
           },
           {
@@ -3569,8 +3589,8 @@
         "rejected": true,
         "errors": [
           {
-            "code": null,
-            "message": "\"\"export\"\" cannot be used as a variable or function name."
+            "code": "CE10150",
+            "message": "\"export\" cannot be used as a variable or function name."
           }
         ]
       },
@@ -3597,7 +3617,7 @@
         "rejected": true,
         "errors": [
           {
-            "code": null,
+            "code": "CE10150",
             "message": "\"\"import\"\" cannot be used as a variable or function name."
           },
           {
@@ -3773,8 +3793,8 @@
         "rejected": true,
         "errors": [
           {
-            "code": null,
-            "message": "\"\"import\"\" cannot be used as a variable or function name."
+            "code": "CE10150",
+            "message": "\"import\" cannot be used as a variable or function name."
           }
         ]
       },
@@ -3801,7 +3821,7 @@
         "rejected": true,
         "errors": [
           {
-            "code": null,
+            "code": "CE10150",
             "message": "\"\"as\"\" cannot be used as a variable or function name."
           }
         ]
@@ -3993,8 +4013,8 @@
         "rejected": true,
         "errors": [
           {
-            "code": null,
-            "message": "\"\"as\"\" cannot be used as a variable or function name."
+            "code": "CE10150",
+            "message": "\"as\" cannot be used as a variable or function name."
           }
         ]
       },
@@ -4021,7 +4041,7 @@
         "rejected": true,
         "errors": [
           {
-            "code": null,
+            "code": "CE10150",
             "message": "\"\"in\"\" cannot be used as a variable or function name."
           }
         ]
@@ -4213,8 +4233,8 @@
         "rejected": true,
         "errors": [
           {
-            "code": null,
-            "message": "\"\"in\"\" cannot be used as a variable or function name."
+            "code": "CE10150",
+            "message": "\"in\" cannot be used as a variable or function name."
           }
         ]
       },
@@ -4241,7 +4261,7 @@
         "rejected": true,
         "errors": [
           {
-            "code": null,
+            "code": "CE10150",
             "message": "\"\"to\"\" cannot be used as a variable or function name."
           }
         ]
@@ -4433,8 +4453,8 @@
         "rejected": true,
         "errors": [
           {
-            "code": null,
-            "message": "\"\"to\"\" cannot be used as a variable or function name."
+            "code": "CE10150",
+            "message": "\"to\" cannot be used as a variable or function name."
           }
         ]
       },
@@ -4461,7 +4481,7 @@
         "rejected": true,
         "errors": [
           {
-            "code": null,
+            "code": "CE10150",
             "message": "\"\"by\"\" cannot be used as a variable or function name."
           }
         ]
@@ -4653,8 +4673,8 @@
         "rejected": true,
         "errors": [
           {
-            "code": null,
-            "message": "\"\"by\"\" cannot be used as a variable or function name."
+            "code": "CE10150",
+            "message": "\"by\" cannot be used as a variable or function name."
           }
         ]
       },
@@ -5216,7 +5236,7 @@
         "rejected": true,
         "errors": [
           {
-            "code": null,
+            "code": "CE10150",
             "message": "\"\"and\"\" cannot be used as a variable or function name."
           },
           {
@@ -5392,8 +5412,8 @@
         "rejected": true,
         "errors": [
           {
-            "code": null,
-            "message": "\"\"and\"\" cannot be used as a variable or function name."
+            "code": "CE10150",
+            "message": "\"and\" cannot be used as a variable or function name."
           }
         ]
       },
@@ -5420,7 +5440,7 @@
         "rejected": true,
         "errors": [
           {
-            "code": null,
+            "code": "CE10150",
             "message": "\"\"or\"\" cannot be used as a variable or function name."
           },
           {
@@ -5596,8 +5616,8 @@
         "rejected": true,
         "errors": [
           {
-            "code": null,
-            "message": "\"\"or\"\" cannot be used as a variable or function name."
+            "code": "CE10150",
+            "message": "\"or\" cannot be used as a variable or function name."
           }
         ]
       },
@@ -5624,7 +5644,7 @@
         "rejected": true,
         "errors": [
           {
-            "code": null,
+            "code": "CE10150",
             "message": "\"\"not\"\" cannot be used as a variable or function name."
           },
           {
@@ -5812,8 +5832,8 @@
         "rejected": true,
         "errors": [
           {
-            "code": null,
-            "message": "\"\"not\"\" cannot be used as a variable or function name."
+            "code": "CE10150",
+            "message": "\"not\" cannot be used as a variable or function name."
           }
         ]
       },
