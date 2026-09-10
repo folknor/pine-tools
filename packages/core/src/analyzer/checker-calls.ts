@@ -22,6 +22,7 @@ import type {
 import {
 	expectedNounFor,
 	type FunctionSignature,
+	formatTailUnion,
 	GENERIC_FUNCTION_BASES,
 	getArgGroups,
 	getBuiltinVarInfo,
@@ -225,10 +226,26 @@ function importedMethodMayExist(
 	return false;
 }
 
+// Wrapper: after the call (and, via the argument loop inside, its whole
+// subtree) is validated, a fresh CE10122/CE10123 marks the call poisoned -
+// TV treats a call whose argument checks failed as returning "unknown",
+// transitively through enclosing calls. Consumed by the format-tail check
+// below; everything else keeps the declared return type (our case-B
+// diagnostic stays deliberately stricter than TV). see INV184
 export function validateCallExpression(
 	v: UnifiedPineValidator,
 	call: CallExpression,
 	version: string = "6",
+): void {
+	const errorsBefore = v.errorCount();
+	validateCallExpressionImpl(v, call, version);
+	if (v.hasArgTypeErrorSince(errorsBefore)) v.poisonedCalls.add(call);
+}
+
+function validateCallExpressionImpl(
+	v: UnifiedPineValidator,
+	call: CallExpression,
+	version: string,
 ): void {
 	if (version === "6" && v.hasCollectionTemplateArg(call)) {
 		v.addError(
@@ -973,6 +990,60 @@ export function validateFunctionArguments(
 				}
 			}
 		}
+		// Format-tail union check (str.format / log.*): TV checks every
+		// value-to-format against the union of the overloads' argN types and
+		// reports CE10122 ("one from"), quoting the first argN overload's
+		// type. A tail argument that is itself a FAILED call arrives poisoned
+		// to "unknown" and fails the membership too - that half is INV184's
+		// case A. Only the five scalar bases and poisoned calls are flagged;
+		// na/unknown/UDT args stay lenient, and arrays are accepted whenever
+		// any overload admits them. v6 only (G004). see INV184
+		if (version === "6") {
+			const tail = formatTailUnion(functionName);
+			if (tail) {
+				for (let i = 1; i < positionalArgs.length; i++) {
+					const provided = positionalArgs[i];
+					const argExpr = provided.arg.value;
+					let repr: string;
+					let typeStr: string;
+					if (
+						argExpr.type === "CallExpression" &&
+						v.poisonedCalls.has(argExpr as CallExpression)
+					) {
+						const callee = memberChainName((argExpr as CallExpression).callee);
+						repr = `call "${callee || "?"}" (unknown)`;
+						typeStr = "unknown";
+					} else {
+						const base = TypeChecker.baseTypeName(String(provided.type));
+						if (!SCALAR_BASE_TYPES.has(base) || tail.members.has(base))
+							continue;
+						const desc = v.describeArgForTemplate(
+							argExpr,
+							provided.type,
+							version,
+						);
+						repr = desc.repr;
+						typeStr = desc.typeStr;
+					}
+					v.addTemplateError({
+						line: argExpr.line,
+						column: argExpr.column,
+						length: 0,
+						message: CE10122_TEMPLATE,
+						severity: DiagnosticSeverity.Error,
+						code: "CE10122",
+						ctx: {
+							argDisplayName: `arg_${i}`,
+							argUserFriendlyRepresentation: repr,
+							argumentType: typeStr,
+							expectedType: tail.noun,
+							funId: functionName,
+						},
+					});
+				}
+			}
+		}
+
 		return; // Skip further parameter validation for variadic functions
 	}
 

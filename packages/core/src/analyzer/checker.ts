@@ -2922,6 +2922,25 @@ export class UnifiedPineValidator {
 	// NOTE: canPromoteType was removed as redundant with TypeChecker.isAssignable()
 	// All type coercion rules (simple->series, int->float, etc.) are in types.ts
 
+	// Calls whose own argument checks - or a nested call's - emitted an
+	// arg-type error. TV poisons such a call's RESULT type to "unknown",
+	// transitively through enclosing calls (probed: str.upper(na(b)) renders
+	// as `call "str.upper" (unknown)` one level up). The format-tail check
+	// is the consumer. see INV184
+	public readonly poisonedCalls = new WeakSet<CallExpression>();
+
+	public errorCount(): number {
+		return this.errors.length;
+	}
+
+	public hasArgTypeErrorSince(count: number): boolean {
+		for (let i = count; i < this.errors.length; i++) {
+			const code = this.errors[i].code;
+			if (code === "CE10122" || code === "CE10123") return true;
+		}
+		return false;
+	}
+
 	public addError(
 		line: number,
 		column: number,

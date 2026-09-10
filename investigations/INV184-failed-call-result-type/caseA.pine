@@ -1,0 +1,4 @@
+//@version=6
+indicator("t")
+bool b = true
+plot(str.length(str.format("{0}", na(b))))

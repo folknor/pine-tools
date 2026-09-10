@@ -438,6 +438,58 @@ export function getOverloadSignatures(
 	}));
 }
 
+// The format-tail ("argN") union of the str.format / log.* family: variadic
+// functions whose overloads carry values-to-format params named arg0/arg1.
+// TV checks every value-to-format against the union of the overloads' argN
+// member types and reports CE10122 ("one from ..."), quoting the FIRST argN
+// overload's type string verbatim as the expected noun. The name criterion
+// is what scopes this: math.max's tail is number0/number1 and TV does NOT
+// run this check there (probed 2026-09-10). see INV184
+export interface FormatTailUnion {
+	noun: string; // the first argN overload's type, quoted as-is by TV
+	members: Set<string>; // scalar member bases across ALL overloads
+	allowsArrays: boolean;
+}
+
+// Split a union type body on top-level "/" only - "array<int/float>" is one
+// member, not three.
+function splitTopLevelUnion(body: string): string[] {
+	const members: string[] = [];
+	let depth = 0;
+	let start = 0;
+	for (let i = 0; i < body.length; i++) {
+		const ch = body[i];
+		if (ch === "<") depth++;
+		else if (ch === ">") depth--;
+		else if (ch === "/" && depth === 0) {
+			members.push(body.slice(start, i).trim());
+			start = i + 1;
+		}
+	}
+	members.push(body.slice(start).trim());
+	return members;
+}
+
+export function formatTailUnion(functionName: string): FormatTailUnion | null {
+	const func = FUNCTIONS_BY_NAME.get(functionName);
+	if (!func?.flags?.variadic || !func.overloads) return null;
+	let noun: string | null = null;
+	const members = new Set<string>();
+	let allowsArrays = false;
+	for (const ov of func.overloads) {
+		const argParam = ov.parameters.find((p) => /^arg\d+$/.test(p.name));
+		if (!argParam?.type) continue;
+		if (noun === null) noun = argParam.type;
+		const body = argParam.type.replace(/^(const|input|simple|series)\s+/, "");
+		for (const m of splitTopLevelUnion(body)) {
+			if (m.startsWith("array<")) allowsArrays = true;
+			else if (m) members.add(m);
+		}
+	}
+	if (noun === null || members.size === 0) return null;
+	return { noun, members, allowsArrays };
+}
+
 // The required-param NAME list of the overload with the FEWEST required
 // params (ties -> first). This is the arity floor: a call providing fewer
 // args than this list's length can satisfy NO overload, so it is a sound

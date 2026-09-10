@@ -1,0 +1,20 @@
+// @test regression/INV184-format-tail-poisoned-call
+// @description The str.format / log.* format tail ("argN" params) is union-checked (TV's CE10122 "one from", quoting the first argN overload's type), and a tail argument that is itself a FAILED call is poisoned to "unknown" - transitively through enclosing calls - and fails the membership. This is finding 13 case A of ../strategies/PINE-LINT-BUGS.md. The name criterion scopes the family: math.max's tail is number0/number1 and TV runs no such check there. All error lines match pine-lint --tv byte for byte, probed 2026-09-10. See INV184.
+// @expects parse: success
+// @expects error: line=4, message=/"na" with argument "x"="b"/
+// @expects error: line=4, message=/"str.format" with argument "arg_1"="call "na" \(unknown\)". An argument of "unknown" type was used but one from "simple int.float.bool.string" is expected/
+// @expects error: line=5, message=/"str.format" with argument "arg_1"="color.red". An argument of "const color" type was used but one from "simple int.float.bool.string" is expected/
+// @expects error: line=6, message=/"na" with argument "x"="b"/
+// @expects error: line=6, message=/"log.info" with argument "arg_1"="call "na" \(unknown\)". An argument of "unknown" type was used but one from "series int.float.bool.string.array<int.float.bool.string>" is expected/
+// @expects errors: 5
+//@version=6
+indicator("INV184 format tail poisoned call")
+bool b = true
+plot(str.length(str.format("{0}", na(b))))
+plot(str.length(str.format("{0}", color.red)))
+log.info("{0}", na(b))
+// negatives: math.max's tail is numberN (no format-tail check), arrays are
+// admitted, and a clean tail stays clean
+arr = array.from(1, 2)
+log.info("{0} {1} {2} {3}", close, "x", true, arr)
+plot(str.length(str.format("{0} {1}", 1.5, syminfo.ticker)))

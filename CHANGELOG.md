@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+- New check: the format tail (the `argN` values-to-format of `str.format` and
+  `log.info`/`log.warning`/`log.error`) is union-checked against the
+  overloads' argN member types, reporting TradingView's CE10122 ("one from
+  ...") and quoting the first argN overload's type verbatim -
+  `str.format("{0}", color.red)` was previously silent. A tail argument that
+  is itself a FAILED call is poisoned to `unknown`, transitively through
+  enclosing calls, and fails the membership the way TradingView reports it
+  (`call "na" (unknown)`), which closes case A of finding 13 in
+  `../strategies/PINE-LINT-BUGS.md`. Case B is kept deliberately: outside the
+  format tail a failed call retains its declared return type, so the true
+  diagnostic TradingView's poisoning discards still fires. The function set
+  is structural (variadic, params named `arg0`/`arg1` in the overloads), not
+  a name list; math.max's `number0` tail is probed unaffected. Zero corpus
+  diffs. See INV184.
+
 - Corrected anchor (v5 only): the paren-wrap continuation error is reported in
   TradingView's joined-line coordinates - the statement's first line, columns
   accumulated over each line from there - instead of at the offending line's

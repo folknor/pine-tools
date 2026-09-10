@@ -1,0 +1,9 @@
+// @test regression/INV184-failed-call-keeps-declared-type
+// @description Outside the format tail, a FAILED call keeps its declared return type and downstream checks still run on it. TradingView is SILENT on line 3's second error (it poisons the failed na call to "unknown" and its plain-param check skips unknown) - kept deliberately: na() genuinely returns bool, so the diagnostic is a true statement about the code, and relaxing to match TV silence would discard it (finding 13 case B of ../strategies/PINE-LINT-BUGS.md; probed 2026-09-10). See INV184.
+// @expects parse: success
+// @expects error: line=3, message=/"na" with argument "x"="call "operator >" \(series bool\)"/
+// @expects error: line=3, message=/"str.length" with argument "string"="call "na" \(series bool\)". An argument of "series bool" type was used but a "const string"  is expected./
+// @expects errors: 2
+//@version=6
+indicator("INV184 failed call keeps declared type")
+plot(math.abs(str.length(na(close > open))))

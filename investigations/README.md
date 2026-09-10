@@ -1311,3 +1311,14 @@ contradiction means re-measure, not "the earlier author was wrong."
   `probe-param-type-nouns.mjs` / `param-type-nouns-probe.json`. The corpus
   cannot verify this one - it holds no type error on any affected parameter -
   so a green regression-check means "no regression", not "confirmed".
+- [INV184](INV184-failed-call-result-type/notes.md) - a failed call's result
+  type (finding 13 of `../strategies/PINE-LINT-BUGS.md`). TV poisons a call
+  whose argument checks failed to `unknown`, transitively through enclosing
+  calls; the one place that surfaces is the format tail (`argN` params of
+  `str.format` / `log.*`), which TV union-checks (CE10122 "one from ...") -
+  and which local lacked entirely (`str.format("{0}", color.red)` was
+  silent). Added poisoned-call tracking plus the data-driven tail check
+  (params named `argN` across overloads - the name criterion is what excludes
+  math.max, matching probes). Case B kept deliberately: local's cascade on a
+  failed call in a PLAIN param slot is a true diagnostic TV's poisoning
+  discards, and TV silence is not grounds to relax.
