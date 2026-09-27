@@ -30,6 +30,10 @@ pnpm check            # Formatter + linter + assist (biome). Alias: pnpm lint
   a fork the plan didn't cover), but don't re-confirm already-agreed steps.
   (Commits stay the exception - see git commit rules.)
 
+### Bash rules
+
+- Never read or write from `/tmp`. All data lives in the project.
+
 ### Doc scope (where things go)
 
 - `notes/todo.md` is **pending work only** - things someone could pick up.
