@@ -56,6 +56,7 @@ export interface SemanticWarning {
 // Why a region is conditional - selects the CONDITIONAL_SERIES wording
 // (TV's CW10003 / CW10004 / CW10002 respectively).
 type ConditionalScopeKind = "block" | "ternary" | "andor";
+
 type TernaryBranch = "consequent" | "alternate";
 
 interface ActiveTernaryContext {
@@ -176,6 +177,7 @@ export class SemanticAnalyzer {
 				this.importAliasToPath.set(statement.alias, statement.libraryPath);
 			}
 		}
+
 		this.collectLibraryTypedVars(ast.body);
 
 		// First pass: collect all variable declarations
@@ -213,10 +215,13 @@ export class SemanticAnalyzer {
 	/** Whether a function body's tail (return value) is series-ish. */
 	private tailIsSeries(stmt: Statement | undefined): boolean {
 		if (!stmt) return false;
+
 		if (stmt.type === "ExpressionStatement")
 			return this.isSeriesishExpression(stmt.expression);
+
 		if (stmt.type === "ReturnStatement")
 			return this.isSeriesishExpression(stmt.value);
+
 		if (stmt.type === "IfStatement") {
 			return (
 				this.tailIsSeries(stmt.consequent[stmt.consequent.length - 1]) ||
@@ -225,6 +230,7 @@ export class SemanticAnalyzer {
 					: false)
 			);
 		}
+
 		return false;
 	}
 
@@ -251,20 +257,25 @@ export class SemanticAnalyzer {
 	 */
 	private tailIsSeriesThroughLocals(body: Statement[]): boolean {
 		const tail = body[body.length - 1];
+
 		if (!tail) return false;
+
 		const expr =
 			tail.type === "ExpressionStatement"
 				? tail.expression
 				: tail.type === "ReturnStatement"
 					? tail.value
 					: undefined;
+
 		if (!expr) return false;
 
 		const localSeries = new Set<string>();
 		const derived = new Set<string>();
+
 		for (let i = 0; i < body.length - 1; i++) {
 			this.recordDerivedUntypedEffects(body[i], derived, localSeries);
 		}
+
 		return this.isSeriesishExpressionWithLocalSeries(expr, localSeries);
 	}
 
@@ -273,6 +284,7 @@ export class SemanticAnalyzer {
 		untypedParams: Set<string>,
 	): boolean {
 		if (untypedParams.size === 0) return false;
+
 		return this.tailBlockDependsOnDerivedUntyped(
 			statements,
 			new Set(untypedParams),
@@ -287,6 +299,7 @@ export class SemanticAnalyzer {
 	): boolean {
 		for (let i = 0; i < statements.length; i++) {
 			const statement = statements[i];
+
 			if (
 				i === statements.length - 1 &&
 				this.tailStatementDependsOnDerivedUntyped(
@@ -297,8 +310,10 @@ export class SemanticAnalyzer {
 			) {
 				return true;
 			}
+
 			this.recordDerivedUntypedEffects(statement, derived, localSeries);
 		}
+
 		return false;
 	}
 
@@ -314,6 +329,7 @@ export class SemanticAnalyzer {
 				localSeries,
 			);
 		}
+
 		if (statement.type === "ReturnStatement") {
 			return this.expressionDependsOnDerivedSeries(
 				statement.value,
@@ -321,6 +337,7 @@ export class SemanticAnalyzer {
 				localSeries,
 			);
 		}
+
 		if (statement.type === "IfStatement") {
 			return (
 				this.tailBlockDependsOnDerivedUntyped(
@@ -337,6 +354,7 @@ export class SemanticAnalyzer {
 					: false)
 			);
 		}
+
 		if (statement.type === "SequenceStatement") {
 			return this.tailBlockDependsOnDerivedUntyped(
 				statement.statements,
@@ -344,6 +362,7 @@ export class SemanticAnalyzer {
 				localSeries,
 			);
 		}
+
 		return false;
 	}
 
@@ -373,6 +392,7 @@ export class SemanticAnalyzer {
 						localSeries,
 					);
 				}
+
 				return;
 			case "AssignmentStatement":
 				if (statement.target.type === "Identifier") {
@@ -383,27 +403,35 @@ export class SemanticAnalyzer {
 						localSeries,
 					);
 				}
+
 				return;
 			case "TupleDeclaration": {
 				const initReferencesDerived = this.expressionReferencesNames(
 					statement.init,
 					derived,
 				);
+
 				const initIsSeries = this.isSeriesishExpressionWithLocalSeries(
 					statement.init,
 					localSeries,
 				);
+
 				for (const name of statement.names) {
 					if (!name) continue;
+
 					if (initReferencesDerived) derived.add(name);
+
 					if (initIsSeries) localSeries.add(name);
 				}
+
 				return;
 			}
+
 			case "FunctionDeclaration":
 			case "MethodDeclaration":
 				return;
 		}
+
 		for (const child of this.childStatements(statement)) {
 			this.recordDerivedUntypedEffects(child, derived, localSeries);
 		}
@@ -418,6 +446,7 @@ export class SemanticAnalyzer {
 		if (this.expressionReferencesNames(value, derived)) {
 			derived.add(name);
 		}
+
 		if (this.isSeriesishExpressionWithLocalSeries(value, localSeries)) {
 			localSeries.add(name);
 		}
@@ -429,10 +458,12 @@ export class SemanticAnalyzer {
 			if (s.type === "VariableDeclaration" && s.name && s.typeAnnotation) {
 				const t = s.typeAnnotation.name ?? "";
 				const dot = t.indexOf(".");
+
 				if (dot > 0 && this.importAliasToPath.has(t.slice(0, dot))) {
 					this.localLibraryVar.set(s.name, t.slice(0, dot));
 				}
 			}
+
 			this.collectLibraryTypedVars(this.childStatements(s));
 		}
 	}
@@ -451,6 +482,7 @@ export class SemanticAnalyzer {
 				for (const name of statement.names) {
 					this.declareName(name, statement.line, statement.column);
 				}
+
 				this.analyzeExpression(statement.init);
 				break;
 
@@ -489,6 +521,7 @@ export class SemanticAnalyzer {
 				for (const stmt of statement.statements) {
 					this.analyzeStatement(stmt);
 				}
+
 				break;
 
 			case "ReturnStatement":
@@ -517,6 +550,7 @@ export class SemanticAnalyzer {
 		// Unused-variable tracking is handled at the symbol table level -
 		// here we only record the name for shadow detection and walk init.
 		const init = declaration.init;
+
 		if (init) {
 			this.withAssignmentTarget(declaration.name, () => {
 				this.analyzeExpression(init);
@@ -531,6 +565,7 @@ export class SemanticAnalyzer {
 	} {
 		const line = declaration.startLine ?? declaration.line;
 		const column = declaration.startColumn ?? declaration.column;
+
 		// Span from the anchor token through the end of the name, so a typed
 		// (`hz hz`) or `var` declaration highlights `<type> <name>` rather than
 		// just the keyword. The anchor token always precedes the name on the
@@ -539,6 +574,7 @@ export class SemanticAnalyzer {
 			line === declaration.line
 				? declaration.column - column + declaration.name.length
 				: declaration.name.length;
+
 		return { line, column, length };
 	}
 
@@ -595,7 +631,9 @@ export class SemanticAnalyzer {
 				"CW10013",
 			);
 		}
+
 		this.scopeNames[this.scopeNames.length - 1].add(name);
+
 		// A declaration made under a series-gated condition or inside a
 		// loop body lives in a scope that may not run every bar - record
 		// it for the CW10018 history check (see INV021).
@@ -612,6 +650,7 @@ export class SemanticAnalyzer {
 	private withScopeFrame(fn: () => void): void {
 		this.scopeNames.push(new Set());
 		this.conditionalLocalFrames.push(new Set());
+
 		try {
 			fn();
 		} finally {
@@ -637,15 +676,18 @@ export class SemanticAnalyzer {
 				.filter((p) => p.name && !p.typeAnnotation)
 				.map((p) => p.name),
 		);
+
 		try {
 			this.withSeriesParams(declaration.params, () => {
 				this.withScopeFrame(() => {
 					// Params are scope names but do NOT shadow-warn (probed:
 					// a param named after an earlier global is silent - INV020).
 					const frame = this.scopeNames[this.scopeNames.length - 1];
+
 					for (const param of declaration.params) {
 						if (param.name) frame.add(param.name);
 					}
+
 					for (const statement of declaration.body) {
 						this.analyzeStatement(statement);
 					}
@@ -673,8 +715,10 @@ export class SemanticAnalyzer {
 		fn: () => void,
 	): void {
 		const added: string[] = [];
+
 		for (const param of params) {
 			const t = param.typeAnnotation?.name ?? "";
+
 			if (
 				param.name &&
 				t !== "" &&
@@ -685,6 +729,7 @@ export class SemanticAnalyzer {
 				added.push(param.name);
 			}
 		}
+
 		try {
 			fn();
 		} finally {
@@ -719,12 +764,14 @@ export class SemanticAnalyzer {
 		} else if (undetermined) {
 			this.enterAmbientUndeterminedGate();
 		}
+
 		try {
 			this.withScopeFrame(() => {
 				for (const stmt of statement.consequent) {
 					this.analyzeStatement(stmt);
 				}
 			});
+
 			if (statement.alternate) {
 				const alternate = statement.alternate;
 				this.withScopeFrame(() => {
@@ -747,9 +794,11 @@ export class SemanticAnalyzer {
 		if ("from" in statement) {
 			this.analyzeExpression(statement.from);
 		}
+
 		if ("to" in statement) {
 			this.analyzeExpression(statement.to);
 		}
+
 		// The `by` operand is a reference like the other two. Omitting it made
 		// every variable-stride loop report its stride as UNUSED_VARIABLE while
 		// `from`/`to` operands counted normally - a single missing edge in the
@@ -757,6 +806,7 @@ export class SemanticAnalyzer {
 		if ("step" in statement && statement.step) {
 			this.analyzeExpression(statement.step);
 		}
+
 		if ("collection" in statement) {
 			this.analyzeExpression(statement.collection);
 		}
@@ -768,12 +818,14 @@ export class SemanticAnalyzer {
 			// [i, v] in` puts the first name one further (past `[`) and the
 			// second after `name, `.
 			const base = statement.column + "for ".length;
+
 			if (statement.type === "ForStatement") {
 				this.declareName(statement.iterator, statement.line, base);
 			} else {
 				const tuple = statement.iterator2 !== undefined;
 				const first = tuple ? base + 1 : base;
 				this.declareName(statement.iterator, statement.line, first);
+
 				if (statement.iterator2 !== undefined) {
 					this.declareName(
 						statement.iterator2,
@@ -821,7 +873,9 @@ export class SemanticAnalyzer {
 		if (statement.condition) {
 			this.analyzeExpression(statement.condition);
 		}
+
 		this.enterConditionalScope("block");
+
 		try {
 			this.withScopeFrame(() => {
 				for (const stmt of statement.body) {
@@ -853,6 +907,7 @@ export class SemanticAnalyzer {
 	private withAssignmentTarget(name: string | null, fn: () => void): void {
 		const prev = this.currentAssignmentTarget;
 		this.currentAssignmentTarget = name;
+
 		try {
 			fn();
 		} finally {
@@ -886,6 +941,7 @@ export class SemanticAnalyzer {
 				for (const element of expr.elements) {
 					this.analyzeExpression(element);
 				}
+
 				break;
 
 			case "IndexExpression":
@@ -910,6 +966,7 @@ export class SemanticAnalyzer {
 						"CW10018",
 					);
 				}
+
 				this.analyzeExpression(expr.object);
 				this.analyzeExpression(expr.index);
 				break;
@@ -959,7 +1016,9 @@ export class SemanticAnalyzer {
 	// so spanning is detectable directly.
 	private checkMultilineStringLiteral(literal: Literal): void {
 		if (typeof literal.value !== "string") return;
+
 		if (!/[\r\n]/.test(literal.raw)) return;
+
 		// CW10001 deprecates spanning a SINGLE pair of delimiters across lines.
 		// The triple-delimited form (April 2026) is the sanctioned replacement -
 		// TV's own message tells you to use it - so warning on it would tell the
@@ -986,6 +1045,7 @@ export class SemanticAnalyzer {
 
 	private analyzeBinaryExpression(expr: BinaryExpression): void {
 		this.analyzeExpression(expr.left);
+
 		// The right operand of and/or is ALWAYS conditional - unlike the
 		// if/ternary/switch gates, TV warns CW10002 even when the left
 		// operand is an input (`input.bool() and ta.crossover(...)` warns;
@@ -1005,23 +1065,28 @@ export class SemanticAnalyzer {
 		const conditional = this.isSeriesishExpression(expr.condition);
 		const undetermined = this.isUndeterminedGate(expr.condition);
 		this.analyzeExpression(expr.condition);
+
 		if (conditional) {
 			this.enterConditionalScope("ternary", undetermined);
 		} else if (undetermined) {
 			this.enterAmbientUndeterminedGate();
 		}
+
 		const ternaryContext: ActiveTernaryContext = {
 			condition: expr.condition,
 			alternate: expr.alternate,
 			branch: "consequent",
 		};
+
 		this.ternaryContextStack.push(ternaryContext);
+
 		try {
 			this.analyzeExpression(expr.consequent);
 			ternaryContext.branch = "alternate";
 			this.analyzeExpression(expr.alternate);
 		} finally {
 			this.ternaryContextStack.pop();
+
 			if (conditional) this.exitConditionalScope();
 			else if (undetermined) this.exitAmbientUndeterminedGate();
 		}
@@ -1042,6 +1107,7 @@ export class SemanticAnalyzer {
 		if (expr.discriminant) {
 			this.analyzeExpression(expr.discriminant);
 		}
+
 		for (const [index, switchCase] of expr.cases.entries()) {
 			if (switchCase.condition) {
 				// The FIRST arm's condition always executes; later
@@ -1054,6 +1120,7 @@ export class SemanticAnalyzer {
 					this.exitConditionalScope();
 				}
 			}
+
 			// Arm bodies execute only when their condition matches.
 			// `result` is contained in the last statement, so walk
 			// `statements` INSTEAD of `result` when present (see SwitchCase).
@@ -1065,6 +1132,7 @@ export class SemanticAnalyzer {
 						: false,
 				);
 			}
+
 			if (switchCase.statements) {
 				const statements = switchCase.statements;
 				this.withScopeFrame(() => {
@@ -1075,6 +1143,7 @@ export class SemanticAnalyzer {
 			} else {
 				this.analyzeExpression(switchCase.result);
 			}
+
 			if (conditional) this.exitConditionalScope();
 		}
 	}
@@ -1093,6 +1162,7 @@ export class SemanticAnalyzer {
 		this.conditionalScopeKinds.pop();
 		this.conditionalGateUndetermined.pop();
 		this.conditionalScopeDepth--;
+
 		if (this.conditionalScopeDepth === 0) {
 			this.inConditionalScope = false;
 		}
@@ -1118,15 +1188,18 @@ export class SemanticAnalyzer {
 		if (call.callee.type === "Identifier") {
 			functionName = call.callee.name;
 			histDep = this.isHistoryDependentFunction(functionName);
+
 			if (!histDep && this.globalIndexDependentUdfs.has(functionName)) {
 				histDep = true;
 			}
 		} else if (call.callee.type === "MemberExpression") {
 			const member = call.callee;
+
 			const full =
 				member.object.type === "Identifier"
 					? `${member.object.name}.${member.property.name}`
 					: "";
+
 			// A namespaced BUILTIN call (`ta.sma`) keeps the full name; a user
 			// METHOD (`PH.draw_trendLine`) or LIBRARY member (`col.cust_series`)
 			// call uses the BARE member name - both register/resolve under the
@@ -1163,18 +1236,22 @@ export class SemanticAnalyzer {
 			) {
 				return;
 			}
+
 			if (this.shouldSuppressSiblingSeedConsistencyWarning()) {
 				return;
 			}
+
 			const kind =
 				this.conditionalScopeKinds[this.conditionalScopeKinds.length - 1] ??
 				"block";
+
 			const message =
 				kind === "andor"
 					? `The '${functionName}()' call inside the conditional expression might not execute on every bar, which can cause inconsistent calculations because the function depends on historical results. For consistency, assign the call's result to a global variable and use that variable in the expression instead.`
 					: kind === "ternary"
 						? `The function '${functionName}' should be called on each calculation for consistency. It is recommended to extract the call from the ternary operator or from the scope`
 						: `The function '${functionName}' should be called on each calculation for consistency. It is recommended to extract the call from this scope`;
+
 			this.addWarning(
 				call.line,
 				call.column,
@@ -1199,23 +1276,32 @@ export class SemanticAnalyzer {
 	// such as `mg := na(mg[1]) ? ta.ema(...) : ...`. see INV129
 	private shouldSuppressSiblingSeedConsistencyWarning(): boolean {
 		if (!this.hasUndeterminedAncestorGate()) return false;
+
 		const kind =
 			this.conditionalScopeKinds[this.conditionalScopeKinds.length - 1];
+
 		if (kind !== "ternary") return false;
+
 		const ternary =
 			this.ternaryContextStack[this.ternaryContextStack.length - 1];
+
 		if (ternary?.branch !== "consequent") return false;
 		const seed = this.naHistorySeedName(ternary.condition);
+
 		if (!seed) return false;
+
 		if (this.currentAssignmentTarget === seed) return false;
+
 		return this.expressionReadsHistoryOfName(ternary.alternate, seed);
 	}
 
 	private hasUndeterminedAncestorGate(): boolean {
 		if (this.ambientUndeterminedGateDepth > 0) return true;
+
 		for (let i = 0; i < this.conditionalGateUndetermined.length - 1; i++) {
 			if (this.conditionalGateUndetermined[i]) return true;
 		}
+
 		return false;
 	}
 
@@ -1228,6 +1314,7 @@ export class SemanticAnalyzer {
 		) {
 			return null;
 		}
+
 		return this.historyIndexIdentifierName(expr.arguments[0].value);
 	}
 
@@ -1240,6 +1327,7 @@ export class SemanticAnalyzer {
 		) {
 			return expr.object.name;
 		}
+
 		return null;
 	}
 
@@ -1248,7 +1336,9 @@ export class SemanticAnalyzer {
 		name: string,
 	): boolean {
 		const indexed = this.historyIndexIdentifierName(expr);
+
 		if (indexed === name) return true;
+
 		switch (expr.type) {
 			case "CallExpression":
 				return (
@@ -1315,18 +1405,23 @@ export class SemanticAnalyzer {
 		) {
 			return true;
 		}
+
 		if (this.currentUntypedParams.size === 0) return false;
+
 		if (!this.expressionReferencesNames(condition, this.currentUntypedParams)) {
 			return false;
 		}
+
 		// Deliberate transient mutation of shared seriesVars: delete the untyped
 		// param names, ask the series oracle, then restore in finally. The series
 		// check is synchronous so no other reader observes the gap - this borrows
 		// seriesVars rather than cloning it.
 		const masked: string[] = [];
+
 		for (const name of this.currentUntypedParams) {
 			if (this.seriesVars.delete(name)) masked.push(name);
 		}
+
 		try {
 			return !this.isSeriesishExpression(condition);
 		} finally {
@@ -1433,17 +1528,21 @@ export class SemanticAnalyzer {
 		if (call.callee.type === "Identifier") {
 			return this.udfReturnsUndetermined.has(call.callee.name);
 		}
+
 		if (call.callee.type === "MemberExpression") {
 			const member = call.callee;
+
 			if (this.udfReturnsUndetermined.has(member.property.name)) {
 				return true;
 			}
+
 			if (member.object.type === "Identifier") {
 				return this.udfReturnsUndetermined.has(
 					`${member.object.name}.${member.property.name}`,
 				);
 			}
 		}
+
 		return false;
 	}
 
@@ -1452,6 +1551,7 @@ export class SemanticAnalyzer {
 		localSeries: Set<string>,
 	): boolean {
 		if (this.isSeriesishExpression(expr)) return true;
+
 		switch (expr.type) {
 			case "Identifier":
 				return localSeries.has(expr.name);
@@ -1532,16 +1632,20 @@ export class SemanticAnalyzer {
 		localSeries: Set<string>,
 	): boolean {
 		const tail = statements[statements.length - 1];
+
 		if (!tail) return false;
+
 		if (tail.type === "ExpressionStatement") {
 			return this.isSeriesishExpressionWithLocalSeries(
 				tail.expression,
 				localSeries,
 			);
 		}
+
 		if (tail.type === "ReturnStatement") {
 			return this.isSeriesishExpressionWithLocalSeries(tail.value, localSeries);
 		}
+
 		if (tail.type === "IfStatement") {
 			return (
 				this.statementListTailIsSeries(tail.consequent, localSeries) ||
@@ -1550,9 +1654,11 @@ export class SemanticAnalyzer {
 					: false)
 			);
 		}
+
 		if (tail.type === "SequenceStatement") {
 			return this.statementListTailIsSeries(tail.statements, localSeries);
 		}
+
 		return false;
 	}
 
@@ -1578,17 +1684,21 @@ export class SemanticAnalyzer {
 			case "MemberExpression": {
 				if (expr.object.type === "Identifier") {
 					const full = `${expr.object.name}.${expr.property.name}`;
+
 					if ((VARIABLES_BY_NAME.get(full)?.type ?? "").startsWith("series")) {
 						return true;
 					}
 				}
+
 				return false;
 			}
+
 			case "IndexExpression":
 				// The [] history operator yields a series
 				return true;
 			case "CallExpression": {
 				let name = "";
+
 				if (expr.callee.type === "Identifier") {
 					name = expr.callee.name;
 				} else if (
@@ -1597,11 +1707,15 @@ export class SemanticAnalyzer {
 				) {
 					name = `${expr.callee.object.name}.${expr.callee.property.name}`;
 				}
+
 				if (!name) return false;
+
 				if (this.isHistoryDependentFunction(name)) return true;
+
 				if ((FUNCTIONS_BY_NAME.get(name)?.returns ?? "").startsWith("series")) {
 					return true;
 				}
+
 				// Series is contagious through arguments. A function's MINIMAL
 				// documented overload often reads simple/const (`na(x) -> simple
 				// bool`, `nz`, `math.*`), but TV widens the result qualifier to
@@ -1613,6 +1727,7 @@ export class SemanticAnalyzer {
 				// the conservative gate protects is untouched. see INV114
 				return expr.arguments.some((a) => this.isSeriesishExpression(a.value));
 			}
+
 			case "BinaryExpression":
 				return (
 					this.isSeriesishExpression(expr.left) ||
@@ -1658,21 +1773,26 @@ export class SemanticAnalyzer {
 	 */
 	private isHistoryDependentFunction(functionName: string): boolean {
 		const func = FUNCTIONS_BY_NAME.get(functionName);
+
 		if (func?.flags?.historyDependent) {
 			return true;
 		}
+
 		if (this.historyDependentUdfs.has(functionName)) {
 			return true;
 		}
+
 		// `recv.member()` where `recv` is either an import alias (`col.cust_series`)
 		// or a LIBRARY-TYPED local (`zigzag.calculate`, zigzag a `zg.Zigzag`):
 		// resolve to the library's history-dependent export set. see INV118
 		const dot = functionName.indexOf(".");
+
 		if (dot > 0) {
 			const recv = functionName.slice(0, dot);
 			const member = functionName.slice(dot + 1);
 			const alias = this.localLibraryVar.get(recv) ?? recv;
 			const libPath = this.importAliasToPath.get(alias);
+
 			if (
 				libPath &&
 				LIBRARY_HISTORY_DEPENDENT_BY_PATH.get(libPath)?.has(member)
@@ -1680,6 +1800,7 @@ export class SemanticAnalyzer {
 				return true;
 			}
 		}
+
 		return false;
 	}
 
@@ -1693,12 +1814,16 @@ export class SemanticAnalyzer {
 	 */
 	private tailTupleSeries(stmt: Statement | undefined): boolean[] | null {
 		if (!stmt) return null;
+
 		const fromArray = (e: Expression): boolean[] | null =>
 			e.type === "ArrayExpression"
 				? e.elements.map((el) => this.isSeriesishExpression(el))
 				: null;
+
 		if (stmt.type === "ExpressionStatement") return fromArray(stmt.expression);
+
 		if (stmt.type === "ReturnStatement") return fromArray(stmt.value);
+
 		if (stmt.type === "IfStatement") {
 			return (
 				this.tailTupleSeries(stmt.consequent[stmt.consequent.length - 1]) ??
@@ -1707,6 +1832,7 @@ export class SemanticAnalyzer {
 					: null)
 			);
 		}
+
 		return null;
 	}
 
@@ -1772,16 +1898,19 @@ export class SemanticAnalyzer {
 						line: statement.line,
 						column: statement.column,
 					});
+
 					if (
 						inUndeterminedConditional ||
 						(statement.init && this.expressionIsUndetermined(statement.init))
 					) {
 						this.undeterminedVars.add(statement.name);
 					}
+
 					if (statement.init && this.isSeriesishExpression(statement.init)) {
 						this.seriesVars.add(statement.name);
 					}
 				}
+
 				break;
 
 			case "AssignmentStatement":
@@ -1799,6 +1928,7 @@ export class SemanticAnalyzer {
 				) {
 					this.seriesVars.add(statement.target.name);
 				}
+
 				if (
 					statement.target.type === "Identifier" &&
 					(inUndeterminedConditional ||
@@ -1806,6 +1936,7 @@ export class SemanticAnalyzer {
 				) {
 					this.undeterminedVars.add(statement.target.name);
 				}
+
 				break;
 
 			case "TupleDeclaration": {
@@ -1816,6 +1947,7 @@ export class SemanticAnalyzer {
 							line: statement.line,
 							column: statement.column,
 						});
+
 						if (
 							inUndeterminedConditional ||
 							this.expressionIsUndetermined(statement.init)
@@ -1824,21 +1956,26 @@ export class SemanticAnalyzer {
 						}
 					}
 				}
+
 				// Series-type the members from a UDF tuple return, so a later
 				// `if a > b` is seen as series-conditional. see INV117
 				const init = statement.init;
+
 				const calleeName =
 					init?.type === "CallExpression" && init.callee.type === "Identifier"
 						? init.callee.name
 						: undefined;
+
 				const elemSeries = calleeName
 					? this.udfReturnTupleSeries.get(calleeName)
 					: undefined;
+
 				if (elemSeries) {
 					statement.names.forEach((name, i) => {
 						if (name && elemSeries[i]) this.seriesVars.add(name);
 					});
 				}
+
 				break;
 			}
 
@@ -1854,30 +1991,36 @@ export class SemanticAnalyzer {
 						});
 					}
 				}
+
 				// Record the series-ness of each element of a returned TUPLE, so
 				// a destructure of this function's result can series-type its
 				// members (the condition `if stClose > stOpen` case). see INV117
 				{
 					const tail = statement.body[statement.body.length - 1];
 					const elemSeries = this.tailTupleSeries(tail);
+
 					if (elemSeries) {
 						this.udfReturnTupleSeries.set(statement.name, elemSeries);
 					}
+
 					if (
 						this.tailIsSeries(tail) ||
 						this.tailIsSeriesThroughLocals(statement.body)
 					) {
 						this.udfReturnsSeries.add(statement.name);
 					}
+
 					const untypedParams = new Set(
 						statement.params
 							.filter((p) => p.name && !p.typeAnnotation)
 							.map((p) => p.name),
 					);
+
 					if (this.tailDependsOnDerivedUntyped(statement.body, untypedParams)) {
 						this.udfReturnsUndetermined.add(statement.name);
 					}
 				}
+
 				// Record history-dependent user functions for the
 				// CONDITIONAL_SERIES check, seeding the scope with the params
 				// so `src[1]` qualifies but `close[1]` does not. see TODO #32.
@@ -1897,6 +2040,7 @@ export class SemanticAnalyzer {
 				) {
 					this.historyDependentUdfs.add(statement.name);
 				}
+
 				// Collect the body with params marked series, so body locals
 				// initialized from params land in seriesVars correctly -
 				// then skip the shared recursion below (it would re-walk the
@@ -1906,6 +2050,7 @@ export class SemanticAnalyzer {
 						this.collectDeclarationsInStatement(child);
 					}
 				});
+
 				return;
 
 			// for/for-in iterator names are deliberately NOT collected: an
@@ -1927,11 +2072,13 @@ export class SemanticAnalyzer {
 			((statement.type === "IfStatement" ||
 				statement.type === "WhileStatement") &&
 				this.isSeriesishExpression(statement.condition));
+
 		const childUndeterminedConditional =
 			inUndeterminedConditional ||
 			((statement.type === "IfStatement" ||
 				statement.type === "WhileStatement") &&
 				this.isUndeterminedGate(statement.condition));
+
 		for (const child of this.childStatements(statement)) {
 			this.collectDeclarationsInStatement(
 				child,
@@ -1947,12 +2094,15 @@ export class SemanticAnalyzer {
 		// IfExpression's OWN condition, not the enclosing statement's. This is
 		// the collect-side twin of the analyzeIfBranches walk gap. see INV168
 		const initExpr = this.statementInitExpression(statement);
+
 		if (initExpr?.type === "IfExpression") {
 			const gateSeries =
 				childConditional || this.isSeriesishExpression(initExpr.condition);
+
 			const gateUndetermined =
 				childUndeterminedConditional ||
 				this.isUndeterminedGate(initExpr.condition);
+
 			for (const child of [
 				...initExpr.consequent,
 				...(initExpr.alternate ?? []),
@@ -2039,17 +2189,20 @@ export class SemanticAnalyzer {
 			) {
 				scopeNames.delete(statement.target.name);
 			}
+
 			for (const expr of this.statementExpressions(statement)) {
 				if (this.scanExpressionForHistoryDependence(expr, scopeNames)) {
 					return true;
 				}
 			}
+
 			const childUndetermined =
 				underUndetermined ||
 				((statement.type === "IfStatement" ||
 					statement.type === "WhileStatement") &&
 					this.expressionReferencesNames(statement.condition, untypedParams) &&
 					!this.isSeriesishExpression(statement.condition));
+
 			if (
 				this.scanStatementsForHistoryDependence(
 					this.childStatements(statement),
@@ -2061,6 +2214,7 @@ export class SemanticAnalyzer {
 				return true;
 			}
 		}
+
 		return false;
 	}
 
@@ -2086,11 +2240,13 @@ export class SemanticAnalyzer {
 					if (name) scopeNames.add(name);
 				}
 			}
+
 			for (const expr of this.statementExpressions(statement)) {
 				if (this.exprIndexesGlobalSeries(expr, scopeNames)) {
 					return true;
 				}
 			}
+
 			if (
 				this.scanStatementsForGlobalIndex(
 					this.childStatements(statement),
@@ -2100,6 +2256,7 @@ export class SemanticAnalyzer {
 				return true;
 			}
 		}
+
 		return false;
 	}
 
@@ -2116,6 +2273,7 @@ export class SemanticAnalyzer {
 				) {
 					return true;
 				}
+
 				return (
 					this.exprIndexesGlobalSeries(expr.object, scopeNames) ||
 					this.exprIndexesGlobalSeries(expr.index, scopeNames)
@@ -2249,6 +2407,7 @@ export class SemanticAnalyzer {
 		) {
 			return false;
 		}
+
 		return (
 			this.statementExpressions(statement).some((expr) =>
 				this.expressionReferencesNames(expr, names),
@@ -2313,6 +2472,7 @@ export class SemanticAnalyzer {
 				);
 			case "CallExpression": {
 				let name = "";
+
 				if (expr.callee.type === "Identifier") {
 					name = expr.callee.name;
 				} else if (
@@ -2321,9 +2481,11 @@ export class SemanticAnalyzer {
 				) {
 					name = `${expr.callee.object.name}.${expr.callee.property.name}`;
 				}
+
 				if (name && this.isHistoryDependentFunction(name)) {
 					return true;
 				}
+
 				// A method call `recv.m()` registers under the BARE method name,
 				// so transitive history-dependence through a user method needs the
 				// bare-name lookup too (`scan` -> `this.getZigzagAndPattern(...)`).
@@ -2334,10 +2496,12 @@ export class SemanticAnalyzer {
 				) {
 					return true;
 				}
+
 				return expr.arguments.some((a) =>
 					this.scanExpressionForHistoryDependence(a.value, scopeNames),
 				);
 			}
+
 			case "MemberExpression":
 				return this.scanExpressionForHistoryDependence(expr.object, scopeNames);
 			case "BinaryExpression":
@@ -2433,6 +2597,7 @@ export class SemanticAnalyzer {
 			if (variableName === "_") {
 				continue;
 			}
+
 			if (!this.usedVariables.has(variableName)) {
 				this.addWarning(
 					pos.line,
@@ -2478,6 +2643,7 @@ export class SemanticAnalyzer {
 			severity,
 			rule,
 		};
+
 		if (code !== undefined) warning.code = code;
 		this.warnings.push(warning);
 	}

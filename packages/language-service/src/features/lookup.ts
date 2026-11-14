@@ -13,6 +13,7 @@ import type { ParameterInfo, SymbolInfo } from "../types";
 export function getSymbolInfo(symbol: string): SymbolInfo | null {
 	// Check variables first
 	const variable = VARIABLES_BY_NAME.get(symbol);
+
 	if (variable) {
 		return {
 			name: variable.name,
@@ -25,6 +26,7 @@ export function getSymbolInfo(symbol: string): SymbolInfo | null {
 
 	// Check functions
 	const func = FUNCTIONS_BY_NAME.get(symbol);
+
 	if (func) {
 		const parameters: ParameterInfo[] = func.parameters.map(
 			(p: PineParameter) => ({
@@ -47,6 +49,7 @@ export function getSymbolInfo(symbol: string): SymbolInfo | null {
 
 	// Check constants
 	const constant = CONSTANTS_BY_NAME.get(symbol);
+
 	if (constant) {
 		return {
 			name: constant.name,
@@ -65,11 +68,13 @@ export function getSymbolInfo(symbol: string): SymbolInfo | null {
  */
 export function getAllFunctionNames(namespace?: string): string[] {
 	const names: string[] = [];
+
 	for (const [name, func] of FUNCTIONS_BY_NAME) {
 		if (!namespace || func.namespace === namespace) {
 			names.push(name);
 		}
 	}
+
 	return names.sort();
 }
 
@@ -78,11 +83,13 @@ export function getAllFunctionNames(namespace?: string): string[] {
  */
 export function getAllVariableNames(namespace?: string): string[] {
 	const names: string[] = [];
+
 	for (const [name, variable] of VARIABLES_BY_NAME) {
 		if (!namespace || variable.namespace === namespace) {
 			names.push(name);
 		}
 	}
+
 	return names.sort();
 }
 
@@ -91,10 +98,12 @@ export function getAllVariableNames(namespace?: string): string[] {
  */
 export function getAllConstantNames(namespace?: string): string[] {
 	const names: string[] = [];
+
 	for (const [name, constant] of CONSTANTS_BY_NAME) {
 		if (!namespace || constant.namespace === namespace) {
 			names.push(name);
 		}
 	}
+
 	return names.sort();
 }

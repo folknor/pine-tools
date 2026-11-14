@@ -6,7 +6,7 @@
 pnpm install          # Install dependencies
 pnpm run <script>     # Run scripts
 pnpm test             # Run tests
-pnpm check            # Formatter + linter + assist (biome). Alias: pnpm lint
+pnpm lint             # Oxlint (alias: pnpm check)
 ```
 
 ---
@@ -184,8 +184,8 @@ self-contained source of truth - see TODO #23.
 pnpm install              # Install dependencies
 pnpm run build            # Build extension
 pnpm test                 # Run tests
-pnpm check                # biome formatter + linter + assist (alias: pnpm lint).
-                          # Use this, never a bare `npx biome`.
+pnpm lint                 # Oxlint (alias: pnpm check).
+                          # Use this, never a bare `npx oxlint`.
 
 # Data Pipeline (packages/pipeline/src/)
 pnpm run crawl            # Crawl TradingView docs (TOC inventory)

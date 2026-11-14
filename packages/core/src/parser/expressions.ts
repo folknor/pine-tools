@@ -40,6 +40,7 @@ export class ExpressionParser {
 		) {
 			return;
 		}
+
 		this.p.parserErrors.push({
 			line: tok.line,
 			column: tok.column,
@@ -52,32 +53,43 @@ export class ExpressionParser {
 	): Token | null {
 		if (!this.p.check(TokenType.NEWLINE)) return null;
 		let i = this.p.current;
+
 		while (this.p.tokens[i]?.type === TokenType.NEWLINE) i++;
 		const tok = this.p.tokens[i];
+
 		return tok && matches(tok) ? tok : null;
 	}
 
 	private skipWrapNewlines(matches: (t: Token) => boolean): boolean {
 		const tok = this.leadingWrapTokenAfterNewlines(matches);
+
 		if (!tok) return false;
 		let i = this.p.current;
+
 		while (this.p.tokens[i]?.type === TokenType.NEWLINE) i++;
 		const newlines = i - this.p.current;
+
 		if ((tok.indent ?? 0) === 0) return false;
+
 		if (newlines > 1 && (tok.indent ?? 0) % 4 === 0) return false;
 		this.leadingWrapError(tok);
+
 		while (this.p.check(TokenType.NEWLINE)) {
 			this.p.advance();
 		}
+
 		return true;
 	}
 
 	private skipPreTernaryColonNewlines(): void {
 		if (!this.p.check(TokenType.NEWLINE)) return;
 		let i = this.p.current;
+
 		while (this.p.tokens[i]?.type === TokenType.NEWLINE) i++;
 		const tok = this.p.tokens[i];
+
 		if (tok?.type === TokenType.COLON) this.leadingWrapError(tok);
+
 		while (this.p.check(TokenType.NEWLINE)) {
 			this.p.advance();
 		}
@@ -98,10 +110,13 @@ export class ExpressionParser {
 	private skipPostOperatorNewlines(): void {
 		if (!this.p.check(TokenType.NEWLINE)) return;
 		const eol = this.p.peek();
+
 		while (this.p.check(TokenType.NEWLINE)) {
 			this.p.advance();
 		}
+
 		const next = this.p.peek();
+
 		if (
 			next.type !== TokenType.EOF &&
 			(next.indent ?? 0) % 4 === 0 &&
@@ -365,6 +380,7 @@ export class ExpressionParser {
 		if (this.p.check(TokenType.NEWLINE)) {
 			const eol = this.p.peek();
 			const nextToken = this.p.peekNext();
+
 			// If next token suggests continuation (identifier, number, paren, unary op), skip newline
 			if (
 				nextToken &&
@@ -375,10 +391,12 @@ export class ExpressionParser {
 					(nextToken.type === TokenType.KEYWORD && nextToken.value === "not"))
 			) {
 				const after = this.p.tokens[this.p.current + 2];
+
 				const looksLikeStatementStart =
 					nextToken.type === TokenType.IDENTIFIER &&
 					(after?.type === TokenType.ASSIGN ||
 						after?.type === TokenType.COMPOUND_ASSIGN);
+
 				if (!looksLikeStatementStart) {
 					if (
 						(nextToken.indent ?? 0) % 4 === 0 &&
@@ -392,6 +410,7 @@ export class ExpressionParser {
 								'Syntax error at input "end of line without line continuation"',
 						});
 					}
+
 					this.p.advance(); // skip newline
 				}
 			}
@@ -404,6 +423,7 @@ export class ExpressionParser {
 		) {
 			const operator = this.p.previous().value;
 			const right = this.unary();
+
 			return {
 				type: "UnaryExpression",
 				operator,
@@ -441,10 +461,14 @@ export class ExpressionParser {
 				// of a chain is the obvious way to disable it, so this fired on
 				// ordinary edited code. see INV149
 				const nextToken = this.p.firstTokenAfterNewlines();
+
 				const postfixWrapToken = this.leadingWrapTokenAfterNewlines((t) => {
 					if (t.type === TokenType.DOT) return true;
+
 					if (t.type !== TokenType.LPAREN) return false;
+
 					if (expr.type === "MemberExpression") return true;
+
 					return (
 						expr.type === "Identifier" &&
 						(expr as AST.Identifier).name.includes(".")
@@ -514,6 +538,7 @@ export class ExpressionParser {
 						// Handle dotted type names like chart.point
 						while (this.p.check(TokenType.DOT)) {
 							this.p.advance(); // consume .
+
 							if (
 								this.p.check(TokenType.IDENTIFIER) ||
 								this.p.check(TokenType.KEYWORD)
@@ -529,14 +554,17 @@ export class ExpressionParser {
 						) {
 							typeArg += "<";
 							this.p.advance();
+
 							if (
 								this.p.check(TokenType.IDENTIFIER) ||
 								this.p.check(TokenType.KEYWORD)
 							) {
 								typeArg += this.p.advance().value;
+
 								// Handle dotted type names in nested generics
 								while (this.p.check(TokenType.DOT)) {
 									this.p.advance();
+
 									if (
 										this.p.check(TokenType.IDENTIFIER) ||
 										this.p.check(TokenType.KEYWORD)
@@ -545,6 +573,7 @@ export class ExpressionParser {
 									}
 								}
 							}
+
 							if (
 								this.p.check(TokenType.COMPARE) &&
 								this.p.peek().value === ">"
@@ -560,7 +589,9 @@ export class ExpressionParser {
 						if (!this.p.check(TokenType.COMMA)) {
 							break;
 						}
+
 						this.p.advance();
+
 						if (
 							!(
 								this.p.check(TokenType.IDENTIFIER) ||
@@ -575,6 +606,7 @@ export class ExpressionParser {
 					// Consume closing >
 					if (this.p.check(TokenType.COMPARE) && this.p.peek().value === ">") {
 						this.p.advance();
+
 						// Now should see ( for function call
 						if (this.p.match(TokenType.LPAREN)) {
 							this.p.parenDepth++; // Increment before finishCall (which decrements)
@@ -583,6 +615,7 @@ export class ExpressionParser {
 						}
 					}
 				}
+
 				// If pattern didn't match, restore position
 				this.p.current = savedPos;
 			}
@@ -594,6 +627,7 @@ export class ExpressionParser {
 			} else if (this.p.match(TokenType.DOT)) {
 				// Member access - property can be identifier or keyword (e.g., input.float)
 				let property: Token;
+
 				if (this.p.check(TokenType.IDENTIFIER)) {
 					property = this.p.advance();
 				} else if (this.p.check(TokenType.KEYWORD)) {
@@ -603,6 +637,7 @@ export class ExpressionParser {
 						`Expected property name at line ${this.p.peek().line}`,
 					);
 				}
+
 				expr = {
 					type: "MemberExpression",
 					object: expr,
@@ -627,6 +662,7 @@ export class ExpressionParser {
 				if (this.p.previous().type === TokenType.NEWLINE) {
 					break;
 				}
+
 				this.p.advance(); // consume [
 				// Array/index access
 				const index = this.expression();
@@ -656,19 +692,26 @@ export class ExpressionParser {
 	// a complete statement and must NOT be swallowed as arguments.
 	private nextLineClosesCall(): boolean {
 		let i = this.p.current;
+
 		while (this.p.tokens[i]?.type === TokenType.NEWLINE) i++;
 		let balance = 0;
+
 		while (i < this.p.tokens.length) {
 			const t = this.p.tokens[i].type;
+
 			if (t === TokenType.NEWLINE || t === TokenType.EOF) return false;
+
 			if (t === TokenType.LPAREN || t === TokenType.LBRACKET) {
 				balance++;
 			} else if (t === TokenType.RPAREN || t === TokenType.RBRACKET) {
 				balance--;
+
 				if (balance < 0) return true;
 			}
+
 			i++;
 		}
+
 		return false;
 	}
 
@@ -685,18 +728,22 @@ export class ExpressionParser {
 	// decision take over.
 	private skipToCallArgumentBoundary(): void {
 		let depth = 0;
+
 		while (!this.p.isAtEnd()) {
 			const t = this.p.peek().type;
+
 			if (t === TokenType.LPAREN || t === TokenType.LBRACKET) {
 				depth++;
 			} else if (t === TokenType.RPAREN || t === TokenType.RBRACKET) {
 				if (depth === 0 && t === TokenType.RPAREN) return;
+
 				if (depth > 0) depth--;
 			} else if (t === TokenType.COMMA && depth === 0) {
 				return;
 			} else if (t === TokenType.NEWLINE) {
 				return;
 			}
+
 			this.p.advance();
 		}
 	}
@@ -722,10 +769,12 @@ export class ExpressionParser {
 						tornAtBoundary = true;
 						break argLoop;
 					}
+
 					while (this.p.check(TokenType.NEWLINE)) {
 						this.p.advance();
 					}
 				}
+
 				if (this.p.check(TokenType.RPAREN) || this.p.isAtEnd()) {
 					break;
 				}
@@ -734,13 +783,16 @@ export class ExpressionParser {
 				// Allow both IDENTIFIER and KEYWORD as parameter names (Pine Script uses keywords like 'color', 'title', etc. as parameter names)
 				// Also handle line continuation: name\n= value
 				let nextTok = this.p.peekNext();
+
 				if (nextTok?.type === TokenType.NEWLINE) {
 					// Look past the newline to check for =
 					const afterNewline = this.p.tokens[this.p.current + 2];
+
 					if (afterNewline?.type === TokenType.ASSIGN) {
 						nextTok = afterNewline;
 					}
 				}
+
 				// Snapshot the depth counters: an argument parse that throws
 				// mid-group (e.g. inside an `[...]` options array torn open by
 				// a broken string) leaves them where the throw happened, and
@@ -751,6 +803,7 @@ export class ExpressionParser {
 				// INV047 / #46(b)
 				const savedParenDepth = this.p.parenDepth;
 				const savedBracketDepth = this.p.bracketDepth;
+
 				try {
 					if (
 						(this.p.check(TokenType.IDENTIFIER) ||
@@ -758,15 +811,19 @@ export class ExpressionParser {
 						nextTok?.type === TokenType.ASSIGN
 					) {
 						const nameTok = this.p.advance();
+
 						// Skip newlines before = (allows: arg\n= value)
 						while (this.p.check(TokenType.NEWLINE)) {
 							this.p.advance();
 						}
+
 						this.p.advance(); // consume =
+
 						// Skip newlines after = (allows: arg =\n value)
 						while (this.p.check(TokenType.NEWLINE)) {
 							this.p.advance();
 						}
+
 						const value = this.expression();
 						args.push({
 							name: nameTok.value,
@@ -798,9 +855,11 @@ export class ExpressionParser {
 				if (this.p.match(TokenType.COMMA)) {
 					continue;
 				}
+
 				if (this.p.check(TokenType.NEWLINE)) {
 					continue; // top of loop decides continuation vs boundary
 				}
+
 				if (this.p.check(TokenType.RPAREN) || this.p.isAtEnd()) {
 					break;
 				}
@@ -815,6 +874,7 @@ export class ExpressionParser {
 				const next = this.p.peekNext();
 				const prev = this.p.previous();
 				let message: string;
+
 				if (
 					(current.type === TokenType.IDENTIFIER ||
 						current.type === TokenType.KEYWORD) &&
@@ -831,6 +891,7 @@ export class ExpressionParser {
 					// recovery stub, not a value expression. see INV081 / INV082
 					message = `Syntax error at input "${current.value}"`;
 					const lastArg = args.at(-1);
+
 					if (
 						lastArg?.value.type === "Identifier" &&
 						lastArg.value.name === prev.value &&
@@ -854,6 +915,7 @@ export class ExpressionParser {
 					// folded into this one. see INV163
 					message = `Syntax error at input "${current.value}"`;
 				}
+
 				this.p.parserErrors.push({
 					line: current.line,
 					column: current.column,
@@ -867,12 +929,14 @@ export class ExpressionParser {
 				this.p.match(TokenType.COMMA);
 			}
 		}
+
 		// A call torn open by mangled source (in-call recovery fired, or the
 		// lexer declared a statement boundary mid-call) closes HERE without
 		// a second "Expected )" record: the anchored in-call/lexer error
 		// already names the problem, and the partial CallExpression keeps
 		// the statement intact. see INV047 / #46(b)
 		let rparen: Token;
+
 		if (this.p.check(TokenType.RPAREN)) {
 			rparen = this.p.advance();
 		} else if (recovered || tornAtBoundary) {
@@ -880,6 +944,7 @@ export class ExpressionParser {
 		} else {
 			rparen = this.p.consume(TokenType.RPAREN, 'Expected ")" after arguments');
 		}
+
 		this.p.parenDepth--; // Decrement depth when closing parenthesis
 
 		// A positional argument after a named one. TV calls this a syntax error
@@ -897,11 +962,13 @@ export class ExpressionParser {
 		// mangle instead.
 		if (!recovered && !tornAtBoundary) {
 			let lastNamed: string | undefined;
+
 			for (const arg of args) {
 				if (arg.name) {
 					lastNamed = arg.name;
 					continue;
 				}
+
 				if (lastNamed === undefined) continue;
 				this.p.parserErrors.push({
 					line: arg.value.line,
@@ -921,6 +988,7 @@ export class ExpressionParser {
 			endLine: rparen.line,
 			endColumn: rparen.column,
 		};
+
 		if (recovered || tornAtBoundary) {
 			// Incomplete argument list - exempt from arg-count checks.
 			callExpr.recovered = true;
@@ -937,6 +1005,7 @@ export class ExpressionParser {
 		// Literals
 		if (this.p.match(TokenType.NUMBER)) {
 			const token = this.p.previous();
+
 			return {
 				type: "Literal",
 				value: parseFloat(token.value),
@@ -948,6 +1017,7 @@ export class ExpressionParser {
 
 		if (this.p.match(TokenType.STRING)) {
 			const token = this.p.previous();
+
 			return {
 				type: "Literal",
 				value: token.value,
@@ -959,6 +1029,7 @@ export class ExpressionParser {
 
 		if (this.p.match(TokenType.BOOL)) {
 			const token = this.p.previous();
+
 			return {
 				type: "Literal",
 				value: token.value === "true",
@@ -970,6 +1041,7 @@ export class ExpressionParser {
 
 		if (this.p.match(TokenType.COLOR)) {
 			const token = this.p.previous();
+
 			return {
 				type: "Literal",
 				value: token.value, // Keep hex color as string (e.g., "#d8e3ac")
@@ -983,6 +1055,7 @@ export class ExpressionParser {
 		// The analyzer handles na() returning bool and na as a constant value
 		if (this.p.match([TokenType.KEYWORD, ["na"]])) {
 			const token = this.p.previous();
+
 			return {
 				type: "Identifier",
 				name: "na",
@@ -1006,6 +1079,7 @@ export class ExpressionParser {
 			this.p.peekNext()?.type !== TokenType.COMPOUND_ASSIGN
 		) {
 			this.p.advance();
+
 			return this.p.switchExpression();
 		}
 
@@ -1015,6 +1089,7 @@ export class ExpressionParser {
 		// block. Parse with the statement machinery, re-tag. see INV031
 		if (this.p.match([TokenType.KEYWORD, ["if"]])) {
 			const stmt = this.p.ifStatement();
+
 			return {
 				type: "IfExpression",
 				condition: stmt.condition,
@@ -1038,6 +1113,7 @@ export class ExpressionParser {
 					"A `once` statement cannot return a value or be assigned to a variable. Convert the statement to an equivalent `if` or `switch` structure to return a usable result.",
 			});
 			this.p.onceStatement();
+
 			// A typed placeholder (not `na`, which draws its own CE10097 on the
 			// untyped declaration) so TV's single error stays single.
 			return {
@@ -1052,6 +1128,7 @@ export class ExpressionParser {
 		// Identifier
 		if (this.p.match(TokenType.IDENTIFIER) || this.p.match(TokenType.KEYWORD)) {
 			const token = this.p.previous();
+
 			return {
 				type: "Identifier",
 				name: token.value,
@@ -1066,6 +1143,7 @@ export class ExpressionParser {
 			const expr = this.expression();
 			this.p.consume(TokenType.RPAREN, 'Expected ")" after expression');
 			this.p.parenDepth--; // Decrement depth after closing
+
 			return expr;
 		}
 
@@ -1074,29 +1152,36 @@ export class ExpressionParser {
 			const openBracket = this.p.previous();
 			this.p.bracketDepth++; // Track bracket depth for multiline arrays
 			const elements: AST.Expression[] = [];
+
 			// Skip newlines after opening bracket
 			while (this.p.check(TokenType.NEWLINE)) {
 				this.p.advance();
 			}
+
 			if (!this.p.check(TokenType.RBRACKET)) {
 				do {
 					// Skip newlines before element
 					while (this.p.check(TokenType.NEWLINE)) {
 						this.p.advance();
 					}
+
 					elements.push(this.expression());
+
 					// Skip newlines after element
 					while (this.p.check(TokenType.NEWLINE)) {
 						this.p.advance();
 					}
 				} while (this.p.match(TokenType.COMMA));
 			}
+
 			// Skip newlines before closing bracket
 			while (this.p.check(TokenType.NEWLINE)) {
 				this.p.advance();
 			}
+
 			const closeBracket = this.p.consume(TokenType.RBRACKET, 'Expected "]"');
 			this.p.bracketDepth--; // Decrement after closing
+
 			return {
 				type: "ArrayExpression",
 				elements,

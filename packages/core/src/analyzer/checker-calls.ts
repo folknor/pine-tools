@@ -82,12 +82,15 @@ export function validateUserFunctionCall(
 	version: string,
 ): void {
 	const sigs = v.functionDeclSignatures.get(functionName);
+
 	if (sigs?.length !== 1) return; // unknown or overloaded -> lenient
+
 	if (v.methodDeclaredNames.has(functionName)) return; // also a method
 	const params = sigs[0];
 
 	const posArgs: CallArgument[] = [];
 	const named = new Set<string>();
+
 	for (const arg of call.arguments) {
 		if (arg.name) named.add(arg.name);
 		else posArgs.push(arg);
@@ -111,6 +114,7 @@ export function validateUserFunctionCall(
 				expectArgsCount: String(params.length),
 			},
 		});
+
 		return; // an over-long call: don't also report missing/type
 	}
 
@@ -119,7 +123,9 @@ export function validateUserFunctionCall(
 	if (v.parserClean) {
 		for (let i = 0; i < params.length; i++) {
 			const p = params[i];
+
 			if (p.defaultValue) continue; // optional
+
 			if (i < posArgs.length || named.has(p.name)) continue; // provided
 			v.addTemplateError({
 				line: call.line,
@@ -137,12 +143,15 @@ export function validateUserFunctionCall(
 	// Arg TYPE (CE10123) for typed primitive / UDT params.
 	for (let i = 0; i < posArgs.length && i < params.length; i++) {
 		const ann = params[i].typeAnnotation?.name;
+
 		if (!ann) continue; // untyped param -> accepts anything
 		const base = TypeChecker.baseTypeName(ann);
 		const primitiveParam = SCALAR_BASE_TYPES.has(base);
+
 		if (!primitiveParam && !v.udtFieldTypes.has(base)) continue;
 		const argExpr = posArgs[i].value;
 		const argType = v.inferExpressionType(argExpr, version);
+
 		if (
 			isSimpleQualifiedParam(ann) &&
 			isSeriesQualified(argType) &&
@@ -167,6 +176,7 @@ export function validateUserFunctionCall(
 			});
 			continue;
 		}
+
 		if (TypeChecker.isAssignable(argType, base as PineType)) continue;
 		const desc = v.describeArgForTemplate(argExpr, argType, version);
 		v.addTemplateError({
@@ -216,13 +226,18 @@ function importedMethodMayExist(
 ): boolean {
 	for (const ns of v.importedNamespaces) {
 		const path = v.importedLibraryPaths.get(ns);
+
 		if (!path) return true; // export set unavailable - cannot rule it out
+
 		const exports =
 			LIBRARY_EXPORTS_BY_PATH.get(path) ??
 			v.localLibraryExportsBySourcePath.get(path);
+
 		if (!exports) return true;
+
 		if (exports.has(member)) return true;
 	}
+
 	return false;
 }
 
@@ -239,6 +254,7 @@ export function validateCallExpression(
 ): void {
 	const errorsBefore = v.errorCount();
 	validateCallExpressionImpl(v, call, version);
+
 	if (v.hasArgTypeErrorSince(errorsBefore)) v.poisonedCalls.add(call);
 }
 
@@ -259,6 +275,7 @@ function validateCallExpressionImpl(
 
 	// Get function name
 	let functionName = "";
+
 	if (call.callee.type === "Identifier") {
 		functionName = call.callee.name;
 	} else if (call.callee.type === "MemberExpression") {
@@ -294,6 +311,7 @@ function validateCallExpressionImpl(
 	if (!functionName) return;
 
 	const ctorMatch = functionName.match(/^(.+)\.new$/);
+
 	if (ctorMatch && v.declaredTypeNames.has(ctorMatch[1])) return;
 
 	// Get function signature. Generic constructors (array.new<T>, map.new<K,V>,
@@ -303,6 +321,7 @@ function validateCallExpressionImpl(
 	// checks run (e.g. the INV107 size narrowing). All their params are optional,
 	// so no spurious CE10165. see INV107
 	let signature = v.functionSignatures.get(functionName);
+
 	if (!signature && GENERIC_FUNCTION_BASES.has(functionName)) {
 		for (const [key, sig] of v.functionSignatures) {
 			if (key.startsWith(`${functionName}<`)) {
@@ -328,6 +347,7 @@ function validateCallExpressionImpl(
 	if (functionName === "str.tostring" && call.arguments.length > 0) {
 		const firstArg = call.arguments[0];
 		const argType = v.inferExpressionType(firstArg.value, version);
+
 		if (argType.startsWith("map<")) {
 			const repr =
 				firstArg.value.type === "Identifier"
@@ -335,6 +355,7 @@ function validateCallExpressionImpl(
 					: firstArg.value.type === "Literal"
 						? String((firstArg.value as Literal).raw ?? "")
 						: "";
+
 			v.addTemplateError({
 				line: firstArg.value.line,
 				column: firstArg.value.column,
@@ -390,6 +411,7 @@ function validateCallExpressionImpl(
 			const memberName = functionName.slice(functionName.lastIndexOf(".") + 1);
 			const objSym = v.symbolTable.lookup(rootName);
 			const userShadowed = !!objSym && objSym.line !== 0;
+
 			if (
 				v.parserClean &&
 				!objSym &&
@@ -447,6 +469,7 @@ function validateCallExpressionImpl(
 					TypeChecker.baseTypeName(objSym.type as string),
 				) &&
 				!v.declaredFunctionNames.has(memberName);
+
 			// The NAMESPACE_PROPERTIES exemption survives on the SHADOWED
 			// branch only, and that asymmetry is measured rather than assumed:
 			// with a user `color = "abc"` in scope, `color.red(1)` is CLEAN at
@@ -499,6 +522,7 @@ function validateCallExpressionImpl(
 				!v.declaredFunctionNames.has(memberName) &&
 				!(functionName in NAMESPACE_PROPERTIES) &&
 				!GENERIC_FUNCTION_BASES.has(functionName);
+
 			// Method call on a COLLECTION receiver: `arr.pushx(1.0)`,
 			// `m.putx(...)`, `mx.setx(...)`. Unlike scalars, collections DO carry
 			// builtin methods - but they are exactly their namespace's catalog
@@ -512,6 +536,7 @@ function validateCallExpressionImpl(
 			const receiverBase = objSym
 				? TypeChecker.baseTypeName(objSym.type as string)
 				: "";
+
 			// A METHOD CALL on an imported UDT is one of the two triggers for TV's
 			// transitive-import rule (the other is a field access, handled in
 			// checkUdtFieldAccess). Anchored at the call, which is exactly where TV
@@ -527,7 +552,9 @@ function validateCallExpressionImpl(
 					functionName.length,
 				);
 			}
+
 			const collectionKind = receiverBase.match(/^(array|matrix|map)</)?.[1];
+
 			const collectionReceiver =
 				v.parserClean &&
 				userShadowed &&
@@ -539,6 +566,7 @@ function validateCallExpressionImpl(
 				!v.declaredFunctionNames.has(memberName) &&
 				!(functionName in NAMESPACE_PROPERTIES) &&
 				!GENERIC_FUNCTION_BASES.has(functionName);
+
 			if (
 				(scalarReceiver || collectionReceiver) &&
 				!importedMethodMayExist(v, memberName)
@@ -572,6 +600,7 @@ function validateCallExpressionImpl(
 				v.localLibraryExportsBySourcePath.get(
 					v.importedLibraryPaths.get(rootName) ?? "",
 				);
+
 			if (
 				libExports &&
 				functionName.indexOf(".") === functionName.lastIndexOf(".") &&
@@ -627,6 +656,7 @@ function validateCallExpressionImpl(
 				);
 			}
 		}
+
 		// A valid UDF call (declared Identifier callee, not the self-call
 		// already flagged above): validate arg count and typed-param arg
 		// types against the captured signature. see INV095
@@ -638,6 +668,7 @@ function validateCallExpressionImpl(
 		) {
 			validateUserFunctionCall(v, call, functionName, version);
 		}
+
 		return;
 	}
 
@@ -656,10 +687,13 @@ export function isVoidCall(
 	version: string,
 ): boolean {
 	const fnName = memberChainName(call.callee);
+
 	if (!fnName) return false;
+
 	const argTypes = call.arguments.map((a) =>
 		v.inferExpressionType(a.value, version),
 	);
+
 	return resolveCallReturnRaw(fnName, argTypes) === "void";
 }
 
@@ -685,6 +719,7 @@ function checkOverloadResolvedArgs(
 	version: string,
 ): void {
 	const overloads = getOverloadSignatures(functionName);
+
 	if (overloads.length < 2) return;
 	const posCount = positionalArgs.length;
 
@@ -694,19 +729,25 @@ function checkOverloadResolvedArgs(
 		for (const name of providedArgs.keys()) {
 			if (!ov.parameters.some((p) => p.name === name)) return false;
 		}
+
 		return posCount <= ov.parameters.length;
 	});
+
 	if (candidates.length === 0) return;
 
 	// Base type with any qualifier stripped (mirrors builtins.baseOfRawType).
 	const baseOf = (raw: string): string => {
 		const s = raw.trim();
 		const br = s.match(/^(?:const|input|simple|series)<(.+)>$/);
+
 		if (br) return br[1].trim();
+
 		return s.replace(/^(const|input|simple|series)\s+/, "").trim();
 	};
+
 	const isScalarArg = (t: PineType): boolean =>
 		SCALAR_BASE_TYPES.has(TypeChecker.baseTypeName(String(t)));
+
 	const isScalarUnionRaw = (raw: string): boolean =>
 		raw.includes("/") &&
 		raw.split("/").every((m) => SCALAR_BASE_TYPES.has(m.trim()));
@@ -721,8 +762,10 @@ function checkOverloadResolvedArgs(
 	): number => {
 		if (!param || argType === "unknown") return 0;
 		const raw = param.rawType ? baseOf(String(param.rawType)) : "";
+
 		// A clearly-scalar arg cannot be a chart.point.
 		if (raw === "chart.point") return isScalarArg(argType) ? -1 : 0;
+
 		if (!param.type || param.type === "unknown") {
 			if (isScalarUnionRaw(raw)) {
 				return raw
@@ -731,6 +774,7 @@ function checkOverloadResolvedArgs(
 					? 1
 					: -1;
 			}
+
 			// A MIXED union - scalars alongside containers/drawing IDs, e.g.
 			// na's `int/float/color/string/label/line/box/array<>/...`. Treating
 			// it as "cannot tell" made every such overload score zero mismatches,
@@ -743,6 +787,7 @@ function checkOverloadResolvedArgs(
 				.split("/")
 				.map((m) => m.trim())
 				.filter((m) => SCALAR_BASE_TYPES.has(m));
+
 			if (
 				raw.includes("/") &&
 				scalarMembers.length > 0 &&
@@ -754,20 +799,25 @@ function checkOverloadResolvedArgs(
 					? 1
 					: -1;
 			}
+
 			return 0;
 		}
+
 		return TypeChecker.isAssignable(argType, param.type) ? 1 : -1;
 	};
 
 	const score = (ov: FunctionSignature): { mm: number; mt: number } => {
 		let mm = 0;
 		let mt = 0;
+
 		const tally = (c: number) => {
 			if (c < 0) mm++;
 			else if (c > 0) mt++;
 		};
+
 		for (let i = 0; i < posCount; i++)
 			tally(classify(positionalArgs[i].type, ov.parameters[i]));
+
 		for (const [name, prov] of providedArgs)
 			tally(
 				classify(
@@ -775,6 +825,7 @@ function checkOverloadResolvedArgs(
 					ov.parameters.find((p) => p.name === name),
 				),
 			);
+
 		return { mm, mt };
 	};
 
@@ -782,8 +833,10 @@ function checkOverloadResolvedArgs(
 	let best = candidates[0];
 	let bestS = score(best);
 	let tie = false;
+
 	for (let k = 1; k < candidates.length; k++) {
 		const s = score(candidates[k]);
+
 		if (s.mm < bestS.mm || (s.mm === bestS.mm && s.mt > bestS.mt)) {
 			best = candidates[k];
 			bestS = s;
@@ -792,8 +845,10 @@ function checkOverloadResolvedArgs(
 			tie = true;
 		}
 	}
+
 	// Resolved cleanly (no mismatch in the selected overload) -> lenient.
 	if (bestS.mm === 0) return;
+
 	// A tie normally means we cannot say WHICH overload the call meant, so
 	// naming a parameter from either would be a guess. The exception is a tie in
 	// which EVERY candidate mismatches: the call is then wrong under all of
@@ -810,11 +865,15 @@ function checkOverloadResolvedArgs(
 	// and only scalar / scalar-union params render a meaningful CE10123.
 	const mergedLossy = (name: string): boolean => {
 		const m = signature.parameters.find((p) => p.name === name);
+
 		return !m?.type || m.type === "unknown";
 	};
+
 	const reportable = (param: ParameterInfo): boolean => {
 		const raw = param.rawType ? baseOf(String(param.rawType)) : "";
+
 		if (SCALAR_BASE_TYPES.has(raw) || isScalarUnionRaw(raw)) return true;
+
 		// A mixed union is reportable too now that classify can mismatch against
 		// one - the message quotes a measured noun, not the union. see INV181
 		return (
@@ -822,6 +881,7 @@ function checkOverloadResolvedArgs(
 			raw.split("/").some((m) => SCALAR_BASE_TYPES.has(m.trim()))
 		);
 	};
+
 	const report = (
 		value: Expression,
 		argType: PineType,
@@ -829,6 +889,7 @@ function checkOverloadResolvedArgs(
 	): void => {
 		const desc = v.describeArgForTemplate(value, argType, version);
 		const raw = param.rawType ? baseOf(String(param.rawType)) : "";
+
 		// Both shapes take the probe-measured noun where the sweep reached it.
 		// They differ only in the fallback: a union has no single doc type to
 		// quote, so it falls back to the `simple <first member>` fabrication,
@@ -838,6 +899,7 @@ function checkOverloadResolvedArgs(
 			.split("/")
 			.map((m) => m.trim())
 			.filter((m) => SCALAR_BASE_TYPES.has(m));
+
 		const docStr = raw.includes("/")
 			? (paramExpectedNoun(functionName, param.name) ??
 				`simple ${scalarMembers[0] ?? raw.split("/")[0].trim()}`)
@@ -846,6 +908,7 @@ function checkOverloadResolvedArgs(
 					param.name,
 					param.rawType ?? String(param.type),
 				);
+
 		v.addTemplateError({
 			line: value.line,
 			column: value.column,
@@ -868,21 +931,29 @@ function checkOverloadResolvedArgs(
 	// one, at the offending argument) - positional first, then named.
 	for (let i = 0; i < posCount; i++) {
 		const param = best.parameters[i];
+
 		if (!param || classify(positionalArgs[i].type, param) >= 0) continue;
+
 		if (!reportable(param) || !mergedLossy(param.name)) continue;
 		report(positionalArgs[i].arg.value, positionalArgs[i].type, param);
+
 		return;
 	}
+
 	for (const [name, prov] of providedArgs) {
 		const param = best.parameters.find((p) => p.name === name);
+
 		if (!param || classify(prov.type, param) >= 0) continue;
+
 		if (!reportable(param) || !mergedLossy(name)) continue;
+
 		// checkUnionArgs already reports NAMED args against the merged union,
 		// for overloaded functions too - only its POSITIONAL half bows out. So a
 		// named arg whose merged param is a readable union belongs to it, and
 		// reporting here as well double-fires (label.new's `size`). see INV181
 		if (namedParamUnionMembers(functionName, name)) continue;
 		report(prov.arg.value, prov.type, param);
+
 		return;
 	}
 }
@@ -902,6 +973,7 @@ export function validateFunctionArguments(
 
 	for (const arg of args) {
 		const argType = v.inferExpressionType(arg.value, version);
+
 		if (arg.name) {
 			providedArgs.set(arg.name, { arg, type: argType });
 		} else {
@@ -940,6 +1012,7 @@ export function validateFunctionArguments(
 	// TV's wording (probed math.max(1), INV059 p04): terse arg count.
 	if (isVariadic) {
 		const minArgs = getMinArgsForVariadic(functionName);
+
 		if (positionalArgs.length < minArgs) {
 			v.addError(
 				call.line,
@@ -962,15 +1035,19 @@ export function validateFunctionArguments(
 		) {
 			const arg0Base = TypeChecker.baseTypeName(String(positionalArgs[0].type));
 			const expected = arrayFromExpectedType(arg0Base);
+
 			if (expected) {
 				for (let i = 1; i < positionalArgs.length; i++) {
 					const provided = positionalArgs[i];
+
 					if (arrayFromArgMatches(provided.type, arg0Base)) continue;
+
 					const desc = v.describeArgForTemplate(
 						provided.arg.value,
 						provided.type,
 						version,
 					);
+
 					v.addTemplateError({
 						line: provided.arg.value.line,
 						column: provided.arg.value.column,
@@ -990,6 +1067,7 @@ export function validateFunctionArguments(
 				}
 			}
 		}
+
 		// Format-tail union check (str.format / log.*): TV checks every
 		// value-to-format against the union of the overloads' argN types and
 		// reports CE10122 ("one from"), quoting the first argN overload's
@@ -1000,12 +1078,14 @@ export function validateFunctionArguments(
 		// any overload admits them. v6 only (G004). see INV184
 		if (version === "6") {
 			const tail = formatTailUnion(functionName);
+
 			if (tail) {
 				for (let i = 1; i < positionalArgs.length; i++) {
 					const provided = positionalArgs[i];
 					const argExpr = provided.arg.value;
 					let repr: string;
 					let typeStr: string;
+
 					if (
 						argExpr.type === "CallExpression" &&
 						v.poisonedCalls.has(argExpr as CallExpression)
@@ -1015,16 +1095,20 @@ export function validateFunctionArguments(
 						typeStr = "unknown";
 					} else {
 						const base = TypeChecker.baseTypeName(String(provided.type));
+
 						if (!SCALAR_BASE_TYPES.has(base) || tail.members.has(base))
 							continue;
+
 						const desc = v.describeArgForTemplate(
 							argExpr,
 							provided.type,
 							version,
 						);
+
 						repr = desc.repr;
 						typeStr = desc.typeStr;
 					}
+
 					v.addTemplateError({
 						line: argExpr.line,
 						column: argExpr.column,
@@ -1088,27 +1172,36 @@ export function validateFunctionArguments(
 	if (checkArgTypes) {
 		const receiverType =
 			providedArgs.get("id")?.type ?? positionalArgs[0]?.type;
+
 		if (receiverType) {
 			for (let i = 0; i < signature.parameters.length; i++) {
 				const param = signature.parameters[i];
+
 				const kindMatch = /type of the (array|map)'s elements/.exec(
 					String(param.rawType ?? param.type),
 				);
+
 				if (!kindMatch) continue;
+
 				const target = collectionElementTarget(
 					receiverType,
 					kindMatch[1],
 					param.name,
 				);
+
 				if (!target) continue; // element type unresolved -> stay lenient
 				const provided = providedArgs.get(param.name) ?? positionalArgs[i];
+
 				if (!provided) continue;
+
 				if (elementArgAssignable(provided.type, target)) continue;
+
 				const desc = v.describeArgForTemplate(
 					provided.arg.value,
 					provided.type,
 					version,
 				);
+
 				v.addTemplateError({
 					line: provided.arg.value.line,
 					column: provided.arg.value.column,
@@ -1139,28 +1232,35 @@ export function validateFunctionArguments(
 	if (checkArgTypes) {
 		for (let i = 0; i < signature.parameters.length; i++) {
 			const param = signature.parameters[i];
+
 			const m = /^any (array|map|matrix) type$/.exec(
 				String(param.rawType ?? ""),
 			);
+
 			if (!m) continue;
 			const provided = providedArgs.get(param.name) ?? positionalArgs[i];
+
 			if (!provided) continue;
+
 			if (
 				!SCALAR_BASE_TYPES.has(TypeChecker.baseTypeName(String(provided.type)))
 			) {
 				continue;
 			}
+
 			const docStr =
 				m[1] === "array"
 					? "array<type>"
 					: m[1] === "map"
 						? "map<type, type>"
 						: "matrix<type>";
+
 			const desc = v.describeArgForTemplate(
 				provided.arg.value,
 				provided.type,
 				version,
 			);
+
 			v.addTemplateError({
 				line: provided.arg.value.line,
 				column: provided.arg.value.column,
@@ -1192,15 +1292,18 @@ export function validateFunctionArguments(
 		const kind = functionName.startsWith("array") ? "array" : "matrix";
 		const t1 = providedArgs.get("id1")?.type ?? positionalArgs[0]?.type;
 		const provided2 = providedArgs.get("id2") ?? positionalArgs[1];
+
 		if (t1 && provided2) {
 			const elem1 = collectionElementTarget(t1, kind, "id1");
 			const elem2 = collectionElementTarget(provided2.type, kind, "id2");
+
 			if (elem1 && elem2 && !elementArgAssignable(elem2 as PineType, elem1)) {
 				const desc = v.describeArgForTemplate(
 					provided2.arg.value,
 					provided2.type,
 					version,
 				);
+
 				v.addTemplateError({
 					line: provided2.arg.value.line,
 					column: provided2.arg.value.column,
@@ -1231,9 +1334,12 @@ export function validateFunctionArguments(
 	if (checkArgTypes) {
 		for (let i = 0; i < signature.parameters.length; i++) {
 			const param = signature.parameters[i];
+
 			if (!param.type || !isSimpleQualifiedParam(param.rawType)) continue;
 			const provided = providedArgs.get(param.name) ?? positionalArgs[i];
+
 			if (!provided) continue;
+
 			// A binding whose qualifier a later `:=` raised to series reads as
 			// its DECLARED type here, because symbol types are stored
 			// unqualified and `inferExpressionType` hands back exactly that.
@@ -1247,12 +1353,15 @@ export function validateFunctionArguments(
 				!isPromotedToSeries(v, provided.arg.value)
 			)
 				continue;
+
 			if (!TypeChecker.isAssignable(provided.type, param.type)) continue;
+
 			const desc = v.describeArgForTemplate(
 				provided.arg.value,
 				provided.type,
 				version,
 			);
+
 			v.addTemplateError({
 				line: provided.arg.value.line,
 				column: provided.arg.value.column,
@@ -1291,15 +1400,19 @@ export function validateFunctionArguments(
 			const param = signature.parameters[i];
 			const raw = (param.rawType ?? "").trim();
 			const m = raw.match(/^simple\s+([A-Za-z_][A-Za-z0-9_.]*)$/);
+
 			if (!m || SCALAR_BASE_TYPES.has(m[1])) continue;
 			const provided = providedArgs.get(param.name) ?? positionalArgs[i];
+
 			if (!provided) continue;
 			const argExpr = provided.arg.value;
+
 			if (exprQualifier(v, argExpr, version) !== "series") continue;
 			// TV renders a special-enum composite's repr bare ("operator ?:"),
 			// not the string case's `call "operator ?:" (type)` wrapper; a leaf
 			// var/member is rendered by name (probed - variable form "la").
 			let repr: string;
+
 			if (argExpr.type === "TernaryExpression") {
 				repr = "operator ?:";
 			} else if (
@@ -1314,6 +1427,7 @@ export function validateFunctionArguments(
 					version,
 				).repr;
 			}
+
 			v.addTemplateError({
 				line: argExpr.line,
 				column: argExpr.column,
@@ -1350,8 +1464,10 @@ export function validateFunctionArguments(
 		const overloadSigs = hasOverloadSignatures(functionName)
 			? getOverloadSignatures(functionName)
 			: null;
+
 		for (let i = 0; i < signature.parameters.length; i++) {
 			const param = signature.parameters[i];
+
 			if (
 				!param.type ||
 				param.type === "unknown" ||
@@ -1359,12 +1475,15 @@ export function validateFunctionArguments(
 			) {
 				continue;
 			}
+
 			let provided = providedArgs.get(param.name);
+
 			if (!provided && positionalArgs[i]) {
 				const slotIsIntEverywhere =
 					overloadSigs === null ||
 					overloadSigs.every((ov) => {
 						const p = ov.parameters[i];
+
 						return (
 							!p ||
 							(!!p.type &&
@@ -1372,15 +1491,19 @@ export function validateFunctionArguments(
 								TypeChecker.baseTypeName(String(p.type)) === "int")
 						);
 					});
+
 				if (slotIsIntEverywhere) provided = positionalArgs[i];
 			}
+
 			if (!provided) continue;
+
 			if (TypeChecker.baseTypeName(String(provided.type)) !== "float") continue;
 			// A series arg into a const / simple / input slot is already one
 			// report from the qualifier passes (INV088 for `simple`, INV014's
 			// checkConstArgs for `const`/`input`) with the identical wording;
 			// TV emits one error there, so this pass yields. see INV175
 			const paramQualifier = (param.rawType ?? "").trim().split(/\s+/)[0];
+
 			if (
 				(paramQualifier === "const" ||
 					paramQualifier === "simple" ||
@@ -1390,11 +1513,13 @@ export function validateFunctionArguments(
 			) {
 				continue;
 			}
+
 			const desc = v.describeArgForTemplate(
 				provided.arg.value,
 				provided.type,
 				version,
 			);
+
 			v.addTemplateError({
 				line: provided.arg.value.line,
 				column: provided.arg.value.column,
@@ -1437,6 +1562,7 @@ export function validateFunctionArguments(
 	if (checkArgTypes) {
 		for (let i = 0; i < signature.parameters.length; i++) {
 			const param = signature.parameters[i];
+
 			// param.type === "unknown": a special enum type the checker doesn't
 			// model (strategy_direction, plot_display, barmerge_*, ...). This
 			// EXCLUDES modeled string-typed params - both genuine string enums
@@ -1450,9 +1576,11 @@ export function validateFunctionArguments(
 			) {
 				continue;
 			}
+
 			const provided =
 				providedArgs.get(param.name) ??
 				(hasOverloadSignatures(functionName) ? undefined : positionalArgs[i]);
+
 			if (provided?.arg.value.type !== "Literal") continue;
 			v.addTemplateError({
 				line: provided.arg.value.line,
@@ -1477,6 +1605,7 @@ export function validateFunctionArguments(
 
 		// Check named argument
 		const namedArg = providedArgs.get(param.name);
+
 		if (namedArg) {
 			// Validate type (named args are unambiguous, so we can check them).
 			// Union/polymorphic params map to "unknown" and fall through here.
@@ -1489,6 +1618,7 @@ export function validateFunctionArguments(
 						namedArg.type,
 						version,
 					);
+
 					v.addTemplateError({
 						line: namedArg.arg.value.line,
 						column: namedArg.arg.value.column,
@@ -1511,6 +1641,7 @@ export function validateFunctionArguments(
 					});
 				}
 			}
+
 			continue;
 		}
 
@@ -1522,7 +1653,9 @@ export function validateFunctionArguments(
 			if (functionHasOverloads) {
 				continue;
 			}
+
 			const posArg = positionalArgs[i];
+
 			// Positional args use the same CE10123 template - TV resolves the
 			// param name (probed `plot(close, 42)` names "title", INV061 p02).
 			if (checkArgTypes && param.type && param.type !== "unknown") {
@@ -1532,6 +1665,7 @@ export function validateFunctionArguments(
 						posArg.type,
 						version,
 					);
+
 					v.addTemplateError({
 						line: posArg.arg.value.line,
 						column: posArg.arg.value.column,
@@ -1554,6 +1688,7 @@ export function validateFunctionArguments(
 					});
 				}
 			}
+
 			continue;
 		}
 
@@ -1596,8 +1731,10 @@ export function validateFunctionArguments(
 	// missing id2. see INV056
 	if (checkArgTypes && !call.recovered && hasOverloadSignatures(functionName)) {
 		const minReq = getMinimalRequiredParams(functionName);
+
 		for (let j = positionalArgs.length; j < minReq.length; j++) {
 			const name = minReq[j];
+
 			if (providedArgs.has(name)) continue;
 			v.addError(
 				call.line,
@@ -1625,15 +1762,20 @@ export function validateFunctionArguments(
 	// recovery-truncated calls whose arguments are incomplete rather than
 	// absent, like the CE10165 check above. see INV142
 	const argGroups = getArgGroups(functionName);
+
 	if (argGroups && version === "6" && !call.recovered) {
 		const supplied = new Set(providedArgs.keys());
+
 		for (let i = 0; i < positionalArgs.length; i++) {
 			const param = signature.parameters[i];
+
 			if (param) supplied.add(param.name);
 		}
+
 		const satisfied = argGroups.anyOf.some((combo) =>
 			combo.every((name) => supplied.has(name)),
 		);
+
 		if (!satisfied) {
 			v.addError(
 				call.line,
@@ -1658,6 +1800,7 @@ export function validateFunctionArguments(
 	// worse than a missed one. see INV148
 	for (const [name, entry] of providedArgs.entries()) {
 		if (version !== "6") continue;
+
 		if (!signature.parameters.some((p) => p.name === name)) {
 			v.addTemplateError({
 				line: entry.arg.nameLine ?? call.line,
@@ -1704,15 +1847,18 @@ export function checkUnionArgs(
 	const functionHasOverloads = hasOverloads(functionName);
 	let positionalNum = 0;
 	let sawNamed = false;
+
 	for (const arg of call.arguments) {
 		let members: string[] | null;
 		let paramInfo: { name: string; docType: string } | null;
+
 		if (arg.name) {
 			sawNamed = true;
 			members = namedParamUnionMembers(functionName, arg.name);
 			paramInfo = unionParamInfo(functionName, -1, arg.name);
 		} else {
 			positionalNum++;
+
 			// A positional arg after a named one is malformed ordering (TV's
 			// own error); positional->param indices are unreliable, so don't
 			// emit a misleading type mismatch on top. see INV016
@@ -1721,7 +1867,9 @@ export function checkUnionArgs(
 			members = positionalParamUnionMembers(functionName, index);
 			paramInfo = unionParamInfo(functionName, index);
 		}
+
 		if (!members) continue;
+
 		// A redeclared name (CE10095) has two conflicting declarations; our
 		// symbol table resolves to the last while TV uses the first, so the
 		// inferred base is untrustworthy - skip it rather than risk a
@@ -1737,11 +1885,14 @@ export function checkUnionArgs(
 		// skipped below, while known scalar bases can be checked. see INV123/INV124
 		const argType = v.inferExpressionType(arg.value, version);
 		const argBase = v.getBaseType(argType);
+
 		if (!SCALARS.has(argBase)) continue; // unknown/na/non-scalar -> skip
 		const numeric = argBase === "int" || argBase === "float";
+
 		const ok =
 			members.includes(argBase) ||
 			(numeric && (members.includes("int") || members.includes("float")));
+
 		if (!ok) {
 			const desc = v.describeArgForTemplate(arg.value, argType, version);
 			v.addTemplateError({
@@ -1805,6 +1956,7 @@ function rejectStrategyInRequestArgument(
 ): void {
 	for (const arg of call.arguments) {
 		const offender = findStrategyReference(arg.value);
+
 		if (!offender) continue;
 		v.addError(
 			offender.line,
@@ -1821,10 +1973,13 @@ function findStrategyReference(
 	expr: Expression | undefined,
 ): { name: string; line: number; column: number } | null {
 	if (!expr) return null;
+
 	if (expr.type === "MemberExpression") {
 		const name = memberChainName(expr);
+
 		if (name?.startsWith("strategy.")) {
 			const m = expr as MemberExpression;
+
 			return {
 				name,
 				line: m.object.line || m.line,
@@ -1832,10 +1987,13 @@ function findStrategyReference(
 			};
 		}
 	}
+
 	for (const child of expressionChildren(expr)) {
 		const found = findStrategyReference(child);
+
 		if (found) return found;
 	}
+
 	return null;
 }
 
@@ -1876,6 +2034,7 @@ function isPromotedToSeries(
 ): boolean {
 	if (expr.type !== "Identifier") return false;
 	const sym = v.symbolTable.lookup((expr as Identifier).name);
+
 	return sym ? v.promotedQualifierFor(sym) === "series" : false;
 }
 
@@ -1894,6 +2053,7 @@ export function checkConstArgs(
 	const args = call.arguments;
 	const positionalCount = args.filter((a) => !a.name).length;
 	let positionalIndex = -1;
+
 	for (let i = 0; i < args.length; i++) {
 		const arg = args[i];
 		// Resolve which const-required param this argument targets. Named args
@@ -1901,6 +2061,7 @@ export function checkConstArgs(
 		// resolved arity-aware (overloads can reshuffle positions). see INV014
 		let paramName: string | undefined;
 		let docType: string | undefined;
+
 		if (arg.name) {
 			if (paramRequiresConst(functionName, arg.name)) {
 				paramName = arg.name;
@@ -1908,18 +2069,22 @@ export function checkConstArgs(
 			}
 		} else {
 			positionalIndex++;
+
 			const hit = positionalConstParam(
 				functionName,
 				positionalIndex,
 				positionalCount,
 			);
+
 			if (hit) {
 				paramName = hit.name;
 				docType = hit.docType;
 			}
 		}
+
 		if (!paramName || !docType) continue;
 		const desc = describeNonConstArg(v, arg.value, version);
+
 		if (!desc) continue;
 		v.addTemplateError({
 			line: arg.value.line,
@@ -1980,19 +2145,25 @@ export function describeNonConstArg(
 		case "CallExpression": {
 			const ce = expr as CallExpression;
 			let name = "";
+
 			if (ce.callee.type === "Identifier") {
 				name = (ce.callee as Identifier).name;
 			} else if (ce.callee.type === "MemberExpression") {
 				const m = ce.callee as MemberExpression;
+
 				if (m.object.type === "Identifier") {
 					name = `${(m.object as Identifier).name}.${m.property.name}`;
 				}
 			}
+
 			if (!name) return null;
+
 			const argTypes = ce.arguments.map((a) =>
 				v.inferExpressionType(a.value, version),
 			);
+
 			const raw = resolveCallReturnRaw(name, argTypes);
+
 			// Builtin path: a resolved simple/series/input return is grounds to
 			// flag; a resolved const return is left alone. An unresolved return
 			// (raw undefined - a UDF, or a builtin whose overload didn't match)
@@ -2001,29 +2172,37 @@ export function describeNonConstArg(
 				if (/^(simple|series|input)\b/.test(raw)) {
 					return { typeStr: raw, repr: `call "${name}" (${raw})` };
 				}
+
 				return null;
 			}
+
 			// UDF fallback: resolveCallReturnRaw only knows builtins. The
 			// trusting provenance path preserves const-returning UDF calls while
 			// exposing genuinely non-const returns. see INV122/INV124
 			const prov = qualifierProvenance(v, expr, version, {
 				trustUdfAndUserVars: true,
 			});
+
 			if (prov && prov.qualifier !== "const" && prov.base !== "unknown") {
 				const typeStr = `${prov.qualifier} ${prov.base}`;
+
 				return { typeStr, repr: `call "${name}" (${typeStr})` };
 			}
+
 			return null;
 		}
+
 		case "Identifier": {
 			const idName = (expr as Identifier).name;
 			const info = getBuiltinVarInfo(idName);
+
 			if (info && info.qualifier !== "const") {
 				return {
 					typeStr: `${info.qualifier} ${info.base}`,
 					repr: idName,
 				};
 			}
+
 			// A USER variable is provably non-const only when its inferred
 			// type is series- or input-QUALIFIED (`series<string>` from a
 			// switch over series conditions, `input<string>` from an
@@ -2034,23 +2213,31 @@ export function describeNonConstArg(
 				const sym = v.symbolTable.lookup(idName);
 				const symType = sym?.type as string | undefined;
 				const m = symType?.match(/^(series|input)<(.+)>$/);
+
 				if (sym?.kind === "variable" && m) {
 					return { typeStr: `${m[1]} ${m[2]}`, repr: idName };
 				}
 			}
+
 			return null;
 		}
+
 		case "MemberExpression": {
 			const m = expr as MemberExpression;
+
 			if (m.object.type !== "Identifier") return null;
 			const name = `${(m.object as Identifier).name}.${m.property.name}`;
+
 			if (isBuiltinConstant(name)) return null;
 			const info = getBuiltinVarInfo(name);
+
 			if (info && info.qualifier !== "const") {
 				return { typeStr: `${info.qualifier} ${info.base}`, repr: name };
 			}
+
 			return null;
 		}
+
 		// Composite args (`close > 0 ? "a" : "b"`, `close > 0`): provably
 		// non-const when the inferred qualifier promotes above const. TV renders
 		// these as `call "operator ?:" (series string)` / `call "operator >"
@@ -2059,20 +2246,26 @@ export function describeNonConstArg(
 		case "TernaryExpression":
 		case "BinaryExpression": {
 			const q = exprQualifier(v, expr, version);
+
 			if (!q || q === "const") return null;
+
 			const base = TypeChecker.baseTypeName(
 				String(v.inferExpressionType(expr, version)),
 			);
+
 			if (base === "unknown") return null;
+
 			const op =
 				expr.type === "TernaryExpression"
 					? "?:"
 					: (expr as BinaryExpression).operator;
+
 			return {
 				typeStr: `${q} ${base}`,
 				repr: `call "operator ${op}" (${q} ${base})`,
 			};
 		}
+
 		default:
 			return null;
 	}

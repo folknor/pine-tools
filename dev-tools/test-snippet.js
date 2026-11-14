@@ -72,6 +72,7 @@ function main() {
 	// Parse arguments
 	for (let i = 0; i < args.length; i++) {
 		const arg = args[i];
+
 		if (arg === "--errors" || arg === "-e") {
 			onlyErrors = true;
 		} else if (arg === "--filter") {
@@ -123,11 +124,13 @@ function main() {
 
 	if (onlyErrors || filter) {
 		let errors = result.result?.errors || [];
+
 		if (filter) {
 			errors = errors.filter((e) =>
 				render(e).toLowerCase().includes(filter.toLowerCase()),
 			);
 		}
+
 		if (errors.length === 0) {
 			console.log("No matching errors.");
 		} else {
@@ -135,6 +138,7 @@ function main() {
 				const loc = err.start ? `${err.start.line}:${err.start.column}` : "?:?";
 				console.log(`[${loc}] ${render(err)}`);
 			}
+
 			console.log(`\nTotal: ${errors.length} error(s)`);
 		}
 	} else {

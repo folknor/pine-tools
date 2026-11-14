@@ -69,9 +69,11 @@ function createLanguageClient(
 function applyFileAssociation() {
 	const cfg = vscode.workspace.getConfiguration();
 	const shouldApply = cfg.get<boolean>("pine.applyFileAssociation", true);
+
 	if (!shouldApply) return;
 
 	const assoc = cfg.get<Record<string, string>>("files.associations", {});
+
 	if (assoc["*.pine"] !== "pine") {
 		const newAssoc = { ...assoc, "*.pine": "pine" };
 		cfg
@@ -91,12 +93,15 @@ function registerCommands(context: vscode.ExtensionContext) {
 	context.subscriptions.push(
 		vscode.commands.registerCommand("pine.validate", async () => {
 			const editor = vscode.window.activeTextEditor;
+
 			if (editor?.document.languageId !== "pine") {
 				vscode.window.showInformationMessage(
 					"Open a Pine (.pine) file to validate.",
 				);
+
 				return;
 			}
+
 			// Force save to trigger re-validation via LSP
 			await editor.document.save();
 			vscode.window.showInformationMessage("Pine v6 validation completed.");
@@ -107,10 +112,12 @@ function registerCommands(context: vscode.ExtensionContext) {
 	context.subscriptions.push(
 		vscode.commands.registerCommand("pine.showDocs", async () => {
 			const editor = vscode.window.activeTextEditor;
+
 			if (editor?.document.languageId !== "pine") {
 				vscode.window.showInformationMessage(
 					"Open a Pine (.pine) file to show docs.",
 				);
+
 				return;
 			}
 
@@ -118,16 +125,19 @@ function registerCommands(context: vscode.ExtensionContext) {
 				editor.selection.active,
 				/[A-Za-z_.]+/,
 			);
+
 			const word = wordRange ? editor.document.getText(wordRange) : "";
 
 			if (!word) {
 				vscode.window.showInformationMessage("Place cursor on a symbol.");
+
 				return;
 			}
 
 			// Request hover from LSP
 			if (!client) {
 				vscode.window.showInformationMessage("Language server not ready.");
+
 				return;
 			}
 
@@ -140,6 +150,7 @@ function registerCommands(context: vscode.ExtensionContext) {
 
 				if (!hover || hover.length === 0) {
 					vscode.window.showInformationMessage(`No docs found for '${word}'.`);
+
 					return;
 				}
 

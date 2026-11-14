@@ -57,17 +57,29 @@ connection.onShutdown(() => {
 // ========== Setup Feature Handlers ==========
 
 setupDocumentHandlers(connection, documents, languageService);
+
 setupCompletionHandler(connection, languageService);
+
 setupHoverHandler(connection, languageService);
+
 setupSignatureHandler(connection, languageService);
+
 setupFormattingHandler(connection, languageService);
+
 setupSymbolsHandler(connection, languageService);
+
 setupDefinitionHandler(connection, languageService);
+
 setupReferencesHandler(connection, languageService);
+
 setupRenameHandler(connection, languageService);
+
 setupCodeActionsHandler(connection, languageService);
+
 setupInlayHintsHandler(connection, languageService);
+
 setupFoldingHandler(connection, languageService);
+
 setupSemanticTokensHandler(connection, languageService);
 
 // ========== Start Listening ==========

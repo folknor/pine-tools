@@ -108,9 +108,11 @@ export class Lexer {
 		while (this.pos < this.source.length) {
 			this.scanToken();
 		}
+
 		// An opener still unmatched at EOF: report the EARLIEST one (TV
 		// stops at its first error, so one record per file). see INV046
 		const unclosed = this.openBrackets[0];
+
 		if (unclosed) {
 			this.lexerErrors.push(
 				unclosed.char === "("
@@ -126,7 +128,9 @@ export class Lexer {
 						},
 			);
 		}
+
 		this.addToken(TokenType.EOF, "", 0);
+
 		return this.tokens;
 	}
 
@@ -173,6 +177,7 @@ export class Lexer {
 						message: 'no viable alternative at character "\u00a0"',
 					});
 				}
+
 				break;
 
 			case "\r":
@@ -185,6 +190,7 @@ export class Lexer {
 				if (this.peek() !== "\n") {
 					this.handleLineBreak();
 				}
+
 				break;
 
 			case "\n":
@@ -229,6 +235,7 @@ export class Lexer {
 				} else {
 					this.addToken(TokenType.DOT, ".", 1);
 				}
+
 				break;
 			case "?":
 				this.addToken(TokenType.TERNARY, "?", 1);
@@ -241,6 +248,7 @@ export class Lexer {
 				} else {
 					this.addToken(TokenType.PLUS, "+", 1);
 				}
+
 				break;
 			case "-":
 				if (this.peek() === "=") {
@@ -249,6 +257,7 @@ export class Lexer {
 				} else {
 					this.addToken(TokenType.MINUS, "-", 1);
 				}
+
 				break;
 			case "*":
 				if (this.peek() === "=") {
@@ -257,6 +266,7 @@ export class Lexer {
 				} else {
 					this.addToken(TokenType.MULTIPLY, "*", 1);
 				}
+
 				break;
 			case "%":
 				if (this.peek() === "=") {
@@ -265,6 +275,7 @@ export class Lexer {
 				} else {
 					this.addToken(TokenType.MODULO, "%", 1);
 				}
+
 				break;
 
 			case "/":
@@ -278,6 +289,7 @@ export class Lexer {
 				} else {
 					this.addToken(TokenType.DIVIDE, "/", 1);
 				}
+
 				break;
 
 			case ":":
@@ -287,6 +299,7 @@ export class Lexer {
 				} else {
 					this.addToken(TokenType.COLON, ":", 1);
 				}
+
 				break;
 
 			case "=":
@@ -299,6 +312,7 @@ export class Lexer {
 				} else {
 					this.addToken(TokenType.ASSIGN, "=", 1);
 				}
+
 				break;
 
 			case "!":
@@ -310,6 +324,7 @@ export class Lexer {
 					// Produce an error token so the parser can report a meaningful error
 					this.addToken(TokenType.ERROR, "!", 1);
 				}
+
 				break;
 
 			case "<":
@@ -319,6 +334,7 @@ export class Lexer {
 				} else {
 					this.addToken(TokenType.COMPARE, "<", 1);
 				}
+
 				break;
 
 			case ">":
@@ -328,6 +344,7 @@ export class Lexer {
 				} else {
 					this.addToken(TokenType.COMPARE, ">", 1);
 				}
+
 				break;
 
 			case "#":
@@ -348,6 +365,7 @@ export class Lexer {
 				} else {
 					this.scanString(char);
 				}
+
 				break;
 
 			default:
@@ -356,6 +374,7 @@ export class Lexer {
 				} else if (this.isAlpha(char)) {
 					this.scanIdentifier();
 				}
+
 				break;
 		}
 	}
@@ -384,19 +403,26 @@ export class Lexer {
 	} {
 		const lineText = (n: number): string =>
 			this.source.split("\n")[n - 1] ?? "";
+
 		const continues = (n: number): boolean => {
 			const t = lineText(n)
 				.replace(/\/\/.*$/, "")
 				.trimEnd();
+
 			return /(?:[+\-*/%?:,=<>([{]|\b(?:and|or|not)|=>|:=)$/.test(t);
 		};
+
 		let start = pending.line;
+
 		while (start > 1 && continues(start - 1)) start--;
+
 		if (start === pending.line) return pending;
 		let column = 0;
+
 		for (let n = start; n <= pending.line; n++) {
 			column += lineText(n).replace(/^\s+/, "").length + 1;
 		}
+
 		return { line: start, column };
 	}
 
@@ -415,6 +441,7 @@ export class Lexer {
 		} else {
 			this.pendingParenWrap = null;
 		}
+
 		this.line++;
 		this.column = 1;
 		this.atLineStart = true;
@@ -433,11 +460,13 @@ export class Lexer {
 			while (this.peek() !== "\n" && this.peek() !== "\r" && !this.isAtEnd()) {
 				this.advance();
 			}
+
 			const value = this.source.substring(start, this.pos);
 			this.addToken(TokenType.ANNOTATION, value, value.length);
 
 			// Extract version information
 			this.extractVersionFromAnnotation(value);
+
 			return;
 		}
 
@@ -445,6 +474,7 @@ export class Lexer {
 		while (this.peek() !== "\n" && this.peek() !== "\r" && !this.isAtEnd()) {
 			this.advance();
 		}
+
 		const value = this.source.substring(start, this.pos);
 		this.addToken(TokenType.COMMENT, value, value.length);
 
@@ -469,6 +499,7 @@ export class Lexer {
 		// validated against no coherent version at all. see INV146
 		if (this.detectedVersion !== null) return;
 		const match = annotation.match(/\/\/\s*@version\s*=\s*(\d+)/);
+
 		if (match) {
 			this.detectedVersion = match[1];
 		}
@@ -510,6 +541,7 @@ export class Lexer {
 				this.advance(); // /
 				break;
 			}
+
 			if (
 				this.peek() === "\n" ||
 				(this.peek() === "\r" && this.peekNext() !== "\n")
@@ -517,6 +549,7 @@ export class Lexer {
 				this.line++;
 				this.column = 0;
 			}
+
 			this.advance();
 		}
 
@@ -552,9 +585,11 @@ export class Lexer {
 			if (this.peek() === "\\") {
 				// Escapes still apply, so `\"""` does not close the literal.
 				this.advance();
+
 				if (!this.isAtEnd()) this.advance();
 				continue;
 			}
+
 			if (
 				this.peek() === quote &&
 				this.peekNext() === quote &&
@@ -568,8 +603,10 @@ export class Lexer {
 					line: startLine,
 					column: startColumn,
 				});
+
 				return;
 			}
+
 			if (
 				this.peek() === "\n" ||
 				(this.peek() === "\r" && this.peekNext() !== "\n")
@@ -579,6 +616,7 @@ export class Lexer {
 				this.line++;
 				this.column = 0;
 			}
+
 			this.advance();
 		}
 
@@ -603,6 +641,7 @@ export class Lexer {
 		while (this.peek() !== quote && !this.isAtEnd()) {
 			if (this.peek() === "\\") {
 				this.advance(); // Skip escape char
+
 				// Valid escape sequences: \n, \t, \\, \", \', etc.
 				// Just skip the next character whatever it is
 				if (!this.isAtEnd()) {
@@ -623,6 +662,7 @@ export class Lexer {
 				// literal with TV's CE10017, anchored at column 1 of the line
 				// where the literal opens. see INV025
 				const after = this.source[this.pos + 1];
+
 				if (
 					after !== undefined &&
 					after !== " " &&
@@ -641,6 +681,7 @@ export class Lexer {
 					// wording at the EOL (p15 - same shape, later quote
 					// present, still mismatched). see TODO #47
 					const hasLaterQuote = this.source.indexOf(quote, this.pos) !== -1;
+
 					if (this.detectedVersion === "6" && hasLaterQuote) {
 						this.lexerErrors.push({
 							line: startLine,
@@ -655,6 +696,7 @@ export class Lexer {
 							message: `mismatched character '\\n' expecting '${quote}'`,
 						});
 					}
+
 					const broken = this.source.substring(start, this.pos);
 					this.addToken(TokenType.STRING, broken, broken.length, {
 						line: startLine,
@@ -672,8 +714,10 @@ export class Lexer {
 					// line lexes fresh. see INV047
 					this.bracketDepth = 0;
 					this.openBrackets.length = 0;
+
 					return; // the line break is re-scanned as a normal NEWLINE
 				}
+
 				this.line++;
 				this.column = 0;
 				this.advance(); // consume the newline
@@ -694,6 +738,7 @@ export class Lexer {
 				line: startLine,
 				column: startColumn,
 			});
+
 			return;
 		}
 
@@ -715,9 +760,11 @@ export class Lexer {
 		// Decimal part - handle both "1.5" and "1." (trailing dot)
 		if (this.peek() === ".") {
 			const nextChar = this.peekNext();
+
 			// Check if this is a decimal point (followed by digit) or trailing dot (followed by non-identifier)
 			if (this.isDigit(nextChar) || !this.isAlpha(nextChar)) {
 				this.advance(); // consume .
+
 				while (this.isDigit(this.peek())) {
 					this.advance();
 				}
@@ -727,9 +774,11 @@ export class Lexer {
 		// Scientific notation
 		if (this.peek() === "e" || this.peek() === "E") {
 			this.advance();
+
 			if (this.peek() === "+" || this.peek() === "-") {
 				this.advance();
 			}
+
 			while (this.isDigit(this.peek())) {
 				this.advance();
 			}
@@ -754,9 +803,11 @@ export class Lexer {
 		// Scientific notation (e.g., .1e5)
 		if (this.peek() === "e" || this.peek() === "E") {
 			this.advance();
+
 			if (this.peek() === "+" || this.peek() === "-") {
 				this.advance();
 			}
+
 			while (this.isDigit(this.peek())) {
 				this.advance();
 			}
@@ -771,6 +822,7 @@ export class Lexer {
 
 		// Count hex digits after #
 		let hexCount = 0;
+
 		while (this.isHexDigit(this.peek()) && hexCount < 8) {
 			this.advance();
 			hexCount++;
@@ -786,6 +838,7 @@ export class Lexer {
 			while (this.isAlphaNumeric(this.peek())) {
 				this.advance();
 			}
+
 			const value = this.source.substring(start, this.pos);
 			this.addToken(TokenType.IDENTIFIER, value, value.length);
 		}
@@ -814,16 +867,19 @@ export class Lexer {
 		const char = this.source.charAt(this.pos);
 		this.pos++;
 		this.column++;
+
 		return char;
 	}
 
 	private peek(): string {
 		if (this.isAtEnd()) return "\0";
+
 		return this.source.charAt(this.pos);
 	}
 
 	private peekNext(): string {
 		if (this.pos + 1 >= this.source.length) return "\0";
+
 		return this.source.charAt(this.pos + 1);
 	}
 
@@ -873,6 +929,7 @@ export class Lexer {
 		if (type === TokenType.KEYWORD && value === "if" && !this.atLineStart) {
 			// Check if the previous token was 'else' on the same line
 			const prevToken = this.tokens[this.tokens.length - 1];
+
 			if (
 				prevToken &&
 				prevToken.type === TokenType.KEYWORD &&
@@ -890,6 +947,7 @@ export class Lexer {
 			this.atLineStart
 		) {
 			this.atLineStart = false;
+
 			// A comment-only line neither trips nor clears the v5 paren-wrap
 			// rule (probed: TV ignores it). A closer on its own line draws a
 			// different TV wording at a joined-line anchor and is left alone.
@@ -908,6 +966,7 @@ export class Lexer {
 							'Syntax error at input "end of line without line continuation"',
 					});
 				}
+
 				this.pendingParenWrap = null;
 			}
 		}

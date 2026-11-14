@@ -39,6 +39,7 @@ import { resolve, join, basename } from "node:path";
 
 const args = process.argv.slice(2);
 let concurrency = 8;
+
 for (let i = 0; i < args.length; i++) {
 	if (args[i] === "--concurrency") concurrency = Number(args[++i]);
 }
@@ -58,6 +59,7 @@ try {
 }
 
 let baseline;
+
 try {
 	baseline = JSON.parse(await readFile(BASELINE, "utf8"));
 } catch {
@@ -70,13 +72,17 @@ try {
 // the script still works - disappearances simply can't be annotated.
 const tvSilentPositions = new Map();
 let tvAvailable = false;
+
 try {
 	const tv = JSON.parse(await readFile(TV_REF, "utf8"));
+
 	for (const f of tv.files) {
 		const set = new Set();
+
 		for (const e of f.localOnly) set.add(`${e.line}:${e.col}:${e.message}`);
 		tvSilentPositions.set(basename(f.file), set);
 	}
+
 	tvAvailable = true;
 } catch {
 	console.warn(`No TV reference at ${TV_REF} - disappearance annotations disabled.`);
@@ -104,6 +110,7 @@ function run(file) {
 // the same position. Must mirror snapshot-local-lint.mjs exactly.
 function fillTemplate(message, ctx) {
 	if (!ctx) return message;
+
 	return message.replace(/\{(\w+)\}/g, (m, key) => ctx[key] ?? m);
 }
 
@@ -111,6 +118,7 @@ function pickErrors(raw) {
 	try {
 		const j = JSON.parse(raw);
 		const errs = j.result?.errors ?? j.errors ?? [];
+
 		return errs.map((e) => ({ line: e.start?.line ?? 0, col: e.start?.column ?? 0, message: fillTemplate(e.message ?? "", e.ctx) }));
 	} catch {
 		return null;
@@ -126,11 +134,13 @@ const startedAt = Date.now();
 async function worker() {
 	while (true) {
 		const i = next++;
+
 		if (i >= entries.length) return;
 		const name = entries[i];
 		const errs = pickErrors(await run(join(FIXTURES, name)));
 		current[name] = { errors: errs ?? [], parseFailed: errs === null };
 		done++;
+
 		if (done % 200 === 0 || done === entries.length) {
 			process.stderr.write(`  ${done}/${entries.length} (${((Date.now() - startedAt) / 1000).toFixed(1)}s)\n`);
 		}
@@ -138,6 +148,7 @@ async function worker() {
 }
 
 console.log(`linting ${entries.length} fixtures locally (concurrency ${concurrency})…`);
+
 await Promise.all(Array.from({ length: concurrency }, worker));
 
 const report = {
@@ -159,6 +170,7 @@ for (const name of entries) {
 		report.filesAdded.push({ file: name, errorCount: current[name].errors.length });
 		continue;
 	}
+
 	const base = baseline.files[name];
 	const cur = current[name];
 
@@ -181,16 +193,21 @@ for (const name of entries) {
 	// regressions or true fixes. see find-real-failures.mjs for the
 	// equivalent samePositionDifferentMessage logic.
 	const disappearedByPos = new Map();
+
 	for (const e of rawDisappeared) {
 		const k = `${e.line}:${e.col}`;
+
 		if (!disappearedByPos.has(k)) disappearedByPos.set(k, []);
 		disappearedByPos.get(k).push(e);
 	}
+
 	const messageChanged = [];
 	const appearedFinal = [];
+
 	for (const a of rawAppeared) {
 		const key = `${a.line}:${a.col}`;
 		const candidates = disappearedByPos.get(key);
+
 		if (candidates && candidates.length > 0) {
 			const d = candidates.shift();
 			messageChanged.push({
@@ -203,12 +220,15 @@ for (const name of entries) {
 			appearedFinal.push(a);
 		}
 	}
+
 	const disappearedFinal = [];
+
 	for (const [, arr] of disappearedByPos) disappearedFinal.push(...arr);
 
 	if (appearedFinal.length === 0 && disappearedFinal.length === 0 && messageChanged.length === 0) continue;
 
 	const tvSilentSet = tvSilentPositions.get(name);
+
 	// tvSilent is meaningful only for files that appeared in the TV
 	// reference. For files outside it (non-v6 fixtures, or v6 files added
 	// since the last find-real-failures.mjs run), there's no per-error TV
@@ -234,41 +254,61 @@ const totals = {
 	disappearedTvFlagged: 0,
 	disappearedUnverifiable: 0,
 };
+
 const tvFlaggedDisappearanceFiles = [];
+
 for (const f of report.filesChanged) {
 	totals.newAppearances += f.appeared.length;
 	totals.messageChanged += (f.messageChanged ?? []).length;
 	const tvFlagged = f.disappeared.filter((e) => e.tvSilent === false);
+
 	if (tvFlagged.length) tvFlaggedDisappearanceFiles.push(f.file);
+
 	for (const e of f.disappeared) {
 		if (e.tvSilent === true) totals.disappearedTvSilent++;
 		else if (e.tvSilent === false) totals.disappearedTvFlagged++;
 		else totals.disappearedUnverifiable++;
 	}
 }
+
 report.totals = totals;
+
 report.tvFlaggedDisappearanceFiles = tvFlaggedDisappearanceFiles;
 
 await mkdir(resolve("lint-reports"), { recursive: true });
+
 await writeFile(OUT, JSON.stringify(report, null, 2));
 
 console.log(`\n=== regression check ===`);
+
 console.log(`baseline taken:               ${report.baselineGeneratedAt}`);
+
 console.log(`fixtures checked:             ${entries.length}`);
+
 console.log(`fixtures changed:             ${totals.filesChanged}`);
+
 console.log(`fixtures added (no baseline): ${report.filesAdded.length}`);
+
 console.log(`fixtures removed:             ${report.filesRemoved.length}`);
+
 console.log(`new error appearances:        ${totals.newAppearances}${totals.newAppearances ? "  ← REGRESSION CANDIDATES" : ""}`);
+
 console.log(`message changed at same pos:  ${totals.messageChanged}  (same line:col, different wording - usually a suggestion shift, not a regression)`);
+
 console.log(`disappeared, TV-silent here:  ${totals.disappearedTvSilent}  (we used to flag where TV is silent - investigate per category, not auto-good)`);
+
 console.log(`disappeared, TV-also-flagged: ${totals.disappearedTvFlagged}${totals.disappearedTvFlagged ? "  ← we stopped flagging something TV catches; verify with --tv" : ""}`);
+
 console.log(`disappeared, unverifiable:    ${totals.disappearedUnverifiable}  (file outside TV reference; v4/v5/non-v6 or added since last find-real-failures run)`);
 
 if (tvFlaggedDisappearanceFiles.length) {
 	console.log(`\nfiles where TV-also-flagged disappearances need recheck (${tvFlaggedDisappearanceFiles.length}):`);
+
 	for (const f of tvFlaggedDisappearanceFiles.slice(0, 15)) console.log(`  node scripts/compare-tv.mjs fixtures/${f}`);
+
 	if (tvFlaggedDisappearanceFiles.length > 15) console.log(`  … +${tvFlaggedDisappearanceFiles.length - 15} more (see ${OUT})`);
 }
 
 console.log(`\nfull report: ${OUT}`);
+
 if (totals.newAppearances > 0) process.exit(1);

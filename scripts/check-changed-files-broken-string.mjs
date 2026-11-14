@@ -9,9 +9,11 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+
 const report = JSON.parse(
   readFileSync(path.join(root, 'lint-reports', 'regression-report.json'), 'utf8'),
 );
+
 const baseline = JSON.parse(
   readFileSync(path.join(root, 'lint-reports', 'local-baseline.json'), 'utf8'),
 );
@@ -19,15 +21,18 @@ const baseline = JSON.parse(
 const MARKER = 'Missing enclosing character in the literal string';
 
 let suspicious = 0;
+
 for (const f of report.filesChanged ?? []) {
   const baselineErrors = baseline.files[f.file]?.errors ?? [];
   const inBaseline = baselineErrors.some((e) => e.message?.includes(MARKER));
   const inAppeared = (f.appeared ?? []).some((e) => e.message?.includes(MARKER));
+
   if (!inBaseline && !inAppeared) {
     suspicious++;
     console.log(`NO broken-string record: ${f.file} (appeared ${f.appeared?.length ?? 0}, disappeared ${f.disappeared?.length ?? 0})`);
   }
 }
+
 console.log(
   suspicious === 0
     ? `OK: all ${report.filesChanged?.length ?? 0} changed files carry a broken-string record`

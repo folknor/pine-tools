@@ -71,10 +71,12 @@ export function tupleInitElementTypes(
 			const elementTypes: PineType[] = [];
 			const call = expr as CallExpression;
 			let funcName = "";
+
 			if (call.callee.type === "Identifier") {
 				funcName = call.callee.name;
 			} else if (call.callee.type === "MemberExpression") {
 				const member = call.callee;
+
 				if (member.object.type === "Identifier") {
 					funcName = `${member.object.name}.${member.property.name}`;
 				}
@@ -92,9 +94,11 @@ export function tupleInitElementTypes(
 				funcName === "request.security_lower_tf"
 			) {
 				const named = call.arguments.find((a) => a.name === "expression");
+
 				const exprArg =
 					named?.value ??
 					(call.arguments.length >= 3 ? call.arguments[2].value : undefined);
+
 				if (exprArg) {
 					const inner = tupleInitElementTypes(
 						v,
@@ -102,6 +106,7 @@ export function tupleInitElementTypes(
 						version,
 						expectedCount,
 					);
+
 					for (const t of inner) {
 						if (funcName === "request.security_lower_tf") {
 							const base = TypeChecker.baseTypeName(t as string);
@@ -126,11 +131,13 @@ export function tupleInitElementTypes(
 				const shapes =
 					v.udfTupleReturnTypes.get(funcName) ??
 					receiverMethodTupleShapes(v, call);
+
 				if (shapes) {
 					const byArity =
 						expectedCount === undefined
 							? undefined
 							: shapes.find((s) => s.length === expectedCount);
+
 					for (const t of byArity ?? shapes[0]) elementTypes.push(t);
 				}
 			}
@@ -141,20 +148,24 @@ export function tupleInitElementTypes(
 			// TODO #51 blocker 3.
 			if (elementTypes.length === 0 && funcName) {
 				const shapes = builtinTupleReturns(funcName);
+
 				if (shapes.length > 0) {
 					const byArity =
 						expectedCount === undefined
 							? undefined
 							: shapes.find((s) => s.length === expectedCount);
+
 					for (const t of byArity ?? shapes[0])
 						elementTypes.push(mapToPineType(t));
 				}
 			}
+
 			return elementTypes;
 		}
 
 		case "IfExpression": {
 			const ifExpr = expr as IfExpression;
+
 			return mergeTupleBranchTypes([
 				branchTailTupleTypes(v, ifExpr.consequent, version, expectedCount),
 				branchTailTupleTypes(v, ifExpr.alternate, version, expectedCount),
@@ -163,6 +174,7 @@ export function tupleInitElementTypes(
 
 		case "SwitchExpression": {
 			const switchExpr = expr as SwitchExpression;
+
 			return mergeTupleBranchTypes(
 				switchExpr.cases.map((c) =>
 					// When `statements` is present, `result` is the last
@@ -189,8 +201,11 @@ export function receiverMethodTupleShapes(
 ): PineType[][] | undefined {
 	if (call.callee.type !== "MemberExpression") return undefined;
 	const member = call.callee;
+
 	if (member.object.type !== "Identifier") return undefined;
+
 	if (KNOWN_NAMESPACES.includes(member.object.name)) return undefined;
+
 	return v.udfTupleReturnTypes.get(member.property.name);
 }
 
@@ -228,27 +243,33 @@ export function tupleInitArity(
 
 		case "TernaryExpression": {
 			const ternary = expr as TernaryExpression;
+
 			const branches = [
 				tupleInitArity(v, ternary.consequent, version),
 				tupleInitArity(v, ternary.alternate, version),
 			];
+
 			if (branches.some((b) => b.kind === "tuple")) {
 				// CE10163 is emitted by the ternary validator. Returning unknown here
 				// avoids duplicate destructure-shape diagnostics. see INV127
 				return { kind: "unknown" };
 			}
+
 			if (branches.every((b) => b.kind === "scalar")) {
 				return { kind: "scalar" };
 			}
+
 			return { kind: "unknown" };
 		}
 
 		case "CallExpression": {
 			const call = expr as CallExpression;
+
 			// In-call recovery dropped arguments (INV047) - and the named
 			// args below would be incomplete.
 			if (call.recovered) return { kind: "unknown" };
 			const funcName = memberChainName(call.callee);
+
 			if (!funcName) return { kind: "unknown" };
 
 			// request.* passes its expression arg's shape through, scalar
@@ -259,9 +280,11 @@ export function tupleInitArity(
 				funcName === "request.security_lower_tf"
 			) {
 				const named = call.arguments.find((a) => a.name === "expression");
+
 				const exprArg =
 					named?.value ??
 					(call.arguments.length >= 3 ? call.arguments[2].value : undefined);
+
 				return exprArg
 					? tupleInitArity(v, exprArg, version)
 					: { kind: "unknown" };
@@ -271,6 +294,7 @@ export function tupleInitArity(
 			const udfShapes =
 				v.udfTupleReturnTypes.get(funcName) ??
 				receiverMethodTupleShapes(v, call);
+
 			if (udfShapes)
 				return {
 					kind: "tuple",
@@ -283,6 +307,7 @@ export function tupleInitArity(
 			// missed would have left the return type unknown too).
 			if (v.declaredFunctionNames.has(funcName)) {
 				const sym = v.symbolTable.lookup(funcName);
+
 				if (
 					sym &&
 					(sym.kind === "function" || sym.kind === "method") &&
@@ -290,6 +315,7 @@ export function tupleInitArity(
 				) {
 					return { kind: "scalar" };
 				}
+
 				return { kind: "unknown" };
 			}
 
@@ -305,6 +331,7 @@ export function tupleInitArity(
 
 		case "IfExpression": {
 			const ifExpr = expr as IfExpression;
+
 			return mergeBranchArities([
 				branchTailArity(v, ifExpr.consequent, version),
 				branchTailArity(v, ifExpr.alternate, version),
@@ -313,6 +340,7 @@ export function tupleInitArity(
 
 		case "SwitchExpression": {
 			const switchExpr = expr as SwitchExpression;
+
 			return mergeBranchArities(
 				switchExpr.cases.map((c) =>
 					c.statements
@@ -322,6 +350,7 @@ export function tupleInitArity(
 			);
 		}
 	}
+
 	return { kind: "unknown" };
 }
 
@@ -335,20 +364,26 @@ export function branchTailArity(
 	| { kind: "unknown" } {
 	if (!stmts || stmts.length === 0) return { kind: "unknown" };
 	const last = stmts[stmts.length - 1];
+
 	if (last.type === "ExpressionStatement") {
 		return tupleInitArity(v, (last as ExpressionStatement).expression, version);
 	}
+
 	if (last.type === "ReturnStatement") {
 		const value = (last as ReturnStatement).value;
+
 		return value ? tupleInitArity(v, value, version) : { kind: "unknown" };
 	}
+
 	if (last.type === "IfStatement") {
 		const ifStmt = last as IfStatement;
+
 		return mergeBranchArities([
 			branchTailArity(v, ifStmt.consequent, version),
 			branchTailArity(v, ifStmt.alternate, version),
 		]);
 	}
+
 	return { kind: "unknown" };
 }
 
@@ -367,16 +402,21 @@ export function mergeBranchArities(
 	| { kind: "scalar" }
 	| { kind: "unknown" } {
 	if (branches.length === 0) return { kind: "unknown" };
+
 	if (branches.some((b) => b.kind === "unknown")) return { kind: "unknown" };
+
 	if (branches.every((b) => b.kind === "scalar")) return { kind: "scalar" };
+
 	if (branches.every((b) => b.kind === "tuple")) {
 		const arities = [
 			...new Set(
 				branches.flatMap((b) => (b.kind === "tuple" ? b.arities : [])),
 			),
 		];
+
 		return { kind: "tuple", arities };
 	}
+
 	return { kind: "unknown" };
 }
 
@@ -392,6 +432,7 @@ export function branchTailTupleTypes(
 ): PineType[] {
 	if (!stmts || stmts.length === 0) return [];
 	const last = stmts[stmts.length - 1];
+
 	if (last.type === "ExpressionStatement") {
 		return tupleInitElementTypes(
 			v,
@@ -400,17 +441,22 @@ export function branchTailTupleTypes(
 			expectedCount,
 		);
 	}
+
 	if (last.type === "ReturnStatement") {
 		const value = (last as ReturnStatement).value;
+
 		return value ? tupleInitElementTypes(v, value, version, expectedCount) : [];
 	}
+
 	if (last.type === "IfStatement") {
 		const ifStmt = last as IfStatement;
+
 		return mergeTupleBranchTypes([
 			branchTailTupleTypes(v, ifStmt.consequent, version, expectedCount),
 			branchTailTupleTypes(v, ifStmt.alternate, version, expectedCount),
 		]);
 	}
+
 	return [];
 }
 
@@ -421,22 +467,30 @@ export function branchTailTupleTypes(
 // consequent preference - see INV030).
 export function mergeTupleBranchTypes(branches: PineType[][]): PineType[] {
 	const candidates = branches.filter((types) => types.length > 0);
+
 	if (candidates.length === 0) return [];
 	const length = Math.max(...candidates.map((types) => types.length));
 	const merged: PineType[] = [];
+
 	for (let i = 0; i < length; i++) {
 		let pick: PineType | undefined;
+
 		for (const types of candidates) {
 			const t = types[i];
+
 			if (!t) continue;
+
 			if (t !== "na") {
 				pick = t;
 				break;
 			}
+
 			if (!pick) pick = t;
 		}
+
 		merged.push(pick ?? "unknown");
 	}
+
 	return merged;
 }
 
@@ -450,11 +504,15 @@ export function recordUdfTupleReturn(
 	types: PineType[],
 ): void {
 	const existing = v.udfTupleReturnTypes.get(name);
+
 	if (!existing) {
 		v.udfTupleReturnTypes.set(name, [types]);
+
 		return;
 	}
+
 	const sameArity = existing.findIndex((t) => t.length === types.length);
+
 	if (sameArity >= 0) existing[sameArity] = types;
 	else existing.push(types);
 }
@@ -484,6 +542,7 @@ export function inferUdfTupleReturnTypes(
 	v.expressionTypes = new Map();
 	v.symbolTable.enterScope();
 	defineParamsWithBindings(v, params, bindings);
+
 	for (const stmt of body) {
 		v.collectDeclarations(stmt, version);
 	}
@@ -491,6 +550,7 @@ export function inferUdfTupleReturnTypes(
 	const types = branchTailTupleTypes(v, body, version);
 	v.symbolTable.exitScope();
 	v.expressionTypes = savedExpressionTypes;
+
 	return types.length > 0 ? types : undefined;
 }
 

@@ -80,14 +80,18 @@ const QUALIFIERS = new Set(["const", "input", "simple", "series"]);
 
 function baseOfRawType(raw) {
 	const parts = String(raw ?? "").trim().split(/\s+/);
+
 	while (parts.length > 1 && QUALIFIERS.has(parts[0])) parts.shift();
+
 	return parts.join(" ");
 }
 
 function scalarUnionMembers(raw) {
 	const base = baseOfRawType(raw);
+
 	if (!base.includes("/")) return null;
 	const members = base.split("/").map((s) => s.trim());
+
 	return members.every((m) => SCALAR_BASES.has(m)) ? members : null;
 }
 
@@ -99,6 +103,7 @@ function scalarUnionMembers(raw) {
 // treats it identically. see INV183
 function plainScalarMember(raw) {
 	const base = baseOfRawType(raw);
+
 	return SCALAR_BASES.has(base) ? [base] : null;
 }
 
@@ -111,22 +116,30 @@ function overloadScalarMembersFor(fn, index) {
 	if (!Array.isArray(fn.overloads) || fn.overloads.length < 2) return null;
 	const union = new Set();
 	let considered = 0;
+
 	for (const ov of fn.overloads) {
 		const p = ov.parameters?.[index];
+
 		if (!p) continue;
 		const base = baseOfRawType(p.type);
+
 		if (!base || base === "unknown") return null;
 		let depth = 0;
+
 		for (const ch of base) {
 			if (ch === "<") depth++;
 			else if (ch === ">") depth--;
 			else if (ch === "/" && depth > 0) return null;
 		}
+
 		considered++;
+
 		for (const m of base.split("/").map((s) => s.trim()))
 			if (SCALAR_BASES.has(m)) union.add(m);
 	}
+
 	if (considered === 0 || union.size === 0) return null;
+
 	return [...union];
 }
 
@@ -140,10 +153,15 @@ function overloadScalarMembersFor(fn, index) {
 // interchangeable in Pine and a union holding either accepts both.
 function wrongArgFor(members) {
 	const has = (m) => members.includes(m);
+
 	if (!has("string")) return '"probe"';
+
 	if (!has("bool")) return "true";
+
 	if (!has("color")) return "color.red";
+
 	if (!has("int") && !has("float")) return "1";
+
 	return null; // every scalar base admitted - nothing is wrong here
 }
 
@@ -177,7 +195,9 @@ const FIXTURES = {
 // function's own namespace instead of from the parameter type.
 function fixtureForUnknownId(fnName) {
 	if (fnName.startsWith("array.")) return FIXTURES["array<float>"];
+
 	if (fnName.startsWith("matrix.")) return FIXTURES["matrix<float>"];
+
 	return null;
 }
 
@@ -188,13 +208,18 @@ function validArgFor(param, fnName) {
 	if (Array.isArray(param.allowedValues) && param.allowedValues.length > 0) {
 		return { arg: String(param.allowedValues[0]) };
 	}
+
 	const base = baseOfRawType(param.type);
+
 	if (base === "unknown") {
 		const fx = fixtureForUnknownId(fnName);
+
 		return fx ? { arg: fx.name, decl: fx.decl } : null;
 	}
+
 	const members = scalarUnionMembers(param.type);
 	const pick = members ? members[0] : base;
+
 	switch (pick) {
 		case "int":
 			return { arg: "1" };
@@ -208,6 +233,7 @@ function validArgFor(param, fnName) {
 			return { arg: "color.red" };
 		default: {
 			const fx = FIXTURES[base];
+
 			return fx ? { arg: fx.name, decl: fx.decl } : null;
 		}
 	}
@@ -218,15 +244,21 @@ function validArgFor(param, fnName) {
 function leadingArgs(fn, targetIndex) {
 	const out = [];
 	const decls = [];
+
 	for (let i = 0; i < targetIndex; i++) {
 		const p = fn.parameters[i];
+
 		if (!p.required) continue;
 		const v = validArgFor(p, fn.name);
+
 		if (v === null) return null;
 		out.push(v.arg);
+
 		if (v.decl) decls.push(v.decl);
 	}
+
 	out.decls = decls;
+
 	return out;
 }
 
@@ -238,15 +270,21 @@ function leadingArgs(fn, targetIndex) {
 function trailingArgs(fn, targetIndex) {
 	const out = [];
 	const decls = [];
+
 	for (let i = targetIndex + 1; i < fn.parameters.length; i++) {
 		const p = fn.parameters[i];
+
 		if (!p.required) continue;
 		const v = validArgFor(p, fn.name);
+
 		if (v === null) return null;
 		out.push(`${p.name} = ${v.arg}`);
+
 		if (v.decl) decls.push(v.decl);
 	}
+
 	out.decls = decls;
+
 	return out;
 }
 
@@ -264,6 +302,7 @@ function callName(name) {
 // Census
 // ---------------------------------------------------------------------------
 const targets = [];
+
 for (const fn of functions) {
 	if (!Array.isArray(fn.parameters)) continue;
 	fn.parameters.forEach((p, index) => {
@@ -271,6 +310,7 @@ for (const fn of functions) {
 			scalarUnionMembers(p.type) ??
 			overloadScalarMembersFor(fn, index) ??
 			plainScalarMember(p.type);
+
 		if (!members) return;
 		const wrong = wrongArgFor(members);
 		const lead = leadingArgs(fn, index);
@@ -299,25 +339,32 @@ if (censusOnly) {
 	const fns = new Set(targets.map((t) => t.fn));
 	const byUnion = {};
 	const byBlocked = {};
+
 	for (const t of targets) {
 		const key = t.members.join("/");
 		byUnion[key] = (byUnion[key] ?? 0) + 1;
 		const b = t.blocked ?? "probeable";
 		byBlocked[b] = (byBlocked[b] ?? 0) + 1;
 	}
+
 	console.log(`union parameters: ${targets.length} across ${fns.size} functions`);
 	console.log(`\nby status:`);
+
 	for (const [k, n] of Object.entries(byBlocked).sort((a, b) => b[1] - a[1]))
 		console.log(`  ${String(n).padStart(4)}  ${k}`);
 	console.log(`\nby union shape:`);
+
 	for (const [k, n] of Object.entries(byUnion).sort((a, b) => b[1] - a[1]))
 		console.log(`  ${String(n).padStart(4)}  ${k}`);
 	const blocked = targets.filter((t) => t.blocked === "unbuildable-lead");
+
 	if (blocked.length) {
 		console.log(`\nunbuildable leading args (${blocked.length}):`);
+
 		for (const t of blocked.slice(0, 40))
 			console.log(`  ${t.fn}(${t.param}) : ${t.docType}`);
 	}
+
 	process.exit(0);
 }
 
@@ -332,12 +379,16 @@ function buildScript(fnName, group) {
 	// Fixture declarations first, deduplicated, so every probe line below can
 	// reference them and the line numbering stays stable per script.
 	const decls = new Set();
+
 	for (const t of group) {
 		for (const d of t.lead.decls ?? []) decls.add(d);
+
 		for (const d of t.trail.decls ?? []) decls.add(d);
 	}
+
 	for (const d of decls) lines.push(d);
 	const lineOf = new Map();
+
 	for (const t of group) {
 		// A variadic function refuses keyword arguments outright (CE10119), so
 		// its probe has to be positional: the wrong value sits at the target's
@@ -348,10 +399,13 @@ function buildScript(fnName, group) {
 		const call = t.positional
 			? `${callName(fnName)}(${[...t.lead, t.wrong].join(", ")})`
 			: `${callName(fnName)}(${[...t.lead, `${t.param} = ${t.wrong}`, ...t.trail].join(", ")})`;
+
 		lines.push(`probe_${lines.length} = ${call}`);
 		lineOf.set(lines.length, t);
 	}
+
 	lines.push("plot(close)");
+
 	return { script: `${lines.join("\n")}\n`, lineOf };
 }
 
@@ -360,6 +414,7 @@ async function tvVerdict(source) {
 		const { stdout } = await execFileP("pine-lint", ["--tv", "-c", source], {
 			timeout: 60000,
 		});
+
 		return JSON.parse(stdout);
 	} catch {
 		return null;
@@ -372,6 +427,7 @@ function errorsOf(verdict) {
 
 const probeable = targets.filter((t) => !t.blocked);
 const groups = new Map();
+
 for (const t of probeable) {
 	if (!groups.has(t.fn)) groups.set(t.fn, []);
 	groups.get(t.fn).push(t);
@@ -382,13 +438,16 @@ for (const t of probeable) {
 // on 141 of them is the difference between a bad fixture costing one look and
 // costing the whole capture.
 const dryIdx = args.indexOf("--dry");
+
 if (dryIdx !== -1) {
 	const want = args[dryIdx + 1];
 	const group = probeable.filter((t) => t.fn === want);
+
 	if (group.length === 0) {
 		console.log(`no probeable union parameters on '${want}'`);
 		process.exit(1);
 	}
+
 	process.stdout.write(buildScript(want, group).script);
 	process.exit(0);
 }
@@ -396,6 +455,7 @@ if (dryIdx !== -1) {
 const prior = existsSync(OUT)
 	? JSON.parse(readFileSync(OUT, "utf8"))
 	: { results: {} };
+
 const SETTLED = new Set(["ok", "unprobeable", "no-error"]);
 const results = retryOnly ? prior.results : {};
 
@@ -430,10 +490,13 @@ function record(t, probeLine, lineErrors) {
 	// ctx.argDisplayName is the control that makes this sweep trustworthy.
 	const loose = (s) => String(s ?? "").replace(/_/g, "");
 	const all123 = lineErrors.filter((e) => e.code === "CE10123");
+
 	const hit = all123.find(
 		(e) => loose(e.ctx?.argDisplayName) === loose(t.param),
 	);
+
 	const key = `${t.fn}.${t.param}`;
+
 	if (!hit && all123.length > 0) {
 		results[key] = {
 			fn: t.fn,
@@ -446,8 +509,10 @@ function record(t, probeLine, lineErrors) {
 			errors: all123.map((e) => ({ code: e.code, message: e.message })),
 			status: "mismatched-arg",
 		};
+
 		return;
 	}
+
 	if (hit) {
 		results[key] = {
 			fn: t.fn,
@@ -488,6 +553,7 @@ function record(t, probeLine, lineErrors) {
 async function runGroup(fnName, group) {
 	const { script, lineOf } = buildScript(fnName, group);
 	const verdict = await tvVerdict(script);
+
 	if (!verdict || verdict.success === false) {
 		for (const t of group)
 			results[`${t.fn}.${t.param}`] = {
@@ -497,23 +563,32 @@ async function runGroup(fnName, group) {
 				ourNoun: t.ourNoun,
 				status: "no-verdict",
 			};
+
 		return;
 	}
+
 	const errors = errorsOf(verdict);
+
 	// A variadic function refuses keyword arguments; retry the group
 	// positionally. Guarded by the flag so the retry cannot loop.
 	if (errors.some((e) => e.code === "CE10119") && !group[0].positional) {
 		for (const t of group) t.positional = true;
 		await runGroup(fnName, group);
+
 		return;
 	}
+
 	// A parse error poisons every line - fall back to one probe per script.
 	const parseBroken = errors.some((e) => !e.code);
+
 	if (parseBroken && group.length > 1) {
 		for (const t of group) await runGroup(fnName, [t]);
+
 		return;
 	}
+
 	const scriptLines = script.split("\n");
+
 	for (const [lineNo, t] of lineOf) {
 		const lineErrors = errors.filter((e) => (e.start?.line ?? e.line) === lineNo);
 		record(t, scriptLines[lineNo - 1], lineErrors);
@@ -523,21 +598,26 @@ async function runGroup(fnName, group) {
 async function worker(q) {
 	for (;;) {
 		const fnName = q.shift();
+
 		if (!fnName) return;
 		await runGroup(fnName, groups.get(fnName));
 		done++;
+
 		if (done % 25 === 0) console.log(`  ${done}/${queue.length}`);
 	}
 }
 
 const q = [...queue];
+
 await Promise.all([1, 2, 3, 4].map(() => worker(q)));
 
 const summary = {};
 let agree = 0;
 let disagree = 0;
+
 for (const r of Object.values(results)) {
 	summary[r.status] = (summary[r.status] ?? 0) + 1;
+
 	if (r.status === "ok") r.agrees ? agree++ : disagree++;
 }
 
@@ -557,5 +637,7 @@ writeFileSync(
 );
 
 console.log(`done: ${JSON.stringify(summary)}`);
+
 console.log(`nouns: ${agree} agree with ours, ${disagree} disagree`);
+
 console.log(`written: ${OUT}`);

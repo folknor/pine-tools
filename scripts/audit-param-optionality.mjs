@@ -27,9 +27,11 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
+
 const raw = JSON.parse(
 	readFileSync(join(root, "pine-data/raw/v6/complete-v6-details.json"), "utf8"),
 );
+
 const generated = JSON.parse(
 	readFileSync(join(root, "pine-data/v6/functions.json"), "utf8"),
 );
@@ -38,16 +40,20 @@ const generated = JSON.parse(
 // tell positive evidence apart from the default-optional fallthrough.
 function rawEvidence(p) {
 	const descLower = (p.description || "").toLowerCase();
+
 	const hasDefault =
 		descLower.includes("the default is") ||
 		descLower.includes("defaults to") ||
 		descLower.includes("default value is") ||
 		descLower.includes("default is ");
+
 	const proseOptional =
 		descLower.includes("optional argument") ||
 		descLower.includes("optional.") ||
 		p.name.startsWith("[");
+
 	const proseRequired = descLower.includes("required argument");
+
 	return { hasDefault, proseOptional, proseRequired };
 }
 
@@ -55,6 +61,7 @@ function rawEvidence(p) {
 // when the raw flag did not already decide).
 function genProse(p) {
 	const desc = (p.description || "").toLowerCase();
+
 	return (
 		desc.includes("optional") ||
 		desc.includes("if not specified") ||
@@ -79,6 +86,7 @@ const COMMON = new Set([
 ]);
 
 const byClass = new Map();
+
 const add = (cls, fn, p) => {
 	if (!byClass.has(cls)) byClass.set(cls, []);
 	byClass.get(cls).push(`${fn}.${p}`);
@@ -89,26 +97,34 @@ let shippedOptional = 0;
 
 for (const genFn of generated) {
 	const rawFn = raw.functions[genFn.name];
+
 	const rawParams = new Map(
 		(rawFn?.parameters ?? []).map((p) => [p.name, p]),
 	);
+
 	for (const gp of genFn.parameters ?? []) {
 		totalParams++;
+
 		if (gp.required) {
 			add("required", genFn.name, gp.name);
 			continue;
 		}
+
 		shippedOptional++;
 		const rp = rawParams.get(gp.name);
+
 		if (rp?.optional === true) {
 			const ev = rawEvidence(rp);
+
 			if (ev.proseOptional) add("raw-prose-optional", genFn.name, gp.name);
 			else if (ev.hasDefault) add("raw-default-prose", genFn.name, gp.name);
 			else add("raw-default-optional", genFn.name, gp.name);
 			continue;
 		}
+
 		// Raw flag absent/false - generate.ts's own rules decided.
 		const base = rp ?? gp;
+
 		if (genProse(base)) add("gen-prose", genFn.name, gp.name);
 		else if (base.default !== undefined || gp.default !== undefined)
 			add("gen-default-field", genFn.name, gp.name);
@@ -118,17 +134,23 @@ for (const genFn of generated) {
 }
 
 console.log(`functions: ${generated.length}`);
+
 console.log(`params:    ${totalParams}  (shipped optional: ${shippedOptional}, required: ${totalParams - shippedOptional})`);
+
 console.log();
+
 console.log("evidence class                     count");
+
 for (const [cls, items] of [...byClass.entries()].sort((a, b) => b[1].length - a[1].length)) {
 	console.log(`${cls.padEnd(34)} ${String(items.length).padStart(5)}`);
 }
 
 const listArg = process.argv.indexOf("--list");
+
 if (listArg !== -1) {
 	const cls = process.argv[listArg + 1];
 	const items = byClass.get(cls) ?? [];
 	console.log(`\n=== ${cls} (${items.length}) ===`);
+
 	for (const it of items) console.log(it);
 }

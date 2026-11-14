@@ -16,6 +16,7 @@ import type { PineType } from "./types";
  */
 export function isTopLevelOnly(functionName: string): boolean {
 	const func = FUNCTIONS_BY_NAME.get(functionName);
+
 	return func?.flags?.topLevelOnly === true;
 }
 
@@ -71,11 +72,13 @@ function buildKnownNamespaces(): string[] {
 			namespaces.add(name.split(".")[0]);
 		}
 	}
+
 	for (const name of VARIABLES_BY_NAME.keys()) {
 		if (name.includes(".")) {
 			namespaces.add(name.split(".")[0]);
 		}
 	}
+
 	for (const name of CONSTANTS_BY_NAME.keys()) {
 		if (name.includes(".")) {
 			namespaces.add(name.split(".")[0]);
@@ -96,18 +99,25 @@ export const KNOWN_NAMESPACES = buildKnownNamespaces();
 // which the single-level check missed. see INV064
 function buildKnownNamespacePrefixes(): Set<string> {
 	const prefixes = new Set<string>();
+
 	const addFrom = (name: string) => {
 		const parts = name.split(".");
+
 		// every proper prefix (drop the last segment, which is the member)
 		for (let i = 1; i < parts.length; i++) {
 			prefixes.add(parts.slice(0, i).join("."));
 		}
 	};
+
 	for (const name of FUNCTIONS_BY_NAME.keys()) addFrom(name);
+
 	for (const name of VARIABLES_BY_NAME.keys()) addFrom(name);
+
 	for (const name of CONSTANTS_BY_NAME.keys()) addFrom(name);
+
 	return prefixes;
 }
+
 export const KNOWN_NAMESPACE_PREFIXES = buildKnownNamespacePrefixes();
 
 // Base names of generic builtin functions - the catalog keys carry the
@@ -117,12 +127,16 @@ export const KNOWN_NAMESPACE_PREFIXES = buildKnownNamespacePrefixes();
 // recognise `array.new<float>()` etc. as real builtins. see INV053
 function buildGenericFunctionBases(): Set<string> {
 	const bases = new Set<string>();
+
 	for (const name of FUNCTIONS_BY_NAME.keys()) {
 		const lt = name.indexOf("<");
+
 		if (lt > 0) bases.add(name.slice(0, lt));
 	}
+
 	return bases;
 }
+
 export const GENERIC_FUNCTION_BASES = buildGenericFunctionBases();
 
 // Function signature interface
@@ -189,7 +203,9 @@ const DRAWING_HANDLE_ANNOTATION_TYPES = new Set([
 function normalizeInnerType(inner: string): string {
 	const trimmed = inner.trim();
 	const lower = trimmed.toLowerCase();
+
 	if (BUILTIN_SCALAR_TYPES.has(lower)) return lower;
+
 	return trimmed;
 }
 
@@ -265,22 +281,26 @@ export function mapToPineType(typeStr?: string): PineType {
 	// `POI` from being silently lowercased to `poi`.
 
 	const arrayMatch = trimmed.match(/^(?:simple\s+)?array<(\w+)>$/i);
+
 	if (arrayMatch) {
 		return `array<${normalizeInnerType(arrayMatch[1])}>` as PineType;
 	}
 
 	// `T[]` short form for `array<T>` (e.g. `float[]`, `int[]`). see INV004.
 	const arraySuffixMatch = trimmed.match(/^(?:simple\s+)?(\w+)\[\]$/i);
+
 	if (arraySuffixMatch) {
 		return `array<${normalizeInnerType(arraySuffixMatch[1])}>` as PineType;
 	}
 
 	const matrixMatch = trimmed.match(/^(?:simple\s+)?matrix<(\w+)>$/i);
+
 	if (matrixMatch) {
 		return `matrix<${normalizeInnerType(matrixMatch[1])}>` as PineType;
 	}
 
 	const mapMatch = trimmed.match(/^(?:simple\s+)?map<(\w+),\s*(\w+)>$/i);
+
 	if (mapMatch) {
 		return `map<${normalizeInnerType(mapMatch[1])}, ${normalizeInnerType(mapMatch[2])}>` as PineType;
 	}
@@ -299,6 +319,7 @@ export function mapReturnTypeToPineType(returnTypeStr: string): PineType {
 	if (DRAWING_HANDLE_ANNOTATION_TYPES.has(returnTypeStr.trim().toLowerCase())) {
 		return "unknown";
 	}
+
 	return mapToPineType(returnTypeStr);
 }
 
@@ -342,6 +363,7 @@ export function buildFunctionSignatures(): Map<string, FunctionSignature> {
 
 	for (const [name, func] of FUNCTIONS_BY_NAME) {
 		const sig = buildSignatureFromPineFunction(name, func);
+
 		if (sig) {
 			signatures.set(name, sig);
 		}
@@ -358,31 +380,37 @@ export function buildFunctionSignatures(): Map<string, FunctionSignature> {
 // hence the GENERIC_FUNCTION_BASES fallback. see INV138
 export function isCatalogFunction(namespace: string, member: string): boolean {
 	const name = `${namespace}.${member}`;
+
 	return FUNCTIONS_BY_NAME.has(name) || GENERIC_FUNCTION_BASES.has(name);
 }
 
 // Check if a function is variadic (accepts variable number of arguments)
 export function isVariadicFunction(functionName: string): boolean {
 	const func = FUNCTIONS_BY_NAME.get(functionName);
+
 	return func?.flags?.variadic === true;
 }
 
 // Get minimum required arguments for variadic functions
 export function getMinArgsForVariadic(functionName: string): number {
 	const func = FUNCTIONS_BY_NAME.get(functionName);
+
 	if (func?.flags?.minArgs !== undefined) {
 		return func.flags.minArgs;
 	}
+
 	// Default: require at least the number of required parameters
 	if (func) {
 		return func.parameters.filter((p) => p.required).length;
 	}
+
 	return 1;
 }
 
 // Check if a function is polymorphic (return type depends on input)
 export function getPolymorphicType(functionName: string): string | undefined {
 	const func = FUNCTIONS_BY_NAME.get(functionName);
+
 	return func?.flags?.polymorphic;
 }
 
@@ -392,6 +420,7 @@ export function getPolymorphicType(functionName: string): string | undefined {
 // fallback when the determining argument can't be typed. see #18
 export function hasReturnTypeParam(functionName: string): boolean {
 	const func = FUNCTIONS_BY_NAME.get(functionName);
+
 	return func?.flags?.returnTypeParam !== undefined;
 }
 
@@ -399,7 +428,9 @@ export function hasReturnTypeParam(functionName: string): boolean {
 // Functions with overloads have merged parameters from all overloads, some with type "unknown"
 export function hasOverloads(functionName: string): boolean {
 	const func = FUNCTIONS_BY_NAME.get(functionName);
+
 	if (!func) return false;
+
 	return func.parameters.some((p) => p.type === "unknown");
 }
 
@@ -410,6 +441,7 @@ export function hasOverloads(functionName: string): boolean {
 // (label.new -> point), and a call may satisfy a different overload (x/y).
 export function hasOverloadSignatures(functionName: string): boolean {
 	const func = FUNCTIONS_BY_NAME.get(functionName);
+
 	return (func?.overloads?.length ?? 0) > 1;
 }
 
@@ -423,7 +455,9 @@ export function getOverloadSignatures(
 	functionName: string,
 ): FunctionSignature[] {
 	const func = FUNCTIONS_BY_NAME.get(functionName);
+
 	if (!func?.overloads || func.overloads.length === 0) return [];
+
 	return func.overloads.map((ov) => ({
 		name: functionName,
 		parameters: ov.parameters.map((p) => ({
@@ -457,8 +491,10 @@ function splitTopLevelUnion(body: string): string[] {
 	const members: string[] = [];
 	let depth = 0;
 	let start = 0;
+
 	for (let i = 0; i < body.length; i++) {
 		const ch = body[i];
+
 		if (ch === "<") depth++;
 		else if (ch === ">") depth--;
 		else if (ch === "/" && depth === 0) {
@@ -466,27 +502,36 @@ function splitTopLevelUnion(body: string): string[] {
 			start = i + 1;
 		}
 	}
+
 	members.push(body.slice(start).trim());
+
 	return members;
 }
 
 export function formatTailUnion(functionName: string): FormatTailUnion | null {
 	const func = FUNCTIONS_BY_NAME.get(functionName);
+
 	if (!func?.flags?.variadic || !func.overloads) return null;
 	let noun: string | null = null;
 	const members = new Set<string>();
 	let allowsArrays = false;
+
 	for (const ov of func.overloads) {
 		const argParam = ov.parameters.find((p) => /^arg\d+$/.test(p.name));
+
 		if (!argParam?.type) continue;
+
 		if (noun === null) noun = argParam.type;
 		const body = argParam.type.replace(/^(const|input|simple|series)\s+/, "");
+
 		for (const m of splitTopLevelUnion(body)) {
 			if (m.startsWith("array<")) allowsArrays = true;
 			else if (m) members.add(m);
 		}
 	}
+
 	if (noun === null || members.size === 0) return null;
+
 	return { noun, members, allowsArrays };
 }
 
@@ -504,12 +549,16 @@ export function formatTailUnion(functionName: string): FormatTailUnion | null {
 export function getMinimalRequiredParams(functionName: string): string[] {
 	const func = FUNCTIONS_BY_NAME.get(functionName);
 	const overloads = func?.overloads;
+
 	if (!overloads || overloads.length === 0) return [];
 	let best: string[] | null = null;
+
 	for (const ov of overloads) {
 		const required = ov.parameters.filter((p) => p.required).map((p) => p.name);
+
 		if (best === null || required.length < best.length) best = required;
 	}
+
 	return best ?? [];
 }
 
@@ -544,10 +593,13 @@ function determiningTypeFitsParam(
 	const param = FUNCTIONS_BY_NAME.get(functionName)?.parameters.find(
 		(p) => p.name === paramName,
 	);
+
 	if (!param?.type) return true;
+
 	const members = baseOfRawType(String(param.type))
 		.split("/")
 		.map((m) => m.trim());
+
 	// Only a CLEAN scalar union can be decided here. Several catalog types are
 	// prose rather than a type expression - `input`'s defval reads
 	// "const int/float/bool/string/color or source-type built-ins", which splits
@@ -558,13 +610,16 @@ function determiningTypeFitsParam(
 	// but it is just the scalar base set - reused rather than duplicated.)
 	if (!members.every((m) => CONST_SCALAR_BASES.has(m))) return true;
 	const argBase = baseOfRawType(String(determined));
+
 	if (argBase === "unknown" || argBase === "na" || argBase.includes("/")) {
 		return true;
 	}
+
 	if (members.includes(argBase)) return true;
 	// int/float widen into one another, matching the accept side of the
 	// union-argument check.
 	const numeric = argBase === "int" || argBase === "float";
+
 	return numeric && (members.includes("int") || members.includes("float"));
 }
 
@@ -589,18 +644,22 @@ export function getPolymorphicReturnType(
 		if (argInfos && argInfos.length > 0) {
 			// First, check for named argument matching returnTypeParam
 			const namedArg = argInfos.find((arg) => arg.name === returnTypeParam);
+
 			if (namedArg) {
 				determiningType = namedArg.type;
 			} else {
 				// Fall back to positional: find position of returnTypeParam in function signature
 				const func = FUNCTIONS_BY_NAME.get(functionName);
+
 				if (func) {
 					const paramIndex = func.parameters.findIndex(
 						(p) => p.name === returnTypeParam,
 					);
+
 					if (paramIndex >= 0 && paramIndex < argInfos.length) {
 						// Only use positional if no named args before this position
 						const positionalArgs = argInfos.filter((a) => !a.name);
+
 						if (paramIndex < positionalArgs.length) {
 							determiningType = positionalArgs[paramIndex].type;
 						}
@@ -611,10 +670,12 @@ export function getPolymorphicReturnType(
 			// Legacy: use first argument if no argInfos provided
 			// This maintains backward compatibility
 			const func = FUNCTIONS_BY_NAME.get(functionName);
+
 			if (func) {
 				const paramIndex = func.parameters.findIndex(
 					(p) => p.name === returnTypeParam,
 				);
+
 				if (paramIndex >= 0 && paramIndex < argTypes.length) {
 					determiningType = argTypes[paramIndex];
 				} else {
@@ -642,6 +703,7 @@ export function getPolymorphicReturnType(
 
 	// Fall back to flags-based polymorphic handling from pine-data
 	const polyType = getPolymorphicType(functionName);
+
 	if (!polyType || argTypes.length === 0) {
 		return null;
 	}
@@ -660,14 +722,18 @@ export function getPolymorphicReturnType(
 			if (firstArgType === "unknown") return null;
 			// If it's an array type like "array<float>", extract the element type
 			const arrayMatch = firstArgType.match(/array<(.+)>/);
+
 			if (arrayMatch) {
 				return arrayMatch[1] as PineType;
 			}
+
 			// For series types, return the base type
 			const seriesMatch = firstArgType.match(/series<(.+)>/);
+
 			if (seriesMatch) {
 				return `series<${seriesMatch[1]}>` as PineType;
 			}
+
 			return firstArgType;
 		}
 
@@ -678,6 +744,7 @@ export function getPolymorphicReturnType(
 			// calls) keep their int-ness instead of hitting the float
 			// fallback. see INV040
 			if (firstArgType === "unknown") return null;
+
 			for (const argType of argTypes) {
 				if (baseOfRawType(String(argType)) === "float") {
 					return String(argType).includes("series<")
@@ -685,9 +752,11 @@ export function getPolymorphicReturnType(
 						: "float";
 				}
 			}
+
 			if (baseOfRawType(String(firstArgType)) === "int") {
 				return firstArgType;
 			}
+
 			// For other numeric types, return float as safe default
 			return String(firstArgType).includes("series<")
 				? "series<float>"
@@ -728,7 +797,9 @@ function qrank(q: string | undefined): number {
 function baseOfRawType(type: string): string {
 	const s = type.trim();
 	const bracket = s.match(/^(?:const|input|simple|series)<(.+)>$/);
+
 	if (bracket) return bracket[1].trim();
+
 	return s.replace(/^(const|input|simple|series)\s+/, "").trim();
 }
 
@@ -742,8 +813,11 @@ function baseOfRawType(type: string): string {
 //    "const ... or source-type built-ins").
 export function typeRequiresConst(rawType: string): boolean {
 	const t = rawType.trim();
+
 	if (!/^const\b/.test(t)) return false;
+
 	if (/\bor\b/.test(t) || /source/i.test(t)) return false;
+
 	return baseOfRawType(t)
 		.split("/")
 		.every((b) => CONST_SCALAR_BASES.has(b.trim()));
@@ -758,6 +832,7 @@ function overloadViews(func: PineFunction): OverloadView[] {
 	if (func.overloads && func.overloads.length > 0) {
 		return func.overloads as OverloadView[];
 	}
+
 	return [{ parameters: func.parameters, returns: func.returns }];
 }
 
@@ -770,18 +845,24 @@ function overloadViews(func: PineFunction): OverloadView[] {
 // comma split is sound. see TODO #51.
 export function builtinTupleReturns(functionName: string): string[][] {
 	const func = FUNCTIONS_BY_NAME.get(functionName);
+
 	if (!func) return [];
 	const shapes: string[][] = [];
+
 	for (const ov of overloadViews(func)) {
 		const r = (ov.returns || "").trim();
+
 		if (!r.startsWith("[") || !r.endsWith("]")) continue;
+
 		const elems = r
 			.slice(1, -1)
 			.split(",")
 			.map((s) => s.trim())
 			.filter(Boolean);
+
 		if (elems.length > 1) shapes.push(elems);
 	}
+
 	return shapes;
 }
 
@@ -804,28 +885,37 @@ export function builtinCallTupleness(
 	| { kind: "scalar" }
 	| { kind: "unknown" } {
 	const func = FUNCTIONS_BY_NAME.get(functionName);
+
 	if (!func) return { kind: "unknown" };
 	const views = overloadViews(func);
 	const isTuple = (r?: string) => (r || "").trim().startsWith("[");
 	const tupleViews = views.filter((ov) => isTuple(ov.returns));
+
 	if (tupleViews.length === 0) return { kind: "scalar" };
+
 	const arities = [
 		...new Set(tupleViews.map((ov) => ov.returns.split(",").length)),
 	];
+
 	if (tupleViews.length === views.length) return { kind: "tuple", arities };
 	const scalarViews = views.filter((ov) => !isTuple(ov.returns));
+
 	const scalarParams = new Set(
 		scalarViews.flatMap((ov) => ov.parameters.map((p) => p.name)),
 	);
+
 	const maxScalarArity = Math.max(
 		...scalarViews.map((ov) => ov.parameters.length),
 	);
+
 	const namedTupleOnly = namedArgs.some(
 		(n) =>
 			!scalarParams.has(n) &&
 			tupleViews.some((ov) => ov.parameters.some((p) => p.name === n)),
 	);
+
 	const positionalTupleOnly = positionalCount > maxScalarArity;
+
 	return namedTupleOnly || positionalTupleOnly
 		? { kind: "tuple", arities }
 		: { kind: "scalar" };
@@ -841,14 +931,19 @@ export function paramRequiresConst(
 	paramName: string,
 ): boolean {
 	const func = FUNCTIONS_BY_NAME.get(functionName);
+
 	if (!func) return false;
 	let seen = false;
+
 	for (const ov of overloadViews(func)) {
 		const p = ov.parameters.find((x) => x.name === paramName);
+
 		if (!p) continue;
 		seen = true;
+
 		if (!typeRequiresConst(p.type)) return false;
 	}
+
 	return seen;
 }
 
@@ -865,17 +960,23 @@ export function positionalConstParam(
 	positionalCount: number,
 ): { name: string; docType: string } | null {
 	const func = FUNCTIONS_BY_NAME.get(functionName);
+
 	if (!func) return null;
 	const views = overloadViews(func);
+
 	const candidates = views.filter(
 		(ov) => ov.parameters.length >= positionalCount,
 	);
+
 	const pool = candidates.length > 0 ? candidates : views;
 	let name: string | undefined;
 	let docType: string | undefined;
+
 	for (const ov of pool) {
 		const p = ov.parameters[index];
+
 		if (!p || !typeRequiresConst(p.type)) return null;
+
 		if (name === undefined) {
 			name = p.name;
 			docType = p.type;
@@ -883,6 +984,7 @@ export function positionalConstParam(
 			return null;
 		}
 	}
+
 	return name !== undefined && docType !== undefined ? { name, docType } : null;
 }
 
@@ -894,11 +996,15 @@ export function getConstParamDocType(
 	paramName: string,
 ): string | undefined {
 	const func = FUNCTIONS_BY_NAME.get(functionName);
+
 	if (!func) return undefined;
+
 	for (const ov of overloadViews(func)) {
 		const p = ov.parameters.find((x) => x.name === paramName);
+
 		if (p) return p.type;
 	}
+
 	return undefined;
 }
 
@@ -909,8 +1015,10 @@ export function getConstParamDocType(
 // (union-types.ts), so this set is exactly what TV accepts at that param. INV016.
 export function getScalarUnionMembers(rawType: string): string[] | null {
 	const base = baseOfRawType(rawType);
+
 	if (!base.includes("/")) return null;
 	const members = base.split("/").map((s) => s.trim());
+
 	return members.every((m) => CONST_SCALAR_BASES.has(m)) ? members : null;
 }
 
@@ -921,6 +1029,7 @@ export function namedParamUnionMembers(
 	const p = FUNCTIONS_BY_NAME.get(functionName)?.parameters.find(
 		(x) => x.name === paramName,
 	);
+
 	return p ? getScalarUnionMembers(p.type) : null;
 }
 
@@ -929,6 +1038,7 @@ export function positionalParamUnionMembers(
 	index: number,
 ): string[] | null {
 	const p = FUNCTIONS_BY_NAME.get(functionName)?.parameters[index];
+
 	return p ? getScalarUnionMembers(p.type) : null;
 }
 
@@ -938,18 +1048,24 @@ export function unionParamInfo(
 	name?: string,
 ): { name: string; docType: string } | null {
 	const func = FUNCTIONS_BY_NAME.get(functionName);
+
 	if (!func) return null;
 	let fallback: { name: string; docType: string } | null = null;
+
 	for (const ov of overloadViews(func)) {
 		const p = name
 			? ov.parameters.find((x) => x.name === name)
 			: ov.parameters[index];
+
 		if (!p || !getScalarUnionMembers(p.type)) continue;
 		const info = { name: p.name, docType: p.type };
 		const base = baseOfRawType(p.type);
+
 		if (!fallback) fallback = info;
+
 		if (base === "int/float" || base === "int/float/color") return info;
 	}
+
 	return fallback;
 }
 
@@ -966,6 +1082,7 @@ export function paramExpectedNoun(
 	const p = FUNCTIONS_BY_NAME.get(functionName)?.parameters.find(
 		(x) => x.name === paramName,
 	);
+
 	return (p as { expectedTypeNoun?: string } | undefined)?.expectedTypeNoun;
 }
 
@@ -1000,7 +1117,9 @@ export function getBuiltinVarInfo(
 	name: string,
 ): { qualifier: string; base: string } | undefined {
 	const v = VARIABLES_BY_NAME.get(name);
+
 	if (!v) return undefined;
+
 	return { qualifier: v.qualifier, base: baseOfRawType(String(v.type)) };
 }
 
@@ -1014,9 +1133,12 @@ export function isBuiltinConstant(name: string): boolean {
 // variable or constant - the argumentType slot of CE10123 templates. see INV061
 export function getBuiltinQualifiedType(name: string): string | undefined {
 	const c = CONSTANTS_BY_NAME.get(name);
+
 	if (c?.type) return `const ${baseOfRawType(String(c.type))}`;
 	const v = VARIABLES_BY_NAME.get(name);
+
 	if (v) return `${v.qualifier} ${baseOfRawType(String(v.type))}`;
+
 	return undefined;
 }
 
@@ -1029,8 +1151,10 @@ function splitUnionMembers(type: string): string[] {
 	const members: string[] = [];
 	let depth = 0;
 	let start = 0;
+
 	for (let i = 0; i < type.length; i++) {
 		const ch = type[i];
+
 		if (ch === "<") depth++;
 		else if (ch === ">") depth--;
 		else if (ch === "/" && depth === 0) {
@@ -1038,7 +1162,9 @@ function splitUnionMembers(type: string): string[] {
 			start = i + 1;
 		}
 	}
+
 	members.push(type.slice(start).trim());
+
 	return members.filter((m) => m.length > 0);
 }
 
@@ -1046,6 +1172,7 @@ const GENERIC_RE = /^([A-Za-z_][\w.]*)<(.+)>$/;
 
 function baseCompatible(argBase: string, paramBase: string): boolean {
 	if (!paramBase || /unknown|\bany\b/.test(paramBase)) return true;
+
 	if (argBase === "unknown" || argBase === "na") return true;
 	const numeric = (x: string) => x === "int" || x === "float";
 	const argGeneric = argBase.match(GENERIC_RE);
@@ -1065,17 +1192,22 @@ function baseCompatible(argBase: string, paramBase: string): boolean {
 		// overload 4's `matrix<int/float>`, and the first-wins pool order
 		// would then hand back matrix<int>. see INV147
 		const pbGeneric = pb.match(GENERIC_RE);
+
 		if (argGeneric && pbGeneric && argGeneric[1] === pbGeneric[1]) {
 			const argElem = argGeneric[2].trim();
 			const pbElems = splitUnionMembers(pbGeneric[2]);
+
 			if (argElem === "unknown" || pbElems.includes("unknown")) return true;
+
 			if (pbElems.includes(argElem)) return true;
 			continue;
 		}
+
 		if (argGeneric || pbGeneric) continue;
 
 		if (numeric(argBase) && numeric(pb)) return true;
 	}
+
 	return false;
 }
 
@@ -1086,10 +1218,12 @@ function baseCompatible(argBase: string, paramBase: string): boolean {
  */
 function typeWidth(type: string): number {
 	let total = 0;
+
 	for (const member of splitUnionMembers(type)) {
 		const generic = member.match(GENERIC_RE);
 		total += generic ? typeWidth(generic[2]) : 1;
 	}
+
 	return Math.max(total, 1);
 }
 
@@ -1112,22 +1246,27 @@ export function resolveCallReturnRaw(
 	argTypes: PineType[],
 ): string | undefined {
 	const func = FUNCTIONS_BY_NAME.get(functionName);
+
 	if (!func) return undefined;
 	const views = overloadViews(func);
 	const argBases = argTypes.map((t) => baseOfRawType(String(t)));
+
 	const anySeriesArg = argTypes.some(
 		(t) => leadingQualifier(String(t)) === "series",
 	);
 
 	const candidates = views.filter((ov) => {
 		if (argBases.length > ov.parameters.length) return false;
+
 		for (let i = 0; i < argBases.length; i++) {
 			if (!baseCompatible(argBases[i], baseOfRawType(ov.parameters[i].type))) {
 				return false;
 			}
 		}
+
 		return true;
 	});
+
 	const pool = candidates.length > 0 ? candidates : views;
 
 	// With const/simple args, TV picks the lowest-qualifier matching overload.
@@ -1138,15 +1277,19 @@ export function resolveCallReturnRaw(
 	// array.abs(array<int>) as array<float> - rejected against an array<int>
 	// declaration that TV accepts (probed 2026-08-21). see INV147
 	let bestOv = pool[0];
+
 	for (const ov of pool) {
 		const dq =
 			qrank(leadingQualifier(ov.returns)) -
 			qrank(leadingQualifier(bestOv.returns));
+
 		if (dq < 0 || (dq === 0 && paramWidth(ov) < paramWidth(bestOv))) {
 			bestOv = ov;
 		}
 	}
+
 	let best = bestOv.returns;
+
 	// A series argument forces at least a series result.
 	if (anySeriesArg && qrank(leadingQualifier(best)) < qrank("series")) {
 		const ser = pool.find((ov) => leadingQualifier(ov.returns) === "series");
@@ -1154,5 +1297,6 @@ export function resolveCallReturnRaw(
 			? ser.returns
 			: best.replace(/^(const|input|simple)\b/, "series");
 	}
+
 	return best;
 }

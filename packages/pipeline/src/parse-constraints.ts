@@ -25,10 +25,13 @@ const TERMINATOR =
 // first terminator. Returns undefined if there is no intro phrase.
 function valueSpan(description: string): string | undefined {
 	const m = description.match(INTRO);
+
 	if (!m) return undefined;
 	let span = description.slice((m.index ?? 0) + m[0].length);
 	const cut = span.search(TERMINATOR);
+
 	if (cut >= 0) span = span.slice(0, cut);
+
 	return span;
 }
 
@@ -40,15 +43,19 @@ function valueSpan(description: string): string | undefined {
  */
 export function parseAllowedValues(description: string): string[] | undefined {
 	const span = valueSpan(description);
+
 	if (span === undefined) return undefined;
+
 	// A span that opens with an article describes a value in prose ("a string
 	// representing …"), not an enumerated set.
 	if (/^an?\s/i.test(span.trim())) return undefined;
 
 	const consts = span.match(/[a-z_][a-z0-9_]*\.[a-z0-9_]+/gi);
+
 	if (consts) return [...new Set(consts)];
 
 	const quoted = [...span.matchAll(/(['"])([^'"]+)\1/g)].map((m) => m[2]);
+
 	if (quoted.length) return [...new Set(quoted)];
 
 	return undefined;
@@ -63,13 +70,17 @@ export function parseNumericRange(
 	description: string,
 ): { min: number; max: number } | undefined {
 	const span = valueSpan(description);
+
 	if (span === undefined) return undefined;
+
 	const m =
 		span.match(
 			/from\s+(-?\d+(?:\.\d+)?)\s*(?:\([^)]*\)\s*)?to\s+(-?\d+(?:\.\d+)?)/i,
 		) ||
 		span.match(/(-?\d+(?:\.\d+)?)\s*[-–]\s*(-?\d+(?:\.\d+)?)/) ||
 		span.match(/(-?\d+(?:\.\d+)?)\s+to\s+(-?\d+(?:\.\d+)?)/i);
+
 	if (m) return { min: Number(m[1]), max: Number(m[2]) };
+
 	return undefined;
 }

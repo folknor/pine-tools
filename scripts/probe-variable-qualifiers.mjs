@@ -35,13 +35,17 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(here, "..");
 
 const argv = process.argv.slice(2);
+
 const opt = (f, d) => {
 	const i = argv.indexOf(f);
+
 	return i >= 0 && argv[i + 1] ? argv[i + 1] : d;
 };
+
 const FILTER = opt("--filter", null);
 const DELAY = Number(opt("--delay", "400"));
 const DRY = argv.includes("--dry");
+
 const OUT = opt(
 	"--out",
 	path.join(root, "investigations", "INV182-user-variable-qualifier", "probe.json"),
@@ -116,7 +120,9 @@ function buildScript(c) {
 	if (c.fn) {
 		return `${HEAD}${c.fn}\nplot(${c.call})\n`;
 	}
+
 	const lines = [...c.decl, "plot(str.length(x))", ...(c.after ?? [])];
+
 	return `${HEAD}${lines.join("\n")}\n`;
 }
 
@@ -130,6 +136,7 @@ function run(args, src) {
 		const c = spawn("pine-lint", [...args, "-c", src], {
 			stdio: ["ignore", "pipe", "pipe"],
 		});
+
 		let out = "";
 		c.stdout.on("data", (d) => (out += d));
 		c.on("close", () => res(out));
@@ -139,12 +146,15 @@ function run(args, src) {
 
 function errorsOf(raw) {
 	let j;
+
 	try {
 		j = JSON.parse(raw);
 	} catch {
 		return null;
 	}
+
 	if (j.success !== true) return null;
+
 	return j.result?.errors ?? j.errors ?? [];
 }
 
@@ -152,11 +162,14 @@ function errorsOf(raw) {
 // where there is one and from the prose only as a fallback.
 function qualifierOf(errs) {
 	if (!errs) return null;
+
 	for (const e of errs) {
 		if (e.ctx?.argumentType) return e.ctx.argumentType;
 		const m = /An argument of "([^"]+)" type was used/.exec(e.message ?? "");
+
 		if (m) return m[1];
 	}
+
 	return null;
 }
 
@@ -164,8 +177,10 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function control(name, { src, expect }) {
 	const errs = errorsOf(await run(["--tv"], src));
+
 	if (errs === null) throw new Error(`control "${name}": no usable --tv result`);
 	const got = errs.length === 0 ? "clean" : "errors";
+
 	if (got !== expect) throw new Error(`control "${name}": expected ${expect}, got ${got}`);
 }
 
@@ -175,6 +190,7 @@ async function main() {
 	if (DRY) {
 		for (const c of cases) process.stdout.write(`--- ${c.name}\n${buildScript(c)}\n`);
 		process.stdout.write(`${cases.length} probes\n`);
+
 		return;
 	}
 
@@ -186,6 +202,7 @@ async function main() {
 
 	const rows = [];
 	let n = 0;
+
 	for (const c of cases) {
 		const src = buildScript(c);
 		await sleep(DELAY);
@@ -218,6 +235,7 @@ async function main() {
 
 	const disagree = rows.filter((r) => r.tv !== null && r.tv !== r.local);
 	process.stdout.write(`\n${disagree.length} disagreements of ${rows.length} -> ${OUT}\n`);
+
 	for (const d of disagree)
 		process.stdout.write(`  ${d.name.padEnd(28)} we ${d.local} / TV ${d.tv}\n`);
 }

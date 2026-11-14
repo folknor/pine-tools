@@ -23,8 +23,10 @@
 // inside a string literal, INCLUDING the whitespace before the comment.
 function codePartLength(line) {
 	let quote = null;
+
 	for (let i = 0; i < line.length; i++) {
 		const ch = line[i];
+
 		if (quote) {
 			if (ch === "\\") i++;
 			else if (ch === quote) quote = null;
@@ -34,12 +36,14 @@ function codePartLength(line) {
 			return i;
 		}
 	}
+
 	return line.length;
 }
 
 function leadingWhitespaceLength(line) {
 	// u00a0 (nbsp): TV accepts nbsp indentation (see plan/31).
 	const m = line.match(/^[ \t\u00a0]*/);
+
 	return m ? m[0].length : 0;
 }
 
@@ -54,25 +58,33 @@ function leadingWhitespaceLength(line) {
 export function mapTvPositionToPhysical(lines, line, col) {
 	const original = { line, col };
 	let li = line - 1;
+
 	if (li < 0 || li >= lines.length) return original;
 	// First physical line contributes its full code part (indent kept).
 	let contributed = codePartLength(lines[li]);
 	let c = col;
+
 	while (c > contributed) {
 		c -= contributed + 1; // +1 for the join space
 		li++;
+
 		if (c < 1) return original; // pointed at the join space itself
+
 		if (li >= lines.length) return original;
 		const next = lines[li];
 		const indent = leadingWhitespaceLength(next);
+
 		// A continuation line must be indented and non-empty.
 		if (indent === 0 || indent === next.length) return original;
 		contributed = codePartLength(next) - indent;
+
 		if (contributed <= 0) return original; // comment-only line
+
 		if (c <= contributed) {
 			return { line: li + 1, col: indent + c };
 		}
 	}
+
 	return original;
 }
 
@@ -87,16 +99,20 @@ function buildRawToDisplayLineMap(source) {
 
 	while (i < source.length) {
 		const ch = source[i];
+
 		if (ch === "\r") {
 			let runEnd = i;
+
 			while (source[runEnd] === "\r") runEnd++;
 
 			if (source[runEnd] === "\n") {
 				const crCount = runEnd - i;
+
 				for (let n = 0; n < crCount - 1; n++) {
 					rawLine++;
 					rawToDisplay[rawLine] = displayLine;
 				}
+
 				rawLine++;
 				displayLine++;
 				rawToDisplay[rawLine] = displayLine;
@@ -109,6 +125,7 @@ function buildRawToDisplayLineMap(source) {
 					i++;
 				}
 			}
+
 			continue;
 		}
 
@@ -117,6 +134,7 @@ function buildRawToDisplayLineMap(source) {
 			displayLine++;
 			rawToDisplay[rawLine] = displayLine;
 		}
+
 		i++;
 	}
 
@@ -125,6 +143,7 @@ function buildRawToDisplayLineMap(source) {
 
 function mapRawToDisplay(rawToDisplay, position) {
 	const line = rawToDisplay[position.line] ?? position.line;
+
 	return line === position.line ? position : { ...position, line };
 }
 
@@ -137,17 +156,22 @@ function mapRawToDisplay(rawToDisplay, position) {
 export function remapTvDiagnostics(source, diags) {
 	const lines = source.split(/\r\n|\r|\n/);
 	const rawToDisplay = buildRawToDisplayLineMap(source);
+
 	return diags.map((d) => {
 		const physical = mapTvPositionToPhysical(lines, d.line, d.col);
 		const display = mapRawToDisplay(rawToDisplay, physical);
+
 		if (display.line === d.line && display.col === d.col) return d;
 		const extra = {};
+
 		if (physical.line !== d.line || physical.col !== d.col) {
 			extra.tvLogical = { line: d.line, col: d.col };
 		}
+
 		if (display.line !== physical.line) {
 			extra.rawPosition = { line: physical.line, col: physical.col };
 		}
+
 		return { ...d, line: display.line, col: display.col, ...extra };
 	});
 }

@@ -18,6 +18,7 @@ export function joinQualifier(a: Qualifier, b: Qualifier): Qualifier {
 
 export function leadingQualifierOf(raw: string): Qualifier | undefined {
 	const m = raw.trim().match(/^(const|input|simple|series)\b/);
+
 	return m ? (m[1] as Qualifier) : undefined;
 }
 

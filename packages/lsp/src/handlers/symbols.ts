@@ -19,6 +19,7 @@ export function setupSymbolsHandler(
 ): void {
 	connection.onDocumentSymbol((params: DocumentSymbolParams) => {
 		const symbols = languageService.getDocumentSymbols(params.textDocument.uri);
+
 		return symbols.map(convertDocumentSymbol);
 	});
 }

@@ -21,8 +21,10 @@ import { SemanticAnalyzer } from "../../core/src/parser/semanticAnalyzer";
 declare const __BUILD_TIME__: string;
 declare const __VERSION__: string;
 declare const __GIT_REF__: string;
+
 const BUILD_TIME =
 	typeof __BUILD_TIME__ !== "undefined" ? __BUILD_TIME__ : "dev";
+
 const VERSION = typeof __VERSION__ !== "undefined" ? __VERSION__ : "dev";
 const GIT_REF = typeof __GIT_REF__ !== "undefined" ? __GIT_REF__ : "dev";
 
@@ -93,17 +95,21 @@ function parseArgs(argv: string[]): ParsedArgs {
 		human: false,
 		noLint: false,
 	};
+
 	for (let i = 0; i < argv.length; i++) {
 		const arg = argv[i];
+
 		if (arg === "-h" || arg === "--help") {
 			parsed.help = true;
 		} else if (arg === "-V" || arg === "--version") {
 			parsed.version = true;
 		} else if (arg === "-c" || arg === "--code") {
 			const value = argv[++i];
+
 			if (value === undefined) {
 				throw new Error(`Missing value for ${arg}`);
 			}
+
 			parsed.code = value;
 		} else if (arg === "--tv") {
 			parsed.tv = true;
@@ -123,6 +129,7 @@ function parseArgs(argv: string[]): ParsedArgs {
 			throw new Error(`Unexpected argument: ${arg}`);
 		}
 	}
+
 	return parsed;
 }
 
@@ -143,7 +150,9 @@ function parseSourceDirective(
 	importLine: number,
 ): string | undefined {
 	const line = lines[importLine - 2];
+
 	if (!line) return undefined;
+
 	return line.match(/^\s*\/\/\/\s*@source\s+(.+?)\s*$/)?.[1];
 }
 
@@ -153,21 +162,27 @@ function collectLocalLibraryExports(
 ): Map<string, Set<string>> {
 	const exportsByPath = new Map<string, Set<string>>();
 	const lines = code.split(/\r\n|\r|\n/);
+
 	for (let i = 0; i < lines.length; i++) {
 		const sourcePath = parseSourceDirective(lines, i + 1);
+
 		if (!sourcePath || !/^\s*import\s+/.test(lines[i] ?? "")) continue;
 		const absolutePath = path.resolve(baseDir, sourcePath);
+
 		if (!fs.existsSync(absolutePath)) continue;
 		const libSource = fs.readFileSync(absolutePath, "utf-8");
 		const libParser = new Parser(libSource);
 		const libAst = libParser.parse();
+
 		if (
 			libParser.getLexerErrors().length > 0 ||
 			libParser.getParserErrors().length > 0
 		) {
 			continue;
 		}
+
 		const exports = new Set<string>();
+
 		for (const stmt of libAst.body) {
 			if (
 				(stmt.type === "FunctionDeclaration" ||
@@ -177,8 +192,10 @@ function collectLocalLibraryExports(
 				exports.add(stmt.name);
 			}
 		}
+
 		exportsByPath.set(sourcePath, exports);
 	}
+
 	return exportsByPath;
 }
 
@@ -188,17 +205,20 @@ function collectLocalLibraryExports(
 async function checkWithTradingView(code: string): Promise<unknown> {
 	const url =
 		"https://pine-facade.tradingview.com/pine-facade/translate_light?user_name=admin&v=3";
+
 	const headers: Record<string, string> = {
 		Referer: "https://www.tradingview.com/",
 		"User-Agent":
 			"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
 		DNT: "1",
 	};
+
 	const form = new FormData();
 	form.append("source", code);
 
 	const controller = new AbortController();
 	const timer = setTimeout(() => controller.abort(), 10_000);
+
 	try {
 		const resp = await fetch(url, {
 			method: "POST",
@@ -206,6 +226,7 @@ async function checkWithTradingView(code: string): Promise<unknown> {
 			headers,
 			signal: controller.signal,
 		});
+
 		return await resp.json();
 	} finally {
 		clearTimeout(timer);
@@ -241,41 +262,54 @@ function printHuman(payload: HumanPayload, label: string): number {
 			2,
 			`${label}: ${payload.error ?? payload.reason ?? "validation failed"}\n`,
 		);
+
 		return 1;
 	}
+
 	// TV has been seen putting errors both under result and at the top level.
 	const errors = payload.result?.errors ?? payload.errors ?? [];
 	const warnings = payload.result?.warnings ?? [];
+
 	// A `lint`-stage finding is prefixed with its rule id, both to mark it as
 	// ours rather than TradingView's and to name what `--no-lint` turns off.
 	const line = (severity: string, e: PineLintError) =>
 		`${label}:${e.start.line}:${e.start.column}: ${severity}: ${
 			e.rule ? `[${e.rule}] ` : ""
 		}${fillTemplate(e)}`;
+
 	const out: string[] = [];
+
 	for (const e of errors) out.push(line("error", e));
+
 	for (const w of warnings) out.push(line("warning", w));
+
 	if (errors.length === 0 && warnings.length === 0) {
 		out.push(`${label}: clean`);
 	} else {
 		const counts: string[] = [];
+
 		if (errors.length > 0) {
 			counts.push(`${errors.length} error${errors.length === 1 ? "" : "s"}`);
 		}
+
 		if (warnings.length > 0) {
 			counts.push(
 				`${warnings.length} warning${warnings.length === 1 ? "" : "s"}`,
 			);
 		}
+
 		out.push(`${label}: ${counts.join(", ")}`);
 	}
+
 	// fd 1: synchronous flush so a piped (non-tty) caller always gets the lines.
 	fs.writeSync(1, `${out.join("\n")}\n`);
+
 	return errors.length > 0 ? 1 : 0;
 }
 
 async function main() {
 	let parsed: ParsedArgs;
+
 	try {
 		parsed = parseArgs(process.argv.slice(2));
 	} catch (e) {
@@ -303,6 +337,7 @@ async function main() {
 		console.error(`No input provided.\n\n${HELP}`);
 		process.exit(2);
 	}
+
 	if (sourceCount > 1) {
 		console.error(
 			`Provide only one of: file path, --code, or stdin.\n\n${HELP}`,
@@ -313,6 +348,7 @@ async function main() {
 	let code: string;
 	let label = "<code>";
 	let baseDir = process.cwd();
+
 	if (parsed.code !== undefined) {
 		code = parsed.code;
 	} else if (parsed.stdin) {
@@ -322,13 +358,16 @@ async function main() {
 		const filePath = parsed.filePath as string;
 		const absolutePath = path.resolve(filePath);
 		baseDir = path.dirname(absolutePath);
+
 		if (!fs.existsSync(absolutePath)) {
 			const output: PineLintOutput = {
 				success: false,
 				error: `File not found: ${filePath}`,
 			};
+
 			emitAndExit(JSON.stringify(output, null, 2), 1);
 		}
+
 		label = filePath;
 		code = fs.readFileSync(absolutePath, "utf-8");
 	}
@@ -339,12 +378,15 @@ async function main() {
 				success?: boolean;
 				result?: Record<string, unknown>;
 			};
+
 			if (!parsed.fullResponse && tvResult.result) {
 				delete tvResult.result.scopes;
 			}
+
 			if (parsed.human) {
 				process.exit(printHuman(tvResult as HumanPayload, label));
 			}
+
 			// Synchronous write to fd 1 so the (often large) TV response is never
 			// truncated by a racing process.exit() on a pipe - a truncated JSON
 			// reads as "no verdict" downstream. see emitAndExit.
@@ -368,9 +410,11 @@ async function main() {
 
 	try {
 		const sourceLines = code.split(/\r\n|\r|\n/);
+
 		const parser = new Parser(code, (importLine) =>
 			parseSourceDirective(sourceLines, importLine),
 		);
+
 		const ast = parser.parse();
 
 		// Get lexer errors first (string validation, etc.)
@@ -390,10 +434,12 @@ async function main() {
 
 		// Run validation to get errors (version-aware)
 		const localLibraryExports = collectLocalLibraryExports(code, baseDir);
+
 		const validator = new UnifiedPineValidator(
 			localLibraryExports,
 			lexerErrors.length === 0 && parserErrors.length === 0,
 		);
+
 		const validationErrors = validator.validate(ast, detectedVersion);
 
 		// Run semantic analysis to get warnings (only for v6)
@@ -402,11 +448,14 @@ async function main() {
 		// TV-mirroring SemanticAnalyzer warnings so they can carry the `lint`
 		// stage. see INV144
 		const semanticLints = [];
+
 		if (detectedVersion === "6") {
 			const semanticAnalyzer = new SemanticAnalyzer();
 			semanticWarnings.push(...semanticAnalyzer.analyze(ast));
+
 			if (!parsed.noLint) semanticLints.push(...runSemanticLints(ast));
 		}
+
 		const mapSourcePosition = createSourcePositionMapper(code);
 
 		// Convert lexer errors to pine-lint format. Lexer/parser failures are the
@@ -414,6 +463,7 @@ async function main() {
 		const lexerPineLintErrors: PineLintError[] = lexerErrors.map((e) => {
 			const start = mapSourcePosition({ line: e.line, column: e.column });
 			const end = mapSourcePosition({ line: e.line, column: e.column + 1 });
+
 			return {
 				start,
 				end,
@@ -428,14 +478,18 @@ async function main() {
 		const parserPineLintErrors: PineLintError[] = parserErrors.map((e) => {
 			const start = mapSourcePosition({ line: e.line, column: e.column });
 			const end = mapSourcePosition({ line: e.line, column: e.column + 1 });
+
 			const out: PineLintError = {
 				start,
 				end,
 				message: e.message,
 				stage: "syntax",
 			};
+
 			if (e.code !== undefined) out.code = e.code;
+
 			if (e.ctx !== undefined) out.ctx = e.ctx;
+
 			return out;
 		});
 
@@ -445,18 +499,23 @@ async function main() {
 			.filter((e) => e.severity === DiagnosticSeverity.Error)
 			.map((e) => {
 				const start = mapSourcePosition({ line: e.line, column: e.column });
+
 				const end = mapSourcePosition({
 					line: e.line,
 					column: e.column + e.length,
 				});
+
 				const out: PineLintError = {
 					start,
 					end,
 					message: e.message,
 					stage: "type",
 				};
+
 				if (e.code !== undefined) out.code = e.code;
+
 				if (e.ctx !== undefined) out.ctx = e.ctx;
+
 				return out;
 			});
 
@@ -480,10 +539,12 @@ async function main() {
 			)
 			.map((w) => {
 				const start = mapSourcePosition({ line: w.line, column: w.column });
+
 				const end = mapSourcePosition({
 					line: w.line,
 					column: w.column + w.length,
 				});
+
 				// `rule` always, plus the TV `code` this warning mirrors. Without
 				// either, 122 of 140 corpus warnings were unfilterable except by
 				// matching prose. see INV148
@@ -494,7 +555,9 @@ async function main() {
 					stage: "analysis",
 					rule: w.rule,
 				};
+
 				if (w.code !== undefined) out.code = w.code;
+
 				return out;
 			});
 
@@ -519,10 +582,12 @@ async function main() {
 			.sort((a, b) => a.line - b.line || a.column - b.column)
 			.map((w) => {
 				const start = mapSourcePosition({ line: w.line, column: w.column });
+
 				const end = mapSourcePosition({
 					line: w.line,
 					column: w.column + w.length,
 				});
+
 				return {
 					start,
 					end,
@@ -544,6 +609,7 @@ async function main() {
 		const unsupportedVersion = validationPineLintErrors.find(
 			(e) => e.code === UNSUPPORTED_VERSION_CODE,
 		);
+
 		const errors: PineLintError[] = unsupportedVersion
 			? [unsupportedVersion]
 			: [
@@ -569,19 +635,24 @@ async function main() {
 			success: true,
 			result,
 		};
+
 		if (parsed.human) {
 			process.exit(printHuman(output as HumanPayload, label));
 		}
+
 		emitAndExit(JSON.stringify(output, null, 2), 0);
 	} catch (e: unknown) {
 		const error = e as { message?: string };
+
 		const output: PineLintOutput = {
 			success: false,
 			error: error.message || String(e),
 		};
+
 		if (parsed.human) {
 			process.exit(printHuman(output as HumanPayload, label));
 		}
+
 		emitAndExit(JSON.stringify(output, null, 2), 1);
 	}
 }

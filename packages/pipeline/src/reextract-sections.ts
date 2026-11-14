@@ -26,11 +26,13 @@ import { extractSections, operatorSlug } from "./section-parse.ts";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
 const PROJECT_ROOT = __dirname.includes("/dist/")
 	? path.resolve(__dirname, "../../../../..")
 	: path.resolve(__dirname, "../../..");
 
 const MIRROR_DIR = path.join(PROJECT_ROOT, ".cache/dom");
+
 const DETAILS_FILE = path.join(
 	PROJECT_ROOT,
 	"pine-data/raw/v6/complete-v6-details.json",
@@ -72,8 +74,10 @@ function applySections(
 		sections.seeAlso = sections.seeAlso.filter(
 			(s) => !(s === name && isSelfReference(s)),
 		);
+
 		if (sections.seeAlso.length === 0) sections.seeAlso = undefined;
 	}
+
 	const before = JSON.stringify([
 		detail.returnsDescription,
 		detail.remarks,
@@ -84,8 +88,10 @@ function applySections(
 	if (sections.returnsDescription)
 		detail.returnsDescription = sections.returnsDescription;
 	else delete detail.returnsDescription;
+
 	if (sections.remarks) detail.remarks = sections.remarks;
 	else delete detail.remarks;
+
 	if (sections.seeAlso) detail.seeAlso = sections.seeAlso;
 	else delete detail.seeAlso;
 
@@ -94,6 +100,7 @@ function applySections(
 		detail.remarks,
 		detail.seeAlso,
 	]);
+
 	return before !== after;
 }
 
@@ -112,15 +119,20 @@ function main(): void {
 	// catalog other than the symbol's own - otherwise it points to a same-named
 	// sibling in a different catalog and must be kept.
 	const nameToCatalogs = new Map<string, Set<string>>();
+
 	for (const { key } of CATALOGS) {
 		const catalog = details[key] as Record<string, unknown> | undefined;
+
 		if (!catalog) continue;
+
 		for (const name of Object.keys(catalog)) {
 			let set = nameToCatalogs.get(name);
+
 			if (!set) {
 				set = new Set();
 				nameToCatalogs.set(name, set);
 			}
+
 			set.add(key);
 		}
 	}
@@ -129,22 +141,27 @@ function main(): void {
 		const catalog = details[key] as
 			| Record<string, Record<string, unknown>>
 			| undefined;
+
 		if (!catalog) continue;
 
 		const isSelfReference = (seeAlsoName: string): boolean => {
 			const catalogs = nameToCatalogs.get(seeAlsoName);
+
 			// True self-ref: name occurs only in this catalog (no cross-catalog twin).
 			return !catalogs || (catalogs.size === 1 && catalogs.has(key));
 		};
 
 		let changed = 0;
 		let missing = 0;
+
 		for (const [name, detail] of Object.entries(catalog)) {
 			const file = path.join(MIRROR_DIR, dir(name), "base.html");
+
 			if (!fs.existsSync(file)) {
 				missing++;
 				continue;
 			}
+
 			if (
 				applySections(
 					name,
@@ -155,6 +172,7 @@ function main(): void {
 			)
 				changed++;
 		}
+
 		console.log(
 			`${key}: ${changed} changed, ${missing} missing mirror (of ${Object.keys(catalog).length}).`,
 		);

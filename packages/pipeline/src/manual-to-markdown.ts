@@ -49,9 +49,11 @@ const ALERT_BY_LABEL: Record<string, string> = {
 export function extractContentHtml(pageHtml: string): string {
 	const startMarker = 'id="slot-container"';
 	const startIdx = pageHtml.indexOf(startMarker);
+
 	if (startIdx === -1) {
 		throw new Error("Could not find #slot-container in page HTML");
 	}
+
 	// Skip to the end of the opening <div ...> tag.
 	const contentStart = pageHtml.indexOf(">", startIdx) + 1;
 
@@ -79,8 +81,10 @@ export function extractContentHtml(pageHtml: string): string {
 
 function hasClass(node: unknown, className: string): boolean {
 	const el = node as { getAttribute?: (name: string) => string | null };
+
 	if (typeof el.getAttribute !== "function") return false;
 	const cls = el.getAttribute("class") ?? "";
+
 	return new RegExp(`(^|\\s)${className}(\\s|$)`).test(cls);
 }
 
@@ -92,6 +96,7 @@ function buildTurndown(): TurndownService {
 		emDelimiter: "_",
 		hr: "---",
 	});
+
 	td.use(gfm);
 
 	// Anything non-content that can sneak inside slot-container.
@@ -106,6 +111,7 @@ function buildTurndown(): TurndownService {
 			(node as unknown as Element).getAttribute("data-pine-colorizer") === "1",
 		replacement: (_content, node) => {
 			const code = (node.textContent ?? "").replace(/^\n+|\n+$/g, "");
+
 			return `\n\n\`\`\`pine\n${code}\n\`\`\`\n\n`;
 		},
 	});
@@ -119,13 +125,16 @@ function buildTurndown(): TurndownService {
 			const pre = el.querySelector("pre");
 			const lang = pre?.getAttribute("data-language") ?? "";
 			const fenceLang = lang === "text" || lang === "plaintext" ? "" : lang;
+
 			const lines = Array.from(el.querySelectorAll(".ec-line")).map(
 				(line) => line.textContent ?? "",
 			);
+
 			const code =
 				lines.length > 0
 					? lines.join("\n")
 					: (pre?.textContent ?? "").replace(/^\n+|\n+$/g, "");
+
 			return `\n\n\`\`\`${fenceLang}\n${code}\n\`\`\`\n\n`;
 		},
 	});
@@ -141,8 +150,10 @@ function buildTurndown(): TurndownService {
 			const header = (node as unknown as Element).querySelector(
 				".tv-informer-header",
 			);
+
 			const label = (header?.textContent ?? "").trim().toLowerCase();
 			const type = ALERT_BY_LABEL[label] ?? "NOTE";
+
 			const body = content
 				.replace(/^\n+|\n+$/g, "")
 				// Collapse runs of blank/whitespace-only lines (left by dropped images
@@ -150,6 +161,7 @@ function buildTurndown(): TurndownService {
 				.replace(/\n[ \t]*(?:\n[ \t]*)+/g, "\n\n")
 				.replace(/^/gm, "> ")
 				.replace(/^>[ \t]*$/gm, ">"); // tidy blank continuation lines
+
 			return `\n\n> [!${type}]\n${body}\n\n`;
 		},
 	});
@@ -196,6 +208,7 @@ function buildTurndown(): TurndownService {
 			const level = Number(node.nodeName.charAt(1));
 			const id = (node as unknown as Element).getAttribute("id");
 			const anchor = id ? ` {#${id}}` : "";
+
 			return `\n\n${"#".repeat(level)} ${content.trim()}${anchor}\n\n`;
 		},
 	});
@@ -271,5 +284,6 @@ function yamlString(value: string): string {
 	if (/[:#"'[\]{}&*!|>%@`]/.test(value) || /^\s|\s$/.test(value)) {
 		return `"${value.replace(/"/g, '\\"')}"`;
 	}
+
 	return value;
 }

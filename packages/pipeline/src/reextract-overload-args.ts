@@ -21,11 +21,13 @@ import { parseArgTypeText } from "./arg-parse.ts";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
 const PROJECT_ROOT = __dirname.includes("/dist/")
 	? path.resolve(__dirname, "../../../../..")
 	: path.resolve(__dirname, "../../..");
 
 const MIRROR_DIR = path.join(PROJECT_ROOT, ".cache/dom");
+
 const DETAILS_FILE = path.join(
 	PROJECT_ROOT,
 	"pine-data/raw/v6/complete-v6-details.json",
@@ -46,6 +48,7 @@ function argTypesFromHtml(
 	html: string,
 ): Array<{ name: string; type: string; description: string }> {
 	const out: Array<{ name: string; type: string; description: string }> = [];
+
 	// Each arg row is a `__text tv-text` div whose inner content is
 	// `<span class="...arg-type">name (type)</span>description`. Match those
 	// divs, keep only the ones holding an arg-type span, then strip inline tags
@@ -53,12 +56,16 @@ function argTypesFromHtml(
 	// scrape's parentElement.textContent. (No arg row nests a <div>, verified.)
 	const re =
 		/<div class="tv-pine-reference-item__text tv-text">([\s\S]*?)<\/div>/g;
+
 	for (const m of html.matchAll(re)) {
 		const inner = m[1];
+
 		if (!inner.includes("tv-pine-reference-item__arg-type")) continue;
 		const text = decodeEntities(stripTags(inner));
+
 		for (const entry of parseArgTypeText(text)) out.push(entry);
 	}
+
 	return out;
 }
 
@@ -78,6 +85,7 @@ function main(): void {
 		details.functions || {},
 	)) {
 		const overloads = detail.overloads as string[] | undefined;
+
 		if (!overloads || overloads.length < 2) continue;
 
 		const safeName = name.replace(/[^a-zA-Z0-9_.-]/g, "_");
@@ -87,10 +95,12 @@ function main(): void {
 
 		for (let i = 0; i < overloads.length; i++) {
 			const file = path.join(dir, `overload-${i}.html`);
+
 			if (!fs.existsSync(file)) {
 				haveAll = false;
 				break;
 			}
+
 			next.push(argTypesFromHtml(fs.readFileSync(file, "utf8")));
 		}
 
@@ -101,6 +111,7 @@ function main(): void {
 
 		const before = JSON.stringify(detail.overloadArgs);
 		const after = JSON.stringify(next);
+
 		if (before !== after) {
 			detail.overloadArgs = next;
 			changed++;

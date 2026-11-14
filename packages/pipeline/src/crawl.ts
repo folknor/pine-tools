@@ -105,6 +105,7 @@ export async function crawlPineScriptReference(): Promise<CrawlResult> {
 		await page.setRequestInterception(true);
 		page.on("request", (request) => {
 			const resourceType = request.resourceType();
+
 			if (["image", "stylesheet", "font", "media"].includes(resourceType)) {
 				request.abort();
 			} else {
@@ -166,6 +167,7 @@ export async function crawlPineScriptReference(): Promise<CrawlResult> {
 
 			// Extract all TOC items (this is where all language constructs are listed)
 			const tocLinks = document.querySelectorAll(".tv-pine-reference-toc-item");
+
 			const allDiscoveredItems = {
 				variables: [] as string[],
 				functions: [] as string[],
@@ -175,6 +177,7 @@ export async function crawlPineScriptReference(): Promise<CrawlResult> {
 				keywords: new Set<string>(),
 				operators: new Set<string>(),
 			};
+
 			// One-run safety net: tally TOC href prefixes (#<prefix>_) we DON'T
 			// classify, so a single crawl reveals the real annotation anchor prefix
 			// if it isn't `an_`.
@@ -211,6 +214,7 @@ export async function crawlPineScriptReference(): Promise<CrawlResult> {
 						allDiscoveredItems.keywords.add(text);
 					} else {
 						const m = href.match(/#([a-z]+)_/i);
+
 						if (m) {
 							unclassifiedPrefixes[m[1]] =
 								(unclassifiedPrefixes[m[1]] || 0) + 1;
@@ -234,8 +238,10 @@ export async function crawlPineScriptReference(): Promise<CrawlResult> {
 				// Extract keywords
 				keywordRegex.lastIndex = 0;
 				let match: RegExpExecArray | null;
+
 				for (;;) {
 					match = keywordRegex.exec(text);
+
 					if (match === null) break;
 					allDiscoveredItems.keywords.add(match[1]);
 				}
@@ -255,9 +261,11 @@ export async function crawlPineScriptReference(): Promise<CrawlResult> {
 					const namespace = parts[0];
 					const member = parts.slice(1).join(".");
 					variableNamespaces.add(namespace);
+
 					if (!variablesByNamespace[namespace]) {
 						variablesByNamespace[namespace] = [];
 					}
+
 					variablesByNamespace[namespace].push(member);
 				} else {
 					standaloneVariables.push(variable);
@@ -275,16 +283,20 @@ export async function crawlPineScriptReference(): Promise<CrawlResult> {
 					const funcName = parts.slice(1).join(".");
 
 					functionNamespaces.add(namespace);
+
 					if (!functionsByNamespace[namespace]) {
 						functionsByNamespace[namespace] = [];
 					}
+
 					functionsByNamespace[namespace].push(funcName);
 				} else {
 					// Standalone function (no namespace)
 					functionNamespaces.add("global");
+
 					if (!functionsByNamespace.global) {
 						functionsByNamespace.global = [];
 					}
+
 					functionsByNamespace.global.push(func);
 				}
 			});
@@ -300,9 +312,11 @@ export async function crawlPineScriptReference(): Promise<CrawlResult> {
 					const constantName = parts.slice(1).join(".");
 
 					constantNamespaces.add(namespace);
+
 					if (!constantsByNamespace[namespace]) {
 						constantsByNamespace[namespace] = [];
 					}
+
 					constantsByNamespace[namespace].push(constantName);
 				}
 			});
@@ -345,8 +359,10 @@ export async function crawlPineScriptReference(): Promise<CrawlResult> {
 			const variableStandaloneCount = result.builtInVariables.standalone.count;
 			const variableNamespaceCount = result.builtInVariables.namespaces.count;
 			const constantNamespaceCount = result.constants.namespaces.count;
+
 			const constantItemCount =
 				Object.values(constantsByNamespace).flat().length;
+
 			const functionNamespaceCount = result.functions.namespaces.count;
 			const functionItemCount = allDiscoveredItems.functions.length;
 			const typeCount = result.types.count;
@@ -386,6 +402,7 @@ export async function crawlPineScriptReference(): Promise<CrawlResult> {
 		} else {
 			// Ensure output directory exists
 			const outputDir = path.dirname(OUTPUT_FILE);
+
 			if (!fs.existsSync(outputDir)) {
 				fs.mkdirSync(outputDir, { recursive: true });
 			}

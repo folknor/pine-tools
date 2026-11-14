@@ -20,11 +20,14 @@ const lspDist = path.join(outDir, "packages", "lsp", "bin");
 const pineDataDist = path.join(outDir, "pine-data", "v6");
 
 fs.mkdirSync(vscodeDist, { recursive: true });
+
 fs.mkdirSync(lspDist, { recursive: true });
+
 fs.mkdirSync(pineDataDist, { recursive: true });
 
 // Copy JSON files from pine-data
 const pineDataSrc = path.join(__dirname, "..", "pine-data", "v6");
+
 for (const file of fs.readdirSync(pineDataSrc)) {
 	if (file.endsWith(".json")) {
 		fs.copyFileSync(
@@ -40,9 +43,11 @@ for (const file of fs.readdirSync(pineDataSrc)) {
 // local timezone, second granularity) and `__GIT_REF__` (the commit it was
 // built from).
 const pkgVersion = require("../package.json").version;
+
 const buildTime = (() => {
 	const d = new Date();
 	const pad = (n) => String(n).padStart(2, "0");
+
 	return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 })();
 
@@ -59,9 +64,11 @@ const gitRef = (() => {
 			encoding: "utf8",
 			stdio: ["ignore", "pipe", "ignore"],
 		}).trim();
+
 	try {
 		const sha = git(["rev-parse", "--short", "HEAD"]);
 		const dirty = git(["status", "--porcelain"]) !== "";
+
 		return dirty ? `${sha}-dirty` : sha;
 	} catch {
 		return "unknown";

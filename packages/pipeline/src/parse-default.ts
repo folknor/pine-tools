@@ -67,20 +67,24 @@ const STOP = new Set([
 
 export function parseDefault(description: string): string | undefined {
 	const m = description.match(/the default(?:\s+value)?\s+is\s+(.+)/is);
+
 	if (!m) return undefined;
 	const rest = m[1].trimStart();
 
 	// Quoted literal - match up to the SAME closing quote so embedded other
 	// quotes survive (e.g. "yyyy-MM-dd'T'HH:mm:ssZ").
 	const q = rest.match(/^(['"`])(.*?)\1/);
+
 	if (q) return q[2];
 
 	// Namespaced constant / dotted identifier (alert.freq_once_per_bar).
 	const id = rest.match(/^([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z0-9_]+)+)/);
+
 	if (id) return id[1];
 
 	// Numeric literal (tolerate a leading "~", e.g. "~50 lines" -> "50").
 	const num = rest.match(/^~?\s*(-?\d+(?:\.\d+)?)/);
+
 	if (num) return num[1];
 
 	// Empty-string phrasings ("an empty string", "empty string").
@@ -92,13 +96,17 @@ export function parseDefault(description: string): string | undefined {
 	if (/^no\s+color/i.test(rest)) return "na";
 
 	const w = rest.match(/^([A-Za-z_][A-Za-z0-9_]*)/);
+
 	if (w) {
 		const lw = w[1].toLowerCase();
+
 		if (lw === "true" || lw === "false" || lw === "na") return lw;
+
 		if (WORDNUM[lw] !== undefined) return WORDNUM[lw];
 		// A lone value token terminated by "." or ")" (e.g. "close.") - but not an
 		// English stopword that begins a referential phrase.
 		const after = rest.slice(w[1].length).trimStart();
+
 		if (!STOP.has(lw) && /^[.)]/.test(after)) return w[1];
 	}
 
@@ -110,16 +118,23 @@ export function parseDefault(description: string): string | undefined {
 // undefined for anything still unrecognized (genuinely free prose).
 function parseDynamicDefault(rest: string): string | undefined {
 	if (/the chart'?s symbol/i.test(rest)) return "CHART_SYMBOL";
+
 	if (/number of chart bars/i.test(rest)) return "CHART_BARS";
+
 	if (/the format value used by the (?:indicator|strategy)/i.test(rest)) {
 		return "SCRIPT_FORMAT";
 	}
+
 	if (/the precision value used by the (?:indicator|strategy)/i.test(rest)) {
 		return "SCRIPT_PRECISION";
 	}
+
 	const arg = rest.match(/the argument used for (\w+)/i);
+
 	if (arg) return `ARG:${arg[1]}`;
+
 	if (/the length of the source string/i.test(rest)) return "SOURCE_LENGTH";
+
 	// Anything else (e.g. ta.vwap.anchor's "equivalent to passing
 	// timeframe.change() with \"1D\" as its argument" - too awkward to
 	// reconstruct faithfully) is left undefined rather than captured wrong.

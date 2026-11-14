@@ -17,23 +17,28 @@ import { readdir, readFile, access } from "node:fs/promises";
 import { join, relative, resolve } from "node:path";
 
 const HELPERS = resolve("dist/packages/core/test/helpers.js");
+
 try {
 	await access(HELPERS);
 } catch {
 	console.error(`No compiled helpers at ${HELPERS}. Run \`pnpm run build:tsc\` first.`);
 	process.exit(2);
 }
+
 const { parseTestFile, runTest } = await import(`file://${HELPERS}`);
 
 const FIXTURE_ROOT = resolve("packages/core/test/fixtures");
 
 async function findPineFiles(dir) {
 	const out = [];
+
 	for (const entry of await readdir(dir, { withFileTypes: true })) {
 		const full = join(dir, entry.name);
+
 		if (entry.isDirectory()) out.push(...(await findPineFiles(full)));
 		else if (entry.isFile() && entry.name.endsWith(".pine")) out.push(full);
 	}
+
 	return out;
 }
 
@@ -54,6 +59,7 @@ for (const file of files) {
 	const hasCountAssertion =
 		parsed.expectations.errorCount !== undefined ||
 		parsed.expectations.warningCount !== undefined;
+
 	const hasPerErrorAssertion =
 		(parsed.expectations.errors && parsed.expectations.errors.length > 0) ||
 		(parsed.expectations.warnings && parsed.expectations.warnings.length > 0);
@@ -77,10 +83,13 @@ console.log(`Scanned ${files.length} .pine fixtures.\n`);
 
 if (malformed.length > 0) {
 	console.log(`=== Malformed @expects directives (${malformed.length} files) ===`);
+
 	for (const m of malformed) {
 		console.log(`\n  ${m.file}:`);
+
 		for (const e of m.errors) console.log(`    ${e}`);
 	}
+
 	console.log("");
 } else {
 	console.log(`No malformed @expects directives.\n`);
@@ -90,22 +99,28 @@ if (countOnly.length > 0) {
 	console.log(`=== Count-only assertions, no per-error coverage (${countOnly.length} files) ===`);
 	console.log(`These tests pass even if errors land on the wrong lines.`);
 	console.log(`Suggested per-error directives (paste into the fixture):\n`);
+
 	for (const c of countOnly) {
 		console.log(`  ${c.file}:`);
+
 		if (c.expectedErrorCount !== undefined) {
 			console.log(`    // existing: @expects errors: ${c.expectedErrorCount}  (actual: ${c.actualErrors.length})`);
 		}
+
 		if (c.expectedWarningCount !== undefined) {
 			console.log(`    // existing: @expects warnings: ${c.expectedWarningCount}  (actual: ${c.actualWarnings.length})`);
 		}
+
 		for (const e of c.actualErrors) {
 			const msg = e.message.replace(/"/g, '\\"').slice(0, 80);
 			console.log(`    // @expects error: line=${e.line}, message="${msg}"`);
 		}
+
 		for (const w of c.actualWarnings) {
 			const msg = w.message.replace(/"/g, '\\"').slice(0, 80);
 			console.log(`    // @expects warning: line=${w.line}, message="${msg}"`);
 		}
+
 		console.log("");
 	}
 } else {

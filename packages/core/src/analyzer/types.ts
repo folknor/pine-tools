@@ -53,6 +53,7 @@ export namespace TypeChecker {
 	// `chart.bg_color` (input<color>) and `chart.left_visible_bar_time` (input<int>).
 	function canonicalizeQualifier(type: PineType): PineType {
 		const m = (type as string).match(/^(input|const)<(\w+)>$/);
+
 		return m ? (`simple<${m[2]}>` as PineType) : type;
 	}
 
@@ -65,6 +66,7 @@ export namespace TypeChecker {
 		const base = (type as string)
 			.replace(/^(series|simple|input|const)\s+/, "")
 			.replace(/^(series|simple|input|const)<(.+)>$/, "$2");
+
 		return base === "plot_display" || base === "plot_simple_display";
 	}
 
@@ -79,13 +81,16 @@ export namespace TypeChecker {
 
 		// Handle space-separated qualifier types: "series int" -> "series<int>"
 		const match = type.match(/^(series|simple|const|input)\s+(\w+)$/);
+
 		if (match) {
 			const [, qualifier, baseType] = match;
+
 			if (qualifier === "series") {
 				return `series<${baseType}>` as PineType;
 			} else if (qualifier === "simple") {
 				return `simple<${baseType}>` as PineType;
 			}
+
 			// const and input types are treated as the base type
 			return baseType as PineType;
 		}
@@ -99,6 +104,7 @@ export namespace TypeChecker {
 
 		// Extract qualifier and union: "series int/float" -> ["series", "int/float"]
 		const qualifierMatch = to.match(/^(series|simple|const|input)\s+(.+)$/);
+
 		const fromQualifierMatch = from.match(
 			/^(series|simple|const|input)\s+(.+)$/,
 		);
@@ -110,12 +116,14 @@ export namespace TypeChecker {
 			// Get base type from 'from'
 			let fromBase = from;
 			let fromQualifier = "";
+
 			if (fromQualifierMatch) {
 				fromQualifier = fromQualifierMatch[1];
 				fromBase = fromQualifierMatch[2];
 			} else if (from.includes("<")) {
 				// Handle our format: "series<int>" -> qualifier="series", base="int"
 				const bracketMatch = from.match(/^(\w+)<(\w+)>$/);
+
 				if (bracketMatch) {
 					fromQualifier = bracketMatch[1];
 					fromBase = bracketMatch[2];
@@ -126,6 +134,7 @@ export namespace TypeChecker {
 			if (toTypes.includes(fromBase)) {
 				// Qualifiers must be compatible (series accepts simple, simple accepts const, etc.)
 				if (toQualifier === "series") return true; // series accepts everything
+
 				if (
 					toQualifier === "simple" &&
 					(fromQualifier === "simple" ||
@@ -133,11 +142,13 @@ export namespace TypeChecker {
 						fromQualifier === "")
 				)
 					return true;
+
 				if (
 					toQualifier === "const" &&
 					(fromQualifier === "const" || fromQualifier === "")
 				)
 					return true;
+
 				if (
 					toQualifier === "input" &&
 					(fromQualifier === "input" ||
@@ -149,9 +160,11 @@ export namespace TypeChecker {
 		} else {
 			// No qualifier, just union type like "int/float"
 			const toTypes = to.split("/");
+
 			const fromBase = from
 				.replace(/^(series|simple|const|input)\s+/, "")
 				.replace(/^(\w+)<(\w+)>$/, "$2");
+
 			if (toTypes.includes(fromBase)) return true;
 		}
 
@@ -161,6 +174,7 @@ export namespace TypeChecker {
 	// Check if type is an na variant (na, const<na>, series<na>)
 	export function isNaType(type: PineType): boolean {
 		const t = type as string;
+
 		return (
 			t === "na" ||
 			t === "const<na>" ||
@@ -180,8 +194,11 @@ export namespace TypeChecker {
 	): boolean {
 		from = canonicalizeQualifier(from);
 		to = canonicalizeQualifier(to);
+
 		if (from === to) return true;
+
 		if (to === "unknown" || from === "unknown") return true;
+
 		if (isNaType(from)) return true; // na is assignable to any type (const<na>, series<na>, etc.)
 
 		// Qualifiers never block assignability on their own (Pine's `:=`
@@ -194,9 +211,11 @@ export namespace TypeChecker {
 		{
 			const fromBase = baseTypeName(from as string);
 			const toBase = baseTypeName(to as string);
+
 			if (!fromBase.includes("<") && !toBase.includes("<")) {
 				if (fromBase === toBase && fromBase !== "na") return true;
 				const numeric = (x: string) => x === "int" || x === "float";
+
 				if (numeric(fromBase) && numeric(toBase)) return true;
 			}
 		}
@@ -207,10 +226,13 @@ export namespace TypeChecker {
 		// assignment is wrong, so accept it rather than emit a false positive.
 		const fromStr = from as string;
 		const toStr = to as string;
+
 		if (fromStr.startsWith("array<") && toStr.startsWith("array<")) {
 			const fromElement = fromStr.slice(6, -1);
 			const toElement = toStr.slice(6, -1);
+
 			if (fromElement === "type" || fromElement === "unknown") return true;
+
 			if (toElement === "type" || toElement === "unknown") return true;
 		}
 
@@ -222,6 +244,7 @@ export namespace TypeChecker {
 		// Normalize types for comparison (handles "series int" vs "series<int>")
 		const normalizedFrom = normalizeType(from as string);
 		const normalizedTo = normalizeType(to as string);
+
 		if (normalizedFrom === normalizedTo) return true;
 
 		// Display-flag enums are mutually assignable (plot_simple_display <->
@@ -230,54 +253,81 @@ export namespace TypeChecker {
 
 		// int <-> float coercion (Pine Script allows bidirectional numeric coercion)
 		if (from === "int" && to === "float") return true;
+
 		if (from === "float" && to === "int") return true;
+
 		if (from === "series<int>" && to === "series<float>") return true;
+
 		if (from === "series<float>" && to === "series<int>") return true;
+
 		if (from === "simple<int>" && to === "simple<float>") return true;
+
 		if (from === "simple<float>" && to === "simple<int>") return true;
 
 		// Simple -> series coercion (base types to series)
 		if (from === "int" && to === "series<int>") return true;
+
 		if (from === "float" && to === "series<float>") return true;
+
 		if (from === "bool" && to === "series<bool>") return true;
+
 		if (from === "string" && to === "series<string>") return true;
+
 		if (from === "color" && to === "series<color>") return true;
 
 		// Cross-type numeric coercion to series
 		if (from === "int" && to === "series<float>") return true;
+
 		if (from === "float" && to === "series<int>") return true;
 
 		// simple<T> -> series<T> coercion
 		if (from === "simple<int>" && to === "series<int>") return true;
+
 		if (from === "simple<float>" && to === "series<float>") return true;
+
 		if (from === "simple<bool>" && to === "series<bool>") return true;
+
 		if (from === "simple<string>" && to === "series<string>") return true;
+
 		if (from === "simple<color>" && to === "series<color>") return true;
 
 		// simple<T> -> base type T coercion (simple is compatible with const)
 		if (from === "simple<int>" && to === "int") return true;
+
 		if (from === "simple<float>" && to === "float") return true;
+
 		if (from === "simple<bool>" && to === "bool") return true;
+
 		if (from === "simple<string>" && to === "string") return true;
+
 		if (from === "simple<color>" && to === "color") return true;
 
 		// Numeric coercion with simple types
 		if (from === "simple<int>" && to === "float") return true;
+
 		if (from === "simple<float>" && to === "int") return true;
+
 		if (from === "simple<int>" && to === "simple<float>") return true;
+
 		if (from === "simple<int>" && to === "series<float>") return true;
+
 		if (from === "simple<float>" && to === "series<int>") return true;
 
 		// series<T> -> T coercion (Pine Script allows series values in simple contexts)
 		// This is common when passing series values to functions expecting simple types
 		if (from === "series<int>" && to === "int") return true;
+
 		if (from === "series<float>" && to === "float") return true;
+
 		if (from === "series<bool>" && to === "bool") return true;
+
 		if (from === "series<string>" && to === "string") return true;
+
 		if (from === "series<color>" && to === "color") return true;
 
 		// Cross-type series to simple coercion
 		if (from === "series<float>" && to === "int") return true;
+
 		if (from === "series<int>" && to === "float") return true;
 
 		// Cross-type coercions exist ONLY for legacy (v4/v5) sources: string
@@ -291,22 +341,28 @@ export namespace TypeChecker {
 			// String -> color ("red", "blue")
 			if (from === "string" && (to === "color" || to === "series<color>"))
 				return true;
+
 			if (from === "series<string>" && to === "series<color>") return true;
 
 			// Numeric -> color (ARGB integers)
 			if (from === "int" && (to === "color" || to === "series<color>"))
 				return true;
+
 			if (from === "float" && (to === "color" || to === "series<color>"))
 				return true;
+
 			if (from === "series<int>" && (to === "series<color>" || to === "color"))
 				return true;
+
 			if (
 				from === "series<float>" &&
 				(to === "series<color>" || to === "color")
 			)
 				return true;
+
 			if (from === "simple<int>" && (to === "color" || to === "series<color>"))
 				return true;
+
 			if (
 				from === "simple<float>" &&
 				(to === "color" || to === "series<color>")
@@ -315,6 +371,7 @@ export namespace TypeChecker {
 
 			// Color -> numeric (integer representation)
 			if (from === "color" && (to === "int" || to === "float")) return true;
+
 			if (
 				from === "series<color>" &&
 				(to === "series<int>" || to === "series<float>")
@@ -324,9 +381,12 @@ export namespace TypeChecker {
 			// Numeric -> string (implicit tostring)
 			if (from === "int" && (to === "string" || to === "series<string>"))
 				return true;
+
 			if (from === "float" && (to === "string" || to === "series<string>"))
 				return true;
+
 			if (from === "series<int>" && to === "series<string>") return true;
+
 			if (from === "series<float>" && to === "series<string>") return true;
 		}
 
@@ -366,7 +426,9 @@ export namespace TypeChecker {
 		declaredBase: string,
 	): boolean {
 		if (!STRICT_ASSIGN_BASES.has(declaredBase)) return false;
+
 		if (isNaType(valueType)) return true;
+
 		return STRICT_ASSIGN_BASES.has(baseTypeName(valueType as string));
 	}
 
@@ -376,7 +438,9 @@ export namespace TypeChecker {
 	): boolean {
 		if (isNaType(valueType)) return declaredBase !== "bool";
 		const fromBase = baseTypeName(valueType as string);
+
 		if (fromBase === declaredBase) return true;
+
 		return fromBase === "int" && declaredBase === "float";
 	}
 
@@ -400,18 +464,25 @@ export namespace TypeChecker {
 		"linefill",
 		"polyline",
 	]);
+
 	export function renderAssignDiagnosticType(type: PineType | string): string {
 		const t = String(type);
+
 		if (isNaType(t as PineType)) return "simple na";
 		const m = t.match(/^(series|simple|const|input)<(.+)>$/);
 		const qualifier = m ? m[1] : null;
 		const inner = m ? m[2] : t.replace(/^(series|simple|const|input)\s+/, "");
+
 		if (/^(array|matrix|map)</.test(inner)) return inner;
+
 		if (DRAWING_TYPES.has(inner)) return `series ${inner}`;
+
 		if (STRICT_ASSIGN_BASES.has(inner)) {
 			const explicit = t.match(/^(series|simple|const|input)\s/)?.[1];
+
 			return `${qualifier ?? explicit ?? "const"} ${inner}`;
 		}
+
 		return inner; // UDTs and anything else unprobed: bare
 	}
 
@@ -431,10 +502,14 @@ export namespace TypeChecker {
 		bareQualifier: string = "const",
 	): string {
 		const t = type as string;
+
 		if (isNaType(t as PineType)) return "simple na";
 		const m = t.match(/^(series|simple|const|input)<(.+)>$/);
+
 		if (m) return `${m[1]} ${m[2]}`;
+
 		if (/^(series|simple|const|input)\s/.test(t)) return t;
+
 		return `${bareQualifier} ${t}`;
 	}
 
@@ -446,11 +521,15 @@ export namespace TypeChecker {
 	export function inferLiteralType(value: unknown, raw?: string): PineType {
 		// Check for na first (it's stored as string "na" in the AST)
 		if (value === "na") return "na";
+
 		if (typeof value === "number") {
 			if (raw && !/^0[xX]/.test(raw) && /[.eE]/.test(raw)) return "float";
+
 			return Number.isInteger(value) ? "int" : "float";
 		}
+
 		if (typeof value === "boolean") return "bool";
+
 		if (typeof value === "string") {
 			// Hex color literals reach the AST as the bare lexeme (#RRGGBB /
 			// #RRGGBBAA - the lexer admits exactly 6 or 8 hex digits), while
@@ -458,8 +537,10 @@ export namespace TypeChecker {
 			// `#` prefix is unambiguous here. Typing these as 'string' was the
 			// root of the string-vs-color ternary FP cluster. see #18
 			if (/^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$/.test(value)) return "color";
+
 			return "string";
 		}
+
 		return "unknown";
 	}
 
@@ -471,17 +552,20 @@ export namespace TypeChecker {
 	): PineType {
 		left = canonicalizeQualifier(left);
 		right = canonicalizeQualifier(right);
+
 		// An unknown operand gives an unknown result. The arithmetic branch
 		// below used to guess `int` for unknown+unknown, which surfaced as
 		// type-mismatch FPs once the numeric->string coercion stopped
 		// masking the guess. see INV059
 		if (left === "unknown" || right === "unknown") return "unknown";
+
 		// String concatenation with +
 		if (operator === "+" && (isStringType(left) || isStringType(right))) {
 			// String concatenation returns string (or series<string> if either is series)
 			if (left.startsWith("series") || right.startsWith("series")) {
 				return "series<string>";
 			}
+
 			return "string";
 		}
 
@@ -502,8 +586,10 @@ export namespace TypeChecker {
 				if (left.includes("float") || right.includes("float")) {
 					return "series<float>";
 				}
+
 				return "series<int>";
 			}
+
 			// Non-series operands: preserve a simple qualifier when present so e.g.
 			// simple<float> / int stays simple<float> instead of collapsing to bare
 			// int. Float dominates int (mirrors the series branch above).
@@ -511,9 +597,12 @@ export namespace TypeChecker {
 				if (left.includes("float") || right.includes("float")) {
 					return "simple<float>";
 				}
+
 				return "simple<int>";
 			}
+
 			if (left === "float" || right === "float") return "float";
+
 			return "int";
 		}
 
@@ -522,6 +611,7 @@ export namespace TypeChecker {
 			if (left.startsWith("series") || right.startsWith("series")) {
 				return "series<bool>";
 			}
+
 			return "bool";
 		}
 
@@ -530,6 +620,7 @@ export namespace TypeChecker {
 			if (left.startsWith("series") || right.startsWith("series")) {
 				return "series<bool>";
 			}
+
 			return "bool";
 		}
 
@@ -546,6 +637,7 @@ export namespace TypeChecker {
 	): boolean {
 		left = canonicalizeQualifier(left);
 		right = canonicalizeQualifier(right);
+
 		// If either type is unknown, we can't verify compatibility - assume OK
 		// This prevents cascading false positives from user-defined functions
 		// and other cases where type inference fails
@@ -560,6 +652,7 @@ export namespace TypeChecker {
 			(isDisplayFlag(left) || isDisplayFlag(right))
 		) {
 			const ok = (t: PineType) => isDisplayFlag(t) || isNumericType(t);
+
 			if (ok(left) && ok(right)) return true;
 		}
 
@@ -578,6 +671,7 @@ export namespace TypeChecker {
 		if (["+", "-", "*", "/", "%"].includes(operator)) {
 			const leftNumeric = isNumericType(left);
 			const rightNumeric = isNumericType(right);
+
 			return leftNumeric && rightNumeric;
 		}
 
@@ -585,6 +679,7 @@ export namespace TypeChecker {
 		if (["<", ">", "<=", ">="].includes(operator)) {
 			const leftNumeric = isNumericType(left);
 			const rightNumeric = isNumericType(right);
+
 			return leftNumeric && rightNumeric;
 		}
 
@@ -595,6 +690,7 @@ export namespace TypeChecker {
 
 			// Allow series<T> == T (Pine Script auto-promotes T to series<T>)
 			if (areCompatibleForComparison(left, right)) return true;
+
 			if (areCompatibleForComparison(right, left)) return true;
 
 			// Allow assignability in either direction
@@ -618,32 +714,41 @@ export namespace TypeChecker {
 	): boolean {
 		// series<int> comparisons
 		if (seriesType === "series<int>" && simpleType === "int") return true;
+
 		if (seriesType === "series<int>" && simpleType === "float") return true; // int can compare with float
+
 		if (seriesType === "series<int>" && simpleType === "simple<int>")
 			return true;
+
 		if (seriesType === "series<int>" && simpleType === "simple<float>")
 			return true;
 
 		// series<float> comparisons
 		if (seriesType === "series<float>" && simpleType === "float") return true;
+
 		if (seriesType === "series<float>" && simpleType === "int") return true; // int coerces to float
+
 		if (seriesType === "series<float>" && simpleType === "simple<int>")
 			return true;
+
 		if (seriesType === "series<float>" && simpleType === "simple<float>")
 			return true;
 
 		// series<bool> comparisons
 		if (seriesType === "series<bool>" && simpleType === "bool") return true;
+
 		if (seriesType === "series<bool>" && simpleType === "simple<bool>")
 			return true;
 
 		// series<string> comparisons
 		if (seriesType === "series<string>" && simpleType === "string") return true;
+
 		if (seriesType === "series<string>" && simpleType === "simple<string>")
 			return true;
 
 		// series<color> comparisons
 		if (seriesType === "series<color>" && simpleType === "color") return true;
+
 		if (seriesType === "series<color>" && simpleType === "simple<color>")
 			return true;
 
@@ -652,6 +757,7 @@ export namespace TypeChecker {
 
 	export function isNumericType(type: PineType): boolean {
 		type = canonicalizeQualifier(type);
+
 		return (
 			type === "int" ||
 			type === "float" ||
@@ -664,6 +770,7 @@ export namespace TypeChecker {
 
 	export function isColorType(type: PineType): boolean {
 		type = canonicalizeQualifier(type);
+
 		return (
 			type === "color" || type === "series<color>" || type === "simple<color>"
 		);
@@ -671,6 +778,7 @@ export namespace TypeChecker {
 
 	export function isBoolType(type: PineType): boolean {
 		type = canonicalizeQualifier(type);
+
 		return (
 			type === "bool" || type === "series<bool>" || type === "simple<bool>"
 		);
@@ -678,6 +786,7 @@ export namespace TypeChecker {
 
 	export function isStringType(type: PineType): boolean {
 		type = canonicalizeQualifier(type);
+
 		return (
 			type === "string" ||
 			type === "series<string>" ||
@@ -707,6 +816,7 @@ export namespace TypeChecker {
 				if (typeof value === "number" && Number.isInteger(value)) {
 					return { valid: true };
 				}
+
 				return {
 					valid: false,
 					message: `Expected integer, got ${typeof value}`,
@@ -717,6 +827,7 @@ export namespace TypeChecker {
 				if (typeof value === "number") {
 					return { valid: true };
 				}
+
 				return {
 					valid: false,
 					message: `Expected number, got ${typeof value}`,
@@ -727,6 +838,7 @@ export namespace TypeChecker {
 				if (typeof value === "boolean") {
 					return { valid: true };
 				}
+
 				return {
 					valid: false,
 					message: `Expected boolean, got ${typeof value}`,
@@ -737,6 +849,7 @@ export namespace TypeChecker {
 				if (typeof value === "string") {
 					return { valid: true };
 				}
+
 				return {
 					valid: false,
 					message: `Expected string, got ${typeof value}`,

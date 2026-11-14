@@ -36,6 +36,7 @@ import { remapTvDiagnostics } from "./lib/tv-positions.mjs";
 const args = process.argv.slice(2);
 let limit = Number.POSITIVE_INFINITY;
 let concurrency = 4;
+
 for (let i = 0; i < args.length; i++) {
 	if (args[i] === "--limit") limit = Number(args[++i]);
 	else if (args[i] === "--concurrency") concurrency = Number(args[++i]);
@@ -67,6 +68,7 @@ function run(args) {
 // so warning/error text is readable in reports.
 function fillTemplate(message, ctx) {
 	if (!ctx) return message;
+
 	return message.replace(/\{(\w+)\}/g, (m, key) => ctx[key] ?? m);
 }
 
@@ -75,6 +77,7 @@ function fillTemplate(message, ctx) {
 function pickDiagnostics(raw) {
 	try {
 		const j = JSON.parse(raw);
+
 		// A refusal carries no verdict: TV's translate_light returns
 		// {"success":false,"reason":"Supported versions are >= 5","result":null}
 		// for files whose //@version annotation it cannot read (e.g.
@@ -90,6 +93,7 @@ function pickDiagnostics(raw) {
 				parseError: j.reason || "null result (refusal, no verdict)",
 			};
 		}
+
 		const mapDiag = (e) => ({
 			// TV sends a few diagnostics with no span at all (CE10250
 			// "Script doesn't contain any statements") - anchor those at
@@ -98,6 +102,7 @@ function pickDiagnostics(raw) {
 			col: e.start?.column ?? 1,
 			message: fillTemplate(e.message ?? "", e.ctx),
 		});
+
 		// Our own semantic lints (INV144) live on the `lint` stage and mirror no
 		// TV diagnostic by design - TV is silent on every one of them. Diffing
 		// them against TV can only ever produce "local-only", which is not a
@@ -105,6 +110,7 @@ function pickDiagnostics(raw) {
 		// REPAINTING_SECURITY records on the first sweep after they landed).
 		// Drop the stage here rather than asking every reader to subtract it.
 		const isTvComparable = (e) => e.stage !== "lint";
+
 		return {
 			ok: true,
 			errors: (j.result?.errors ?? j.errors ?? [])
@@ -121,6 +127,7 @@ function pickDiagnostics(raw) {
 
 async function isV6(file) {
 	const src = await readFile(file, "utf8");
+
 	return /\/\/\s*@version\s*=\s*6/.test(src);
 }
 
@@ -133,14 +140,19 @@ function emptyWarningDiff() {
 // disagreement (usually two correct linters with different wording).
 function diffByPosition(localList, tvList) {
 	const localByPos = new Map();
+
 	for (const e of localList) {
 		const k = `${e.line}:${e.col}`;
+
 		if (!localByPos.has(k)) localByPos.set(k, []);
 		localByPos.get(k).push(e);
 	}
+
 	const tvByPos = new Map();
+
 	for (const e of tvList) {
 		const k = `${e.line}:${e.col}`;
+
 		if (!tvByPos.has(k)) tvByPos.set(k, []);
 		tvByPos.get(k).push(e);
 	}
@@ -149,9 +161,12 @@ function diffByPosition(localList, tvList) {
 	const tvOnly = tvList.filter((e) => !localByPos.has(`${e.line}:${e.col}`));
 
 	const samePositionDifferentMessage = [];
+
 	for (const [k, locals] of localByPos.entries()) {
 		const tvs = tvByPos.get(k);
+
 		if (!tvs) continue;
+
 		for (const l of locals) {
 			for (const t of tvs) {
 				if (l.message !== t.message) {
@@ -165,6 +180,7 @@ function diffByPosition(localList, tvList) {
 			}
 		}
 	}
+
 	return { localOnly, tvOnly, samePositionDifferentMessage };
 }
 
@@ -175,15 +191,19 @@ function diffByPosition(localList, tvList) {
 function splitPostTvStop(localOnly, tvErrors) {
 	if (tvErrors.length === 0) return { confirmable: localOnly, postTvStop: [] };
 	let stop = tvErrors[0];
+
 	for (const e of tvErrors) {
 		if (e.line > stop.line || (e.line === stop.line && e.col > stop.col)) stop = e;
 	}
+
 	const confirmable = [];
 	const postTvStop = [];
+
 	for (const e of localOnly) {
 		const after = e.line > stop.line || (e.line === stop.line && e.col > stop.col);
 		(after ? postTvStop : confirmable).push(e);
 	}
+
 	return { confirmable, postTvStop };
 }
 
@@ -191,6 +211,7 @@ async function main() {
 	const entries = (await readdir(DIR)).filter((n) => n.endsWith(".pine")).sort();
 	const allPaths = entries.map((n) => join(DIR, n));
 	const v6Paths = [];
+
 	for (const p of allPaths) if (await isV6(p)) v6Paths.push(p);
 	const targets = v6Paths.slice(0, Math.min(limit, v6Paths.length));
 
@@ -204,13 +225,16 @@ async function main() {
 	async function worker() {
 		while (true) {
 			const i = next++;
+
 			if (i >= targets.length) return;
 			const file = targets[i];
+
 			const [local, tv, source] = await Promise.all([
 				run([file]),
 				run(["--tv", file]),
 				readFile(file, "utf8"),
 			]);
+
 			const localE = pickDiagnostics(local.out);
 			const tvE = pickDiagnostics(tv.out);
 			// TV reports wrapped statements at logical-line columns; map them
@@ -239,10 +263,12 @@ async function main() {
 					tvExitCode: tv.code,
 				};
 				done++;
+
 				if (done % 25 === 0 || done === targets.length) {
 					const elapsed = ((Date.now() - startAll) / 1000).toFixed(1);
 					process.stderr.write(`  ${done}/${targets.length} (${elapsed}s)\n`);
 				}
+
 				continue;
 			}
 
@@ -275,23 +301,27 @@ async function main() {
 				tvExitCode: tv.code,
 			};
 			done++;
+
 			if (done % 25 === 0 || done === targets.length) {
 				const elapsed = ((Date.now() - startAll) / 1000).toFixed(1);
 				process.stderr.write(`  ${done}/${targets.length} (${elapsed}s)\n`);
 			}
 		}
 	}
+
 	await Promise.all(Array.from({ length: concurrency }, worker));
 
 	// Aggregate. A TV measurement is a point-in-time fact (G001), so the
 	// report records WHEN it was taken and against WHICH commit of our
 	// validator - without these the FP/FN counts can't be trusted later.
 	let gitCommit = "unknown";
+
 	try {
 		gitCommit = execSync("git rev-parse HEAD", { encoding: "utf-8" }).trim();
 	} catch {
 		// not a git checkout - leave "unknown"
 	}
+
 	const summary = {
 		generatedAt: new Date().toISOString(),
 		gitCommit,
@@ -315,6 +345,7 @@ async function main() {
 		totalWarningLocalOnlyPostTvStop: 0,
 		totalWarningTvOnly: 0,
 	};
+
 	const localOnlyByMessage = new Map();
 	const tvOnlyByMessage = new Map();
 	const localOnlyExamples = new Map();
@@ -323,48 +354,63 @@ async function main() {
 	const warnTvOnlyByMessage = new Map();
 	const warnLocalOnlyExamples = new Map();
 	const warnTvOnlyExamples = new Map();
+
 	for (const r of fileReports) {
 		if (!r.localOk) {
 			summary.localUnparseable++;
 			summary.localUnparseableFiles.push(r.file);
 		}
+
 		if (!r.tvOk) {
 			summary.tvUnparseable++;
 			summary.tvUnparseableFiles.push(r.file);
 		}
+
 		if (r.localOnly.length > 0) summary.filesWithLocalOnly++;
+
 		if (r.tvOnly.length > 0) summary.filesWithTvOnly++;
+
 		if (r.samePositionDifferentMessage && r.samePositionDifferentMessage.length > 0) {
 			summary.filesWithSamePosDifferentMessage++;
 			summary.totalSamePosDifferentMessage += r.samePositionDifferentMessage.length;
 		}
+
 		summary.totalLocalOnly += r.localOnly.length;
 		summary.totalLocalOnlyPostTvStop += (r.localOnlyPostTvStop ?? []).length;
 		summary.totalTvOnly += r.tvOnly.length;
+
 		for (const e of r.localOnly) {
 			const m = e.message.slice(0, 200);
 			localOnlyByMessage.set(m, (localOnlyByMessage.get(m) ?? 0) + 1);
+
 			if (!localOnlyExamples.has(m)) localOnlyExamples.set(m, { file: r.file, line: e.line, col: e.col });
 		}
+
 		for (const e of r.tvOnly) {
 			const m = e.message.slice(0, 200);
 			tvOnlyByMessage.set(m, (tvOnlyByMessage.get(m) ?? 0) + 1);
+
 			if (!tvOnlyExamples.has(m)) tvOnlyExamples.set(m, { file: r.file, line: e.line, col: e.col });
 		}
+
 		const w = r.warnings ?? emptyWarningDiff();
 		summary.totalLocalWarnings += w.localCount;
 		summary.totalTvWarnings += w.tvCount;
 		summary.totalWarningLocalOnly += w.localOnly.length;
 		summary.totalWarningLocalOnlyPostTvStop += (w.localOnlyPostTvStop ?? []).length;
 		summary.totalWarningTvOnly += w.tvOnly.length;
+
 		for (const e of w.localOnly) {
 			const m = e.message.slice(0, 200);
 			warnLocalOnlyByMessage.set(m, (warnLocalOnlyByMessage.get(m) ?? 0) + 1);
+
 			if (!warnLocalOnlyExamples.has(m)) warnLocalOnlyExamples.set(m, { file: r.file, line: e.line, col: e.col });
 		}
+
 		for (const e of w.tvOnly) {
 			const m = e.message.slice(0, 200);
 			warnTvOnlyByMessage.set(m, (warnTvOnlyByMessage.get(m) ?? 0) + 1);
+
 			if (!warnTvOnlyExamples.has(m)) warnTvOnlyExamples.set(m, { file: r.file, line: e.line, col: e.col });
 		}
 	}
@@ -390,19 +436,25 @@ async function main() {
 	console.log(`total tv-only:                       ${summary.totalTvOnly}`);
 	console.log(`total same-pos different-msg pairs:  ${summary.totalSamePosDifferentMessage}`);
 	console.log(`TV response unparseable:             ${summary.tvUnparseable}`);
+
 	if (summary.tvUnparseableFiles.length) {
 		for (const f of summary.tvUnparseableFiles) console.log(`  ${f}`);
 	}
+
 	console.log(`local response unparseable:          ${summary.localUnparseable}`);
+
 	if (summary.localUnparseableFiles.length) {
 		for (const f of summary.localUnparseableFiles) console.log(`  ${f}`);
 	}
 
 	console.log(`\ntop 15 local-only messages (we flag, TV silent - investigate per category):`);
+
 	for (const [m, c] of [...localOnlyByMessage.entries()].sort((a, b) => b[1] - a[1]).slice(0, 15)) {
 		console.log(`  ${String(c).padStart(5)}  ${m}`);
 	}
+
 	console.log(`\ntop 15 tv-only messages (TV flags, we silent - investigate per category):`);
+
 	for (const [m, c] of [...tvOnlyByMessage.entries()].sort((a, b) => b[1] - a[1]).slice(0, 15)) {
 		console.log(`  ${String(c).padStart(5)}  ${m}`);
 	}
@@ -414,13 +466,17 @@ async function main() {
 	console.log(`warning local-only past TV stop:     ${summary.totalWarningLocalOnlyPostTvStop}`);
 	console.log(`warning tv-only (TV warns, we no):   ${summary.totalWarningTvOnly}`);
 	console.log(`\ntop 15 warning local-only messages:`);
+
 	for (const [m, c] of [...warnLocalOnlyByMessage.entries()].sort((a, b) => b[1] - a[1]).slice(0, 15)) {
 		console.log(`  ${String(c).padStart(5)}  ${m.slice(0, 130)}`);
 	}
+
 	console.log(`\ntop 15 warning tv-only messages:`);
+
 	for (const [m, c] of [...warnTvOnlyByMessage.entries()].sort((a, b) => b[1] - a[1]).slice(0, 15)) {
 		console.log(`  ${String(c).padStart(5)}  ${m.slice(0, 130)}`);
 	}
+
 	console.log(`\nfull report: ${reportPath}`);
 }
 

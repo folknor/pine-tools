@@ -53,16 +53,20 @@ const MUTANT_DIR = resolve(REPORT_DIR, "mutants");
 const REAL_FAILURES = resolve(ROOT, "lint-reports/real-failures.json");
 
 const args = process.argv.slice(2);
+
 const opt = (name, dflt) => {
 	const i = args.indexOf(`--${name}`);
+
 	return i !== -1 ? args[i + 1] : dflt;
 };
+
 const FIXTURE_COUNT = Number(opt("fixtures", "10"));
 const OPS = opt("operators", Object.keys(OPERATORS).join(",")).split(",");
 const SITES_PER = Number(opt("sites-per", "1"));
 const SEED = Number(opt("seed", "1"));
 const CONCURRENCY = Number(opt("concurrency", "4"));
 const DRY_RUN = args.includes("--dry-run");
+
 // Per-mutant progress is one line each, and the preferred entry point - the
 // full-pool dry-run (`--fixtures 9999 --sites-per 6`) - is ~19k mutants, so
 // printing it by default drowns the verdict summary and survivor triage that
@@ -79,11 +83,13 @@ for (const op of OPS) {
 
 function mulberry32(seed) {
 	let a = seed >>> 0;
+
 	return () => {
 		a |= 0;
 		a = (a + 0x6d2b79f5) | 0;
 		let t = Math.imul(a ^ (a >>> 15), 1 | a);
 		t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+
 		return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
 	};
 }
@@ -91,6 +97,7 @@ function mulberry32(seed) {
 // --- pick both-clean fixtures --------------------------------------------------
 
 let realFailures;
+
 try {
 	realFailures = JSON.parse(await readFile(REAL_FAILURES, "utf8"));
 } catch {
@@ -119,19 +126,24 @@ if (bothClean.length === 0) {
 // Seeded shuffle, take N - successive seeds rotate through the corpus.
 const rng = mulberry32(SEED);
 const shuffled = [...bothClean];
+
 for (let i = shuffled.length - 1; i > 0; i--) {
 	const j = Math.floor(rng() * (i + 1));
 	[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
 }
+
 const picked = shuffled.slice(0, FIXTURE_COUNT);
 
 // --- generate mutants -----------------------------------------------------------
 
 await mkdir(MUTANT_DIR, { recursive: true });
+
 const mutants = [];
+
 for (const file of picked) {
 	const source = await readFile(file, "utf8");
 	let generated;
+
 	try {
 		generated = generateMutants(source, {
 			operators: OPS,
@@ -142,6 +154,7 @@ for (const file of picked) {
 		console.error(`  mutate failed on ${basename(file)}: ${e.message}`);
 		continue;
 	}
+
 	for (const m of generated) {
 		const hash = basename(file, ".pine").slice(0, 12);
 		const name = `${hash}--${m.operator}--L${m.site.line}C${m.site.col}.pine`;
@@ -154,6 +167,7 @@ for (const file of picked) {
 console.log(
 	`both-clean pool: ${bothClean.length} fixtures; picked ${picked.length} (seed ${SEED})`,
 );
+
 console.log(
 	`mutants: ${mutants.length} (${OPS.join(", ")} x sites-per ${SITES_PER})` +
 		(DRY_RUN ? "  [dry-run: local side only, no TV calls]" : `  -> ~${mutants.length} TV calls`),
@@ -175,44 +189,54 @@ function run(cmd, runArgs) {
 async function judgeMutant(m) {
 	if (DRY_RUN) {
 		const r = await run("pine-lint", [m.path]);
+
 		try {
 			const j = JSON.parse(r.out);
 			const local = j.result?.errors ?? [];
+
 			return { ...m, verdict: local.length > 0 ? "killed-local" : "local-accepts", local };
 		} catch {
 			return { ...m, verdict: "no-verdict", detail: r.err.slice(0, 200) };
 		}
 	}
+
 	// compare-tv exits 2 on no-verdict (transient empty TV response) - retry once.
 	for (let attempt = 0; attempt < 2; attempt++) {
 		const r = await run("node", [resolve(ROOT, "scripts/compare-tv.mjs"), m.path, "--json"]);
 		let j;
+
 		try {
 			j = JSON.parse(r.out);
 		} catch {
 			continue;
 		}
+
 		if (j.unavailable) continue;
 		const tvErrs = j.tv ?? [];
 		const localErrs = j.local ?? [];
+
 		const verdict =
 			tvErrs.length === 0
 				? "tv-accepts"
 				: localErrs.length > 0
 					? "killed"
 					: "SURVIVOR";
+
 		return { ...m, verdict, tv: tvErrs, local: localErrs };
 	}
+
 	return { ...m, verdict: "no-verdict" };
 }
 
 const results = [];
 let next = 0;
+
 async function worker() {
 	while (next < mutants.length) {
 		const m = mutants[next++];
 		const r = await judgeMutant(m);
 		results.push(r);
+
 		// Survivors are the whole signal, so they print even when quiet; the
 		// rest of the stream is progress and lives in the report.
 		if (VERBOSE || r.verdict === "SURVIVOR") {
@@ -223,18 +247,22 @@ async function worker() {
 		}
 	}
 }
+
 await Promise.all(Array.from({ length: CONCURRENCY }, worker));
 
 // --- triage: group by (operator, TV code) --------------------------------------
 
 const byVerdict = {};
+
 for (const r of results) byVerdict[r.verdict] = (byVerdict[r.verdict] ?? 0) + 1;
 
 const survivorGroups = new Map();
+
 for (const r of results) {
 	if (r.verdict !== "SURVIVOR") continue;
 	const code = r.tv[0]?.code ?? "(no code)";
 	const k = `${r.operator} / ${code}`;
+
 	if (!survivorGroups.has(k)) survivorGroups.set(k, []);
 	survivorGroups.get(k).push(r);
 }
@@ -243,13 +271,17 @@ for (const r of results) {
 // operator's expectedClass is informational (TV saw a DIFFERENT breakage
 // than designed - the operator may need tightening).
 let expectationDiverged = 0;
+
 for (const r of results) {
 	if (!r.tv?.length) continue;
+
 	if (!r.tv.some((e) => e.code === r.expectedClass)) expectationDiverged++;
 }
 
 console.log("\n=== verdicts ===");
+
 for (const [v, n] of Object.entries(byVerdict)) console.log(`  ${v.padEnd(14)} ${n}`);
+
 if (!DRY_RUN) {
 	console.log(
 		`  (expectation diverged on ${expectationDiverged} TV-rejected mutants - TV used a different code than the operator targets)`,
@@ -258,8 +290,10 @@ if (!DRY_RUN) {
 
 if (survivorGroups.size > 0) {
 	console.log("\n=== SURVIVORS by (operator, TV code) - candidate FN gaps ===");
+
 	for (const [k, list] of survivorGroups.entries()) {
 		console.log(`  ${k}: ${list.length}`);
+
 		for (const r of list.slice(0, 3)) {
 			console.log(`      ${basename(r.path)}  tv: ${r.tv[0]?.message?.slice(0, 90)}`);
 		}
@@ -268,6 +302,7 @@ if (survivorGroups.size > 0) {
 
 const stamp = new Date().toISOString().replace(/[:.]/g, "-");
 const reportPath = resolve(REPORT_DIR, `run-${stamp}.json`);
+
 await writeFile(
 	reportPath,
 	JSON.stringify(
@@ -285,4 +320,5 @@ await writeFile(
 		2,
 	),
 );
+
 console.log(`\nreport: ${reportPath}`);

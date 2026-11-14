@@ -36,6 +36,7 @@ function collectInlayHintsFromStatement(
 	// Skip statements outside the range
 	if (stmt.line !== undefined) {
 		const line = stmt.line - 1; // Convert to 0-indexed
+
 		if (line < range.start.line || line > range.end.line) {
 			return;
 		}
@@ -46,47 +47,59 @@ function collectInlayHintsFromStatement(
 			if (stmt.init) {
 				collectInlayHintsFromExpression(stmt.init, doc, range, hints);
 			}
+
 			break;
 		case "ExpressionStatement":
 			collectInlayHintsFromExpression(stmt.expression, doc, range, hints);
 			break;
 		case "IfStatement":
 			collectInlayHintsFromExpression(stmt.condition, doc, range, hints);
+
 			for (const s of stmt.consequent) {
 				collectInlayHintsFromStatement(s, doc, range, hints);
 			}
+
 			if (stmt.alternate) {
 				for (const s of stmt.alternate) {
 					collectInlayHintsFromStatement(s, doc, range, hints);
 				}
 			}
+
 			break;
 		case "ForStatement":
 			collectInlayHintsFromExpression(stmt.from, doc, range, hints);
 			collectInlayHintsFromExpression(stmt.to, doc, range, hints);
+
 			if (stmt.step) {
 				collectInlayHintsFromExpression(stmt.step, doc, range, hints);
 			}
+
 			for (const s of stmt.body) {
 				collectInlayHintsFromStatement(s, doc, range, hints);
 			}
+
 			break;
 		case "ForInStatement":
 			collectInlayHintsFromExpression(stmt.collection, doc, range, hints);
+
 			for (const s of stmt.body) {
 				collectInlayHintsFromStatement(s, doc, range, hints);
 			}
+
 			break;
 		case "WhileStatement":
 			collectInlayHintsFromExpression(stmt.condition, doc, range, hints);
+
 			for (const s of stmt.body) {
 				collectInlayHintsFromStatement(s, doc, range, hints);
 			}
+
 			break;
 		case "FunctionDeclaration":
 			for (const s of stmt.body) {
 				collectInlayHintsFromStatement(s, doc, range, hints);
 			}
+
 			break;
 	}
 }
@@ -103,10 +116,12 @@ function collectInlayHintsFromExpression(
 	switch (expr.type) {
 		case "CallExpression":
 			collectInlayHintsFromCall(expr, doc, range, hints);
+
 			// Also process arguments recursively for nested calls
 			for (const arg of expr.arguments) {
 				collectInlayHintsFromExpression(arg.value, doc, range, hints);
 			}
+
 			break;
 		case "BinaryExpression":
 			collectInlayHintsFromExpression(expr.left, doc, range, hints);
@@ -124,12 +139,15 @@ function collectInlayHintsFromExpression(
 			if (expr.discriminant) {
 				collectInlayHintsFromExpression(expr.discriminant, doc, range, hints);
 			}
+
 			for (const c of expr.cases) {
 				if (c.condition) {
 					collectInlayHintsFromExpression(c.condition, doc, range, hints);
 				}
+
 				collectInlayHintsFromExpression(c.result, doc, range, hints);
 			}
+
 			break;
 		case "IndexExpression":
 			collectInlayHintsFromExpression(expr.object, doc, range, hints);
@@ -139,6 +157,7 @@ function collectInlayHintsFromExpression(
 			for (const element of expr.elements) {
 				collectInlayHintsFromExpression(element, doc, range, hints);
 			}
+
 			break;
 		case "MemberExpression":
 			collectInlayHintsFromExpression(expr.object, doc, range, hints);
@@ -153,15 +172,19 @@ function getCalleeName(callee: Expression): string | null {
 	if (callee.type === "Identifier") {
 		return callee.name;
 	}
+
 	if (callee.type === "MemberExpression") {
 		const objName =
 			callee.object.type === "Identifier" ? callee.object.name : null;
+
 		const propName =
 			callee.property.type === "Identifier" ? callee.property.name : null;
+
 		if (objName && propName) {
 			return `${objName}.${propName}`;
 		}
 	}
+
 	return null;
 }
 
@@ -171,6 +194,7 @@ function getCalleeName(callee: Expression): string | null {
 function parseParameterNames(syntax: string): string[] {
 	try {
 		const match = syntax.match(/\(([^)]*)\)/);
+
 		if (!match?.[1].trim()) return [];
 
 		const paramsString = match[1].trim();
@@ -178,19 +202,24 @@ function parseParameterNames(syntax: string): string[] {
 
 		let current = "";
 		let depth = 0;
+
 		for (const char of paramsString) {
 			if (char === "(" || char === "[" || char === "<") depth++;
 			else if (char === ")" || char === "]" || char === ">") depth--;
 			else if (char === "," && depth === 0) {
 				const name = extractParamName(current.trim());
+
 				if (name) names.push(name);
 				current = "";
 				continue;
 			}
+
 			current += char;
 		}
+
 		if (current.trim()) {
 			const name = extractParamName(current.trim());
+
 			if (name) names.push(name);
 		}
 
@@ -208,6 +237,7 @@ function extractParamName(param: string): string | null {
 	const withoutDefault = param.split("=")[0].trim();
 	// Get the last word (the parameter name)
 	const parts = withoutDefault.split(/\s+/);
+
 	return parts[parts.length - 1] || null;
 }
 
@@ -221,18 +251,22 @@ function collectInlayHintsFromCall(
 	hints: InlayHint[],
 ): void {
 	const funcName = getCalleeName(call.callee);
+
 	if (!funcName) return;
 
 	// Look up function in pine-data
 	const func = FUNCTIONS_BY_NAME.get(funcName);
+
 	if (!func?.syntax) return;
 
 	// Parse parameter names from syntax
 	const paramNames = parseParameterNames(func.syntax);
+
 	if (paramNames.length === 0) return;
 
 	// Add hints for positional arguments (those without explicit names)
 	let positionalIndex = 0;
+
 	for (const arg of call.arguments) {
 		// Skip named arguments - they already show the name
 		if (arg.name) continue;
@@ -245,6 +279,7 @@ function collectInlayHintsFromCall(
 
 		// Get position of the argument
 		const argExpr = arg.value;
+
 		if (argExpr.line === undefined || argExpr.column === undefined) continue;
 
 		hints.push({

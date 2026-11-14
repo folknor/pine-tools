@@ -50,13 +50,16 @@ export class ParsedDocument {
 	 */
 	offsetAt(position: Position): number {
 		let offset = 0;
+
 		for (let i = 0; i < position.line && i < this.lines.length; i++) {
 			offset += this.lines[i].length + 1; // +1 for newline
 		}
+
 		offset += Math.min(
 			position.character,
 			this.lines[position.line]?.length ?? 0,
 		);
+
 		return offset;
 	}
 
@@ -65,13 +68,17 @@ export class ParsedDocument {
 	 */
 	positionAt(offset: number): Position {
 		let remaining = offset;
+
 		for (let line = 0; line < this.lines.length; line++) {
 			const lineLength = this.lines[line].length + 1; // +1 for newline
+
 			if (remaining < lineLength) {
 				return { line, character: remaining };
 			}
+
 			remaining -= lineLength;
 		}
+
 		// Past end of document
 		return {
 			line: this.lines.length - 1,
@@ -86,8 +93,10 @@ export class ParsedDocument {
 		if (!range) {
 			return this.content;
 		}
+
 		const startOffset = this.offsetAt(range.start);
 		const endOffset = this.offsetAt(range.end);
+
 		return this.content.substring(startOffset, endOffset);
 	}
 
@@ -104,6 +113,7 @@ export class ParsedDocument {
 	 */
 	getWordAtPosition(position: Position): string | null {
 		const line = this.getLine(position.line);
+
 		if (!line) return null;
 
 		// Find word boundaries - include dots for namespace.member patterns
@@ -111,12 +121,15 @@ export class ParsedDocument {
 		let match: RegExpExecArray | null;
 
 		match = wordPattern.exec(line);
+
 		while (match !== null) {
 			const start = match.index;
 			const end = start + match[0].length;
+
 			if (position.character >= start && position.character <= end) {
 				return match[0];
 			}
+
 			match = wordPattern.exec(line);
 		}
 
@@ -128,6 +141,7 @@ export class ParsedDocument {
 	 */
 	getTextBeforeCursor(position: Position): string {
 		const line = this.getLine(position.line);
+
 		return line.substring(0, position.character);
 	}
 }

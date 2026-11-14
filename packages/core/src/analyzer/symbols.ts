@@ -45,8 +45,11 @@ export class Scope {
 
 	lookup(name: string): Symbol | undefined {
 		const symbol = this.symbols.get(name);
+
 		if (symbol) return symbol;
+
 		if (this.parent) return this.parent.lookup(name);
+
 		return undefined;
 	}
 
@@ -55,10 +58,14 @@ export class Scope {
 	// callable), then methods, then walk parents.
 	lookupCallable(name: string): Symbol | undefined {
 		const symbol = this.symbols.get(name);
+
 		if (symbol) return symbol;
 		const method = this.methods.get(name);
+
 		if (method) return method;
+
 		if (this.parent) return this.parent.lookupCallable(name);
+
 		return undefined;
 	}
 
@@ -75,6 +82,7 @@ export class Scope {
 
 	markUsed(name: string): void {
 		const symbol = this.symbols.get(name) ?? this.methods.get(name);
+
 		if (symbol) {
 			symbol.used = true;
 		} else if (this.parent) {
@@ -85,6 +93,7 @@ export class Scope {
 	createChild(): Scope {
 		const child = new Scope(this);
 		this.children.push(child);
+
 		return child;
 	}
 
@@ -128,6 +137,7 @@ export class SymbolTable {
 			// Don't overwrite variables with functions (e.g., hour is both a variable and function)
 			// The variable type is more useful for type checking; function calls get resolved separately
 			const existing = this.globalScope.lookup(name);
+
 			if (existing && existing.kind === "variable") continue;
 
 			this.globalScope.define({
@@ -172,6 +182,7 @@ export class SymbolTable {
 
 	exitScope(): void {
 		const parent = this.currentScope.getParent();
+
 		if (parent) {
 			this.currentScope = parent;
 		}
@@ -202,6 +213,7 @@ export class SymbolTable {
 	// see INV150
 	resolvesToGlobal(name: string): boolean {
 		const resolved = this.currentScope.lookup(name);
+
 		return (
 			resolved !== undefined && resolved === this.globalScope.lookupLocal(name)
 		);
@@ -215,6 +227,7 @@ export class SymbolTable {
 		// Update the symbol in the current scope
 		// This is used for type promotion when a variable's type changes
 		const existing = this.currentScope.lookupLocal(symbol.name);
+
 		if (existing) {
 			this.currentScope.define(symbol); // Replace the existing symbol
 		}
@@ -231,10 +244,12 @@ export class SymbolTable {
 	getScopeDepth(): number {
 		let depth = 0;
 		let scope: Scope | null = this.currentScope;
+
 		while (scope?.getParent()) {
 			depth++;
 			scope = scope.getParent();
 		}
+
 		return depth;
 	}
 
@@ -245,6 +260,7 @@ export class SymbolTable {
 
 		for (const symbolName of allSymbols) {
 			const distance = this.levenshteinDistance(name, symbolName);
+
 			if (distance <= threshold && distance > 0) {
 				similar.push(symbolName);
 			}
@@ -253,6 +269,7 @@ export class SymbolTable {
 		return similar.sort((a, b) => {
 			const distA = this.levenshteinDistance(name, a);
 			const distB = this.levenshteinDistance(name, b);
+
 			return distA - distB;
 		});
 	}

@@ -33,6 +33,7 @@ export function getSemanticTokens(doc: ParsedDocument): SemanticTokensResult {
 	// Sort tokens by position
 	tokens.sort((a, b) => {
 		if (a.line !== b.line) return a.line - b.line;
+
 		return a.character - b.character;
 	});
 
@@ -52,9 +53,11 @@ function collectTokensFromStatement(
 			// Variable declaration - mark the name
 			if (stmt.line !== undefined && stmt.column !== undefined) {
 				const modifiers = [SemanticTokenModifier.Declaration];
+
 				if (stmt.varType === "const") {
 					modifiers.push(SemanticTokenModifier.Readonly);
 				}
+
 				tokens.push({
 					line: stmt.line - 1,
 					character: stmt.column - 1,
@@ -66,9 +69,11 @@ function collectTokensFromStatement(
 					tokenModifiers: modifiers,
 				});
 			}
+
 			if (stmt.init) {
 				collectTokensFromExpression(stmt.init, tokens);
 			}
+
 			break;
 
 		case "FunctionDeclaration":
@@ -85,14 +90,17 @@ function collectTokensFromStatement(
 					],
 				});
 			}
+
 			// Mark parameters
 			for (const _param of stmt.params) {
 				// We don't have exact position for params, skip for now
 			}
+
 			// Process body
 			for (const s of stmt.body) {
 				collectTokensFromStatement(s, tokens);
 			}
+
 			break;
 
 		case "MethodDeclaration":
@@ -108,9 +116,11 @@ function collectTokensFromStatement(
 					],
 				});
 			}
+
 			for (const s of stmt.body) {
 				collectTokensFromStatement(s, tokens);
 			}
+
 			break;
 
 		case "ExpressionStatement":
@@ -119,39 +129,49 @@ function collectTokensFromStatement(
 
 		case "IfStatement":
 			collectTokensFromExpression(stmt.condition, tokens);
+
 			for (const s of stmt.consequent) {
 				collectTokensFromStatement(s, tokens);
 			}
+
 			if (stmt.alternate) {
 				for (const s of stmt.alternate) {
 					collectTokensFromStatement(s, tokens);
 				}
 			}
+
 			break;
 
 		case "ForStatement":
 			collectTokensFromExpression(stmt.from, tokens);
 			collectTokensFromExpression(stmt.to, tokens);
+
 			if (stmt.step) {
 				collectTokensFromExpression(stmt.step, tokens);
 			}
+
 			for (const s of stmt.body) {
 				collectTokensFromStatement(s, tokens);
 			}
+
 			break;
 
 		case "ForInStatement":
 			collectTokensFromExpression(stmt.collection, tokens);
+
 			for (const s of stmt.body) {
 				collectTokensFromStatement(s, tokens);
 			}
+
 			break;
 
 		case "WhileStatement":
 			collectTokensFromExpression(stmt.condition, tokens);
+
 			for (const s of stmt.body) {
 				collectTokensFromStatement(s, tokens);
 			}
+
 			break;
 
 		case "AssignmentStatement":
@@ -167,6 +187,7 @@ function collectTokensFromStatement(
 			for (const s of stmt.statements) {
 				collectTokensFromStatement(s, tokens);
 			}
+
 			break;
 
 		case "ImportStatement":
@@ -174,6 +195,7 @@ function collectTokensFromStatement(
 			if (stmt.alias && stmt.line !== undefined && stmt.column !== undefined) {
 				// Approximate position - would need better tracking
 			}
+
 			break;
 	}
 }
@@ -193,14 +215,17 @@ function collectTokensFromExpression(
 				const isBuiltinFunc = FUNCTIONS_BY_NAME.has(expr.name);
 
 				const modifiers: SemanticTokenModifier[] = [];
+
 				if (isBuiltinVar || isBuiltinConst || isBuiltinFunc) {
 					modifiers.push(SemanticTokenModifier.DefaultLibrary);
 				}
+
 				if (isBuiltinConst) {
 					modifiers.push(SemanticTokenModifier.Readonly);
 				}
 
 				let tokenType = SemanticTokenType.Variable;
+
 				if (isBuiltinFunc) {
 					tokenType = SemanticTokenType.Function;
 				}
@@ -213,14 +238,17 @@ function collectTokensFromExpression(
 					tokenModifiers: modifiers,
 				});
 			}
+
 			break;
 
 		case "Literal":
 			if (expr.line !== undefined && expr.column !== undefined) {
 				let tokenType = SemanticTokenType.Number;
+
 				if (typeof expr.value === "string") {
 					tokenType = SemanticTokenType.String;
 				}
+
 				tokens.push({
 					line: expr.line - 1,
 					character: expr.column - 1,
@@ -229,18 +257,22 @@ function collectTokensFromExpression(
 					tokenModifiers: [],
 				});
 			}
+
 			break;
 
 		case "CallExpression":
 			// Mark function call
 			collectTokensFromExpression(expr.callee, tokens);
+
 			for (const arg of expr.arguments) {
 				collectTokensFromExpression(arg.value, tokens);
 			}
+
 			break;
 
 		case "MemberExpression":
 			collectTokensFromExpression(expr.object, tokens);
+
 			// Mark property as namespace or property
 			if (
 				expr.property.line !== undefined &&
@@ -249,6 +281,7 @@ function collectTokensFromExpression(
 				// Check if this is a namespace.function pattern
 				const objName =
 					expr.object.type === "Identifier" ? expr.object.name : null;
+
 				const propName = expr.property.name;
 				const fullName = objName ? `${objName}.${propName}` : propName;
 
@@ -256,9 +289,11 @@ function collectTokensFromExpression(
 				const isBuiltinConst = BUILTIN_CONSTANTS.has(fullName);
 
 				const modifiers: SemanticTokenModifier[] = [];
+
 				if (isBuiltinFunc || isBuiltinConst) {
 					modifiers.push(SemanticTokenModifier.DefaultLibrary);
 				}
+
 				if (isBuiltinConst) {
 					modifiers.push(SemanticTokenModifier.Readonly);
 				}
@@ -273,6 +308,7 @@ function collectTokensFromExpression(
 					tokenModifiers: modifiers,
 				});
 			}
+
 			break;
 
 		case "BinaryExpression":
@@ -294,6 +330,7 @@ function collectTokensFromExpression(
 			for (const el of expr.elements) {
 				collectTokensFromExpression(el, tokens);
 			}
+
 			break;
 
 		case "IndexExpression":
@@ -305,12 +342,15 @@ function collectTokensFromExpression(
 			if (expr.discriminant) {
 				collectTokensFromExpression(expr.discriminant, tokens);
 			}
+
 			for (const c of expr.cases) {
 				if (c.condition) {
 					collectTokensFromExpression(c.condition, tokens);
 				}
+
 				collectTokensFromExpression(c.result, tokens);
 			}
+
 			break;
 	}
 }
@@ -331,11 +371,13 @@ function encodeTokens(tokens: SemanticToken[]): SemanticTokensResult {
 
 	for (const token of tokens) {
 		const deltaLine = token.line - prevLine;
+
 		const deltaChar =
 			deltaLine === 0 ? token.character - prevChar : token.character;
 
 		// Encode modifiers as bit mask
 		let modifiersMask = 0;
+
 		for (const mod of token.tokenModifiers) {
 			modifiersMask |= 1 << mod;
 		}

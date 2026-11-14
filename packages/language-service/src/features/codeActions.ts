@@ -123,8 +123,10 @@ function getQuickFixesForDiagnostic(
 		let match: RegExpExecArray | null;
 
 		match = timeMatch.exec(text);
+
 		while (match !== null) {
 			const pos = doc.positionAt(match.index);
+
 			if (pos.line === diagnostic.range.start.line) {
 				const endPos = doc.positionAt(match.index + match[0].length);
 				fixes.push({
@@ -148,6 +150,7 @@ function getQuickFixesForDiagnostic(
 				});
 				break;
 			}
+
 			match = timeMatch.exec(text);
 		}
 	}

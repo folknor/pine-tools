@@ -21,6 +21,7 @@ import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 const PROJECT_ROOT = __dirname.includes("/dist/")
 	? path.resolve(__dirname, "../../../..")
 	: path.resolve(__dirname, "../../..");
@@ -29,21 +30,26 @@ const PROJECT_ROOT = __dirname.includes("/dist/")
 // bundler), so it cannot run under raw --experimental-strip-types ESM. Use
 // the COMPILED parser from dist/ instead - run `pnpm run build` first.
 const require = createRequire(import.meta.url);
+
 const parserModule = path.join(
 	PROJECT_ROOT,
 	"dist/packages/core/src/parser/parser.js",
 );
+
 if (!fs.existsSync(parserModule)) {
 	console.error(
 		`compiled parser not found at ${parserModule} - run 'pnpm run build' first`,
 	);
 	process.exit(1);
 }
+
 const { Parser } = require(parserModule);
+
 const semanticModule = path.join(
 	PROJECT_ROOT,
 	"dist/packages/core/src/parser/semanticAnalyzer.js",
 );
+
 const { SemanticAnalyzer } = require(semanticModule);
 
 const VENDOR_DIR = path.join(PROJECT_ROOT, "vendor");
@@ -55,12 +61,17 @@ const isDir = (p: string): boolean => fs.statSync(p).isDirectory();
 function collectLibraryFiles(): { libPath: string; file: string }[] {
 	if (!fs.existsSync(VENDOR_DIR)) return [];
 	const out: { libPath: string; file: string }[] = [];
+
 	for (const author of fs.readdirSync(VENDOR_DIR)) {
 		const authorDir = path.join(VENDOR_DIR, author);
+
 		if (!isDir(authorDir)) continue;
+
 		for (const lib of fs.readdirSync(authorDir)) {
 			const libDir = path.join(authorDir, lib);
+
 			if (!isDir(libDir)) continue;
+
 			for (const f of fs.readdirSync(libDir)) {
 				if (!f.endsWith(".pine")) continue;
 				out.push({
@@ -70,26 +81,31 @@ function collectLibraryFiles(): { libPath: string; file: string }[] {
 			}
 		}
 	}
+
 	return out;
 }
 
 const libraries: Record<string, string[]> = {};
+
 // "Author/Lib/Version" -> exported names whose bodies are HISTORY-DEPENDENT
 // (call ta.* / index own scope), so the checker can flag a conditional
 // `lib.export()` call (CW10003). Derived offline by running the SemanticAnalyzer
 // on the library body - a FACT about the public API, not the source. see INV118
 const historyDependent: Record<string, string[]> = {};
+
 // "Author/Lib/Version" -> exported type name -> field name -> field type. The
 // FIELD SURFACE of each exported UDT, so the checker can type an imported UDT
 // instance and validate its members instead of staying lenient. Fields whose
 // annotation we cannot read are recorded as "unknown" rather than dropped: the
 // NAME set must stay complete or a real field reads as a typo. see INV140
 const typeFields: Record<string, Record<string, Record<string, string>>> = {};
+
 // libPath -> exported type -> the foreign types its fields reference. see INV143
 const foreignTypeRefs: Record<
 	string,
 	Record<string, Array<{ type: string; library: string }>>
 > = {};
+
 const quarantined: string[] = [];
 
 for (const { libPath, file } of collectLibraryFiles().sort((a, b) =>
@@ -99,6 +115,7 @@ for (const { libPath, file } of collectLibraryFiles().sort((a, b) =>
 	const parser = new Parser(src);
 	const ast = parser.parse();
 	const errs = [...parser.getLexerErrors(), ...parser.getParserErrors()];
+
 	if (errs.length > 0) {
 		// A parse error means the export surface is INCOMPLETE - some `export`
 		// would be missed, and the checker would then flag a real member as a
@@ -112,6 +129,7 @@ for (const { libPath, file } of collectLibraryFiles().sort((a, b) =>
 		quarantined.push(libPath);
 		continue;
 	}
+
 	// The public surface is exported functions, methods, AND types/enums: a
 	// library's `export type T` is importable as `alias.T` (the corpus does
 	// this - `method processData(ffUtil.News[] N, ...)`), so dropping it left
@@ -131,6 +149,7 @@ for (const { libPath, file } of collectLibraryFiles().sort((a, b) =>
 				.map((s: { name: string }) => s.name),
 		),
 	].sort();
+
 	libraries[libPath] = exports;
 
 	// This library's OWN import aliases, so a field type written `D.Line` can be
@@ -139,17 +158,20 @@ for (const { libPath, file } of collectLibraryFiles().sort((a, b) =>
 	// this the field type is an opaque string with no way to tell which library
 	// it points at. see INV143
 	const importedAs = new Map<string, string>();
+
 	for (const s of ast.body as Array<{
 		type: string;
 		alias?: string;
 		libraryPath?: string;
 	}>) {
 		if (s.type !== "ImportStatement") continue;
+
 		if (s.alias && s.libraryPath) importedAs.set(s.alias, s.libraryPath);
 	}
 
 	// The field surface of each exported UDT. see INV140
 	const libTypes: Record<string, Record<string, string>> = {};
+
 	// Per exported type, the DISTINCT foreign types its fields reference, with
 	// the library declaring each. TV requires such a library to be imported
 	// EXPLICITLY by any script that uses the type. Kept in field-declaration
@@ -159,6 +181,7 @@ for (const { libPath, file } of collectLibraryFiles().sort((a, b) =>
 		string,
 		Array<{ type: string; library: string }>
 	> = {};
+
 	for (const s of ast.body as Array<{
 		type: string;
 		name: string;
@@ -169,6 +192,7 @@ for (const { libPath, file } of collectLibraryFiles().sort((a, b) =>
 		const fields: Record<string, string> = {};
 		const foreign: Array<{ type: string; library: string }> = [];
 		const seenForeign = new Set<string>();
+
 		for (const f of s.fields ?? []) {
 			if (!f.name) continue;
 			// Keep the name even when the annotation is unreadable - an absent
@@ -181,17 +205,23 @@ for (const { libPath, file } of collectLibraryFiles().sort((a, b) =>
 			// inventing provenance for it would be the FP risk here.
 			const bare = annotation.replace(/\[\]$/, "");
 			const dot = bare.indexOf(".");
+
 			if (dot <= 0) continue;
 			const declaring = importedAs.get(bare.slice(0, dot));
 			const typeName = bare.slice(dot + 1);
+
 			if (!declaring || seenForeign.has(typeName)) continue;
 			seenForeign.add(typeName);
 			foreign.push({ type: typeName, library: declaring });
 		}
+
 		libTypes[s.name] = fields;
+
 		if (foreign.length > 0) libForeign[s.name] = foreign;
 	}
+
 	if (Object.keys(libTypes).length > 0) typeFields[libPath] = libTypes;
+
 	if (Object.keys(libForeign).length > 0) foreignTypeRefs[libPath] = libForeign;
 
 	// Which exports are history-dependent: run the analyzer on the library body
@@ -201,12 +231,14 @@ for (const { libPath, file } of collectLibraryFiles().sort((a, b) =>
 		analyzer.analyze(ast);
 		const hist: Set<string> = analyzer.getHistoryDependentNames();
 		const series: Set<string> = analyzer.getSeriesReturningNames();
+
 		// Flag only history-dependent exports that RETURN A SERIES. Side-effect
 		// builders (`StatsData.update` returns `this`, draws a table) are
 		// history-dependent internally but TV exempts them from CW10003. INV118
 		const histExports = exports.filter(
 			(n: string) => hist.has(n) && series.has(n),
 		);
+
 		if (histExports.length > 0) historyDependent[libPath] = histExports;
 		console.log(
 			`${libPath}: ${exports.length} exports (${histExports.length} history-dependent)`,
@@ -223,8 +255,10 @@ const OVERRIDE_FILE = path.join(
 	PROJECT_ROOT,
 	"pine-data/raw/v6/library-history-overrides.json",
 );
+
 if (fs.existsSync(OVERRIDE_FILE)) {
 	const overrides = JSON.parse(fs.readFileSync(OVERRIDE_FILE, "utf8"));
+
 	for (const [libPath, names] of Object.entries(overrides)) {
 		if (libPath.startsWith("_") || !Array.isArray(names)) continue;
 		const merged = new Set([...(historyDependent[libPath] ?? []), ...names]);
@@ -297,14 +331,17 @@ export const LIBRARY_FOREIGN_TYPE_REFS: Record<
 `;
 
 fs.writeFileSync(path.join(OUTPUT_DIR, "libraries.ts"), ts);
+
 fs.writeFileSync(
 	path.join(OUTPUT_DIR, "libraries.json"),
 	`${JSON.stringify(libraries, null, 2)}\n`,
 );
+
 fs.writeFileSync(
 	path.join(OUTPUT_DIR, "libraries-history-dependent.json"),
 	`${JSON.stringify(historyDependent, null, 2)}\n`,
 );
+
 fs.writeFileSync(
 	path.join(OUTPUT_DIR, "libraries-type-fields.json"),
 	`${JSON.stringify(typeFields, null, 2)}\n`,
@@ -313,6 +350,7 @@ fs.writeFileSync(
 console.log(
 	`\nWrote ${Object.keys(libraries).length} libraries to pine-data/v6/libraries.{ts,json}`,
 );
+
 if (quarantined.length > 0) {
 	console.log(
 		`Quarantined ${quarantined.length} (parse errors, left lenient): ${quarantined.join(", ")}`,

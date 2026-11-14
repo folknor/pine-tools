@@ -18,6 +18,7 @@ interface ParsedParameter {
 function parseParameters(syntax: string): ParsedParameter[] {
 	try {
 		const match = syntax.match(/\(([^)]*)\)/);
+
 		if (!match?.[1].trim()) return [];
 
 		const paramsString = match[1].trim();
@@ -26,6 +27,7 @@ function parseParameters(syntax: string): ParsedParameter[] {
 		// Split by comma, handling nested structures
 		let current = "";
 		let depth = 0;
+
 		for (const char of paramsString) {
 			if (char === "(" || char === "[" || char === "<") depth++;
 			else if (char === ")" || char === "]" || char === ">") depth--;
@@ -33,11 +35,14 @@ function parseParameters(syntax: string): ParsedParameter[] {
 				if (current.trim()) {
 					params.push({ label: current.trim() });
 				}
+
 				current = "";
 				continue;
 			}
+
 			current += char;
 		}
+
 		if (current.trim()) {
 			params.push({ label: current.trim() });
 		}
@@ -74,6 +79,7 @@ function findFunctionName(line: string, character: number): string | null {
 	const match = beforeCursor.match(
 		/([a-z_][a-z0-9_]*(?:\.[a-z_][a-z0-9_]*)?)\s*\([^)]*$/i,
 	);
+
 	if (!match) return null;
 
 	return match[1];
@@ -93,15 +99,18 @@ export function getSignatureHelp(
 
 	// Look up function in pine-data
 	const func = FUNCTIONS_BY_NAME.get(functionName);
+
 	if (!func?.syntax) return null;
 
 	// Parse parameters from syntax
 	const parsedParams = parseParameters(func.syntax);
+
 	if (parsedParams.length === 0) return null;
 
 	// Build parameter info with descriptions from pine-data
 	const parameters: ParameterInfo[] = parsedParams.map((parsed, index) => {
 		const pineParam = func.parameters[index];
+
 		return {
 			label: parsed.label,
 			documentation: pineParam?.description,
@@ -117,9 +126,11 @@ export function getSignatureHelp(
 	// Add function documentation
 	if (func.description) {
 		let doc = func.description;
+
 		if (func.returns) {
 			doc += `\n\n**Returns:** \`${func.returns}\``;
 		}
+
 		signature.documentation = doc;
 	}
 

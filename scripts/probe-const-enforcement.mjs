@@ -32,20 +32,26 @@ import { fileURLToPath } from "node:url";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(here, "..");
+
 const functions = JSON.parse(
 	fs.readFileSync(path.join(root, "pine-data", "v6", "functions.json"), "utf-8"),
 );
+
 const byName = new Map(functions.map((f) => [f.name, f]));
 
 const argv = process.argv.slice(2);
+
 const opt = (flag, def) => {
 	const i = argv.indexOf(flag);
+
 	return i >= 0 && argv[i + 1] ? argv[i + 1] : def;
 };
+
 const FILTER = opt("--filter", null);
 const LIMIT = Number(opt("--limit", "0")) || 0;
 const DELAY = Number(opt("--delay", "450"));
 const DRY = argv.includes("--dry");
+
 const OUT = opt(
 	"--out",
 	path.join(root, "investigations", "INV014-const-arg-enforcement", "audit.json"),
@@ -58,31 +64,49 @@ const baseOf = (t) => t.replace(CONST_RE, "").trim();
 // syminfo.tickerid (simple string), syminfo.mintick (simple float),
 // int(syminfo.mintick) (simple int), timeframe.isdaily (simple bool).
 function nonConstValue(base) {
-	if (/^int\/string/.test(base)) return "syminfo.tickerid";
-	if (/^int\/float/.test(base)) return "syminfo.mintick";
+	if (base.startsWith('int/string')) return "syminfo.tickerid";
+
+	if (base.startsWith('int/float')) return "syminfo.mintick";
+
 	if (/source-type/.test(base)) return "int(syminfo.mintick)"; // the input() blob
+
 	if (/\bstring\b/.test(base)) return "syminfo.tickerid";
+
 	if (/\bfloat\b/.test(base)) return "syminfo.mintick";
+
 	if (/\bint\b/.test(base)) return "int(syminfo.mintick)";
+
 	if (/\bbool\b/.test(base)) return "timeframe.isdaily";
+
 	if (/\bcolor\b/.test(base)) return "color.new(color.red, int(syminfo.mintick))";
+
 	if (/plot_display/.test(base)) return "int(syminfo.mintick)";
+
 	if (/scale_type/.test(base)) return "int(syminfo.mintick)";
+
 	if (/\benum\b/.test(base)) return null; // needs a user enum; handled manually
+
 	return null;
 }
 
 // A valid (often const) value to satisfy a REQUIRED scaffolding arg by its type.
 function scaffoldValue(type) {
 	const t = type.toLowerCase();
-	if (/^series/.test(t) || /open\/high\/low\/close|source/.test(t)) {
+
+	if (t.startsWith('series') || /open\/high\/low\/close|source/.test(t)) {
 		return /string/.test(t) ? '"x"' : "close";
 	}
+
 	if (/string/.test(t)) return '"x"';
+
 	if (/bool/.test(t)) return "true";
+
 	if (/color/.test(t)) return "color.red";
+
 	if (/float/.test(t)) return "1.0";
+
 	if (/int/.test(t)) return "1";
+
 	return null; // non-scalar -> needs manual scaffold
 }
 
@@ -94,9 +118,11 @@ const MANUAL = {
 	fill: (p, v) => {
 		const a = { title: '"t"', color: "color.red" };
 		a[p] = v;
+
 		const named = Object.entries(a)
 			.map(([k, x]) => `${k}=${x}`)
 			.join(", ");
+
 		return `//@version=6\nindicator("x")\np1 = plot(close)\np2 = plot(open)\nfill(p1, p2, ${named})`;
 	},
 	"polyline.new": (p, v) =>
@@ -129,11 +155,14 @@ const MANUAL = {
 		if (p === "defval") {
 			return `//@version=6\nindicator("x")\nenum E\n    a\n    b\nvar E e = E.a\ne := bar_index % 2 == 0 ? E.a : E.b\nx = input.enum(e)\nplot(close)`;
 		}
+
 		const a = { defval: "E.a" };
 		a[p] = v;
+
 		const named = Object.entries(a)
 			.map(([k, x]) => `${k}=${x}`)
 			.join(", ");
+
 		return `//@version=6\nindicator("x")\nenum E\n    a\n    b\nx = input.enum(${named})\nplot(close)`;
 	},
 };
@@ -142,10 +171,12 @@ const MANUAL = {
 function buildProbe(fnName, param, type) {
 	const base = baseOf(type);
 	const v = nonConstValue(base);
+
 	if (MANUAL[fnName]) {
 		// enum value generator differs; nonConstValue may be null but MANUAL handles it.
 		return { src: MANUAL[fnName](param, v ?? "E.a"), base };
 	}
+
 	if (v == null) return { skip: `no non-const value for base '${base}'` };
 
 	const fn = byName.get(fnName);
@@ -154,11 +185,14 @@ function buildProbe(fnName, param, type) {
 	// param (so the primary positional is present) + the probed param (=v).
 	const args = new Map();
 	const firstParam = params[0];
+
 	const ensure = (pp) => {
 		if (!pp || pp.name === param) return;
 		const sv = scaffoldValue(pp.type);
+
 		if (sv != null) args.set(pp.name, sv);
 	};
+
 	for (const pp of params) if (pp.required) ensure(pp);
 	ensure(firstParam);
 	args.set(param, v);
@@ -167,13 +201,17 @@ function buildProbe(fnName, param, type) {
 	const unmet = params.find(
 		(pp) => pp.required && pp.name !== param && !args.has(pp.name),
 	);
+
 	if (unmet) return { skip: `required '${unmet.name}:${unmet.type}' unscaffoldable` };
 
 	const named = [...args.entries()].map(([k, x]) => `${k}=${x}`).join(", ");
+
 	if (DECL_FNS.has(fnName)) {
 		const tail = fnName === "library" ? "" : "\nplot(close)";
+
 		return { src: `//@version=6\n${fnName}(${named})${tail}`, base };
 	}
+
 	return { src: `//@version=6\nindicator("x")\n${fnName}(${named})`, base };
 }
 
@@ -182,6 +220,7 @@ function runTv(src) {
 		const c = spawn("pine-lint", ["--tv", "-c", src], {
 			stdio: ["ignore", "pipe", "pipe"],
 		});
+
 		let out = "";
 		let err = "";
 		c.stdout.on("data", (d) => (out += d));
@@ -193,18 +232,22 @@ function runTv(src) {
 
 function classify(raw, param) {
 	let j;
+
 	try {
 		j = JSON.parse(raw);
 	} catch (e) {
 		return { verdict: "PARSE_FAIL", detail: raw.slice(0, 160) };
 	}
+
 	const errs = j.result?.errors ?? j.errors ?? [];
+
 	const mine = errs.find(
 		(e) =>
 			e.code === "CE10123" &&
 			e.ctx?.argDisplayName === param &&
 			/^const/.test(e.ctx?.currentTypeDocStr ?? ""),
 	);
+
 	if (mine) {
 		return {
 			verdict: "ENFORCED",
@@ -212,7 +255,9 @@ function classify(raw, param) {
 			passed: mine.ctx.argumentType,
 		};
 	}
+
 	if (errs.length === 0) return { verdict: "LENIENT" };
+
 	return {
 		verdict: "AMBIGUOUS",
 		detail: errs
@@ -225,6 +270,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // Collect the work list.
 const work = [];
+
 for (const fn of functions) {
 	for (const p of fn.parameters ?? []) {
 		if (typeof p.type === "string" && CONST_RE.test(p.type)) {
@@ -233,37 +279,46 @@ for (const fn of functions) {
 		}
 	}
 }
+
 const slice = LIMIT > 0 ? work.slice(0, LIMIT) : work;
 
 const results = [];
+
 for (let i = 0; i < slice.length; i++) {
 	const { fn, param, type } = slice[i];
 	const probe = buildProbe(fn, param, type);
+
 	if (probe.skip) {
 		results.push({ fn, param, type, verdict: "SKIP", detail: probe.skip });
 		console.log(`[${i + 1}/${slice.length}] ${fn}::${param}  SKIP (${probe.skip})`);
 		continue;
 	}
+
 	if (DRY) {
 		console.log(`--- ${fn}::${param} (${type}) ---\n${probe.src}\n`);
 		results.push({ fn, param, type, src: probe.src });
 		continue;
 	}
+
 	const { out } = await runTv(probe.src);
 	const c = classify(out, param);
 	results.push({ fn, param, type, ...c, src: probe.src });
+
 	const extra =
 		c.verdict === "ENFORCED"
 			? `(passed ${c.passed} -> wants ${c.expected})`
 			: c.verdict === "AMBIGUOUS"
 				? `(${c.detail})`
 				: "";
+
 	console.log(`[${i + 1}/${slice.length}] ${fn}::${param}  ${c.verdict} ${extra}`);
+
 	if (i < slice.length - 1) await sleep(DELAY);
 }
 
 if (!DRY) {
 	const summary = {};
+
 	for (const r of results) summary[r.verdict] = (summary[r.verdict] ?? 0) + 1;
 	const stamp = new Date().toISOString().slice(0, 10);
 	fs.writeFileSync(
@@ -272,11 +327,14 @@ if (!DRY) {
 	);
 	console.log(`\nSummary: ${JSON.stringify(summary)}`);
 	console.log(`Wrote ${results.length} results -> ${path.relative(root, OUT)}`);
+
 	const interesting = results.filter(
 		(r) => r.verdict === "LENIENT" || r.verdict === "AMBIGUOUS" || r.verdict === "SKIP",
 	);
+
 	if (interesting.length) {
 		console.log("\nNon-ENFORCED (need attention):");
+
 		for (const r of interesting)
 			console.log(`  ${r.fn}::${r.param} (${r.type}) -> ${r.verdict} ${r.detail ?? ""}`);
 	}

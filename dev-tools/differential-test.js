@@ -21,6 +21,7 @@ import { Parser } from "../dist/packages/core/src/parser/parser.js";
 // TradingView linter - inline implementation to avoid pipeline dependency
 const TV_API_URL =
 	"https://pine-facade.tradingview.com/pine-facade/translate_light?user_name=admin&v=3";
+
 const TV_HEADERS = {
 	Referer: "https://www.tradingview.com/",
 	"User-Agent":
@@ -49,6 +50,7 @@ async function checkPineScript(code, options = {}) {
 		if (error.name === "AbortError") {
 			return { success: false, error: `Request timed out after ${timeout}ms` };
 		}
+
 		return { success: false, error: error.message };
 	} finally {
 		clearTimeout(timeoutId);
@@ -59,10 +61,13 @@ async function checkPineScript(code, options = {}) {
 
 const identifier = fc.stringMatching(/^[a-zA-Z_][a-zA-Z0-9_]{1,12}$/);
 const intLiteral = fc.integer({ min: -10000, max: 10000 }).map(String);
+
 const floatLiteral = fc
 	.tuple(fc.integer({ min: -1000, max: 1000 }), fc.integer({ min: 0, max: 99 }))
 	.map(([a, b]) => `${a}.${b}`);
+
 const boolLiteral = fc.constantFrom("true", "false");
+
 const stringLiteral = fc
 	.stringMatching(/^[a-zA-Z0-9 _-]{0,30}$/)
 	.map((s) => `"${s}"`);
@@ -359,8 +364,10 @@ const ifStmt = fc
 	)
 	.map(([cond, consequent, alternate]) => {
 		let code = `if ${cond}\n${consequent.map((s) => `    ${s}`).join("\n")}`;
+
 		if (alternate)
 			code += `\nelse\n${alternate.map((s) => `    ${s}`).join("\n")}`;
+
 		return code;
 	});
 
@@ -400,8 +407,11 @@ const switchStmt = fc
 	)
 	.map(([disc, cases, def]) => {
 		let code = `switch ${disc}\n`;
+
 		for (const [cond, result] of cases) code += `    ${cond} => ${result}\n`;
+
 		if (def) code += `    => ${def}\n`;
+
 		return code;
 	});
 
@@ -555,6 +565,7 @@ function compareDiagnostics(tv, internal) {
 
 	// Index by line for matching
 	const internalByLine = new Map();
+
 	for (const d of internal) {
 		const list = internalByLine.get(d.line) || [];
 		list.push(d);
@@ -572,6 +583,7 @@ function compareDiagnostics(tv, internal) {
 			// Check if messages are similar
 			const tvMsg = tvDiag.message.toLowerCase();
 			const intMsg = match.message.toLowerCase();
+
 			if (
 				!tvMsg.includes(intMsg.slice(0, 20)) &&
 				!intMsg.includes(tvMsg.slice(0, 20))
@@ -617,16 +629,19 @@ async function compareScript(script) {
 
 async function main() {
 	const args = process.argv.slice(2);
+
 	const count = parseInt(
 		args.find((_, i, a) => a[i - 1] === "--count") || "10",
 		10,
 	);
+
 	const seed = args.find((_, i, a) => a[i - 1] === "--seed");
 	const verbose = args.includes("--verbose");
 	const save = args.includes("--save");
 
 	console.log(`\n🧪 Differential Testing: TradingView vs Internal Validator\n`);
 	console.log(`   Scripts: ${count}`);
+
 	if (seed) console.log(`   Seed: ${seed}`);
 	console.log("");
 
@@ -639,6 +654,7 @@ async function main() {
 			numRuns: 1,
 			seed: seed ? parseInt(seed, 10) + i : undefined,
 		})[0];
+
 		scripts.push(sample);
 	}
 
@@ -682,6 +698,7 @@ async function main() {
 
 		for (let i = 0; i < results.length; i++) {
 			const r = results[i];
+
 			const hasDiscrepancy =
 				r.discrepancies.onlyInTv.length > 0 ||
 				r.discrepancies.onlyInInternal.length > 0 ||
@@ -699,6 +716,7 @@ async function main() {
 
 			if (r.discrepancies.onlyInTv.length > 0) {
 				console.log("  ❌ Only in TradingView (we're missing these):");
+
 				for (const d of r.discrepancies.onlyInTv) {
 					console.log(`     L${d.line}: ${d.message}`);
 				}
@@ -706,6 +724,7 @@ async function main() {
 
 			if (r.discrepancies.onlyInInternal.length > 0) {
 				console.log("  ⚠️  Only in Internal (false positives):");
+
 				for (const d of r.discrepancies.onlyInInternal) {
 					console.log(`     L${d.line}: ${d.message}`);
 				}
@@ -713,6 +732,7 @@ async function main() {
 
 			if (r.discrepancies.messageDiffs.length > 0) {
 				console.log("  📝 Different messages:");
+
 				for (const { tv, internal } of r.discrepancies.messageDiffs) {
 					console.log(`     L${tv.line}:`);
 					console.log(`       TV: ${tv.message}`);

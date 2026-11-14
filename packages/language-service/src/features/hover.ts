@@ -42,13 +42,16 @@ export function getHover(
 	options: HoverOptions = {},
 ): HoverInfo | null {
 	const symbol = doc.getWordAtPosition(position);
+
 	if (!symbol) return null;
 
 	// Check if this is a library symbol (e.g., "myLib.myFunction")
 	const libraryHover = getLibraryHover(doc, position, symbol, options);
+
 	if (libraryHover) return libraryHover;
 
 	const info = getSymbolInfo(symbol);
+
 	if (!info) return null;
 
 	const mode = options.mode ?? "full";
@@ -70,6 +73,7 @@ export function getHover(
 			mode === "summary"
 				? `${info.description.split(".")[0]}.`
 				: info.description;
+
 		parts.push(desc);
 	}
 
@@ -83,6 +87,7 @@ export function getHover(
 	// Parameters (for functions, in full mode)
 	if (mode === "full" && info.parameters && info.parameters.length > 0) {
 		parts.push("**Parameters:**");
+
 		for (const param of info.parameters) {
 			if (param.documentation) {
 				parts.push(`- \`${param.label}\`: ${param.documentation}`);
@@ -117,6 +122,7 @@ function getLibraryHover(
 	options: HoverOptions,
 ): HoverInfo | null {
 	const line = doc.getLine(position.line);
+
 	if (!line) return null;
 
 	// Check if we're hovering over a member of a library alias (e.g., "myLib.myFunction")
@@ -125,24 +131,29 @@ function getLibraryHover(
 
 	// Find the full expression around the cursor
 	const beforeMatch = beforeSymbol.match(/([a-zA-Z_][a-zA-Z0-9_]*)\.$/);
+
 	if (!beforeMatch) return null;
 
 	const alias = beforeMatch[1];
 	const memberMatch = afterSymbol.match(/^([a-zA-Z_][a-zA-Z0-9_]*)/);
+
 	if (!memberMatch) return null;
 
 	// Check if the alias is a resolved import
 	const imports = getResolvedImports(doc);
 	const resolvedImport = imports.find((i) => i.alias === alias);
+
 	if (!resolvedImport) return null;
 
 	// Get library content
 	const content = libraryContentCache.get(resolvedImport.sourcePath);
+
 	if (!content) return null;
 
 	// Parse the library and find the export
 	const library = parseLibrary(content, resolvedImport.sourcePath);
 	const exportInfo = findLibraryExport(library, symbol);
+
 	if (!exportInfo) return null;
 
 	return buildLibraryExportHover(alias, exportInfo, options);
@@ -167,6 +178,7 @@ function buildLibraryExportHover(
 		const paramStr = exportInfo.params
 			.map((p) => `${p.name}${p.type ? `: ${p.type}` : ""}`)
 			.join(", ");
+
 		parts.push(`\`\`\`pine\n${exportInfo.name}(${paramStr})\n\`\`\``);
 	}
 
@@ -176,6 +188,7 @@ function buildLibraryExportHover(
 			mode === "summary"
 				? `${exportInfo.description.split(".")[0]}.`
 				: exportInfo.description;
+
 		parts.push(desc);
 	}
 
@@ -187,6 +200,7 @@ function buildLibraryExportHover(
 	// Parameters (for functions, in full mode)
 	if (mode === "full" && exportInfo.params && exportInfo.params.length > 0) {
 		parts.push("**Parameters:**");
+
 		for (const param of exportInfo.params) {
 			const typeStr = param.type ? `: ${param.type}` : "";
 			parts.push(`- \`${param.name}${typeStr}\``);

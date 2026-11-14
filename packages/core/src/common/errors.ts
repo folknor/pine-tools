@@ -29,8 +29,10 @@ export function renderMessage(
 	e: Pick<ValidationError, "message" | "ctx">,
 ): string {
 	if (!e.ctx) return e.message;
+
 	return e.message.replace(/\{(\w+)\}/g, (match, key) => {
 		const value = e.ctx?.[key];
+
 		return value === undefined ? match : String(value);
 	});
 }

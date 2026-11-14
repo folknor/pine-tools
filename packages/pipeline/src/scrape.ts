@@ -47,33 +47,43 @@ function parseCliOptions(argv: string[]): CliOptions {
 
 	for (let i = 0; i < argv.length; i++) {
 		const arg = argv[i];
+
 		if (arg === "--dry-run" || arg === "-n") {
 			dryRun = true;
 			continue;
 		}
+
 		if (arg === "--only-overloaded") {
 			onlyOverloaded = true;
 			continue;
 		}
+
 		if (arg === "--only") {
 			const value = argv[++i];
+
 			if (!value) {
 				throw new Error("--only requires a comma-separated name list");
 			}
+
 			for (const name of value.split(",")) {
 				if (name.trim()) onlyNames.add(name.trim());
 			}
+
 			continue;
 		}
+
 		if (arg.startsWith("--only=")) {
 			for (const name of arg.slice("--only=".length).split(",")) {
 				if (name.trim()) onlyNames.add(name.trim());
 			}
+
 			continue;
 		}
+
 		if (arg.startsWith("-")) {
 			continue;
 		}
+
 		positionalArgs.push(arg);
 	}
 
@@ -87,9 +97,11 @@ const DRY_RUN_LIMIT = 5;
 const INPUT_FILE =
 	CLI_OPTIONS.positionalArgs[0] ||
 	path.join(PROJECT_ROOT, "pine-data/raw/v6/v6-language-constructs.json");
+
 const OUTPUT_FILE =
 	CLI_OPTIONS.positionalArgs[1] ||
 	path.join(PROJECT_ROOT, "pine-data/raw/v6/complete-v6-details.json");
+
 const CACHE_DIR = path.join(PROJECT_ROOT, ".cache/function-details");
 const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
@@ -106,9 +118,11 @@ function saveDomSnapshot(name: string, label: string, html: string): void {
 	try {
 		const safeName = name.replace(/[^a-zA-Z0-9_.-]/g, "_");
 		const dir = path.join(MIRROR_DIR, safeName);
+
 		if (!fs.existsSync(dir)) {
 			fs.mkdirSync(dir, { recursive: true });
 		}
+
 		fs.writeFileSync(path.join(dir, `${label}.html`), html, "utf8");
 	} catch (error) {
 		console.warn(
@@ -232,6 +246,7 @@ interface ScrapeResult {
 // `time` variable (which share a name) don't collide on disk.
 function getCacheFilePath(name: string, prefix = ""): string {
 	const safeName = name.replace(/[^a-zA-Z0-9]/g, "_");
+
 	return path.join(CACHE_DIR, `${prefix}${safeName}.json`);
 }
 
@@ -242,6 +257,7 @@ function isCacheValid(cacheFilePath: string): boolean {
 
 	const stats = fs.statSync(cacheFilePath);
 	const age = Date.now() - stats.mtime.getTime();
+
 	return age < CACHE_TTL;
 }
 
@@ -252,6 +268,7 @@ function isCacheValid(cacheFilePath: string): boolean {
 // the snapshot the offline reextract passes need.
 function hasMirror(name: string, mirrorPrefix = ""): boolean {
 	const safeName = `${mirrorPrefix}${name}`.replace(/[^a-zA-Z0-9_.-]/g, "_");
+
 	return fs.existsSync(path.join(MIRROR_DIR, safeName, "base.html"));
 }
 
@@ -268,9 +285,11 @@ function getCachedData<T = FunctionDetails>(
 	try {
 		const cachedData = JSON.parse(fs.readFileSync(cacheFilePath, "utf8"));
 		console.log(`Using cached data for: ${prefix}${name}`);
+
 		return cachedData;
 	} catch {
 		console.log(`Invalid cache for ${prefix}${name}, will re-scrape`);
+
 		return null;
 	}
 }
@@ -313,6 +332,7 @@ async function getSharedBrowser(): Promise<Browser> {
 			],
 		});
 	}
+
 	return sharedBrowser;
 }
 
@@ -325,6 +345,7 @@ async function getSharedPage(): Promise<Page> {
 		await sharedPage.setRequestInterception(true);
 		sharedPage.on("request", (request) => {
 			const resourceType = request.resourceType();
+
 			if (["image", "stylesheet", "font", "media"].includes(resourceType)) {
 				request.abort();
 			} else {
@@ -344,6 +365,7 @@ async function getSharedPage(): Promise<Page> {
 			.waitForFunction(
 				() => {
 					const content = document.body.innerText;
+
 					return content.length > 1000 && !content.includes("Loading");
 				},
 				{ timeout: 15000 },
@@ -354,6 +376,7 @@ async function getSharedPage(): Promise<Page> {
 
 		console.log("SPA loaded, ready for hash navigation");
 	}
+
 	return sharedPage;
 }
 
@@ -361,6 +384,7 @@ async function closeSharedBrowser(): Promise<void> {
 	if (sharedPage) {
 		sharedPage = null;
 	}
+
 	if (sharedBrowser) {
 		await sharedBrowser.close();
 		sharedBrowser = null;
@@ -395,8 +419,10 @@ async function collectOverloadArgs(
 
 		const { argTexts, html } = await page.evaluate((name: string) => {
 			const el = document.getElementById(`fun_${name}`);
+
 			if (!el) return { argTexts: [] as string[], html: "" };
 			const texts: string[] = [];
+
 			for (const node of el.querySelectorAll(
 				".tv-pine-reference-item__arg-type",
 			)) {
@@ -407,6 +433,7 @@ async function collectOverloadArgs(
 				const row = node.parentElement ?? node;
 				texts.push(row.textContent?.trim() || "");
 			}
+
 			return { argTexts: texts, html: el.outerHTML };
 		}, funcNameClean);
 
@@ -430,6 +457,7 @@ export async function scrapeFunctionDetails(
 	// Check cache first
 	if (useCache) {
 		const cachedData = getCachedData(functionName);
+
 		if (cachedData) {
 			return cachedData;
 		}
@@ -458,6 +486,7 @@ export async function scrapeFunctionDetails(
 						document.getElementById(`fun_${funcName}`) ||
 						document.getElementById(`var_${funcName}`) ||
 						document.getElementById(`type_${funcName}`);
+
 					return el !== null;
 				},
 				{ timeout: 5000 },
@@ -490,8 +519,10 @@ export async function scrapeFunctionDetails(
 			if (!funcElement) {
 				// Try to find by searching all items
 				const items = document.querySelectorAll(".tv-pine-reference-item");
+
 				for (const item of items) {
 					const header = item.querySelector(".tv-pine-reference-item__header");
+
 					if (
 						header &&
 						header.textContent?.replace(/[()]/g, "").trim() === funcName
@@ -499,6 +530,7 @@ export async function scrapeFunctionDetails(
 						return extractFromElement(item as HTMLElement);
 					}
 				}
+
 				return result;
 			}
 
@@ -521,6 +553,7 @@ export async function scrapeFunctionDetails(
 				const headerEl = element.querySelector(
 					".tv-pine-reference-item__header",
 				);
+
 				if (headerEl) {
 					res.name = headerEl.textContent?.trim() || "";
 				}
@@ -529,9 +562,11 @@ export async function scrapeFunctionDetails(
 				const syntaxEls = element.querySelectorAll(
 					".tv-pine-reference-item__syntax",
 				);
+
 				const allSyntaxes: string[] = [];
 				syntaxEls.forEach((syntaxEl) => {
 					const syntaxText = syntaxEl.textContent?.trim() || "";
+
 					if (syntaxText) {
 						allSyntaxes.push(syntaxText);
 					}
@@ -542,9 +577,11 @@ export async function scrapeFunctionDetails(
 					res.syntax = allSyntaxes[0];
 					// Extract return type from syntax
 					const returnMatch = res.syntax.match(/→\s*(.+)$/);
+
 					if (returnMatch) {
 						res.returns = returnMatch[1].trim();
 					}
+
 					// Store all syntaxes for overload analysis
 					if (allSyntaxes.length > 1) {
 						res.overloads = allSyntaxes;
@@ -555,8 +592,10 @@ export async function scrapeFunctionDetails(
 				const textElements = element.querySelectorAll(
 					".tv-pine-reference-item__text.tv-text",
 				);
+
 				if (textElements.length > 0) {
 					const firstText = textElements[0];
+
 					if (!firstText.querySelector(".tv-pine-reference-item__arg-type")) {
 						res.description = firstText.textContent?.trim() || "";
 					}
@@ -566,9 +605,11 @@ export async function scrapeFunctionDetails(
 				const argElements = element.querySelectorAll(
 					".tv-pine-reference-item__arg-type",
 				);
+
 				argElements.forEach((argEl) => {
 					const argText = argEl.textContent?.trim() || "";
 					const match = argText.match(/^(\w+)\s*\(([^)]+)\)/);
+
 					if (match) {
 						const paramName = match[1];
 						const paramType = match[2];
@@ -576,18 +617,22 @@ export async function scrapeFunctionDetails(
 						const descText = parentText.replace(argText, "").trim();
 
 						const descLower = descText.toLowerCase();
+
 						const hasDefault =
 							descLower.includes("the default is") ||
 							descLower.includes("defaults to") ||
 							descLower.includes("default value is") ||
 							descLower.includes("default is ");
+
 						const isExplicitlyOptional =
 							argText.toLowerCase().includes("optional") ||
 							paramName.startsWith("[") ||
 							descLower.includes("optional argument") ||
 							descLower.includes("optional.");
+
 						const isExplicitlyRequired =
 							descLower.includes("required argument");
+
 						const isOptional =
 							isExplicitlyOptional || hasDefault || !isExplicitlyRequired;
 
@@ -618,15 +663,18 @@ export async function scrapeFunctionDetails(
 					isFirstOverload = false,
 				) => {
 					const syntaxMatch = syntaxStr.match(/^[^(]+\(([^)]+)\)/);
+
 					if (syntaxMatch) {
 						const paramsStr = syntaxMatch[1];
 						const parts = paramsStr.split(/,\s*/);
 						parts.forEach((part) => {
 							const trimmed = part.trim();
+
 							if (trimmed === "...") {
 								res.variadic = true;
 							} else if (trimmed) {
 								const existingParam = paramsByName.get(trimmed);
+
 								if (!existingParam) {
 									paramsByName.set(trimmed, {
 										name: trimmed,
@@ -659,24 +707,29 @@ export async function scrapeFunctionDetails(
 
 				if (paramsByName.size > res.parameters.length) {
 					const mergedParams: typeof res.parameters = [];
+
 					for (const [name, syntaxParam] of paramsByName) {
 						const argTypeParam = res.parameters.find((p) => p.name === name);
+
 						if (argTypeParam) {
 							mergedParams.push(argTypeParam);
 						} else {
 							mergedParams.push(syntaxParam);
 						}
 					}
+
 					res.parameters = mergedParams;
 				}
 
 				if (res.parameters.length === 0 && res.syntax) {
 					const syntaxMatch = res.syntax.match(/^[^(]+\(([^)]+)\)/);
+
 					if (syntaxMatch) {
 						const paramsStr = syntaxMatch[1];
 						const parts = paramsStr.split(/,\s*/);
 						parts.forEach((part) => {
 							const trimmed = part.trim();
+
 							if (trimmed === "...") {
 								res.variadic = true;
 							} else if (trimmed) {
@@ -703,10 +756,12 @@ export async function scrapeFunctionDetails(
 				const exampleEls = element.querySelectorAll(
 					".tv-pine-reference-item__example code",
 				);
+
 				for (const exampleEl of exampleEls) {
 					const text = ((exampleEl as HTMLElement).innerText || "")
 						.replace(/\u00a0/g, " ")
 						.trim();
+
 					if (text) res.examples.push(text);
 				}
 
@@ -728,8 +783,10 @@ export async function scrapeFunctionDetails(
 				document.getElementById(`fun_${name}`) ||
 				document.getElementById(`var_${name}`) ||
 				document.getElementById(`type_${name}`);
+
 			return el ? el.outerHTML : "";
 		}, funcNameClean);
+
 		if (baseHtml) saveDomSnapshot(funcNameClean, "base", baseHtml);
 
 		// Overloaded functions: the single-pass extract above only saw overload
@@ -750,6 +807,7 @@ export async function scrapeFunctionDetails(
 		console.log(
 			`Failed to scrape ${functionName}: ${(error as Error).message}`,
 		);
+
 		return null;
 	}
 }
@@ -765,8 +823,10 @@ export async function scrapeMemberDetails(
 	useCache = true,
 ): Promise<MemberDetails | null> {
 	const cachePrefix = `${kind}__`;
+
 	if (useCache) {
 		const cached = getCachedData<MemberDetails>(name, cachePrefix);
+
 		if (cached) {
 			return cached;
 		}
@@ -795,6 +855,7 @@ export async function scrapeMemberDetails(
 		const details = await page.evaluate(
 			(id: string, fallbackName: string) => {
 				const el = document.getElementById(id);
+
 				if (!el) return null;
 
 				const headerEl = el.querySelector(".tv-pine-reference-item__header");
@@ -802,21 +863,26 @@ export async function scrapeMemberDetails(
 
 				// Type: the __text sibling that follows the "Type" sub-header.
 				let type = "";
+
 				const subHeaders = el.querySelectorAll(
 					".tv-pine-reference-item__sub-header",
 				);
+
 				for (const sh of subHeaders) {
 					if ((sh.textContent || "").trim() === "Type") {
 						let sibling = sh.nextElementSibling;
+
 						while (
 							sibling &&
 							!sibling.classList.contains("tv-pine-reference-item__text")
 						) {
 							sibling = sibling.nextElementSibling;
 						}
+
 						if (sibling) {
 							type = (sibling.textContent || "").replace(/\s+/g, " ").trim();
 						}
+
 						break;
 					}
 				}
@@ -825,12 +891,15 @@ export async function scrapeMemberDetails(
 				// argument-type entry nor the Type value itself (it precedes Type
 				// in document order, so this resolves to the prose description).
 				let description = "";
+
 				const texts = el.querySelectorAll(
 					".tv-pine-reference-item__text.tv-text",
 				);
+
 				for (const t of texts) {
 					if (t.querySelector(".tv-pine-reference-item__arg-type")) continue;
 					const txt = (t.textContent || "").trim();
+
 					if (!txt || txt === type) continue;
 					description = txt;
 					break;
@@ -858,8 +927,10 @@ export async function scrapeMemberDetails(
 			if (details.html) {
 				saveDomSnapshot(`${cachePrefix}${name}`, "base", details.html);
 			}
+
 			const { html: _html, ...member } = details;
 			saveToCache(name, member, cachePrefix);
+
 			return member;
 		}
 
@@ -868,6 +939,7 @@ export async function scrapeMemberDetails(
 		console.log(
 			`Failed to scrape ${kind} ${name}: ${(error as Error).message}`,
 		);
+
 		return null;
 	}
 }
@@ -882,6 +954,7 @@ export async function scrapeTypeDetails(
 ): Promise<TypeDetails | null> {
 	if (useCache) {
 		const cached = getCachedData<TypeDetails>(name, "type__");
+
 		if (cached) return cached;
 	}
 
@@ -904,16 +977,19 @@ export async function scrapeTypeDetails(
 		const result = await page.evaluate(
 			(id: string, fallbackName: string) => {
 				const el = document.getElementById(id);
+
 				if (!el) return null;
 				const headerEl = el.querySelector(".tv-pine-reference-item__header");
 				const resolvedName = headerEl?.textContent?.trim() || fallbackName;
 
 				let description = "";
+
 				for (const t of el.querySelectorAll(
 					".tv-pine-reference-item__text.tv-text",
 				)) {
 					if (t.querySelector(".tv-pine-reference-item__arg-type")) continue;
 					const txt = (t.textContent || "").trim();
+
 					if (txt) {
 						description = txt;
 						break;
@@ -921,17 +997,20 @@ export async function scrapeTypeDetails(
 				}
 
 				const examples: string[] = [];
+
 				for (const ex of el.querySelectorAll(
 					".tv-pine-reference-item__example code",
 				)) {
 					const text = ((ex as HTMLElement).innerText || "")
 						.replace(/ /g, " ")
 						.trim();
+
 					if (text) examples.push(text);
 				}
 
 				// Field rows render like argument rows ("name (type) description").
 				const fieldTexts: string[] = [];
+
 				for (const node of el.querySelectorAll(
 					".tv-pine-reference-item__arg-type",
 				)) {
@@ -952,9 +1031,11 @@ export async function scrapeTypeDetails(
 		);
 
 		if (!result) return null;
+
 		if (result.html) saveDomSnapshot(`type__${name}`, "base", result.html);
 
 		const fields = result.fieldTexts.flatMap(parseArgTypeText);
+
 		const details: TypeDetails = {
 			name: result.resolvedName,
 			description: result.description,
@@ -964,10 +1045,13 @@ export async function scrapeTypeDetails(
 				? result.resolvedName.split(".")[0]
 				: undefined,
 		};
+
 		saveToCache(name, details, "type__");
+
 		return details;
 	} catch (error) {
 		console.log(`Failed to scrape type ${name}: ${(error as Error).message}`);
+
 		return null;
 	}
 }
@@ -981,6 +1065,7 @@ export async function scrapeAnnotationDetails(
 ): Promise<AnnotationDetails | null> {
 	if (useCache) {
 		const cached = getCachedData<AnnotationDetails>(name, "an__");
+
 		if (cached) return cached;
 	}
 
@@ -1003,6 +1088,7 @@ export async function scrapeAnnotationDetails(
 		const result = await page.evaluate(
 			(id: string, fallbackName: string) => {
 				const el = document.getElementById(id);
+
 				if (!el) return null;
 				const headerEl = el.querySelector(".tv-pine-reference-item__header");
 				const resolvedName = headerEl?.textContent?.trim() || fallbackName;
@@ -1011,11 +1097,13 @@ export async function scrapeAnnotationDetails(
 				const syntax = syntaxEl?.textContent?.trim() || "";
 
 				let description = "";
+
 				for (const t of el.querySelectorAll(
 					".tv-pine-reference-item__text.tv-text",
 				)) {
 					if (t.querySelector(".tv-pine-reference-item__arg-type")) continue;
 					const txt = (t.textContent || "").trim();
+
 					if (txt) {
 						description = txt;
 						break;
@@ -1023,12 +1111,14 @@ export async function scrapeAnnotationDetails(
 				}
 
 				const examples: string[] = [];
+
 				for (const ex of el.querySelectorAll(
 					".tv-pine-reference-item__example code",
 				)) {
 					const text = ((ex as HTMLElement).innerText || "")
 						.replace(/ /g, " ")
 						.trim();
+
 					if (text) examples.push(text);
 				}
 
@@ -1045,6 +1135,7 @@ export async function scrapeAnnotationDetails(
 		);
 
 		if (!result) return null;
+
 		if (result.html) saveDomSnapshot(`an__${name}`, "base", result.html);
 
 		const details: AnnotationDetails = {
@@ -1053,12 +1144,15 @@ export async function scrapeAnnotationDetails(
 			syntax: result.syntax || undefined,
 			examples: result.examples,
 		};
+
 		saveToCache(name, details, "an__");
+
 		return details;
 	} catch (error) {
 		console.log(
 			`Failed to scrape annotation ${name}: ${(error as Error).message}`,
 		);
+
 		return null;
 	}
 }
@@ -1074,8 +1168,10 @@ export async function scrapeOperatorDetails(
 	// Cache/mirror under a hex slug so symbols like `?:`/`+=`/`==` don't collide
 	// on disk; the DOM anchor still uses the raw symbol.
 	const slug = operatorSlug(symbol);
+
 	if (useCache) {
 		const cached = getCachedData<OperatorDetails>(slug, "op__");
+
 		if (cached) return cached;
 	}
 
@@ -1098,6 +1194,7 @@ export async function scrapeOperatorDetails(
 		const result = await page.evaluate(
 			(id: string, fallbackName: string) => {
 				const el = document.getElementById(id);
+
 				if (!el) return null;
 				const headerEl = el.querySelector(".tv-pine-reference-item__header");
 				const resolvedName = headerEl?.textContent?.trim() || fallbackName;
@@ -1106,11 +1203,13 @@ export async function scrapeOperatorDetails(
 				const syntax = syntaxEl?.textContent?.trim() || "";
 
 				let description = "";
+
 				for (const t of el.querySelectorAll(
 					".tv-pine-reference-item__text.tv-text",
 				)) {
 					if (t.querySelector(".tv-pine-reference-item__arg-type")) continue;
 					const txt = (t.textContent || "").trim();
+
 					if (txt) {
 						description = txt;
 						break;
@@ -1118,12 +1217,14 @@ export async function scrapeOperatorDetails(
 				}
 
 				const examples: string[] = [];
+
 				for (const ex of el.querySelectorAll(
 					".tv-pine-reference-item__example code",
 				)) {
 					const text = ((ex as HTMLElement).innerText || "")
 						.replace(/ /g, " ")
 						.trim();
+
 					if (text) examples.push(text);
 				}
 
@@ -1140,6 +1241,7 @@ export async function scrapeOperatorDetails(
 		);
 
 		if (!result) return null;
+
 		if (result.html) saveDomSnapshot(`op__${slug}`, "base", result.html);
 
 		const details: OperatorDetails = {
@@ -1148,12 +1250,15 @@ export async function scrapeOperatorDetails(
 			description: result.description,
 			examples: result.examples,
 		};
+
 		saveToCache(slug, details, "op__");
+
 		return details;
 	} catch (error) {
 		console.log(
 			`Failed to scrape operator ${symbol}: ${(error as Error).message}`,
 		);
+
 		return null;
 	}
 }
@@ -1164,6 +1269,7 @@ export async function scrapeKeywordDetails(
 ): Promise<KeywordDetails | null> {
 	if (useCache) {
 		const cached = getCachedData<KeywordDetails>(name, "kw__");
+
 		if (cached) return cached;
 	}
 
@@ -1196,6 +1302,7 @@ export async function scrapeKeywordDetails(
 			result = await page.evaluate(
 				(id: string, fallbackName: string) => {
 					const el = document.getElementById(id);
+
 					if (!el) return null;
 					const headerEl = el.querySelector(".tv-pine-reference-item__header");
 					const resolvedName = headerEl?.textContent?.trim() || fallbackName;
@@ -1204,11 +1311,13 @@ export async function scrapeKeywordDetails(
 					const syntax = syntaxEl?.textContent?.trim() || "";
 
 					let description = "";
+
 					for (const t of el.querySelectorAll(
 						".tv-pine-reference-item__text.tv-text",
 					)) {
 						if (t.querySelector(".tv-pine-reference-item__arg-type")) continue;
 						const txt = (t.textContent || "").trim();
+
 						if (txt) {
 							description = txt;
 							break;
@@ -1216,12 +1325,14 @@ export async function scrapeKeywordDetails(
 					}
 
 					const examples: string[] = [];
+
 					for (const ex of el.querySelectorAll(
 						".tv-pine-reference-item__example code",
 					)) {
 						const text = ((ex as HTMLElement).innerText || "")
 							.replace(/ /g, " ")
 							.trim();
+
 						if (text) examples.push(text);
 					}
 
@@ -1241,6 +1352,7 @@ export async function scrapeKeywordDetails(
 		}
 
 		if (!result) return null;
+
 		if (result.html) saveDomSnapshot(`kw__${name}`, "base", result.html);
 
 		const details: KeywordDetails = {
@@ -1249,12 +1361,15 @@ export async function scrapeKeywordDetails(
 			description: result.description,
 			examples: result.examples,
 		};
+
 		saveToCache(name, details, "kw__");
+
 		return details;
 	} catch (error) {
 		console.log(
 			`Failed to scrape keyword ${name}: ${(error as Error).message}`,
 		);
+
 		return null;
 	}
 }
@@ -1263,6 +1378,7 @@ function filterNames<T extends string>(names: T[]): T[] {
 	if (CLI_OPTIONS.onlyNames.size === 0) {
 		return names;
 	}
+
 	return names.filter((name) => CLI_OPTIONS.onlyNames.has(name));
 }
 
@@ -1270,12 +1386,14 @@ function readExistingDetails(): ScrapeResult | null {
 	if (!fs.existsSync(OUTPUT_FILE)) {
 		return null;
 	}
+
 	try {
 		return JSON.parse(fs.readFileSync(OUTPUT_FILE, "utf8"));
 	} catch (error) {
 		console.warn(
 			`Unable to read existing output for targeted scrape: ${(error as Error).message}`,
 		);
+
 		return null;
 	}
 }
@@ -1287,18 +1405,18 @@ function mergeExistingDetails(
 	target.functions = { ...existing.functions, ...target.functions };
 	target.variables = { ...existing.variables, ...target.variables };
 	target.constants = { ...existing.constants, ...target.constants };
-	target.types = { ...(existing.types || {}), ...(target.types || {}) };
+	target.types = { ...existing.types, ...target.types };
 	target.annotations = {
-		...(existing.annotations || {}),
-		...(target.annotations || {}),
+		...existing.annotations,
+		...target.annotations,
 	};
 	target.operators = {
-		...(existing.operators || {}),
-		...(target.operators || {}),
+		...existing.operators,
+		...target.operators,
 	};
 	target.keywords = {
-		...(existing.keywords || {}),
-		...(target.keywords || {}),
+		...existing.keywords,
+		...target.keywords,
 	};
 }
 
@@ -1319,14 +1437,18 @@ export async function scrapeAllFunctions(
 	}
 
 	const inputData = JSON.parse(fs.readFileSync(INPUT_FILE, "utf8"));
+
 	const targetedScrape =
 		CLI_OPTIONS.onlyNames.size > 0 || CLI_OPTIONS.onlyOverloaded;
+
 	const existingDetails = targetedScrape ? readExistingDetails() : null;
+
 	if (CLI_OPTIONS.onlyNames.size > 0) {
 		console.log(
 			`Only scraping requested names: ${[...CLI_OPTIONS.onlyNames].join(", ")}`,
 		);
 	}
+
 	if (CLI_OPTIONS.onlyOverloaded) {
 		console.log("Only scraping functions with existing overload data");
 	}
@@ -1340,8 +1462,10 @@ export async function scrapeAllFunctions(
 		)) {
 			for (const func of funcs as string[]) {
 				const baseName = func.replace(/\(\)$/, "");
+
 				const fullName =
 					namespace === "global" ? baseName : `${namespace}.${baseName}`;
+
 				functionNames.push(fullName);
 			}
 		}
@@ -1355,14 +1479,17 @@ export async function scrapeAllFunctions(
 	}
 
 	functionNames.sort();
+
 	if (CLI_OPTIONS.onlyOverloaded) {
 		const overloadedNames = new Set(
 			Object.entries(existingDetails?.functions || {})
 				.filter(([, details]) => (details.overloads?.length || 0) > 0)
 				.map(([name]) => name),
 		);
+
 		functionNames = functionNames.filter((name) => overloadedNames.has(name));
 	}
+
 	functionNames = filterNames(functionNames);
 
 	console.log(`Found ${functionNames.length} functions to process`);
@@ -1374,6 +1501,7 @@ export async function scrapeAllFunctions(
 	if (!forceRefresh && !targetedScrape) {
 		for (const funcName of functionNames) {
 			const cacheFilePath = getCacheFilePath(funcName);
+
 			if (isCacheValid(cacheFilePath)) {
 				functionsFromCache.push(funcName);
 			} else {
@@ -1397,9 +1525,11 @@ export async function scrapeAllFunctions(
 
 	// Build variable list (namespaced members + standalone) from the crawl.
 	const variableNames: string[] = [];
+
 	const varByNamespace = inputData.builtInVariables?.byNamespace as
 		| Record<string, string[]>
 		| undefined;
+
 	if (varByNamespace) {
 		for (const [namespace, members] of Object.entries(varByNamespace)) {
 			for (const member of members) {
@@ -1407,17 +1537,22 @@ export async function scrapeAllFunctions(
 			}
 		}
 	}
+
 	for (const name of inputData.builtInVariables?.standalone?.items || []) {
 		variableNames.push(name);
 	}
+
 	variableNames.sort();
+
 	const selectedVariableNames = CLI_OPTIONS.onlyOverloaded
 		? []
 		: filterNames(variableNames);
+
 	console.log(`Found ${selectedVariableNames.length} variables to process`);
 
 	const variablesToScrape: string[] = [];
 	const variablesFromCache: string[] = [];
+
 	if (!forceRefresh) {
 		for (const name of selectedVariableNames) {
 			// Re-scrape when the details cache is stale OR the DOM mirror is absent
@@ -1434,17 +1569,21 @@ export async function scrapeAllFunctions(
 	} else {
 		variablesToScrape.push(...selectedVariableNames);
 	}
+
 	if (DRY_RUN && variablesToScrape.length > DRY_RUN_LIMIT) {
 		variablesToScrape.splice(DRY_RUN_LIMIT);
 	}
+
 	console.log(`   Variables from cache: ${variablesFromCache.length}`);
 	console.log(`   Variables to scrape: ${variablesToScrape.length}`);
 
 	// Build constant list (namespaced members) from the crawl.
 	const constantNames: string[] = [];
+
 	const constByNamespace = inputData.constants?.byNamespace as
 		| Record<string, string[]>
 		| undefined;
+
 	if (constByNamespace) {
 		for (const [namespace, members] of Object.entries(constByNamespace)) {
 			for (const member of members) {
@@ -1452,14 +1591,18 @@ export async function scrapeAllFunctions(
 			}
 		}
 	}
+
 	constantNames.sort();
+
 	const selectedConstantNames = CLI_OPTIONS.onlyOverloaded
 		? []
 		: filterNames(constantNames);
+
 	console.log(`Found ${selectedConstantNames.length} constants to process`);
 
 	const constantsToScrape: string[] = [];
 	const constantsFromCache: string[] = [];
+
 	if (!forceRefresh) {
 		for (const name of selectedConstantNames) {
 			if (
@@ -1474,9 +1617,11 @@ export async function scrapeAllFunctions(
 	} else {
 		constantsToScrape.push(...selectedConstantNames);
 	}
+
 	if (DRY_RUN && constantsToScrape.length > DRY_RUN_LIMIT) {
 		constantsToScrape.splice(DRY_RUN_LIMIT);
 	}
+
 	console.log(`   Constants from cache: ${constantsFromCache.length}`);
 	console.log(`   Constants to scrape: ${constantsToScrape.length}`);
 
@@ -1484,10 +1629,12 @@ export async function scrapeAllFunctions(
 	const typeNames: string[] = CLI_OPTIONS.onlyOverloaded
 		? []
 		: filterNames([...(inputData.types?.items || [])].sort());
+
 	console.log(`Found ${typeNames.length} types to process`);
 
 	const typesToScrape: string[] = [];
 	const typesFromCache: string[] = [];
+
 	if (!forceRefresh) {
 		for (const name of typeNames) {
 			if (isCacheValid(getCacheFilePath(name, "type__"))) {
@@ -1499,9 +1646,11 @@ export async function scrapeAllFunctions(
 	} else {
 		typesToScrape.push(...typeNames);
 	}
+
 	if (DRY_RUN && typesToScrape.length > DRY_RUN_LIMIT) {
 		typesToScrape.splice(DRY_RUN_LIMIT);
 	}
+
 	console.log(`   Types from cache: ${typesFromCache.length}`);
 	console.log(`   Types to scrape: ${typesToScrape.length}`);
 
@@ -1509,10 +1658,12 @@ export async function scrapeAllFunctions(
 	const annotationNames: string[] = CLI_OPTIONS.onlyOverloaded
 		? []
 		: filterNames([...(inputData.annotations?.items || [])]);
+
 	console.log(`Found ${annotationNames.length} annotations to process`);
 
 	const annotationsToScrape: string[] = [];
 	const annotationsFromCache: string[] = [];
+
 	if (!forceRefresh) {
 		for (const name of annotationNames) {
 			if (isCacheValid(getCacheFilePath(name, "an__"))) {
@@ -1524,9 +1675,11 @@ export async function scrapeAllFunctions(
 	} else {
 		annotationsToScrape.push(...annotationNames);
 	}
+
 	if (DRY_RUN && annotationsToScrape.length > DRY_RUN_LIMIT) {
 		annotationsToScrape.splice(DRY_RUN_LIMIT);
 	}
+
 	console.log(`   Annotations from cache: ${annotationsFromCache.length}`);
 	console.log(`   Annotations to scrape: ${annotationsToScrape.length}`);
 
@@ -1537,13 +1690,16 @@ export async function scrapeAllFunctions(
 		: filterNames([
 				...((inputData.operators?.items as string[] | undefined) || []),
 			]);
+
 	console.log(`Found ${operatorNames.length} operators to process`);
 
 	const operatorsToScrape: string[] = [];
 	const operatorsFromCache: string[] = [];
+
 	if (!forceRefresh) {
 		for (const name of operatorNames) {
 			const slug = operatorSlug(name);
+
 			if (
 				isCacheValid(getCacheFilePath(slug, "op__")) &&
 				hasMirror(slug, "op__")
@@ -1556,9 +1712,11 @@ export async function scrapeAllFunctions(
 	} else {
 		operatorsToScrape.push(...operatorNames);
 	}
+
 	if (DRY_RUN && operatorsToScrape.length > DRY_RUN_LIMIT) {
 		operatorsToScrape.splice(DRY_RUN_LIMIT);
 	}
+
 	console.log(`   Operators from cache: ${operatorsFromCache.length}`);
 	console.log(`   Operators to scrape: ${operatorsToScrape.length}`);
 
@@ -1568,10 +1726,12 @@ export async function scrapeAllFunctions(
 		: filterNames(
 				[...((inputData.keywords?.items as string[] | undefined) || [])].sort(),
 			);
+
 	console.log(`Found ${keywordNames.length} keywords to process`);
 
 	const keywordsToScrape: string[] = [];
 	const keywordsFromCache: string[] = [];
+
 	if (!forceRefresh) {
 		for (const name of keywordNames) {
 			if (
@@ -1586,9 +1746,11 @@ export async function scrapeAllFunctions(
 	} else {
 		keywordsToScrape.push(...keywordNames);
 	}
+
 	if (DRY_RUN && keywordsToScrape.length > DRY_RUN_LIMIT) {
 		keywordsToScrape.splice(DRY_RUN_LIMIT);
 	}
+
 	console.log(`   Keywords from cache: ${keywordsFromCache.length}`);
 	console.log(`   Keywords to scrape: ${keywordsToScrape.length}`);
 
@@ -1632,51 +1794,66 @@ export async function scrapeAllFunctions(
 			!operatorNames.includes(name) &&
 			!keywordNames.includes(name),
 	);
+
 	if (unknownOnlyNames.length > 0) {
 		console.warn(`Requested names not found: ${unknownOnlyNames.join(", ")}`);
 	}
 
 	// Load cached data first
 	console.log("Loading cached data...");
+
 	for (const funcName of functionsFromCache) {
 		const cachedData = getCachedData(funcName);
+
 		if (cachedData) {
 			allDetails.functions[funcName] = cachedData;
 			allDetails.metadata.successfulScrapes++;
 		}
 	}
+
 	for (const name of variablesFromCache) {
 		const cached = getCachedData<MemberDetails>(name, "var__");
+
 		if (cached) {
 			allDetails.variables[name] = cached;
 		}
 	}
+
 	for (const name of constantsFromCache) {
 		const cached = getCachedData<MemberDetails>(name, "const__");
+
 		if (cached) {
 			allDetails.constants[name] = cached;
 		}
 	}
+
 	for (const name of typesFromCache) {
 		const cached = getCachedData<TypeDetails>(name, "type__");
+
 		if (cached && allDetails.types) {
 			allDetails.types[name] = cached;
 		}
 	}
+
 	for (const name of annotationsFromCache) {
 		const cached = getCachedData<AnnotationDetails>(name, "an__");
+
 		if (cached && allDetails.annotations) {
 			allDetails.annotations[name] = cached;
 		}
 	}
+
 	for (const name of operatorsFromCache) {
 		const cached = getCachedData<OperatorDetails>(operatorSlug(name), "op__");
+
 		if (cached && allDetails.operators) {
 			allDetails.operators[name] = cached;
 		}
 	}
+
 	for (const name of keywordsFromCache) {
 		const cached = getCachedData<KeywordDetails>(name, "kw__");
+
 		if (cached && allDetails.keywords) {
 			allDetails.keywords[name] = cached;
 		}
@@ -1704,12 +1881,14 @@ export async function scrapeAllFunctions(
 					funcName,
 					!forceRefresh && !targetedScrape,
 				);
+
 				if (details) {
 					allDetails.functions[funcName] = details;
 					allDetails.metadata.successfulScrapes++;
 				} else {
 					allDetails.metadata.failedScrapes++;
 				}
+
 				await new Promise((resolve) => setTimeout(resolve, 100));
 			}
 
@@ -1734,15 +1913,18 @@ export async function scrapeAllFunctions(
 
 		for (let i = 0; i < variablesToScrape.length; i += batchSize) {
 			const batch = variablesToScrape.slice(i, i + batchSize);
+
 			for (const name of batch) {
 				// useCache=false: items reach this loop only when they need a fetch
 				// (stale cache OR missing mirror), so always hit the page.
 				const details = await scrapeMemberDetails(name, "var", false);
+
 				if (details) {
 					allDetails.variables[name] = details;
 				} else {
 					allDetails.metadata.failedScrapes++;
 				}
+
 				await new Promise((resolve) => setTimeout(resolve, 100));
 			}
 
@@ -1766,13 +1948,16 @@ export async function scrapeAllFunctions(
 
 		for (let i = 0; i < constantsToScrape.length; i += batchSize) {
 			const batch = constantsToScrape.slice(i, i + batchSize);
+
 			for (const name of batch) {
 				const details = await scrapeMemberDetails(name, "const", false);
+
 				if (details) {
 					allDetails.constants[name] = details;
 				} else {
 					allDetails.metadata.failedScrapes++;
 				}
+
 				await new Promise((resolve) => setTimeout(resolve, 100));
 			}
 
@@ -1791,30 +1976,38 @@ export async function scrapeAllFunctions(
 	// Scrape built-in types (shares the browser opened above, if any).
 	if (typesToScrape.length > 0 && allDetails.types) {
 		console.log("Scraping type details...");
+
 		for (const name of typesToScrape) {
 			const details = await scrapeTypeDetails(name, !forceRefresh);
+
 			if (details) {
 				allDetails.types[name] = details;
 			} else {
 				allDetails.metadata.failedScrapes++;
 			}
+
 			await new Promise((resolve) => setTimeout(resolve, 100));
 		}
+
 		console.log(`  Types: ${typesToScrape.length}/${typesToScrape.length}`);
 	}
 
 	// Scrape annotations (shares the browser opened above, if any).
 	if (annotationsToScrape.length > 0 && allDetails.annotations) {
 		console.log("Scraping annotation details...");
+
 		for (const name of annotationsToScrape) {
 			const details = await scrapeAnnotationDetails(name, !forceRefresh);
+
 			if (details) {
 				allDetails.annotations[name] = details;
 			} else {
 				allDetails.metadata.failedScrapes++;
 			}
+
 			await new Promise((resolve) => setTimeout(resolve, 100));
 		}
+
 		console.log(
 			`  Annotations: ${annotationsToScrape.length}/${annotationsToScrape.length}`,
 		);
@@ -1823,15 +2016,19 @@ export async function scrapeAllFunctions(
 	// Scrape operators (shares the browser opened above, if any).
 	if (operatorsToScrape.length > 0 && allDetails.operators) {
 		console.log("Scraping operator details...");
+
 		for (const name of operatorsToScrape) {
 			const details = await scrapeOperatorDetails(name, !forceRefresh);
+
 			if (details) {
 				allDetails.operators[name] = details;
 			} else {
 				allDetails.metadata.failedScrapes++;
 			}
+
 			await new Promise((resolve) => setTimeout(resolve, 100));
 		}
+
 		console.log(
 			`  Operators: ${operatorsToScrape.length}/${operatorsToScrape.length}`,
 		);
@@ -1840,15 +2037,19 @@ export async function scrapeAllFunctions(
 	// Scrape keywords (shares the browser opened above, if any).
 	if (keywordsToScrape.length > 0 && allDetails.keywords) {
 		console.log("Scraping keyword details...");
+
 		for (const name of keywordsToScrape) {
 			const details = await scrapeKeywordDetails(name, !forceRefresh);
+
 			if (details) {
 				allDetails.keywords[name] = details;
 			} else {
 				allDetails.metadata.failedScrapes++;
 			}
+
 			await new Promise((resolve) => setTimeout(resolve, 100));
 		}
+
 		console.log(
 			`  Keywords: ${keywordsToScrape.length}/${keywordsToScrape.length}`,
 		);
@@ -1898,9 +2099,11 @@ export async function scrapeAllFunctions(
 	if (DRY_RUN) {
 		const dryRunFile = OUTPUT_FILE.replace(/\.json$/, ".dryrun.json");
 		const outputDir = path.dirname(dryRunFile);
+
 		if (!fs.existsSync(outputDir)) {
 			fs.mkdirSync(outputDir, { recursive: true });
 		}
+
 		fs.writeFileSync(dryRunFile, serialized, "utf8");
 		console.log(
 			`[dry-run] Wrote sample to ${dryRunFile} (${serialized.length} bytes); real output ${OUTPUT_FILE} untouched`,
@@ -1908,6 +2111,7 @@ export async function scrapeAllFunctions(
 	} else {
 		// Ensure output directory exists
 		const outputDir = path.dirname(OUTPUT_FILE);
+
 		if (!fs.existsSync(outputDir)) {
 			fs.mkdirSync(outputDir, { recursive: true });
 		}
@@ -1958,4 +2162,5 @@ export async function scrapeAllFunctions(
 // Run if executed directly
 const forceRefresh =
 	process.argv.includes("--force") || process.argv.includes("-f");
+
 scrapeAllFunctions(forceRefresh).catch(console.error);

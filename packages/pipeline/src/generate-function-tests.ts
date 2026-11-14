@@ -69,32 +69,50 @@ function getTestValue(type: string, paramName: string): string {
 	const t = type.toLowerCase();
 
 	if (t.includes("bool")) return "true";
+
 	if (t.includes("int") && !t.includes("float")) return "14";
+
 	if (t.includes("float") || t.includes("number")) return "1.5";
+
 	if (t.includes("string")) return `"test_${paramName}"`;
+
 	if (t.includes("color")) return "color.red";
+
 	if (t.includes("source") || paramName === "source" || paramName === "src")
 		return "close";
+
 	if (t.includes("series")) {
 		if (t.includes("bool")) return "close > open";
+
 		return "close";
 	}
 
 	// Special cases by parameter name
 	if (paramName === "condition") return "true";
+
 	if (paramName === "message" || paramName === "title") return `"test"`;
+
 	if (paramName === "freq") return "alert.freq_once_per_bar";
+
 	if (paramName === "length" || paramName === "period") return "14";
+
 	if (paramName === "price") return "50.0";
+
 	if (paramName === "offset") return "0";
+
 	if (paramName === "defval") return "14"; // Default to int for polymorphism testing
 
 	// Fallback
 	if (t.includes("plot")) return "plot.style_line";
+
 	if (t.includes("label")) return "label.style_label_down";
+
 	if (t.includes("line")) return "line.style_solid";
+
 	if (t.includes("location")) return "location.top";
+
 	if (t.includes("size")) return "size.small";
+
 	if (t.includes("display")) return "display.all";
 
 	return "na"; // Last resort
@@ -112,6 +130,7 @@ function generateArgumentOrderingTest(func: PineFunction): string {
 
 	if (SKIP_FUNCTIONS.has(func.name)) {
 		lines.push(`// ${func.name}: Requires complex objects, tested separately`);
+
 		return lines.join("\n");
 	}
 
@@ -122,6 +141,7 @@ function generateArgumentOrderingTest(func: PineFunction): string {
 	if (params.length === 0) {
 		lines.push(`// ${func.name}: No required parameters, skip ordering test`);
 		lines.push(`// ${func.name}()`);
+
 		return lines.join("\n");
 	}
 
@@ -132,6 +152,7 @@ function generateArgumentOrderingTest(func: PineFunction): string {
 		);
 		const args = params.map((p) => getTestValue(p.type, p.name)).join(", ");
 		lines.push(`// ${func.name}(${args})`);
+
 		return lines.join("\n");
 	}
 
@@ -139,6 +160,7 @@ function generateArgumentOrderingTest(func: PineFunction): string {
 	const positionalArgs = params
 		.map((p) => getTestValue(p.type, p.name))
 		.join(", ");
+
 	lines.push(`// Positional`);
 
 	// Some functions need their result captured
@@ -150,10 +172,13 @@ function generateArgumentOrderingTest(func: PineFunction): string {
 	const namedArgs = params
 		.map((p) => `${p.name}=${getTestValue(p.type, p.name)}`)
 		.join(", ");
+
 	lines.push(`// All named`);
+
 	const prefix2 = needsCapture
 		? `_${func.name.replace(".", "_")}_named = `
 		: "";
+
 	lines.push(`${prefix2}${func.name}(${namedArgs})`);
 
 	// Generate reversed named call (if more than 1 param)
@@ -162,10 +187,13 @@ function generateArgumentOrderingTest(func: PineFunction): string {
 			.reverse()
 			.map((p) => `${p.name}=${getTestValue(p.type, p.name)}`)
 			.join(", ");
+
 		lines.push(`// Reversed named`);
+
 		const prefix3 = needsCapture
 			? `_${func.name.replace(".", "_")}_rev = `
 			: "";
+
 		lines.push(`${prefix3}${func.name}(${reversedArgs})`);
 	}
 

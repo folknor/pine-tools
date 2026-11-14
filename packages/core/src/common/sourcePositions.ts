@@ -13,8 +13,10 @@ export function createSourcePositionMapper(
 	source: string,
 ): (position: OneBasedPosition) => OneBasedPosition {
 	const rawToDisplay = buildRawToDisplayLineMap(source);
+
 	return (position) => {
 		const line = rawToDisplay[position.line] ?? position.line;
+
 		return line === position.line ? position : { ...position, line };
 	};
 }
@@ -29,16 +31,20 @@ export function buildRawToDisplayLineMap(source: string): number[] {
 
 	while (i < source.length) {
 		const ch = source[i];
+
 		if (ch === "\r") {
 			let runEnd = i;
+
 			while (source[runEnd] === "\r") runEnd++;
 
 			if (source[runEnd] === "\n") {
 				const crCount = runEnd - i;
+
 				for (let n = 0; n < crCount - 1; n++) {
 					rawLine++;
 					rawToDisplay[rawLine] = displayLine;
 				}
+
 				rawLine++;
 				displayLine++;
 				rawToDisplay[rawLine] = displayLine;
@@ -51,6 +57,7 @@ export function buildRawToDisplayLineMap(source: string): number[] {
 					i++;
 				}
 			}
+
 			continue;
 		}
 
@@ -59,6 +66,7 @@ export function buildRawToDisplayLineMap(source: string): number[] {
 			displayLine++;
 			rawToDisplay[rawLine] = displayLine;
 		}
+
 		i++;
 	}
 

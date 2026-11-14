@@ -65,6 +65,7 @@ export function format(
 function formatLine(line: string): string {
 	// Skip comments
 	const commentIdx = line.indexOf("//");
+
 	if (commentIdx === 0) return line;
 
 	// Split into code and comment parts
@@ -81,6 +82,7 @@ function formatLine(line: string): string {
 	const strings: string[] = [];
 	code = code.replace(/"([^"\\]|\\.)*"/g, (match) => {
 		strings.push(match);
+
 		return `__STR${strings.length - 1}__`;
 	});
 
@@ -106,9 +108,11 @@ function formatLine(line: string): string {
 
 	// Combine code and comment, preserving a single space before comment
 	code = code.trimEnd();
+
 	if (comment && code.length > 0) {
 		return `${code} ${comment}`.trimEnd();
 	}
+
 	return (code + comment).trimEnd();
 }
 

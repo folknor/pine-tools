@@ -31,10 +31,12 @@ const PROJECT_ROOT = __dirname.includes("/dist/")
 
 const SITE_ORIGIN = "https://www.tradingview.com";
 const ENTRY_URL = `${SITE_ORIGIN}/pine-script-docs/welcome/`;
+
 const PAGES_JSON = path.join(
 	PROJECT_ROOT,
 	"pine-data/raw/v6/manual-pages.json",
 );
+
 const CACHE_DIR = path.join(PROJECT_ROOT, ".cache/manual/v6");
 
 const FORCE = process.argv.includes("--force");
@@ -66,15 +68,18 @@ function decodeEntities(text: string): string {
 export function parseSidebar(html: string): ManualPage[] {
 	const linkRe =
 		/class="page-link"\s+href="(\/pine-script-docs\/[^"#]+)"[^>]*>([^<]+)<\/a>/g;
+
 	const seen = new Set<string>();
 	const pages: ManualPage[] = [];
 
 	for (;;) {
 		const m = linkRe.exec(html);
+
 		if (m === null) break;
 
 		const href = m[1].replace(/\/$/, "");
 		const relPath = href.replace("/pine-script-docs/", "");
+
 		if (relPath === "" || seen.has(relPath)) continue;
 		seen.add(relPath);
 
@@ -100,9 +105,11 @@ async function fetchText(url: string): Promise<string> {
 			Accept: "text/html",
 		},
 	});
+
 	if (!res.ok) {
 		throw new Error(`HTTP ${res.status} for ${url}`);
 	}
+
 	return res.text();
 }
 
@@ -141,8 +148,10 @@ async function main(): Promise<void> {
 
 	let fetched = 0;
 	let skipped = 0;
+
 	for (const page of pages) {
 		const dest = path.join(CACHE_DIR, page.cacheFile);
+
 		if (!FORCE && fs.existsSync(dest)) {
 			skipped++;
 			continue;
@@ -151,6 +160,7 @@ async function main(): Promise<void> {
 		// The welcome page is already in hand from discovery.
 		const html =
 			page.path === "welcome" ? entryHtml : await fetchText(page.url);
+
 		fs.writeFileSync(dest, html, "utf8");
 		fetched++;
 		console.log(`  [${fetched + skipped}/${pages.length}] ${page.path}`);

@@ -16,6 +16,7 @@ import { resolve, join } from "node:path";
 
 const args = process.argv.slice(2);
 let concurrency = 8;
+
 for (let i = 0; i < args.length; i++) {
 	if (args[i] === "--concurrency") concurrency = Number(args[++i]);
 }
@@ -54,6 +55,7 @@ function run(file) {
 // position. Must mirror regression-check.mjs exactly.
 function fillTemplate(message, ctx) {
 	if (!ctx) return message;
+
 	return message.replace(/\{(\w+)\}/g, (m, key) => ctx[key] ?? m);
 }
 
@@ -61,6 +63,7 @@ function pickErrors(raw) {
 	try {
 		const j = JSON.parse(raw);
 		const errs = j.result?.errors ?? j.errors ?? [];
+
 		return errs
 			.map((e) => ({ line: e.start?.line ?? 0, col: e.start?.column ?? 0, message: fillTemplate(e.message ?? "", e.ctx) }))
 			.sort((a, b) => a.line - b.line || a.col - b.col || a.message.localeCompare(b.message));
@@ -74,6 +77,7 @@ const entries = (await readdir(FIXTURES)).filter((n) => n.endsWith(".pine")).sor
 // Record the validator commit the snapshot was taken against - a baseline
 // without provenance can't be trusted after the working tree moves on.
 let gitCommit = "unknown";
+
 try {
 	gitCommit = execSync("git rev-parse HEAD", { encoding: "utf-8" }).trim();
 } catch {
@@ -94,11 +98,13 @@ const startedAt = Date.now();
 async function worker() {
 	while (true) {
 		const i = next++;
+
 		if (i >= entries.length) return;
 		const name = entries[i];
 		const errs = pickErrors(await run(join(FIXTURES, name)));
 		baseline.files[name] = { errors: errs ?? [], parseFailed: errs === null };
 		done++;
+
 		if (done % 200 === 0 || done === entries.length) {
 			process.stderr.write(`  ${done}/${entries.length} (${((Date.now() - startedAt) / 1000).toFixed(1)}s)\n`);
 		}
@@ -106,9 +112,11 @@ async function worker() {
 }
 
 console.log(`snapshotting local pine-lint over ${entries.length} fixtures (concurrency ${concurrency})…`);
+
 await Promise.all(Array.from({ length: concurrency }, worker));
 
 await mkdir(resolve("lint-reports"), { recursive: true });
+
 await writeFile(OUT, JSON.stringify(baseline, null, 2));
 
 const filesWithErrors = Object.values(baseline.files).filter((f) => f.errors.length > 0).length;
@@ -116,7 +124,11 @@ const totalErrors = Object.values(baseline.files).reduce((s, f) => s + f.errors.
 const parseFailed = Object.values(baseline.files).filter((f) => f.parseFailed).length;
 
 console.log(`\nbaseline written: ${OUT}`);
+
 console.log(`fixtures snapshotted:  ${entries.length}`);
+
 console.log(`fixtures with errors:  ${filesWithErrors}`);
+
 console.log(`total error records:   ${totalErrors}`);
+
 console.log(`pine-lint parse fails: ${parseFailed}`);

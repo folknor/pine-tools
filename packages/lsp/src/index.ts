@@ -3,6 +3,7 @@
  */
 
 export { getCapabilities } from "./capabilities";
+
 export {
 	convertCompletionItem,
 	convertDiagnostic,

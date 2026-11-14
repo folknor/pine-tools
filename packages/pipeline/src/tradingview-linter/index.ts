@@ -33,6 +33,7 @@ export class PineLintChecker {
 
 		const baseUrl =
 			"https://pine-facade.tradingview.com/pine-facade/translate_light";
+
 		this.apiUrl = `${baseUrl}?user_name=${this.options.username}&v=3`;
 
 		this.headers = {
@@ -56,6 +57,7 @@ export class PineLintChecker {
 			formData.append("source", pineCode);
 
 			const controller = new AbortController();
+
 			const timeoutId = setTimeout(
 				() => controller.abort(),
 				this.options.timeout,
@@ -89,11 +91,13 @@ export class PineLintChecker {
 						error: `Request timed out after ${this.options.timeout}ms`,
 					};
 				}
+
 				return {
 					success: false,
 					error: `Network request failed: ${error.message}`,
 				};
 			}
+
 			return {
 				success: false,
 				error: "Unknown error occurred",
@@ -114,6 +118,7 @@ export async function checkPineScript(
 	options?: PineLintOptions,
 ): Promise<PineLintResponse> {
 	const checker = new PineLintChecker(options);
+
 	return checker.checkSyntax(pineCode);
 }
 
@@ -132,6 +137,7 @@ export async function checkPineScriptFile(
 
 	try {
 		const pineCode = await fs.readFile(filePath, "utf-8");
+
 		return checkPineScript(pineCode, options);
 	} catch (error) {
 		if (error instanceof Error) {
@@ -140,6 +146,7 @@ export async function checkPineScriptFile(
 				error: `Unable to read file ${filePath}: ${error.message}`,
 			};
 		}
+
 		return {
 			success: false,
 			error: `Unable to read file ${filePath}`,

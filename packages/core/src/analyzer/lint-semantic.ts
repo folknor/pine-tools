@@ -74,6 +74,7 @@ const COMPOUND_ASSIGN = new Set(["+=", "-=", "*=", "/=", "%="]);
 
 export function runSemanticLints(ast: Program): SemanticWarning[] {
 	const ctx = new LintContext(ast);
+
 	return [
 		...checkRepaintingSecurity(ctx),
 		...checkPlotBudget(ctx),
@@ -113,6 +114,7 @@ class LintContext {
 				this.functionBodies.set(stmt.name, stmt.body);
 			else if (stmt.type === "MethodDeclaration")
 				this.methodBodies.set(stmt.name, stmt.body);
+
 			for (const expr of statementExpressions(stmt)) this.collect(expr);
 		});
 	}
@@ -127,8 +129,10 @@ class LintContext {
 	bodyOf(call: CallExpression): Statement[] | undefined {
 		if (call.callee.type === "Identifier")
 			return this.functionBodies.get(call.callee.name);
+
 		if (call.callee.type === "MemberExpression")
 			return this.methodBodies.get(call.callee.property.name);
+
 		return undefined;
 	}
 
@@ -147,6 +151,7 @@ class LintContext {
 
 	callsNamed(...names: string[]): CallSite[] {
 		const wanted = new Set(names);
+
 		return this.calls.filter((c) => wanted.has(c.name));
 	}
 }
@@ -157,10 +162,13 @@ class LintContext {
  */
 function calleeName(callee: Expression): string {
 	if (callee.type === "Identifier") return callee.name;
+
 	if (callee.type === "MemberExpression") {
 		const object = calleeName(callee.object);
+
 		return object ? `${object}.${callee.property.name}` : "";
 	}
+
 	return "";
 }
 
@@ -171,6 +179,7 @@ function walkStatements(
 ): void {
 	for (const stmt of stmts) {
 		visit(stmt);
+
 		for (const block of statementBlocks(stmt)) walkStatements(block, visit);
 	}
 }
@@ -235,9 +244,11 @@ function walkExpression(
 	visit: (node: Expression) => void,
 ): void {
 	visit(expr);
+
 	switch (expr.type) {
 		case "CallExpression":
 			walkExpression(expr.callee, visit);
+
 			for (const arg of expr.arguments) walkExpression(arg.value, visit);
 			break;
 		case "MemberExpression":
@@ -264,17 +275,21 @@ function walkExpression(
 			break;
 		case "IfExpression":
 			walkExpression(expr.condition, visit);
+
 			for (const block of [expr.consequent, expr.alternate ?? []]) {
 				walkStatements(block, (stmt) => {
 					for (const sub of statementExpressions(stmt))
 						walkExpression(sub, visit);
 				});
 			}
+
 			break;
 		case "SwitchExpression":
 			if (expr.discriminant) walkExpression(expr.discriminant, visit);
+
 			for (const arm of expr.cases) {
 				if (arm.condition) walkExpression(arm.condition, visit);
+
 				// `statements` supersedes `result` when present - walking both
 				// would double-count every call in a multi-statement arm.
 				if (arm.statements) {
@@ -286,6 +301,7 @@ function walkExpression(
 					walkExpression(arm.result, visit);
 				}
 			}
+
 			break;
 		default:
 			break;
@@ -301,7 +317,9 @@ function argumentAt(
 	for (const arg of call.arguments) {
 		if (arg.name === name) return arg.value;
 	}
+
 	const positional = call.arguments.filter((a) => a.name === undefined);
+
 	return positional[index]?.value;
 }
 
@@ -428,13 +446,17 @@ function checkRepaintingSecurity(ctx: LintContext): SemanticWarning[] {
 		// `lookahead` never exempts, it only picks the message - see the header.
 		// Writing the default out is not evidence of anything. see INV152/INV153
 		const timeframe = argumentAt(call, "timeframe", 1);
+
 		if (timeframe && isChartTimeframe(timeframe)) continue;
 
 		const expression = argumentAt(call, "expression", 2);
+
 		if (!expression) continue;
+
 		if (containsHistoryOffset(expression, ctx)) continue;
 
 		const lookahead = argumentAt(call, "lookahead", 4);
+
 		const leaks =
 			lookahead !== undefined &&
 			serialize(lookahead) === "barmerge.lookahead_on";
@@ -462,10 +484,13 @@ function isChartTimeframe(expr: Expression): boolean {
 		// the triple-delimited multiline form. see INV145
 		const text = String(expr.value);
 		const quote = text[0];
+
 		if (quote !== '"' && quote !== "'") return false;
 		const width = text.startsWith(quote.repeat(3)) ? 3 : 1;
+
 		return text.slice(width, -width) === "";
 	}
+
 	return serialize(expr) === "timeframe.period";
 }
 
@@ -496,24 +521,30 @@ function containsHistoryOffset(
 		if (node.type === "IndexExpression") found = true;
 		else if (node.type === "CallExpression") called.push(node);
 	});
+
 	if (found) return true;
 
 	for (const call of called) {
 		const body = ctx.bodyOf(call);
+
 		if (!body || visited.has(body)) continue;
 		visited.add(body);
 		let hit = false;
 		walkStatements(body, (stmt) => {
 			if (hit) return;
+
 			for (const sub of statementExpressions(stmt)) {
 				if (containsHistoryOffset(sub, ctx, visited)) {
 					hit = true;
+
 					return;
 				}
 			}
 		});
+
 		if (hit) return true;
 	}
+
 	return false;
 }
 
@@ -534,11 +565,13 @@ function containsHistoryOffset(
  */
 function checkPlotBudget(ctx: LintContext): SemanticWarning[] {
 	const plots = ctx.calls.filter((c) => countsTowardPlotBudget(c.name));
+
 	if (plots.length <= PLOT_LIMIT) return [];
 
 	// Anchor on the call that breaks the budget, not on the first one - the
 	// author needs to see where the allowance ran out.
 	const breach = plots[PLOT_LIMIT];
+
 	return [
 		warn(
 			anchor(breach.call),
@@ -579,6 +612,7 @@ function checkRequestBudget(ctx: LintContext): SemanticWarning[] {
 		if (site.name === "request.footprint") {
 			if (!footprints.has(key)) {
 				footprints.add(key);
+
 				if (footprints.size > FOOTPRINT_LIMIT && !footprintBreach) {
 					footprintBreach = site;
 				}
@@ -587,6 +621,7 @@ function checkRequestBudget(ctx: LintContext): SemanticWarning[] {
 
 		if (seen.has(key)) continue;
 		seen.add(key);
+
 		if (seen.size > REQUEST_LIMIT && !breach) breach = site;
 	}
 
@@ -647,17 +682,23 @@ function checkAccumulatorLifetime(ctx: LintContext): SemanticWarning[] {
 	const seeds = new Map<string, VariableDeclaration>();
 	walkStatements(ctx.ast.body, (stmt) => {
 		if (stmt.type !== "VariableDeclaration") return;
+
 		if (stmt.varType !== "var" && stmt.varType !== "varip") return;
+
 		if (!stmt.init || !isNumericSeed(stmt.init)) return;
 		seeds.set(stmt.name, stmt);
 	});
+
 	if (seeds.size === 0) return [];
 
 	const reset = new Set<string>();
 	walkStatements(ctx.ast.body, (stmt) => {
 		if (stmt.type !== "AssignmentStatement") return;
+
 		if (stmt.operator !== ":=") return;
+
 		if (stmt.target.type !== "Identifier") return;
+
 		if (!references(stmt.value, stmt.target.name)) reset.add(stmt.target.name);
 	});
 
@@ -675,6 +716,7 @@ function checkAccumulatorLifetime(ctx: LintContext): SemanticWarning[] {
 				for (const [name, decl] of seeds) {
 					if (reported.has(name) || reset.has(name)) continue;
 					const hit = findSelfAccumulation(stmt.body, name);
+
 					if (!hit) continue;
 					reported.add(name);
 					findings.push(
@@ -693,21 +735,26 @@ function checkAccumulatorLifetime(ctx: LintContext): SemanticWarning[] {
 			const guarded =
 				runOnce ||
 				(stmt.type === "IfStatement" && isRunOnceGuard(stmt.condition));
+
 			for (const block of statementBlocks(stmt)) scan(block, guarded);
 		}
 	};
 
 	scan(ctx.ast.body, false);
+
 	return findings;
 }
 
 /** `0`, `-1`, `0.0`, or `na` - a scalar seed, as opposed to a collection. */
 function isNumericSeed(expr: Expression): boolean {
 	if (expr.type === "Literal") return typeof expr.value === "number";
+
 	if (expr.type === "Identifier") return expr.name === "na";
+
 	if (expr.type === "UnaryExpression" && expr.operator === "-") {
 		return isNumericSeed(expr.argument);
 	}
+
 	return false;
 }
 
@@ -717,6 +764,7 @@ function references(expr: Expression, name: string): boolean {
 	walkExpression(expr, (node) => {
 		if (node.type === "Identifier" && node.name === name) found = true;
 	});
+
 	return found;
 }
 
@@ -746,19 +794,24 @@ function findSelfAccumulation(
 			if (stmt.target.type !== "Identifier" || stmt.target.name !== name) {
 				continue;
 			}
+
 			if (COMPOUND_ASSIGN.has(stmt.operator)) return stmt;
+
 			if (stmt.operator === ":=" && references(stmt.value, name)) return stmt;
 			continue;
 		}
+
 		if (
 			stmt.type === "ForStatement" ||
 			stmt.type === "ForInStatement" ||
 			stmt.type === "WhileStatement"
 		) {
 			const nested = findSelfAccumulation(stmt.body, name);
+
 			if (nested) return nested;
 		}
 	}
+
 	return undefined;
 }
 
@@ -768,9 +821,11 @@ function isRunOnceGuard(condition: Expression): boolean {
 	walkExpression(condition, (node) => {
 		if (node.type === "MemberExpression") {
 			const name = serialize(node);
+
 			if (name === "barstate.isfirst" || name === "barstate.islast")
 				found = true;
 		}
+
 		if (
 			node.type === "BinaryExpression" &&
 			node.operator === "==" &&
@@ -779,17 +834,21 @@ function isRunOnceGuard(condition: Expression): boolean {
 			found = true;
 		}
 	});
+
 	return found;
 }
 
 function isBarIndexZero(left: Expression, right: Expression): boolean {
 	const pair = [left, right];
+
 	const hasBarIndex = pair.some(
 		(e): e is Identifier => e.type === "Identifier" && e.name === "bar_index",
 	);
+
 	const hasZero = pair.some(
 		(e): e is Literal => e.type === "Literal" && e.value === 0,
 	);
+
 	return hasBarIndex && hasZero;
 }
 
@@ -816,11 +875,15 @@ function isBarIndexZero(left: Expression, right: Expression): boolean {
  */
 function checkEntryWithoutExit(ctx: LintContext): SemanticWarning[] {
 	const entries = ctx.calls.filter((c) => ENTRY_FUNCTIONS.has(c.name));
+
 	if (entries.length === 0) return [];
+
 	if (ctx.calls.some((c) => EXIT_FUNCTIONS.has(c.name))) return [];
+
 	if (hasReversingEntries(ctx)) return [];
 
 	const first = entries[0];
+
 	return [
 		warn(
 			anchor(first.call),
@@ -846,8 +909,10 @@ function hasReversingEntries(ctx: LintContext): boolean {
 
 	for (const { call } of ctx.callsNamed("strategy.entry")) {
 		const direction = argumentAt(call, "direction", 1);
+
 		if (!direction) continue;
 		const name = serialize(direction);
+
 		if (name === "strategy.long") long = true;
 		else if (name === "strategy.short") short = true;
 		else return true;
@@ -901,14 +966,17 @@ function checkArgumentOutOfRange(ctx: LintContext): SemanticWarning[] {
 
 	for (const { call, name } of ctx.calls) {
 		const fn = FUNCTIONS_BY_NAME.get(name);
+
 		if (!fn) continue;
 		const params = decidableParameters(fn, call);
 
 		for (const [index, param] of params.entries()) {
 			const { min, max, notNa } = param;
+
 			if (min === undefined && max === undefined && !notNa) continue;
 
 			const arg = argumentAt(call, param.name, index);
+
 			if (arg === undefined) continue;
 
 			if (notNa && arg.type === "Identifier" && arg.name === "na") {
@@ -924,7 +992,9 @@ function checkArgumentOutOfRange(ctx: LintContext): SemanticWarning[] {
 			}
 
 			const value = numericLiteralValue(arg);
+
 			if (value === null) continue;
+
 			if (
 				(min === undefined || value >= min) &&
 				(max === undefined || value <= max)
@@ -938,6 +1008,7 @@ function checkArgumentOutOfRange(ctx: LintContext): SemanticWarning[] {
 					: min !== undefined
 						? `at least ${min}`
 						: `at most ${max}`;
+
 			// The two sources need different prose: the reference DOCUMENTS a
 			// range TV then happily runs outside of, while a runtime domain is
 			// documented nowhere and is fatal. Saying "documents" of a runtime
@@ -946,6 +1017,7 @@ function checkArgumentOutOfRange(ctx: LintContext): SemanticWarning[] {
 				param.rangeSource === "runtime"
 					? `'${name}' requires '${param.name}' ${range} at runtime, but ${value} was passed. This compiles and then fails on bar 0 - the script never produces a value.`
 					: `'${name}' documents '${param.name}' as ${range}, but ${value} was passed. TradingView compiles this - the reference is what excludes it, so check the intended value.`;
+
 			out.push(
 				warn(
 					arg as { line: number; column: number },
@@ -985,6 +1057,7 @@ function decidableParameters(
 	if (!fn.overloads || fn.overloads.length < 2) return fn.parameters;
 
 	const positional = call.arguments.filter((a) => a.name === undefined).length;
+
 	const named = call.arguments
 		.map((a) => a.name)
 		.filter((n): n is string => n !== undefined);
@@ -996,9 +1069,11 @@ function decidableParameters(
 				positional <= params.length &&
 				named.every((n) => params.some((p) => p.name === n)),
 		);
+
 	if (candidates.length === 0) return [];
 
 	const [first, ...rest] = candidates;
+
 	return first.map((param, index) =>
 		rest.every((params) => sameDomain(params[index], param))
 			? param
@@ -1021,15 +1096,21 @@ function sameDomain(a: PineParameter | undefined, b: PineParameter): boolean {
 /** A numeric literal's value, unary minus included. Null for anything else. */
 function numericLiteralValue(expr: Expression | undefined): number | null {
 	if (!expr) return null;
+
 	if (expr.type === "Literal") {
 		const value = (expr as Literal).value;
+
 		return typeof value === "number" ? value : null;
 	}
+
 	if (expr.type === "UnaryExpression") {
 		const unary = expr as { operator: string; argument: Expression };
+
 		if (unary.operator !== "-") return null;
 		const inner = numericLiteralValue(unary.argument);
+
 		return inner === null ? null : -inner;
 	}
+
 	return null;
 }

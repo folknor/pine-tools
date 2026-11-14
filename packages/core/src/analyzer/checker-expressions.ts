@@ -39,6 +39,7 @@ const TERNARY_TUPLE_MESSAGE =
 // lateral finding + INV059). String/color stay flagged everywhere.
 export function boolContextOk(t: PineType, version: string): boolean {
 	if (t === "unknown" || TypeChecker.isBoolType(t)) return true;
+
 	return version !== "6" && TypeChecker.isNumericType(t);
 }
 
@@ -54,6 +55,7 @@ export function validateBinaryExpression(
 	if (expr.operator === "==" || expr.operator === "!=") {
 		const isLeftNaIdentifier =
 			expr.left.type === "Identifier" && expr.left.name === "na";
+
 		const isRightNaIdentifier =
 			expr.right.type === "Identifier" && expr.right.name === "na";
 
@@ -65,6 +67,7 @@ export function validateBinaryExpression(
 				`Cannot compare a value to "na" directly. Use the "na()" function instead.`,
 				DiagnosticSeverity.Error,
 			);
+
 			return; // Don't report additional type errors for this
 		}
 	}
@@ -88,6 +91,7 @@ export function validateBinaryExpression(
 				version,
 			);
 		}
+
 		if (!boolContextOk(rightType, version)) {
 			addBoolOperatorError(
 				v,
@@ -98,6 +102,7 @@ export function validateBinaryExpression(
 				version,
 			);
 		}
+
 		// The per-operand check IS the complete check for logical
 		// operators - operands that pass it (bool, unknown, or
 		// legacy-numeric per boolContextOk) are individually acceptable,
@@ -129,23 +134,28 @@ export function validateBinaryExpression(
 		// color.blue` at both); fall back to the whole expression for
 		// mutual incompatibilities. see INV028
 		const ARITH_OR_COMPARE = ["+", "-", "*", "/", "%", "<", ">", "<=", ">="];
+
 		const offenders: Array<{
 			expr: Expression;
 			type: PineType;
 			argName: "expr0" | "expr1";
 		}> = [];
+
 		if (ARITH_OR_COMPARE.includes(expr.operator)) {
 			if (!TypeChecker.isNumericType(leftType)) {
 				offenders.push({ expr: expr.left, type: leftType, argName: "expr0" });
 			}
+
 			if (!TypeChecker.isNumericType(rightType)) {
 				offenders.push({ expr: expr.right, type: rightType, argName: "expr1" });
 			}
 		}
+
 		if (offenders.length > 0) {
 			const expected = ["<", ">", "<=", ">="].includes(expr.operator)
 				? "simple float"
 				: expectedArithmeticOperandType(leftType, rightType);
+
 			for (const offender of offenders) {
 				addOperatorTypeError(
 					v,
@@ -157,6 +167,7 @@ export function validateBinaryExpression(
 					version,
 				);
 			}
+
 			return;
 		}
 
@@ -172,6 +183,7 @@ export function validateBinaryExpression(
 				expr.right,
 				rightType,
 			);
+
 			if (choice) {
 				const offenderExpr = choice.side === "left" ? expr.left : expr.right;
 				const offenderType = choice.side === "left" ? leftType : rightType;
@@ -185,6 +197,7 @@ export function validateBinaryExpression(
 					version,
 					"const",
 				);
+
 				return;
 			}
 		}
@@ -208,10 +221,12 @@ function eqMismatchChoice(
 ): { side: "left" | "right"; expectedType: PineType } | null {
 	const leftLiteral = leftExpr.type === "Literal";
 	const rightLiteral = rightExpr.type === "Literal";
+
 	if (leftLiteral !== rightLiteral) {
 		const literalSide = leftLiteral ? "left" : "right";
 		const literalType = leftLiteral ? leftType : rightType;
 		const otherType = leftLiteral ? rightType : leftType;
+
 		if (!eqLiteralException(otherType, literalType)) {
 			return { side: literalSide, expectedType: otherType };
 		}
@@ -219,6 +234,7 @@ function eqMismatchChoice(
 
 	const leftPriority = eqMismatchPriority(v, leftType);
 	const rightPriority = eqMismatchPriority(v, rightType);
+
 	if (
 		leftPriority === null ||
 		rightPriority === null ||
@@ -226,6 +242,7 @@ function eqMismatchChoice(
 	) {
 		return null;
 	}
+
 	return leftPriority < rightPriority
 		? { side: "left", expectedType: rightType }
 		: { side: "right", expectedType: leftType };
@@ -237,6 +254,7 @@ function eqLiteralException(
 ): boolean {
 	const otherBase = TypeChecker.baseTypeName(String(otherType));
 	const literalBase = TypeChecker.baseTypeName(String(literalType));
+
 	return (
 		otherBase === "color" || (otherBase === "int" && literalBase === "string")
 	);
@@ -247,12 +265,19 @@ function eqMismatchPriority(
 	type: PineType,
 ): number | null {
 	const base = TypeChecker.baseTypeName(String(type));
+
 	if (base === "float") return 6;
+
 	if (base === "string") return 5;
+
 	if (base === "bool") return 4;
+
 	if (v.enumMemberNames.has(base)) return 3;
+
 	if (base === "int") return 2;
+
 	if (base === "color") return 1;
+
 	return null;
 }
 
@@ -263,14 +288,19 @@ function eqMismatchPriority(
 // float overload. Everything else flows through the normal qualifier render.
 function renderEqExpectedType(v: UnifiedPineValidator, t: PineType): string {
 	const base = TypeChecker.baseTypeName(String(t));
+
 	if (v.enumMemberNames.has(base)) return "const enum";
+
 	if (base === "int") return v.renderTvType(eqFloatExpectedType(t), "const");
+
 	return v.renderTvType(t, "const");
 }
 
 function eqFloatExpectedType(t: PineType): PineType {
 	const raw = String(t);
+
 	if (raw === "int") return "float";
+
 	return raw
 		.replace(/^(series|simple|input|const)<int>$/, "$1<float>")
 		.replace(/^(series|simple|input|const)\s+int$/, "$1 float") as PineType;
@@ -283,6 +313,7 @@ export function expectedArithmeticOperandType(
 	const otherNumeric = TypeChecker.isNumericType(leftType)
 		? leftType
 		: rightType;
+
 	return TypeChecker.baseTypeName(otherNumeric) === "float"
 		? "const float"
 		: "const int";
@@ -298,14 +329,17 @@ export function addBoolOperatorError(
 	qualifier: "const" | "simple" = "const",
 ): void {
 	let expectedQualifier: "const" | "simple" | "series" = qualifier;
+
 	if (qualifier === "const") {
 		if (expr.type === "CallExpression") {
 			expectedQualifier = "series";
 		} else if (expr.type === "Identifier") {
 			const sym = v.symbolTable.lookup((expr as Identifier).name);
+
 			if (sym && sym.line !== 0) expectedQualifier = "simple";
 		}
 	}
+
 	addOperatorTypeError(
 		v,
 		operator,
@@ -333,6 +367,7 @@ export function addOperatorTypeError(
 		version,
 		argBareQualifier,
 	);
+
 	v.addTemplateError({
 		line: expr.line,
 		column: expr.column,
@@ -358,6 +393,7 @@ export function validateUnaryExpression(
 ): void {
 	if (expr.operator === "not") {
 		const argType = v.inferExpressionType(expr.argument, version);
+
 		if (!boolContextOk(argType, version)) {
 			addBoolOperatorError(
 				v,
@@ -378,11 +414,13 @@ export function validateTernaryExpression(
 	version: string = "6",
 ): void {
 	const condType = v.inferExpressionType(expr.condition, version);
+
 	if (!boolContextOk(condType, version)) {
 		addBoolOperatorError(v, "?:", "expr0", expr.condition, condType, version);
 	}
 
 	const tupleAnchor = ternaryTupleResultAnchor(v, expr, version);
+
 	if (tupleAnchor) {
 		const start = expressionStart(tupleAnchor);
 		v.addTemplateError({
@@ -393,6 +431,7 @@ export function validateTernaryExpression(
 			severity: DiagnosticSeverity.Error,
 			code: "CE10163",
 		});
+
 		return;
 	}
 
@@ -418,11 +457,13 @@ export function validateTernaryExpression(
 		const offendingExpr = expectedFromConseq ? expr.alternate : expr.consequent;
 		const offendingType = expectedFromConseq ? altType : conseqType;
 		const expectedType = expectedFromConseq ? conseqType : altType;
+
 		const desc = v.describeArgForTemplate(
 			offendingExpr,
 			offendingType,
 			version,
 		);
+
 		v.addTemplateError({
 			line: offendingExpr.line || expr.line,
 			column: offendingExpr.column || expr.column,
@@ -449,22 +490,26 @@ function ternaryTupleResultAnchor(
 ): Expression | undefined {
 	const consequentArity = tupleInitArity(v, expr.consequent, version);
 	const alternateArity = tupleInitArity(v, expr.alternate, version);
+
 	if (consequentArity.kind === "tuple" || alternateArity.kind === "tuple") {
 		// TV anchors CE10163 at the first result expression, even when only the
 		// alternate branch is tuple-producing. see INV127
 		return expr.consequent;
 	}
+
 	return undefined;
 }
 
 function expressionStart(expr: Expression): { line: number; column: number } {
 	if (expr.type === "ArrayExpression") {
 		const arr = expr as ArrayExpression;
+
 		return {
 			line: arr.startLine ?? arr.line,
 			column: arr.startColumn ?? arr.column,
 		};
 	}
+
 	return { line: expr.line, column: expr.column };
 }
 
@@ -480,20 +525,25 @@ export function areTernaryBranchTypesCompatible(
 
 	const base1 = v.getBaseType(type1);
 	const base2 = v.getBaseType(type2);
+
 	if (base1 === base2) return true;
 
 	if (TypeChecker.isNumericType(type1) && TypeChecker.isNumericType(type2)) {
 		return true;
 	}
+
 	if (TypeChecker.isBoolType(type1) && TypeChecker.isBoolType(type2)) {
 		return true;
 	}
+
 	if (TypeChecker.isStringType(type1) && TypeChecker.isStringType(type2)) {
 		return true;
 	}
+
 	if (TypeChecker.isColorType(type1) && TypeChecker.isColorType(type2)) {
 		return true;
 	}
+
 	if (TypeChecker.isDisplayFlag(type1) && TypeChecker.isDisplayFlag(type2)) {
 		return true;
 	}
@@ -515,6 +565,7 @@ export function collectBranchResultTypes(
 	const blockTail = (block: { type: string }[] | undefined): void => {
 		if (!block || block.length === 0) return;
 		const tail = block[block.length - 1];
+
 		if (tail.type === "IfStatement" || tail.type === "IfExpression") {
 			collectBranchResultTypes(v, tail as unknown as BranchNode, version, out);
 		} else if (tail.type === "ExpressionStatement") {
@@ -526,6 +577,7 @@ export function collectBranchResultTypes(
 			);
 		}
 	};
+
 	if (node.type === "SwitchExpression") {
 		for (const c of (node as SwitchExpression).cases) {
 			if (c.statements) blockTail(c.statements as { type: string }[]);
@@ -555,14 +607,18 @@ export function checkIfSwitchBranchTypes(
 	if (version !== "6") return;
 	const types: PineType[] = [];
 	collectBranchResultTypes(v, node, version, types);
+
 	const concrete = types.filter(
 		(t) => t !== "unknown" && !TypeChecker.isNaType(t),
 	);
+
 	if (concrete.length < 2) return;
 	const ref = concrete[0];
+
 	const incompatible = concrete
 		.slice(1)
 		.some((t) => !areTernaryBranchTypesCompatible(v, ref, t));
+
 	if (incompatible) {
 		const kw = node.type === "SwitchExpression" ? "switch" : "if";
 		v.addError(

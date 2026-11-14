@@ -68,16 +68,19 @@ function cmdLookup(name) {
 	console.log(`Looking up: "${name}"\n`);
 
 	const variable = VARIABLES_BY_NAME.get(name);
+
 	if (variable) {
 		console.log("VARIABLE:", JSON.stringify(variable, null, 2));
 	}
 
 	const func = FUNCTIONS_BY_NAME.get(name);
+
 	if (func) {
 		console.log("FUNCTION:", JSON.stringify(func, null, 2));
 	}
 
 	const constant = CONSTANTS_BY_NAME.get(name);
+
 	if (constant) {
 		console.log("CONSTANT:", JSON.stringify(constant, null, 2));
 	}
@@ -89,6 +92,7 @@ function cmdLookup(name) {
 		if (!name.includes(".")) {
 			const { PineV6 } = loadModule("pine-data/v6/index.js");
 			const namespaces = PineV6.getAllNamespaces();
+
 			if (namespaces.includes(name)) {
 				console.log(`\n"${name}" is a NAMESPACE.`);
 				const members = PineV6.getNamespaceMembers(name);
@@ -117,6 +121,7 @@ function cmdParse(code) {
 
 	if (parser.errors && parser.errors.length > 0) {
 		console.log("\nParse Errors:");
+
 		for (const err of parser.errors) {
 			console.log(`  [${err.line}:${err.column}] ${err.message}`);
 		}
@@ -134,6 +139,7 @@ function cmdTokens(code) {
 	console.log(`  ${"-".repeat(65)}`);
 
 	let idx = 0;
+
 	for (const t of tokens) {
 		// Skip whitespace for cleaner output
 		if (t.type === "WHITESPACE") continue;
@@ -158,12 +164,14 @@ function cmdTokens(code) {
 function describeToken(token) {
 	if (!token) return "<none>";
 	const indent = token.indent === undefined ? "-" : token.indent;
+
 	return `${token.line}:${token.column} ${token.type} ${JSON.stringify(token.value)} indent=${indent}`;
 }
 
 function describeParserState(parser) {
 	const block = parser.__traceBlockState?.();
 	const base = `paren=${parser.parenDepth} bracket=${parser.bracketDepth}`;
+
 	return block ? `${base} ${block}` : base;
 }
 
@@ -172,6 +180,7 @@ function nodeContainsLine(node, line) {
 		return false;
 	let start = node.line;
 	let end = typeof node.endLine === "number" ? node.endLine : node.line;
+
 	for (const child of Object.values(node)) {
 		if (Array.isArray(child)) {
 			for (const item of child) {
@@ -189,6 +198,7 @@ function nodeContainsLine(node, line) {
 			end = Math.max(end, child.endLine ?? child.line);
 		}
 	}
+
 	return start <= line && line <= end;
 }
 
@@ -197,13 +207,16 @@ function traceRelevant(before, after, args, result, targetLine, context) {
 		token &&
 		typeof token.line === "number" &&
 		Math.abs(token.line - targetLine) <= context;
+
 	if (close(before) || close(after)) return true;
+
 	if (
 		args.some(
 			(arg) => typeof arg === "number" && Math.abs(arg - targetLine) <= context,
 		)
 	)
 		return true;
+
 	return nodeContainsLine(result, targetLine);
 }
 
@@ -214,8 +227,10 @@ function cmdTrace(args) {
 	let sourceArg = null;
 	let verbose = false;
 	let methodFilter = null;
+
 	for (let i = 0; i < args.length; i++) {
 		const arg = args[i];
+
 		if (arg === "--line") targetLine = Number(args[++i]);
 		else if (arg === "--context") context = Number(args[++i]);
 		else if (arg === "--verbose") verbose = true;
@@ -228,6 +243,7 @@ function cmdTrace(args) {
 			);
 		} else if (!sourceArg) sourceArg = arg;
 	}
+
 	if (!sourceArg || !Number.isInteger(targetLine) || targetLine < 1) {
 		console.error(
 			"Usage: trace <file|code> --line <N> [--context <N>] [--verbose] [--methods a,b]",
@@ -237,6 +253,7 @@ function cmdTrace(args) {
 
 	let code = sourceArg;
 	let label = "<code>";
+
 	if (fs.existsSync(sourceArg)) {
 		label = sourceArg;
 		code = fs.readFileSync(sourceArg, "utf8");
@@ -265,16 +282,19 @@ function cmdTrace(args) {
 		"forStatement",
 		"whileStatement",
 	];
+
 	const verboseMethods = [
 		...defaultMethods,
 		"parseSameLineBinary",
 		"skipSameLineLeadingWrap",
 	];
+
 	const methods = methodFilter
 		? [...methodFilter]
 		: verbose
 			? verboseMethods
 			: defaultMethods;
+
 	const traceBlockState = {
 		parseIndentedBlock: (args) =>
 			`block=indented baseIndent=${args[1]} startLine=${args[0]}`,
@@ -286,12 +306,15 @@ function cmdTrace(args) {
 		parseInlineSwitchCaseBody: () => "block=inlineSwitchCase",
 		parseInlineArrowBody: () => "block=inlineArrow",
 	};
+
 	const originals = new Map();
 	const events = [];
 	const stack = [];
 	const blockStack = [];
+
 	for (const name of methods) {
 		const original = Parser.prototype[name];
+
 		if (typeof original !== "function") continue;
 		originals.set(name, original);
 		Parser.prototype[name] = function tracedMethod(...methodArgs) {
@@ -299,12 +322,15 @@ function cmdTrace(args) {
 			const before = this.peek?.();
 			const blockState = traceBlockState[name]?.(methodArgs);
 			stack.push(name);
+
 			if (blockState) blockStack.push(blockState);
 			this.__traceBlockState = () => blockStack[blockStack.length - 1] || "";
 			let result;
 			let thrown;
+
 			try {
 				result = original.apply(this, methodArgs);
+
 				return result;
 			} catch (e) {
 				thrown = e;
@@ -314,6 +340,7 @@ function cmdTrace(args) {
 				const changed = beforeIndex !== this.current;
 				const hasResult = Boolean(result?.type);
 				const includeNoop = verbose || thrown || changed || hasResult;
+
 				if (
 					includeNoop &&
 					traceRelevant(before, after, methodArgs, result, targetLine, context)
@@ -333,8 +360,11 @@ function cmdTrace(args) {
 						thrown: thrown ? thrown.message || String(thrown) : "",
 					});
 				}
+
 				stack.pop();
+
 				if (blockState) blockStack.pop();
+
 				if (blockStack.length === 0) delete this.__traceBlockState;
 			}
 		};
@@ -344,24 +374,30 @@ function cmdTrace(args) {
 		const parser = new Parser(code);
 		parser.parse();
 		console.log(`# Parser trace: ${label} line ${targetLine}`);
+
 		for (const event of events) {
 			const indent = "  ".repeat(event.depth);
+
 			const suffix = event.thrown
 				? ` THROW ${event.thrown}`
 				: event.result
 					? ` -> ${event.result}`
 					: "";
+
 			console.log(
 				`${indent}${event.name}(${event.args}) ${event.current} ${event.state}${suffix}`,
 			);
 			console.log(`${indent}  before ${event.before}`);
 			console.log(`${indent}  after  ${event.after}`);
 		}
+
 		if (events.length === 0)
 			console.log("No parser events touched the requested line/context.");
 		const errors = parser.getParserErrors();
+
 		if (errors.length > 0) {
 			console.log("\nParse errors:");
+
 			for (const err of errors)
 				console.log(`  ${err.line}:${err.column} ${err.message}`);
 		}
@@ -372,6 +408,7 @@ function cmdTrace(args) {
 
 function cmdValidate(code) {
 	const { Parser } = loadModule("packages/core/src/parser/parser.js");
+
 	const { UnifiedPineValidator } = loadModule(
 		"packages/core/src/analyzer/checker.js",
 	);
@@ -386,9 +423,11 @@ function cmdValidate(code) {
 
 	if (parser.errors && parser.errors.length > 0) {
 		console.log("Parse Errors:");
+
 		for (const err of parser.errors) {
 			console.log(`  [${err.line}:${err.column}] ${err.message}`);
 		}
+
 		console.log("");
 	}
 
@@ -399,10 +438,12 @@ function cmdValidate(code) {
 		console.log("No validation errors.");
 	} else {
 		console.log("Validation Errors:");
+
 		for (const err of errors) {
 			const loc = err.start ? `${err.start.line}:${err.start.column}` : "?:?";
 			console.log(`  [${loc}] ${err.message}`);
 		}
+
 		console.log(`\nTotal: ${errors.length} error(s)`);
 	}
 }
@@ -438,10 +479,12 @@ function cmdSymbols(filter) {
 		console.log(`No symbols matching "${filter}"`);
 	} else {
 		console.log(`Found ${results.length} symbol(s):\n`);
+
 		for (const r of results.slice(0, 50)) {
 			const typeInfo = r.type || r.returns || "?";
 			console.log(`  [${r.kind.padEnd(8)}] ${r.name}: ${typeInfo}`);
 		}
+
 		if (results.length > 50) {
 			console.log(`  ... and ${results.length - 50} more`);
 		}
@@ -450,9 +493,11 @@ function cmdSymbols(filter) {
 
 function cmdSymbolTable(code) {
 	const { Parser } = loadModule("packages/core/src/parser/parser.js");
+
 	const { UnifiedPineValidator } = loadModule(
 		"packages/core/src/analyzer/checker.js",
 	);
+
 	const { SymbolTable } = loadModule("packages/core/src/analyzer/symbols.js");
 
 	// Add version header if missing
@@ -468,6 +513,7 @@ function cmdSymbolTable(code) {
 
 	console.log("Initial Symbol Table (built-ins):");
 	const globalSymbols = st.getGlobalScope().getAllSymbols();
+
 	const userRelevant = globalSymbols.filter(
 		(s) =>
 			!s.name.includes(".") &&
@@ -483,9 +529,11 @@ function cmdSymbolTable(code) {
 				"na",
 			].includes(s.name),
 	);
+
 	for (const s of userRelevant) {
 		console.log(`  [${s.kind.padEnd(8)}] ${s.name}: ${s.type}`);
 	}
+
 	console.log(
 		`  ... and ${globalSymbols.length - userRelevant.length} more built-ins\n`,
 	);
@@ -497,8 +545,10 @@ function cmdSymbolTable(code) {
 	// Show what lookup returns for common names
 	console.log("Symbol Lookups:");
 	const testNames = ["hour", "minute", "close", "na", "x", "y"];
+
 	for (const name of testNames) {
 		const sym = st.lookup(name);
+
 		if (sym) {
 			console.log(`  ${name}: ${sym.type} (${sym.kind})`);
 		}
@@ -519,11 +569,13 @@ function printAnalyzeResults({
 		console.log(
 			`Found ${results.length} matching ${showCliErrors ? "CLI errors" : "discrepancies"} across ${fileMatches.size} files:\n`,
 		);
+
 		for (const [msg, count] of sorted.slice(0, limit)) {
 			console.log(
 				`  [${count.toString().padStart(4)}] ${msg.slice(0, 80)}${msg.length > 80 ? "..." : ""}`,
 			);
 		}
+
 		if (sorted.length > limit) {
 			console.log(`  ... and ${sorted.length - limit} more unique messages`);
 		}
@@ -531,12 +583,15 @@ function printAnalyzeResults({
 		console.log(
 			`Files with matching ${showCliErrors ? "CLI errors" : "discrepancies"}:\n`,
 		);
+
 		const sorted = [...fileMatches.entries()].sort(
 			(a, b) => b[1].length - a[1].length,
 		);
+
 		for (const [file, msgs] of sorted.slice(0, limit)) {
 			console.log(`  ${file}: ${msgs.length} match(es)`);
 		}
+
 		if (sorted.length > limit) {
 			console.log(`  ... and ${sorted.length - limit} more files`);
 		}
@@ -544,10 +599,12 @@ function printAnalyzeResults({
 		console.log(
 			`Found ${results.length} matching ${showCliErrors ? "CLI errors" : "discrepancies"}:\n`,
 		);
+
 		for (const r of results.slice(0, limit)) {
 			const loc = r.line ? `:${r.line}` : "";
 			console.log(`  [${r.file}${loc}] ${r.message}`);
 		}
+
 		if (results.length > limit) {
 			console.log(
 				`\n  ... and ${results.length - limit} more (use --limit to see more)`,
@@ -565,8 +622,10 @@ function cmdAnalyzeRealFailures(reportPath, options) {
 	const results = [];
 	const messageCounts = new Map();
 	const fileMatches = new Map();
+
 	const addResult = (file, line, message, type) => {
 		const msg = message || "";
+
 		if (
 			options.filter &&
 			!msg.toLowerCase().includes(options.filter.toLowerCase())
@@ -574,12 +633,14 @@ function cmdAnalyzeRealFailures(reportPath, options) {
 			return;
 		results.push({ file, line, message: msg, type });
 		messageCounts.set(msg, (messageCounts.get(msg) || 0) + 1);
+
 		if (!fileMatches.has(file)) fileMatches.set(file, []);
 		fileMatches.get(file).push(msg);
 	};
 
 	for (const record of data.files ?? []) {
 		const file = record.fixture || record.file || record.path || "<unknown>";
+
 		if (options.showCliErrors) {
 			for (const err of record.localErrors ?? record.cliErrors ?? []) {
 				addResult(file, err.start?.line ?? err.line, err.message, "local");
@@ -588,9 +649,11 @@ function cmdAnalyzeRealFailures(reportPath, options) {
 			for (const err of record.localOnly ?? []) {
 				addResult(file, err.start?.line ?? err.line, err.message, "local-only");
 			}
+
 			for (const err of record.tvOnly ?? []) {
 				addResult(file, err.start?.line ?? err.line, err.message, "tv-only");
 			}
+
 			for (const err of record.samePositionDifferentMessage ??
 				record.samePosDifferentMessage ??
 				record.messageDiffs ??
@@ -622,6 +685,7 @@ function cmdAnalyze(args) {
 
 	for (let i = 0; i < args.length; i++) {
 		const arg = args[i];
+
 		if (arg === "--filter" && args[i + 1]) {
 			filter = args[++i];
 		} else if (arg === "--cli-errors") {
@@ -682,10 +746,12 @@ function cmdCorpus(args) {
 		withErrors: [],
 		failed: [],
 	};
+
 	const errorCounts = new Map();
 
 	for (const dir of DIRS) {
 		const dirPath = path.join(CORPUS_BASE, dir);
+
 		if (!fs.existsSync(dirPath)) continue;
 
 		const files = fs.readdirSync(dirPath).filter((f) => f.endsWith(".pine"));
@@ -697,6 +763,7 @@ function cmdCorpus(args) {
 			// Check version if v6Only
 			if (v6Only) {
 				const versionMatch = content.match(/@version=(\d+)/);
+
 				if (versionMatch?.[1] !== "6") continue;
 			}
 
@@ -708,6 +775,7 @@ function cmdCorpus(args) {
 					maxBuffer: 10 * 1024 * 1024,
 					timeout: 30000,
 				});
+
 				const json = JSON.parse(output);
 				const errors = json.result?.errors || [];
 
@@ -725,6 +793,7 @@ function cmdCorpus(args) {
 						count: parseErrors.length,
 						first: parseErrors[0].message,
 					});
+
 					for (const e of parseErrors) {
 						const key = e.message.replace(/at line \d+/, "at line N");
 						errorCounts.set(key, (errorCounts.get(key) || 0) + 1);
@@ -753,6 +822,7 @@ function cmdCorpus(args) {
 
 	if (showErrors && results.withErrors.length > 0) {
 		console.log("\nFiles with parse errors:");
+
 		for (const f of results.withErrors) {
 			console.log(`  ${f.file}: ${f.count} errors - "${f.first}"`);
 		}
@@ -760,9 +830,11 @@ function cmdCorpus(args) {
 
 	if (showClean && results.clean.length > 0) {
 		console.log("\nClean files:");
+
 		for (const f of results.clean.slice(0, 50)) {
 			console.log(`  ${f}`);
 		}
+
 		if (results.clean.length > 50) {
 			console.log(`  ... and ${results.clean.length - 50} more`);
 		}
@@ -771,10 +843,12 @@ function cmdCorpus(args) {
 	if (summaryOnly && errorCounts.size > 0) {
 		console.log("\nParse error types by frequency:");
 		const sorted = [...errorCounts.entries()].sort((a, b) => b[1] - a[1]);
+
 		for (const [msg, count] of sorted.slice(0, 20)) {
 			const displayMsg = msg.length > 60 ? `${msg.slice(0, 57)}...` : msg;
 			console.log(`  ${count.toString().padStart(4)} x ${displayMsg}`);
 		}
+
 		if (sorted.length > 20) {
 			console.log(`  ... and ${sorted.length - 20} more error types`);
 		}
@@ -782,6 +856,7 @@ function cmdCorpus(args) {
 
 	if (results.failed.length > 0) {
 		console.log("\nFailed files (timeout/crash):");
+
 		for (const f of results.failed) {
 			console.log(`  ${f}`);
 		}
@@ -790,6 +865,7 @@ function cmdCorpus(args) {
 
 function main() {
 	const args = process.argv.slice(2);
+
 	if (args[0] === "--") args.shift();
 	const command = args[0];
 
@@ -837,6 +913,7 @@ function main() {
 				console.error("Usage: lookup <name>");
 				process.exit(1);
 			}
+
 			cmdLookup(args[1]);
 			break;
 
@@ -845,6 +922,7 @@ function main() {
 				console.error("Usage: parse 'code'");
 				process.exit(1);
 			}
+
 			cmdParse(args[1]);
 			break;
 
@@ -853,6 +931,7 @@ function main() {
 				console.error("Usage: tokens 'code'");
 				process.exit(1);
 			}
+
 			cmdTokens(args[1]);
 			break;
 
@@ -865,6 +944,7 @@ function main() {
 				console.error("Usage: validate 'code'");
 				process.exit(1);
 			}
+
 			cmdValidate(args[1]);
 			break;
 
@@ -877,6 +957,7 @@ function main() {
 				console.error("Usage: symbol-table 'code'");
 				process.exit(1);
 			}
+
 			cmdSymbolTable(args[1]);
 			break;
 

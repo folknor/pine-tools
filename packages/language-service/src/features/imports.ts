@@ -78,13 +78,16 @@ export function parseSourceDirective(
 	// importLine is 1-indexed from AST, doc.getLine is 0-indexed
 	// So line before import (1-indexed) is importLine - 1, which is (importLine - 2) in 0-indexed
 	const prevLineIndex = importLine - 2;
+
 	if (prevLineIndex < 0) return undefined;
 
 	const line = doc.getLine(prevLineIndex);
+
 	if (!line) return undefined;
 
 	// Match `/// @source <path>`
 	const match = line.match(/^\s*\/\/\/\s*@source\s+(.+?)\s*$/);
+
 	if (!match) return undefined;
 
 	return match[1];
@@ -102,10 +105,12 @@ export function getResolvedImports(doc: ParsedDocument): ResolvedImport[] {
 		if (stmt.type !== "ImportStatement") continue;
 
 		const importStmt = stmt as AST.ImportStatement;
+
 		if (!importStmt.alias) continue;
 
 		// Check for @source directive on the previous line
 		const sourcePath = parseSourceDirective(doc, stmt.line);
+
 		if (sourcePath) {
 			imports.push({
 				alias: importStmt.alias,
@@ -162,6 +167,7 @@ export function parseLibrary(
 ): ParsedLibrary {
 	// Check cache first
 	const cached = libraryCache.get(sourcePath);
+
 	if (cached) return cached;
 
 	const parser = new Parser(content);
@@ -175,6 +181,7 @@ export function parseLibrary(
 	for (const stmt of ast.body) {
 		if (stmt.type === "FunctionDeclaration") {
 			const funcDecl = stmt as AST.FunctionDeclaration;
+
 			if (funcDecl.isExport) {
 				exports.push({
 					name: funcDecl.name,
@@ -189,6 +196,7 @@ export function parseLibrary(
 			}
 		} else if (stmt.type === "MethodDeclaration") {
 			const methodDecl = stmt as AST.MethodDeclaration;
+
 			if (methodDecl.isExport) {
 				exports.push({
 					name: methodDecl.name,
@@ -251,6 +259,7 @@ export function getImportAliasAtPosition(
 	position: Position,
 ): string | undefined {
 	const line = doc.getLine(position.line);
+
 	if (!line) return undefined;
 
 	// Find the identifier at the position
@@ -267,6 +276,7 @@ export function getImportAliasAtPosition(
 	// Check if this identifier is an import alias
 	const imports = getResolvedImports(doc);
 	const resolved = imports.find((i) => i.alias === identifier);
+
 	if (resolved) {
 		return identifier;
 	}
@@ -282,16 +292,19 @@ export function getLibraryAliasBeforeDot(
 	position: Position,
 ): ResolvedImport | undefined {
 	const line = doc.getLine(position.line);
+
 	if (!line) return undefined;
 
 	const beforeCursor = line.substring(0, position.character);
 
 	// Match pattern like "myLib." at end of beforeCursor
 	const match = beforeCursor.match(/([a-zA-Z_][a-zA-Z0-9_]*)\.$/);
+
 	if (!match) return undefined;
 
 	const alias = match[1];
 	const imports = getResolvedImports(doc);
+
 	return imports.find((i) => i.alias === alias);
 }
 
@@ -308,6 +321,7 @@ export function getLibraryCompletions(
 
 	for (const exp of library.exports) {
 		let kind: CompletionItemKind;
+
 		switch (exp.kind) {
 			case "function":
 			case "method":
@@ -335,6 +349,7 @@ export function getLibraryCompletions(
 			const paramStr = exp.params
 				.map((p) => `${p.name}${p.type ? `: ${p.type}` : ""}`)
 				.join(", ");
+
 			docParts.push(`\`\`\`pine\n${exp.name}(${paramStr})\n\`\`\``);
 		}
 

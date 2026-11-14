@@ -34,18 +34,22 @@ const ROOTS = [
 	"dev-tools",
 	"packages",
 ];
+
 const EXT = new Set([".md", ".ts", ".mjs", ".js"]);
 const SKIP = ["node_modules", "dist", ".cache", "pine-data", "pine-manual", ".git"];
 
 function walk(rel, out) {
 	const abs = path.join(root, rel);
+
 	if (SKIP.some((s) => rel.split(path.sep).includes(s))) return;
 	let st;
+
 	try {
 		st = fs.statSync(abs);
 	} catch {
 		return;
 	}
+
 	if (st.isDirectory()) {
 		for (const e of fs.readdirSync(abs)) walk(path.join(rel, e), out);
 	} else if (EXT.has(path.extname(rel))) {
@@ -54,6 +58,7 @@ function walk(rel, out) {
 }
 
 const files = [];
+
 for (const r of ROOTS) walk(r, files);
 
 const EM = /[ \t]*—[ \t]*/g;
@@ -61,12 +66,15 @@ const EN = /–/g;
 
 let totalFiles = 0;
 let totalSubs = 0;
+
 for (const rel of files) {
 	const abs = path.join(root, rel);
 	const src = fs.readFileSync(abs, "utf-8");
 	const em = (src.match(/—/g) || []).length;
 	const en = (src.match(EN) || []).length;
+
 	if (em + en === 0) continue;
+
 	// This script itself uses em/en-dashes FUNCTIONALLY (its detection regexes),
 	// so never rewrite it.
 	if (rel === path.join("scripts", "strip-gremlins.mjs")) continue;
@@ -75,26 +83,33 @@ for (const rel of files) {
 	// class `[-–]` in parse-constraints.ts); no .md has one, so only replace
 	// en-dashes in markdown, never in code.
 	const isMd = path.extname(rel) === ".md";
+
 	const fixed = isMd
 		? src.replace(EM, " - ").replace(EN, "-")
 		: src.replace(EM, " - ");
+
 	const remaining =
 		(fixed.match(/—/g) || []).length + (isMd ? (fixed.match(EN) || []).length : 0);
+
 	const applied = (isMd ? em + en : em) - remaining;
+
 	if (applied === 0) continue;
 	totalFiles++;
 	totalSubs += applied;
 	const skipped = remaining > 0 ? ` (${remaining} left in code)` : "";
 	console.log(`${String(applied).padStart(4)}  ${rel}${skipped}`);
+
 	// For non-markdown (code), show the changed lines so they can be eyeballed
 	// (we only ever expect comments to change, never meaningful string literals).
 	if (path.extname(rel) !== ".md") {
 		const a = src.split("\n");
 		const b = fixed.split("\n");
+
 		for (let i = 0; i < a.length; i++) {
 			if (a[i] !== b[i]) console.log(`        L${i + 1}: ${b[i].trim()}`);
 		}
 	}
+
 	if (WRITE) fs.writeFileSync(abs, fixed);
 }
 

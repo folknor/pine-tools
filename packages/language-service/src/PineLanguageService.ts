@@ -110,7 +110,9 @@ export class PineLanguageService {
 	 */
 	getCompletions(uri: string, position: Position): CompletionItem[] {
 		const doc = this.documents.get(uri);
+
 		if (!doc) return [];
+
 		return getCompletionsImpl(doc, position);
 	}
 
@@ -123,7 +125,9 @@ export class PineLanguageService {
 		options?: HoverOptions,
 	): HoverInfo | null {
 		const doc = this.documents.get(uri);
+
 		if (!doc) return null;
+
 		return getHoverImpl(doc, position, options);
 	}
 
@@ -132,7 +136,9 @@ export class PineLanguageService {
 	 */
 	getSignatureHelp(uri: string, position: Position): SignatureHelp | null {
 		const doc = this.documents.get(uri);
+
 		if (!doc) return null;
+
 		return getSignatureHelpImpl(doc, position);
 	}
 
@@ -141,7 +147,9 @@ export class PineLanguageService {
 	 */
 	getDiagnostics(uri: string): Diagnostic[] {
 		const doc = this.documents.get(uri);
+
 		if (!doc) return [];
+
 		return getDiagnosticsImpl(doc);
 	}
 
@@ -150,7 +158,9 @@ export class PineLanguageService {
 	 */
 	format(uri: string, options?: FormattingOptions): TextEdit[] {
 		const doc = this.documents.get(uri);
+
 		if (!doc) return [];
+
 		return formatImpl(doc, options);
 	}
 
@@ -159,7 +169,9 @@ export class PineLanguageService {
 	 */
 	getDocumentSymbols(uri: string): DocumentSymbol[] {
 		const doc = this.documents.get(uri);
+
 		if (!doc) return [];
+
 		return getDocumentSymbolsImpl(doc);
 	}
 
@@ -168,7 +180,9 @@ export class PineLanguageService {
 	 */
 	getDefinition(uri: string, position: Position): DefinitionResult | null {
 		const doc = this.documents.get(uri);
+
 		if (!doc) return null;
+
 		return getDefinitionImpl(doc, position);
 	}
 
@@ -181,7 +195,9 @@ export class PineLanguageService {
 		options?: ReferencesOptions,
 	): Location[] {
 		const doc = this.documents.get(uri);
+
 		if (!doc) return [];
+
 		return getReferencesImpl(doc, position, options);
 	}
 
@@ -190,7 +206,9 @@ export class PineLanguageService {
 	 */
 	prepareRename(uri: string, position: Position): PrepareRenameResult | null {
 		const doc = this.documents.get(uri);
+
 		if (!doc) return null;
+
 		return prepareRenameImpl(doc, position);
 	}
 
@@ -203,7 +221,9 @@ export class PineLanguageService {
 		newName: string,
 	): RenameResult | null {
 		const doc = this.documents.get(uri);
+
 		if (!doc) return null;
+
 		return renameImpl(doc, position, newName);
 	}
 
@@ -216,7 +236,9 @@ export class PineLanguageService {
 		context: CodeActionContext,
 	): CodeAction[] {
 		const doc = this.documents.get(uri);
+
 		if (!doc) return [];
+
 		return getCodeActionsImpl(doc, range, context);
 	}
 
@@ -225,7 +247,9 @@ export class PineLanguageService {
 	 */
 	getInlayHints(uri: string, range: Range): InlayHint[] {
 		const doc = this.documents.get(uri);
+
 		if (!doc) return [];
+
 		return getInlayHintsImpl(doc, range);
 	}
 
@@ -234,7 +258,9 @@ export class PineLanguageService {
 	 */
 	getFoldingRanges(uri: string): FoldingRange[] {
 		const doc = this.documents.get(uri);
+
 		if (!doc) return [];
+
 		return getFoldingRangesImpl(doc);
 	}
 
@@ -243,7 +269,9 @@ export class PineLanguageService {
 	 */
 	getSemanticTokens(uri: string): SemanticTokensResult {
 		const doc = this.documents.get(uri);
+
 		if (!doc) return { data: [] };
+
 		return getSemanticTokensImpl(doc);
 	}
 

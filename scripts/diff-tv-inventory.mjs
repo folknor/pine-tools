@@ -23,6 +23,7 @@ const ours = {
 
 // TV catalog names by category. Function TOC text may carry "()" - strip it.
 const tv = { var: new Set(), const: new Set(), fun: new Set() };
+
 for (const item of probe.catalog) {
 	if (!(item.category in tv)) continue;
 	const n = item.text.replace(/\(\)$/, "").trim();
@@ -30,6 +31,7 @@ for (const item of probe.catalog) {
 }
 
 const diff = {};
+
 for (const cat of ["var", "const", "fun"]) {
 	const missing = [...tv[cat]].filter((n) => !ours[cat].has(n)).sort();
 	const extra = [...ours[cat]].filter((n) => !tv[cat].has(n)).sort();
@@ -44,6 +46,7 @@ for (const cat of ["var", "const", "fun"]) {
 }
 
 const OUT = path.join(REPO, "lint-reports", "tv-inventory-diff.json");
+
 fs.writeFileSync(OUT, JSON.stringify(diff, null, 2));
 
 for (const cat of ["var", "const", "fun"]) {
@@ -54,4 +57,5 @@ for (const cat of ["var", "const", "fun"]) {
 	console.log("MISSING (in TV, not us):");
 	console.log("  " + (d.missing.join(", ") || "(none)"));
 }
+
 console.log(`\nFull diff (incl. 'extra') written to ${OUT}`);

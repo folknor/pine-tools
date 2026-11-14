@@ -25,8 +25,10 @@ export function annotationToSymbolType(
 	name: string,
 ): PineType {
 	const mapped = mapToPineType(name);
+
 	if (mapped !== "unknown") return mapped;
 	const base = TypeChecker.baseTypeName(name);
+
 	return v.declaredTypeNames.has(base) ? (base as PineType) : "unknown";
 }
 
@@ -38,6 +40,7 @@ export function recordEnumMembers(
 ): void {
 	if (statement.type !== "EnumDeclaration") return;
 	const members = statement.members;
+
 	if (members && members.length > 0) {
 		v.enumMemberNames.set(statement.name, new Set(members));
 	}
@@ -50,6 +53,7 @@ export function registerTypeDeclaration(
 	if (statement.type !== "TypeDeclaration") return;
 	v.declaredTypeNames.add(statement.name);
 	const fields = new Map<string, PineType>();
+
 	for (const field of statement.fields ?? []) {
 		if (!field.typeAnnotation) continue;
 		const mapped = mapToPineType(field.typeAnnotation.name);
@@ -63,6 +67,7 @@ export function registerTypeDeclaration(
 					: "unknown",
 		);
 	}
+
 	v.udtFieldTypes.set(statement.name, fields);
 }
 
@@ -80,6 +85,7 @@ export function checkBuiltinShadowDeclaration(
 	version: string,
 ): void {
 	if (version !== "6") return;
+
 	if (!v.usedBuiltins.has(name)) return;
 	v.addError(
 		line,
@@ -104,6 +110,7 @@ export function checkTypeAnnotationName(
 ): void {
 	if (version !== "6" || !statement.typeAnnotation) return;
 	const raw = statement.typeAnnotation.name;
+
 	// Collection-in-template annotations, all anchored at the template
 	// span (probed 2026-06-05, see INV038):
 	// - `array<array<float>>` is CE10022 "Arrays of type {inner} are not
@@ -117,21 +124,25 @@ export function checkTypeAnnotationName(
 	const nestedAnnotation = raw.match(
 		/^(?:(?:series|simple|input|const)\s+)?(array|matrix|map)\s*<(.*)$/,
 	);
+
 	if (nestedAnnotation) {
 		const outer = nestedAnnotation[1];
 		const templateRest = nestedAnnotation[2];
 		const innerCollection = templateRest.match(/\b(array|matrix|map)\s*</)?.[1];
+
 		if (innerCollection) {
 			const decl0 = statement as { startLine?: number; startColumn?: number };
 			const stmt = statement as { line: number; column: number };
 			const startColumn = decl0.startColumn ?? stmt.column;
 			const lt = raw.indexOf("<");
+
 			const message =
 				outer === "map"
 					? "Cannot use a collection in a type template of another collection. Create a user-defined type with that collection as a field and use it instead."
 					: outer === "matrix"
 						? `Matrix of type ${innerCollection} are not supported.`
 						: `Arrays of type ${innerCollection} are not supported.`;
+
 			v.addError(
 				decl0.startLine ?? stmt.line,
 				startColumn + lt,
@@ -139,17 +150,22 @@ export function checkTypeAnnotationName(
 				message,
 				DiagnosticSeverity.Error,
 			);
+
 			return;
 		}
 	}
+
 	const base = invalidAnnotationBase(v, raw);
+
 	if (base === null) return;
+
 	const decl = statement as {
 		startLine?: number;
 		startColumn?: number;
 		line: number;
 		column: number;
 	};
+
 	// Only flag when the annotation and the variable name sit on the
 	// same physical line. Hard-wrapped corpus files glue prose / split
 	// identifiers into IDENT IDENT = shapes across lines, which parse
@@ -187,13 +203,18 @@ function importAliasTypeInvalid(
 	if (base.indexOf(".") !== base.lastIndexOf(".")) return null;
 	const alias = base.slice(0, base.indexOf("."));
 	const member = base.slice(base.indexOf(".") + 1);
+
 	if (!v.importedNamespaces.has(alias)) return null;
 	const path = v.importedLibraryPaths.get(alias);
+
 	if (!path) return null; // export set unavailable - stay lenient
+
 	const exports =
 		LIBRARY_EXPORTS_BY_PATH.get(path) ??
 		v.localLibraryExportsBySourcePath.get(path);
+
 	if (!exports) return null;
+
 	return exports.has(member) ? null : base;
 }
 
@@ -212,11 +233,17 @@ export function invalidAnnotationBase(
 		.replace(/<.*$/, "")
 		.replace(/\[\]$/, "")
 		.trim();
+
 	if (!base) return null;
+
 	if (TYPE_KEYWORDS.has(base)) return null;
+
 	if (TYPE_NAMES.has(base)) return null; // incl. dotted chart.point
+
 	if (base.includes(".")) return importAliasTypeInvalid(v, base);
+
 	if (v.declaredTypeNames.has(base)) return null;
+
 	return base;
 }
 
@@ -232,10 +259,13 @@ export function checkParamTypeAnnotations(
 	version: string,
 ): void {
 	if (version !== "6") return;
+
 	for (const param of params) {
 		const ann = param.typeAnnotation;
+
 		if (!ann || ann.line === undefined || ann.column === undefined) continue;
 		const base = invalidAnnotationBase(v, ann.name);
+
 		if (base === null) continue;
 		v.addError(
 			ann.line,
@@ -296,6 +326,7 @@ export function defaultValueViolation(
 			};
 		case "Identifier": {
 			const name = (expr as Identifier).name;
+
 			if (name === "na") {
 				// `na` is fine once the parameter states its type - TV's own
 				// message says so and the probe confirms `int y = na` is clean.
@@ -308,17 +339,21 @@ export function defaultValueViolation(
 							atExpression: false,
 						};
 			}
+
 			// A BUILT-IN variable or constant is allowed; a user one is not.
 			// Built-ins are defined at line 0 by initializeBuiltins, which is
 			// the same test the rest of the checker uses to tell them apart.
 			const sym = v.symbolTable.lookup(name);
+
 			if (!sym || sym.line === 0) return null;
+
 			return {
 				code: "CE10132",
 				message: `Cannot use "${name}" as the default value of a type's field. The default value cannot be a function, variable or calculation.`,
 				atExpression: true,
 			};
 		}
+
 		case "MemberExpression":
 			// `color.red`, `text.align_right` - a built-in namespaced constant.
 			// A member of a USER value cannot appear here (a default is
@@ -339,14 +374,18 @@ export function checkParamDefaults(
 	version: string,
 ): void {
 	if (version !== "6") return;
+
 	for (const param of params) {
 		if (!param.defaultValue) continue;
+
 		if (param.line === undefined || param.column === undefined) continue;
+
 		const hit = defaultValueViolation(
 			v,
 			param.defaultValue,
 			!!param.typeAnnotation,
 		);
+
 		if (!hit) continue;
 		const atExpr = hit.atExpression;
 		v.addTemplateError({
@@ -376,8 +415,10 @@ export function checkExportedParamsTypified(
 	version: string,
 ): void {
 	if (version !== "6" || !isExport) return;
+
 	for (const param of params) {
 		if (param.typeAnnotation) continue;
+
 		if (param.line === undefined || param.column === undefined) continue;
 		v.addError(
 			param.line,
@@ -408,17 +449,21 @@ export function checkRedeclaration(
 	// (`_ = '--- SECTION ---'` separators; probed clean). see INV035
 	if (name === "_") return;
 	const frame = v.declScopes[v.declScopes.length - 1];
+
 	if (!frame) return;
+
 	if (version === "6" && frame.has(name)) {
 		// Record the conflict so type-dependent gates (the union-arg check)
 		// can treat references to this name as untrustworthy. see INV124
 		v.redeclaredNames.add(name);
 		const startLine = statement.startLine ?? statement.line;
 		const startColumn = statement.startColumn ?? statement.column;
+
 		const span =
 			statement.line === startLine
 				? statement.column - startColumn + name.length
 				: name.length;
+
 		v.addError(
 			startLine,
 			startColumn,
@@ -427,6 +472,7 @@ export function checkRedeclaration(
 			DiagnosticSeverity.Error,
 		);
 	}
+
 	frame.add(name);
 }
 
@@ -444,11 +490,14 @@ export function checkFunctionRedefinition(
 	if (version !== "6") return;
 	const name = statement.name;
 	let sigs = v.functionDeclSignatures.get(name);
+
 	if (!sigs) {
 		sigs = [];
 		v.functionDeclSignatures.set(name, sigs);
 	}
+
 	const cur = statement.params;
+
 	for (const prev of sigs) {
 		// TV's CE10111, which the arity comparison below cannot see: overloads
 		// whose REQUIRED parameter lists match are illegal however many optional
@@ -460,21 +509,26 @@ export function checkFunctionRedefinition(
 		// nothing (probed: p1/p5/p11 are all TV-clean), the same never-guess
 		// rule the same-arity check applies. see INV165
 		if (checkRequiredParamCollision(v, statement, prev, cur)) break;
+
 		if (prev.length !== cur.length) continue; // different arity -> legal
 		let distinct = false;
+
 		for (let i = 0; i < cur.length; i++) {
 			const a = prev[i].typeAnnotation?.name;
 			const b = cur[i].typeAnnotation?.name;
 			const aTyped = a != null;
 			const bTyped = b != null;
+
 			if (aTyped !== bTyped || (aTyped && bTyped && a !== b)) {
 				distinct = true;
 				break;
 			}
 		}
+
 		if (distinct) continue; // a valid overload
 		// Redefinition. TV anchors at the '(' after the name; code by typing.
 		const column = statement.column + name.length;
+
 		if (cur.length === 0) {
 			v.addTemplateError({
 				line: statement.line,
@@ -512,8 +566,10 @@ export function checkFunctionRedefinition(
 				ctx: { functionName: name, functionName1: name },
 			});
 		}
+
 		break; // one error per redefinition
 	}
+
 	sigs.push(cur);
 }
 
@@ -549,16 +605,20 @@ function checkRequiredParamCollision(
 ): boolean {
 	const required = (params: FunctionParam[]) =>
 		params.filter((p) => p.defaultValue === undefined);
+
 	const reqPrev = required(prev);
 	const reqCur = required(cur);
 
 	if (prev.length === reqPrev.length && cur.length === reqCur.length) {
 		return false; // no optionals: the same-arity check owns this case
 	}
+
 	if (reqPrev.length !== reqCur.length) return false;
+
 	if (![...reqPrev, ...reqCur].every((p) => p.typeAnnotation?.name != null)) {
 		return false; // an undetermined parameter distinguishes nothing
 	}
+
 	if (
 		reqCur.some(
 			(p, i) => p.typeAnnotation?.name !== reqPrev[i].typeAnnotation?.name,
@@ -578,5 +638,6 @@ function checkRequiredParamCollision(
 		code: "CE10111",
 		ctx: { functionName: statement.name },
 	});
+
 	return true;
 }

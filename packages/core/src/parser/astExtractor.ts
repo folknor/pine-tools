@@ -120,6 +120,7 @@ export interface PineLintOutput {
 // Helper: Get function return type from pine-data
 function getFunctionReturnType(funcName: string): string | undefined {
 	const func = FUNCTIONS_BY_NAME.get(funcName);
+
 	return func?.returns;
 }
 
@@ -136,41 +137,52 @@ function computeExpressionEnd(
 	expr: Expression | null,
 ): { line: number; column: number } | undefined {
 	if (!expr) return undefined;
+
 	if (expr.endLine !== undefined && expr.endColumn !== undefined) {
 		return { line: expr.endLine, column: expr.endColumn };
 	}
+
 	if (expr.type === "Literal") {
 		const lit = expr as Literal;
 		const text = String(lit.raw ?? lit.value ?? "");
+
 		return {
 			line: lit.line,
 			column: lit.column + Math.max(0, text.length - 1),
 		};
 	}
+
 	if (expr.type === "Identifier") {
 		const id = expr as Identifier;
+
 		return {
 			line: id.line,
 			column: id.column + Math.max(0, id.name.length - 1),
 		};
 	}
+
 	if (expr.type === "MemberExpression") {
 		return computeExpressionEnd((expr as { property: Expression }).property);
 	}
+
 	return undefined;
 }
 
 // Helper: Get variable type from pine-data
 function getVariableType(varName: string): string | undefined {
 	const variable = VARIABLES_BY_NAME.get(varName);
+
 	if (variable?.type) {
 		// Normalize format: "series<float>" -> "series float"
 		return variable.type.replace(/<(\w+)>/, " $1");
 	}
+
 	const constant = CONSTANTS_BY_NAME.get(varName);
+
 	if (constant?.type) {
 		return `const ${constant.type.replace(/<(\w+)>/, " $1")}`;
 	}
+
 	return undefined;
 }
 
@@ -232,6 +244,7 @@ export class ASTExtractor {
 		// main scope). Inner function declarations bump the counter via walkStatements.
 		this.scopeCounter = 1;
 		this.walkStatements(ast.body, this.extractedVariables, "#1");
+
 		return this.extractedVariables;
 	}
 
@@ -272,7 +285,9 @@ export class ASTExtractor {
 					consequent: Statement[];
 					alternate?: Statement[];
 				};
+
 				this.walkStatements(ifStmt.consequent, variables, scopeId);
+
 				if (ifStmt.alternate) {
 					this.walkStatements(ifStmt.alternate, variables, scopeId);
 				}
@@ -301,6 +316,7 @@ export class ASTExtractor {
 						scopeId,
 					),
 				);
+
 				if (forInStmt.iterator2) {
 					variables.push(
 						this.createIteratorVariable(
@@ -312,6 +328,7 @@ export class ASTExtractor {
 						),
 					);
 				}
+
 				this.walkStatements(forInStmt.body, variables, scopeId);
 			} else if (
 				stmt.type === "WhileStatement" ||
@@ -335,6 +352,7 @@ export class ASTExtractor {
 		scopeId: string | undefined,
 	): PineLintVariable {
 		const typeString = this.inferVariableType(varDecl);
+
 		const end = computeExpressionEnd(varDecl.init) ?? {
 			line: varDecl.line,
 			column: varDecl.column + varDecl.name.length - 1,
@@ -367,11 +385,13 @@ export class ASTExtractor {
 
 		// Infer type from the init expression (usually a function call returning tuple)
 		let baseType = "series float"; // Default for tuples
+
 		if (tupleDecl.init.type === "CallExpression") {
 			const call = tupleDecl.init as CallExpression;
 			const funcName = this.getCalleeString(call.callee);
 			// Get return type from pine-data
 			const returnType = getFunctionReturnType(funcName);
+
 			if (returnType) {
 				baseType = returnType;
 			}
@@ -382,11 +402,13 @@ export class ASTExtractor {
 		// Fall back to the unsplit string when the member count mismatches.
 		// see plan/31 Finding 5.
 		const memberTypes = this.splitTupleType(baseType);
+
 		const usableSplit =
 			memberTypes !== null && memberTypes.length === tupleDecl.names.length;
 
 		for (let i = 0; i < tupleDecl.names.length; i++) {
 			const name = tupleDecl.names[i];
+
 			const variable: PineLintVariable = {
 				name,
 				type: usableSplit ? memberTypes[i] : baseType,
@@ -395,9 +417,11 @@ export class ASTExtractor {
 					end: { line: tupleDecl.line, column: tupleDecl.column + name.length },
 				},
 			};
+
 			if (scopeId) {
 				variable.scopeId = scopeId;
 			}
+
 			variables.push(variable);
 		}
 
@@ -412,19 +436,23 @@ export class ASTExtractor {
 	 */
 	private splitTupleType(type: string): string[] | null {
 		const trimmed = type.trim();
+
 		if (!trimmed.startsWith("[") || !trimmed.endsWith("]")) {
 			return null;
 		}
+
 		const inner = trimmed.slice(1, -1);
 		const parts: string[] = [];
 		let depth = 0;
 		let current = "";
+
 		for (const ch of inner) {
 			if (ch === "<" || ch === "[" || ch === "(") {
 				depth++;
 			} else if (ch === ">" || ch === "]" || ch === ")") {
 				depth--;
 			}
+
 			if (ch === "," && depth === 0) {
 				parts.push(current.trim());
 				current = "";
@@ -432,7 +460,9 @@ export class ASTExtractor {
 				current += ch;
 			}
 		}
+
 		parts.push(current.trim());
+
 		return parts;
 	}
 
@@ -477,9 +507,11 @@ export class ASTExtractor {
 				end: { line, column: column + name.length },
 			},
 		};
+
 		if (scopeId) {
 			variable.scopeId = scopeId;
 		}
+
 		return variable;
 	}
 
@@ -507,8 +539,10 @@ export class ASTExtractor {
 	private typeAnnotationToString(annotation: TypeAnnotation): string {
 		const raw = annotation.name.trim();
 		const qualified = raw.match(/^(series|simple|input|const)\s+(.+)$/i);
+
 		if (qualified) {
 			const base = this.formatTypeName(qualified[2]);
+
 			return `${qualified[1].toLowerCase()} ${base}`;
 		}
 
@@ -527,6 +561,7 @@ export class ASTExtractor {
 
 	private formatTypeName(name: string): string {
 		const trimmed = name.trim();
+
 		return this.userDefinedTypes.has(trimmed) ? trimmed : trimmed.toLowerCase();
 	}
 
@@ -537,19 +572,24 @@ export class ASTExtractor {
 		switch (expr.type) {
 			case "Literal": {
 				const lit = expr as { value: string | number | boolean; raw?: string };
+
 				if (typeof lit.value === "number") {
 					// Check raw string for decimal point to properly detect floats like 2.0
 					const hasDecimalPoint = lit.raw?.includes(".");
+
 					return hasDecimalPoint || !Number.isInteger(lit.value)
 						? "const float"
 						: "const int";
 				}
+
 				if (typeof lit.value === "boolean") {
 					return "const bool";
 				}
+
 				if (typeof lit.value === "string") {
 					return "const string";
 				}
+
 				return "undetermined type";
 			}
 
@@ -557,16 +597,20 @@ export class ASTExtractor {
 				const id = expr as Identifier;
 				// Check built-in variables from pine-data
 				const varType = getVariableType(id.name);
+
 				if (varType) {
 					return varType;
 				}
+
 				// Check already-extracted variables
 				const variable = this.extractedVariables.find(
 					(v) => v.name === id.name,
 				);
+
 				if (variable && variable.type !== "undetermined type") {
 					return variable.type;
 				}
+
 				return "undetermined type";
 			}
 
@@ -575,6 +619,7 @@ export class ASTExtractor {
 				const funcName = this.getCalleeString(call.callee);
 				const funcDef = FUNCTIONS_BY_NAME.get(funcName);
 				const ctorMatch = funcName.match(/^(.+)\.new$/);
+
 				if (ctorMatch && this.userDefinedTypes.has(ctorMatch[1])) {
 					return ctorMatch[1];
 				}
@@ -582,14 +627,18 @@ export class ASTExtractor {
 				// Handle generic type arguments: array.new<float>() -> array<float>
 				if (call.typeArguments && call.typeArguments.length > 0) {
 					const typeArg = call.typeArguments[0];
+
 					if (funcName.startsWith("array.new")) {
 						return `array<${typeArg}>`;
 					}
+
 					if (funcName.startsWith("matrix.new")) {
 						return `matrix<${typeArg}>`;
 					}
+
 					if (funcName === "map.new") {
 						const valueArg = call.typeArguments[1];
+
 						return valueArg
 							? `map<${typeArg}, ${valueArg}>`
 							: `map<${typeArg}>`;
@@ -599,6 +648,7 @@ export class ASTExtractor {
 				// array.from(arg0, arg1, ...) - element type comes from the first arg
 				if (funcName === "array.from" && call.arguments.length > 0) {
 					const elem = this.inferExpressionType(call.arguments[0].value);
+
 					return `array<${stripTypeQualifier(elem)}>`;
 				}
 
@@ -608,6 +658,7 @@ export class ASTExtractor {
 						name: arg.name,
 						type: this.inferExpressionType(arg.value),
 					}));
+
 					const polyType = getPolymorphicReturnType(
 						funcName,
 						argInfos.map(
@@ -615,12 +666,14 @@ export class ASTExtractor {
 						) as import("../analyzer/types").PineType[],
 						argInfos as ArgumentInfo[],
 					);
+
 					return polyType ? `input ${polyType}` : "input int";
 				}
 
 				// Handle input.* functions (input.int, input.float, etc.)
 				if (funcName.startsWith("input.") && funcDef?.returns) {
 					const baseType = funcDef.returns.replace(/^(series|simple)\s*/, "");
+
 					return `input ${baseType}`;
 				}
 
@@ -641,12 +694,15 @@ export class ASTExtractor {
 					const arrayArgType = this.inferExpressionType(
 						call.arguments[0].value,
 					);
+
 					const arrayMatch = arrayArgType.match(/^array<(.+)>$/);
+
 					if (arrayMatch) {
 						// If function has explicit return type, use it; otherwise use element type
 						if (funcDef.returns && !funcDef.returns.includes("<type>")) {
 							return funcDef.returns;
 						}
+
 						return arrayMatch[1];
 					}
 				}
@@ -656,11 +712,13 @@ export class ASTExtractor {
 					const argTypes = call.arguments.map((arg) =>
 						this.inferExpressionType(arg.value),
 					) as PineType[];
+
 					return resolveCallReturnRaw(funcName, argTypes) ?? funcDef.returns;
 				}
 
 				// Check user-defined functions (collected in first pass)
 				const udfReturnType = this.userDefinedFunctions.get(funcName);
+
 				if (udfReturnType) {
 					return udfReturnType;
 				}
@@ -674,6 +732,7 @@ export class ASTExtractor {
 
 				// Check built-in variables from pine-data
 				const memberType = getVariableType(fullName);
+
 				if (memberType) {
 					return memberType;
 				}
@@ -689,13 +748,16 @@ export class ASTExtractor {
 			case "UnaryExpression": {
 				const unary = expr as { operator: string; argument: Expression };
 				const argType = this.inferExpressionType(unary.argument);
+
 				// Unary negation preserves the qualifier and type
 				if (unary.operator === "-" || unary.operator === "+") {
 					return argType;
 				}
+
 				if (unary.operator === "not") {
 					return argType.replace(/int|float/, "bool");
 				}
+
 				return argType;
 			}
 
@@ -717,9 +779,11 @@ export class ASTExtractor {
 		if (callee.type === "Identifier") {
 			return (callee as Identifier).name;
 		}
+
 		if (callee.type === "MemberExpression") {
 			return this.getMemberExpressionString(callee as MemberExpression);
 		}
+
 		return "";
 	}
 
@@ -807,6 +871,7 @@ export class ASTExtractor {
 		for (const stmt of funcDecl.body) {
 			if (stmt.type === "ReturnStatement") {
 				const retStmt = stmt as { value: Expression };
+
 				return this.inferExpressionType(retStmt.value);
 			}
 		}
@@ -814,8 +879,10 @@ export class ASTExtractor {
 		// Check last statement as implicit return
 		if (funcDecl.body.length > 0) {
 			const lastStmt = funcDecl.body[funcDecl.body.length - 1];
+
 			if (lastStmt.type === "ExpressionStatement") {
 				const exprStmt = lastStmt as { expression: Expression };
+
 				return this.inferExpressionType(exprStmt.expression);
 			}
 		}

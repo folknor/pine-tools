@@ -28,8 +28,10 @@ function baseOf(type) {
 }
 
 const rows = [];
+
 for (const fn of functions) {
 	const overloaded = (fn.parameters ?? []).some((p) => p.type === "unknown");
+
 	for (const p of fn.parameters ?? []) {
 		if (typeof p.type === "string" && CONST_RE.test(p.type)) {
 			rows.push({
@@ -48,6 +50,7 @@ if (process.argv.includes("--json")) {
 	process.stdout.write(`${JSON.stringify(rows, null, 2)}\n`);
 } else {
 	const byBase = new Map();
+
 	for (const r of rows) byBase.set(r.base, (byBase.get(r.base) ?? 0) + 1);
 
 	console.log(`Total const-typed params: ${rows.length}`);
@@ -58,10 +61,13 @@ if (process.argv.includes("--json")) {
 		`On overloaded fns (merged param may be ambiguous): ${rows.filter((r) => r.overloaded).length}`,
 	);
 	console.log("\nBy base type:");
+
 	for (const [base, n] of [...byBase.entries()].sort((a, b) => b[1] - a[1])) {
 		console.log(`  ${String(n).padStart(4)}  ${base}`);
 	}
+
 	console.log("\nAll (fn :: param :: type):");
+
 	for (const r of rows.sort((a, b) => a.fn.localeCompare(b.fn))) {
 		const tag = r.overloaded ? " [overloaded]" : "";
 		console.log(`  ${r.fn} :: ${r.param} :: ${r.type}${tag}`);

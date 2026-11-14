@@ -82,6 +82,7 @@ export class Parser {
 
 	private markLicenseHeaderContinuations(rawTokens: Token[]): void {
 		let previousCommentMentionsLicense = false;
+
 		for (const token of rawTokens) {
 			if (
 				token.type === TokenType.WHITESPACE ||
@@ -89,9 +90,11 @@ export class Parser {
 			) {
 				continue;
 			}
+
 			if (previousCommentMentionsLicense && token.indent === 0) {
 				this.licenseHeaderContinuationLines.add(token.line);
 			}
+
 			previousCommentMentionsLicense =
 				token.type === TokenType.COMMENT &&
 				token.indent === 0 &&
@@ -106,11 +109,14 @@ export class Parser {
 	): boolean {
 		for (let i = this.current - 1; i >= 0; i--) {
 			const token = this.tokens[i];
+
 			if (token.line < line - 1) return false;
+
 			if (token.line === line - 1 && token.type === type) {
 				return value === undefined || token.value === value;
 			}
 		}
+
 		return false;
 	}
 
@@ -121,10 +127,13 @@ export class Parser {
 		// directly (in-call recovery - INV047/#46(b)) record once per pass.
 		// An identical triplet carries no extra information.
 		const seen = new Set<string>();
+
 		return this.parserErrors.filter((e) => {
 			const key = `${e.line}:${e.column}:${e.message}`;
+
 			if (seen.has(key)) return false;
 			seen.add(key);
+
 			return true;
 		});
 	}
@@ -139,6 +148,7 @@ export class Parser {
 		while (!this.isAtEnd()) {
 			try {
 				const stmt = this.statement();
+
 				if (stmt) body.push(stmt);
 			} catch (e) {
 				// Collect parser error
@@ -200,6 +210,7 @@ export class Parser {
 
 		if (this.startsInvalidOperatorStatement()) {
 			const token = this.peek();
+
 			if (
 				token.type === TokenType.TERNARY &&
 				this.previousLineHasToken(token.line, TokenType.TERNARY)
@@ -207,8 +218,10 @@ export class Parser {
 				while (!this.isAtEnd() && !this.check(TokenType.NEWLINE)) {
 					this.advance();
 				}
+
 				return null;
 			}
+
 			throw new Error('Syntax error at input "new line"');
 		}
 
@@ -219,6 +232,7 @@ export class Parser {
 			while (!this.isAtEnd() && !this.check(TokenType.NEWLINE)) {
 				this.advance();
 			}
+
 			return null;
 		}
 
@@ -252,6 +266,7 @@ export class Parser {
 			this.tokens[this.current + 2]?.type === TokenType.LPAREN
 		) {
 			this.advance();
+
 			return this.methodDeclaration(false, this.previous().indent ?? 0);
 		}
 
@@ -274,6 +289,7 @@ export class Parser {
 		// as an IDENTIFIER and only the statement shape enters here. see INV177
 		if (this.looksLikeOnceStatement()) {
 			this.advance();
+
 			return this.onceStatement();
 		}
 
@@ -299,6 +315,7 @@ export class Parser {
 			this.advance();
 			// Parse switch as an expression statement (it returns a value)
 			const switchExpr = this.switchExpression();
+
 			return {
 				type: "ExpressionStatement",
 				expression: switchExpr,
@@ -318,6 +335,7 @@ export class Parser {
 			this.peekNext()?.type === TokenType.IDENTIFIER
 		) {
 			this.advance();
+
 			return this.typeOrEnumDeclaration(this.previous().value);
 		}
 
@@ -337,6 +355,7 @@ export class Parser {
 			// `var line up = na, line.delete(up), var label lb = na`
 			if (this.check(TokenType.COMMA)) {
 				const statements: AST.Statement[] = [firstDecl];
+
 				while (this.match(TokenType.COMMA)) {
 					// Trailing comma: either tolerated end-of-list
 					// (`var a = line(na),`) or a wrap continuing the units on
@@ -344,10 +363,12 @@ export class Parser {
 					if (!this.commaUnitsContinue()) {
 						break;
 					}
+
 					if (this.match([TokenType.KEYWORD, ["var", "varip", "const"]])) {
 						statements.push(this.varDeclarationAfterKeyword());
 						continue;
 					}
+
 					// Type-annotated unit: `..., float [] recRet = na`. The
 					// peekNext guard keeps namespace calls (`color.new(...)`,
 					// peekNext is DOT) in the expression branch below.
@@ -361,19 +382,23 @@ export class Parser {
 					) {
 						const unitStartToken = this.peek();
 						let unitType = this.advance().value;
+
 						if (this.isVarTypeKeyword()) {
 							// qualifier consumed above - append the base type
 							unitType += ` ${this.advance().value}`;
 						}
+
 						unitType += this.parseGenericTypeSuffix();
 						statements.push(
 							this.variableDeclaration(null, unitType, unitStartToken),
 						);
 						continue;
 					}
+
 					{
 						const unitStartToken = this.peek();
 						const userType = this.tryUserTypeAnnotation();
+
 						if (userType) {
 							statements.push(
 								this.variableDeclaration(null, userType, unitStartToken),
@@ -381,6 +406,7 @@ export class Parser {
 							continue;
 						}
 					}
+
 					// Untyped unit: `var a = 0, isNew = false`. A `name = value`
 					// unit DECLARES `name` - `=` is Pine's declaration operator
 					// and `:=` its reassignment - so it must not fall through to
@@ -398,10 +424,12 @@ export class Parser {
 						statements.push(this.variableDeclaration(null, undefined));
 						continue;
 					}
+
 					// A `[`-led unit is a tuple destructure - see the untyped
 					// comma loop / #46(c)
 					if (this.check(TokenType.LBRACKET)) {
 						const unitCheckpoint = this.current;
+
 						try {
 							statements.push(this.tupleDestructuring());
 							continue;
@@ -409,7 +437,9 @@ export class Parser {
 							this.current = unitCheckpoint;
 						}
 					}
+
 					const expr = this.expression();
+
 					if (
 						this.check(TokenType.ASSIGN) ||
 						this.check(TokenType.COMPOUND_ASSIGN)
@@ -433,6 +463,7 @@ export class Parser {
 						});
 					}
 				}
+
 				return {
 					type: "SequenceStatement",
 					statements,
@@ -456,6 +487,7 @@ export class Parser {
 		) {
 			const qualifierToken = this.advance();
 			this.qualifierFormError(qualifierToken);
+
 			return this.variableDeclaration(null, undefined, qualifierToken);
 		}
 
@@ -467,10 +499,12 @@ export class Parser {
 			const checkpoint = this.current;
 			const typeStartToken = this.peek();
 			let typeAnnotation = this.advance().value;
+
 			if (this.isVarTypeKeyword()) {
 				// qualifier consumed above - append the base type
 				typeAnnotation += ` ${this.advance().value}`;
 			}
+
 			typeAnnotation += this.parseGenericTypeSuffix();
 
 			// Check if next token is identifier followed by =
@@ -483,6 +517,7 @@ export class Parser {
 				if (typeAnnotation === "series" || typeAnnotation === "simple") {
 					this.qualifierFormError(typeStartToken);
 				}
+
 				// This is a type-annotated variable declaration
 				const firstDecl = this.variableDeclaration(
 					null,
@@ -500,16 +535,19 @@ export class Parser {
 						if (!this.commaUnitsContinue()) {
 							break;
 						}
+
 						// Each subsequent part can be:
 						// 1. type identifier = expression (own annotation)
 						// 2. identifier = expression (untyped)
 						if (this.isVarTypeKeyword() || this.isQualifiedVarTypeKeyword()) {
 							const unitStartToken = this.peek();
 							let nextType = this.advance().value;
+
 							if (this.isVarTypeKeyword()) {
 								// qualifier consumed above - append the base type
 								nextType += ` ${this.advance().value}`;
 							}
+
 							nextType += this.parseGenericTypeSuffix();
 
 							if (
@@ -521,6 +559,7 @@ export class Parser {
 									nextType,
 									unitStartToken,
 								);
+
 								statements.push(nextDecl);
 							} else {
 								break;
@@ -566,18 +605,23 @@ export class Parser {
 				// Scan without consuming: IDENT [ ... ] =
 				let i = this.current + 1; // at LBRACKET
 				let depth = 0;
+
 				while (i < this.tokens.length) {
 					const t = this.tokens[i].type;
+
 					if (t === TokenType.LBRACKET) {
 						depth++;
 					} else if (t === TokenType.RBRACKET) {
 						depth--;
+
 						if (depth === 0) break;
 					} else if (t === TokenType.NEWLINE) {
 						break;
 					}
+
 					i++;
 				}
+
 				if (
 					depth === 0 &&
 					this.tokens[i]?.type === TokenType.RBRACKET &&
@@ -595,6 +639,7 @@ export class Parser {
 					this.advance(); // consume '='
 					this.skipWrapContinuationNewline();
 					const init = this.expression();
+
 					return {
 						type: "VariableDeclaration",
 						name: nameToken.value,
@@ -623,10 +668,12 @@ export class Parser {
 		) {
 			for (let i = this.current + 2; i < this.tokens.length; i++) {
 				const token = this.tokens[i];
+
 				if (token.type === TokenType.COLON) {
 					this.current = i;
 					throw new Error(`Syntax error at input "${token.value}"`);
 				}
+
 				if (token.type === TokenType.NEWLINE || token.type === TokenType.EOF) {
 					this.current = i;
 					throw new Error(
@@ -646,6 +693,7 @@ export class Parser {
 		const methodAsFuncName =
 			this.check([TokenType.KEYWORD, ["method"]]) &&
 			this.peekNext()?.type === TokenType.LPAREN;
+
 		if (this.check(TokenType.IDENTIFIER) || methodAsFuncName) {
 			const checkpoint = this.current;
 			const nameToken = this.advance();
@@ -670,11 +718,13 @@ export class Parser {
 						if (this.localScopeDepth > 0) {
 							throw new Error(NESTED_FUNC_DEF_ERROR);
 						}
+
 						this.advance(); // consume =>
 						// Committed: the `=>` is consumed, so this is a
 						// definition and the NAME can be judged. Before the
 						// arrow it is still possibly a call. see INV179
 						this.reservedDeclarationName(nameToken);
+
 						// It's a function definition!
 						return this.functionDeclaration(
 							nameToken.value,
@@ -692,6 +742,7 @@ export class Parser {
 					if (e instanceof Error && e.message === NESTED_FUNC_DEF_ERROR) {
 						throw e;
 					}
+
 					// Not a function definition (parsing params failed), backtrack
 					this.current = checkpoint;
 				}
@@ -704,6 +755,7 @@ export class Parser {
 		// Check for tuple destructuring: [a, b, c] = expr
 		if (this.check(TokenType.LBRACKET)) {
 			const checkpoint = this.current;
+
 			try {
 				return this.tupleDestructuring();
 			} catch (_e) {
@@ -719,6 +771,7 @@ export class Parser {
 		{
 			const typeStartToken = this.peek();
 			const userType = this.tryUserTypeAnnotation();
+
 			if (userType) {
 				const firstDecl = this.variableDeclaration(
 					null,
@@ -733,6 +786,7 @@ export class Parser {
 					while (this.match(TokenType.COMMA)) {
 						const unitStartToken = this.peek();
 						const nextType = this.tryUserTypeAnnotation();
+
 						if (nextType) {
 							statements.push(
 								this.variableDeclaration(null, nextType, unitStartToken),
@@ -781,6 +835,7 @@ export class Parser {
 					if (!this.commaUnitsContinue()) {
 						break;
 					}
+
 					// `var`/`varip`/`const`-led units are valid comma
 					// declarations too (`TFhrdata = rollingTF.new(), var
 					// volRolling = array.new<float>()` - the b16b3948…
@@ -791,12 +846,14 @@ export class Parser {
 						statements.push(this.varDeclarationAfterKeyword());
 						continue;
 					}
+
 					// A `[`-led unit is a tuple destructure
 					// (`ph_ = ta.pivothigh(...), [tH, ph] = request.security(...)`
 					// - a6d1bf91… is TV-silent there); parsing it as an array
 					// expression left the tuple names undeclared. see #46(c)
 					if (this.check(TokenType.LBRACKET)) {
 						const unitCheckpoint = this.current;
+
 						try {
 							statements.push(this.tupleDestructuring());
 							continue;
@@ -804,12 +861,14 @@ export class Parser {
 							this.current = unitCheckpoint;
 						}
 					}
+
 					// `name := expr` / `name += expr` units are REASSIGNMENTS,
 					// not declarations - `u11 = 0.0, u11 := nz(u11[1])` is an
 					// idiomatic declare-then-seed pair. Emitting a declaration
 					// here made the second unit a CE10095 FP. Only `name =`
 					// declares. see INV035
 					const unitOp = this.peekNext();
+
 					if (
 						this.check(TokenType.IDENTIFIER) &&
 						unitOp?.type === TokenType.ASSIGN &&
@@ -819,12 +878,14 @@ export class Parser {
 						statements.push(nextDecl);
 						continue;
 					}
+
 					// Anything else is an expression or assignment unit
 					// (`x2 = id.get_x2(), id.set_xy2(x1, y1)`,
 					// `a = 1, b.c := 2` - the var-led sequence above already
 					// supported these; the b16b3948… fixture is TV-clean).
 					// see #46(c)
 					const target = this.expression();
+
 					if (
 						this.check(TokenType.ASSIGN) ||
 						this.check(TokenType.COMPOUND_ASSIGN)
@@ -865,8 +926,10 @@ export class Parser {
 		// Check for assignment: target := expr or target = expr or target += expr (compound)
 		// Also handles comma-separated assignments: a := 1, b := 2, c := 3
 		const checkpoint = this.current;
+
 		try {
 			const target = this.expression();
+
 			if (
 				this.match(TokenType.ASSIGN) ||
 				this.match(TokenType.COMPOUND_ASSIGN)
@@ -874,6 +937,7 @@ export class Parser {
 				const operator = this.previous().value;
 				this.skipWrapContinuationNewline();
 				const value = this.expression();
+
 				const firstAssignment: AST.AssignmentStatement = {
 					type: "AssignmentStatement",
 					target,
@@ -893,6 +957,7 @@ export class Parser {
 						if (!this.commaUnitsContinue()) {
 							break;
 						}
+
 						// A unit after the comma may be an assignment OR a bare
 						// expression - `b := na, c.clear()` is one statement list
 						// mixing both, and TV accepts it (probed 2026-08-21).
@@ -904,6 +969,7 @@ export class Parser {
 						// allowed both, so `c.clear(), a := na` parsed while the
 						// same list in the other order did not. see INV149
 						const nextTarget = this.expression();
+
 						if (
 							this.match(TokenType.ASSIGN) ||
 							this.match(TokenType.COMPOUND_ASSIGN)
@@ -938,6 +1004,7 @@ export class Parser {
 
 				return firstAssignment;
 			}
+
 			// Not an assignment, backtrack
 			this.current = checkpoint;
 		} catch (_e) {
@@ -956,6 +1023,7 @@ export class Parser {
 		this.consume(TokenType.LBRACKET, 'Expected "["');
 
 		const names: string[] = [];
+
 		if (!this.check(TokenType.RBRACKET)) {
 			do {
 				// A type keyword can BE a destructured name, exactly as it can
@@ -974,31 +1042,37 @@ export class Parser {
 					this.isVarTypeKeyword() &&
 					(this.peekNext()?.type === TokenType.COMMA ||
 						this.peekNext()?.type === TokenType.RBRACKET);
+
 				const nameToken = typeKeywordAsName
 					? this.advance()
 					: this.consume(
 							TokenType.IDENTIFIER,
 							"Expected variable name in tuple",
 						);
+
 				names.push(nameToken.value);
 			} while (this.match(TokenType.COMMA));
 		}
 
 		this.consume(TokenType.RBRACKET, 'Expected "]"');
+
 		// The `=` may LEAD the next line when its indent is a valid wrap
 		// continuation (not a multiple of 4 - INV017): `[m, m1, ...]` then
 		// `   = request.security_lower_tf(...)`. The f7bc17b0… fixture is
 		// TV-clean on this shape. see #46(c)
 		if (this.check(TokenType.NEWLINE)) {
 			const next = this.peekNext();
+
 			if (next?.type === TokenType.ASSIGN && (next.indent ?? 0) % 4 !== 0) {
 				this.advance();
 			}
 		}
+
 		const assignToken = this.consume(
 			TokenType.ASSIGN,
 			'Expected "=" after tuple',
 		);
+
 		// The RHS may start on a wrapped (possibly blank-line-separated)
 		// continuation line, same as variableDeclaration's init. Without
 		// this, `[a, b] = ` + blank + wrapped RHS backtracked into an
@@ -1015,6 +1089,7 @@ export class Parser {
 		// tuple statement parsed, so a backtracking caller that discards
 		// this parse can't leave a spurious error behind.
 		const isReassignment = assignToken.value === ":=";
+
 		if (isReassignment) {
 			this.parserErrors.push({
 				line: assignToken.line,
@@ -1091,6 +1166,7 @@ export class Parser {
 					message: `""${varKeyword}"" cannot be used as a variable or function name.`,
 				});
 			}
+
 			return this.tupleDestructuring();
 		}
 
@@ -1110,6 +1186,7 @@ export class Parser {
 		// probed 2026-06-04/05. see INV024.
 		let qualifier = "";
 		let qualifierToken: Token | undefined;
+
 		if (this.isQualifiedVarTypeKeyword()) {
 			qualifierToken = this.peek();
 			qualifier = `${this.advance().value} `;
@@ -1132,11 +1209,13 @@ export class Parser {
 		if (this.isVarTypeKeyword() && this.peekNext()?.type !== TokenType.ASSIGN) {
 			typeAnnotation = qualifier + this.advance().value;
 			typeAnnotation += this.parseGenericTypeSuffix();
+
 			if (qualifierToken && varKeyword === "const") {
 				this.qualifierFormError(qualifierToken);
 			}
 		} else {
 			typeAnnotation = this.tryUserTypeAnnotation() ?? undefined;
+
 			if (qualifierToken && typeAnnotation === undefined) {
 				this.qualifierFormError(qualifierToken);
 			}
@@ -1179,6 +1258,7 @@ export class Parser {
 		let i = this.current;
 		let typeName = this.tokens[i].value;
 		i++;
+
 		if (
 			this.tokens[i]?.type === TokenType.DOT &&
 			this.tokens[i + 1]?.type === TokenType.IDENTIFIER
@@ -1186,6 +1266,7 @@ export class Parser {
 			typeName += `.${this.tokens[i + 1].value}`;
 			i += 2;
 		}
+
 		if (
 			this.tokens[i]?.type === TokenType.LBRACKET &&
 			this.tokens[i + 1]?.type === TokenType.RBRACKET
@@ -1201,8 +1282,10 @@ export class Parser {
 			this.tokens[i + 1]?.value === "="
 		) {
 			this.current = i; // consume the type tokens; `name` is next
+
 			return typeName;
 		}
+
 		return null;
 	}
 
@@ -1227,14 +1310,19 @@ export class Parser {
 	// further units - the b16b3948… fixture lints 0 on TV). see #46(c)/(d)
 	private commaUnitsContinue(): boolean {
 		if (this.isAtEnd()) return false;
+
 		if (!this.check(TokenType.NEWLINE)) return true; // same line
 		let i = this.current;
+
 		while (this.tokens[i]?.type === TokenType.NEWLINE) i++;
 		const next = this.tokens[i];
+
 		if (next && next.type !== TokenType.EOF && (next.indent ?? 0) % 4 !== 0) {
 			this.current = i;
+
 			return true;
 		}
+
 		return false;
 	}
 
@@ -1242,11 +1330,13 @@ export class Parser {
 		while (this.check(TokenType.NEWLINE)) {
 			const eol = this.peek();
 			const next = this.peekNext();
+
 			if (next?.type === TokenType.NEWLINE) {
 				// blank line inside the wrap - keep looking
 				this.advance();
 				continue;
 			}
+
 			if (next && (next.indent ?? 0) % 4 !== 0) {
 				this.advance();
 			} else if (next && next.type !== TokenType.EOF) {
@@ -1263,6 +1353,7 @@ export class Parser {
 					(next.indent ?? 0) > 0 &&
 					next.type === TokenType.KEYWORD &&
 					["if", "switch", "for", "while"].includes(next.value);
+
 				if (!isIndentedBlockRHS) {
 					this.parserErrors.push({
 						line: eol.line,
@@ -1273,6 +1364,7 @@ export class Parser {
 					this.advance();
 				}
 			}
+
 			break;
 		}
 	}
@@ -1296,6 +1388,7 @@ export class Parser {
 		this.reservedDeclarationName(token);
 
 		let init: AST.Expression | null = null;
+
 		if (this.match(TokenType.ASSIGN)) {
 			this.skipWrapContinuationNewline();
 			init = this.expression();
@@ -1337,14 +1430,17 @@ export class Parser {
 				if (!this.commaUnitsContinue()) {
 					break;
 				}
+
 				// Check if next part is an assignment (identifier followed by := or = or +=)
 				const nextExpr = this.expression();
+
 				if (
 					this.check(TokenType.ASSIGN) ||
 					this.check(TokenType.COMPOUND_ASSIGN)
 				) {
 					const op = this.advance().value;
 					const value = this.expression();
+
 					const stmt: AST.AssignmentStatement = {
 						type: "AssignmentStatement",
 						target: nextExpr,
@@ -1353,6 +1449,7 @@ export class Parser {
 						line: nextExpr.line,
 						column: nextExpr.column,
 					};
+
 					statements.push(stmt);
 				} else {
 					statements.push({
@@ -1408,6 +1505,7 @@ export class Parser {
 		// An if/for/while block is a local scope - a `=>` function
 		// definition is illegal here (INV108).
 		this.localScopeDepth++;
+
 		try {
 			while (!this.isAtEnd()) {
 				const currentToken = this.peek();
@@ -1435,6 +1533,7 @@ export class Parser {
 							// No properly-indented body - the block is empty. see INV008.
 							break;
 						}
+
 						bodyIndent = currentIndent;
 					}
 
@@ -1450,6 +1549,7 @@ export class Parser {
 
 				try {
 					const stmt = this.statement();
+
 					if (stmt) {
 						body.push(stmt);
 					} else {
@@ -1468,6 +1568,7 @@ export class Parser {
 					});
 					this.parenDepth = 0;
 					this.bracketDepth = 0;
+
 					while (!this.isAtEnd() && !this.check(TokenType.NEWLINE)) {
 						this.advance();
 					}
@@ -1503,6 +1604,7 @@ export class Parser {
 		// for that level to consume. (The lexer gives the inline `if` of an
 		// `else if` the `else`'s own indent, so chains nest correctly.)
 		let alternate: AST.Statement[] | undefined;
+
 		if (
 			this.check([TokenType.KEYWORD, ["else"]]) &&
 			(this.peek().indent ?? ifIndent) === ifIndent
@@ -1540,6 +1642,7 @@ export class Parser {
 		if (this.check(TokenType.IDENTIFIER) || this.isTypeKeyword()) {
 			return this.advance().value;
 		}
+
 		throw new Error(`${message} at line ${this.peek().line}`);
 	}
 
@@ -1550,15 +1653,19 @@ export class Parser {
 		if (this.match(TokenType.LBRACKET)) {
 			const iterator = this.consumeIteratorName("Expected iterator variable");
 			this.consume(TokenType.COMMA, 'Expected "," in for-in tuple');
+
 			const iterator2 = this.consumeIteratorName(
 				"Expected second iterator variable",
 			);
+
 			this.consume(TokenType.RBRACKET, 'Expected "]" after for-in tuple');
+
 			if (!this.match([TokenType.KEYWORD, ["in"]])) {
 				throw new Error(
 					`Expected "in" in for loop at line ${this.peek().line}`,
 				);
 			}
+
 			const collection = this.expression();
 
 			// Skip newlines after collection expression
@@ -1637,6 +1744,7 @@ export class Parser {
 
 		// Optional step value: "by <expr>"
 		let step: AST.Expression | undefined;
+
 		if (this.match([TokenType.KEYWORD, ["by"]])) {
 			step = this.expression();
 		}
@@ -1651,6 +1759,7 @@ export class Parser {
 		// the rest of the file parses. see INV034
 		if (this.check(TokenType.NEWLINE)) {
 			const next = this.peekNext();
+
 			if (
 				next &&
 				next.type !== TokenType.NEWLINE &&
@@ -1703,19 +1812,26 @@ export class Parser {
 		if (!this.check(TokenType.IDENTIFIER) || this.peek().value !== "once") {
 			return false;
 		}
+
 		const next = this.peekNext();
+
 		if (!next) return false;
+
 		switch (next.type) {
 			case TokenType.NEWLINE: {
 				// `once` alone at end of line is the no-condition statement only
 				// when an indented block follows; `n := once` (a variable read,
 				// probe p18) is followed by a line at the same or lesser indent.
 				let i = this.current + 1;
+
 				while (this.tokens[i]?.type === TokenType.NEWLINE) i++;
 				const after = this.tokens[i];
+
 				if (!after || after.type === TokenType.EOF) return false;
+
 				return (after.indent ?? 0) > this.currentLineIndent();
 			}
+
 			case TokenType.IDENTIFIER:
 			case TokenType.NUMBER:
 			case TokenType.STRING:
@@ -1739,8 +1855,11 @@ export class Parser {
 
 	private currentLineIndentOf(token: Token): number {
 		let i = this.tokens.indexOf(token);
+
 		if (i < 0) return token.indent ?? 0;
+
 		while (i > 0 && this.tokens[i - 1]?.line === token.line) i--;
+
 		return this.tokens[i]?.indent ?? 0;
 	}
 
@@ -1753,6 +1872,7 @@ export class Parser {
 		// The token right after the condition's FIRST token - TV's anchor when
 		// the block is missing (below).
 		const secondCondToken = this.tokens[this.current + 1];
+
 		if (!this.check(TokenType.NEWLINE) && !this.check(TokenType.EOF)) {
 			condition = this.parseSingleLineExpression(startToken.line);
 		}
@@ -1763,6 +1883,7 @@ export class Parser {
 
 		const onceIndent =
 			startToken.indent ?? this.currentLineIndentOf(startToken);
+
 		const body = this.parseIndentedBlock(startToken.line, onceIndent, true);
 
 		// No indented block: TV reads the line as an expression statement and
@@ -1797,9 +1918,11 @@ export class Parser {
 				column: 1,
 				message: 'Syntax error at input "new line"',
 			});
+
 			while (this.check(TokenType.NEWLINE)) {
 				this.advance();
 			}
+
 			this.parseIndentedBlock(elseToken.line, elseToken.indent ?? onceIndent);
 		}
 
@@ -1875,9 +1998,11 @@ export class Parser {
 		// Statements parsed below are in a local scope - a nested `=>`
 		// definition is illegal here (INV108).
 		this.localScopeDepth++;
+
 		try {
 			// Check if next token is on a new line with deeper indentation
 			const nextToken = this.peek();
+
 			if (nextToken.line === line) {
 				// Single-line function: same line as =>. Like inline switch
 				// arms (TODO #33/#35), the body can be a comma-separated
@@ -1920,6 +2045,7 @@ export class Parser {
 							if (currentIndent <= baseIndent) {
 								break;
 							}
+
 							functionBodyIndent = currentIndent;
 						}
 
@@ -1937,6 +2063,7 @@ export class Parser {
 					// Parse statement at this indentation level
 					try {
 						const stmt = this.statement();
+
 						if (stmt) {
 							body.push(stmt);
 						} else {
@@ -1956,6 +2083,7 @@ export class Parser {
 						});
 						this.parenDepth = 0;
 						this.bracketDepth = 0;
+
 						while (!this.isAtEnd() && !this.check(TokenType.NEWLINE)) {
 							this.advance();
 						}
@@ -2030,8 +2158,10 @@ export class Parser {
 
 		// Optional: as alias
 		let alias: string | undefined;
+
 		if (this.check(TokenType.KEYWORD) && this.peek().value === "as") {
 			this.advance(); // consume 'as'
+
 			if (this.check(TokenType.IDENTIFIER)) {
 				alias = this.advance().value;
 			} else {
@@ -2081,6 +2211,7 @@ export class Parser {
 			this.tokens[this.current + 2]?.type === TokenType.LPAREN
 		) {
 			this.advance();
+
 			return this.methodDeclaration(true, exportIndent);
 		}
 
@@ -2097,6 +2228,7 @@ export class Parser {
 			// uncaught and instances of imported UDTs untypeable. see INV139
 			const decl = this.typeOrEnumDeclaration(this.previous().value);
 			decl.isExport = true;
+
 			return decl;
 		}
 
@@ -2116,8 +2248,10 @@ export class Parser {
 			// the const/type/name token.
 			decl.startLine = exportToken.line;
 			decl.startColumn = exportToken.column;
+
 			return decl;
 		};
+
 		// const-led: `export const [type] name = ...`
 		if (this.match([TokenType.KEYWORD, ["const"]])) {
 			// `varDeclarationAfterKeyword` can return a TupleDeclaration on the
@@ -2129,16 +2263,20 @@ export class Parser {
 				this.varDeclarationAfterKeyword() as AST.VariableDeclaration,
 			);
 		}
+
 		// type-led: `export <type> name = ...` (only when the var shape
 		// `type name =` follows - guards against anything funkier).
 		if (this.isVarTypeKeyword() || this.isQualifiedVarTypeKeyword()) {
 			const checkpoint = this.current;
 			const typeStartToken = this.peek();
 			let typeAnnotation = this.advance().value;
+
 			if (this.isVarTypeKeyword()) {
 				typeAnnotation += ` ${this.advance().value}`;
 			}
+
 			typeAnnotation += this.parseGenericTypeSuffix();
+
 			if (
 				this.check(TokenType.IDENTIFIER) &&
 				this.peekNext()?.type === TokenType.ASSIGN
@@ -2147,8 +2285,10 @@ export class Parser {
 					this.variableDeclaration(null, typeAnnotation, typeStartToken),
 				);
 			}
+
 			this.current = checkpoint;
 		}
+
 		// bare: `export name = ...` (IDENTIFIER not followed by LPAREN).
 		if (
 			this.check(TokenType.IDENTIFIER) &&
@@ -2170,6 +2310,7 @@ export class Parser {
 						TokenType.IDENTIFIER,
 						"Expected function name after 'export'",
 					);
+
 		this.consume(TokenType.LPAREN, 'Expected "(" after function name');
 		const params = this.parseFunctionParams();
 		this.consume(TokenType.RPAREN, 'Expected ")" after function parameters');
@@ -2182,7 +2323,9 @@ export class Parser {
 			nameToken.column,
 			exportIndent,
 		);
+
 		funcDecl.isExport = true;
+
 		return funcDecl;
 	}
 
@@ -2209,6 +2352,7 @@ export class Parser {
 		}
 
 		const firstBodyToken = this.peek();
+
 		if (firstBodyToken.line > startToken.line) {
 			const bodyIndent = firstBodyToken.indent || 0;
 			const baseIndent = startToken.indent || 0;
@@ -2216,6 +2360,7 @@ export class Parser {
 			if (bodyIndent > baseIndent) {
 				while (!this.isAtEnd()) {
 					const currentToken = this.peek();
+
 					// NEWLINE tokens that start blank lines carry the
 					// leading-whitespace count as their `indent` (e.g. 0 for
 					// an empty line). A NEWLINE is not a content token, so
@@ -2227,6 +2372,7 @@ export class Parser {
 						this.advance();
 						continue;
 					}
+
 					const isLineStart = currentToken.indent !== undefined;
 
 					if (
@@ -2237,12 +2383,14 @@ export class Parser {
 					) {
 						break;
 					}
+
 					if (
 						kind === "type" &&
 						isLineStart &&
 						currentToken.indent === bodyIndent
 					) {
 						const field = this.scanTypeFieldAtCurrent();
+
 						if (field) {
 							// A default that is not a bare literal is parsed as a full
 							// expression from its first token; the loop resumes after
@@ -2254,6 +2402,7 @@ export class Parser {
 								);
 								this.current--; // the trailing advance() below re-consumes
 							}
+
 							field.defaultStartIndex = undefined;
 							fields.push(field);
 						}
@@ -2272,8 +2421,10 @@ export class Parser {
 						enumMembers.push(currentToken.value); // member name. see INV096
 						const eq = this.tokens[this.current + 1];
 						const val = this.tokens[this.current + 2];
+
 						if (eq?.type === TokenType.ASSIGN && eq.value === "=" && val) {
 							let badType: string | null = null;
+
 							if (val.type === TokenType.NUMBER) {
 								badType =
 									/[.eE]/.test(val.value) && !/^0[xX]/.test(val.value)
@@ -2282,6 +2433,7 @@ export class Parser {
 							} else if (val.type === TokenType.BOOL) {
 								badType = "literal bool";
 							}
+
 							if (badType) {
 								this.parserErrors.push({
 									line: currentToken.line,
@@ -2291,6 +2443,7 @@ export class Parser {
 							}
 						}
 					}
+
 					this.advance();
 				}
 			}
@@ -2387,8 +2540,10 @@ export class Parser {
 		// report CE10288 at the `var` token instead, matching TV's position and
 		// wording. see INV141
 		let illegalQualifier: Token | undefined;
+
 		if (this.tokens[i]?.type === TokenType.KEYWORD) {
 			const qualifier = this.tokens[i].value;
+
 			if (qualifier === "varip") {
 				i++;
 			} else if (qualifier === "var") {
@@ -2396,7 +2551,9 @@ export class Parser {
 				i++;
 			}
 		}
+
 		const start = this.tokens[i];
+
 		if (!start) return null;
 
 		if (start.type === TokenType.KEYWORD && this.isTypeTokenAt(i)) {
@@ -2414,6 +2571,7 @@ export class Parser {
 				i++;
 			}
 		}
+
 		// Suffix-scan every branch, not just the keyword one: a UDT-typed array
 		// field (`Bucket[] buckets`, `D.Line[] plots`) was dropped because the
 		// identifier branch never consumed its `[]` and the field-name check then
@@ -2426,6 +2584,7 @@ export class Parser {
 		}
 
 		const fieldToken = this.tokens[i];
+
 		if (
 			!typeName ||
 			(fieldToken?.type !== TokenType.IDENTIFIER &&
@@ -2433,6 +2592,7 @@ export class Parser {
 		) {
 			return null;
 		}
+
 		// Deferred to here so a non-field line that merely starts with `var` (this
 		// scanner runs on every body-indent line and rejects non-fields by the
 		// trailing name check above) cannot draw the diagnostic. see INV141
@@ -2444,6 +2604,7 @@ export class Parser {
 					'The keywords "var" cannot be used in a type declaration. Use them when declaring variables of that type.',
 			});
 		}
+
 		// A reserved name as a FIELD name. Deferred past the trailing-name check
 		// for the same reason the qualifier error is: this scanner runs on every
 		// body-indent line, and a non-field line must not draw it. The field is
@@ -2457,8 +2618,10 @@ export class Parser {
 		let defaultStartIndex: number | undefined;
 		const eqTok = this.tokens[i + 1];
 		const valTok = this.tokens[i + 2];
+
 		if (eqTok?.type === TokenType.ASSIGN && eqTok.value === "=" && valTok) {
 			const afterVal = this.tokens[i + 3];
+
 			const bareLiteral =
 				(valTok.type === TokenType.NUMBER ||
 					valTok.type === TokenType.STRING ||
@@ -2467,6 +2630,7 @@ export class Parser {
 					afterVal.type === TokenType.NEWLINE ||
 					afterVal.type === TokenType.EOF ||
 					afterVal.type === TokenType.COMMENT);
+
 			if (!bareLiteral && valTok.type !== TokenType.NEWLINE) {
 				defaultStartIndex = i + 2;
 			} else if (valTok.type === TokenType.NUMBER) {
@@ -2495,6 +2659,7 @@ export class Parser {
 				};
 			}
 		}
+
 		return {
 			name: fieldToken.value,
 			typeAnnotation: { name: typeName },
@@ -2508,6 +2673,7 @@ export class Parser {
 
 	private isTypeTokenAt(index: number): boolean {
 		const token = this.tokens[index];
+
 		return (
 			token?.type === TokenType.KEYWORD &&
 			(VAR_TYPE_KEYWORDS as readonly string[]).includes(token.value)
@@ -2520,22 +2686,28 @@ export class Parser {
 	} {
 		let i = index;
 		let suffix = "";
+
 		if (
 			this.tokens[i]?.type === TokenType.COMPARE &&
 			this.tokens[i].value === "<"
 		) {
 			let depth = 0;
+
 			while (this.tokens[i] && this.tokens[i].type !== TokenType.EOF) {
 				const token = this.tokens[i];
 				suffix += token.value;
+
 				if (token.type === TokenType.COMPARE && token.value === "<") depth++;
+
 				if (token.type === TokenType.COMPARE && token.value === ">") {
 					depth--;
+
 					if (depth === 0) {
 						i++;
 						break;
 					}
 				}
+
 				i++;
 			}
 		} else if (
@@ -2545,6 +2717,7 @@ export class Parser {
 			suffix = "[]";
 			i += 2;
 		}
+
 		return { suffix, next: i };
 	}
 
@@ -2566,6 +2739,7 @@ export class Parser {
 						TokenType.IDENTIFIER,
 						"Expected method name after 'method'",
 					);
+
 		this.consume(TokenType.LPAREN, 'Expected "(" after method name');
 		const params = this.parseFunctionParams();
 		this.consume(TokenType.RPAREN, 'Expected ")" after method parameters');
@@ -2588,9 +2762,11 @@ export class Parser {
 		// Method body statements are in a local scope - a nested `=>`
 		// definition is illegal here (INV108).
 		this.localScopeDepth++;
+
 		try {
 			// Check if next token is on a new line with deeper indentation
 			const nextToken = this.peek();
+
 			if (nextToken.line === line) {
 				// Single-line method: same line as =>. Comma-separated statement
 				// units ending in the return value, like inline switch arms and
@@ -2621,6 +2797,7 @@ export class Parser {
 						if (currentIndent <= baseIndent) {
 							break;
 						}
+
 						methodBodyIndent = currentIndent;
 					}
 
@@ -2635,6 +2812,7 @@ export class Parser {
 
 					try {
 						const stmt = this.statement();
+
 						if (stmt) {
 							body.push(stmt);
 						} else {
@@ -2672,6 +2850,7 @@ export class Parser {
 		// Check for discriminant expression on the same line (e.g., "switch pos")
 		// If there's an identifier or expression before the newline, parse it as discriminant
 		let discriminant: AST.Expression | undefined;
+
 		if (!this.check(TokenType.NEWLINE) && !this.isAtEnd()) {
 			// Parse discriminant using a restricted method that stops at newlines.
 			// This prevents "switch x\n    -1 => ..." from being parsed as "switch (x - 1)".
@@ -2726,16 +2905,19 @@ export class Parser {
 			// Parse condition => result
 			try {
 				const condition = this.expression();
+
 				// The => may LEAD the next line when its indent is a valid
 				// wrap continuation (not a multiple of 4) - TV accepts the
 				// condition-then-wrapped-arrow arm (probed INV047 p07, the
 				// switch typed simple string). see TODO #46(d)
 				if (this.check(TokenType.NEWLINE)) {
 					const next = this.peekNext();
+
 					if (next?.type === TokenType.ARROW && (next.indent ?? 0) % 4 !== 0) {
 						this.advance();
 					}
 				}
+
 				if (this.match(TokenType.ARROW)) {
 					cases.push({
 						condition,
@@ -2752,6 +2934,7 @@ export class Parser {
 						column: at.column,
 						message: `Expected "=>" in switch case at line ${at.line}`,
 					});
+
 					while (!this.isAtEnd() && !this.check(TokenType.NEWLINE)) {
 						this.advance();
 					}
@@ -2767,6 +2950,7 @@ export class Parser {
 				});
 				this.parenDepth = 0;
 				this.bracketDepth = 0;
+
 				while (!this.isAtEnd() && !this.check(TokenType.NEWLINE)) {
 					this.advance();
 				}
@@ -2800,6 +2984,7 @@ export class Parser {
 	private parseSwitchDiscriminant(switchLine: number): AST.Expression {
 		const saved = this.sameLineAnchor;
 		this.sameLineAnchor = switchLine;
+
 		try {
 			return this.parseSameLineBinary(0);
 		} finally {
@@ -2837,6 +3022,7 @@ export class Parser {
 		) {
 			return;
 		}
+
 		this.parserErrors.push({
 			line: tok.line,
 			column: tok.column,
@@ -2849,14 +3035,20 @@ export class Parser {
 	): number | null {
 		if (!this.check(TokenType.NEWLINE)) return null;
 		let i = this.current;
+
 		while (this.tokens[i]?.type === TokenType.NEWLINE) i++;
 		const next = this.tokens[i];
+
 		if (!next || next.type === TokenType.EOF || !matches(next)) return null;
+
 		if ((next.indent ?? 0) === 0) return null;
+
 		if ((next.indent ?? 0) % 4 === 0) return null;
+
 		while (this.check(TokenType.NEWLINE)) {
 			this.advance();
 		}
+
 		return next.line;
 	}
 
@@ -2874,10 +3066,13 @@ export class Parser {
 				// between the expression and wrapped operator, so scan past all
 				// NEWLINEs before deciding whether the expression continues.
 				const wrappedLine = this.skipSameLineLeadingWrap(matches);
+
 				if (wrappedLine === null) break;
 				this.sameLineAnchor = wrappedLine;
 			}
+
 			const currentToken = this.peek();
+
 			if (currentToken.line !== this.sameLineAnchor) {
 				// Postfix parsing may already have consumed the NEWLINE before a
 				// valid operator-leading wrap. Re-anchor here so restricted
@@ -2890,11 +3085,14 @@ export class Parser {
 				) {
 					break;
 				}
+
 				this.sameLineAnchor = currentToken.line;
 			}
+
 			if (!matches(currentToken)) {
 				break;
 			}
+
 			this.advance();
 			// Operator-trailing wrap: `expr +\n  more`
 			this.skipWrapContinuationNewline();
@@ -2930,6 +3128,7 @@ export class Parser {
 		if (this.check(TokenType.NEWLINE)) {
 			line = this.skipRestrictedLeadingWrap(TokenType.TERNARY, line);
 		}
+
 		if (
 			!this.isAtEnd() &&
 			this.peek().line === line &&
@@ -2937,12 +3136,14 @@ export class Parser {
 		) {
 			const consequentLine = this.skipArmWrapNewline(line);
 			const consequent = this.parseSingleLineExpression(consequentLine);
+
 			// A leading `:` on a continuation line joins too. Multiple-of-4
 			// indentation is still an error, but we join for recovery like the
 			// expression parser's leading-operator path. see TODO #45.
 			if (this.check(TokenType.NEWLINE)) {
 				this.skipRestrictedLeadingWrap(TokenType.COLON, consequentLine);
 			}
+
 			this.consume(TokenType.COLON, 'Expected ":" in ternary expression');
 			const alternateLine = this.skipArmWrapNewline(consequentLine);
 			const alternate = this.parseSingleLineExpression(alternateLine);
@@ -2961,12 +3162,16 @@ export class Parser {
 
 	private parseInlineSwitchArmExpression(line: number): AST.Expression {
 		let expr = this.parseSingleLineExpression(line);
+
 		while (true) {
 			let i = this.current;
+
 			if (this.check(TokenType.NEWLINE)) {
 				while (this.tokens[i]?.type === TokenType.NEWLINE) i++;
 			}
+
 			const op = this.tokens[i];
+
 			if (
 				!op ||
 				op.type === TokenType.EOF ||
@@ -2974,12 +3179,14 @@ export class Parser {
 			) {
 				break;
 			}
+
 			if (
 				(op.indent ?? 0) % 4 === 0 &&
 				(op.value === "-" || op.value === "+")
 			) {
 				break;
 			}
+
 			this.leadingSwitchArmWrapError(op);
 			this.current = i;
 			const opToken = this.advance();
@@ -2993,6 +3200,7 @@ export class Parser {
 				column: expr.column,
 			};
 		}
+
 		return expr;
 	}
 
@@ -3004,26 +3212,35 @@ export class Parser {
 	private skipRestrictedLeadingWrap(type: TokenType, line: number): number {
 		if (!this.check(TokenType.NEWLINE)) return line;
 		let i = this.current;
+
 		while (this.tokens[i]?.type === TokenType.NEWLINE) i++;
 		const next = this.tokens[i];
+
 		if (!next || next.type !== type || next.type === TokenType.EOF) return line;
+
 		if ((next.indent ?? 0) === 0) return line;
+
 		if (i - this.current > 1 && (next.indent ?? 0) % 4 === 0) return line;
 		this.leadingSwitchArmWrapError(next);
+
 		while (this.check(TokenType.NEWLINE)) {
 			this.advance();
 		}
+
 		return next.line;
 	}
 
 	private skipArmWrapNewline(line: number): number {
 		if (this.check(TokenType.NEWLINE)) {
 			const next = this.peekNext();
+
 			if (next && next.type !== TokenType.EOF && (next.indent ?? 0) % 4 !== 0) {
 				this.advance();
+
 				return next.line;
 			}
 		}
+
 		return line;
 	}
 
@@ -3110,6 +3327,7 @@ export class Parser {
 			// Parse the next statement
 			try {
 				const stmt = this.statement();
+
 				if (stmt) {
 					bodyStatements.push(stmt);
 				} else {
@@ -3126,6 +3344,7 @@ export class Parser {
 				});
 				this.parenDepth = 0;
 				this.bracketDepth = 0;
+
 				while (!this.isAtEnd() && !this.check(TokenType.NEWLINE)) {
 					this.advance();
 				}
@@ -3169,9 +3388,11 @@ export class Parser {
 					this.parseInlineSwitchArmExpression(anchorLine),
 				),
 			);
+
 			if (!this.match(TokenType.COMMA)) {
 				break;
 			}
+
 			if (this.check(TokenType.NEWLINE) || this.isAtEnd()) {
 				// A trailing comma may CONTINUE the unit list on a following
 				// line (blank lines between allowed) when that line is a
@@ -3182,8 +3403,10 @@ export class Parser {
 				// arm / statement - the comma is just trailing
 				// (`'25' => 1 ,`), tolerate and stop. see TODO #46(d)
 				let i = this.current;
+
 				while (this.tokens[i]?.type === TokenType.NEWLINE) i++;
 				const next = this.tokens[i];
+
 				if (
 					next &&
 					next.type !== TokenType.EOF &&
@@ -3219,9 +3442,11 @@ export class Parser {
 
 		for (;;) {
 			statements.push(this.parseInlineStatementUnit(() => this.expression()));
+
 			if (!this.match(TokenType.COMMA)) {
 				break;
 			}
+
 			// Tolerate a trailing comma at end of line
 			if (this.check(TokenType.NEWLINE) || this.isAtEnd()) {
 				break;
@@ -3230,6 +3455,7 @@ export class Parser {
 
 		// The last unit is the function's return value
 		const lastStmt = statements[statements.length - 1];
+
 		if (lastStmt.type === "ExpressionStatement") {
 			statements[statements.length - 1] = {
 				type: "ReturnStatement",
@@ -3238,6 +3464,7 @@ export class Parser {
 				column: lastStmt.column,
 			};
 		}
+
 		return statements;
 	}
 
@@ -3252,9 +3479,11 @@ export class Parser {
 		parseExpr: () => AST.Expression,
 	): AST.Statement {
 		const expr = parseExpr();
+
 		if (this.check(TokenType.ASSIGN) || this.check(TokenType.COMPOUND_ASSIGN)) {
 			const opToken = this.advance();
 			const value = parseExpr();
+
 			if (
 				opToken.type === TokenType.ASSIGN &&
 				opToken.value === "=" &&
@@ -3269,6 +3498,7 @@ export class Parser {
 					column: expr.column,
 				};
 			}
+
 			return {
 				type: "AssignmentStatement",
 				target: expr,
@@ -3278,6 +3508,7 @@ export class Parser {
 				column: expr.column,
 			};
 		}
+
 		return {
 			type: "ExpressionStatement",
 			expression: expr,
@@ -3293,15 +3524,19 @@ export class Parser {
 	 */
 	private armResultExpression(statements: AST.Statement[]): AST.Expression {
 		const lastStmt = statements[statements.length - 1];
+
 		if (lastStmt.type === "ExpressionStatement") {
 			return lastStmt.expression;
 		}
+
 		if (lastStmt.type === "AssignmentStatement") {
 			return lastStmt.value;
 		}
+
 		if (lastStmt.type === "VariableDeclaration" && lastStmt.init) {
 			return lastStmt.init;
 		}
+
 		return {
 			type: "Identifier",
 			name: "na",
@@ -3314,6 +3549,7 @@ export class Parser {
 
 	private isTypeKeyword(): boolean {
 		const token = this.peek();
+
 		return token.type === TokenType.KEYWORD && TYPE_KEYWORDS.has(token.value);
 	}
 
@@ -3333,7 +3569,9 @@ export class Parser {
 		if (!this.check([TokenType.KEYWORD, ["series", "simple"]])) {
 			return false;
 		}
+
 		const next = this.peekNext();
+
 		return (
 			next?.type === TokenType.KEYWORD &&
 			(VAR_TYPE_KEYWORDS as readonly string[]).includes(next.value)
@@ -3354,29 +3592,38 @@ export class Parser {
 			this.advance(); // consume <
 			let suffix = "<";
 			let depth = 1;
+
 			while (!this.isAtEnd() && depth > 0) {
 				const token = this.advance();
+
 				if (token.type === TokenType.COMPARE && token.value === "<") {
 					depth++;
 				} else if (token.type === TokenType.COMPARE && token.value === ">") {
 					depth--;
 				}
+
 				suffix += token.value;
+
 				// Add space after comma for readability
 				if (token.type === TokenType.COMMA && depth > 0) {
 					suffix += " ";
 				}
 			}
+
 			return suffix;
 		}
+
 		// Check for simple array type syntax: float[], int[], etc.
 		if (this.check(TokenType.LBRACKET)) {
 			this.advance(); // consume [
+
 			if (this.check(TokenType.RBRACKET)) {
 				this.advance(); // consume ]
+
 				return "[]";
 			}
 		}
+
 		return "";
 	}
 
@@ -3423,6 +3670,7 @@ export class Parser {
 
 			// Collect type keywords (qualifiers and base types)
 			const typeKeywords: string[] = [];
+
 			// `const` qualifier on a UDF param (`f(const int x)`) is valid
 			// Pine - TV lints it clean. `const` stays out of TYPE_KEYWORDS
 			// (a bare `const` is not a type name), so consume the qualifier
@@ -3435,11 +3683,13 @@ export class Parser {
 			) {
 				typeKeywords.push(this.advance().value);
 			}
+
 			while (this.isTypeKeyword()) {
 				// Check what follows: if it's an identifier, < (generic), [ (array
 				// suffix), or any keyword, this is part of the type. If it's = / , /
 				// ) , this keyword is the parameter name.
 				const next = this.peekNext();
+
 				if (
 					next?.type === TokenType.IDENTIFIER ||
 					next?.type === TokenType.KEYWORD || // Any keyword can be a param name (e.g., 'type', 'color')
@@ -3463,20 +3713,25 @@ export class Parser {
 				this.advance(); // consume <
 				let genericType = "<";
 				let depth = 1;
+
 				// Consume everything until matching >
 				while (!this.isAtEnd() && depth > 0) {
 					const token = this.advance();
+
 					if (token.type === TokenType.COMPARE && token.value === "<") {
 						depth++;
 					} else if (token.type === TokenType.COMPARE && token.value === ">") {
 						depth--;
 					}
+
 					genericType += token.value;
+
 					// Add space after comma for readability
 					if (token.type === TokenType.COMMA && depth > 0) {
 						genericType += " ";
 					}
 				}
+
 				typeKeywords[typeKeywords.length - 1] += genericType;
 			}
 
@@ -3490,6 +3745,7 @@ export class Parser {
 			// see INV003.
 			if (typeKeywords.length > 0 && this.check(TokenType.IDENTIFIER)) {
 				const next = this.peekNext();
+
 				if (
 					next?.type === TokenType.DOT &&
 					this.tokens[this.current + 2]?.type === TokenType.IDENTIFIER
@@ -3523,6 +3779,7 @@ export class Parser {
 			// onto the last collected type. see INV004.
 			if (typeKeywords.length > 0 && this.check(TokenType.LBRACKET)) {
 				this.advance(); // consume [
+
 				if (this.check(TokenType.RBRACKET)) {
 					this.advance(); // consume ]
 					typeKeywords[typeKeywords.length - 1] += "[]";
@@ -3535,6 +3792,7 @@ export class Parser {
 					line: paramStartTok?.line,
 					column: paramStartTok?.column,
 				};
+
 				// Next token should be the parameter name (identifier or keyword used as name)
 				// Keywords like 'type', 'color', 'string' etc. can be used as param names
 				if (this.check(TokenType.IDENTIFIER)) {
@@ -3557,6 +3815,7 @@ export class Parser {
 					TokenType.IDENTIFIER,
 					"Expected parameter name or type",
 				);
+
 				let typeName = firstIdent.value;
 
 				// `ns.Type name` - namespaced type (`chart.point start`,
@@ -3607,6 +3866,7 @@ export class Parser {
 			// errors on `and`/`or`/`not` across 260 corpus files. see INV179
 
 			let defaultValue: AST.Expression | undefined;
+
 			if (this.match(TokenType.ASSIGN)) {
 				defaultValue = this.expression();
 			}
@@ -3690,6 +3950,7 @@ export class Parser {
 	private startsInvalidOperatorStatement(): boolean {
 		if (this.peek().indent === undefined) return false;
 		const tok = this.peek();
+
 		if (
 			tok.type === TokenType.TERNARY ||
 			tok.type === TokenType.COLON ||
@@ -3700,6 +3961,7 @@ export class Parser {
 		) {
 			return true;
 		}
+
 		return tok.type === TokenType.KEYWORD && ["and", "or"].includes(tok.value);
 	}
 
@@ -3708,33 +3970,41 @@ export class Parser {
 		for (const type of types) {
 			if (Array.isArray(type)) {
 				const [tokenType, values] = type;
+
 				if (this.check(tokenType) && values.includes(this.peek().value)) {
 					this.advance();
+
 					return true;
 				}
 			} else {
 				if (this.check(type)) {
 					this.advance();
+
 					return true;
 				}
 			}
 		}
+
 		return false;
 	}
 
 	public check(type: TokenType | [TokenType, string[]]): boolean {
 		if (this.isAtEnd()) return false;
+
 		if (Array.isArray(type)) {
 			const [tokenType, values] = type;
+
 			return (
 				this.peek().type === tokenType && values.includes(this.peek().value)
 			);
 		}
+
 		return this.peek().type === type;
 	}
 
 	public advance(): Token {
 		if (!this.isAtEnd()) this.current++;
+
 		return this.previous();
 	}
 
@@ -3748,6 +4018,7 @@ export class Parser {
 
 	public peekNext(): Token | null {
 		if (this.current + 1 >= this.tokens.length) return null;
+
 		return this.tokens[this.current + 1];
 	}
 
@@ -3759,7 +4030,9 @@ export class Parser {
 	 */
 	public firstTokenAfterNewlines(): Token | null {
 		let i = this.current;
+
 		while (this.tokens[i]?.type === TokenType.NEWLINE) i++;
+
 		return this.tokens[i] ?? null;
 	}
 

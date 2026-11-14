@@ -16,6 +16,7 @@ export const SCALAR_BASE_TYPES = new Set([
 	"string",
 	"color",
 ]);
+
 export const ARRAY_ELEMENT_RETURN_METHODS = new Set([
 	"first",
 	"get",
@@ -24,6 +25,7 @@ export const ARRAY_ELEMENT_RETURN_METHODS = new Set([
 	"remove",
 	"shift",
 ]);
+
 export const ARRAY_SELF_RETURN_METHODS = new Set(["concat", "copy", "slice"]);
 export const MAP_SELF_RETURN_METHODS = new Set(["copy"]);
 export const MATRIX_SELF_RETURN_METHODS = new Set(["copy", "submatrix"]);
@@ -35,12 +37,16 @@ export const MATRIX_ARRAY_RETURN_METHODS = new Set(["col", "row"]);
 // property access (e.g. `foo().bar`, `arr[0].baz`). see INV054
 export function memberChainName(expr: Expression): string {
 	if (expr.type === "Identifier") return (expr as Identifier).name;
+
 	if (expr.type === "MemberExpression") {
 		const m = expr as MemberExpression;
 		const base = memberChainName(m.object);
+
 		if (!base) return "";
+
 		return `${base}.${m.property.name}`;
 	}
+
 	return "";
 }
 
@@ -55,18 +61,24 @@ export function collectionElementTarget(
 	paramName: string,
 ): string | null {
 	const r = String(receiverType);
+
 	if (kind === "array") {
 		if (!r.startsWith("array<") || !r.endsWith(">")) return null;
 		const e = r.slice(6, -1).trim();
+
 		return e === "unknown" || e === "type" ? null : e;
 	}
+
 	if (!r.startsWith("map<") || !r.endsWith(">")) return null;
 	const inner = r.slice(4, -1);
 	const c = inner.indexOf(",");
+
 	if (c < 0) return null;
+
 	const pick = (
 		paramName === "key" ? inner.slice(0, c) : inner.slice(c + 1)
 	).trim();
+
 	return pick === "unknown" || pick === "type" ? null : pick;
 }
 
@@ -81,8 +93,11 @@ export function elementArgAssignable(
 	if (argType === "unknown" || TypeChecker.isNaType(argType)) return true;
 	const ab = TypeChecker.baseTypeName(String(argType));
 	const tb = TypeChecker.baseTypeName(target);
+
 	if (ab === tb) return true;
+
 	if (tb === "float" && ab === "int") return true; // widening only
+
 	return false;
 }
 
@@ -98,6 +113,7 @@ export function isSimpleQualifiedParam(rawType?: string): boolean {
 
 export function isSeriesQualified(argType: PineType): boolean {
 	const s = String(argType);
+
 	return s.startsWith("series<") || s.startsWith("series ");
 }
 
@@ -123,6 +139,7 @@ export function isOpaqueHandleType(t: PineType): boolean {
 // array.from's per-arg0-type overloads (po lookup array.from). see INV090
 export function arrayFromExpectedType(arg0Base: string): string | null {
 	if (arg0Base === "int" || arg0Base === "float") return "series int/float";
+
 	if (
 		arg0Base === "bool" ||
 		arg0Base === "string" ||
@@ -135,6 +152,7 @@ export function arrayFromExpectedType(arg0Base: string): string | null {
 	) {
 		return `series ${arg0Base}`;
 	}
+
 	return null; // UDT / enum / na / unknown arg0 -> stay lenient
 }
 
@@ -144,9 +162,11 @@ export function arrayFromArgMatches(
 ): boolean {
 	if (argType === "unknown" || TypeChecker.isNaType(argType)) return true;
 	const ab = TypeChecker.baseTypeName(String(argType));
+
 	if (arg0Base === "int" || arg0Base === "float") {
 		return ab === "int" || ab === "float";
 	}
+
 	return ab === arg0Base;
 }
 

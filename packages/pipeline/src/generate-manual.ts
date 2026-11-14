@@ -30,6 +30,7 @@ const PAGES_JSON = path.join(
 	PROJECT_ROOT,
 	"pine-data/raw/v6/manual-pages.json",
 );
+
 const CACHE_DIR = path.join(PROJECT_ROOT, ".cache/manual/v6");
 const OUTPUT_DIR = path.join(PROJECT_ROOT, "pine-manual/v6");
 
@@ -43,6 +44,7 @@ interface PagesFile {
 
 function sectionLabel(section: string): string {
 	if (section === "(root)") return "General";
+
 	return section.charAt(0).toUpperCase() + section.slice(1).replace(/-/g, " ");
 }
 
@@ -55,8 +57,10 @@ function generateIndex(pages: ManualPage[], scrapedAt: string): string {
 	// Preserve sidebar order: sections appear in first-seen order.
 	const order: string[] = [];
 	const bySection = new Map<string, ManualPage[]>();
+
 	for (const page of pages) {
 		const list = bySection.get(page.section);
+
 		if (list) {
 			list.push(page);
 		} else {
@@ -67,9 +71,11 @@ function generateIndex(pages: ManualPage[], scrapedAt: string): string {
 
 	for (const section of order) {
 		md += `## ${sectionLabel(section)}\n\n`;
+
 		for (const page of bySection.get(section) ?? []) {
 			md += `- [${page.title}](${page.path}.md)\n`;
 		}
+
 		md += "\n";
 	}
 
@@ -92,8 +98,10 @@ function main(): void {
 
 	let written = 0;
 	let missing = 0;
+
 	for (const page of pages) {
 		const cached = path.join(CACHE_DIR, page.cacheFile);
+
 		if (!fs.existsSync(cached)) {
 			console.warn(`  ! no cache for ${page.path} (skipping)`);
 			missing++;
@@ -101,6 +109,7 @@ function main(): void {
 		}
 
 		const html = fs.readFileSync(cached, "utf8");
+
 		const markdown = convertManualPage(html, {
 			title: page.title,
 			url: page.url,
@@ -108,14 +117,17 @@ function main(): void {
 		});
 
 		const dest = path.join(OUTPUT_DIR, `${page.path}.md`);
+
 		if (!DRY_RUN) {
 			fs.mkdirSync(path.dirname(dest), { recursive: true });
 			fs.writeFileSync(dest, markdown, "utf8");
 		}
+
 		written++;
 	}
 
 	const index = generateIndex(pages, metadata.scrapedAt);
+
 	if (!DRY_RUN) {
 		fs.writeFileSync(path.join(OUTPUT_DIR, "README.md"), index, "utf8");
 	}
@@ -125,6 +137,7 @@ function main(): void {
 			? `[dry-run] Would write ${written} page(s) + README.md`
 			: `Wrote ${written} page(s) + README.md`,
 	);
+
 	if (missing > 0) {
 		console.warn(
 			`${missing} page(s) had no cached HTML - re-run scrape:manual.`,

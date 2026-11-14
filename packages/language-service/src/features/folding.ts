@@ -38,6 +38,7 @@ function collectCommentFolds(
 
 	for (let i = 0; i < lines.length; i++) {
 		const trimmed = lines[i].trim();
+
 		if (trimmed.startsWith("//")) {
 			if (blockStart === -1) {
 				blockStart = i;
@@ -51,6 +52,7 @@ function collectCommentFolds(
 					kind: FoldingRangeKind.Comment,
 				});
 			}
+
 			blockStart = -1;
 		}
 	}
@@ -102,6 +104,7 @@ function collectStatementFolds(
 		case "MethodDeclaration":
 			if (stmt.body.length > 0 && stmt.line !== undefined) {
 				const lastStmt = stmt.body[stmt.body.length - 1];
+
 				if (lastStmt.line !== undefined && lastStmt.line > stmt.line) {
 					ranges.push({
 						startLine: stmt.line - 1,
@@ -109,15 +112,18 @@ function collectStatementFolds(
 					});
 				}
 			}
+
 			// Recurse into body
 			for (const s of stmt.body) {
 				collectStatementFolds(s, doc, ranges);
 			}
+
 			break;
 
 		case "IfStatement":
 			if (stmt.consequent.length > 0 && stmt.line !== undefined) {
 				const lastConsequent = stmt.consequent[stmt.consequent.length - 1];
+
 				if (
 					lastConsequent.line !== undefined &&
 					lastConsequent.line > stmt.line
@@ -128,15 +134,18 @@ function collectStatementFolds(
 					});
 				}
 			}
+
 			// Recurse
 			for (const s of stmt.consequent) {
 				collectStatementFolds(s, doc, ranges);
 			}
+
 			if (stmt.alternate) {
 				for (const s of stmt.alternate) {
 					collectStatementFolds(s, doc, ranges);
 				}
 			}
+
 			break;
 
 		case "ForStatement":
@@ -144,6 +153,7 @@ function collectStatementFolds(
 		case "WhileStatement":
 			if (stmt.body.length > 0 && stmt.line !== undefined) {
 				const lastBody = stmt.body[stmt.body.length - 1];
+
 				if (lastBody.line !== undefined && lastBody.line > stmt.line) {
 					ranges.push({
 						startLine: stmt.line - 1,
@@ -151,15 +161,18 @@ function collectStatementFolds(
 					});
 				}
 			}
+
 			for (const s of stmt.body) {
 				collectStatementFolds(s, doc, ranges);
 			}
+
 			break;
 
 		case "SequenceStatement":
 			for (const s of stmt.statements) {
 				collectStatementFolds(s, doc, ranges);
 			}
+
 			break;
 	}
 }

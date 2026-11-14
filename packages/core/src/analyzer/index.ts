@@ -13,11 +13,15 @@ export {
 	NAMESPACE_PROPERTIES,
 	type ParameterInfo,
 } from "./builtins";
+
 export {
 	DiagnosticSeverity,
 	UnifiedPineValidator,
 	type ValidationError,
 } from "./checker";
+
 export { runSemanticLints } from "./lint-semantic";
+
 export { Scope, type Symbol, SymbolTable } from "./symbols";
+
 export { type PineType, TypeChecker, TypeInfo } from "./types";

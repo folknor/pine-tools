@@ -32,12 +32,14 @@ import { join, resolve } from "node:path";
 const asJson = process.argv.includes("--json");
 
 const PARSER = resolve("dist/packages/core/src/parser/parser.js");
+
 try {
 	await access(PARSER);
 } catch {
 	console.error(`No compiled parser at ${PARSER}. Run \`pnpm run build:tsc\` first.`);
 	process.exit(2);
 }
+
 const { Parser } = await import(`file://${PARSER}`);
 
 // --- catalog ---------------------------------------------------------------
@@ -73,12 +75,17 @@ const FLAG_FNS = {
 // (e.g. foo().bar, arr[0].baz).
 function chainName(node) {
 	if (!node) return "";
+
 	if (node.type === "Identifier") return node.name;
+
 	if (node.type === "MemberExpression") {
 		const base = chainName(node.object);
+
 		if (!base) return "";
+
 		return `${base}.${node.property.name}`;
 	}
+
 	return "";
 }
 
@@ -112,12 +119,14 @@ function newStats() {
 function bump(obj, key) {
 	obj[key] = (obj[key] || 0) + 1;
 }
+
 function depthBucket(d) {
 	return d >= 3 ? "3+" : String(d);
 }
 
 function recordCall(stats, name, depth) {
 	const e = stats.callsAtDepth.get(name) || { top: 0, local: 0 };
+
 	if (depth > 0) e.local++;
 	else e.top++;
 	stats.callsAtDepth.set(name, e);
@@ -125,18 +134,24 @@ function recordCall(stats, name, depth) {
 
 function visit(node, depth, stats, inValuePos) {
 	if (!node || typeof node !== "object") return;
+
 	if (Array.isArray(node)) {
 		for (const c of node) visit(c, depth, stats, inValuePos);
+
 		return;
 	}
+
 	const t = node.type;
+
 	if (!t) return;
 	bump(stats.nodeCounts, t);
+
 	if (depth > stats.maxBlockDepth) stats.maxBlockDepth = depth;
 
 	switch (t) {
 		case "CallExpression": {
 			const name = chainName(node.callee);
+
 			if (name) {
 				stats.refs.add(name);
 				recordCall(stats, name, depth);
@@ -145,11 +160,15 @@ function visit(node, depth, stats, inValuePos) {
 			} else {
 				visit(node.callee, depth, stats, true);
 			}
+
 			for (const arg of node.arguments || []) visit(arg.value, depth, stats, true);
+
 			return;
 		}
+
 		case "MemberExpression": {
 			const name = chainName(node);
+
 			if (name) {
 				stats.refs.add(name);
 				const cd = (name.match(/\./g) || []).length + 1;
@@ -157,10 +176,13 @@ function visit(node, depth, stats, inValuePos) {
 			} else {
 				visit(node.object, depth, stats, true);
 			}
+
 			return;
 		}
+
 		case "Identifier":
 			stats.refs.add(node.name);
+
 			return;
 		case "SwitchExpression":
 			if (node.discriminant) {
@@ -169,11 +191,15 @@ function visit(node, depth, stats, inValuePos) {
 			} else {
 				stats.switchNoDisc++;
 			}
+
 			for (const c of node.cases || []) {
 				if (c.condition) visit(c.condition, depth, stats, true);
+
 				if (c.result) visit(c.result, depth + 1, stats, true);
+
 				if (c.statements) visit(c.statements, depth + 1, stats, false);
 			}
+
 			return;
 		case "ForInStatement":
 			if (node.iterator2) stats.forInTuple++;
@@ -182,6 +208,7 @@ function visit(node, depth, stats, inValuePos) {
 	}
 
 	const blockFields = BLOCK_BODY_FIELDS[t] || [];
+
 	for (const [key, val] of Object.entries(node)) {
 		if (key === "type" || key === "line" || key === "column") continue;
 		const childDepth = blockFields.includes(key) ? depth + 1 : depth;
@@ -194,44 +221,54 @@ function visit(node, depth, stats, inValuePos) {
 async function findPine(dir) {
 	const out = [];
 	let entries;
+
 	try {
 		entries = await readdir(dir, { withFileTypes: true });
 	} catch {
 		return out;
 	}
+
 	for (const e of entries) {
 		const full = join(dir, e.name);
+
 		if (e.isDirectory()) out.push(...(await findPine(full)));
 		else if (e.isFile() && e.name.endsWith(".pine")) out.push(full);
 	}
+
 	return out;
 }
 
 async function scanSet(dir) {
 	const stats = newStats();
 	const files = await findPine(dir);
+
 	for (const file of files) {
 		stats.files++;
 		let src;
+
 		try {
 			src = await readFile(file, "utf8");
 		} catch {
 			stats.parseErrors++;
 			continue;
 		}
+
 		let ast;
+
 		try {
 			ast = new Parser(src).parse();
 		} catch {
 			stats.parseErrors++;
 			continue;
 		}
+
 		try {
 			visit(ast, 0, stats, false);
 		} catch {
 			stats.parseErrors++;
 		}
 	}
+
 	return stats;
 }
 
@@ -248,10 +285,12 @@ function uncovered(catalog, setRefs) {
 
 function groupByNamespace(names) {
 	const g = {};
+
 	for (const n of names) {
 		const ns = n.includes(".") ? n.split(".").slice(0, -1).join(".") : "(top-level)";
 		(g[ns] ||= []).push(n);
 	}
+
 	return g;
 }
 
@@ -300,15 +339,19 @@ function structSummary(s) {
 for (const [flag, names] of Object.entries(FLAG_FNS)) {
 	const seen = names.filter((n) => allRefs.has(stripTemplate(n)));
 	const entry = { total: names.length, referenced: seen.length };
+
 	if (flag === "topLevelOnly") {
 		const localCalls = (name) => {
 			const c = corpus.callsAtDepth.get(name);
 			const t = tests.callsAtDepth.get(name);
+
 			return (c?.local || 0) + (t?.local || 0) > 0;
 		};
+
 		entry.exercisedInLocalScope = names.filter(localCalls);
 		entry.neverInLocalScope = names.filter((n) => !localCalls(n));
 	}
+
 	report.flags[flag] = entry;
 }
 
@@ -320,25 +363,34 @@ if (asJson) {
 // --- text output -----------------------------------------------------------
 
 const line = (s = "") => console.log(s);
+
 line(`Fixture coverage census`);
+
 line(`  corpus: ${corpus.files} files (${corpus.parseErrors} parse-skipped)`);
+
 line(`  tests:  ${tests.files} files (${tests.parseErrors} parse-skipped)`);
+
 line();
 
 line(`=== 1. Catalog coverage ===`);
+
 for (const [kind, info] of Object.entries(report.catalog)) {
 	const u = info.uncoveredEverywhere;
 	line(`\n  ${kind}: ${info.total} in catalog, ${u.length} referenced in NO fixture`);
+
 	if (u.length) {
 		const g = groupByNamespace(u);
+
 		for (const ns of Object.keys(g).sort()) {
 			line(`    ${ns}: ${g[ns].join(", ")}`);
 		}
 	}
+
 	if (kind === "functions" && info.uncoveredInTests.length) {
 		const onlyCorpus = info.uncoveredInTests.filter(
 			(n) => !u.includes(n),
 		);
+
 		line(
 			`    [${onlyCorpus.length} functions appear in the corpus but have NO regression/test fixture]`,
 		);
@@ -346,25 +398,33 @@ for (const [kind, info] of Object.entries(report.catalog)) {
 }
 
 line(`\n=== 2. Flag coverage ===`);
+
 for (const [flag, info] of Object.entries(report.flags)) {
 	line(`\n  ${flag}: ${info.total} flagged, ${info.referenced} referenced anywhere`);
+
 	if (flag === "topLevelOnly") {
 		line(`    exercised in a local scope (the violating case): ${info.exercisedInLocalScope.length}`);
+
 		if (info.exercisedInLocalScope.length)
 			line(`      ${info.exercisedInLocalScope.join(", ")}`);
 		line(`    NEVER tested in a local scope: ${info.neverInLocalScope.length}`);
+
 		if (info.neverInLocalScope.length)
 			line(`      ${info.neverInLocalScope.join(", ")}`);
 	}
 }
 
 line(`\n=== 3. Structural census (corpus | tests) ===`);
+
 const ks = Object.keys(report.structure.corpus);
+
 for (const k of ks) {
 	const c = report.structure.corpus[k];
 	const t = report.structure.tests[k];
 	const fmt = (v) => (typeof v === "object" ? JSON.stringify(v) : String(v));
 	line(`  ${k.padEnd(16)} ${fmt(c).padEnd(28)} | ${fmt(t)}`);
 }
+
 line();
+
 line(`(Shapes present in corpus but 0 in tests are real-world patterns we do not assert.)`);

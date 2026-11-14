@@ -27,6 +27,7 @@ export function getReferences(
 ): Location[] {
 	const includeDeclaration = options.includeDeclaration ?? true;
 	const symbol = doc.getWordAtPosition(position);
+
 	if (!symbol) return [];
 
 	const locations: Location[] = [];
@@ -61,21 +62,25 @@ function findReferencesInStatement(
 			if (stmt.name === symbolName && includeDeclaration) {
 				locations.push(createLocation(uri, stmt.line, stmt.column, stmt.name));
 			}
+
 			// Check initialization expression
 			if (stmt.init) {
 				findReferencesInExpression(stmt.init, symbolName, uri, locations);
 			}
+
 			break;
 		}
 
 		case "FunctionDeclaration": {
 			const funcDecl = stmt as FunctionDeclaration;
+
 			// Check if function name is the symbol
 			if (funcDecl.name === symbolName && includeDeclaration) {
 				locations.push(
 					createLocation(uri, funcDecl.line, funcDecl.column, funcDecl.name),
 				);
 			}
+
 			// Check parameters
 			for (const param of funcDecl.params) {
 				if (param.name === symbolName && includeDeclaration) {
@@ -85,6 +90,7 @@ function findReferencesInStatement(
 						createLocation(uri, funcDecl.line, funcDecl.column, param.name),
 					);
 				}
+
 				// Check default values
 				if (param.defaultValue) {
 					findReferencesInExpression(
@@ -95,6 +101,7 @@ function findReferencesInStatement(
 					);
 				}
 			}
+
 			// Search in function body
 			for (const bodyStmt of funcDecl.body) {
 				findReferencesInStatement(
@@ -105,11 +112,13 @@ function findReferencesInStatement(
 					includeDeclaration,
 				);
 			}
+
 			break;
 		}
 
 		case "MethodDeclaration": {
 			const methodDecl = stmt as MethodDeclaration;
+
 			if (methodDecl.name === symbolName && includeDeclaration) {
 				locations.push(
 					createLocation(
@@ -120,12 +129,14 @@ function findReferencesInStatement(
 					),
 				);
 			}
+
 			for (const param of methodDecl.params) {
 				if (param.name === symbolName && includeDeclaration) {
 					locations.push(
 						createLocation(uri, methodDecl.line, methodDecl.column, param.name),
 					);
 				}
+
 				if (param.defaultValue) {
 					findReferencesInExpression(
 						param.defaultValue,
@@ -135,6 +146,7 @@ function findReferencesInStatement(
 					);
 				}
 			}
+
 			for (const bodyStmt of methodDecl.body) {
 				findReferencesInStatement(
 					bodyStmt,
@@ -144,6 +156,7 @@ function findReferencesInStatement(
 					includeDeclaration,
 				);
 			}
+
 			break;
 		}
 
@@ -160,6 +173,7 @@ function findReferencesInStatement(
 
 		case "IfStatement": {
 			findReferencesInExpression(stmt.condition, symbolName, uri, locations);
+
 			for (const bodyStmt of stmt.consequent) {
 				findReferencesInStatement(
 					bodyStmt,
@@ -169,6 +183,7 @@ function findReferencesInStatement(
 					includeDeclaration,
 				);
 			}
+
 			if (stmt.alternate) {
 				for (const bodyStmt of stmt.alternate) {
 					findReferencesInStatement(
@@ -180,6 +195,7 @@ function findReferencesInStatement(
 					);
 				}
 			}
+
 			break;
 		}
 
@@ -190,12 +206,15 @@ function findReferencesInStatement(
 					createLocation(uri, stmt.line, stmt.column, stmt.iterator),
 				);
 			}
+
 			// Check range expressions
 			findReferencesInExpression(stmt.from, symbolName, uri, locations);
 			findReferencesInExpression(stmt.to, symbolName, uri, locations);
+
 			if (stmt.step) {
 				findReferencesInExpression(stmt.step, symbolName, uri, locations);
 			}
+
 			// Search in body
 			for (const bodyStmt of stmt.body) {
 				findReferencesInStatement(
@@ -206,6 +225,7 @@ function findReferencesInStatement(
 					includeDeclaration,
 				);
 			}
+
 			break;
 		}
 
@@ -215,7 +235,9 @@ function findReferencesInStatement(
 					createLocation(uri, stmt.line, stmt.column, stmt.iterator),
 				);
 			}
+
 			findReferencesInExpression(stmt.collection, symbolName, uri, locations);
+
 			for (const bodyStmt of stmt.body) {
 				findReferencesInStatement(
 					bodyStmt,
@@ -225,11 +247,13 @@ function findReferencesInStatement(
 					includeDeclaration,
 				);
 			}
+
 			break;
 		}
 
 		case "WhileStatement": {
 			findReferencesInExpression(stmt.condition, symbolName, uri, locations);
+
 			for (const bodyStmt of stmt.body) {
 				findReferencesInStatement(
 					bodyStmt,
@@ -239,6 +263,7 @@ function findReferencesInStatement(
 					includeDeclaration,
 				);
 			}
+
 			break;
 		}
 
@@ -253,6 +278,7 @@ function findReferencesInStatement(
 					locations.push(createLocation(uri, stmt.line, stmt.column, name));
 				}
 			}
+
 			findReferencesInExpression(stmt.init, symbolName, uri, locations);
 			break;
 		}
@@ -261,6 +287,7 @@ function findReferencesInStatement(
 			if (stmt.alias === symbolName && includeDeclaration) {
 				locations.push(createLocation(uri, stmt.line, stmt.column, stmt.alias));
 			}
+
 			break;
 		}
 
@@ -269,6 +296,7 @@ function findReferencesInStatement(
 			if (stmt.name === symbolName && includeDeclaration) {
 				locations.push(createLocation(uri, stmt.line, stmt.column, stmt.name));
 			}
+
 			break;
 		}
 
@@ -282,6 +310,7 @@ function findReferencesInStatement(
 					includeDeclaration,
 				);
 			}
+
 			break;
 		}
 	}
@@ -299,9 +328,11 @@ function findReferencesInExpression(
 	switch (expr.type) {
 		case "Identifier": {
 			const id = expr as Identifier;
+
 			if (id.name === symbolName) {
 				locations.push(createLocation(uri, id.line, id.column, id.name));
 			}
+
 			break;
 		}
 
@@ -309,10 +340,12 @@ function findReferencesInExpression(
 			const call = expr as CallExpression;
 			// Check callee
 			findReferencesInExpression(call.callee, symbolName, uri, locations);
+
 			// Check arguments
 			for (const arg of call.arguments) {
 				findReferencesInExpression(arg.value, symbolName, uri, locations);
 			}
+
 			break;
 		}
 
@@ -345,6 +378,7 @@ function findReferencesInExpression(
 			for (const element of expr.elements) {
 				findReferencesInExpression(element, symbolName, uri, locations);
 			}
+
 			break;
 		}
 
@@ -363,6 +397,7 @@ function findReferencesInExpression(
 					locations,
 				);
 			}
+
 			for (const switchCase of expr.cases) {
 				if (switchCase.condition) {
 					findReferencesInExpression(
@@ -372,6 +407,7 @@ function findReferencesInExpression(
 						locations,
 					);
 				}
+
 				findReferencesInExpression(
 					switchCase.result,
 					symbolName,
@@ -379,6 +415,7 @@ function findReferencesInExpression(
 					locations,
 				);
 			}
+
 			break;
 		}
 
@@ -401,5 +438,6 @@ function createLocation(
 		start: { line: line - 1, character: column - 1 },
 		end: { line: line - 1, character: column - 1 + name.length },
 	};
+
 	return { uri, range };
 }

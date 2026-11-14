@@ -303,6 +303,7 @@ export class UnifiedPineValidator {
 		// diagnostics still stand - they come from the syntax stage, not here.
 		// see INV146
 		const versionNumber = Number.parseInt(version, 10);
+
 		if (Number.isFinite(versionNumber) && versionNumber < 5) {
 			// Carries a code so the CLI can recognise the refusal structurally
 			// and drop every other diagnostic, rather than matching its prose.
@@ -315,6 +316,7 @@ export class UnifiedPineValidator {
 				severity: DiagnosticSeverity.Error,
 				code: UNSUPPORTED_VERSION_CODE,
 			});
+
 			return this.errors;
 		}
 
@@ -324,11 +326,13 @@ export class UnifiedPineValidator {
 		// sibling dispatch, not recursion. see INV086
 		{
 			const seen = new Set<string>();
+
 			for (const statement of ast.body) {
 				if (statement.type === "FunctionDeclaration") {
 					if (seen.has(statement.name)) {
 						this.overloadedFunctionNames.add(statement.name);
 					}
+
 					seen.add(statement.name);
 				} else if (statement.type === "MethodDeclaration") {
 					// A name can be BOTH a function and a method (TV-legal
@@ -357,16 +361,20 @@ export class UnifiedPineValidator {
 					column: statement.expression.column,
 				};
 			}
+
 			if (statement.type === "ImportStatement") {
 				const ns = statement.alias ?? statement.libraryPath.split("/")[1];
+
 				if (ns) {
 					this.importedNamespaces.add(ns);
+
 					// Record the path so the member-call check can validate
 					// members against the vendored export set (INV067). The last
 					// import wins on an ns collision, matching TV's single-binding.
 					const localExports = statement.sourcePath
 						? this.localLibraryExportsBySourcePath.get(statement.sourcePath)
 						: undefined;
+
 					if (localExports) {
 						this.localLibraryExportsBySourcePath.set(
 							statement.libraryPath,
@@ -376,6 +384,7 @@ export class UnifiedPineValidator {
 					} else if (LIBRARY_EXPORTS_BY_PATH.has(statement.libraryPath)) {
 						this.importedLibraryPaths.set(ns, statement.libraryPath);
 					}
+
 					this.registerImportedLibraryTypes(ns, statement.libraryPath);
 				}
 			}
@@ -421,23 +430,29 @@ export class UnifiedPineValidator {
 	 */
 	private registerImportedLibraryTypes(ns: string, libraryPath: string): void {
 		const libTypes = LIBRARY_TYPE_FIELDS[libraryPath];
+
 		if (!libTypes) return;
+
 		for (const [typeName, fields] of Object.entries(libTypes)) {
 			const qualified = `${ns}.${typeName}`;
 			this.declaredTypeNames.add(qualified);
 			const fieldMap = new Map<string, PineType>();
+
 			for (const [fieldName, rawType] of Object.entries(fields)) {
 				const mapped = mapToPineType(rawType);
+
 				if (mapped !== "unknown") {
 					fieldMap.set(fieldName, mapped);
 					continue;
 				}
+
 				const base = TypeChecker.baseTypeName(rawType);
 				fieldMap.set(
 					fieldName,
 					base in libTypes ? (`${ns}.${base}` as PineType) : "unknown",
 				);
 			}
+
 			this.udtFieldTypes.set(qualified, fieldMap);
 		}
 	}
@@ -498,6 +513,7 @@ export class UnifiedPineValidator {
 				this.declaredEnumNames.add(statement.name); // see INV048
 				recordEnumMembers(this, statement); // see INV096
 			}
+
 			const symbol: SymbolInfo = {
 				name: statement.name,
 				type: "unknown",
@@ -507,6 +523,7 @@ export class UnifiedPineValidator {
 				kind: "variable", // Treat as variable/namespace for now
 				declaredWith: null,
 			};
+
 			this.symbolTable.define(symbol);
 		} else if (statement.type === "MethodDeclaration") {
 			// Handle method declarations like function declarations
@@ -525,6 +542,7 @@ export class UnifiedPineValidator {
 					kind: "variable", // Treat as namespace
 					declaredWith: null,
 				};
+
 				this.symbolTable.define(symbol);
 			}
 		} else if (statement.type === "SequenceStatement") {
@@ -540,7 +558,9 @@ export class UnifiedPineValidator {
 	private isOnceTailUdfCall(call: CallExpression): boolean {
 		if (call.callee.type !== "Identifier") return false;
 		const records = this.udfBodyRecords.get((call.callee as Identifier).name);
+
 		if (!records || records.length === 0) return false;
+
 		return records.every(
 			(r) => r.body[r.body.length - 1]?.type === "OnceStatement",
 		);
@@ -548,10 +568,12 @@ export class UnifiedPineValidator {
 
 	private recordUdfBody(statement: FunctionDeclaration): void {
 		let records = this.udfBodyRecords.get(statement.name);
+
 		if (!records) {
 			records = [];
 			this.udfBodyRecords.set(statement.name, records);
 		}
+
 		records.push({ declaration: statement, body: statement.body });
 	}
 
@@ -567,10 +589,14 @@ export class UnifiedPineValidator {
 			case "SwitchExpression": {
 				const sw = expr as SwitchExpression;
 				const conds: Expression[] = [];
+
 				if (sw.discriminant) conds.push(sw.discriminant);
+
 				for (const c of sw.cases) if (c.condition) conds.push(c.condition);
+
 				return conds;
 			}
+
 			default:
 				return null;
 		}
@@ -587,16 +613,21 @@ export class UnifiedPineValidator {
 		version: string,
 	): "series" | "input" | null {
 		let sawInput = false;
+
 		for (const c of conditions) {
 			const t = this.inferExpressionType(c, version) as string;
+
 			if (t.startsWith("series")) return "series";
+
 			if (t.startsWith("input<")) sawInput = true;
 		}
+
 		return sawInput ? "input" : null;
 	}
 
 	private pushDeclScope(seedNames?: string[]): void {
 		const frame = new Set<string>();
+
 		if (seedNames) for (const n of seedNames) frame.add(n);
 		this.declScopes.push(frame);
 	}
@@ -607,6 +638,7 @@ export class UnifiedPineValidator {
 
 	private validateStatement(statement: Statement, version: string = "6"): void {
 		const _prevBlockDepth = this.blockDepth;
+
 		switch (statement.type) {
 			case "VariableDeclaration": {
 				// An EXPORTED library variable must carry BOTH a `const`
@@ -626,6 +658,7 @@ export class UnifiedPineValidator {
 						DiagnosticSeverity.Error,
 					);
 				}
+
 				checkBuiltinShadowDeclaration(
 					this,
 					statement.name,
@@ -635,6 +668,7 @@ export class UnifiedPineValidator {
 				);
 				checkTypeAnnotationName(this, statement, version);
 				checkRedeclaration(this, statement.name, statement, version);
+
 				// TV emits CE10025 a SECOND time at the statement start when a
 				// nested-collection constructor is a declaration initializer
 				// (probed: `var x = array.new<array<float>>()` errors at the
@@ -657,6 +691,7 @@ export class UnifiedPineValidator {
 						DiagnosticSeverity.Error,
 					);
 				}
+
 				// A void-returning builtin call cannot initialize a variable:
 				// TV's CE10098 "Void expression cannot be assigned to a
 				// variable" (probed array.push / matrix.reverse, 2026-06-10).
@@ -770,6 +805,7 @@ export class UnifiedPineValidator {
 					// (type keyword / var keyword), not the variable name. see INV032
 					const startLine = statement.startLine ?? statement.line;
 					const startColumn = statement.startColumn ?? statement.column;
+
 					const span =
 						statement.line === startLine
 							? statement.column - startColumn + statement.name.length
@@ -778,6 +814,7 @@ export class UnifiedPineValidator {
 					if (statement.typeAnnotation && initType !== "unknown") {
 						const annotationName = statement.typeAnnotation.name;
 						const declaredBase = TypeChecker.baseTypeName(annotationName);
+
 						if (
 							version === "6" &&
 							TypeChecker.strictAssignApplies(initType, declaredBase)
@@ -793,6 +830,7 @@ export class UnifiedPineValidator {
 								)
 									? annotationName
 									: `const ${declaredBase}`;
+
 								this.addError(
 									startLine,
 									startColumn,
@@ -805,6 +843,7 @@ export class UnifiedPineValidator {
 							// Lenient path for everything the strict rule doesn't
 							// cover (UDTs, collections, void, legacy versions).
 							const varSymbol = this.symbolTable.lookupLocal(statement.name);
+
 							if (
 								varSymbol &&
 								varSymbol.type !== "unknown" &&
@@ -830,6 +869,7 @@ export class UnifiedPineValidator {
 								)
 									? annotationName
 									: TypeChecker.renderAssignDiagnosticType(annotationName);
+
 								this.addError(
 									startLine,
 									startColumn,
@@ -855,12 +895,14 @@ export class UnifiedPineValidator {
 						);
 					}
 				}
+
 				break;
 			}
 
 			case "TupleDeclaration": {
 				// Handle tuple destructuring: [a, b, c] = expr
 				const tupleDecl = statement as TupleDeclaration;
+
 				for (const name of tupleDecl.names) {
 					checkBuiltinShadowDeclaration(
 						this,
@@ -869,6 +911,7 @@ export class UnifiedPineValidator {
 						tupleDecl.column,
 						version,
 					);
+
 					// Tuple names enter the redeclaration scope like plain
 					// declarations: a later `m = ...` is CE10095, and so is a
 					// duplicate name WITHIN one tuple (`[a, a] = ...`) - both
@@ -883,6 +926,7 @@ export class UnifiedPineValidator {
 						checkRedeclaration(this, name, tupleDecl, version);
 					}
 				}
+
 				const elementTypes = inferTupleElementTypes(this, tupleDecl, version);
 				defineTupleVariables(this, tupleDecl, elementTypes);
 
@@ -897,6 +941,7 @@ export class UnifiedPineValidator {
 				// see INV058 / TODO #51.
 				if (version === "6" && tupleDecl.init.type !== "ArrayExpression") {
 					const arity = tupleInitArity(this, tupleDecl.init, version);
+
 					if (arity.kind === "scalar") {
 						this.addError(
 							tupleDecl.line,
@@ -928,6 +973,7 @@ export class UnifiedPineValidator {
 				// `break`/`continue` parse as a bare Identifier statement; outside
 				// any loop they are TV's CE10135/CE10136. see INV092
 				const stmtExpr = statement.expression;
+
 				if (
 					version === "6" &&
 					this.loopDepth === 0 &&
@@ -943,6 +989,7 @@ export class UnifiedPineValidator {
 						code: stmtExpr.name === "break" ? "CE10135" : "CE10136",
 					});
 				}
+
 				// A bare `[...]` statement at TOP LEVEL is TV's
 				// `Mismatched input "end of line without line continuation"
 				// expecting set "="`, anchored one past the closing bracket:
@@ -974,6 +1021,7 @@ export class UnifiedPineValidator {
 						DiagnosticSeverity.Error,
 					);
 				}
+
 				this.validateExpression(statement.expression, version);
 				break;
 			}
@@ -1010,6 +1058,7 @@ export class UnifiedPineValidator {
 						udfIdentityKey(statement.name, "function", statement.params),
 					),
 				);
+
 				if (tupleTypes) recordUdfTupleReturn(this, statement.name, tupleTypes);
 
 				// Redefinition: a same-arity declaration not distinguishable by
@@ -1078,9 +1127,11 @@ export class UnifiedPineValidator {
 				this.currentFunctionName = statement.name;
 				this.pushDeclScope(statement.params.map((p) => p.name));
 				this.functionDepth++;
+
 				for (const stmt of statement.body) {
 					this.validateStatement(stmt, version);
 				}
+
 				this.functionDepth--;
 				// A function whose implicit RETURN is a trailing if-statement with
 				// incompatible branch types is TV's CE10235 - the same rule as an
@@ -1088,9 +1139,11 @@ export class UnifiedPineValidator {
 				// IfStatement, which the expression path never reaches. (A switch
 				// tail is a SwitchExpression and is already covered.) see INV106
 				const fnTail = statement.body[statement.body.length - 1];
+
 				if (version === "6" && fnTail?.type === "IfStatement") {
 					checkIfSwitchBranchTypes(this, fnTail, version);
 				}
+
 				this.popDeclScope();
 				this.currentFunctionName = prevFunctionName;
 				this.symbolTable.exitScope();
@@ -1101,6 +1154,7 @@ export class UnifiedPineValidator {
 			case "IfStatement": {
 				this.validateExpression(statement.condition, version);
 				const condType = this.inferExpressionType(statement.condition, version);
+
 				// Skip check if type is unknown (can't verify, don't complain).
 				// TV's wording and anchor: 'The condition of the "if" statement
 				// must evaluate to a "bool" value.' at the CONDITION expression
@@ -1133,35 +1187,46 @@ export class UnifiedPineValidator {
 				// TV, while `if close > open` / `n := 6` makes it series (both
 				// probed 2026-08-25). see INV157
 				const seriesGated = isSeriesQualified(condType);
+
 				if (seriesGated) this.seriesGateDepth++;
 				const scopeBranches = version === "6";
+
 				if (scopeBranches) this.symbolTable.enterScope();
 				this.blockDepth++;
 				this.pushDeclScope();
+
 				for (const stmt of statement.consequent) {
 					this.collectDeclarations(stmt, version);
 				}
+
 				for (const stmt of statement.consequent) {
 					this.validateStatement(stmt, version);
 				}
+
 				this.popDeclScope();
 				this.blockDepth--;
+
 				if (scopeBranches) this.symbolTable.exitScope();
 
 				if (statement.alternate) {
 					if (scopeBranches) this.symbolTable.enterScope();
 					this.blockDepth++;
 					this.pushDeclScope();
+
 					for (const stmt of statement.alternate) {
 						this.collectDeclarations(stmt, version);
 					}
+
 					for (const stmt of statement.alternate) {
 						this.validateStatement(stmt, version);
 					}
+
 					this.popDeclScope();
 					this.blockDepth--;
+
 					if (scopeBranches) this.symbolTable.exitScope();
 				}
+
 				if (seriesGated) this.seriesGateDepth--;
 				break;
 			}
@@ -1183,6 +1248,7 @@ export class UnifiedPineValidator {
 				// non-collection) - lenient, as before. The tuple INDEX stays
 				// "int" and the counted form's iterator stays "int". see INV071
 				let elemType: PineType = "unknown";
+
 				if (
 					statement.type === "ForInStatement" &&
 					"collection" in statement &&
@@ -1191,9 +1257,11 @@ export class UnifiedPineValidator {
 					const base = TypeChecker.baseTypeName(
 						this.inferExpressionType(statement.collection, version) as string,
 					);
+
 					const am = base.match(/^array<(.+)>$/);
 					const mm = base.match(/^map<\s*[^,]+,\s*(.+)>$/);
 					const elem = am ? am[1] : mm ? mm[1].trim() : undefined;
+
 					if (elem && elem !== "unknown") {
 						// Canonical bracket form - `isNumericType` etc. only
 						// recognise `series<float>`, not the space form.
@@ -1218,6 +1286,7 @@ export class UnifiedPineValidator {
 							this.inferExpressionType(statement.collection, version),
 							version,
 						);
+
 						this.addTemplateError({
 							line: statement.collection.line || statement.line,
 							column: statement.collection.column || statement.column,
@@ -1236,9 +1305,11 @@ export class UnifiedPineValidator {
 						});
 					}
 				}
+
 				if ("iterator" in statement) {
 					const isForInValue =
 						statement.type === "ForInStatement" && !statement.iterator2;
+
 					// Counted-for counter is `series int` (TV types it so - a
 					// series value is then rejected in a simple-int slot, e.g.
 					// `ta.ema(close, i)`, CE10123). The for-in tuple INDEX stays
@@ -1248,6 +1319,7 @@ export class UnifiedPineValidator {
 						: statement.type === "ForStatement"
 							? "series<int>"
 							: "int";
+
 					this.symbolTable.define({
 						name: statement.iterator,
 						type: iterType,
@@ -1259,6 +1331,7 @@ export class UnifiedPineValidator {
 						loopVar: true, // immutable - see INV099
 					});
 				}
+
 				if ("iterator2" in statement && statement.iterator2) {
 					this.symbolTable.define({
 						name: statement.iterator2,
@@ -1276,9 +1349,11 @@ export class UnifiedPineValidator {
 				if ("from" in statement) {
 					this.validateExpression(statement.from, version);
 				}
+
 				if ("to" in statement) {
 					this.validateExpression(statement.to, version);
 				}
+
 				if ("collection" in statement) {
 					this.validateExpression(statement.collection, version);
 				}
@@ -1287,6 +1362,7 @@ export class UnifiedPineValidator {
 				for (const stmt of statement.body) {
 					this.collectDeclarations(stmt, version);
 				}
+
 				// Then validate. Iterators count as declared by the loop scope.
 				// see INV035
 				this.pushDeclScope(
@@ -1295,9 +1371,11 @@ export class UnifiedPineValidator {
 						"iterator2" in statement ? statement.iterator2 : undefined,
 					].filter((n): n is string => typeof n === "string"),
 				);
+
 				for (const stmt of statement.body) {
 					this.validateStatement(stmt, version);
 				}
+
 				this.popDeclScope();
 
 				this.symbolTable.exitScope();
@@ -1314,10 +1392,12 @@ export class UnifiedPineValidator {
 				// its target series whatever the condition's qualifier. see INV177
 				if (statement.condition) {
 					this.validateExpression(statement.condition, version);
+
 					const onceCondType = this.inferExpressionType(
 						statement.condition,
 						version,
 					);
+
 					if (!boolContextOk(onceCondType, version)) {
 						this.addError(
 							statement.condition.line || statement.line,
@@ -1328,16 +1408,20 @@ export class UnifiedPineValidator {
 						);
 					}
 				}
+
 				this.seriesGateDepth++;
 				this.symbolTable.enterScope();
 				this.blockDepth++;
 				this.pushDeclScope();
+
 				for (const stmt of statement.body) {
 					this.collectDeclarations(stmt, version);
 				}
+
 				for (const stmt of statement.body) {
 					this.validateStatement(stmt, version);
 				}
+
 				this.popDeclScope();
 				this.blockDepth--;
 				this.symbolTable.exitScope();
@@ -1348,6 +1432,7 @@ export class UnifiedPineValidator {
 			case "WhileStatement":
 				if ("condition" in statement) {
 					this.validateExpression(statement.condition, version);
+
 					// Same rule and template as the if-condition check: TV's
 					// CE10101 with blockName "while", anchored at the CONDITION
 					// expression (probed `while close` / `while n`). see INV041
@@ -1355,6 +1440,7 @@ export class UnifiedPineValidator {
 						statement.condition,
 						version,
 					);
+
 					if (!boolContextOk(whileCondType, version)) {
 						this.addError(
 							statement.condition.line || statement.line,
@@ -1365,13 +1451,16 @@ export class UnifiedPineValidator {
 						);
 					}
 				}
+
 				this.symbolTable.enterScope();
 				this.blockDepth++;
 				this.loopDepth++; // break/continue allowed below here. see INV092
 				this.pushDeclScope();
+
 				for (const stmt of statement.body) {
 					this.validateStatement(stmt, version);
 				}
+
 				this.popDeclScope();
 				this.symbolTable.exitScope();
 				this.blockDepth--;
@@ -1396,6 +1485,7 @@ export class UnifiedPineValidator {
 					const targetSym = this.symbolTable.lookup(
 						(statement.target as Identifier).name,
 					);
+
 					if (targetSym?.loopVar) {
 						this.addTemplateError({
 							line: statement.target.line || statement.line,
@@ -1408,6 +1498,7 @@ export class UnifiedPineValidator {
 						});
 					}
 				}
+
 				// A user function may not reassign a GLOBAL variable: TV's CE10088,
 				// anchored at the target identifier, for `:=` and every compound
 				// operator alike (`=` inside a body is a local declaration, not a
@@ -1427,6 +1518,7 @@ export class UnifiedPineValidator {
 				) {
 					const globalName = (statement.target as Identifier).name;
 					const globalSym = this.symbolTable.lookup(globalName);
+
 					if (
 						globalSym &&
 						globalSym.line > 0 &&
@@ -1445,6 +1537,7 @@ export class UnifiedPineValidator {
 						});
 					}
 				}
+
 				// `matrix = 0.0` - a type-keyword/namespace name used as a user
 				// variable parses as AssignmentStatement (the declaration path
 				// rejects keyword names), so the name would otherwise keep
@@ -1457,6 +1550,7 @@ export class UnifiedPineValidator {
 				) {
 					const targetName = (statement.target as Identifier).name;
 					const existing = this.symbolTable.lookup(targetName);
+
 					if (existing && existing.line === 0) {
 						// Same na-initializer guard as collectDeclarations: a
 						// bare-na RHS gives the variable NO type. see INV032
@@ -1472,6 +1566,7 @@ export class UnifiedPineValidator {
 						});
 					}
 				}
+
 				// The target is a write position, not a value use - route an
 				// Identifier target straight to validateIdentifier (same shape
 				// as member objects). see INV048
@@ -1480,6 +1575,7 @@ export class UnifiedPineValidator {
 				} else {
 					this.validateExpression(statement.target, version);
 				}
+
 				this.validateExpression(statement.value, version);
 
 				// Pine has no array literals: a `[...]` tuple expression is
@@ -1514,6 +1610,7 @@ export class UnifiedPineValidator {
 						statement.target,
 						version,
 					);
+
 					if (targetType !== "unknown") {
 						this.addError(
 							statement.line,
@@ -1528,8 +1625,10 @@ export class UnifiedPineValidator {
 				// Check type compatibility (isAssignable handles all coercion rules)
 				const targetType = this.inferExpressionType(statement.target, version);
 				const valueType = this.inferExpressionType(statement.value, version);
+
 				if (targetType !== "unknown" && valueType !== "unknown") {
 					const targetBase = TypeChecker.baseTypeName(targetType as string);
+
 					if (
 						version === "6" &&
 						statement.operator === ":=" &&
@@ -1544,6 +1643,7 @@ export class UnifiedPineValidator {
 							const valueBase = TypeChecker.isNaType(valueType)
 								? "na"
 								: TypeChecker.baseTypeName(valueType as string);
+
 							this.addError(
 								statement.line,
 								statement.column,
@@ -1569,6 +1669,7 @@ export class UnifiedPineValidator {
 							statement.target.type === "Identifier"
 								? `Cannot assign a value of the "${TypeChecker.renderAssignDiagnosticType(valueType)}" type to the "${(statement.target as Identifier).name}" variable. The variable is declared with the "${TypeChecker.renderAssignDiagnosticType(targetType)}" type.`
 								: `Cannot assign ${TypeChecker.displayType(valueType)} to ${TypeChecker.displayType(targetType)}`;
+
 						this.addError(
 							statement.line,
 							statement.column,
@@ -1604,6 +1705,7 @@ export class UnifiedPineValidator {
 						valueType,
 					);
 				}
+
 				break;
 			}
 
@@ -1636,6 +1738,7 @@ export class UnifiedPineValidator {
 						udfIdentityKey(statement.name, "method", statement.params),
 					),
 				);
+
 				if (tupleTypes) recordUdfTupleReturn(this, statement.name, tupleTypes);
 
 				// Register the method in the symbol table. Use kind:"method"
@@ -1672,9 +1775,11 @@ export class UnifiedPineValidator {
 				// above. see INV140
 				for (const param of statement.params) {
 					let paramType: PineType = "unknown";
+
 					if (param.typeAnnotation) {
 						paramType = annotationToSymbolType(this, param.typeAnnotation.name);
 					}
+
 					this.symbolTable.define({
 						name: param.name,
 						type: paramType,
@@ -1691,18 +1796,23 @@ export class UnifiedPineValidator {
 				for (const stmt of statement.body) {
 					this.collectDeclarations(stmt, version);
 				}
+
 				this.pushDeclScope(statement.params.map((p) => p.name));
 				this.functionDepth++;
+
 				for (const stmt of statement.body) {
 					this.validateStatement(stmt, version);
 				}
+
 				this.functionDepth--;
 				// Implicit-return trailing if-statement branch types (CE10235),
 				// as in FunctionDeclaration above. see INV106
 				const mTail = statement.body[statement.body.length - 1];
+
 				if (version === "6" && mTail?.type === "IfStatement") {
 					checkIfSwitchBranchTypes(this, mTail, version);
 				}
+
 				this.popDeclScope();
 
 				this.symbolTable.exitScope();
@@ -1730,6 +1840,7 @@ export class UnifiedPineValidator {
 						declaredWith: null,
 					});
 				}
+
 				break;
 			}
 
@@ -1738,6 +1849,7 @@ export class UnifiedPineValidator {
 				for (const stmt of statement.statements) {
 					this.validateStatement(stmt, version);
 				}
+
 				break;
 			}
 
@@ -1752,6 +1864,7 @@ export class UnifiedPineValidator {
 					this.declaredEnumNames.add(statement.name); // see INV048
 					recordEnumMembers(this, statement); // see INV096
 				}
+
 				const symbol: SymbolInfo = {
 					name: statement.name,
 					type: "unknown", // User-defined type
@@ -1761,6 +1874,7 @@ export class UnifiedPineValidator {
 					kind: "variable", // Treat as namespace for member access
 					declaredWith: null,
 				};
+
 				this.symbolTable.define(symbol);
 				break;
 			}
@@ -1774,38 +1888,46 @@ export class UnifiedPineValidator {
 		if (call.callee.type !== "MemberExpression") return null;
 		const member = call.callee as MemberExpression;
 		const method = member.property.name;
+
 		const receiverType = TypeChecker.baseTypeName(
 			this.inferExpressionType(member.object, version) as string,
 		);
 
 		const arrayMatch = receiverType.match(/^array<(.+)>$/);
+
 		if (arrayMatch) {
 			if (ARRAY_ELEMENT_RETURN_METHODS.has(method)) {
 				return arrayMatch[1] as PineType;
 			}
+
 			if (ARRAY_SELF_RETURN_METHODS.has(method)) {
 				return receiverType as PineType;
 			}
 		}
 
 		const matrixMatch = receiverType.match(/^matrix<(.+)>$/);
+
 		if (matrixMatch) {
 			if (method === "get") {
 				return matrixMatch[1] as PineType;
 			}
+
 			if (MATRIX_SELF_RETURN_METHODS.has(method)) {
 				return receiverType as PineType;
 			}
+
 			if (MATRIX_ARRAY_RETURN_METHODS.has(method)) {
 				return `array<${matrixMatch[1]}>` as PineType;
 			}
 		}
 
 		const mapMatch = receiverType.match(/^map<\s*[^,]+,\s*(.+)>$/);
+
 		if (mapMatch) {
 			if (method === "get") {
 				return mapMatch[1].trim() as PineType;
 			}
+
 			if (MAP_SELF_RETURN_METHODS.has(method)) {
 				return receiverType as PineType;
 			}
@@ -1831,11 +1953,13 @@ export class UnifiedPineValidator {
 				// checkNonValueReference doesn't fire on `chart.bg_color`,
 				// `ta.sma`, etc. see INV048
 				const memberObj = expr.object;
+
 				if (memberObj.type === "Identifier") {
 					this.validateIdentifier(memberObj, memberChainName(expr));
 				} else {
 					this.validateExpression(memberObj, version);
 				}
+
 				// A built-in TYPE reached as a namespace member (`chart.point`)
 				// used in value position is TV's CE10272 - probed 2026-06-07,
 				// `x = chart.point` errors at the member span. see INV048
@@ -1845,6 +1969,7 @@ export class UnifiedPineValidator {
 					expr.property?.type === "Identifier"
 				) {
 					const fullName = `${memberObj.name}.${expr.property.name}`;
+
 					if (TYPE_NAMES.has(fullName)) {
 						this.addError(
 							expr.line || 0,
@@ -1855,6 +1980,7 @@ export class UnifiedPineValidator {
 						);
 					}
 				}
+
 				checkUdtFieldAccess(this, expr, version);
 				break;
 			}
@@ -1866,6 +1992,7 @@ export class UnifiedPineValidator {
 				if (!this.rejectTupleInValuePosition(expr.left, version)) {
 					this.rejectTupleInValuePosition(expr.right, version);
 				}
+
 				this.validateExpression(expr.left, version);
 				this.validateExpression(expr.right, version);
 				validateBinaryExpression(this, expr, version);
@@ -1896,6 +2023,7 @@ export class UnifiedPineValidator {
 				for (const el of expr.elements) {
 					this.validateExpression(el, version);
 				}
+
 				break;
 
 			case "IndexExpression":
@@ -1906,6 +2034,7 @@ export class UnifiedPineValidator {
 			case "SwitchExpression": {
 				// Validate all cases in the switch expression
 				const switchExpr = expr as SwitchExpression;
+
 				// A switch WITH a subject desugars each case to `subject == case`,
 				// so a case value incomparable with the subject is TV's CE10123 for
 				// `operator ==` (probed `switch close` / `"a"` case -> expr1
@@ -1916,6 +2045,7 @@ export class UnifiedPineValidator {
 				const subjType = switchExpr.discriminant
 					? this.inferExpressionType(switchExpr.discriminant, version)
 					: null;
+
 				const subjDocStr =
 					switchExpr.discriminant && subjType
 						? this.describeArgForTemplate(
@@ -1924,17 +2054,21 @@ export class UnifiedPineValidator {
 								version,
 							).typeStr
 						: "";
+
 				if (switchExpr.discriminant) {
 					this.validateExpression(switchExpr.discriminant, version);
 				}
+
 				for (const switchCase of switchExpr.cases) {
 					if (switchCase.condition) {
 						this.validateExpression(switchCase.condition, version);
+
 						if (version === "6" && subjType && subjType !== "unknown") {
 							const caseType = this.inferExpressionType(
 								switchCase.condition,
 								version,
 							);
+
 							if (
 								caseType !== "unknown" &&
 								!TypeChecker.areTypesCompatible(subjType, caseType, "==", false)
@@ -1951,6 +2085,7 @@ export class UnifiedPineValidator {
 							}
 						}
 					}
+
 					// `result` is contained in the last statement, so walk
 					// `statements` INSTEAD of `result` when present (see
 					// SwitchCase). Each arm body is its own local scope.
@@ -1958,12 +2093,15 @@ export class UnifiedPineValidator {
 						this.symbolTable.enterScope();
 						this.blockDepth++;
 						this.pushDeclScope();
+
 						for (const stmt of switchCase.statements) {
 							this.collectDeclarations(stmt, version);
 						}
+
 						for (const stmt of switchCase.statements) {
 							this.validateStatement(stmt, version);
 						}
+
 						this.popDeclScope();
 						this.blockDepth--;
 						this.symbolTable.exitScope();
@@ -1971,6 +2109,7 @@ export class UnifiedPineValidator {
 						this.validateExpression(switchCase.result, version);
 					}
 				}
+
 				checkIfSwitchBranchTypes(this, switchExpr, version);
 				break;
 			}
@@ -1981,21 +2120,26 @@ export class UnifiedPineValidator {
 				// arm handling above). see INV031
 				const ifExpr = expr as IfExpression;
 				this.validateExpression(ifExpr.condition, version);
+
 				for (const branch of [ifExpr.consequent, ifExpr.alternate]) {
 					if (!branch) continue;
 					this.symbolTable.enterScope();
 					this.blockDepth++;
 					this.pushDeclScope();
+
 					for (const stmt of branch) {
 						this.collectDeclarations(stmt, version);
 					}
+
 					for (const stmt of branch) {
 						this.validateStatement(stmt, version);
 					}
+
 					this.popDeclScope();
 					this.blockDepth--;
 					this.symbolTable.exitScope();
 				}
+
 				checkIfSwitchBranchTypes(this, ifExpr, version);
 				break;
 			}
@@ -2026,6 +2170,7 @@ export class UnifiedPineValidator {
 			'Syntax error at input "["',
 			DiagnosticSeverity.Error,
 		);
+
 		return true;
 	}
 
@@ -2053,6 +2198,7 @@ export class UnifiedPineValidator {
 	 */
 	private userSymbolQualifier(sym: SymbolInfo): Qualifier | undefined {
 		const declared = this.declaredQualifiers.get(sym);
+
 		// Nothing recorded - a parameter, or a declaration shape
 		// `recordDeclaredQualifier` could not read. Returning undefined keeps
 		// the caller's default, which is what TV reports for a typed parameter
@@ -2060,6 +2206,7 @@ export class UnifiedPineValidator {
 		// correct answer here and not merely a safe one.
 		if (!declared) return undefined;
 		const promoted = this.promotedQualifiers.get(sym);
+
 		return promoted ? joinQualifier(declared, promoted) : declared;
 	}
 
@@ -2074,9 +2221,11 @@ export class UnifiedPineValidator {
 		version: string,
 	): string {
 		if (!init) return "const";
+
 		const prov = qualifierProvenance(this, init, version, {
 			trustUdfAndUserVars: true,
 		});
+
 		return prov?.qualifier ?? "const";
 	}
 
@@ -2107,6 +2256,7 @@ export class UnifiedPineValidator {
 		const annotated = statement.typeAnnotation
 			? leadingQualifierOf(statement.typeAnnotation.name)
 			: undefined;
+
 		const q =
 			annotated ??
 			(statement.init
@@ -2114,6 +2264,7 @@ export class UnifiedPineValidator {
 						trustUdfAndUserVars: true,
 					})?.qualifier
 				: undefined);
+
 		if (q) this.declaredQualifiers.set(symbol, q);
 	}
 
@@ -2135,11 +2286,14 @@ export class UnifiedPineValidator {
 		valueType: PineType,
 	): void {
 		const symbol = this.symbolTable.lookup(target.name);
+
 		if (symbol?.kind !== "variable") return;
 		const symType = String(symbol.type);
+
 		// An untyped symbol has nothing to qualify, and a builtin seed (line 0)
 		// is not ours to rewrite.
 		if (symType === "unknown" || symbol.line === 0) return;
+
 		// A write that RUNS conditionally is series regardless of what was
 		// written: TV promotes on a const `sum := sum + 1` inside a loop body
 		// or a series-gated branch, and leaves the identical write alone at
@@ -2148,12 +2302,14 @@ export class UnifiedPineValidator {
 			this.loopDepth > 0 || this.seriesGateDepth > 0
 				? "series"
 				: leadingQualifierOf(String(valueType));
+
 		if (!written) return;
 		// A stored type carries a qualifier only when the initializer had one
 		// (`n = int(close)` stores "series int", `n = 5` stores bare "int"), so
 		// an unqualified variable type is the const default.
 		const declared = leadingQualifierOf(symType) ?? "const";
 		const promoted = joinQualifier(declared, written);
+
 		if (promoted === declared) return;
 		// Recorded BESIDE the symbol, never written into `symbol.type`. Symbol
 		// types are stored unqualified and the qualifier is derived per read
@@ -2188,17 +2344,21 @@ export class UnifiedPineValidator {
 					`Undeclared identifier "${fullMemberName}"`,
 					DiagnosticSeverity.Error,
 				);
+
 				return;
 			}
 
 			const similar = this.symbolTable.findSimilarSymbols(identifier.name, 2);
 			let message = `Undefined variable '${identifier.name}'`;
+
 			if (similar.length > 0) {
 				message += `. Did you mean '${similar[0]}'?`;
 			}
+
 			if (similar.length === 0) {
 				message = `Undeclared identifier "${identifier.name}"`;
 			}
+
 			this.addError(
 				identifier.line,
 				identifier.column,
@@ -2206,6 +2366,7 @@ export class UnifiedPineValidator {
 				message,
 				DiagnosticSeverity.Error,
 			);
+
 			return;
 		}
 
@@ -2237,9 +2398,11 @@ export class UnifiedPineValidator {
 		if (version !== "6") return;
 		const name = identifier.name;
 		const symbol = this.symbolTable.lookup(name);
+
 		// Unresolved names already got "Undefined variable" in
 		// validateIdentifier; don't stack a second error.
 		if (!symbol) return;
+
 		if (symbol.line !== 0) {
 			// User-declared symbol (or UDT/enum/import alias).
 			if (this.declaredEnumNames.has(name)) {
@@ -2251,12 +2414,15 @@ export class UnifiedPineValidator {
 					DiagnosticSeverity.Error,
 				);
 			}
+
 			return;
 		}
+
 		// A name that is ALSO a bare built-in variable is a real value -
 		// `dayofweek` is both a series int variable and the constants
 		// namespace (dayofweek.monday). The only such collision in v6.
 		if (getBuiltinVarInfo(name)) return;
+
 		if (
 			TYPE_KEYWORDS.has(name) ||
 			TYPE_NAMES.has(name) ||
@@ -2276,6 +2442,7 @@ export class UnifiedPineValidator {
 		const match = (type as string).match(
 			/^(?:series|simple|input|const)<(.+)>$/,
 		);
+
 		return match ? match[1] : (type as string);
 	}
 
@@ -2293,13 +2460,17 @@ export class UnifiedPineValidator {
 	public renderTvType(t: PineType, bareQualifier: string): string {
 		const m = (t as string).match(/^(series|simple|input|const)<(.+)>$/);
 		const base = TypeChecker.baseTypeName(t as string);
+
 		if (this.udtFieldTypes.has(base)) return base;
+
 		if (m) return `${m[1]} ${m[2]}`;
+
 		// Already carries a space-form qualifier ("series int"), so prefixing
 		// `bareQualifier` again would render "series series int". Types reach
 		// this renderer in both shapes - a qualifier survives on the symbol
 		// when the initializer had one, or when a `:=` promoted it. see INV157
 		if (/^(series|simple|input|const)\s/.test(t as string)) return t as string;
+
 		if (
 			t === "unknown" ||
 			t === "na" ||
@@ -2316,6 +2487,7 @@ export class UnifiedPineValidator {
 		) {
 			return t;
 		}
+
 		return `${bareQualifier} ${t}`;
 	}
 
@@ -2334,68 +2506,90 @@ export class UnifiedPineValidator {
 		switch (expr.type) {
 			case "Literal": {
 				const lit = expr as Literal;
+
 				if (typeof lit.value === "string") {
 					// TV renders the string CONTENT, unquoted ("red" -> red).
 					const repr = String(lit.value).replace(/^(["'])(.*)\1$/s, "$2");
+
 					return { repr, typeStr: "literal string" };
 				}
+
 				if (typeof lit.value === "boolean") {
 					return { repr: lit.raw, typeStr: "literal bool" };
 				}
+
 				if (lit.raw.startsWith("#")) {
 					return { repr: lit.raw, typeStr: "literal color" };
 				}
+
 				const base =
 					lit.raw.includes(".") || /[eE]/.test(lit.raw) ? "float" : "int";
+
 				return { repr: lit.raw, typeStr: `literal ${base}` };
 			}
+
 			case "Identifier":
 			case "MemberExpression": {
 				const name =
 					expr.type === "Identifier"
 						? (expr as Identifier).name
 						: memberChainName(expr);
+
 				const qualified = name ? getBuiltinQualifiedType(name) : undefined;
+
 				const sym =
 					expr.type === "Identifier"
 						? this.symbolTable.lookup((expr as Identifier).name)
 						: undefined;
+
 				const bareQualifier =
 					sym && sym.line !== 0
 						? (this.userSymbolQualifier(sym) ?? bareIdentifierQualifier)
 						: "const";
+
 				return {
 					repr: name || "?",
 					typeStr: qualified ?? this.renderTvType(inferred, bareQualifier),
 				};
 			}
+
 			case "CallExpression": {
 				const ce = expr as CallExpression;
 				const name = memberChainName(ce.callee);
+
 				const argTypes = ce.arguments.map((a) =>
 					this.inferExpressionType(a.value, version),
 				);
+
 				const raw = name ? resolveCallReturnRaw(name, argTypes) : undefined;
+
 				const typeStr =
 					raw && raw !== "void"
 						? name === "ta.change"
 							? "series float"
 							: raw
 						: this.renderTvType(inferred, "series");
+
 				return { repr: `call "${name || "?"}" (${typeStr})`, typeStr };
 			}
+
 			case "BinaryExpression":
 			case "UnaryExpression": {
 				const op = (expr as BinaryExpression | UnaryExpression).operator;
 				const typeStr = this.renderTvType(inferred, "series");
+
 				return { repr: `call "operator ${op}" (${typeStr})`, typeStr };
 			}
+
 			case "TernaryExpression": {
 				const typeStr = this.renderTvType(inferred, "series");
+
 				return { repr: `call "operator ?:" (${typeStr})`, typeStr };
 			}
+
 			default: {
 				const typeStr = this.renderTvType(inferred, "series");
+
 				return { repr: typeStr, typeStr };
 			}
 		}
@@ -2446,6 +2640,7 @@ export class UnifiedPineValidator {
 		// Check cache
 		if (this.expressionTypes.has(expr)) {
 			const cached = this.expressionTypes.get(expr);
+
 			if (cached) return cached;
 		}
 
@@ -2461,6 +2656,7 @@ export class UnifiedPineValidator {
 
 			case "Identifier": {
 				const idName = (expr as Identifier).name;
+
 				// `na` lexes as a keyword, so its symbol-table entry carries no
 				// value type ("unknown" - the RESERVED_KEYWORDS registration
 				// overwrites the pine-data variable's simple<na>). Its expression
@@ -2470,6 +2666,7 @@ export class UnifiedPineValidator {
 					type = "na";
 					break;
 				}
+
 				const symbol = this.symbolTable.lookup(idName);
 				type = symbol ? symbol.type : "unknown";
 				break;
@@ -2477,6 +2674,7 @@ export class UnifiedPineValidator {
 
 			case "CallExpression": {
 				const callExpr = expr as CallExpression;
+
 				// Flatten the WHOLE callee chain - two-level builtin namespaces
 				// (strategy.closedtrades.entry_comment) otherwise leave funcName
 				// empty and the call's catalog return type unresolved (the same
@@ -2487,6 +2685,7 @@ export class UnifiedPineValidator {
 						: memberChainName(callExpr.callee);
 
 				const ctorMatch = funcName.match(/^(.+)\.new$/);
+
 				if (ctorMatch && this.declaredTypeNames.has(ctorMatch[1])) {
 					type = ctorMatch[1] as PineType;
 					break;
@@ -2496,6 +2695,7 @@ export class UnifiedPineValidator {
 					callExpr,
 					version,
 				);
+
 				if (receiverMethodReturn) {
 					type = receiverMethodReturn;
 					break;
@@ -2504,15 +2704,18 @@ export class UnifiedPineValidator {
 				// Handle generic type arguments: array.new<float>() -> array<float>
 				if (callExpr.typeArguments && callExpr.typeArguments.length > 0) {
 					const typeArg = callExpr.typeArguments[0];
+
 					// array.new<T> returns array<T>, matrix.new<T> returns matrix<T>
 					if (funcName === "array.new" || funcName.startsWith("array.new")) {
 						type = `array<${typeArg}>` as PineType;
 						break;
 					}
+
 					if (funcName === "matrix.new" || funcName.startsWith("matrix.new")) {
 						type = `matrix<${typeArg}>` as PineType;
 						break;
 					}
+
 					if (funcName === "map.new") {
 						const valueArg = callExpr.typeArguments[1];
 						type = (
@@ -2529,6 +2732,7 @@ export class UnifiedPineValidator {
 						callExpr.arguments[0].value,
 						version,
 					);
+
 					// baseTypeName strips both qualifier forms - the space form
 					// and the bracketed one (input<bool> elements from input.*
 					// calls would otherwise produce array<input<bool>>). see INV040
@@ -2540,6 +2744,7 @@ export class UnifiedPineValidator {
 				// Special handling for request.security with non-tuple returns
 				if (funcName === "request.security" && callExpr.arguments.length >= 3) {
 					const exprArg = callExpr.arguments[2].value;
+
 					if (exprArg.type !== "ArrayExpression") {
 						type = this.inferExpressionType(exprArg, version);
 						break;
@@ -2557,8 +2762,10 @@ export class UnifiedPineValidator {
 					callExpr.arguments.length >= 3
 				) {
 					const exprArg = callExpr.arguments[2].value;
+
 					if (exprArg.type !== "ArrayExpression") {
 						const elem = this.inferExpressionType(exprArg, version);
+
 						if (elem !== "unknown") {
 							const m = elem.match(/^(?:series|simple|input|const)<(.+)>$/);
 							type = `array<${m ? m[1] : elem}>` as PineType;
@@ -2573,12 +2780,15 @@ export class UnifiedPineValidator {
 					name: arg.name,
 					type: this.inferExpressionType(arg.value, version),
 				}));
+
 				const argTypes = argInfos.map((info) => info.type);
+
 				const polyReturnType = getPolymorphicReturnType(
 					funcName,
 					argTypes,
 					argInfos,
 				);
+
 				// The 'type' placeholder (an unresolved generic element) must never
 				// leak into compatibility checks - e.g. the 'element' rule extracts
 				// 'type' from an arg typed array<type>. Fall through to the
@@ -2607,8 +2817,10 @@ export class UnifiedPineValidator {
 
 				// Then check function signatures for built-ins
 				const signature = this.functionSignatures.get(funcName);
+
 				if (signature?.returns) {
 					const ret = signature.returns;
+
 					// A generic placeholder return ("type", "matrix<type>", ...)
 					// follows the element type of the function's collection
 					// argument (e.g. matrix.transpose(matrix<bool>) -> matrix<bool>).
@@ -2619,13 +2831,16 @@ export class UnifiedPineValidator {
 					// unknown via the same path.) see INV027
 					if (ret === "type" || ret.includes("<type>")) {
 						let elem: string | null = null;
+
 						for (const ai of argInfos) {
 							const m = ai.type.match(/^(?:array|matrix)<(.+)>$/);
+
 							if (m && m[1] !== "type" && m[1] !== "unknown") {
 								elem = m[1];
 								break;
 							}
 						}
+
 						type = elem
 							? ((ret === "type"
 									? elem
@@ -2633,11 +2848,14 @@ export class UnifiedPineValidator {
 							: "unknown";
 						break;
 					}
+
 					const rawReturn = resolveCallReturnRaw(funcName, argTypes);
+
 					if (rawReturn) {
 						type = mapReturnTypeToPineType(rawReturn);
 						break;
 					}
+
 					type = mapReturnTypeToPineType(ret);
 					break;
 				}
@@ -2647,6 +2865,7 @@ export class UnifiedPineValidator {
 				// methods (which live in a separate namespace from variables).
 				// see INV006.
 				const udfSymbol = this.symbolTable.lookupCallable(funcName);
+
 				if (
 					udfSymbol &&
 					(udfSymbol.kind === "function" || udfSymbol.kind === "method") &&
@@ -2675,6 +2894,7 @@ export class UnifiedPineValidator {
 
 			case "UnaryExpression": {
 				const unaryExpr = expr as UnaryExpression;
+
 				if (unaryExpr.operator === "not") {
 					type = "bool";
 				} else if (unaryExpr.operator === "-") {
@@ -2682,15 +2902,18 @@ export class UnifiedPineValidator {
 				} else {
 					type = this.inferExpressionType(unaryExpr.argument, version);
 				}
+
 				break;
 			}
 
 			case "TernaryExpression": {
 				const ternaryExpr = expr as TernaryExpression;
+
 				const conseqType = this.inferExpressionType(
 					ternaryExpr.consequent,
 					version,
 				);
+
 				const altType = this.inferExpressionType(
 					ternaryExpr.alternate,
 					version,
@@ -2710,6 +2933,7 @@ export class UnifiedPineValidator {
 					type = TypeChecker.isNaType(altType) ? "unknown" : altType;
 					break;
 				}
+
 				if (altType === "unknown" && conseqType !== "unknown") {
 					type = TypeChecker.isNaType(conseqType) ? "unknown" : conseqType;
 					break;
@@ -2747,6 +2971,7 @@ export class UnifiedPineValidator {
 				} else {
 					type = "unknown";
 				}
+
 				break;
 			}
 
@@ -2756,6 +2981,7 @@ export class UnifiedPineValidator {
 
 				// Handle series<T>[index] → T
 				const seriesMatch = arrayType.match(/^series<(.+)>$/);
+
 				if (seriesMatch) {
 					type = seriesMatch[1] as PineType;
 					break;
@@ -2777,9 +3003,11 @@ export class UnifiedPineValidator {
 				// Condition-driven qualification (series/input wrap) is applied
 				// centrally at the tail of this function. see INV040
 				const switchExpr = expr as SwitchExpression;
+
 				if (switchExpr.cases.length > 0) {
 					type = this.inferExpressionType(switchExpr.cases[0].result, version);
 				}
+
 				break;
 			}
 
@@ -2788,12 +3016,14 @@ export class UnifiedPineValidator {
 				// SwitchExpression first-arm rule above). see INV031
 				const ifExpr = expr as IfExpression;
 				const tail = ifExpr.consequent[ifExpr.consequent.length - 1];
+
 				if (tail?.type === "ExpressionStatement") {
 					type = this.inferExpressionType(
 						(tail as ExpressionStatement).expression,
 						version,
 					);
 				}
+
 				break;
 			}
 
@@ -2801,6 +3031,7 @@ export class UnifiedPineValidator {
 				const memberExpr = expr as MemberExpression;
 
 				const udtFieldType = resolveUdtFieldType(this, memberExpr);
+
 				if (udtFieldType) {
 					type = udtFieldType;
 					break;
@@ -2818,6 +3049,7 @@ export class UnifiedPineValidator {
 					// the value is typed as the enum (its name), so the operator
 					// checks reject `E.a == 1` / `E.a + 1`. see INV096
 					const enumMembers = this.enumMemberNames.get(namespaceName);
+
 					if (enumMembers?.has(memberExpr.property.name)) {
 						type = namespaceName as PineType;
 						break;
@@ -2832,6 +3064,7 @@ export class UnifiedPineValidator {
 					// Check if it's a known function (some functions can be accessed without parentheses)
 					// e.g., ta.tr is a function but can be used as ta.tr without ()
 					const funcSig = this.functionSignatures.get(propertyName);
+
 					if (funcSig) {
 						// Return the function's return type
 						type = funcSig.returns
@@ -2882,6 +3115,7 @@ export class UnifiedPineValidator {
 		) {
 			const ce = expr as CallExpression;
 			let inputFnName = "";
+
 			if (ce.callee.type === "Identifier") {
 				inputFnName = (ce.callee as Identifier).name;
 			} else if (
@@ -2891,11 +3125,13 @@ export class UnifiedPineValidator {
 				const m = ce.callee as MemberExpression;
 				inputFnName = `${(m.object as Identifier).name}.${m.property.name}`;
 			}
+
 			if (inputFnName === "input" || inputFnName.startsWith("input.")) {
 				const raw = resolveCallReturnRaw(
 					inputFnName,
 					ce.arguments.map((a) => this.inferExpressionType(a.value, version)),
 				);
+
 				if (raw && /^input\b/.test(raw)) {
 					type = `input<${type}>` as PineType;
 				}
@@ -2909,13 +3145,16 @@ export class UnifiedPineValidator {
 		// Wrap bare primitive results only. see INV040
 		if (type !== "unknown" && !(type as string).includes("<")) {
 			const conds = this.governingConditions(expr);
+
 			if (conds && conds.length > 0) {
 				const q = this.conditionQualifier(conds, version);
+
 				if (q) type = `${q}<${type}>` as PineType;
 			}
 		}
 
 		this.expressionTypes.set(expr, type);
+
 		return type;
 	}
 
@@ -2936,8 +3175,10 @@ export class UnifiedPineValidator {
 	public hasArgTypeErrorSince(count: number): boolean {
 		for (let i = count; i < this.errors.length; i++) {
 			const code = this.errors[i].code;
+
 			if (code === "CE10122" || code === "CE10123") return true;
 		}
+
 		return false;
 	}
 

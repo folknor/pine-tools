@@ -16,6 +16,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const PINE_DATA_DIR = path.join(__dirname, "../../../pine-data/v6");
+
 const OUTPUT_FILE = path.join(
 	__dirname,
 	"../../../syntaxes/pine.tmLanguage.json",
@@ -47,22 +48,29 @@ function extractFunctions(content: string): Map<string, string[]> {
 	// Match function names like "name": "ta.sma" or "name": "alert"
 	const regex =
 		/"name":\s*"([a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)?)"/g;
+
 	let match: RegExpExecArray | null;
+
 	for (;;) {
 		match = regex.exec(content);
+
 		if (match === null) break;
 		const fullName = match[1];
+
 		if (fullName.includes(".")) {
 			const [namespace, funcName] = fullName.split(".");
+
 			if (!byNamespace.has(namespace)) {
 				byNamespace.set(namespace, []);
 			}
+
 			byNamespace.get(namespace)?.push(funcName);
 		} else {
 			// Global function
 			if (!byNamespace.has("_global")) {
 				byNamespace.set("_global", []);
 			}
+
 			byNamespace.get("_global")?.push(fullName);
 		}
 	}
@@ -77,14 +85,18 @@ function extractConstants(content: string): Map<string, string[]> {
 	// Match constant names like "name": "color.red"
 	const regex = /"name":\s*"([a-zA-Z_][a-zA-Z0-9_]*\.[a-zA-Z_][a-zA-Z0-9_]*)"/g;
 	let match: RegExpExecArray | null;
+
 	for (;;) {
 		match = regex.exec(content);
+
 		if (match === null) break;
 		const fullName = match[1];
 		const [namespace, constName] = fullName.split(".");
+
 		if (!byNamespace.has(namespace)) {
 			byNamespace.set(namespace, []);
 		}
+
 		byNamespace.get(namespace)?.push(constName);
 	}
 
@@ -101,16 +113,22 @@ function extractVariables(content: string): {
 	// Match variable names like "name": "close" or "name": "syminfo.tickerid"
 	const regex =
 		/"name":\s*"([a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)?)"/g;
+
 	let match: RegExpExecArray | null;
+
 	for (;;) {
 		match = regex.exec(content);
+
 		if (match === null) break;
 		const fullName = match[1];
+
 		if (fullName.includes(".")) {
 			const [namespace, varName] = fullName.split(".");
+
 			if (!namespaced.has(namespace)) {
 				namespaced.set(namespace, []);
 			}
+
 			namespaced.get(namespace)?.push(varName);
 		} else {
 			standalone.push(fullName);
@@ -129,12 +147,15 @@ function generateGrammar(data: ReturnType<typeof loadPineData>) {
 
 	// Get all namespaces
 	const allNamespaces = new Set<string>();
+
 	for (const ns of functions.keys()) {
 		if (ns !== "_global") allNamespaces.add(ns);
 	}
+
 	for (const ns of constants.keys()) {
 		allNamespaces.add(ns);
 	}
+
 	for (const ns of variables.namespaced.keys()) {
 		allNamespaces.add(ns);
 	}
@@ -397,6 +418,7 @@ function generateGlobalFunctionPatterns(globalFuncs: string[]) {
 				"alert",
 			].includes(f),
 		);
+
 		const otherFuncs = globalFuncs.filter((f) => !plotFuncs.includes(f));
 
 		if (plotFuncs.length > 0) {

@@ -35,6 +35,7 @@ export function getDiagnostics(doc: ParsedDocument): Diagnostic[] {
 			new Map(),
 			doc.parseErrors.length === 0,
 		);
+
 		const validationErrors = validator.validate(doc.ast, doc.detectedVersion);
 
 		for (const error of validationErrors) {
@@ -48,10 +49,12 @@ export function getDiagnostics(doc: ParsedDocument): Diagnostic[] {
 					line: error.line,
 					column: error.column,
 				});
+
 				const end = mapSourcePosition({
 					line: error.line,
 					column: error.column + error.length,
 				});
+
 				diagnostics.push({
 					range: {
 						start: { line: start.line - 1, character: start.column - 1 },
@@ -77,10 +80,12 @@ export function getDiagnostics(doc: ParsedDocument): Diagnostic[] {
 					line: lint.line,
 					column: lint.column,
 				});
+
 				const end = mapSourcePosition({
 					line: lint.line,
 					column: lint.column + lint.length,
 				});
+
 				diagnostics.push({
 					range: {
 						start: { line: start.line - 1, character: start.column - 1 },
@@ -135,6 +140,7 @@ function getPatternWarnings(doc: ParsedDocument): Diagnostic[] {
 		!/input\.timeframe/m.test(text)
 	) {
 		const match = /input\.string\s*\(\s*"\d+"\s*,\s*"HTF/m.exec(text);
+
 		if (match) {
 			const pos = doc.positionAt(match.index);
 			warnings.push({
@@ -155,6 +161,7 @@ function getPatternWarnings(doc: ParsedDocument): Diagnostic[] {
 		!/not\s+na\(time\(timeframe\.period,/m.test(text)
 	) {
 		const match = /time\(timeframe\.period,\s*\w+\)/m.exec(text);
+
 		if (match) {
 			const pos = doc.positionAt(match.index);
 			warnings.push({
@@ -173,6 +180,7 @@ function getPatternWarnings(doc: ParsedDocument): Diagnostic[] {
 	// 4. ta.change in condition hint
 	if (/ta\.change\s*\(/m.test(text) && /\?\s*\(|\)\s*and|\)\s*or/.test(text)) {
 		const match = /ta\.change\s*\(/m.exec(text);
+
 		if (match) {
 			const pos = doc.positionAt(match.index);
 			warnings.push({
@@ -192,6 +200,7 @@ function getPatternWarnings(doc: ParsedDocument): Diagnostic[] {
 	if (/timenow\s*-\s*\w+\s*<=\s*\w+\s*\*\s*60(?!\s*\*\s*1000)/m.test(text)) {
 		const match =
 			/timenow\s*-\s*\w+\s*<=\s*\w+\s*\*\s*60(?!\s*\*\s*1000)/m.exec(text);
+
 		if (match) {
 			const pos = doc.positionAt(match.index);
 			warnings.push({
@@ -209,6 +218,7 @@ function getPatternWarnings(doc: ParsedDocument): Diagnostic[] {
 	// 6. Invalid functions (e.g., math.clamp)
 	if (isV6 && /\bmath\.clamp\b/.test(text)) {
 		const match = /math\.clamp/.exec(text);
+
 		if (match) {
 			const pos = doc.positionAt(match.index);
 			warnings.push({
@@ -229,6 +239,7 @@ function getPatternWarnings(doc: ParsedDocument): Diagnostic[] {
 	let match: RegExpExecArray | null;
 
 	match = plotshapeShapeMatch.exec(text);
+
 	while (match !== null) {
 		const shapeIndex = match[0].indexOf("shape=");
 		const pos = doc.positionAt(match.index + shapeIndex);
@@ -247,6 +258,7 @@ function getPatternWarnings(doc: ParsedDocument): Diagnostic[] {
 	// 8. plotchar with wrong parameter name (shape= instead of char=)
 	const plotcharShapeMatch = /plotchar\s*\([^)]*\bshape\s*=/g;
 	match = plotcharShapeMatch.exec(text);
+
 	while (match !== null) {
 		const shapeIndex = match[0].indexOf("shape=");
 		const pos = doc.positionAt(match.index + shapeIndex);
@@ -265,9 +277,12 @@ function getPatternWarnings(doc: ParsedDocument): Diagnostic[] {
 	// 9. timeframe_gaps without timeframe parameter
 	const indicatorMatch =
 		/(indicator|strategy)\s*\([^)]*timeframe_gaps\s*=\s*true[^)]*\)/g;
+
 	match = indicatorMatch.exec(text);
+
 	while (match !== null) {
 		const fullCall = match[0];
+
 		if (!/\btimeframe\s*=/.test(fullCall)) {
 			const gapsIndex = fullCall.indexOf("timeframe_gaps");
 			const pos = doc.positionAt(match.index + gapsIndex);
@@ -282,14 +297,17 @@ function getPatternWarnings(doc: ParsedDocument): Diagnostic[] {
 				source: "pine-lint",
 			});
 		}
+
 		match = indicatorMatch.exec(text);
 	}
 
 	// 10. alertcondition with too many arguments
 	const alertCondMatch = /alertcondition\s*\(([^)]+)\)/g;
 	match = alertCondMatch.exec(text);
+
 	while (match !== null) {
 		const args = match[1].split(",").map((a) => a.trim());
+
 		if (args.length > 3) {
 			const pos = doc.positionAt(match.index);
 			warnings.push({
@@ -302,12 +320,14 @@ function getPatternWarnings(doc: ParsedDocument): Diagnostic[] {
 				source: "pine-lint",
 			});
 		}
+
 		match = alertCondMatch.exec(text);
 	}
 
 	// 11. input.string() without required defval parameter
 	const inputStringMatch = /input\.string\s*\(\s*\)/g;
 	match = inputStringMatch.exec(text);
+
 	while (match !== null) {
 		const pos = doc.positionAt(match.index);
 		warnings.push({
@@ -325,6 +345,7 @@ function getPatternWarnings(doc: ParsedDocument): Diagnostic[] {
 
 	// 12. Library imports without /// @source directive
 	const unresolvedImports = getUnresolvedImports(doc);
+
 	for (const unresolved of unresolvedImports) {
 		warnings.push({
 			range: {

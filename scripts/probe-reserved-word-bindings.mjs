@@ -35,14 +35,18 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(here, "..");
 
 const argv = process.argv.slice(2);
+
 const opt = (flag, def) => {
 	const i = argv.indexOf(flag);
+
 	return i >= 0 && argv[i + 1] ? argv[i + 1] : def;
 };
+
 const FILTER = opt("--filter", null);
 const POSITION = opt("--position", null);
 const DELAY = Number(opt("--delay", "450"));
 const DRY = argv.includes("--dry");
+
 const OUT = opt(
 	"--out",
 	path.join(root, "investigations", "INV179-reserved-words-binding", "probe.json"),
@@ -144,6 +148,7 @@ function runTv(src) {
 		const c = spawn("pine-lint", ["--tv", "-c", src], {
 			stdio: ["ignore", "pipe", "pipe"],
 		});
+
 		let out = "";
 		let err = "";
 		c.stdout.on("data", (d) => (out += d));
@@ -165,12 +170,15 @@ function runLocal(src) {
 
 function errorsOf(raw) {
 	let j;
+
 	try {
 		j = JSON.parse(raw);
 	} catch {
 		return null;
 	}
+
 	if (j.success !== true) return null;
+
 	// A clean TV response carries NO `errors` key at all, so a missing key is
 	// "no errors" rather than "no answer". `success:true` is what separates the
 	// two; the dirty control is what proves `success:true` came from TV and not
@@ -183,10 +191,13 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function control(name, { src, expect }) {
 	const { out, err } = await runTv(src);
 	const errs = errorsOf(out);
+
 	if (errs === null) {
 		throw new Error(`control "${name}": --tv returned no usable result (${err || out})`);
 	}
+
 	const got = errs.length === 0 ? "clean" : "errors";
+
 	if (got !== expect) {
 		throw new Error(`control "${name}": expected TV ${expect}, got ${got}: ${out}`);
 	}
@@ -194,9 +205,11 @@ async function control(name, { src, expect }) {
 
 async function main() {
 	const positions = POSITION ? [POSITION] : Object.keys(POSITIONS);
+
 	for (const p of positions) {
 		if (!POSITIONS[p]) throw new Error(`unknown position "${p}"`);
 	}
+
 	const words = FILTER ? CANDIDATES.filter((w) => w.includes(FILTER)) : CANDIDATES;
 
 	if (DRY) {
@@ -205,7 +218,9 @@ async function main() {
 				process.stdout.write(`--- ${w} / ${p}\n${POSITIONS[p](w)}\n`);
 			}
 		}
+
 		process.stdout.write(`${words.length * positions.length} probes\n`);
+
 		return;
 	}
 
@@ -218,6 +233,7 @@ async function main() {
 	const rows = [];
 	let n = 0;
 	const total = words.length * positions.length;
+
 	for (const w of words) {
 		for (const p of positions) {
 			const src = POSITIONS[p](w);
@@ -227,6 +243,7 @@ async function main() {
 			const localRaw = await runLocal(src);
 			const localErrors = errorsOf(localRaw);
 			n += 1;
+
 			const row = {
 				word: w,
 				position: p,
@@ -256,6 +273,7 @@ async function main() {
 								})),
 							},
 			};
+
 			row.gap =
 				row.tv.usable && row.local.usable && row.tv.rejected && !row.local.rejected;
 			rows.push(row);
@@ -280,10 +298,12 @@ async function main() {
 	const gaps = rows.filter((r) => r.gap);
 	process.stdout.write(`\n${gaps.length} gaps of ${rows.length} probes -> ${OUT}\n`);
 	const byWord = new Map();
+
 	for (const g of gaps) {
 		if (!byWord.has(g.word)) byWord.set(g.word, []);
 		byWord.get(g.word).push(g.position);
 	}
+
 	for (const [w, ps] of byWord) process.stdout.write(`  ${w}: ${ps.join(", ")}\n`);
 }
 

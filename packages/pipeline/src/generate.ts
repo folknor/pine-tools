@@ -32,10 +32,12 @@ const OUTPUT_DIR = path.join(PROJECT_ROOT, `pine-data/${VERSION}`);
 // Input files
 const DETAILS_FILE = path.join(RAW_DIR, "complete-v6-details.json");
 const CONSTRUCTS_FILE = path.join(RAW_DIR, "v6-language-constructs.json");
+
 const REQUIRED_PARAMS_PROBE_FILE = path.join(
 	RAW_DIR,
 	"required-params-probe.json",
 );
+
 const RUNTIME_DOMAINS_FILE = path.join(RAW_DIR, "runtime-domains.json");
 const PARAM_TYPE_NOUNS_FILE = path.join(RAW_DIR, "param-type-nouns-probe.json");
 
@@ -88,12 +90,14 @@ interface ReferenceProse {
 // copied as Pine. Both are rendering artifacts, never meaningful Pine content.
 const NBSP = String.fromCodePoint(0xa0);
 const ZERO_WIDTH_SPACE = String.fromCodePoint(0x200b);
+
 function stripInvisibleWhitespace(s: string): string {
 	return s.split(NBSP).join(" ").split(ZERO_WIDTH_SPACE).join("");
 }
 
 function normalizeExamples(examples?: string[]): string[] | undefined {
 	if (!examples || examples.length === 0) return undefined;
+
 	return examples.map(stripInvisibleWhitespace);
 }
 
@@ -103,10 +107,14 @@ function pickProse(src: {
 	seeAlso?: string[];
 }): ReferenceProse {
 	const out: ReferenceProse = {};
+
 	if (src.returnsDescription)
 		out.returnsDescription = stripInvisibleWhitespace(src.returnsDescription);
+
 	if (src.remarks) out.remarks = stripInvisibleWhitespace(src.remarks);
+
 	if (src.seeAlso && src.seeAlso.length > 0) out.seeAlso = src.seeAlso;
+
 	return out;
 }
 
@@ -271,11 +279,14 @@ interface ConstructsData {
 function parseQualifiedType(raw: string): { type: string; qualifier: string } {
 	const s = (raw || "").trim();
 	const m = s.match(/^(series|simple|input|const)\s+(.+)$/);
+
 	if (m) {
 		const qualifier = m[1];
 		const base = m[2].trim();
+
 		return { qualifier, type: `${qualifier}<${base}>` };
 	}
+
 	// Collection (array<…>/matrix<…>/map<…>) or otherwise unqualified.
 	return { qualifier: "series", type: s };
 }
@@ -375,6 +386,7 @@ function getFunctionFlags(name: string): Record<string, unknown> | undefined {
 		"strategy.risk.max_intraday_loss",
 		"strategy.risk.max_position_size",
 	];
+
 	if (topLevelOnly.includes(name)) {
 		flags.topLevelOnly = true;
 	}
@@ -388,6 +400,7 @@ function getFunctionFlags(name: string): Record<string, unknown> | undefined {
 		"array.from": { minArgs: 1 },
 		"str.format": { minArgs: 1 },
 	};
+
 	if (variadic[name]) {
 		flags.variadic = true;
 		flags.minArgs = variadic[name].minArgs;
@@ -426,6 +439,7 @@ function getFunctionFlags(name: string): Record<string, unknown> | undefined {
 		// Flagging them "numeric" made `int x = math.round(float)` a false
 		// "cannot assign float to int". see INV032
 	};
+
 	if (polymorphic[name]) {
 		flags.polymorphic = polymorphic[name];
 	}
@@ -516,9 +530,13 @@ const REQUIRED_PARAMS_PROBE: {
 
 function probedRequiredSet(fnName: string): Set<string> | undefined {
 	const r = REQUIRED_PARAMS_PROBE.results[fnName];
+
 	if (!r) return undefined;
+
 	if (r.status === "variadic") return undefined;
+
 	if (!["ok", "id-supplied"].includes(r.status)) return undefined;
+
 	return new Set([...(r.required ?? []), ...(r.requiredAssumed ?? [])]);
 }
 
@@ -535,6 +553,7 @@ interface RuntimeDomainFact {
 	max?: number;
 	notNa?: boolean;
 }
+
 const RUNTIME_DOMAINS: { facts: RuntimeDomainFact[] } = fs.existsSync(
 	RUNTIME_DOMAINS_FILE,
 )
@@ -552,6 +571,7 @@ interface ParamNounEntry {
 	status: string;
 	tvNoun?: string | null;
 }
+
 const PARAM_TYPE_NOUNS: Record<string, ParamNounEntry> = fs.existsSync(
 	PARAM_TYPE_NOUNS_FILE,
 )
@@ -567,7 +587,9 @@ function probedParamNoun(
 	paramName: string,
 ): string | undefined {
 	const entry = PARAM_TYPE_NOUNS[`${fnName}.${paramName}`];
+
 	if (entry?.status !== "ok") return undefined;
+
 	return entry.tvNoun ?? undefined;
 }
 
@@ -582,22 +604,27 @@ function paramConstraints(fnName: string, paramName: string, desc: string) {
 	const documented = allowedValues ? undefined : parseNumericRange(desc);
 	let min = documented?.min;
 	let max = documented?.max;
+
 	let rangeSource: "reference" | "runtime" | undefined =
 		documented === undefined ? undefined : "reference";
+
 	let notNa: true | undefined;
 
 	for (const fact of RUNTIME_DOMAINS.facts) {
 		if (fact.function !== fnName || fact.parameter !== paramName) continue;
+
 		// The tighter bound wins whichever source it came from - both are real
 		// and a value has to satisfy both.
 		if (fact.min !== undefined && (min === undefined || fact.min > min)) {
 			min = fact.min;
 			rangeSource = "runtime";
 		}
+
 		if (fact.max !== undefined && (max === undefined || fact.max < max)) {
 			max = fact.max;
 			rangeSource = "runtime";
 		}
+
 		if (fact.notNa) notNa = true;
 	}
 
@@ -608,6 +635,7 @@ function paramConstraints(fnName: string, paramName: string, desc: string) {
 // constraints above plus the probed CE10123 noun.
 function paramFacts(fnName: string, paramName: string, desc: string) {
 	const expectedTypeNoun = probedParamNoun(fnName, paramName);
+
 	return {
 		...paramConstraints(fnName, paramName, desc),
 		...(expectedTypeNoun ? { expectedTypeNoun } : {}),
@@ -618,7 +646,9 @@ function paramFacts(fnName: string, paramName: string, desc: string) {
 // probed; otherwise the evidence-based prose fallback below. see INV050
 function isParamRequired(fnName: string, param: Parameter): boolean {
 	const probed = probedRequiredSet(fnName);
+
 	if (probed) return probed.has(param.name);
+
 	return !isParameterOptional(param);
 }
 
@@ -631,18 +661,29 @@ function isParamRequired(fnName: string, param: Parameter): boolean {
 // commonOptionalParams name-list heuristic is retired with it. see INV050
 function isParameterOptional(param: Parameter): boolean {
 	const desc = (param.description || "").toLowerCase();
+
 	if (desc.includes("required argument") || desc.includes("is required")) {
 		return false;
 	}
+
 	if (desc.includes("optional")) return true;
+
 	if (desc.includes("if not specified")) return true;
+
 	if (desc.includes("default value is")) return true;
+
 	if (desc.includes("default is")) return true;
+
 	if (desc.includes("the default is")) return true;
+
 	if (desc.includes("defaults to")) return true;
+
 	if (desc.includes("if omitted")) return true;
+
 	if (desc.includes("not required")) return true;
+
 	if (param.default !== undefined) return true;
+
 	return false;
 }
 
@@ -650,6 +691,7 @@ function isParameterOptional(param: Parameter): boolean {
 // "math.round(number, precision) → series float" -> "series float".
 function parseReturnFromSignature(sig: string): string {
 	const m = sig.match(/→\s*(.+)$/);
+
 	return m ? m[1].trim() : "";
 }
 
@@ -658,7 +700,9 @@ function parseReturnFromSignature(sig: string): string {
 // variadic marker. Used only as a fallback when overloadArgs is empty.
 function parseParamNamesFromSignature(sig: string): string[] {
 	const m = sig.match(/^[^(]+\(([^)]*)\)/);
+
 	if (!m) return [];
+
 	return m[1]
 		.split(",")
 		.map((s) => s.trim())
@@ -700,12 +744,15 @@ function buildOverloads(
 ): GeneratedFunction["overloads"] {
 	const sigs = detail.overloads;
 	const hidden = HIDDEN_OVERLOADS[fnName];
+
 	if (hidden && (!sigs || sigs.length < 2)) {
 		const merged = new Map((detail.parameters || []).map((p) => [p.name, p]));
+
 		return hidden.map((names) => ({
 			parameters: names.map((n) => {
 				const m = merged.get(n);
 				const desc = m?.description || "";
+
 				return {
 					name: n,
 					type: m?.type ?? "unknown",
@@ -719,6 +766,7 @@ function buildOverloads(
 			returns: detail.returns,
 		}));
 	}
+
 	if (!sigs || sigs.length < 2) return undefined;
 
 	const merged = new Map((detail.parameters || []).map((p) => [p.name, p]));
@@ -733,12 +781,14 @@ function buildOverloads(
 						type: "unknown",
 						description: "",
 					}));
+
 		return {
 			parameters: args.map(({ name, type, description }) => {
 				const m = merged.get(name);
 				// Prefer this overload's own captured description; fall back to the
 				// merged param's (overload #0's). see TODO #25
 				const desc = description || m?.description || "";
+
 				return {
 					name,
 					type,
@@ -765,11 +815,13 @@ function buildOverloads(
 // First non-empty description per name wins. see TODO #25
 function overloadDescriptions(detail: FunctionDetail): Map<string, string> {
 	const out = new Map<string, string>();
+
 	for (const args of detail.overloadArgs || []) {
 		for (const { name, description } of args) {
 			if (description && !out.get(name)) out.set(name, description);
 		}
 	}
+
 	return out;
 }
 
@@ -793,9 +845,11 @@ function generateFunctions(
 		// from the "..." overload so the checker doesn't cap their arity.
 		if (detail.variadic && !flags.variadic) {
 			flags.variadic = true;
+
 			const requiredCount = (detail.parameters || []).filter((p) =>
 				isParamRequired(name, p),
 			).length;
+
 			flags.minArgs = Math.max(1, requiredCount);
 		}
 
@@ -805,6 +859,7 @@ function generateFunctions(
 		// otherwise stuck at "series color"). See union-types.ts / TODO #17.
 		const returnTypeParam =
 			RETURN_TYPE_PARAM_OVERRIDES[name] ?? detectReturnTypeParam(detail);
+
 		if (returnTypeParam) {
 			flags.returnTypeParam = returnTypeParam;
 		}
@@ -816,8 +871,10 @@ function generateFunctions(
 		// Backfill descriptions for params that appear only in a later overload
 		// (blank in the merged view scraped from overload #0). see TODO #25
 		const descByName = overloadDescriptions(detail);
+
 		const parameters = (detail.parameters || []).map((p) => {
 			const description = p.description || descByName.get(p.name) || "";
+
 			return {
 				name: p.name,
 				type:
@@ -845,6 +902,7 @@ function generateFunctions(
 		const depMatch = (detail.description || "").match(
 			/([^.]*\bdeprecated\b[^.]*\.)/i,
 		);
+
 		const deprecated = depMatch ? depMatch[1].trim() : undefined;
 
 		const func: GeneratedFunction = {
@@ -913,6 +971,7 @@ export const FUNCTION_NAMESPACES: Set<string> = new Set(
 
 	fs.writeFileSync(path.join(OUTPUT_DIR, "functions.ts"), content);
 	console.log(`   ${functions.length} functions`);
+
 	return functions;
 }
 
@@ -931,7 +990,9 @@ function generateVariables(
 	const names: string[] = [
 		...(constructs.builtInVariables?.standalone?.items || []),
 	];
+
 	const byNamespace = constructs.builtInVariables?.byNamespace || {};
+
 	for (const [namespace, members] of Object.entries(byNamespace)) {
 		for (const member of members) {
 			names.push(`${namespace}.${member}`);
@@ -948,6 +1009,7 @@ function generateVariables(
 
 	for (const name of [...new Set(names)].sort()) {
 		const undocumented = UNDOCUMENTED_VARIABLES[name];
+
 		if (undocumented) {
 			variables.push({
 				name,
@@ -958,8 +1020,10 @@ function generateVariables(
 			});
 			continue;
 		}
+
 		const sv = scraped[name];
 		let typeInfo: { type: string; qualifier: string };
+
 		if (sv?.type) {
 			typeInfo = parseQualifiedType(sv.type);
 		} else if (VARIABLE_TYPE_OVERRIDES[name]) {
@@ -968,6 +1032,7 @@ function generateVariables(
 			missingType.push(name);
 			typeInfo = { type: "series<float>", qualifier: "series" };
 		}
+
 		variables.push({
 			name,
 			namespace: name.includes(".") ? name.split(".")[0] : undefined,
@@ -1040,6 +1105,7 @@ export const VARIABLE_NAMESPACES: Set<string> = new Set(
 
 	fs.writeFileSync(path.join(OUTPUT_DIR, "variables.ts"), content);
 	console.log(`   ${variables.length} variables`);
+
 	return variables;
 }
 
@@ -1054,11 +1120,13 @@ function generateConstants(
 	const missingType: string[] = [];
 
 	const byNamespace = constructs.constants?.byNamespace || {};
+
 	for (const [namespace, items] of Object.entries(byNamespace)) {
 		for (const shortName of items) {
 			const name = `${namespace}.${shortName}`;
 			const sc = scraped[name];
 			let type: string;
+
 			if (sc?.type) {
 				type = constantBaseType(sc.type);
 			} else if (CONSTANT_TYPE_OVERRIDES[name]) {
@@ -1067,6 +1135,7 @@ function generateConstants(
 				missingType.push(name);
 				type = "string";
 			}
+
 			constants.push({
 				name,
 				namespace,
@@ -1129,6 +1198,7 @@ export const CONSTANT_NAMESPACES: Set<string> = new Set(CONSTANTS.map(c => c.nam
 
 	fs.writeFileSync(path.join(OUTPUT_DIR, "constants.ts"), content);
 	console.log(`   ${constants.length} constants`);
+
 	return constants;
 }
 
@@ -1160,6 +1230,7 @@ function generateTypes(
 
 	const types: GeneratedType[] = names.map((name) => {
 		const sc = scraped[name];
+
 		return {
 			name,
 			namespace: name.includes(".") ? name.split(".")[0] : undefined,
@@ -1200,6 +1271,7 @@ export const TYPE_NAMES: Set<string> = new Set(TYPES.map(t => t.name));
 
 	fs.writeFileSync(path.join(OUTPUT_DIR, "types.ts"), content);
 	console.log(`   ${types.length} types`);
+
 	return types;
 }
 
@@ -1214,6 +1286,7 @@ function generateAnnotations(
 
 	const annotations: GeneratedAnnotation[] = names.map((name) => {
 		const sc = scraped[name];
+
 		return {
 			name,
 			description: sc?.description || "",
@@ -1252,6 +1325,7 @@ export const ANNOTATION_NAMES: Set<string> = new Set(ANNOTATIONS.map(a => a.name
 
 	fs.writeFileSync(path.join(OUTPUT_DIR, "annotations.ts"), content);
 	console.log(`   ${annotations.length} annotations`);
+
 	return annotations;
 }
 
@@ -1266,6 +1340,7 @@ function generateOperators(
 
 	const operators: GeneratedOperator[] = names.map((name) => {
 		const sc = scraped[name];
+
 		return {
 			name,
 			syntax: sc?.syntax || undefined,
@@ -1308,6 +1383,7 @@ export const OPERATOR_NAMES: Set<string> = new Set(OPERATORS.map(o => o.name));
 
 	fs.writeFileSync(path.join(OUTPUT_DIR, "operators.ts"), content);
 	console.log(`   ${operators.length} operators`);
+
 	return operators;
 }
 
@@ -1412,15 +1488,19 @@ export const TYPE_KEYWORDS: Set<string> = new Set([
 	// details.keywords; keywords with no reference page (e.g. the function-style
 	// `indicator`/`library`/`strategy`) land as name-only entries.
 	const scraped = details.keywords || {};
+
 	const keywordObjects: GeneratedKeyword[] = keywordList.map((name) => {
 		const sc = scraped[name];
 		const out: GeneratedKeyword = { name };
+
 		if (sc?.description) out.description = sc.description;
 		Object.assign(out, sc ? pickProse(sc) : {});
+
 		return out;
 	});
 
 	console.log(`   ${keywordList.length} keywords`);
+
 	return keywordObjects;
 }
 
@@ -1554,6 +1634,7 @@ function main(): void {
 		console.error(`Details file not found: ${DETAILS_FILE}`);
 		process.exit(1);
 	}
+
 	if (!fs.existsSync(CONSTRUCTS_FILE)) {
 		console.error(`Constructs file not found: ${CONSTRUCTS_FILE}`);
 		process.exit(1);
@@ -1562,6 +1643,7 @@ function main(): void {
 	const details: DetailsData = JSON.parse(
 		fs.readFileSync(DETAILS_FILE, "utf8"),
 	);
+
 	const constructs: ConstructsData = JSON.parse(
 		fs.readFileSync(CONSTRUCTS_FILE, "utf8"),
 	);
@@ -1583,6 +1665,7 @@ function main(): void {
 		fs.writeFileSync(file, `${JSON.stringify(data, null, 2)}\n`);
 		console.log(`Wrote ${file}`);
 	};
+
 	writeJson("functions", functions);
 	writeJson("variables", variables);
 	writeJson("constants", constants);

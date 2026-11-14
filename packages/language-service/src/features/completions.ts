@@ -83,16 +83,20 @@ function createSnippetFromSyntax(
 ): string | null {
 	try {
 		const match = syntax.match(/\(([^)]*)\)/);
+
 		if (!match) return null;
 
 		const paramsString = match[1].trim();
+
 		if (!paramsString) {
 			return `${functionName}()`;
 		}
 
 		const params = paramsString.split(",").map((p) => p.trim());
+
 		const snippetParams = params.map((param, index) => {
 			const paramName = param.split(/[=:]/)[0].trim();
+
 			return `\${${index + 1}:${paramName}}`;
 		});
 
@@ -136,6 +140,7 @@ function createCompletionItem(
 			docParts.push(
 				data.examples.length > 1 ? "**Examples:**" : "**Example:**",
 			);
+
 			for (const example of data.examples) {
 				docParts.push(`\`\`\`pine\n${example}\n\`\`\``);
 			}
@@ -152,6 +157,7 @@ function createCompletionItem(
 		// Create snippet for functions
 		if (kind === CompletionItemKind.Function && data.syntax) {
 			const snippet = createSnippetFromSyntax(data.syntax, label);
+
 			if (snippet) {
 				item.insertText = snippet;
 				item.insertTextFormat = InsertTextFormat.Snippet;
@@ -177,6 +183,7 @@ export function getNamespaceCompletions(namespace: string): CompletionItem[] {
 
 	// Add functions from namespace
 	const nsFuncs = FUNCTIONS_BY_NAMESPACE.get(namespace);
+
 	if (nsFuncs) {
 		for (const func of nsFuncs) {
 			const parts = func.name.split(".");
@@ -195,11 +202,14 @@ export function getNamespaceCompletions(namespace: string): CompletionItem[] {
 
 	// Add variables from namespace
 	const nsVars = VARIABLES_BY_NAMESPACE.get(namespace);
+
 	if (nsVars) {
 		for (const variable of nsVars) {
 			const parts = variable.name.split(".");
+
 			const shortName =
 				parts.length > 1 ? parts[parts.length - 1] : variable.name;
+
 			items.push(
 				createCompletionItem(shortName, CompletionItemKind.Variable, {
 					type: variable.type as string,
@@ -212,12 +222,14 @@ export function getNamespaceCompletions(namespace: string): CompletionItem[] {
 
 	// Add constants from namespace
 	const nsConsts = CONSTANTS_BY_NAMESPACE.get(namespace);
+
 	if (nsConsts) {
 		for (const constant of nsConsts) {
 			const kind =
 				namespace === "color"
 					? CompletionItemKind.Color
 					: CompletionItemKind.Constant;
+
 			items.push(
 				createCompletionItem(constant.shortName, kind, {
 					type: constant.type as string,
@@ -250,6 +262,7 @@ export function getAllCompletions(): CompletionItem[] {
 
 	// Add global functions
 	const globalFuncs = FUNCTIONS_BY_NAMESPACE.get("_global");
+
 	if (globalFuncs) {
 		for (const func of globalFuncs) {
 			items.push(
@@ -270,6 +283,7 @@ export function getAllCompletions(): CompletionItem[] {
 
 	// Add namespace prefixes (for discoverability)
 	const namespaces = PineV6.getAllNamespaces();
+
 	for (const ns of namespaces) {
 		const item = createCompletionItem(ns, CompletionItemKind.Module);
 		item.detail = `${ns} namespace`;
@@ -289,6 +303,7 @@ export function getParameterCompletions(
 ): CompletionItem[] {
 	const items: CompletionItem[] = [];
 	const func = FUNCTIONS_BY_NAME.get(functionName);
+
 	if (!func) return items;
 
 	for (const param of func.parameters) {
@@ -296,9 +311,11 @@ export function getParameterCompletions(
 		item.insertText = `${param.name} = $0`;
 		item.insertTextFormat = InsertTextFormat.Snippet;
 		item.detail = `Parameter for ${functionName}`;
+
 		if (param.description) {
 			item.documentation = param.description;
 		}
+
 		items.push(item);
 	}
 
@@ -336,19 +353,24 @@ export function getConstantCompletions(
 	};
 
 	const ns = paramToNamespace[paramName];
+
 	if (!ns) return items;
 
 	const nsConsts = CONSTANTS_BY_NAMESPACE.get(ns);
+
 	if (nsConsts) {
 		for (const constant of nsConsts) {
 			const item = createCompletionItem(
 				constant.name,
 				CompletionItemKind.Constant,
 			);
+
 			item.detail = `Constant for ${ns}`;
+
 			if (constant.description) {
 				item.documentation = constant.description;
 			}
+
 			items.push(item);
 		}
 	}
@@ -370,16 +392,20 @@ export function getCompletions(
 	const namedParamMatch = beforeCursor.match(
 		/([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*$/,
 	);
+
 	if (namedParamMatch) {
 		const paramName = namedParamMatch[1];
 		// Find the function name by looking back for the last open paren
 		const lastOpenParen = beforeCursor.lastIndexOf("(");
+
 		if (lastOpenParen !== -1) {
 			const beforeParen = beforeCursor.substring(0, lastOpenParen).trim();
 			const funcMatch = beforeParen.match(/([a-zA-Z_][a-zA-Z0-9_.]*)$/);
+
 			if (funcMatch) {
 				const functionName = funcMatch[1];
 				const constantItems = getConstantCompletions(functionName, paramName);
+
 				if (constantItems.length > 0) {
 					return constantItems;
 				}
@@ -389,6 +415,7 @@ export function getCompletions(
 
 	// 2. Check if we're completing after a library alias dot (e.g., myLib.)
 	const libraryImport = getLibraryAliasBeforeDot(doc, position);
+
 	if (libraryImport) {
 		// Try to parse the library file and get its exports
 		// Note: In a real implementation, we'd need filesystem access to read the file
@@ -398,9 +425,11 @@ export function getCompletions(
 
 	// 3. Check if we're completing after a namespace dot (e.g., ta.)
 	const namespaceMatch = beforeCursor.match(/([a-z]+)\.\s*$/);
+
 	if (namespaceMatch) {
 		const namespace = namespaceMatch[1];
 		const nsItems = getNamespaceCompletions(namespace);
+
 		if (nsItems.length > 0) {
 			return nsItems;
 		}
@@ -408,12 +437,15 @@ export function getCompletions(
 
 	// 4. Check if we're inside a function call and should suggest parameters
 	const lastOpenParen = beforeCursor.lastIndexOf("(");
+
 	if (lastOpenParen !== -1) {
 		const beforeParen = beforeCursor.substring(0, lastOpenParen).trim();
 		const funcMatch = beforeParen.match(/([a-zA-Z_][a-zA-Z0-9_.]*)$/);
+
 		if (funcMatch) {
 			const functionName = funcMatch[1];
 			const paramItems = getParameterCompletions(functionName);
+
 			if (paramItems.length > 0) {
 				// Combine with all completions for better UX
 				return [...paramItems, ...getAllCompletions()];
@@ -455,11 +487,13 @@ function getLibraryCompletionsForImport(
 	sourcePath: string,
 ): CompletionItem[] {
 	const content = libraryContentCache.get(sourcePath);
+
 	if (!content) {
 		// Library content not available - return empty
 		return [];
 	}
 
 	const library = parseLibrary(content, sourcePath);
+
 	return getLibraryCompletions(library);
 }

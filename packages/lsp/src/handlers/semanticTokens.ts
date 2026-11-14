@@ -20,6 +20,7 @@ export function setupSemanticTokensHandler(
 	connection.languages.semanticTokens.on(
 		(params: SemanticTokensParams): SemanticTokens => {
 			const result = languageService.getSemanticTokens(params.textDocument.uri);
+
 			return {
 				data: result.data,
 			};

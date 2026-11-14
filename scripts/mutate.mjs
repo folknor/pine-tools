@@ -38,6 +38,7 @@ import { dirname, resolve } from "node:path";
 
 const require = createRequire(import.meta.url);
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+
 const { Lexer } = require(
 	resolve(ROOT, "dist/packages/core/src/parser/lexer.js"),
 );
@@ -47,6 +48,7 @@ const VARIABLES = require(resolve(ROOT, "pine-data/v6/variables.json"));
 const CONSTANTS = require(resolve(ROOT, "pine-data/v6/constants.json"));
 
 const FN_BY_NAME = new Map(FUNCTIONS.map((f) => [f.name, f]));
+
 const KNOWN_NAMES = new Set([
 	...FUNCTIONS.map((f) => f.name),
 	...VARIABLES.map((v) => v.name),
@@ -80,11 +82,13 @@ const BUILTIN_NAMESPACES = new Set(
 // site rotation - runs are bounded and reproducible, per the #48 design.
 function mulberry32(seed) {
 	let a = seed >>> 0;
+
 	return () => {
 		a |= 0;
 		a = (a + 0x6d2b79f5) | 0;
 		let t = Math.imul(a ^ (a >>> 15), 1 | a);
 		t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+
 		return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
 	};
 }
@@ -93,9 +97,11 @@ function mulberry32(seed) {
 
 function lineStarts(source) {
 	const starts = [0];
+
 	for (let i = 0; i < source.length; i++) {
 		if (source[i] === "\n") starts.push(i + 1);
 	}
+
 	return starts;
 }
 
@@ -113,6 +119,7 @@ function makeCtx(source) {
 	const tokens = new Lexer(source).tokenize();
 	const starts = lineStarts(source);
 	const offsetOf = (t) => starts[t.line - 1] + (t.column - 1);
+
 	return { source, tokens, offsetOf };
 }
 
@@ -128,11 +135,13 @@ function splice(source, start, end, replacement) {
 function findCalls(ctx) {
 	const { tokens } = ctx;
 	const calls = [];
+
 	for (let i = 0; i < tokens.length; i++) {
 		if (tokens[i].type !== "IDENTIFIER") continue;
 		// Walk the member chain forward.
 		let j = i;
 		const chain = [tokens[i]];
+
 		while (
 			tokens[j + 1]?.type === "DOT" &&
 			tokens[j + 2]?.type === "IDENTIFIER"
@@ -140,8 +149,10 @@ function findCalls(ctx) {
 			chain.push(tokens[j + 2]);
 			j += 2;
 		}
+
 		// Don't start mid-chain (previous token a DOT).
 		if (tokens[i - 1]?.type === "DOT") continue;
+
 		if (tokens[j + 1]?.type !== "LPAREN") continue;
 		const lparen = j + 1;
 		// Find the matching RPAREN and top-level arg boundaries.
@@ -149,34 +160,44 @@ function findCalls(ctx) {
 		let rparen = -1;
 		const argStarts = []; // token index of each arg's first token
 		const commas = []; // token indices of top-level commas
+
 		for (let k = lparen; k < tokens.length; k++) {
 			const t = tokens[k];
+
 			if (t.type === "LPAREN" || t.type === "LBRACKET") depth++;
 			else if (t.type === "RPAREN" || t.type === "RBRACKET") {
 				depth--;
+
 				if (depth === 0 && t.type === "RPAREN") {
 					rparen = k;
 					break;
 				}
 			} else if (t.type === "COMMA" && depth === 1) commas.push(k);
 		}
+
 		if (rparen === -1) continue;
+
 		// Arg spans: [lparen+1 .. comma-1], [comma+1 .. ...], last ends rparen-1.
 		if (rparen > lparen + 1) {
 			let s = lparen + 1;
+
 			for (const c of commas) {
 				argStarts.push({ start: s, end: c - 1 });
 				s = c + 1;
 			}
+
 			argStarts.push({ start: s, end: rparen - 1 });
 		}
+
 		const args = argStarts.map(({ start, end }) => {
 			const named =
 				(tokens[start]?.type === "IDENTIFIER" ||
 					tokens[start]?.type === "KEYWORD") &&
 				tokens[start + 1]?.type === "ASSIGN";
+
 			return { start, end, named, nameTok: named ? tokens[start] : null };
 		});
+
 		calls.push({
 			name: chain.map((t) => t.value).join("."),
 			nameTokens: chain,
@@ -186,13 +207,16 @@ function findCalls(ctx) {
 			args,
 		});
 	}
+
 	return calls;
 }
 
 // A typo'd name guaranteed absent from the catalog.
 function typoName(name) {
 	let candidate = `${name}x`;
+
 	while (KNOWN_NAMES.has(candidate)) candidate += "x";
+
 	return candidate;
 }
 
@@ -210,25 +234,35 @@ export const OPERATORS = {
 		describe: "remove the last positional argument of a fully-required call",
 		findSites(ctx) {
 			const sites = [];
+
 			for (const call of findCalls(ctx)) {
 				const fn = FN_BY_NAME.get(call.name);
+
 				if (!fn) continue;
+
 				if ((fn.overloads ?? []).length > 0) continue;
+
 				if (fn.flags?.variadic) continue;
+
 				if (fn.parameters.some((p) => !p.type || p.type === "unknown"))
 					continue;
 				const requiredCount = fn.parameters.filter((p) => p.required).length;
+
 				if (requiredCount === 0) continue;
+
 				if (call.args.length === 0 || call.args.some((a) => a.named)) continue;
+
 				if (call.args.length > requiredCount) continue; // drop would hit an optional
 				const { tokens, offsetOf, source } = ctx;
 				const lastArg = call.args[call.args.length - 1];
+
 				// Splice from the comma before the last arg (or from after the
 				// lparen when it is the only arg) to just before the rparen.
 				const from =
 					call.args.length === 1
 						? offsetOf(tokens[call.lparen]) + 1
 						: offsetOf(tokens[call.commas[call.commas.length - 1]]);
+
 				const to = offsetOf(tokens[call.rparen]);
 				const t = tokens[lastArg.start];
 				sites.push({
@@ -238,6 +272,7 @@ export const OPERATORS = {
 					apply: () => splice(source, from, to, ""),
 				});
 			}
+
 			return sites;
 		},
 	},
@@ -248,16 +283,20 @@ export const OPERATORS = {
 		describe: "typo the member name of a builtin namespaced call",
 		findSites(ctx) {
 			const sites = [];
+
 			for (const call of findCalls(ctx)) {
 				if (call.nameTokens.length < 2) continue;
+
 				if (!FN_BY_NAME.has(call.name)) continue;
 				const { offsetOf, source } = ctx;
 				const memberTok = call.nameTokens[call.nameTokens.length - 1];
 				const from = offsetOf(memberTok);
 				const to = from + memberTok.value.length;
+
 				const replacement = typoName(call.name).slice(
 					call.name.length - memberTok.value.length,
 				);
+
 				sites.push({
 					line: memberTok.line,
 					col: memberTok.column,
@@ -265,6 +304,7 @@ export const OPERATORS = {
 					apply: () => splice(source, from, to, replacement),
 				});
 			}
+
 			return sites;
 		},
 	},
@@ -276,16 +316,21 @@ export const OPERATORS = {
 		describe: "replace a string literal argument with 42",
 		findSites(ctx) {
 			const sites = [];
+
 			for (const call of findCalls(ctx)) {
 				const fn = FN_BY_NAME.get(call.name);
+
 				if (!fn) continue;
+
 				if ((fn.overloads ?? []).length > 0) continue;
 				const { tokens, offsetOf, source } = ctx;
 				call.args.forEach((arg, idx) => {
 					if (arg.named || arg.start !== arg.end) return;
 					const t = tokens[arg.start];
+
 					if (t.type !== "STRING") return;
 					const param = fn.parameters[idx];
+
 					if (!param?.type?.includes("string")) return;
 					const from = offsetOf(t);
 					sites.push({
@@ -296,6 +341,7 @@ export const OPERATORS = {
 					});
 				});
 			}
+
 			return sites;
 		},
 	},
@@ -306,15 +352,20 @@ export const OPERATORS = {
 		describe: "typo a named argument's parameter name",
 		findSites(ctx) {
 			const sites = [];
+
 			for (const call of findCalls(ctx)) {
 				const fn = FN_BY_NAME.get(call.name);
+
 				if (!fn) continue;
 				const { offsetOf, source } = ctx;
 				const paramNames = new Set(fn.parameters.map((p) => p.name));
+
 				for (const arg of call.args) {
 					if (!arg.named) continue;
+
 					if (!paramNames.has(arg.nameTok.value)) continue; // already broken
 					let typo = `${arg.nameTok.value}x`;
+
 					while (paramNames.has(typo)) typo += "x";
 					const from = offsetOf(arg.nameTok);
 					sites.push({
@@ -326,6 +377,7 @@ export const OPERATORS = {
 					});
 				}
 			}
+
 			return sites;
 		},
 	},
@@ -350,17 +402,24 @@ export const OPERATORS = {
 		describe: "name the first argument so a later positional one follows it",
 		findSites(ctx) {
 			const sites = [];
+
 			for (const call of findCalls(ctx)) {
 				const fn = FN_BY_NAME.get(call.name);
+
 				if (!fn) continue;
+
 				if ((fn.overloads ?? []).length > 0) continue;
+
 				if (fn.flags?.variadic) continue;
+
 				// Need at least two arguments and none already named, so the
 				// mutation introduces the ordering violation rather than
 				// depending on one the source already had.
 				if (call.args.length < 2) continue;
+
 				if (call.args.some((a) => a.named)) continue;
 				const paramName = fn.parameters?.[0]?.name;
+
 				if (!paramName) continue;
 				const { tokens, offsetOf, source } = ctx;
 				const first = tokens[call.args[0].start];
@@ -372,6 +431,7 @@ export const OPERATORS = {
 					apply: () => splice(source, from, from, `${paramName} = `),
 				});
 			}
+
 			return sites;
 		},
 	},
@@ -388,6 +448,7 @@ export const OPERATORS = {
 		findSites(ctx) {
 			const sites = [];
 			const { tokens, offsetOf, source } = ctx;
+
 			for (let i = 0; i < tokens.length; i++) {
 				// A chain may START at a KEYWORD, not just an IDENTIFIER: the
 				// namespaces that are also TYPE names - color, line, label, box,
@@ -397,10 +458,13 @@ export const OPERATORS = {
 				// operator.
 				const startsChain =
 					tokens[i].type === "IDENTIFIER" || tokens[i].type === "KEYWORD";
+
 				if (!startsChain) continue;
+
 				if (tokens[i - 1]?.type === "DOT") continue; // don't start mid-chain
 				let j = i;
 				const chain = [tokens[i]];
+
 				while (
 					tokens[j + 1]?.type === "DOT" &&
 					(tokens[j + 2]?.type === "IDENTIFIER" ||
@@ -409,11 +473,15 @@ export const OPERATORS = {
 					chain.push(tokens[j + 2]);
 					j += 2;
 				}
+
 				if (chain.length < 2) continue;
 				const name = chain.map((t) => t.value).join(".");
+
 				if (!NON_FUNCTION_MEMBERS.has(name)) continue;
+
 				// Already a call, or being assigned to - leave it alone.
 				if (tokens[j + 1]?.type === "LPAREN") continue;
+
 				if (tokens[j + 1]?.type === "ASSIGN") continue;
 				const last = chain[chain.length - 1];
 				const end = offsetOf(last) + last.value.length;
@@ -424,6 +492,7 @@ export const OPERATORS = {
 					apply: () => splice(source, end, end, "(1)"),
 				});
 			}
+
 			return sites;
 		},
 	},
@@ -437,25 +506,31 @@ export const OPERATORS = {
 			const { tokens, source } = ctx;
 			const starts = lineStarts(source);
 			const lines = source.split("\n");
+
 			for (let i = 0; i < tokens.length; i++) {
 				const t = tokens[i];
+
 				// Statement start: IDENTIFIER at column 1 followed by `=` (a
 				// plain declaration; `:=`/`var`/typed forms are skipped - this
 				// operator wants the simplest unambiguous shape).
 				if (t.type !== "IDENTIFIER" || t.column !== 1) continue;
+
 				// `=` and `:=` both lex as ASSIGN - distinguish by value so
 				// reassignments (`x := 10`) are skipped: deleting one leaves the
 				// variable still declared, so TV accepts (a wasted probe, not a
 				// CE10272). This is the `:=`-skip the comment above promises.
 				if (tokens[i + 1]?.type !== "ASSIGN" || tokens[i + 1].value !== "=")
 					continue;
+
 				if (tokens[i - 1] && tokens[i - 1].type !== "NEWLINE") continue;
 				// Single-line statements only: the declaration must end on its
 				// own line (next line blank, comment, or column-1 code - no
 				// wrapped continuations to reason about).
 				const next = lines[t.line]; // 0-based: the line AFTER t.line
+
 				if (next !== undefined && /^[ \t]/.test(next) && next.trim() !== "")
 					continue;
+
 				// The name must be USED later (a later token outside this line),
 				// and the use must actually DEPEND on the declaration. A name that
 				// shadows a builtin NAMESPACE resolves fine without it as long as
@@ -466,16 +541,22 @@ export const OPERATORS = {
 				// depend on the declaration, so such a site is still generated.
 				const usedLater = tokens.some((u, k) => {
 					if (k <= i) return false;
+
 					if (u.type !== "IDENTIFIER" || u.value !== t.value) return false;
+
 					if (u.line <= t.line) return false;
+
 					if (tokens[k + 1]?.type === "ASSIGN") return false;
+
 					if (
 						BUILTIN_NAMESPACES.has(u.value) &&
 						tokens[k + 1]?.type === "DOT"
 					)
 						return false;
+
 					return true;
 				});
+
 				if (!usedLater) continue;
 				const from = starts[t.line - 1];
 				const to = t.line < starts.length ? starts[t.line] : source.length;
@@ -486,6 +567,7 @@ export const OPERATORS = {
 					apply: () => splice(source, from, to, ""),
 				});
 			}
+
 			return sites;
 		},
 	},
@@ -500,6 +582,7 @@ export const OPERATORS = {
 		findSites(ctx) {
 			const sites = [];
 			const { tokens, offsetOf, source } = ctx;
+
 			for (const call of findCalls(ctx)) {
 				const rp = tokens[call.rparen];
 				const from = offsetOf(rp);
@@ -510,6 +593,7 @@ export const OPERATORS = {
 					apply: () => splice(source, from, from + 1, ""),
 				});
 			}
+
 			return sites;
 		},
 	},
@@ -526,6 +610,7 @@ export const OPERATORS = {
 		findSites(ctx) {
 			const sites = [];
 			const { tokens, offsetOf, source } = ctx;
+
 			const baseTypes = new Set([
 				"float",
 				"int",
@@ -537,18 +622,25 @@ export const OPERATORS = {
 				"box",
 				"table",
 			]);
+
 			for (let i = 0; i < tokens.length; i++) {
 				const t = tokens[i];
+
 				if (t.type !== "KEYWORD" || !baseTypes.has(t.value)) continue;
+
 				if (tokens[i + 1]?.type !== "IDENTIFIER") continue;
+
 				if (tokens[i + 2]?.type !== "ASSIGN") continue;
 				const prev = tokens[i - 1];
+
 				const bare =
 					t.column === 1 && (!prev || prev.type === "NEWLINE");
+
 				const afterVar =
 					prev?.type === "KEYWORD" &&
 					(prev.value === "var" || prev.value === "varip") &&
 					prev.column === 1;
+
 				if (!bare && !afterVar) continue;
 				const from = offsetOf(t);
 				sites.push({
@@ -558,6 +650,7 @@ export const OPERATORS = {
 					apply: () => splice(source, from, from + t.value.length, "series"),
 				});
 			}
+
 			return sites;
 		},
 	},
@@ -572,17 +665,23 @@ export function generateMutants(
 ) {
 	const ctx = makeCtx(source);
 	const mutants = [];
+
 	for (const op of operators) {
 		const def = OPERATORS[op];
+
 		if (!def) throw new Error(`unknown operator: ${op}`);
+
 		const sites = def
 			.findSites(ctx)
 			.sort((a, b) => a.line - b.line || a.col - b.col);
+
 		if (sites.length === 0) continue;
 		const rng = mulberry32(seed * 7919 + op.length);
 		const picked = new Set();
+
 		for (let n = 0; n < Math.min(sitesPer, sites.length); n++) {
 			let idx = Math.floor(rng() * sites.length);
+
 			while (picked.has(idx)) idx = (idx + 1) % sites.length;
 			picked.add(idx);
 			const site = sites[idx];
@@ -595,6 +694,7 @@ export function generateMutants(
 			});
 		}
 	}
+
 	return mutants;
 }
 
@@ -602,33 +702,44 @@ export function generateMutants(
 
 const isMain =
 	process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+
 if (isMain) {
 	const args = process.argv.slice(2);
 	const file = args.find((a) => !a.startsWith("--"));
+
 	const opt = (name, dflt) => {
 		const i = args.indexOf(`--${name}`);
+
 		return i !== -1 ? args[i + 1] : dflt;
 	};
+
 	if (!file) {
 		console.error(
 			"usage: mutate.mjs <file.pine> [--operators a,b] [--sites-per N] [--seed N] [--print <i>]",
 		);
 		process.exit(1);
 	}
+
 	const source = readFileSync(file, "utf8");
+
 	const mutants = generateMutants(source, {
 		operators: opt("operators", Object.keys(OPERATORS).join(",")).split(","),
 		sitesPer: Number(opt("sites-per", "1")),
 		seed: Number(opt("seed", "1")),
 	});
+
 	const printIdx = opt("print", null);
+
 	if (printIdx !== null) {
 		const m = mutants[Number(printIdx)];
+
 		if (!m) {
 			console.error(`no mutant ${printIdx} (have ${mutants.length})`);
 			process.exit(1);
 		}
+
 		const out = opt("out", null);
+
 		if (out) writeFileSync(out, m.mutant);
 		else process.stdout.write(m.mutant);
 	} else {
@@ -637,6 +748,7 @@ if (isMain) {
 				`[${i}] ${m.operator}  ${m.site.line}:${m.site.col}  expect=${m.expectedClass}  (${m.totalSites} sites)  ${m.site.desc}`,
 			);
 		}
+
 		if (mutants.length === 0) console.log("no mutable sites found");
 	}
 }

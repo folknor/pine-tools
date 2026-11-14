@@ -12,6 +12,7 @@ export class DocumentManager {
 	open(uri: string, content: string, version: number): ParsedDocument {
 		const doc = new ParsedDocument(uri, content, version);
 		this.documents.set(uri, doc);
+
 		return doc;
 	}
 

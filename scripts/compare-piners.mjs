@@ -28,8 +28,10 @@ const flags = new Set();
 const inputs = [];
 let concurrency = 8;
 let limit = null;
+
 for (let i = 0; i < args.length; i++) {
 	const a = args[i];
+
 	if (a === "--concurrency") concurrency = Number(args[++i]);
 	else if (a === "--limit") limit = Number(args[++i]);
 	else if (a.startsWith("--")) flags.add(a);
@@ -65,12 +67,14 @@ Default inputs:
 
 function displayPath(path) {
 	const rel = relative(REPO_ROOT, path);
+
 	return rel && !rel.startsWith("..") && !isAbsolute(rel) ? rel : path;
 }
 
 async function exists(path) {
 	try {
 		await access(path);
+
 		return true;
 	} catch {
 		return false;
@@ -80,18 +84,22 @@ async function exists(path) {
 async function walkPine(dir) {
 	const found = [];
 	const entries = await readdir(dir, { withFileTypes: true, recursive: true });
+
 	for (const e of entries) {
 		if (e.isFile() && e.name.endsWith(".pine")) {
 			found.push(join(e.parentPath ?? e.path, e.name));
 		}
 	}
+
 	return found;
 }
 
 function globToRegex(pattern) {
 	let re = "";
+
 	for (let i = 0; i < pattern.length; i++) {
 		const c = pattern[i];
+
 		if (c === "*") {
 			if (pattern[i + 1] === "*") {
 				re += ".*";
@@ -103,6 +111,7 @@ function globToRegex(pattern) {
 			re += "[^/]";
 		} else if (c === "[") {
 			const end = pattern.indexOf("]", i + 1);
+
 			if (end === -1) {
 				re += "\\[";
 			} else {
@@ -113,14 +122,17 @@ function globToRegex(pattern) {
 			re += c.replace(/[.+^${}()|\\\]]/g, "\\$&");
 		}
 	}
+
 	return new RegExp(`^${re}$`);
 }
 
 async function expandInput(arg) {
 	if (!/[*?]/.test(arg)) {
 		const s = await stat(arg).catch(() => null);
+
 		if (!s) return [];
 		const files = s.isDirectory() ? await walkPine(arg) : [arg];
+
 		return files.map((p) => resolve(p));
 	}
 
@@ -128,9 +140,11 @@ async function expandInput(arg) {
 	const firstWild = segments.findIndex((s) => /[*?]/.test(s));
 	const baseDir = firstWild === 0 ? "." : segments.slice(0, firstWild).join(sep);
 	const s = await stat(baseDir).catch(() => null);
+
 	if (!s?.isDirectory()) return [];
 	const re = globToRegex(arg);
 	const entries = await readdir(baseDir, { withFileTypes: true, recursive: true });
+
 	return entries
 		.filter((e) => e.isFile())
 		.map((e) => join(e.parentPath ?? e.path, e.name))
@@ -144,6 +158,7 @@ function run(command, spawnArgs) {
 			cwd: REPO_ROOT,
 			stdio: ["ignore", "pipe", "pipe"],
 		});
+
 		let out = "";
 		let err = "";
 		c.stdout.on("data", (d) => (out += d));
@@ -177,6 +192,7 @@ function runPineLint(file) {
 
 function fillTemplate(message, ctx) {
 	if (!ctx) return message;
+
 	return message.replace(/\{(\w+)\}/g, (m, key) => ctx[key] ?? m);
 }
 
@@ -199,6 +215,7 @@ function sortDiagnostics(list) {
 function pickPineLint(raw) {
 	try {
 		const j = JSON.parse(raw);
+
 		const mapDiag = (e, severity) => ({
 			line: e.start?.line ?? 1,
 			col: e.start?.column ?? 1,
@@ -209,17 +226,21 @@ function pickPineLint(raw) {
 				: "analysis",
 			...(e.code ? { code: e.code } : {}),
 		});
+
 		const errors = (j.result?.errors ?? j.errors ?? []).map((e) =>
 			mapDiag(e, "error"),
 		);
+
 		const warnings = includeWarnings
 			? (j.result?.warnings ?? j.warnings ?? []).map((e) =>
 					mapDiag(e, "warning"),
 				)
 			: [];
+
 		const diagnostics = sortDiagnostics([...errors, ...warnings]).filter(
 			(d) => !syntaxOnly || d.stage === "syntax",
 		);
+
 		return { ok: true, diagnostics };
 	} catch (e) {
 		return {
@@ -233,6 +254,7 @@ function pickPineLint(raw) {
 function pickPiners(raw) {
 	try {
 		const j = JSON.parse(raw);
+
 		const diagnostics = sortDiagnostics(
 			(j.diagnostics ?? [])
 				.filter((d) => includeWarnings || d.severity !== "warning")
@@ -246,6 +268,7 @@ function pickPiners(raw) {
 				}))
 				.filter((d) => !syntaxOnly || d.stage === "parse" || d.stage === "lex"),
 		);
+
 		return { ok: true, diagnostics };
 	} catch (e) {
 		return {
@@ -266,10 +289,12 @@ function diffByPosition(pineLint, piners) {
 	const pineLintOnly = pineLint.filter((d) => !pinersPos.has(key(d)));
 	const pinersOnly = piners.filter((d) => !pineLintPos.has(key(d)));
 	const pinersByPos = new Map(piners.map((d) => [key(d), d]));
+
 	const samePositionDifferentStage = pineLint
 		.filter((d) => pinersByPos.has(key(d)))
 		.map((d) => ({ pineLint: d, piners: pinersByPos.get(key(d)) }))
 		.filter((p) => p.pineLint.stage !== p.piners.stage);
+
 	return { pineLintOnly, pinersOnly, samePositionDifferentStage };
 }
 
@@ -281,6 +306,7 @@ async function compareOne(file) {
 
 	const pineLint = pickPineLint(pineLintRes.out);
 	const piners = pickPiners(pinersRes.out);
+
 	if (!pineLint.ok || !piners.ok) {
 		return {
 			file,
@@ -322,9 +348,11 @@ const startedAt = Date.now();
 async function worker() {
 	while (true) {
 		const i = next++;
+
 		if (i >= files.length) return;
 		results[i] = await compareOne(files[i]);
 		done++;
+
 		if (!jsonMode && (done % 200 === 0 || done === files.length)) {
 			process.stderr.write(
 				`  ${done}/${files.length} (${((Date.now() - startedAt) / 1000).toFixed(1)}s)\n`,
@@ -347,6 +375,7 @@ function hasGap(r) {
 function firstLine(d) {
 	const stage = d.stage ? `${d.stage} ` : "";
 	const code = d.code ? `${d.code} ` : "";
+
 	return `${d.line}:${d.col} ${stage}${code}${d.message}`;
 }
 
@@ -368,24 +397,31 @@ function summarize(side) {
 	const counts = new Map();
 	const fileCounts = new Map();
 	const examples = new Map();
+
 	for (const r of results) {
 		const seenInFile = new Set();
+
 		for (const d of r[side] ?? []) {
 			const k = bucketKey(d);
 			counts.set(k, (counts.get(k) ?? 0) + 1);
 			seenInFile.add(k);
+
 			if (!examples.has(k)) {
 				examples.set(k, []);
 			}
+
 			const list = examples.get(k);
+
 			if (list.length < 3) {
 				list.push(`${displayPath(r.file)}:${d.line}:${d.col}`);
 			}
 		}
+
 		for (const k of seenInFile) {
 			fileCounts.set(k, (fileCounts.get(k) ?? 0) + 1);
 		}
 	}
+
 	return [...counts.entries()]
 		.sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
 		.slice(0, 20)
@@ -427,13 +463,16 @@ if (jsonMode) {
 } else {
 	for (const r of results) {
 		if (summaryOnly) break;
+
 		if (quiet && !hasGap(r)) continue;
+
 		if (r.noVerdict) {
 			console.log(
 				`== ${displayPath(r.file)}  (no verdict: ${r.noVerdict} - ${r.detail})`,
 			);
 			continue;
 		}
+
 		const clean = !hasGap(r);
 		console.log(
 			`== ${displayPath(r.file)}${clean ? "  (no gaps)" : ""}` +
@@ -441,15 +480,19 @@ if (jsonMode) {
 					? ""
 					: `  pine-lint-only ${r.pineLintOnly.length} / piners-only ${r.pinersOnly.length} / stage-only ${r.samePositionDifferentStage.length}`),
 		);
+
 		for (const d of r.pineLintOnly.slice(0, 12)) {
 			console.log(`  pine-lint-only ${firstLine(d)}`);
 		}
+
 		if (r.pineLintOnly.length > 12) {
 			console.log(`  pine-lint-only +${r.pineLintOnly.length - 12} more`);
 		}
+
 		for (const d of r.pinersOnly.slice(0, 12)) {
 			console.log(`  piners-only    ${firstLine(d)}`);
 		}
+
 		if (r.pinersOnly.length > 12) {
 			console.log(`  piners-only +${r.pinersOnly.length - 12} more`);
 		}
@@ -470,10 +513,13 @@ if (jsonMode) {
 		["top piners-only", "pinersOnly"],
 	]) {
 		const rows = summarize(side);
+
 		if (!rows.length) continue;
 		console.log(`\n=== ${title} ===`);
+
 		for (const r of rows) {
 			console.log(`${r.count} diagnostics in ${r.files} files  ${r.message}`);
+
 			for (const example of r.examples) {
 				console.log(`    e.g. ${example}`);
 			}

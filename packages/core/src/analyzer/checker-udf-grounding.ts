@@ -20,6 +20,7 @@ export function udfIdentityKey(
 	const signature = params
 		.map((param) => param.typeAnnotation?.name ?? "_")
 		.join(",");
+
 	return `${kind}:${name}(${signature})`;
 }
 
@@ -33,8 +34,11 @@ function qualifiedType(base: string, series: boolean): PineType {
 
 export function joinPineType(a: PineType, b: PineType): PineType {
 	if (a === b) return a;
+
 	if (a === "unknown" || b === "unknown") return "unknown";
+
 	if (TypeChecker.isNaType(a)) return b;
+
 	if (TypeChecker.isNaType(b)) return a;
 
 	const aBase = TypeChecker.baseTypeName(a as string);
@@ -61,12 +65,14 @@ export function defineParamsWithBindings(
 	bindings: Map<string, PineType> | undefined,
 ): void {
 	if (!params) return;
+
 	for (const param of params) {
 		// annotationToSymbolType, not mapToPineType: a UDT-annotated param would
 		// otherwise ground as "unknown". see INV140
 		const paramType: PineType = param.typeAnnotation
 			? annotationToSymbolType(v, param.typeAnnotation.name)
 			: (bindings?.get(param.name) ?? "unknown");
+
 		v.symbolTable.define({
 			name: param.name,
 			type: paramType,
@@ -85,6 +91,7 @@ function explicitReturnTypes(
 	version: string,
 ): PineType[] {
 	const types: PineType[] = [];
+
 	for (const stmt of body) {
 		if (stmt.type === "ReturnStatement") {
 			types.push(
@@ -92,21 +99,27 @@ function explicitReturnTypes(
 			);
 			continue;
 		}
+
 		if (stmt.type === "IfStatement") {
 			const ifStmt = stmt as IfStatement;
 			types.push(...explicitReturnTypes(v, ifStmt.consequent, version));
 			types.push(...explicitReturnTypes(v, ifStmt.alternate ?? [], version));
 			continue;
 		}
+
 		const loopBody = (stmt as { body?: Statement[] }).body;
+
 		if (Array.isArray(loopBody)) {
 			types.push(...explicitReturnTypes(v, loopBody, version));
 		}
+
 		const seq = (stmt as { statements?: Statement[] }).statements;
+
 		if (Array.isArray(seq)) {
 			types.push(...explicitReturnTypes(v, seq, version));
 		}
 	}
+
 	return types;
 }
 
@@ -123,13 +136,16 @@ function tailExprScalarTypes(
 ): PineType[] {
 	if (expr.type === "IfExpression") {
 		const ifExpr = expr as IfExpression;
+
 		return [
 			...tailScalarTypes(v, ifExpr.consequent, version),
 			...tailScalarTypes(v, ifExpr.alternate, version),
 		];
 	}
+
 	if (expr.type === "SwitchExpression") {
 		const sw = expr as SwitchExpression;
+
 		// When a case carries `statements`, its `result` is the last statement's
 		// expression - visit the statement tail instead (SwitchCase in ast.ts).
 		return sw.cases.flatMap((c) =>
@@ -138,6 +154,7 @@ function tailExprScalarTypes(
 				: tailExprScalarTypes(v, c.result, version),
 		);
 	}
+
 	return [v.inferExpressionType(expr, version)];
 }
 
@@ -148,6 +165,7 @@ function tailScalarTypes(
 ): PineType[] {
 	if (!body || body.length === 0) return [];
 	const last = body[body.length - 1];
+
 	if (last.type === "ExpressionStatement") {
 		return tailExprScalarTypes(
 			v,
@@ -155,16 +173,20 @@ function tailScalarTypes(
 			version,
 		);
 	}
+
 	if (last.type === "ReturnStatement") {
 		return tailExprScalarTypes(v, (last as ReturnStatement).value, version);
 	}
+
 	if (last.type === "IfStatement") {
 		const ifStmt = last as IfStatement;
+
 		return [
 			...tailScalarTypes(v, ifStmt.consequent, version),
 			...tailScalarTypes(v, ifStmt.alternate, version),
 		];
 	}
+
 	return [];
 }
 
@@ -174,11 +196,13 @@ export function inferGroundedScalarReturn(
 	version: string,
 ): PineType {
 	let returnType: PineType | undefined;
+
 	for (const t of [
 		...explicitReturnTypes(v, body, version),
 		...tailScalarTypes(v, body, version),
 	]) {
 		returnType = returnType ? joinPineType(returnType, t) : t;
 	}
+
 	return returnType ?? "unknown";
 }

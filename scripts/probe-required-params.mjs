@@ -53,6 +53,7 @@ const OUT = join(root, "pine-data/raw/v6/required-params-probe.json");
 const functions = JSON.parse(
 	readFileSync(join(root, "pine-data/v6/functions.json"), "utf8"),
 );
+
 const byName = new Map(functions.map((f) => [f.name, f]));
 
 const args = process.argv.slice(2);
@@ -61,6 +62,7 @@ const limit = limitIdx !== -1 ? Number(args[limitIdx + 1]) : Infinity;
 const retryOnly = args.includes("--retry");
 
 const SETTLED = new Set(["ok", "id-supplied", "variadic"]);
+
 const prior =
 	existsSync(OUT) ? JSON.parse(readFileSync(OUT, "utf8")) : { results: {} };
 
@@ -76,22 +78,29 @@ function callName(name) {
 function firstArgFixture(fn) {
 	const t = fn?.parameters?.[0]?.type ?? "";
 	const ns = fn?.name ?? "";
-	if (/array/.test(t) || /^array\./.test(ns))
+
+	if (/array/.test(t) || ns.startsWith('array.'))
 		return { decl: "a0 = array.new<float>(3)", arg: "a0" };
-	if (/map/.test(t) || /^map\./.test(ns))
+
+	if (/map/.test(t) || ns.startsWith('map.'))
 		return { decl: "m0 = map.new<string, float>()", arg: "m0" };
-	if (/matrix/.test(t) || /^matrix\./.test(ns))
+
+	if (/matrix/.test(t) || ns.startsWith('matrix.'))
 		return { decl: "mx0 = matrix.new<float>(2, 2)", arg: "mx0" };
+
 	if (/series/.test(t)) return { decl: null, arg: "close" };
+
 	return null;
 }
 
 function probeVariants(name) {
 	const fn = byName.get(name);
 	const call = callName(name);
+
 	const header = name.startsWith("strategy")
 		? 'strategy("probe")'
 		: 'indicator("probe")';
+
 	const variants = [
 		{
 			kind: "zero-arg",
@@ -106,7 +115,9 @@ function probeVariants(name) {
 			script: `//@version=6\n${header}\nplot(${call}())\n`,
 		},
 	];
+
 	const fixture = firstArgFixture(fn);
+
 	if (fixture) {
 		const decl = fixture.decl ? `${fixture.decl}\n` : "";
 		variants.push({
@@ -115,6 +126,7 @@ function probeVariants(name) {
 			script: `//@version=6\n${header}\n${decl}${call}(${fixture.arg})\nplot(close)\n`,
 		});
 	}
+
 	return variants;
 }
 
@@ -125,6 +137,7 @@ async function tvVerdict(source) {
 			["--tv", "-c", source],
 			{ timeout: 60000 },
 		);
+
 		return JSON.parse(stdout);
 	} catch {
 		return null;
@@ -137,13 +150,16 @@ const IGNORABLE_RE =
 
 function classify(verdict) {
 	if (!verdict || verdict.success === false) return { status: "no-verdict" };
+
 	const errors = (verdict.result?.errors ?? verdict.errors ?? []).map(
 		(e) => ({ code: e.code, ctx: e.ctx, message: e.message }),
 	);
+
 	const required = [];
 	let variadicGroup = false;
 	let foreign = false;
 	let crashed = false;
+
 	for (const e of errors) {
 		if (e.code === "CE10165" && e.ctx?.name) {
 			// A comma/ellipsis "name" is the variadic group, not a param.
@@ -153,8 +169,11 @@ function classify(verdict) {
 		else if (e.code === "CE10118") variadicGroup = true; // wrong number of args
 		else if (!IGNORABLE_RE.test(e.message ?? "")) foreign = true;
 	}
+
 	if (crashed) return { status: "crash", errors };
+
 	if (variadicGroup && !foreign) return { status: "variadic", required, errors };
+
 	return { status: foreign ? "ambiguous" : "ok", required, errors };
 }
 
@@ -173,11 +192,14 @@ let done = 0;
 async function worker(queue) {
 	for (;;) {
 		const name = queue.shift();
+
 		if (!name) return;
 		let best = null;
+
 		for (const variant of probeVariants(name)) {
 			const c = classify(await tvVerdict(variant.script));
 			let entry;
+
 			if (variant.kind === "id-supplied" && (c.status === "ok" || c.status === "variadic")) {
 				entry = {
 					probe: variant.script,
@@ -189,19 +211,25 @@ async function worker(queue) {
 			} else {
 				entry = { probe: variant.script, ...c };
 			}
+
 			if (!best || RANK[entry.status] < RANK[best.status]) best = entry;
+
 			if (entry.status === "ok" || entry.status === "variadic") break;
 		}
+
 		results[name] = best;
 		done++;
+
 		if (done % 25 === 0) console.log(`  ${done}/${targets.length}`);
 	}
 }
 
 const queue = [...targets];
+
 await Promise.all([1, 2, 3, 4].map(() => worker(queue)));
 
 const summary = {};
+
 for (const r of Object.values(results))
 	summary[r.status] = (summary[r.status] ?? 0) + 1;
 
@@ -221,7 +249,9 @@ writeFileSync(
 );
 
 console.log(`done: ${JSON.stringify(summary)}`);
+
 console.log(`written: ${OUT}`);
+
 for (const [name, r] of Object.entries(results)) {
 	if (!SETTLED.has(r.status))
 		console.log(

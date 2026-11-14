@@ -31,6 +31,7 @@ export function prepareRename(
 	position: Position,
 ): PrepareRenameResult | null {
 	const symbol = doc.getWordAtPosition(position);
+
 	if (!symbol) return null;
 
 	// Check if it's a built-in (cannot rename)
@@ -63,6 +64,7 @@ export function rename(
 	newName: string,
 ): RenameResult | null {
 	const symbol = doc.getWordAtPosition(position);
+
 	if (!symbol) return null;
 
 	// Check if it's a built-in (cannot rename)
@@ -77,6 +79,7 @@ export function rename(
 
 	// Find all references
 	const references = getReferences(doc, position, { includeDeclaration: true });
+
 	if (references.length === 0) return null;
 
 	// Generate text edits for each reference
@@ -112,9 +115,11 @@ function isValidIdentifier(name: string): boolean {
  */
 function findWordStart(line: string, position: number): number {
 	let start = position;
+
 	while (start > 0 && /[A-Za-z0-9_]/.test(line[start - 1])) {
 		start--;
 	}
+
 	return start;
 }
 
@@ -123,8 +128,10 @@ function findWordStart(line: string, position: number): number {
  */
 function findWordEnd(line: string, position: number): number {
 	let end = position;
+
 	while (end < line.length && /[A-Za-z0-9_]/.test(line[end])) {
 		end++;
 	}
+
 	return end;
 }

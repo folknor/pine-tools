@@ -43,6 +43,7 @@ interface Parsed {
 
 function parse(typeString: string): Parsed {
 	const m = typeString.match(/^(const|input|simple|series)\s+(.+)$/);
+
 	return m
 		? { qualifier: m[1], rest: m[2].trim(), raw: typeString }
 		: { qualifier: null, rest: typeString.trim(), raw: typeString };
@@ -51,7 +52,9 @@ function parse(typeString: string): Parsed {
 // A clean primitive union is `<qualifier> prim(/prim)*` with no templated types.
 function isCleanPrimitive(p: Parsed): boolean {
 	if (p.qualifier === null) return false;
+
 	if (/[<>]/.test(p.rest)) return false;
+
 	return p.rest.split("/").every((t) => PRIMITIVES.has(t.trim()));
 }
 
@@ -59,9 +62,13 @@ function orderPrimitives(prims: Set<string>): string[] {
 	return [...prims].sort((a, b) => {
 		const ia = TYPE_ORDER.indexOf(a);
 		const ib = TYPE_ORDER.indexOf(b);
+
 		if (ia !== -1 && ib !== -1) return ia - ib;
+
 		if (ia !== -1) return -1;
+
 		if (ib !== -1) return 1;
+
 		return a.localeCompare(b);
 	});
 }
@@ -70,13 +77,16 @@ function orderPrimitives(prims: Set<string>): string[] {
 // "int/float". Returns null if any member is not a primitive scalar.
 function mergePrimitives(fragments: string[]): string | null {
 	const prims = new Set<string>();
+
 	for (const fragment of fragments) {
 		for (const t of fragment.split("/")) {
 			const base = t.trim();
+
 			if (!PRIMITIVES.has(base)) return null;
 			prims.add(base);
 		}
 	}
+
 	return orderPrimitives(prims).join("/");
 }
 
@@ -99,25 +109,32 @@ export function unionTypes(typeStrings: string[]): string {
 	if (parsed.every(isCleanPrimitive)) {
 		let bestRank = -1;
 		let bestQualifier = "series";
+
 		for (const p of parsed) {
 			const rank = QUALIFIER_RANK[p.qualifier as string];
+
 			if (rank > bestRank) {
 				bestRank = rank;
 				bestQualifier = p.qualifier as string;
 			}
 		}
+
 		return `${bestQualifier} ${mergePrimitives(parsed.map((p) => p.rest))}`;
 	}
 
 	// 2. same collection kind → union element types
 	const coll = uniq.map((t) => t.match(/^(array|matrix|map)<(.+)>$/));
+
 	if (coll.every(Boolean) && new Set(coll.map((m) => m?.[1])).size === 1) {
 		const kind = coll[0]?.[1];
 		const elements = coll.map((m) => m?.[2] as string);
 		const innerMerged = mergePrimitives(elements);
+
 		if (innerMerged) return `${kind}<${innerMerged}>`;
 		const inners = new Set(elements);
+
 		if (inners.size === 1) return `${kind}<${[...inners][0]}>`;
+
 		return "unknown";
 	}
 
@@ -143,10 +160,12 @@ export function unionTypes(typeStrings: string[]): string {
  */
 function overloadsAreNested(overloadArgs: OverloadArg[][]): boolean {
 	const nameLists = overloadArgs.map((args) => args.map((a) => a.name));
+
 	const longest = nameLists.reduce(
 		(a, b) => (b.length > a.length ? b : a),
 		[] as string[],
 	);
+
 	return nameLists.every((list) => list.every((n, i) => longest[i] === n));
 }
 
@@ -165,6 +184,7 @@ export function unionOverloadParams(
 ): Map<string, string> {
 	const result = new Map<string, string>();
 	const overloadArgs = detail.overloadArgs;
+
 	if (!overloadArgs || overloadArgs.length < 2) return result;
 
 	const overloadCount = overloadArgs.length;
@@ -207,15 +227,20 @@ function baseType(s: string): string {
  */
 export function detectReturnTypeParam(detail: OverloadCapture): string | null {
 	const overloads = detail.overloads;
+
 	if (!overloads || overloads.length < 2) return null;
 
 	const returnBases = new Set<string>();
+
 	for (const o of overloads) {
 		const ret = o.match(/→\s*(.+)$/)?.[1];
+
 		if (!ret) return null;
 		returnBases.add(baseType(ret));
 	}
+
 	if (returnBases.size < 2) return null;
+
 	if (![...returnBases].every((b) => PRIMITIVES.has(b))) return null;
 
 	const unioned = unionOverloadParams(detail);
@@ -227,9 +252,11 @@ export function detectReturnTypeParam(detail: OverloadCapture): string | null {
 	}
 
 	let match: null | string = null;
+
 	for (const [name, type] of unioned) {
 		if (type === "unknown") continue;
 		const bases = new Set(baseType(type).split("/"));
+
 		if (
 			bases.size === returnBases.size &&
 			[...returnBases].every((b) => bases.has(b))
@@ -238,6 +265,7 @@ export function detectReturnTypeParam(detail: OverloadCapture): string | null {
 			match = name;
 		}
 	}
+
 	if (!match) return null;
 
 	// Set-equality alone can match coincidentally: math.round's returns are
@@ -249,18 +277,23 @@ export function detectReturnTypeParam(detail: OverloadCapture): string | null {
 	// ta.valuewhen maps color->color, int->int, int/float->float, bool->bool).
 	// see INV032
 	const overloadArgs = detail.overloadArgs;
+
 	if (overloadArgs && overloadArgs.length === overloads.length) {
 		const seen = new Map<string, string>();
+
 		for (let i = 0; i < overloads.length; i++) {
 			const ret = overloads[i].match(/→\s*(.+)$/)?.[1];
 			const arg = overloadArgs[i]?.find((a) => a.name === match);
+
 			if (!ret || !arg) continue;
 			const key = baseType(arg.type);
 			const retBase = baseType(ret);
 			const prior = seen.get(key);
+
 			if (prior !== undefined && prior !== retBase) return null;
 			seen.set(key, retBase);
 		}
 	}
+
 	return match;
 }

@@ -27,23 +27,31 @@ export function resolveUdtExpressionType(
 ): PineType | null {
 	if (expr.type === "Identifier") {
 		const symbol = v.symbolTable.lookup((expr as Identifier).name);
+
 		const type = symbol
 			? TypeChecker.baseTypeName(symbol.type as string)
 			: "unknown";
+
 		return v.udtFieldTypes.has(type) ? (type as PineType) : null;
 	}
+
 	if (expr.type === "CallExpression") {
 		const call = expr as CallExpression;
+
 		const name =
 			call.callee.type === "Identifier"
 				? call.callee.name
 				: memberChainName(call.callee);
+
 		const ctor = name.match(/^(.+)\.new$/);
+
 		return ctor && v.udtFieldTypes.has(ctor[1]) ? (ctor[1] as PineType) : null;
 	}
+
 	if (expr.type === "MemberExpression") {
 		return resolveUdtFieldType(v, expr as MemberExpression);
 	}
+
 	return null;
 }
 
@@ -52,9 +60,12 @@ export function resolveUdtFieldType(
 	expr: MemberExpression,
 ): PineType | null {
 	const receiverType = resolveUdtExpressionType(v, expr.object);
+
 	if (!receiverType) return null;
 	const fields = v.udtFieldTypes.get(TypeChecker.baseTypeName(receiverType));
+
 	if (!fields) return null;
+
 	return fields.get(expr.property.name) ?? null;
 }
 
@@ -90,15 +101,20 @@ export function checkTransitiveLibraryImports(
 	if (!receiverType) return;
 	const base = TypeChecker.baseTypeName(receiverType);
 	const dot = base.indexOf(".");
+
 	if (dot <= 0) return;
 	const libraryPath = v.importedLibraryPaths.get(base.slice(0, dot));
+
 	if (!libraryPath) return;
 	const refs = LIBRARY_FOREIGN_TYPE_REFS[libraryPath]?.[base.slice(dot + 1)];
+
 	if (!refs) return;
 	const imported = new Set(v.importedLibraryPaths.values());
+
 	for (const ref of refs) {
 		if (imported.has(ref.library)) continue;
 		const key = `${ref.type}@${ref.library}`;
+
 		if (v.reportedTransitiveImports.has(key)) continue;
 		v.reportedTransitiveImports.add(key);
 		v.addError(
@@ -118,6 +134,7 @@ export function checkUdtFieldAccess(
 ): void {
 	if (version !== "6") return;
 	const receiverType = resolveUdtExpressionType(v, expr.object);
+
 	// Field-access trigger for the transitive-import rule, anchored at the script
 	// declaration statement per TV. With no declaration statement to anchor to
 	// (an incomplete script) we stay silent rather than invent a position.
@@ -130,12 +147,16 @@ export function checkUdtFieldAccess(
 			expr.property.name.length,
 		);
 	}
+
 	if (receiverType) {
 		const fields = v.udtFieldTypes.get(TypeChecker.baseTypeName(receiverType));
+
 		if (!fields || fields.has(expr.property.name)) return;
 		emitNoField(v, expr);
+
 		return;
 	}
+
 	// Field access on a scalar value (`close.foo`) - scalars have no fields,
 	// so any member read is TV's CE10198. Restricted to a plain IDENTIFIER
 	// receiver: inferring a deep-namespace member object (`strategy.commission`)
@@ -144,8 +165,10 @@ export function checkUdtFieldAccess(
 	// namespace/type/enum names (`color.red`, `math.pi`, `chart.point`),
 	// which are not scalar VALUES. see INV093
 	const obj = expr.object;
+
 	if (obj.type !== "Identifier") return;
 	const n = obj.name;
+
 	if (
 		KNOWN_NAMESPACES.includes(n) ||
 		TYPE_NAMES.has(n) ||
@@ -155,9 +178,11 @@ export function checkUdtFieldAccess(
 	) {
 		return;
 	}
+
 	const objBase = TypeChecker.baseTypeName(
 		v.inferExpressionType(obj, version) as string,
 	);
+
 	if (
 		objBase === "int" ||
 		objBase === "float" ||
@@ -176,6 +201,7 @@ export function emitNoField(
 	expr: MemberExpression,
 ): void {
 	const key = `${expr.property.line}:${expr.property.column}:${expr.property.name}`;
+
 	if (v.reportedUdtFieldErrors.has(key)) return;
 	v.reportedUdtFieldErrors.add(key);
 	v.addError(
@@ -197,6 +223,7 @@ export function checkDuplicateUdtFields(
 ): void {
 	if (version !== "6" || !statement.fields) return;
 	const seen = new Set<string>();
+
 	for (const field of statement.fields) {
 		if (seen.has(field.name)) {
 			v.addTemplateError({
@@ -210,6 +237,7 @@ export function checkDuplicateUdtFields(
 			});
 			continue;
 		}
+
 		seen.add(field.name);
 	}
 }
@@ -225,6 +253,7 @@ export function checkTypeFieldDefaults(
 	version: string,
 ): void {
 	if (version !== "6" || !statement.fields) return;
+
 	for (const field of statement.fields) {
 		if (!field.defaultValue || !field.typeAnnotation) continue;
 		// What a field default may BE - the same rule and codes as a UDF
@@ -234,6 +263,7 @@ export function checkTypeFieldDefaults(
 		// name. Fields are always typed, so the untyped-`na` case cannot
 		// arise. 23-cell grid, 2026-09-07. see INV178
 		const shape = defaultValueViolation(v, field.defaultValue, true);
+
 		if (shape) {
 			v.addTemplateError({
 				line: field.line ?? statement.line,
@@ -247,11 +277,15 @@ export function checkTypeFieldDefaults(
 			});
 			continue;
 		}
+
 		const fb = TypeChecker.baseTypeName(field.typeAnnotation.name);
+
 		if (fb !== "int" && fb !== "float" && fb !== "bool" && fb !== "string") {
 			continue; // color/array/map/UDT field defaults -> lenient
 		}
+
 		const defType = v.inferExpressionType(field.defaultValue, version);
+
 		if (elementArgAssignable(defType, fb)) continue;
 		const desc = v.describeArgForTemplate(field.defaultValue, defType, version);
 		v.addTemplateError({

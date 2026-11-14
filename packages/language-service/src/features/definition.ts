@@ -54,14 +54,17 @@ export function getDefinition(
 	position: Position,
 ): DefinitionResult | null {
 	const symbol = doc.getWordAtPosition(position);
+
 	if (!symbol) return null;
 
 	// Check if this is a library symbol (e.g., "myLib.myFunction")
 	const libraryDef = getLibraryDefinition(doc, position, symbol);
+
 	if (libraryDef) return libraryDef;
 
 	// First check if it's a built-in
 	const builtinInfo = getSymbolInfo(symbol);
+
 	if (builtinInfo) {
 		return {
 			isBuiltin: true,
@@ -71,6 +74,7 @@ export function getDefinition(
 
 	// Search for user-defined symbol in AST
 	const location = findDefinitionInAST(doc, symbol);
+
 	if (location) {
 		return { location };
 	}
@@ -87,11 +91,13 @@ function getLibraryDefinition(
 	symbol: string,
 ): DefinitionResult | null {
 	const line = doc.getLine(position.line);
+
 	if (!line) return null;
 
 	// Check if we're on a member of a library alias (e.g., "myLib.myFunction")
 	const beforeSymbol = line.substring(0, position.character);
 	const beforeMatch = beforeSymbol.match(/([a-zA-Z_][a-zA-Z0-9_]*)\.$/);
+
 	if (!beforeMatch) return null;
 
 	const alias = beforeMatch[1];
@@ -99,10 +105,12 @@ function getLibraryDefinition(
 	// Check if the alias is a resolved import
 	const imports = getResolvedImports(doc);
 	const resolvedImport = imports.find((i) => i.alias === alias);
+
 	if (!resolvedImport) return null;
 
 	// Get library content
 	const content = libraryContentCache.get(resolvedImport.sourcePath);
+
 	if (!content) {
 		// Return library info without location
 		return {
@@ -114,6 +122,7 @@ function getLibraryDefinition(
 	// Parse the library and find the export
 	const library = parseLibrary(content, resolvedImport.sourcePath);
 	const exportInfo = findLibraryExport(library, symbol);
+
 	if (!exportInfo) return null;
 
 	// Find the actual definition location in the library
@@ -151,11 +160,13 @@ function findExportLocationInLibrary(
 	for (const stmt of ast.body) {
 		if (stmt.type === "FunctionDeclaration") {
 			const funcDecl = stmt as FunctionDeclaration;
+
 			if (funcDecl.isExport && funcDecl.name === symbolName) {
 				// Create URI from source path
 				const uri = sourcePath.startsWith("file://")
 					? sourcePath
 					: `file://${sourcePath}`;
+
 				return createLocation(
 					uri,
 					funcDecl.line,
@@ -165,10 +176,12 @@ function findExportLocationInLibrary(
 			}
 		} else if (stmt.type === "MethodDeclaration") {
 			const methodDecl = stmt as MethodDeclaration;
+
 			if (methodDecl.isExport && methodDecl.name === symbolName) {
 				const uri = sourcePath.startsWith("file://")
 					? sourcePath
 					: `file://${sourcePath}`;
+
 				return createLocation(
 					uri,
 					methodDecl.line,
@@ -192,6 +205,7 @@ function findDefinitionInAST(
 	// Walk the AST to find the definition
 	for (const stmt of doc.ast.body) {
 		const location = findDefinitionInStatement(stmt, symbolName, doc.uri);
+
 		if (location) return location;
 	}
 
@@ -209,14 +223,17 @@ function findDefinitionInStatement(
 	switch (stmt.type) {
 		case "VariableDeclaration": {
 			const varDecl = stmt as VariableDeclaration;
+
 			if (varDecl.name === symbolName) {
 				return createLocation(uri, varDecl.line, varDecl.column, varDecl.name);
 			}
+
 			break;
 		}
 
 		case "FunctionDeclaration": {
 			const funcDecl = stmt as FunctionDeclaration;
+
 			if (funcDecl.name === symbolName) {
 				return createLocation(
 					uri,
@@ -225,6 +242,7 @@ function findDefinitionInStatement(
 					funcDecl.name,
 				);
 			}
+
 			// Check parameters
 			for (const param of funcDecl.params) {
 				if (param.name === symbolName) {
@@ -237,16 +255,20 @@ function findDefinitionInStatement(
 					);
 				}
 			}
+
 			// Search in function body
 			for (const bodyStmt of funcDecl.body) {
 				const loc = findDefinitionInStatement(bodyStmt, symbolName, uri);
+
 				if (loc) return loc;
 			}
+
 			break;
 		}
 
 		case "MethodDeclaration": {
 			const methodDecl = stmt as MethodDeclaration;
+
 			if (methodDecl.name === symbolName) {
 				return createLocation(
 					uri,
@@ -255,6 +277,7 @@ function findDefinitionInStatement(
 					methodDecl.name,
 				);
 			}
+
 			// Check parameters
 			for (const param of methodDecl.params) {
 				if (param.name === symbolName) {
@@ -266,11 +289,14 @@ function findDefinitionInStatement(
 					);
 				}
 			}
+
 			// Search in method body
 			for (const bodyStmt of methodDecl.body) {
 				const loc = findDefinitionInStatement(bodyStmt, symbolName, uri);
+
 				if (loc) return loc;
 			}
+
 			break;
 		}
 
@@ -279,11 +305,14 @@ function findDefinitionInStatement(
 			if (stmt.iterator === symbolName) {
 				return createLocation(uri, stmt.line, stmt.column, stmt.iterator);
 			}
+
 			// Search in body
 			for (const bodyStmt of stmt.body) {
 				const loc = findDefinitionInStatement(bodyStmt, symbolName, uri);
+
 				if (loc) return loc;
 			}
+
 			break;
 		}
 
@@ -291,10 +320,13 @@ function findDefinitionInStatement(
 			if (stmt.iterator === symbolName) {
 				return createLocation(uri, stmt.line, stmt.column, stmt.iterator);
 			}
+
 			for (const bodyStmt of stmt.body) {
 				const loc = findDefinitionInStatement(bodyStmt, symbolName, uri);
+
 				if (loc) return loc;
 			}
+
 			break;
 		}
 
@@ -304,6 +336,7 @@ function findDefinitionInStatement(
 					return createLocation(uri, stmt.line, stmt.column, name);
 				}
 			}
+
 			break;
 		}
 
@@ -311,6 +344,7 @@ function findDefinitionInStatement(
 			if (stmt.alias === symbolName) {
 				return createLocation(uri, stmt.line, stmt.column, stmt.alias);
 			}
+
 			break;
 		}
 
@@ -319,6 +353,7 @@ function findDefinitionInStatement(
 			if (stmt.name === symbolName) {
 				return createLocation(uri, stmt.line, stmt.column, stmt.name);
 			}
+
 			break;
 		}
 
@@ -326,30 +361,38 @@ function findDefinitionInStatement(
 			// Search in consequent and alternate
 			for (const bodyStmt of stmt.consequent) {
 				const loc = findDefinitionInStatement(bodyStmt, symbolName, uri);
+
 				if (loc) return loc;
 			}
+
 			if (stmt.alternate) {
 				for (const bodyStmt of stmt.alternate) {
 					const loc = findDefinitionInStatement(bodyStmt, symbolName, uri);
+
 					if (loc) return loc;
 				}
 			}
+
 			break;
 		}
 
 		case "WhileStatement": {
 			for (const bodyStmt of stmt.body) {
 				const loc = findDefinitionInStatement(bodyStmt, symbolName, uri);
+
 				if (loc) return loc;
 			}
+
 			break;
 		}
 
 		case "SequenceStatement": {
 			for (const seqStmt of stmt.statements) {
 				const loc = findDefinitionInStatement(seqStmt, symbolName, uri);
+
 				if (loc) return loc;
 			}
+
 			break;
 		}
 	}
@@ -370,5 +413,6 @@ function createLocation(
 		start: { line: line - 1, character: column - 1 },
 		end: { line: line - 1, character: column - 1 + name.length },
 	};
+
 	return { uri, range };
 }

@@ -60,7 +60,9 @@ function normalizeProse(htmlSlice: string): string {
 	const withBreaks = htmlSlice
 		.replace(/<\/p>/gi, "\n")
 		.replace(/<br\s*\/?>/gi, "\n");
+
 	const text = decodeEntities(stripTags(withBreaks));
+
 	return text
 		.replace(/[ \t]+/g, " ")
 		.replace(/ *\n */g, "\n")
@@ -76,19 +78,24 @@ const SUB_HEADER_RE =
 function sliceSection(html: string, label: string): string | null {
 	SUB_HEADER_RE.lastIndex = 0;
 	const headers: Array<{ label: string; end: number }> = [];
+
 	for (const m of html.matchAll(SUB_HEADER_RE)) {
 		headers.push({
 			label: stripTags(m[1]).trim().toLowerCase(),
 			end: m.index + m[0].length,
 		});
 	}
+
 	for (let i = 0; i < headers.length; i++) {
 		if (headers[i].label !== label.toLowerCase()) continue;
 		const start = headers[i].end;
+
 		const stop =
 			i + 1 < headers.length ? findHeaderStart(html, start) : html.length;
+
 		return html.slice(start, stop);
 	}
+
 	return null;
 }
 
@@ -99,6 +106,7 @@ function findHeaderStart(html: string, from: number): number {
 		'<div class="tv-pine-reference-item__sub-header',
 		from,
 	);
+
 	return idx === -1 ? html.length : idx;
 }
 
@@ -108,12 +116,16 @@ function findHeaderStart(html: string, from: number): number {
 function proseFromSlice(slice: string): string {
 	const re =
 		/<div class="tv-pine-reference-item__text tv-text">([\s\S]*?)<\/div>/g;
+
 	const parts: string[] = [];
+
 	for (const m of slice.matchAll(re)) {
 		if (m[1].includes("tv-pine-reference-item__arg-type")) continue;
 		const prose = normalizeProse(m[1]);
+
 		if (prose) parts.push(prose);
 	}
+
 	return parts.join("\n");
 }
 
@@ -121,21 +133,27 @@ export function extractSections(html: string): ReferenceSections {
 	const out: ReferenceSections = {};
 
 	const returnsSlice = sliceSection(html, "Returns");
+
 	if (returnsSlice) {
 		const prose = proseFromSlice(returnsSlice);
+
 		if (prose) out.returnsDescription = prose;
 	}
 
 	const remarksSlice = sliceSection(html, "Remarks");
+
 	if (remarksSlice) {
 		const prose = proseFromSlice(remarksSlice);
+
 		if (prose) out.remarks = prose;
 	}
 
 	const seeAlsoSlice = sliceSection(html, "See also");
+
 	if (seeAlsoSlice) {
 		const names: string[] = [];
 		const re = /<a [^>]*>([\s\S]*?)<\/a>/g;
+
 		for (const m of seeAlsoSlice.matchAll(re)) {
 			// Cross-ref labels render as "array.max()" / "na" - drop the trailing
 			// "()" so the value is the bare symbol consumers can look up. Generic
@@ -145,8 +163,10 @@ export function extractSections(html: string): ReferenceSections {
 				.trim()
 				.replace(/\(\)$/, "")
 				.replace(/<[^>]*>$/, "");
+
 			if (name) names.push(name);
 		}
+
 		if (names.length) out.seeAlso = names;
 	}
 

@@ -16,6 +16,7 @@ export function getDocumentSymbols(doc: ParsedDocument): DocumentSymbol[] {
 
 	for (const stmt of doc.ast.body) {
 		const symbol = extractSymbol(stmt, doc);
+
 		if (symbol) {
 			symbols.push(symbol);
 		}
@@ -140,6 +141,7 @@ function createVariableSymbol(
 ): DocumentSymbol {
 	// Determine symbol kind based on variable type
 	let kind = SymbolKind.Variable;
+
 	if (varDecl.varType === "const") {
 		kind = SymbolKind.Constant;
 	}
@@ -170,6 +172,7 @@ function findBlockEndLine(body: Statement[], startLine: number): number {
 		// Recurse into nested blocks
 		if ("body" in stmt && Array.isArray(stmt.body)) {
 			const nestedEnd = findBlockEndLine(stmt.body as Statement[], stmt.line);
+
 			if (nestedEnd > maxLine) {
 				maxLine = nestedEnd;
 			}
@@ -178,6 +181,7 @@ function findBlockEndLine(body: Statement[], startLine: number): number {
 		// Handle if statements with alternate blocks
 		if (stmt.type === "IfStatement" && stmt.alternate) {
 			const altEnd = findBlockEndLine(stmt.alternate, stmt.line);
+
 			if (altEnd > maxLine) {
 				maxLine = altEnd;
 			}
@@ -201,6 +205,7 @@ function createRange(
 	end: { line: number; character: number };
 } {
 	const lineContent = doc.getLine(line - 1);
+
 	return {
 		start: { line: line - 1, character: column - 1 },
 		end: { line: line - 1, character: lineContent.length },
