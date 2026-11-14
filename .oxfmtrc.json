@@ -1,0 +1,19 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "ignorePatterns": [
+    "pnpm-lock.yaml",
+    "tools/oxlint/anti-slop",
+    "pine-data",
+    "pine-manual",
+    "syntaxes",
+    "investigations",
+    "gotchas",
+    "fixtures",
+    "lint-reports",
+    "mutation-reports",
+    "pinescripts",
+    "samples",
+    "vendor",
+    "packages/**/test/fixtures"
+  ]
+}
