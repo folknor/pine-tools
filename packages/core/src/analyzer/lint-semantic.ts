@@ -19,21 +19,18 @@
  * worse than a miss, because it teaches the reader to ignore the channel.
  */
 
-import type {
-	PineFunction,
-	PineParameter,
-} from "../../../../pine-data/schema/types";
+import type { PineFunction, PineParameter } from "../../../../pine-data/schema/types";
 import { FUNCTIONS_BY_NAME } from "../../../../pine-data/v6";
 import { DiagnosticSeverity } from "../common/errors";
 import type {
-	AssignmentStatement,
-	CallExpression,
-	Expression,
-	Identifier,
-	Literal,
-	Program,
-	Statement,
-	VariableDeclaration,
+  AssignmentStatement,
+  CallExpression,
+  Expression,
+  Identifier,
+  Literal,
+  Program,
+  Statement,
+  VariableDeclaration,
 } from "../parser/ast";
 import type { SemanticWarning } from "../parser/semanticAnalyzer";
 
@@ -58,31 +55,27 @@ const FOOTPRINT_LIMIT = 1;
 
 /** Calls that draw against the plot budget: `plot*()` plus `alertcondition()`. */
 function countsTowardPlotBudget(name: string): boolean {
-	return name.startsWith("plot") || name === "alertcondition";
+  return name.startsWith("plot") || name === "alertcondition";
 }
 
 /** Closes an open position. `strategy.cancel*` only withdraws a PENDING order. */
-const EXIT_FUNCTIONS = new Set([
-	"strategy.exit",
-	"strategy.close",
-	"strategy.close_all",
-]);
+const EXIT_FUNCTIONS = new Set(["strategy.exit", "strategy.close", "strategy.close_all"]);
 
 const ENTRY_FUNCTIONS = new Set(["strategy.entry", "strategy.order"]);
 
 const COMPOUND_ASSIGN = new Set(["+=", "-=", "*=", "/=", "%="]);
 
 export function runSemanticLints(ast: Program): SemanticWarning[] {
-	const ctx = new LintContext(ast);
+  const ctx = new LintContext(ast);
 
-	return [
-		...checkRepaintingSecurity(ctx),
-		...checkPlotBudget(ctx),
-		...checkRequestBudget(ctx),
-		...checkAccumulatorLifetime(ctx),
-		...checkEntryWithoutExit(ctx),
-		...checkArgumentOutOfRange(ctx),
-	].sort((a, b) => a.line - b.line || a.column - b.column);
+  return [
+    ...checkRepaintingSecurity(ctx),
+    ...checkPlotBudget(ctx),
+    ...checkRequestBudget(ctx),
+    ...checkAccumulatorLifetime(ctx),
+    ...checkEntryWithoutExit(ctx),
+    ...checkArgumentOutOfRange(ctx),
+  ].sort((a, b) => a.line - b.line || a.column - b.column);
 }
 
 // ─────────────────────────────────────────────────────────
@@ -90,70 +83,64 @@ export function runSemanticLints(ast: Program): SemanticWarning[] {
 // ─────────────────────────────────────────────────────────
 
 interface CallSite {
-	call: CallExpression;
-	/** Dotted callee name (`request.security`), or "" for a computed callee. */
-	name: string;
+  call: CallExpression;
+  /** Dotted callee name (`request.security`), or "" for a computed callee. */
+  name: string;
 }
 
 class LintContext {
-	readonly calls: CallSite[] = [];
-	/** Calls that are the object of an index expression - `f(...)[1]`. */
-	readonly indexedCalls = new Set<CallExpression>();
-	/**
-	 * Bodies of the script's own functions, by name, so a rule can look at what
-	 * a call actually evaluates rather than only at its arguments. Methods are
-	 * keyed separately because a method call reads as `obj.name()` - the dotted
-	 * callee name never matches the bare declaration name. see INV151
-	 */
-	readonly functionBodies = new Map<string, Statement[]>();
-	readonly methodBodies = new Map<string, Statement[]>();
+  readonly calls: CallSite[] = [];
+  /** Calls that are the object of an index expression - `f(...)[1]`. */
+  readonly indexedCalls = new Set<CallExpression>();
+  /**
+   * Bodies of the script's own functions, by name, so a rule can look at what
+   * a call actually evaluates rather than only at its arguments. Methods are
+   * keyed separately because a method call reads as `obj.name()` - the dotted
+   * callee name never matches the bare declaration name. see INV151
+   */
+  readonly functionBodies = new Map<string, Statement[]>();
+  readonly methodBodies = new Map<string, Statement[]>();
 
-	constructor(readonly ast: Program) {
-		walkStatements(ast.body, (stmt) => {
-			if (stmt.type === "FunctionDeclaration")
-				this.functionBodies.set(stmt.name, stmt.body);
-			else if (stmt.type === "MethodDeclaration")
-				this.methodBodies.set(stmt.name, stmt.body);
+  constructor(readonly ast: Program) {
+    walkStatements(ast.body, (stmt) => {
+      if (stmt.type === "FunctionDeclaration") this.functionBodies.set(stmt.name, stmt.body);
+      else if (stmt.type === "MethodDeclaration") this.methodBodies.set(stmt.name, stmt.body);
 
-			for (const expr of statementExpressions(stmt)) this.collect(expr);
-		});
-	}
+      for (const expr of statementExpressions(stmt)) this.collect(expr);
+    });
+  }
 
-	/**
-	 * The script's own body for a call, or undefined for a builtin. A dotted
-	 * callee resolves against the METHOD table by its final segment only - an
-	 * `obj.f()` call cannot reach a plain function declaration, so consulting
-	 * `functionBodies` there would match `request.security` to a UDF named
-	 * `security`.
-	 */
-	bodyOf(call: CallExpression): Statement[] | undefined {
-		if (call.callee.type === "Identifier")
-			return this.functionBodies.get(call.callee.name);
+  /**
+   * The script's own body for a call, or undefined for a builtin. A dotted
+   * callee resolves against the METHOD table by its final segment only - an
+   * `obj.f()` call cannot reach a plain function declaration, so consulting
+   * `functionBodies` there would match `request.security` to a UDF named
+   * `security`.
+   */
+  bodyOf(call: CallExpression): Statement[] | undefined {
+    if (call.callee.type === "Identifier") return this.functionBodies.get(call.callee.name);
 
-		if (call.callee.type === "MemberExpression")
-			return this.methodBodies.get(call.callee.property.name);
+    if (call.callee.type === "MemberExpression")
+      return this.methodBodies.get(call.callee.property.name);
 
-		return undefined;
-	}
+    return undefined;
+  }
 
-	private collect(expr: Expression): void {
-		walkExpression(expr, (node) => {
-			if (node.type === "CallExpression") {
-				this.calls.push({ call: node, name: calleeName(node.callee) });
-			} else if (
-				node.type === "IndexExpression" &&
-				node.object.type === "CallExpression"
-			) {
-				this.indexedCalls.add(node.object);
-			}
-		});
-	}
+  private collect(expr: Expression): void {
+    walkExpression(expr, (node) => {
+      if (node.type === "CallExpression") {
+        this.calls.push({ call: node, name: calleeName(node.callee) });
+      } else if (node.type === "IndexExpression" && node.object.type === "CallExpression") {
+        this.indexedCalls.add(node.object);
+      }
+    });
+  }
 
-	callsNamed(...names: string[]): CallSite[] {
-		const wanted = new Set(names);
+  callsNamed(...names: string[]): CallSite[] {
+    const wanted = new Set(names);
 
-		return this.calls.filter((c) => wanted.has(c.name));
-	}
+    return this.calls.filter((c) => wanted.has(c.name));
+  }
 }
 
 /**
@@ -161,75 +148,70 @@ class LintContext {
  * `request.security` -> "request.security"; `arr.get(0)()` -> "".
  */
 function calleeName(callee: Expression): string {
-	if (callee.type === "Identifier") return callee.name;
+  if (callee.type === "Identifier") return callee.name;
 
-	if (callee.type === "MemberExpression") {
-		const object = calleeName(callee.object);
+  if (callee.type === "MemberExpression") {
+    const object = calleeName(callee.object);
 
-		return object ? `${object}.${callee.property.name}` : "";
-	}
+    return object ? `${object}.${callee.property.name}` : "";
+  }
 
-	return "";
+  return "";
 }
 
 /** Every statement in the tree, outermost first. Blocks are visited in order. */
-function walkStatements(
-	stmts: Statement[],
-	visit: (stmt: Statement) => void,
-): void {
-	for (const stmt of stmts) {
-		visit(stmt);
+function walkStatements(stmts: Statement[], visit: (stmt: Statement) => void): void {
+  for (const stmt of stmts) {
+    visit(stmt);
 
-		for (const block of statementBlocks(stmt)) walkStatements(block, visit);
-	}
+    for (const block of statementBlocks(stmt)) walkStatements(block, visit);
+  }
 }
 
 /** The nested statement lists a statement owns. */
 function statementBlocks(stmt: Statement): Statement[][] {
-	switch (stmt.type) {
-		case "IfStatement":
-			return stmt.alternate
-				? [stmt.consequent, stmt.alternate]
-				: [stmt.consequent];
-		case "ForStatement":
-		case "ForInStatement":
-		case "WhileStatement":
-		case "OnceStatement":
-		case "FunctionDeclaration":
-		case "MethodDeclaration":
-			return [stmt.body];
-		case "SequenceStatement":
-			return [stmt.statements];
-		default:
-			return [];
-	}
+  switch (stmt.type) {
+    case "IfStatement":
+      return stmt.alternate ? [stmt.consequent, stmt.alternate] : [stmt.consequent];
+    case "ForStatement":
+    case "ForInStatement":
+    case "WhileStatement":
+    case "OnceStatement":
+    case "FunctionDeclaration":
+    case "MethodDeclaration":
+      return [stmt.body];
+    case "SequenceStatement":
+      return [stmt.statements];
+    default:
+      return [];
+  }
 }
 
 /** The expressions a statement owns directly (not those of nested blocks). */
 function statementExpressions(stmt: Statement): Expression[] {
-	switch (stmt.type) {
-		case "VariableDeclaration":
-			return stmt.init ? [stmt.init] : [];
-		case "TupleDeclaration":
-			return [stmt.init];
-		case "AssignmentStatement":
-			return [stmt.target, stmt.value];
-		case "ExpressionStatement":
-			return [stmt.expression];
-		case "IfStatement":
-		case "WhileStatement":
-			return [stmt.condition];
-		case "OnceStatement":
-			return stmt.condition ? [stmt.condition] : [];
-		case "ForStatement":
-			return stmt.step ? [stmt.from, stmt.to, stmt.step] : [stmt.from, stmt.to];
-		case "ForInStatement":
-			return [stmt.collection];
-		case "ReturnStatement":
-			return [stmt.value];
-		default:
-			return [];
-	}
+  switch (stmt.type) {
+    case "VariableDeclaration":
+      return stmt.init ? [stmt.init] : [];
+    case "TupleDeclaration":
+      return [stmt.init];
+    case "AssignmentStatement":
+      return [stmt.target, stmt.value];
+    case "ExpressionStatement":
+      return [stmt.expression];
+    case "IfStatement":
+    case "WhileStatement":
+      return [stmt.condition];
+    case "OnceStatement":
+      return stmt.condition ? [stmt.condition] : [];
+    case "ForStatement":
+      return stmt.step ? [stmt.from, stmt.to, stmt.step] : [stmt.from, stmt.to];
+    case "ForInStatement":
+      return [stmt.collection];
+    case "ReturnStatement":
+      return [stmt.value];
+    default:
+      return [];
+  }
 }
 
 /**
@@ -239,140 +221,131 @@ function statementExpressions(stmt: Statement): Expression[] {
  * crosses back into statement land - a `request.security()` inside a switch
  * arm is still a call the budget rules must see.
  */
-function walkExpression(
-	expr: Expression,
-	visit: (node: Expression) => void,
-): void {
-	visit(expr);
+function walkExpression(expr: Expression, visit: (node: Expression) => void): void {
+  visit(expr);
 
-	switch (expr.type) {
-		case "CallExpression":
-			walkExpression(expr.callee, visit);
+  switch (expr.type) {
+    case "CallExpression":
+      walkExpression(expr.callee, visit);
 
-			for (const arg of expr.arguments) walkExpression(arg.value, visit);
-			break;
-		case "MemberExpression":
-			walkExpression(expr.object, visit);
-			break;
-		case "BinaryExpression":
-			walkExpression(expr.left, visit);
-			walkExpression(expr.right, visit);
-			break;
-		case "UnaryExpression":
-			walkExpression(expr.argument, visit);
-			break;
-		case "TernaryExpression":
-			walkExpression(expr.condition, visit);
-			walkExpression(expr.consequent, visit);
-			walkExpression(expr.alternate, visit);
-			break;
-		case "ArrayExpression":
-			for (const element of expr.elements) walkExpression(element, visit);
-			break;
-		case "IndexExpression":
-			walkExpression(expr.object, visit);
-			walkExpression(expr.index, visit);
-			break;
-		case "IfExpression":
-			walkExpression(expr.condition, visit);
+      for (const arg of expr.arguments) walkExpression(arg.value, visit);
+      break;
+    case "MemberExpression":
+      walkExpression(expr.object, visit);
+      break;
+    case "BinaryExpression":
+      walkExpression(expr.left, visit);
+      walkExpression(expr.right, visit);
+      break;
+    case "UnaryExpression":
+      walkExpression(expr.argument, visit);
+      break;
+    case "TernaryExpression":
+      walkExpression(expr.condition, visit);
+      walkExpression(expr.consequent, visit);
+      walkExpression(expr.alternate, visit);
+      break;
+    case "ArrayExpression":
+      for (const element of expr.elements) walkExpression(element, visit);
+      break;
+    case "IndexExpression":
+      walkExpression(expr.object, visit);
+      walkExpression(expr.index, visit);
+      break;
+    case "IfExpression":
+      walkExpression(expr.condition, visit);
 
-			for (const block of [expr.consequent, expr.alternate ?? []]) {
-				walkStatements(block, (stmt) => {
-					for (const sub of statementExpressions(stmt))
-						walkExpression(sub, visit);
-				});
-			}
+      for (const block of [expr.consequent, expr.alternate ?? []]) {
+        walkStatements(block, (stmt) => {
+          for (const sub of statementExpressions(stmt)) walkExpression(sub, visit);
+        });
+      }
 
-			break;
-		case "SwitchExpression":
-			if (expr.discriminant) walkExpression(expr.discriminant, visit);
+      break;
+    case "SwitchExpression":
+      if (expr.discriminant) walkExpression(expr.discriminant, visit);
 
-			for (const arm of expr.cases) {
-				if (arm.condition) walkExpression(arm.condition, visit);
+      for (const arm of expr.cases) {
+        if (arm.condition) walkExpression(arm.condition, visit);
 
-				// `statements` supersedes `result` when present - walking both
-				// would double-count every call in a multi-statement arm.
-				if (arm.statements) {
-					walkStatements(arm.statements, (stmt) => {
-						for (const sub of statementExpressions(stmt))
-							walkExpression(sub, visit);
-					});
-				} else {
-					walkExpression(arm.result, visit);
-				}
-			}
+        // `statements` supersedes `result` when present - walking both
+        // would double-count every call in a multi-statement arm.
+        if (arm.statements) {
+          walkStatements(arm.statements, (stmt) => {
+            for (const sub of statementExpressions(stmt)) walkExpression(sub, visit);
+          });
+        } else {
+          walkExpression(arm.result, visit);
+        }
+      }
 
-			break;
-		default:
-			break;
-	}
+      break;
+    default:
+      break;
+  }
 }
 
 /** Named argument, or the positional one at `index` if the call has no names there. */
-function argumentAt(
-	call: CallExpression,
-	name: string,
-	index: number,
-): Expression | undefined {
-	for (const arg of call.arguments) {
-		if (arg.name === name) return arg.value;
-	}
+function argumentAt(call: CallExpression, name: string, index: number): Expression | undefined {
+  for (const arg of call.arguments) {
+    if (arg.name === name) return arg.value;
+  }
 
-	const positional = call.arguments.filter((a) => a.name === undefined);
+  const positional = call.arguments.filter((a) => a.name === undefined);
 
-	return positional[index]?.value;
+  return positional[index]?.value;
 }
 
 /** Stable text for a node, so identical calls can be recognised as identical. */
 function serialize(expr: Expression): string {
-	switch (expr.type) {
-		case "Identifier":
-			return expr.name;
-		case "Literal":
-			return expr.raw ?? String(expr.value);
-		case "CallExpression":
-			return `${serialize(expr.callee)}(${expr.arguments
-				.map((a) => (a.name ? `${a.name}=` : "") + serialize(a.value))
-				.join(",")})`;
-		case "MemberExpression":
-			return `${serialize(expr.object)}.${expr.property.name}`;
-		case "BinaryExpression":
-			return `(${serialize(expr.left)}${expr.operator}${serialize(expr.right)})`;
-		case "UnaryExpression":
-			return `(${expr.operator}${serialize(expr.argument)})`;
-		case "TernaryExpression":
-			return `(${serialize(expr.condition)}?${serialize(expr.consequent)}:${serialize(expr.alternate)})`;
-		case "ArrayExpression":
-			return `[${expr.elements.map(serialize).join(",")}]`;
-		case "IndexExpression":
-			return `${serialize(expr.object)}[${serialize(expr.index)}]`;
-		default:
-			// If/switch expressions have no cheap canonical form. Anchoring on the
-			// source position keeps them UNIQUE, which is the conservative side:
-			// it can only push a script over a budget, never hide one.
-			return `${expr.type}@${expr.line}:${expr.column}`;
-	}
+  switch (expr.type) {
+    case "Identifier":
+      return expr.name;
+    case "Literal":
+      return expr.raw ?? String(expr.value);
+    case "CallExpression":
+      return `${serialize(expr.callee)}(${expr.arguments
+        .map((a) => (a.name ? `${a.name}=` : "") + serialize(a.value))
+        .join(",")})`;
+    case "MemberExpression":
+      return `${serialize(expr.object)}.${expr.property.name}`;
+    case "BinaryExpression":
+      return `(${serialize(expr.left)}${expr.operator}${serialize(expr.right)})`;
+    case "UnaryExpression":
+      return `(${expr.operator}${serialize(expr.argument)})`;
+    case "TernaryExpression":
+      return `(${serialize(expr.condition)}?${serialize(expr.consequent)}:${serialize(expr.alternate)})`;
+    case "ArrayExpression":
+      return `[${expr.elements.map(serialize).join(",")}]`;
+    case "IndexExpression":
+      return `${serialize(expr.object)}[${serialize(expr.index)}]`;
+    default:
+      // If/switch expressions have no cheap canonical form. Anchoring on the
+      // source position keeps them UNIQUE, which is the conservative side:
+      // it can only push a script over a budget, never hide one.
+      return `${expr.type}@${expr.line}:${expr.column}`;
+  }
 }
 
 function warn(
-	node: { line: number; column: number },
-	length: number,
-	rule: string,
-	message: string,
+  node: { line: number; column: number },
+  length: number,
+  rule: string,
+  message: string,
 ): SemanticWarning {
-	return {
-		line: node.line,
-		column: node.column,
-		length,
-		message,
-		severity: DiagnosticSeverity.Warning,
-		rule,
-	};
+  return {
+    line: node.line,
+    column: node.column,
+    length,
+    message,
+    severity: DiagnosticSeverity.Warning,
+    rule,
+  };
 }
 
 /** Anchor position of a call - the callee, so the squiggle sits on the name. */
 function anchor(call: CallExpression): { line: number; column: number } {
-	return { line: call.callee.line, column: call.callee.column };
+  return { line: call.callee.line, column: call.callee.column };
 }
 
 // ─────────────────────────────────────────────────────────
@@ -438,60 +411,58 @@ function anchor(call: CallExpression): { line: number; column: number } {
  * structural test would be guesswork.
  */
 function checkRepaintingSecurity(ctx: LintContext): SemanticWarning[] {
-	const findings: SemanticWarning[] = [];
+  const findings: SemanticWarning[] = [];
 
-	for (const { call } of ctx.callsNamed("request.security")) {
-		if (ctx.indexedCalls.has(call)) continue;
+  for (const { call } of ctx.callsNamed("request.security")) {
+    if (ctx.indexedCalls.has(call)) continue;
 
-		// `lookahead` never exempts, it only picks the message - see the header.
-		// Writing the default out is not evidence of anything. see INV152/INV153
-		const timeframe = argumentAt(call, "timeframe", 1);
+    // `lookahead` never exempts, it only picks the message - see the header.
+    // Writing the default out is not evidence of anything. see INV152/INV153
+    const timeframe = argumentAt(call, "timeframe", 1);
 
-		if (timeframe && isChartTimeframe(timeframe)) continue;
+    if (timeframe && isChartTimeframe(timeframe)) continue;
 
-		const expression = argumentAt(call, "expression", 2);
+    const expression = argumentAt(call, "expression", 2);
 
-		if (!expression) continue;
+    if (!expression) continue;
 
-		if (containsHistoryOffset(expression, ctx)) continue;
+    if (containsHistoryOffset(expression, ctx)) continue;
 
-		const lookahead = argumentAt(call, "lookahead", 4);
+    const lookahead = argumentAt(call, "lookahead", 4);
 
-		const leaks =
-			lookahead !== undefined &&
-			serialize(lookahead) === "barmerge.lookahead_on";
+    const leaks = lookahead !== undefined && serialize(lookahead) === "barmerge.lookahead_on";
 
-		findings.push(
-			warn(
-				anchor(call),
-				"request.security".length,
-				leaks ? "LOOKAHEAD_BIAS" : "REPAINTING_SECURITY",
-				leaks
-					? "'request.security' with 'lookahead = barmerge.lookahead_on' and no history offset returns the requested period's value from the START of that period, so on historical bars it reads data that did not exist yet. Offset the expression by one bar (close[1]), keeping 'lookahead_on'."
-					: "'request.security' reads the current, still-forming bar of the requested timeframe, so this value repaints: history settles on the period's final value while realtime shows it moving. For a HIGHER timeframe, offset the expression by one bar (close[1]) together with 'lookahead = barmerge.lookahead_on' - note that shifts the value by one period. A same- or lower-timeframe request needs no change.",
-			),
-		);
-	}
+    findings.push(
+      warn(
+        anchor(call),
+        "request.security".length,
+        leaks ? "LOOKAHEAD_BIAS" : "REPAINTING_SECURITY",
+        leaks
+          ? "'request.security' with 'lookahead = barmerge.lookahead_on' and no history offset returns the requested period's value from the START of that period, so on historical bars it reads data that did not exist yet. Offset the expression by one bar (close[1]), keeping 'lookahead_on'."
+          : "'request.security' reads the current, still-forming bar of the requested timeframe, so this value repaints: history settles on the period's final value while realtime shows it moving. For a HIGHER timeframe, offset the expression by one bar (close[1]) together with 'lookahead = barmerge.lookahead_on' - note that shifts the value by one period. A same- or lower-timeframe request needs no change.",
+      ),
+    );
+  }
 
-	return findings;
+  return findings;
 }
 
 /** `""` or `timeframe.period` - the request stays on the chart's timeframe. */
 function isChartTimeframe(expr: Expression): boolean {
-	if (expr.type === "Literal") {
-		// A string Literal's `value` keeps its delimiters (`"\"\""` for an empty
-		// string), so the emptiness test has to strip them - three of them for
-		// the triple-delimited multiline form. see INV145
-		const text = String(expr.value);
-		const quote = text[0];
+  if (expr.type === "Literal") {
+    // A string Literal's `value` keeps its delimiters (`"\"\""` for an empty
+    // string), so the emptiness test has to strip them - three of them for
+    // the triple-delimited multiline form. see INV145
+    const text = String(expr.value);
+    const quote = text[0];
 
-		if (quote !== '"' && quote !== "'") return false;
-		const width = text.startsWith(quote.repeat(3)) ? 3 : 1;
+    if (quote !== '"' && quote !== "'") return false;
+    const width = text.startsWith(quote.repeat(3)) ? 3 : 1;
 
-		return text.slice(width, -width) === "";
-	}
+    return text.slice(width, -width) === "";
+  }
 
-	return serialize(expr) === "timeframe.period";
+  return serialize(expr) === "timeframe.period";
 }
 
 /**
@@ -511,41 +482,41 @@ function isChartTimeframe(expr: Expression): boolean {
  * guards against a malformed tree rather than against legal code.
  */
 function containsHistoryOffset(
-	expr: Expression,
-	ctx: LintContext,
-	visited: Set<Statement[]> = new Set(),
+  expr: Expression,
+  ctx: LintContext,
+  visited: Set<Statement[]> = new Set(),
 ): boolean {
-	let found = false;
-	const called: CallExpression[] = [];
-	walkExpression(expr, (node) => {
-		if (node.type === "IndexExpression") found = true;
-		else if (node.type === "CallExpression") called.push(node);
-	});
+  let found = false;
+  const called: CallExpression[] = [];
+  walkExpression(expr, (node) => {
+    if (node.type === "IndexExpression") found = true;
+    else if (node.type === "CallExpression") called.push(node);
+  });
 
-	if (found) return true;
+  if (found) return true;
 
-	for (const call of called) {
-		const body = ctx.bodyOf(call);
+  for (const call of called) {
+    const body = ctx.bodyOf(call);
 
-		if (!body || visited.has(body)) continue;
-		visited.add(body);
-		let hit = false;
-		walkStatements(body, (stmt) => {
-			if (hit) return;
+    if (!body || visited.has(body)) continue;
+    visited.add(body);
+    let hit = false;
+    walkStatements(body, (stmt) => {
+      if (hit) return;
 
-			for (const sub of statementExpressions(stmt)) {
-				if (containsHistoryOffset(sub, ctx, visited)) {
-					hit = true;
+      for (const sub of statementExpressions(stmt)) {
+        if (containsHistoryOffset(sub, ctx, visited)) {
+          hit = true;
 
-					return;
-				}
-			}
-		});
+          return;
+        }
+      }
+    });
 
-		if (hit) return true;
-	}
+    if (hit) return true;
+  }
 
-	return false;
+  return false;
 }
 
 // ─────────────────────────────────────────────────────────
@@ -564,22 +535,22 @@ function containsHistoryOffset(
  * this module refuses to guess at.
  */
 function checkPlotBudget(ctx: LintContext): SemanticWarning[] {
-	const plots = ctx.calls.filter((c) => countsTowardPlotBudget(c.name));
+  const plots = ctx.calls.filter((c) => countsTowardPlotBudget(c.name));
 
-	if (plots.length <= PLOT_LIMIT) return [];
+  if (plots.length <= PLOT_LIMIT) return [];
 
-	// Anchor on the call that breaks the budget, not on the first one - the
-	// author needs to see where the allowance ran out.
-	const breach = plots[PLOT_LIMIT];
+  // Anchor on the call that breaks the budget, not on the first one - the
+  // author needs to see where the allowance ran out.
+  const breach = plots[PLOT_LIMIT];
 
-	return [
-		warn(
-			anchor(breach.call),
-			breach.name.length,
-			"PLOT_BUDGET",
-			`This script makes ${plots.length} plot-budget calls; a script may use at most ${PLOT_LIMIT}. Calls with a non-const 'color' argument count as two, so the real total may be higher.`,
-		),
-	];
+  return [
+    warn(
+      anchor(breach.call),
+      breach.name.length,
+      "PLOT_BUDGET",
+      `This script makes ${plots.length} plot-budget calls; a script may use at most ${PLOT_LIMIT}. Calls with a non-const 'color' argument count as two, so the real total may be higher.`,
+    ),
+  ];
 }
 
 // ─────────────────────────────────────────────────────────
@@ -599,55 +570,55 @@ function checkPlotBudget(ctx: LintContext): SemanticWarning[] {
  * so, since we cannot know the reader's plan.
  */
 function checkRequestBudget(ctx: LintContext): SemanticWarning[] {
-	const findings: SemanticWarning[] = [];
-	const seen = new Set<string>();
-	const footprints = new Set<string>();
-	let breach: CallSite | undefined;
-	let footprintBreach: CallSite | undefined;
+  const findings: SemanticWarning[] = [];
+  const seen = new Set<string>();
+  const footprints = new Set<string>();
+  let breach: CallSite | undefined;
+  let footprintBreach: CallSite | undefined;
 
-	for (const site of ctx.calls) {
-		if (!site.name.startsWith("request.")) continue;
-		const key = serialize(site.call);
+  for (const site of ctx.calls) {
+    if (!site.name.startsWith("request.")) continue;
+    const key = serialize(site.call);
 
-		if (site.name === "request.footprint") {
-			if (!footprints.has(key)) {
-				footprints.add(key);
+    if (site.name === "request.footprint") {
+      if (!footprints.has(key)) {
+        footprints.add(key);
 
-				if (footprints.size > FOOTPRINT_LIMIT && !footprintBreach) {
-					footprintBreach = site;
-				}
-			}
-		}
+        if (footprints.size > FOOTPRINT_LIMIT && !footprintBreach) {
+          footprintBreach = site;
+        }
+      }
+    }
 
-		if (seen.has(key)) continue;
-		seen.add(key);
+    if (seen.has(key)) continue;
+    seen.add(key);
 
-		if (seen.size > REQUEST_LIMIT && !breach) breach = site;
-	}
+    if (seen.size > REQUEST_LIMIT && !breach) breach = site;
+  }
 
-	if (breach) {
-		findings.push(
-			warn(
-				anchor(breach.call),
-				breach.name.length,
-				"REQUEST_BUDGET",
-				`This script makes ${seen.size} unique 'request.*()' calls; the limit is ${REQUEST_LIMIT} (${64} on the Ultimate plan). Identical calls are free - only distinct argument sets count.`,
-			),
-		);
-	}
+  if (breach) {
+    findings.push(
+      warn(
+        anchor(breach.call),
+        breach.name.length,
+        "REQUEST_BUDGET",
+        `This script makes ${seen.size} unique 'request.*()' calls; the limit is ${REQUEST_LIMIT} (${64} on the Ultimate plan). Identical calls are free - only distinct argument sets count.`,
+      ),
+    );
+  }
 
-	if (footprintBreach) {
-		findings.push(
-			warn(
-				anchor(footprintBreach.call),
-				footprintBreach.name.length,
-				"REQUEST_BUDGET",
-				`This script makes ${footprints.size} unique 'request.footprint()' calls; a script may make only ${FOOTPRINT_LIMIT}.`,
-			),
-		);
-	}
+  if (footprintBreach) {
+    findings.push(
+      warn(
+        anchor(footprintBreach.call),
+        footprintBreach.name.length,
+        "REQUEST_BUDGET",
+        `This script makes ${footprints.size} unique 'request.footprint()' calls; a script may make only ${FOOTPRINT_LIMIT}.`,
+      ),
+    );
+  }
 
-	return findings;
+  return findings;
 }
 
 // ─────────────────────────────────────────────────────────
@@ -679,93 +650,91 @@ function checkRequestBudget(ctx: LintContext): SemanticWarning[] {
  * legitimate reason to accumulate without one.
  */
 function checkAccumulatorLifetime(ctx: LintContext): SemanticWarning[] {
-	const seeds = new Map<string, VariableDeclaration>();
-	walkStatements(ctx.ast.body, (stmt) => {
-		if (stmt.type !== "VariableDeclaration") return;
+  const seeds = new Map<string, VariableDeclaration>();
+  walkStatements(ctx.ast.body, (stmt) => {
+    if (stmt.type !== "VariableDeclaration") return;
 
-		if (stmt.varType !== "var" && stmt.varType !== "varip") return;
+    if (stmt.varType !== "var" && stmt.varType !== "varip") return;
 
-		if (!stmt.init || !isNumericSeed(stmt.init)) return;
-		seeds.set(stmt.name, stmt);
-	});
+    if (!stmt.init || !isNumericSeed(stmt.init)) return;
+    seeds.set(stmt.name, stmt);
+  });
 
-	if (seeds.size === 0) return [];
+  if (seeds.size === 0) return [];
 
-	const reset = new Set<string>();
-	walkStatements(ctx.ast.body, (stmt) => {
-		if (stmt.type !== "AssignmentStatement") return;
+  const reset = new Set<string>();
+  walkStatements(ctx.ast.body, (stmt) => {
+    if (stmt.type !== "AssignmentStatement") return;
 
-		if (stmt.operator !== ":=") return;
+    if (stmt.operator !== ":=") return;
 
-		if (stmt.target.type !== "Identifier") return;
+    if (stmt.target.type !== "Identifier") return;
 
-		if (!references(stmt.value, stmt.target.name)) reset.add(stmt.target.name);
-	});
+    if (!references(stmt.value, stmt.target.name)) reset.add(stmt.target.name);
+  });
 
-	const findings: SemanticWarning[] = [];
-	const reported = new Set<string>();
+  const findings: SemanticWarning[] = [];
+  const reported = new Set<string>();
 
-	const scan = (stmts: Statement[], runOnce: boolean): void => {
-		for (const stmt of stmts) {
-			const isLoop =
-				stmt.type === "ForStatement" ||
-				stmt.type === "ForInStatement" ||
-				stmt.type === "WhileStatement";
+  const scan = (stmts: Statement[], runOnce: boolean): void => {
+    for (const stmt of stmts) {
+      const isLoop =
+        stmt.type === "ForStatement" ||
+        stmt.type === "ForInStatement" ||
+        stmt.type === "WhileStatement";
 
-			if (isLoop && !runOnce) {
-				for (const [name, decl] of seeds) {
-					if (reported.has(name) || reset.has(name)) continue;
-					const hit = findSelfAccumulation(stmt.body, name);
+      if (isLoop && !runOnce) {
+        for (const [name, decl] of seeds) {
+          if (reported.has(name) || reset.has(name)) continue;
+          const hit = findSelfAccumulation(stmt.body, name);
 
-					if (!hit) continue;
-					reported.add(name);
-					findings.push(
-						warn(
-							hit,
-							name.length,
-							"ACCUMULATOR_LIFETIME",
-							stmt.type === "WhileStatement"
-								? `'${name}' is declared with ${decl.varType}, so it keeps its value across bars. On the next bar the while condition is already false and this loop never runs again. Reset '${name}' before the loop, or drop ${decl.varType} if it is per-bar state.`
-								: `'${name}' is declared with ${decl.varType}, so it persists across bars and this loop adds to it again on every bar - it grows without bound. Drop ${decl.varType} for a per-bar total, or reset '${name}' before the loop.`,
-						),
-					);
-				}
-			}
+          if (!hit) continue;
+          reported.add(name);
+          findings.push(
+            warn(
+              hit,
+              name.length,
+              "ACCUMULATOR_LIFETIME",
+              stmt.type === "WhileStatement"
+                ? `'${name}' is declared with ${decl.varType}, so it keeps its value across bars. On the next bar the while condition is already false and this loop never runs again. Reset '${name}' before the loop, or drop ${decl.varType} if it is per-bar state.`
+                : `'${name}' is declared with ${decl.varType}, so it persists across bars and this loop adds to it again on every bar - it grows without bound. Drop ${decl.varType} for a per-bar total, or reset '${name}' before the loop.`,
+            ),
+          );
+        }
+      }
 
-			const guarded =
-				runOnce ||
-				(stmt.type === "IfStatement" && isRunOnceGuard(stmt.condition));
+      const guarded = runOnce || (stmt.type === "IfStatement" && isRunOnceGuard(stmt.condition));
 
-			for (const block of statementBlocks(stmt)) scan(block, guarded);
-		}
-	};
+      for (const block of statementBlocks(stmt)) scan(block, guarded);
+    }
+  };
 
-	scan(ctx.ast.body, false);
+  scan(ctx.ast.body, false);
 
-	return findings;
+  return findings;
 }
 
 /** `0`, `-1`, `0.0`, or `na` - a scalar seed, as opposed to a collection. */
 function isNumericSeed(expr: Expression): boolean {
-	if (expr.type === "Literal") return typeof expr.value === "number";
+  if (expr.type === "Literal") return typeof expr.value === "number";
 
-	if (expr.type === "Identifier") return expr.name === "na";
+  if (expr.type === "Identifier") return expr.name === "na";
 
-	if (expr.type === "UnaryExpression" && expr.operator === "-") {
-		return isNumericSeed(expr.argument);
-	}
+  if (expr.type === "UnaryExpression" && expr.operator === "-") {
+    return isNumericSeed(expr.argument);
+  }
 
-	return false;
+  return false;
 }
 
 /** Whether an identifier appears anywhere in an expression. */
 function references(expr: Expression, name: string): boolean {
-	let found = false;
-	walkExpression(expr, (node) => {
-		if (node.type === "Identifier" && node.name === name) found = true;
-	});
+  let found = false;
+  walkExpression(expr, (node) => {
+    if (node.type === "Identifier" && node.name === name) found = true;
+  });
 
-	return found;
+  return found;
 }
 
 /**
@@ -785,71 +754,65 @@ function references(expr: Expression, name: string): boolean {
  * the defect. So the search descends into nested LOOPS (still unconditional -
  * more iterations, same problem) but stops at `if`/`switch` bodies.
  */
-function findSelfAccumulation(
-	body: Statement[],
-	name: string,
-): AssignmentStatement | undefined {
-	for (const stmt of body) {
-		if (stmt.type === "AssignmentStatement") {
-			if (stmt.target.type !== "Identifier" || stmt.target.name !== name) {
-				continue;
-			}
+function findSelfAccumulation(body: Statement[], name: string): AssignmentStatement | undefined {
+  for (const stmt of body) {
+    if (stmt.type === "AssignmentStatement") {
+      if (stmt.target.type !== "Identifier" || stmt.target.name !== name) {
+        continue;
+      }
 
-			if (COMPOUND_ASSIGN.has(stmt.operator)) return stmt;
+      if (COMPOUND_ASSIGN.has(stmt.operator)) return stmt;
 
-			if (stmt.operator === ":=" && references(stmt.value, name)) return stmt;
-			continue;
-		}
+      if (stmt.operator === ":=" && references(stmt.value, name)) return stmt;
+      continue;
+    }
 
-		if (
-			stmt.type === "ForStatement" ||
-			stmt.type === "ForInStatement" ||
-			stmt.type === "WhileStatement"
-		) {
-			const nested = findSelfAccumulation(stmt.body, name);
+    if (
+      stmt.type === "ForStatement" ||
+      stmt.type === "ForInStatement" ||
+      stmt.type === "WhileStatement"
+    ) {
+      const nested = findSelfAccumulation(stmt.body, name);
 
-			if (nested) return nested;
-		}
-	}
+      if (nested) return nested;
+    }
+  }
 
-	return undefined;
+  return undefined;
 }
 
 /** `barstate.isfirst` / `barstate.islast` / `bar_index == 0` in a condition. */
 function isRunOnceGuard(condition: Expression): boolean {
-	let found = false;
-	walkExpression(condition, (node) => {
-		if (node.type === "MemberExpression") {
-			const name = serialize(node);
+  let found = false;
+  walkExpression(condition, (node) => {
+    if (node.type === "MemberExpression") {
+      const name = serialize(node);
 
-			if (name === "barstate.isfirst" || name === "barstate.islast")
-				found = true;
-		}
+      if (name === "barstate.isfirst" || name === "barstate.islast") found = true;
+    }
 
-		if (
-			node.type === "BinaryExpression" &&
-			node.operator === "==" &&
-			isBarIndexZero(node.left, node.right)
-		) {
-			found = true;
-		}
-	});
+    if (
+      node.type === "BinaryExpression" &&
+      node.operator === "==" &&
+      isBarIndexZero(node.left, node.right)
+    ) {
+      found = true;
+    }
+  });
 
-	return found;
+  return found;
 }
 
 function isBarIndexZero(left: Expression, right: Expression): boolean {
-	const pair = [left, right];
+  const pair = [left, right];
 
-	const hasBarIndex = pair.some(
-		(e): e is Identifier => e.type === "Identifier" && e.name === "bar_index",
-	);
+  const hasBarIndex = pair.some(
+    (e): e is Identifier => e.type === "Identifier" && e.name === "bar_index",
+  );
 
-	const hasZero = pair.some(
-		(e): e is Literal => e.type === "Literal" && e.value === 0,
-	);
+  const hasZero = pair.some((e): e is Literal => e.type === "Literal" && e.value === 0);
 
-	return hasBarIndex && hasZero;
+  return hasBarIndex && hasZero;
 }
 
 // ─────────────────────────────────────────────────────────
@@ -874,24 +837,24 @@ function isBarIndexZero(left: Expression, right: Expression): boolean {
  * false positive class on real scripts (see INV144's corpus sweep).
  */
 function checkEntryWithoutExit(ctx: LintContext): SemanticWarning[] {
-	const entries = ctx.calls.filter((c) => ENTRY_FUNCTIONS.has(c.name));
+  const entries = ctx.calls.filter((c) => ENTRY_FUNCTIONS.has(c.name));
 
-	if (entries.length === 0) return [];
+  if (entries.length === 0) return [];
 
-	if (ctx.calls.some((c) => EXIT_FUNCTIONS.has(c.name))) return [];
+  if (ctx.calls.some((c) => EXIT_FUNCTIONS.has(c.name))) return [];
 
-	if (hasReversingEntries(ctx)) return [];
+  if (hasReversingEntries(ctx)) return [];
 
-	const first = entries[0];
+  const first = entries[0];
 
-	return [
-		warn(
-			anchor(first.call),
-			first.name.length,
-			"ENTRY_WITHOUT_EXIT",
-			"This script opens positions but never closes them - no 'strategy.exit', 'strategy.close' or 'strategy.close_all' anywhere, and no opposing entry to reverse into. An entry without an exit is unbounded risk ('strategy.cancel' withdraws a pending order, it does not close a position).",
-		),
-	];
+  return [
+    warn(
+      anchor(first.call),
+      first.name.length,
+      "ENTRY_WITHOUT_EXIT",
+      "This script opens positions but never closes them - no 'strategy.exit', 'strategy.close' or 'strategy.close_all' anywhere, and no opposing entry to reverse into. An entry without an exit is unbounded risk ('strategy.cancel' withdraws a pending order, it does not close a position).",
+    ),
+  ];
 }
 
 /**
@@ -904,21 +867,21 @@ function checkEntryWithoutExit(ctx: LintContext): SemanticWarning[] {
  * not close an opposing position.
  */
 function hasReversingEntries(ctx: LintContext): boolean {
-	let long = false;
-	let short = false;
+  let long = false;
+  let short = false;
 
-	for (const { call } of ctx.callsNamed("strategy.entry")) {
-		const direction = argumentAt(call, "direction", 1);
+  for (const { call } of ctx.callsNamed("strategy.entry")) {
+    const direction = argumentAt(call, "direction", 1);
 
-		if (!direction) continue;
-		const name = serialize(direction);
+    if (!direction) continue;
+    const name = serialize(direction);
 
-		if (name === "strategy.long") long = true;
-		else if (name === "strategy.short") short = true;
-		else return true;
-	}
+    if (name === "strategy.long") long = true;
+    else if (name === "strategy.short") short = true;
+    else return true;
+  }
 
-	return long && short;
+  return long && short;
 }
 
 // ─────────────────────────────────────────────────────────
@@ -962,74 +925,71 @@ function hasReversingEntries(ctx: LintContext): boolean {
  *   overwhelmingly common corpus shape and must stay silent.
  */
 function checkArgumentOutOfRange(ctx: LintContext): SemanticWarning[] {
-	const out: SemanticWarning[] = [];
+  const out: SemanticWarning[] = [];
 
-	for (const { call, name } of ctx.calls) {
-		const fn = FUNCTIONS_BY_NAME.get(name);
+  for (const { call, name } of ctx.calls) {
+    const fn = FUNCTIONS_BY_NAME.get(name);
 
-		if (!fn) continue;
-		const params = decidableParameters(fn, call);
+    if (!fn) continue;
+    const params = decidableParameters(fn, call);
 
-		for (const [index, param] of params.entries()) {
-			const { min, max, notNa } = param;
+    for (const [index, param] of params.entries()) {
+      const { min, max, notNa } = param;
 
-			if (min === undefined && max === undefined && !notNa) continue;
+      if (min === undefined && max === undefined && !notNa) continue;
 
-			const arg = argumentAt(call, param.name, index);
+      const arg = argumentAt(call, param.name, index);
 
-			if (arg === undefined) continue;
+      if (arg === undefined) continue;
 
-			if (notNa && arg.type === "Identifier" && arg.name === "na") {
-				out.push(
-					warn(
-						arg,
-						2,
-						"ARGUMENT_NA_AT_RUNTIME",
-						`'${name}' rejects na for '${param.name}' at runtime - this script compiles and then dies on bar 0. Nothing here is computed; pass a value, or guard the call.`,
-					),
-				);
-				continue;
-			}
+      if (notNa && arg.type === "Identifier" && arg.name === "na") {
+        out.push(
+          warn(
+            arg,
+            2,
+            "ARGUMENT_NA_AT_RUNTIME",
+            `'${name}' rejects na for '${param.name}' at runtime - this script compiles and then dies on bar 0. Nothing here is computed; pass a value, or guard the call.`,
+          ),
+        );
+        continue;
+      }
 
-			const value = numericLiteralValue(arg);
+      const value = numericLiteralValue(arg);
 
-			if (value === null) continue;
+      if (value === null) continue;
 
-			if (
-				(min === undefined || value >= min) &&
-				(max === undefined || value <= max)
-			) {
-				continue;
-			}
+      if ((min === undefined || value >= min) && (max === undefined || value <= max)) {
+        continue;
+      }
 
-			const range =
-				min !== undefined && max !== undefined
-					? `${min} to ${max}`
-					: min !== undefined
-						? `at least ${min}`
-						: `at most ${max}`;
+      const range =
+        min !== undefined && max !== undefined
+          ? `${min} to ${max}`
+          : min !== undefined
+            ? `at least ${min}`
+            : `at most ${max}`;
 
-			// The two sources need different prose: the reference DOCUMENTS a
-			// range TV then happily runs outside of, while a runtime domain is
-			// documented nowhere and is fatal. Saying "documents" of a runtime
-			// bound would send the reader to a reference page that is silent.
-			const message =
-				param.rangeSource === "runtime"
-					? `'${name}' requires '${param.name}' ${range} at runtime, but ${value} was passed. This compiles and then fails on bar 0 - the script never produces a value.`
-					: `'${name}' documents '${param.name}' as ${range}, but ${value} was passed. TradingView compiles this - the reference is what excludes it, so check the intended value.`;
+      // The two sources need different prose: the reference DOCUMENTS a
+      // range TV then happily runs outside of, while a runtime domain is
+      // documented nowhere and is fatal. Saying "documents" of a runtime
+      // bound would send the reader to a reference page that is silent.
+      const message =
+        param.rangeSource === "runtime"
+          ? `'${name}' requires '${param.name}' ${range} at runtime, but ${value} was passed. This compiles and then fails on bar 0 - the script never produces a value.`
+          : `'${name}' documents '${param.name}' as ${range}, but ${value} was passed. TradingView compiles this - the reference is what excludes it, so check the intended value.`;
 
-			out.push(
-				warn(
-					arg as { line: number; column: number },
-					String(value).length,
-					"ARGUMENT_OUT_OF_RANGE",
-					message,
-				),
-			);
-		}
-	}
+      out.push(
+        warn(
+          arg as { line: number; column: number },
+          String(value).length,
+          "ARGUMENT_OUT_OF_RANGE",
+          message,
+        ),
+      );
+    }
+  }
 
-	return out;
+  return out;
 }
 
 /**
@@ -1050,67 +1010,61 @@ function checkArgumentOutOfRange(ctx: LintContext): SemanticWarning[] {
  * cannot tell which form was called, and an undecidable position is skipped
  * rather than guessed. Returns an empty list when no overload fits.
  */
-function decidableParameters(
-	fn: PineFunction,
-	call: CallExpression,
-): PineParameter[] {
-	if (!fn.overloads || fn.overloads.length < 2) return fn.parameters;
+function decidableParameters(fn: PineFunction, call: CallExpression): PineParameter[] {
+  if (!fn.overloads || fn.overloads.length < 2) return fn.parameters;
 
-	const positional = call.arguments.filter((a) => a.name === undefined).length;
+  const positional = call.arguments.filter((a) => a.name === undefined).length;
 
-	const named = call.arguments
-		.map((a) => a.name)
-		.filter((n): n is string => n !== undefined);
+  const named = call.arguments.map((a) => a.name).filter((n): n is string => n !== undefined);
 
-	const candidates = fn.overloads
-		.map((o) => o.parameters)
-		.filter(
-			(params) =>
-				positional <= params.length &&
-				named.every((n) => params.some((p) => p.name === n)),
-		);
+  const candidates = fn.overloads
+    .map((o) => o.parameters)
+    .filter(
+      (params) =>
+        positional <= params.length && named.every((n) => params.some((p) => p.name === n)),
+    );
 
-	if (candidates.length === 0) return [];
+  if (candidates.length === 0) return [];
 
-	const [first, ...rest] = candidates;
+  const [first, ...rest] = candidates;
 
-	return first.map((param, index) =>
-		rest.every((params) => sameDomain(params[index], param))
-			? param
-			: // A placeholder with no domain: the position exists but nothing
-				// about it is agreed, so nothing about it is decidable.
-				{ ...param, min: undefined, max: undefined, notNa: undefined },
-	);
+  return first.map((param, index) =>
+    rest.every((params) => sameDomain(params[index], param))
+      ? param
+      : // A placeholder with no domain: the position exists but nothing
+        // about it is agreed, so nothing about it is decidable.
+        { ...param, min: undefined, max: undefined, notNa: undefined },
+  );
 }
 
 function sameDomain(a: PineParameter | undefined, b: PineParameter): boolean {
-	return (
-		a !== undefined &&
-		a.name === b.name &&
-		a.min === b.min &&
-		a.max === b.max &&
-		a.notNa === b.notNa
-	);
+  return (
+    a !== undefined &&
+    a.name === b.name &&
+    a.min === b.min &&
+    a.max === b.max &&
+    a.notNa === b.notNa
+  );
 }
 
 /** A numeric literal's value, unary minus included. Null for anything else. */
 function numericLiteralValue(expr: Expression | undefined): number | null {
-	if (!expr) return null;
+  if (!expr) return null;
 
-	if (expr.type === "Literal") {
-		const value = (expr as Literal).value;
+  if (expr.type === "Literal") {
+    const value = (expr as Literal).value;
 
-		return typeof value === "number" ? value : null;
-	}
+    return typeof value === "number" ? value : null;
+  }
 
-	if (expr.type === "UnaryExpression") {
-		const unary = expr as { operator: string; argument: Expression };
+  if (expr.type === "UnaryExpression") {
+    const unary = expr as { operator: string; argument: Expression };
 
-		if (unary.operator !== "-") return null;
-		const inner = numericLiteralValue(unary.argument);
+    if (unary.operator !== "-") return null;
+    const inner = numericLiteralValue(unary.argument);
 
-		return inner === null ? null : -inner;
-	}
+    return inner === null ? null : -inner;
+  }
 
-	return null;
+  return null;
 }

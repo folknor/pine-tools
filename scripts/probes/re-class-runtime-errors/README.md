@@ -14,10 +14,10 @@ pine-lint --tv scripts/probes/re-class-runtime-errors/probe.pine
 
 ## Verdicts, 2026-08-25
 
-| tool | verdict |
-|---|---|
-| `pine-lint -H` (local) | `clean` |
-| `pine-lint --tv` | `{"success":true,"result":{"functions":[],"types":[],"enums":[]}}` - zero errors |
+| tool                   | verdict                                                                          |
+| ---------------------- | -------------------------------------------------------------------------------- |
+| `pine-lint -H` (local) | `clean`                                                                          |
+| `pine-lint --tv`       | `{"success":true,"result":{"functions":[],"types":[],"enums":[]}}` - zero errors |
 
 ## The runtime behaviour each line provokes
 
@@ -34,11 +34,11 @@ never through either pine-lint mode. These images are the only oracle
 this rule will ever have, which is why they live in the repo rather than
 being cited across it.
 
-| line | error | banner |
-|---|---|---|
-| `ta.sma(close, 0)` | RE10001, bar 0 - "Invalid value of the 'length' argument (0) in the \"sma\" function. It must be > 0." | `tv-banners/RE10001-sma-length-zero.png` |
-| `ta.sma(close, na)` | RE10003, bar 0 - "Invalid value of the 'length' argument in the \"sma\" function. It must not be na" | `tv-banners/RE10003-sma-length-na.png` |
-| `ta.sma(close, 2000000)` | RE10004, bar 0 - "The 'sma' function references too many historical candles (2000000), the limit is 5000." | `tv-banners/RE10004-sma-length-2000000.png` |
+| line                        | error                                                                                                          | banner                                               |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| `ta.sma(close, 0)`          | RE10001, bar 0 - "Invalid value of the 'length' argument (0) in the \"sma\" function. It must be > 0."         | `tv-banners/RE10001-sma-length-zero.png`             |
+| `ta.sma(close, na)`         | RE10003, bar 0 - "Invalid value of the 'length' argument in the \"sma\" function. It must not be na"           | `tv-banners/RE10003-sma-length-na.png`               |
+| `ta.sma(close, 2000000)`    | RE10004, bar 0 - "The 'sma' function references too many historical candles (2000000), the limit is 5000."     | `tv-banners/RE10004-sma-length-2000000.png`          |
 | `ta.pivothigh(high, -1, 2)` | RE10001, bar 0 - "Invalid value of the 'leftbars' argument (-1) in the 'pivothigh' function. It must be >= 0." | `tv-banners/RE10001-pivothigh-leftbars-negative.png` |
 
 Four further banners cover the `array.slice` family, which

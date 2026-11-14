@@ -1,211 +1,211 @@
 // Abstract Syntax Tree definitions for Pine Script v6
 
 export interface ASTNode {
-	type: string;
-	line: number;
-	column: number;
-	// 1-indexed source position of the last character of the node, set when
-	// the parser can compute it (currently CallExpression). Optional so existing
-	// nodes that don't set it still type-check.
-	endLine?: number;
-	endColumn?: number;
+  type: string;
+  line: number;
+  column: number;
+  // 1-indexed source position of the last character of the node, set when
+  // the parser can compute it (currently CallExpression). Optional so existing
+  // nodes that don't set it still type-check.
+  endLine?: number;
+  endColumn?: number;
 }
 
 export interface Program extends ASTNode {
-	type: "Program";
-	body: Statement[];
+  type: "Program";
+  body: Statement[];
 }
 
 export type Statement =
-	| VariableDeclaration
-	| TupleDeclaration
-	| FunctionDeclaration
-	| ExpressionStatement
-	| IfStatement
-	| ForStatement
-	| ForInStatement
-	| WhileStatement
-	| OnceStatement
-	| ReturnStatement
-	| TypeDeclaration
-	| EnumDeclaration
-	| AssignmentStatement
-	| SequenceStatement
-	| ImportStatement
-	| MethodDeclaration;
+  | VariableDeclaration
+  | TupleDeclaration
+  | FunctionDeclaration
+  | ExpressionStatement
+  | IfStatement
+  | ForStatement
+  | ForInStatement
+  | WhileStatement
+  | OnceStatement
+  | ReturnStatement
+  | TypeDeclaration
+  | EnumDeclaration
+  | AssignmentStatement
+  | SequenceStatement
+  | ImportStatement
+  | MethodDeclaration;
 
 export interface SequenceStatement extends ASTNode {
-	type: "SequenceStatement";
-	statements: Statement[];
+  type: "SequenceStatement";
+  statements: Statement[];
 }
 
 export interface ImportStatement extends ASTNode {
-	type: "ImportStatement";
-	libraryPath: string; // e.g., "TradingView/RelativeValue/3"
-	alias?: string; // e.g., "TVrv"
-	sourcePath?: string; // from immediately preceding /// @source directive
+  type: "ImportStatement";
+  libraryPath: string; // e.g., "TradingView/RelativeValue/3"
+  alias?: string; // e.g., "TVrv"
+  sourcePath?: string; // from immediately preceding /// @source directive
 }
 
 export interface MethodDeclaration extends ASTNode {
-	type: "MethodDeclaration";
-	name: string;
-	params: FunctionParam[];
-	body: Statement[];
-	returnType?: TypeAnnotation;
-	isExport?: boolean;
+  type: "MethodDeclaration";
+  name: string;
+  params: FunctionParam[];
+  body: Statement[];
+  returnType?: TypeAnnotation;
+  isExport?: boolean;
 }
 
 export interface TypeDeclaration extends ASTNode {
-	type: "TypeDeclaration";
-	name: string;
-	fields?: TypeField[];
-	// `export type T` in a library. Part of the library's public surface, so
-	// generate-libraries records it alongside exported functions/methods.
-	// see INV139
-	isExport?: boolean;
+  type: "TypeDeclaration";
+  name: string;
+  fields?: TypeField[];
+  // `export type T` in a library. Part of the library's public surface, so
+  // generate-libraries records it alongside exported functions/methods.
+  // see INV139
+  isExport?: boolean;
 }
 
 export interface TypeField {
-	name: string;
-	typeAnnotation?: TypeAnnotation;
-	line?: number;
-	column?: number;
-	// The default expression (`int x = 1.5`, `int y = userVar`). Originally only
-	// literals were captured (CE10170 type check, INV094); every default is
-	// parsed now so the checker can apply TV's what-may-a-default-BE rule to
-	// fields too. see INV178
-	defaultValue?: Expression;
-	// Column of the field line's first token (the type, or `varip`) - TV's
-	// anchor for CE10133/CE10134 on a field. see INV178
-	startColumn?: number;
-	// Parser-internal: token index of a non-literal default awaiting a full
-	// expression parse; cleared before the field is emitted. see INV178
-	defaultStartIndex?: number;
+  name: string;
+  typeAnnotation?: TypeAnnotation;
+  line?: number;
+  column?: number;
+  // The default expression (`int x = 1.5`, `int y = userVar`). Originally only
+  // literals were captured (CE10170 type check, INV094); every default is
+  // parsed now so the checker can apply TV's what-may-a-default-BE rule to
+  // fields too. see INV178
+  defaultValue?: Expression;
+  // Column of the field line's first token (the type, or `varip`) - TV's
+  // anchor for CE10133/CE10134 on a field. see INV178
+  startColumn?: number;
+  // Parser-internal: token index of a non-literal default awaiting a full
+  // expression parse; cleared before the field is emitted. see INV178
+  defaultStartIndex?: number;
 }
 
 export interface EnumDeclaration extends ASTNode {
-	type: "EnumDeclaration";
-	name: string;
-	// Member names, captured so the checker can type `E.member` as the enum
-	// type and reject incompatible operations (CE10123). see INV096
-	members?: string[];
-	// `export enum E` in a library - same public-surface role as
-	// TypeDeclaration.isExport. see INV139
-	isExport?: boolean;
+  type: "EnumDeclaration";
+  name: string;
+  // Member names, captured so the checker can type `E.member` as the enum
+  // type and reject incompatible operations (CE10123). see INV096
+  members?: string[];
+  // `export enum E` in a library - same public-surface role as
+  // TypeDeclaration.isExport. see INV139
+  isExport?: boolean;
 }
 
 export interface AssignmentStatement extends ASTNode {
-	type: "AssignmentStatement";
-	target: Expression;
-	operator: string;
-	value: Expression;
+  type: "AssignmentStatement";
+  target: Expression;
+  operator: string;
+  value: Expression;
 }
 
 export interface VariableDeclaration extends ASTNode {
-	type: "VariableDeclaration";
-	name: string;
-	varType: "var" | "varip" | "const" | null;
-	init: Expression | null;
-	typeAnnotation?: TypeAnnotation;
-	// Set on `export <var>` in a library. TV requires a const modifier AND
-	// a type on exported variables; the checker reads this. see INV052
-	isExport?: boolean;
-	// Statement-start anchor (the var/varip/const keyword or the leading
-	// type annotation token). TV anchors declaration-level diagnostics
-	// there, not at the variable name; line/column above stay on the name
-	// for symbol-table/definition purposes. see INV032
-	startLine?: number;
-	startColumn?: number;
+  type: "VariableDeclaration";
+  name: string;
+  varType: "var" | "varip" | "const" | null;
+  init: Expression | null;
+  typeAnnotation?: TypeAnnotation;
+  // Set on `export <var>` in a library. TV requires a const modifier AND
+  // a type on exported variables; the checker reads this. see INV052
+  isExport?: boolean;
+  // Statement-start anchor (the var/varip/const keyword or the leading
+  // type annotation token). TV anchors declaration-level diagnostics
+  // there, not at the variable name; line/column above stay on the name
+  // for symbol-table/definition purposes. see INV032
+  startLine?: number;
+  startColumn?: number;
 }
 
 export interface TupleDeclaration extends ASTNode {
-	type: "TupleDeclaration";
-	names: string[];
-	init: Expression;
-	/**
-	 * Written with `:=` rather than `=`. Not valid Pine - the parser has
-	 * already reported it - and the node is kept only so the checker can type
-	 * the elements. The names are NOT re-declared for it, which is what stops
-	 * a redeclaration cascade on names the earlier `=` already introduced.
-	 * see INV163
-	 */
-	isReassignment?: boolean;
+  type: "TupleDeclaration";
+  names: string[];
+  init: Expression;
+  /**
+   * Written with `:=` rather than `=`. Not valid Pine - the parser has
+   * already reported it - and the node is kept only so the checker can type
+   * the elements. The names are NOT re-declared for it, which is what stops
+   * a redeclaration cascade on names the earlier `=` already introduced.
+   * see INV163
+   */
+  isReassignment?: boolean;
 }
 
 export interface FunctionDeclaration extends ASTNode {
-	type: "FunctionDeclaration";
-	name: string;
-	params: FunctionParam[];
-	body: Statement[];
-	returnType?: TypeAnnotation;
-	isExport?: boolean;
+  type: "FunctionDeclaration";
+  name: string;
+  params: FunctionParam[];
+  body: Statement[];
+  returnType?: TypeAnnotation;
+  isExport?: boolean;
 }
 
 export interface FunctionParam {
-	name: string;
-	typeAnnotation?: TypeAnnotation;
-	defaultValue?: Expression;
-	// Position of the param's first token. TV anchors "All exported
-	// functions args should be typified" at the untyped param. see INV052
-	line?: number;
-	column?: number;
-	// Position of the param's NAME token, which is the type's when there is no
-	// annotation and differs from it when there is. TV anchors the
-	// reserved-name error at the name. see INV179
-	nameLine?: number;
-	nameColumn?: number;
+  name: string;
+  typeAnnotation?: TypeAnnotation;
+  defaultValue?: Expression;
+  // Position of the param's first token. TV anchors "All exported
+  // functions args should be typified" at the untyped param. see INV052
+  line?: number;
+  column?: number;
+  // Position of the param's NAME token, which is the type's when there is no
+  // annotation and differs from it when there is. TV anchors the
+  // reserved-name error at the name. see INV179
+  nameLine?: number;
+  nameColumn?: number;
 }
 
 export interface TypeAnnotation {
-	name: string; // int, float, bool, string, color, etc.
-	qualifier?: string; // series, simple, input, const
-	// Position of the annotation's first token, where TV anchors CE10149
-	// on UDF parameter annotations (probed `f(source x)` at the keyword).
-	// Only set on the parseFunctionParams path so far. see INV033
-	line?: number;
-	column?: number;
+  name: string; // int, float, bool, string, color, etc.
+  qualifier?: string; // series, simple, input, const
+  // Position of the annotation's first token, where TV anchors CE10149
+  // on UDF parameter annotations (probed `f(source x)` at the keyword).
+  // Only set on the parseFunctionParams path so far. see INV033
+  line?: number;
+  column?: number;
 }
 
 export interface ExpressionStatement extends ASTNode {
-	type: "ExpressionStatement";
-	expression: Expression;
+  type: "ExpressionStatement";
+  expression: Expression;
 }
 
 export interface IfStatement extends ASTNode {
-	type: "IfStatement";
-	condition: Expression;
-	consequent: Statement[];
-	alternate?: Statement[];
+  type: "IfStatement";
+  condition: Expression;
+  consequent: Statement[];
+  alternate?: Statement[];
 }
 
 export interface ForStatement extends ASTNode {
-	type: "ForStatement";
-	iterator: string;
-	from: Expression;
-	to: Expression;
-	step?: Expression; // Optional step value from "by" clause
-	body: Statement[];
+  type: "ForStatement";
+  iterator: string;
+  from: Expression;
+  to: Expression;
+  step?: Expression; // Optional step value from "by" clause
+  body: Statement[];
 }
 
 export interface ForInStatement extends ASTNode {
-	type: "ForInStatement";
-	iterator: string;
-	// Second name of the tuple iterator form `for [index, value] in coll`.
-	// When present, `iterator` is the index and `iterator2` the value.
-	iterator2?: string;
-	collection: Expression;
-	body: Statement[];
+  type: "ForInStatement";
+  iterator: string;
+  // Second name of the tuple iterator form `for [index, value] in coll`.
+  // When present, `iterator` is the index and `iterator2` the value.
+  iterator2?: string;
+  collection: Expression;
+  body: Statement[];
 }
 
 export interface WhileStatement extends ASTNode {
-	type: "WhileStatement";
-	condition: Expression;
-	body: Statement[];
+  type: "WhileStatement";
+  condition: Expression;
+  body: Statement[];
 }
 
 export interface ReturnStatement extends ASTNode {
-	type: "ReturnStatement";
-	value: Expression;
+  type: "ReturnStatement";
+  value: Expression;
 }
 
 // `once [<condition>]` + block (Pine v6, added by TV in August 2026): runs
@@ -215,123 +215,123 @@ export interface ReturnStatement extends ASTNode {
 // condition is optional (defaults to true). `once` is a CONTEXTUAL keyword:
 // `once = 1` / `int once = 1` stay valid identifiers. see INV177
 export interface OnceStatement extends ASTNode {
-	type: "OnceStatement";
-	condition?: Expression;
-	body: Statement[];
+  type: "OnceStatement";
+  condition?: Expression;
+  body: Statement[];
 }
 
 export type Expression =
-	| Identifier
-	| Literal
-	| CallExpression
-	| MemberExpression
-	| BinaryExpression
-	| UnaryExpression
-	| TernaryExpression
-	| ArrayExpression
-	| IndexExpression
-	| SwitchExpression
-	| IfExpression;
+  | Identifier
+  | Literal
+  | CallExpression
+  | MemberExpression
+  | BinaryExpression
+  | UnaryExpression
+  | TernaryExpression
+  | ArrayExpression
+  | IndexExpression
+  | SwitchExpression
+  | IfExpression;
 
 // An if/else in expression position (`int m = if cond` ... `else` ...) -
 // Pine statements return their tail value. Parsed with the statement
 // machinery (Parser.ifStatement) and re-tagged; the branch arrays have
 // IfStatement's shape. see INV031
 export interface IfExpression extends ASTNode {
-	type: "IfExpression";
-	condition: Expression;
-	consequent: Statement[];
-	alternate?: Statement[];
+  type: "IfExpression";
+  condition: Expression;
+  consequent: Statement[];
+  alternate?: Statement[];
 }
 
 export interface SwitchCase {
-	condition?: Expression; // undefined for default case
-	result: Expression;
-	// Full arm body when the arm holds statements (multi-line bodies, or
-	// inline statement forms like `cond => a := b` / `=> f(), na`).
-	// `result` stays the arm's value expression - it is the last
-	// statement's expression/value, so walkers should visit `statements`
-	// INSTEAD OF `result` when present, not both. see TODO #33.
-	statements?: Statement[];
+  condition?: Expression; // undefined for default case
+  result: Expression;
+  // Full arm body when the arm holds statements (multi-line bodies, or
+  // inline statement forms like `cond => a := b` / `=> f(), na`).
+  // `result` stays the arm's value expression - it is the last
+  // statement's expression/value, so walkers should visit `statements`
+  // INSTEAD OF `result` when present, not both. see TODO #33.
+  statements?: Statement[];
 }
 
 export interface SwitchExpression extends ASTNode {
-	type: "SwitchExpression";
-	discriminant?: Expression; // Optional discriminant (e.g., "switch pos")
-	cases: SwitchCase[];
+  type: "SwitchExpression";
+  discriminant?: Expression; // Optional discriminant (e.g., "switch pos")
+  cases: SwitchCase[];
 }
 
 export interface Identifier extends ASTNode {
-	type: "Identifier";
-	name: string;
+  type: "Identifier";
+  name: string;
 }
 
 export interface Literal extends ASTNode {
-	type: "Literal";
-	value: string | number | boolean;
-	raw: string;
+  type: "Literal";
+  value: string | number | boolean;
+  raw: string;
 }
 
 export interface CallExpression extends ASTNode {
-	type: "CallExpression";
-	callee: Expression;
-	arguments: CallArgument[];
-	typeArguments?: string[]; // Generic type arguments, e.g., array.new<float>() stores ["float"]
-	// True when in-call error recovery dropped/truncated arguments (INV047 /
-	// #46(b)). The argument list is incomplete, so arg-count checks (missing
-	// required parameter) must not run against it.
-	recovered?: boolean;
+  type: "CallExpression";
+  callee: Expression;
+  arguments: CallArgument[];
+  typeArguments?: string[]; // Generic type arguments, e.g., array.new<float>() stores ["float"]
+  // True when in-call error recovery dropped/truncated arguments (INV047 /
+  // #46(b)). The argument list is incomplete, so arg-count checks (missing
+  // required parameter) must not run against it.
+  recovered?: boolean;
 }
 
 export interface CallArgument {
-	name?: string; // For named arguments like style=shape.circle
-	// 1-indexed position of the argument NAME token when named - TV anchors
-	// its unknown-parameter error (CE10120) at the name. see INV061
-	nameLine?: number;
-	nameColumn?: number;
-	value: Expression;
-	// Parser recovery proved this argument is only a torn prefix of a syntax
-	// error, so semantic validation would be duplicate noise. see INV082
-	skipSemanticValidation?: boolean;
+  name?: string; // For named arguments like style=shape.circle
+  // 1-indexed position of the argument NAME token when named - TV anchors
+  // its unknown-parameter error (CE10120) at the name. see INV061
+  nameLine?: number;
+  nameColumn?: number;
+  value: Expression;
+  // Parser recovery proved this argument is only a torn prefix of a syntax
+  // error, so semantic validation would be duplicate noise. see INV082
+  skipSemanticValidation?: boolean;
 }
 
 export interface MemberExpression extends ASTNode {
-	type: "MemberExpression";
-	object: Expression;
-	property: Identifier;
+  type: "MemberExpression";
+  object: Expression;
+  property: Identifier;
 }
 
 export interface BinaryExpression extends ASTNode {
-	type: "BinaryExpression";
-	operator: string;
-	left: Expression;
-	right: Expression;
+  type: "BinaryExpression";
+  operator: string;
+  left: Expression;
+  right: Expression;
 }
 
 export interface UnaryExpression extends ASTNode {
-	type: "UnaryExpression";
-	operator: string;
-	argument: Expression;
+  type: "UnaryExpression";
+  operator: string;
+  argument: Expression;
 }
 
 export interface TernaryExpression extends ASTNode {
-	type: "TernaryExpression";
-	condition: Expression;
-	consequent: Expression;
-	alternate: Expression;
+  type: "TernaryExpression";
+  condition: Expression;
+  consequent: Expression;
+  alternate: Expression;
 }
 
 export interface ArrayExpression extends ASTNode {
-	type: "ArrayExpression";
-	elements: Expression[];
-	// line/column anchor at the CLOSING bracket (historical); start*
-	// carry the opening `[` for opener-anchored checks. see INV046
-	startLine?: number;
-	startColumn?: number;
+  type: "ArrayExpression";
+  elements: Expression[];
+  // line/column anchor at the CLOSING bracket (historical); start*
+  // carry the opening `[` for opener-anchored checks. see INV046
+  startLine?: number;
+  startColumn?: number;
 }
 
 export interface IndexExpression extends ASTNode {
-	type: "IndexExpression";
-	object: Expression;
-	index: Expression;
+  type: "IndexExpression";
+  object: Expression;
+  index: Expression;
 }

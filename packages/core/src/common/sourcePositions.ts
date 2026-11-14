@@ -1,6 +1,6 @@
 export interface OneBasedPosition {
-	line: number;
-	column: number;
+  line: number;
+  column: number;
 }
 
 /**
@@ -10,65 +10,65 @@ export interface OneBasedPosition {
  * displayed source line. see INV128 / G005
  */
 export function createSourcePositionMapper(
-	source: string,
+  source: string,
 ): (position: OneBasedPosition) => OneBasedPosition {
-	const rawToDisplay = buildRawToDisplayLineMap(source);
+  const rawToDisplay = buildRawToDisplayLineMap(source);
 
-	return (position) => {
-		const line = rawToDisplay[position.line] ?? position.line;
+  return (position) => {
+    const line = rawToDisplay[position.line] ?? position.line;
 
-		return line === position.line ? position : { ...position, line };
-	};
+    return line === position.line ? position : { ...position, line };
+  };
 }
 
 // NOTE: kept byte-for-byte in sync with the copy in scripts/lib/tv-positions.mjs
 // (the TV-diff scripts can't import this TS module). Change both together.
 export function buildRawToDisplayLineMap(source: string): number[] {
-	const rawToDisplay = [0, 1];
-	let rawLine = 1;
-	let displayLine = 1;
-	let i = 0;
+  const rawToDisplay = [0, 1];
+  let rawLine = 1;
+  let displayLine = 1;
+  let i = 0;
 
-	while (i < source.length) {
-		const ch = source[i];
+  while (i < source.length) {
+    const ch = source[i];
 
-		if (ch === "\r") {
-			let runEnd = i;
+    if (ch === "\r") {
+      let runEnd = i;
 
-			while (source[runEnd] === "\r") runEnd++;
+      while (source[runEnd] === "\r") runEnd++;
 
-			if (source[runEnd] === "\n") {
-				const crCount = runEnd - i;
+      if (source[runEnd] === "\n") {
+        const crCount = runEnd - i;
 
-				for (let n = 0; n < crCount - 1; n++) {
-					rawLine++;
-					rawToDisplay[rawLine] = displayLine;
-				}
+        for (let n = 0; n < crCount - 1; n++) {
+          rawLine++;
+          rawToDisplay[rawLine] = displayLine;
+        }
 
-				rawLine++;
-				displayLine++;
-				rawToDisplay[rawLine] = displayLine;
-				i = runEnd + 1;
-			} else {
-				while (i < runEnd) {
-					rawLine++;
-					displayLine++;
-					rawToDisplay[rawLine] = displayLine;
-					i++;
-				}
-			}
+        rawLine++;
+        displayLine++;
+        rawToDisplay[rawLine] = displayLine;
+        i = runEnd + 1;
+      } else {
+        while (i < runEnd) {
+          rawLine++;
+          displayLine++;
+          rawToDisplay[rawLine] = displayLine;
+          i++;
+        }
+      }
 
-			continue;
-		}
+      continue;
+    }
 
-		if (ch === "\n") {
-			rawLine++;
-			displayLine++;
-			rawToDisplay[rawLine] = displayLine;
-		}
+    if (ch === "\n") {
+      rawLine++;
+      displayLine++;
+      rawToDisplay[rawLine] = displayLine;
+    }
 
-		i++;
-	}
+    i++;
+  }
 
-	return rawToDisplay;
+  return rawToDisplay;
 }

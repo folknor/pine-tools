@@ -11,17 +11,14 @@ import { convertHover } from "../converters";
  * Setup hover handler.
  */
 export function setupHoverHandler(
-	connection: Connection,
-	languageService: PineLanguageService,
+  connection: Connection,
+  languageService: PineLanguageService,
 ): void {
-	connection.onHover((params: HoverParams) => {
-		const hover = languageService.getHover(
-			params.textDocument.uri,
-			params.position,
-		);
+  connection.onHover((params: HoverParams) => {
+    const hover = languageService.getHover(params.textDocument.uri, params.position);
 
-		if (!hover) return null;
+    if (!hover) return null;
 
-		return convertHover(hover);
-	});
+    return convertHover(hover);
+  });
 }

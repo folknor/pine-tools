@@ -41,7 +41,7 @@ const args = process.argv.slice(2);
 let concurrency = 8;
 
 for (let i = 0; i < args.length; i++) {
-	if (args[i] === "--concurrency") concurrency = Number(args[++i]);
+  if (args[i] === "--concurrency") concurrency = Number(args[++i]);
 }
 
 const FIXTURES = resolve("fixtures");
@@ -50,21 +50,21 @@ const TV_REF = resolve("lint-reports/real-failures.json");
 const OUT = resolve("lint-reports/regression-report.json");
 
 try {
-	await access(FIXTURES);
+  await access(FIXTURES);
 } catch {
-	console.error(
-		`No ${FIXTURES} - the corpus is gitignored and machine-local. It was built by scripts/collect-pine-fixtures.mjs (removed; recoverable from git history), which walked a source tree copying .pine files by sha256.`,
-	);
-	process.exit(2);
+  console.error(
+    `No ${FIXTURES} - the corpus is gitignored and machine-local. It was built by scripts/collect-pine-fixtures.mjs (removed; recoverable from git history), which walked a source tree copying .pine files by sha256.`,
+  );
+  process.exit(2);
 }
 
 let baseline;
 
 try {
-	baseline = JSON.parse(await readFile(BASELINE, "utf8"));
+  baseline = JSON.parse(await readFile(BASELINE, "utf8"));
 } catch {
-	console.error(`No baseline at ${BASELINE}. Run scripts/snapshot-local-lint.mjs first.`);
-	process.exit(2);
+  console.error(`No baseline at ${BASELINE}. Run scripts/snapshot-local-lint.mjs first.`);
+  process.exit(2);
 }
 
 // Build the per-fixture set of positions where TV is silent and we
@@ -74,55 +74,59 @@ const tvSilentPositions = new Map();
 let tvAvailable = false;
 
 try {
-	const tv = JSON.parse(await readFile(TV_REF, "utf8"));
+  const tv = JSON.parse(await readFile(TV_REF, "utf8"));
 
-	for (const f of tv.files) {
-		const set = new Set();
+  for (const f of tv.files) {
+    const set = new Set();
 
-		for (const e of f.localOnly) set.add(`${e.line}:${e.col}:${e.message}`);
-		tvSilentPositions.set(basename(f.file), set);
-	}
+    for (const e of f.localOnly) set.add(`${e.line}:${e.col}:${e.message}`);
+    tvSilentPositions.set(basename(f.file), set);
+  }
 
-	tvAvailable = true;
+  tvAvailable = true;
 } catch {
-	console.warn(`No TV reference at ${TV_REF} - disappearance annotations disabled.`);
+  console.warn(`No TV reference at ${TV_REF} - disappearance annotations disabled.`);
 }
 
 function run(file) {
-	return new Promise((res) => {
-		const c = spawn("pine-lint", [file], { stdio: ["ignore", "pipe", "pipe"] });
-		let out = "";
-		c.stdout.on("data", (d) => (out += d));
-		const t = setTimeout(() => c.kill("SIGKILL"), 30_000);
-		c.on("close", () => {
-			clearTimeout(t);
-			res(out);
-		});
-		c.on("error", () => {
-			clearTimeout(t);
-			res("");
-		});
-	});
+  return new Promise((res) => {
+    const c = spawn("pine-lint", [file], { stdio: ["ignore", "pipe", "pipe"] });
+    let out = "";
+    c.stdout.on("data", (d) => (out += d));
+    const t = setTimeout(() => c.kill("SIGKILL"), 30_000);
+    c.on("close", () => {
+      clearTimeout(t);
+      res(out);
+    });
+    c.on("error", () => {
+      clearTimeout(t);
+      res("");
+    });
+  });
 }
 
 // Structured errors carry an unfilled template + ctx (see INV061); render
 // them so the (line, col, message) key distinguishes different findings at
 // the same position. Must mirror snapshot-local-lint.mjs exactly.
 function fillTemplate(message, ctx) {
-	if (!ctx) return message;
+  if (!ctx) return message;
 
-	return message.replace(/\{(\w+)\}/g, (m, key) => ctx[key] ?? m);
+  return message.replace(/\{(\w+)\}/g, (m, key) => ctx[key] ?? m);
 }
 
 function pickErrors(raw) {
-	try {
-		const j = JSON.parse(raw);
-		const errs = j.result?.errors ?? j.errors ?? [];
+  try {
+    const j = JSON.parse(raw);
+    const errs = j.result?.errors ?? j.errors ?? [];
 
-		return errs.map((e) => ({ line: e.start?.line ?? 0, col: e.start?.column ?? 0, message: fillTemplate(e.message ?? "", e.ctx) }));
-	} catch {
-		return null;
-	}
+    return errs.map((e) => ({
+      line: e.start?.line ?? 0,
+      col: e.start?.column ?? 0,
+      message: fillTemplate(e.message ?? "", e.ctx),
+    }));
+  } catch {
+    return null;
+  }
 }
 
 const entries = (await readdir(FIXTURES)).filter((n) => n.endsWith(".pine")).sort();
@@ -132,19 +136,21 @@ let done = 0;
 const startedAt = Date.now();
 
 async function worker() {
-	while (true) {
-		const i = next++;
+  while (true) {
+    const i = next++;
 
-		if (i >= entries.length) return;
-		const name = entries[i];
-		const errs = pickErrors(await run(join(FIXTURES, name)));
-		current[name] = { errors: errs ?? [], parseFailed: errs === null };
-		done++;
+    if (i >= entries.length) return;
+    const name = entries[i];
+    const errs = pickErrors(await run(join(FIXTURES, name)));
+    current[name] = { errors: errs ?? [], parseFailed: errs === null };
+    done++;
 
-		if (done % 200 === 0 || done === entries.length) {
-			process.stderr.write(`  ${done}/${entries.length} (${((Date.now() - startedAt) / 1000).toFixed(1)}s)\n`);
-		}
-	}
+    if (done % 200 === 0 || done === entries.length) {
+      process.stderr.write(
+        `  ${done}/${entries.length} (${((Date.now() - startedAt) / 1000).toFixed(1)}s)\n`,
+      );
+    }
+  }
 }
 
 console.log(`linting ${entries.length} fixtures locally (concurrency ${concurrency})…`);
@@ -152,123 +158,128 @@ console.log(`linting ${entries.length} fixtures locally (concurrency ${concurren
 await Promise.all(Array.from({ length: concurrency }, worker));
 
 const report = {
-	baselineGeneratedAt: baseline.generatedAt,
-	checkedAt: new Date().toISOString(),
-	tvReferenceAvailable: tvAvailable,
-	filesAdded: [],
-	filesRemoved: [],
-	filesChanged: [],
-	parseFailureDelta: { newlyFailing: [], newlySucceeding: [] },
+  baselineGeneratedAt: baseline.generatedAt,
+  checkedAt: new Date().toISOString(),
+  tvReferenceAvailable: tvAvailable,
+  filesAdded: [],
+  filesRemoved: [],
+  filesChanged: [],
+  parseFailureDelta: { newlyFailing: [], newlySucceeding: [] },
 };
 
 for (const name of Object.keys(baseline.files)) {
-	if (!(name in current)) report.filesRemoved.push(name);
+  if (!(name in current)) report.filesRemoved.push(name);
 }
 
 for (const name of entries) {
-	if (!(name in baseline.files)) {
-		report.filesAdded.push({ file: name, errorCount: current[name].errors.length });
-		continue;
-	}
+  if (!(name in baseline.files)) {
+    report.filesAdded.push({ file: name, errorCount: current[name].errors.length });
+    continue;
+  }
 
-	const base = baseline.files[name];
-	const cur = current[name];
+  const base = baseline.files[name];
+  const cur = current[name];
 
-	if (base.parseFailed !== cur.parseFailed) {
-		(cur.parseFailed ? report.parseFailureDelta.newlyFailing : report.parseFailureDelta.newlySucceeding).push(name);
-	}
+  if (base.parseFailed !== cur.parseFailed) {
+    (cur.parseFailed
+      ? report.parseFailureDelta.newlyFailing
+      : report.parseFailureDelta.newlySucceeding
+    ).push(name);
+  }
 
-	const oldKeys = new Set(base.errors.map((e) => `${e.line}:${e.col}:${e.message}`));
-	const newKeys = new Set(cur.errors.map((e) => `${e.line}:${e.col}:${e.message}`));
-	const rawAppeared = cur.errors.filter((e) => !oldKeys.has(`${e.line}:${e.col}:${e.message}`));
-	const rawDisappeared = base.errors.filter((e) => !newKeys.has(`${e.line}:${e.col}:${e.message}`));
+  const oldKeys = new Set(base.errors.map((e) => `${e.line}:${e.col}:${e.message}`));
+  const newKeys = new Set(cur.errors.map((e) => `${e.line}:${e.col}:${e.message}`));
+  const rawAppeared = cur.errors.filter((e) => !oldKeys.has(`${e.line}:${e.col}:${e.message}`));
+  const rawDisappeared = base.errors.filter((e) => !newKeys.has(`${e.line}:${e.col}:${e.message}`));
 
-	// "Message changed at same position" - when an appeared and a
-	// disappeared error share the same (line, col) but differ only in
-	// message, they're almost always the same underlying finding with
-	// different wording (e.g. a "Did you mean" suggestion that shifted
-	// after a scope-table change, or a more-precise message replacing a
-	// generic one). Pull these out of the appeared/disappeared lists into
-	// a third category so reviewers don't pattern-match them as
-	// regressions or true fixes. see find-real-failures.mjs for the
-	// equivalent samePositionDifferentMessage logic.
-	const disappearedByPos = new Map();
+  // "Message changed at same position" - when an appeared and a
+  // disappeared error share the same (line, col) but differ only in
+  // message, they're almost always the same underlying finding with
+  // different wording (e.g. a "Did you mean" suggestion that shifted
+  // after a scope-table change, or a more-precise message replacing a
+  // generic one). Pull these out of the appeared/disappeared lists into
+  // a third category so reviewers don't pattern-match them as
+  // regressions or true fixes. see find-real-failures.mjs for the
+  // equivalent samePositionDifferentMessage logic.
+  const disappearedByPos = new Map();
 
-	for (const e of rawDisappeared) {
-		const k = `${e.line}:${e.col}`;
+  for (const e of rawDisappeared) {
+    const k = `${e.line}:${e.col}`;
 
-		if (!disappearedByPos.has(k)) disappearedByPos.set(k, []);
-		disappearedByPos.get(k).push(e);
-	}
+    if (!disappearedByPos.has(k)) disappearedByPos.set(k, []);
+    disappearedByPos.get(k).push(e);
+  }
 
-	const messageChanged = [];
-	const appearedFinal = [];
+  const messageChanged = [];
+  const appearedFinal = [];
 
-	for (const a of rawAppeared) {
-		const key = `${a.line}:${a.col}`;
-		const candidates = disappearedByPos.get(key);
+  for (const a of rawAppeared) {
+    const key = `${a.line}:${a.col}`;
+    const candidates = disappearedByPos.get(key);
 
-		if (candidates && candidates.length > 0) {
-			const d = candidates.shift();
-			messageChanged.push({
-				line: a.line,
-				col: a.col,
-				oldMessage: d.message,
-				newMessage: a.message,
-			});
-		} else {
-			appearedFinal.push(a);
-		}
-	}
+    if (candidates && candidates.length > 0) {
+      const d = candidates.shift();
+      messageChanged.push({
+        line: a.line,
+        col: a.col,
+        oldMessage: d.message,
+        newMessage: a.message,
+      });
+    } else {
+      appearedFinal.push(a);
+    }
+  }
 
-	const disappearedFinal = [];
+  const disappearedFinal = [];
 
-	for (const [, arr] of disappearedByPos) disappearedFinal.push(...arr);
+  for (const [, arr] of disappearedByPos) disappearedFinal.push(...arr);
 
-	if (appearedFinal.length === 0 && disappearedFinal.length === 0 && messageChanged.length === 0) continue;
+  if (appearedFinal.length === 0 && disappearedFinal.length === 0 && messageChanged.length === 0)
+    continue;
 
-	const tvSilentSet = tvSilentPositions.get(name);
+  const tvSilentSet = tvSilentPositions.get(name);
 
-	// tvSilent is meaningful only for files that appeared in the TV
-	// reference. For files outside it (non-v6 fixtures, or v6 files added
-	// since the last find-real-failures.mjs run), there's no per-error TV
-	// data, so mark disappearances as unverifiable.
-	const annotatedDisappeared = disappearedFinal.map((e) => ({
-		...e,
-		tvSilent: tvAvailable && tvSilentSet ? tvSilentSet.has(`${e.line}:${e.col}:${e.message}`) : null,
-	}));
+  // tvSilent is meaningful only for files that appeared in the TV
+  // reference. For files outside it (non-v6 fixtures, or v6 files added
+  // since the last find-real-failures.mjs run), there's no per-error TV
+  // data, so mark disappearances as unverifiable.
+  const annotatedDisappeared = disappearedFinal.map((e) => ({
+    ...e,
+    tvSilent:
+      tvAvailable && tvSilentSet ? tvSilentSet.has(`${e.line}:${e.col}:${e.message}`) : null,
+  }));
 
-	report.filesChanged.push({
-		file: name,
-		appeared: appearedFinal,
-		disappeared: annotatedDisappeared,
-		messageChanged,
-	});
+  report.filesChanged.push({
+    file: name,
+    appeared: appearedFinal,
+    disappeared: annotatedDisappeared,
+    messageChanged,
+  });
 }
 
 const totals = {
-	filesChanged: report.filesChanged.length,
-	newAppearances: 0,
-	messageChanged: 0,
-	disappearedTvSilent: 0,
-	disappearedTvFlagged: 0,
-	disappearedUnverifiable: 0,
+  filesChanged: report.filesChanged.length,
+  newAppearances: 0,
+  messageChanged: 0,
+  disappearedTvSilent: 0,
+  disappearedTvFlagged: 0,
+  disappearedUnverifiable: 0,
 };
 
 const tvFlaggedDisappearanceFiles = [];
 
 for (const f of report.filesChanged) {
-	totals.newAppearances += f.appeared.length;
-	totals.messageChanged += (f.messageChanged ?? []).length;
-	const tvFlagged = f.disappeared.filter((e) => e.tvSilent === false);
+  totals.newAppearances += f.appeared.length;
+  totals.messageChanged += (f.messageChanged ?? []).length;
+  const tvFlagged = f.disappeared.filter((e) => e.tvSilent === false);
 
-	if (tvFlagged.length) tvFlaggedDisappearanceFiles.push(f.file);
+  if (tvFlagged.length) tvFlaggedDisappearanceFiles.push(f.file);
 
-	for (const e of f.disappeared) {
-		if (e.tvSilent === true) totals.disappearedTvSilent++;
-		else if (e.tvSilent === false) totals.disappearedTvFlagged++;
-		else totals.disappearedUnverifiable++;
-	}
+  for (const e of f.disappeared) {
+    if (e.tvSilent === true) totals.disappearedTvSilent++;
+    else if (e.tvSilent === false) totals.disappearedTvFlagged++;
+    else totals.disappearedUnverifiable++;
+  }
 }
 
 report.totals = totals;
@@ -291,22 +302,36 @@ console.log(`fixtures added (no baseline): ${report.filesAdded.length}`);
 
 console.log(`fixtures removed:             ${report.filesRemoved.length}`);
 
-console.log(`new error appearances:        ${totals.newAppearances}${totals.newAppearances ? "  ← REGRESSION CANDIDATES" : ""}`);
+console.log(
+  `new error appearances:        ${totals.newAppearances}${totals.newAppearances ? "  ← REGRESSION CANDIDATES" : ""}`,
+);
 
-console.log(`message changed at same pos:  ${totals.messageChanged}  (same line:col, different wording - usually a suggestion shift, not a regression)`);
+console.log(
+  `message changed at same pos:  ${totals.messageChanged}  (same line:col, different wording - usually a suggestion shift, not a regression)`,
+);
 
-console.log(`disappeared, TV-silent here:  ${totals.disappearedTvSilent}  (we used to flag where TV is silent - investigate per category, not auto-good)`);
+console.log(
+  `disappeared, TV-silent here:  ${totals.disappearedTvSilent}  (we used to flag where TV is silent - investigate per category, not auto-good)`,
+);
 
-console.log(`disappeared, TV-also-flagged: ${totals.disappearedTvFlagged}${totals.disappearedTvFlagged ? "  ← we stopped flagging something TV catches; verify with --tv" : ""}`);
+console.log(
+  `disappeared, TV-also-flagged: ${totals.disappearedTvFlagged}${totals.disappearedTvFlagged ? "  ← we stopped flagging something TV catches; verify with --tv" : ""}`,
+);
 
-console.log(`disappeared, unverifiable:    ${totals.disappearedUnverifiable}  (file outside TV reference; v4/v5/non-v6 or added since last find-real-failures run)`);
+console.log(
+  `disappeared, unverifiable:    ${totals.disappearedUnverifiable}  (file outside TV reference; v4/v5/non-v6 or added since last find-real-failures run)`,
+);
 
 if (tvFlaggedDisappearanceFiles.length) {
-	console.log(`\nfiles where TV-also-flagged disappearances need recheck (${tvFlaggedDisappearanceFiles.length}):`);
+  console.log(
+    `\nfiles where TV-also-flagged disappearances need recheck (${tvFlaggedDisappearanceFiles.length}):`,
+  );
 
-	for (const f of tvFlaggedDisappearanceFiles.slice(0, 15)) console.log(`  node scripts/compare-tv.mjs fixtures/${f}`);
+  for (const f of tvFlaggedDisappearanceFiles.slice(0, 15))
+    console.log(`  node scripts/compare-tv.mjs fixtures/${f}`);
 
-	if (tvFlaggedDisappearanceFiles.length > 15) console.log(`  … +${tvFlaggedDisappearanceFiles.length - 15} more (see ${OUT})`);
+  if (tvFlaggedDisappearanceFiles.length > 15)
+    console.log(`  … +${tvFlaggedDisappearanceFiles.length - 15} more (see ${OUT})`);
 }
 
 console.log(`\nfull report: ${OUT}`);

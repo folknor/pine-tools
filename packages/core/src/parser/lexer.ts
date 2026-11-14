@@ -2,982 +2,957 @@
 import { LEXER_KEYWORDS } from "../constants/keywords";
 
 export enum TokenType {
-	// Literals
-	NUMBER = "NUMBER",
-	STRING = "STRING",
-	BOOL = "BOOL",
-	COLOR = "COLOR",
+  // Literals
+  NUMBER = "NUMBER",
+  STRING = "STRING",
+  BOOL = "BOOL",
+  COLOR = "COLOR",
 
-	// Identifiers and Keywords
-	IDENTIFIER = "IDENTIFIER",
-	KEYWORD = "KEYWORD",
+  // Identifiers and Keywords
+  IDENTIFIER = "IDENTIFIER",
+  KEYWORD = "KEYWORD",
 
-	// Operators
-	ASSIGN = "ASSIGN", // =, :=
-	COMPOUND_ASSIGN = "COMPOUND_ASSIGN", // +=, -=, *=, /=, %=
-	PLUS = "PLUS", // +
-	MINUS = "MINUS", // -
-	MULTIPLY = "MULTIPLY", // *
-	DIVIDE = "DIVIDE", // /
-	MODULO = "MODULO", // %
-	COMPARE = "COMPARE", // ==, !=, <, >, <=, >=
-	LOGICAL = "LOGICAL", // and, or, not
-	TERNARY = "TERNARY", // ?
+  // Operators
+  ASSIGN = "ASSIGN", // =, :=
+  COMPOUND_ASSIGN = "COMPOUND_ASSIGN", // +=, -=, *=, /=, %=
+  PLUS = "PLUS", // +
+  MINUS = "MINUS", // -
+  MULTIPLY = "MULTIPLY", // *
+  DIVIDE = "DIVIDE", // /
+  MODULO = "MODULO", // %
+  COMPARE = "COMPARE", // ==, !=, <, >, <=, >=
+  LOGICAL = "LOGICAL", // and, or, not
+  TERNARY = "TERNARY", // ?
 
-	// Delimiters
-	LPAREN = "LPAREN", // (
-	RPAREN = "RPAREN", // )
-	LBRACKET = "LBRACKET", // [
-	RBRACKET = "RBRACKET", // ]
-	COMMA = "COMMA", // ,
-	DOT = "DOT", // .
-	COLON = "COLON", // :
-	ARROW = "ARROW", // =>
+  // Delimiters
+  LPAREN = "LPAREN", // (
+  RPAREN = "RPAREN", // )
+  LBRACKET = "LBRACKET", // [
+  RBRACKET = "RBRACKET", // ]
+  COMMA = "COMMA", // ,
+  DOT = "DOT", // .
+  COLON = "COLON", // :
+  ARROW = "ARROW", // =>
 
-	// Special
-	NEWLINE = "NEWLINE",
-	COMMENT = "COMMENT",
-	ANNOTATION = "ANNOTATION", // //@version=6
-	EOF = "EOF",
-	WHITESPACE = "WHITESPACE",
-	ERROR = "ERROR", // Invalid/unexpected character
+  // Special
+  NEWLINE = "NEWLINE",
+  COMMENT = "COMMENT",
+  ANNOTATION = "ANNOTATION", // //@version=6
+  EOF = "EOF",
+  WHITESPACE = "WHITESPACE",
+  ERROR = "ERROR", // Invalid/unexpected character
 }
 
 export interface Token {
-	type: TokenType;
-	value: string;
-	line: number;
-	column: number;
-	length: number;
-	indent?: number; // Indentation level (number of spaces at line start)
+  type: TokenType;
+  value: string;
+  line: number;
+  column: number;
+  length: number;
+  indent?: number; // Indentation level (number of spaces at line start)
 }
 
 export interface LexerError {
-	line: number;
-	column: number;
-	message: string;
+  line: number;
+  column: number;
+  message: string;
 }
 
 // Keywords are defined in constants/keywords.ts (uses LEXER_KEYWORDS)
 
 export class Lexer {
-	private source: string;
-	private pos: number = 0;
-	private line: number = 1;
-	private column: number = 1;
-	private tokens: Token[] = [];
-	private currentIndent: number = 0; // Track current line's indentation
-	private atLineStart: boolean = true; // Track if we're at the start of a line
-	private lexerErrors: LexerError[] = [];
-	private detectedVersion: string | null = null;
-	// One CE10005 per file - NBSP-obfuscated scripts carry thousands. see INV029
-	private nbspErrorReported: boolean = false;
-	// Open ( / [ nesting depth. Newlines inside a bracket group are
-	// continuations, not statement boundaries, so no NEWLINE token is
-	// emitted while depth > 0 - this is what lets `x = (` ... `)` and
-	// multi-line calls/tuples span lines. Clamped at 0 so a stray `)` in
-	// a broken file can't suppress newlines for the rest of the source.
-	// see TODO #34 / plan/31.
-	private bracketDepth: number = 0;
-	// Positions of currently-open ( / [ so an opener still unmatched at
-	// EOF can be reported where TV reports it: the earliest unclosed `(`
-	// is CE10015 "Syntax error: Missing closing parenthesis" anchored at
-	// the opener's line, column 1; an unclosed `[` is CE10156 at the
-	// bracket itself. A closer pops the nearest opener regardless of
-	// which character it is - mismatched pairs only occur in already-
-	// broken files. see INV046
-	private openBrackets: Array<{
-		char: "(" | "[";
-		line: number;
-		column: number;
-	}> = [];
-	// v5 ONLY: a line wrapped inside ( ) still may not continue at an indent
-	// that is a multiple of 4 (tabs count 4). v6 lifted that restriction for
-	// parenthesised wraps, and the manual documents only the v6 rule, so the
-	// v5 case is invisible from the docs. TV reports CE10156 anchored at the
-	// EOL of the line being wrapped; a comment-only line in between is
-	// ignored. Set at a line break while a `(` is open, consumed by the next
-	// line's first real token. see INV176
-	private pendingParenWrap: { line: number; column: number } | null = null;
-
-	constructor(source: string) {
-		this.source = source;
-	}
-
-	tokenize(): Token[] {
-		while (this.pos < this.source.length) {
-			this.scanToken();
-		}
-
-		// An opener still unmatched at EOF: report the EARLIEST one (TV
-		// stops at its first error, so one record per file). see INV046
-		const unclosed = this.openBrackets[0];
-
-		if (unclosed) {
-			this.lexerErrors.push(
-				unclosed.char === "("
-					? {
-							line: unclosed.line,
-							column: 1,
-							message: "Syntax error: Missing closing parenthesis",
-						}
-					: {
-							line: unclosed.line,
-							column: unclosed.column,
-							message: 'Syntax error at input "["',
-						},
-			);
-		}
-
-		this.addToken(TokenType.EOF, "", 0);
-
-		return this.tokens;
-	}
-
-	getErrors(): LexerError[] {
-		return this.lexerErrors;
-	}
-
-	private scanToken(): void {
-		const _start = this.pos;
-		const _startColumn = this.column;
-		const char = this.advance();
-
-		switch (char) {
-			case " ":
-			case "\t":
-			case "\u00a0":
-				// Count indentation at line start. U+00A0 (non-breaking
-				// space) appears as indentation in real published scripts;
-				// silently dropping it gave body tokens indent 0 and made
-				// function bodies swallow the rest of the file. see plan/31.
-				// (TV does NOT treat NBSP indentation as block indent - it
-				// wrap-joins such lines - but our lenient reading keeps
-				// bodies intact; see INV029 probe b.)
-				if (this.atLineStart) {
-					this.currentIndent += char === "\t" ? 4 : 1;
-				} else if (
-					char === "\u00a0" &&
-					this.bracketDepth === 0 &&
-					!this.nbspErrorReported
-				) {
-					// Mid-line NBSP at bracket depth 0 is a lexical error in
-					// TV: CE10005 "no viable alternative at character",
-					// anchored at the NBSP itself. Inside ( ) / [ ] TV accepts
-					// NBSP as plain whitespace (both probed 2026-06-04 - see
-					// INV029). Report only the FIRST one: NBSP-obfuscated
-					// published scripts carry tens of thousands of NBSPs (one
-					// corpus file has 41749), and TV itself emits exactly one
-					// CE10005 and stops. Recover by treating it as a plain
-					// space so downstream diagnostics survive.
-					this.nbspErrorReported = true;
-					this.lexerErrors.push({
-						line: this.line,
-						column: this.column - 1,
-						message: 'no viable alternative at character "\u00a0"',
-					});
-				}
-
-				break;
-
-			case "\r":
-				// A lone \r is a line terminator; \r\n pairs break at the \n.
-				// TV, VS Code, and LSP all split on \r\n | \r | \n, so a file
-				// with \r\r\n endings holds TWO breaks per line and a CR-only
-				// file breaks at every \r. Skipping \r entirely made CR-only
-				// files one giant comment line and halved \r\r\n line numbers
-				// against TV's. see G005 / TODO #38.
-				if (this.peek() !== "\n") {
-					this.handleLineBreak();
-				}
-
-				break;
-
-			case "\n":
-				this.handleLineBreak();
-				break;
-
-			case "(":
-				this.bracketDepth++;
-				this.openBrackets.push({
-					char: "(",
-					line: this.line,
-					column: this.column - 1,
-				});
-				this.addToken(TokenType.LPAREN, "(", 1);
-				break;
-			case ")":
-				this.bracketDepth = Math.max(0, this.bracketDepth - 1);
-				this.openBrackets.pop();
-				this.addToken(TokenType.RPAREN, ")", 1);
-				break;
-			case "[":
-				this.bracketDepth++;
-				this.openBrackets.push({
-					char: "[",
-					line: this.line,
-					column: this.column - 1,
-				});
-				this.addToken(TokenType.LBRACKET, "[", 1);
-				break;
-			case "]":
-				this.bracketDepth = Math.max(0, this.bracketDepth - 1);
-				this.openBrackets.pop();
-				this.addToken(TokenType.RBRACKET, "]", 1);
-				break;
-			case ",":
-				this.addToken(TokenType.COMMA, ",", 1);
-				break;
-			case ".":
-				// Check if this is a number starting with . (e.g., .1 = 0.1)
-				if (this.isDigit(this.peek())) {
-					this.scanNumberStartingWithDot();
-				} else {
-					this.addToken(TokenType.DOT, ".", 1);
-				}
-
-				break;
-			case "?":
-				this.addToken(TokenType.TERNARY, "?", 1);
-				break;
-
-			case "+":
-				if (this.peek() === "=") {
-					this.advance();
-					this.addToken(TokenType.COMPOUND_ASSIGN, "+=", 2);
-				} else {
-					this.addToken(TokenType.PLUS, "+", 1);
-				}
-
-				break;
-			case "-":
-				if (this.peek() === "=") {
-					this.advance();
-					this.addToken(TokenType.COMPOUND_ASSIGN, "-=", 2);
-				} else {
-					this.addToken(TokenType.MINUS, "-", 1);
-				}
-
-				break;
-			case "*":
-				if (this.peek() === "=") {
-					this.advance();
-					this.addToken(TokenType.COMPOUND_ASSIGN, "*=", 2);
-				} else {
-					this.addToken(TokenType.MULTIPLY, "*", 1);
-				}
-
-				break;
-			case "%":
-				if (this.peek() === "=") {
-					this.advance();
-					this.addToken(TokenType.COMPOUND_ASSIGN, "%=", 2);
-				} else {
-					this.addToken(TokenType.MODULO, "%", 1);
-				}
-
-				break;
-
-			case "/":
-				if (this.peek() === "/") {
-					this.scanComment();
-				} else if (this.peek() === "*") {
-					this.scanBlockComment();
-				} else if (this.peek() === "=") {
-					this.advance();
-					this.addToken(TokenType.COMPOUND_ASSIGN, "/=", 2);
-				} else {
-					this.addToken(TokenType.DIVIDE, "/", 1);
-				}
-
-				break;
-
-			case ":":
-				if (this.peek() === "=") {
-					this.advance();
-					this.addToken(TokenType.ASSIGN, ":=", 2);
-				} else {
-					this.addToken(TokenType.COLON, ":", 1);
-				}
-
-				break;
-
-			case "=":
-				if (this.peek() === "=") {
-					this.advance();
-					this.addToken(TokenType.COMPARE, "==", 2);
-				} else if (this.peek() === ">") {
-					this.advance();
-					this.addToken(TokenType.ARROW, "=>", 2);
-				} else {
-					this.addToken(TokenType.ASSIGN, "=", 1);
-				}
-
-				break;
-
-			case "!":
-				if (this.peek() === "=") {
-					this.advance();
-					this.addToken(TokenType.COMPARE, "!=", 2);
-				} else {
-					// Pine Script uses 'not' for negation, not '!'
-					// Produce an error token so the parser can report a meaningful error
-					this.addToken(TokenType.ERROR, "!", 1);
-				}
-
-				break;
-
-			case "<":
-				if (this.peek() === "=") {
-					this.advance();
-					this.addToken(TokenType.COMPARE, "<=", 2);
-				} else {
-					this.addToken(TokenType.COMPARE, "<", 1);
-				}
-
-				break;
-
-			case ">":
-				if (this.peek() === "=") {
-					this.advance();
-					this.addToken(TokenType.COMPARE, ">=", 2);
-				} else {
-					this.addToken(TokenType.COMPARE, ">", 1);
-				}
-
-				break;
-
-			case "#":
-				// Check for hex color literal (#RRGGBB or #RRGGBBAA)
-				this.scanHexColor();
-				break;
-
-			case '"':
-			case "'":
-				// Three delimiters open a MULTILINE string (`"""..."""` /
-				// `'''...'''`), added to Pine in April 2026. It is a distinct
-				// literal form, not a run of single-line strings: the newlines
-				// between the delimiters are literal text, so the scanner must
-				// consume them rather than treat the line break as the broken-
-				// string error a single-pair literal would draw. see INV145
-				if (this.peek() === char && this.peekNext() === char) {
-					this.scanMultilineString(char);
-				} else {
-					this.scanString(char);
-				}
-
-				break;
-
-			default:
-				if (this.isDigit(char)) {
-					this.scanNumber();
-				} else if (this.isAlpha(char)) {
-					this.scanIdentifier();
-				}
-
-				break;
-		}
-	}
-
-	/**
-	 * TV reports the v5 paren-wrap error in JOINED-LINE coordinates: the
-	 * statement's first line, with columns accumulated over each line from
-	 * there to the offending one - leading whitespace stripped, one joining
-	 * space added per line. Our own anchor is the offending line's EOL, which
-	 * is the same point whenever the statement is one line long (every probe in
-	 * INV176 except two corpus files).
-	 *
-	 * The statement's start is recovered by walking BACK over continuation
-	 * lines rather than by tracking it: a NEWLINE IS emitted after a trailing
-	 * operator at depth 0 (`x = a or` / `    (b and` / `    c)` - the shape
-	 * both outlier files have), so the lexer's newline bookkeeping does not
-	 * know where the statement began. A line whose trimmed text ends in an
-	 * operator, comma or opener cannot end a statement, which is a purely
-	 * textual test needing no token state.
-	 *
-	 * v5-gated by its only caller. see INV176
-	 */
-	private joinedWrapAnchor(pending: { line: number; column: number }): {
-		line: number;
-		column: number;
-	} {
-		const lineText = (n: number): string =>
-			this.source.split("\n")[n - 1] ?? "";
-
-		const continues = (n: number): boolean => {
-			const t = lineText(n)
-				.replace(/\/\/.*$/, "")
-				.trimEnd();
-
-			return /(?:[+\-*/%?:,=<>([{]|\b(?:and|or|not)|=>|:=)$/.test(t);
-		};
-
-		let start = pending.line;
-
-		while (start > 1 && continues(start - 1)) start--;
-
-		if (start === pending.line) return pending;
-		let column = 0;
-
-		for (let n = start; n <= pending.line; n++) {
-			column += lineText(n).replace(/^\s+/, "").length + 1;
-		}
-
-		return { line: start, column };
-	}
-
-	// Shared by the "\n" and lone-"\r" cases in scanToken. see G005.
-	private handleLineBreak(): void {
-		if (this.bracketDepth === 0) {
-			this.addToken(TokenType.NEWLINE, "\n", 1);
-			this.pendingParenWrap = null;
-		} else if (
-			this.detectedVersion === "5" &&
-			this.openBrackets[this.openBrackets.length - 1]?.char === "("
-		) {
-			// `this.column` is already past the line-break character, so the
-			// EOL (TV's anchor) is one column back. see INV176
-			this.pendingParenWrap = { line: this.line, column: this.column - 1 };
-		} else {
-			this.pendingParenWrap = null;
-		}
-
-		this.line++;
-		this.column = 1;
-		this.atLineStart = true;
-		this.currentIndent = 0;
-	}
-
-	private scanComment(): void {
-		const start = this.pos - 1;
-		const _startColumn = this.column - 1;
-
-		// Advance past the second '/'
-		this.advance();
-
-		// Check for annotation (//@version=6)
-		if (this.peek() === "@") {
-			while (this.peek() !== "\n" && this.peek() !== "\r" && !this.isAtEnd()) {
-				this.advance();
-			}
-
-			const value = this.source.substring(start, this.pos);
-			this.addToken(TokenType.ANNOTATION, value, value.length);
-
-			// Extract version information
-			this.extractVersionFromAnnotation(value);
-
-			return;
-		}
-
-		// Regular comment (a lone \r terminates the line too - see G005)
-		while (this.peek() !== "\n" && this.peek() !== "\r" && !this.isAtEnd()) {
-			this.advance();
-		}
-
-		const value = this.source.substring(start, this.pos);
-		this.addToken(TokenType.COMMENT, value, value.length);
-
-		// A version directive written with whitespace (`// @version=5`,
-		// `//@version = 5`) lands here as a COMMENT rather than an ANNOTATION.
-		// Still scan it for the version so detection is whitespace-tolerant,
-		// but DON'T reclassify it as an annotation: doing so would turn every
-		// `// @param` / `// @function` doc comment into an annotation token and
-		// cascade the parser. see G004
-		this.extractVersionFromAnnotation(value);
-	}
-
-	private extractVersionFromAnnotation(annotation: string): void {
-		// Parse //@version=X where X is 2, 4, 5, or 6. Tolerate whitespace
-		// between // and @version and around the = (e.g. `// @version = 5`).
-		//
-		// FIRST wins, not last. TV takes the leading directive and ignores any
-		// later one; last-wins let a `//@version=4` further down the file
-		// retroactively rewrite the declared version, and because the version
-		// is consumed at different points (the multiline-string rule below
-		// reads it mid-lex, the checker reads it after) the file ended up
-		// validated against no coherent version at all. see INV146
-		if (this.detectedVersion !== null) return;
-		const match = annotation.match(/\/\/\s*@version\s*=\s*(\d+)/);
-
-		if (match) {
-			this.detectedVersion = match[1];
-		}
-	}
-
-	getDetectedVersion(): string | null {
-		return this.detectedVersion;
-	}
-
-	private scanBlockComment(): void {
-		const start = this.pos - 1;
-		const startLine = this.line;
-		const startColumn = this.column - 1;
-		// Pine has NO block comments - TV lexes `/` `*` as two operator
-		// tokens and the parse fails emergently: a line-leading `/*` gets
-		// CE10156 'Syntax error at input "new line"' at column 1, a
-		// mid-line one gets CE10156 'Syntax error at input "*"' at the
-		// `*` (both probed - see INV043). We keep consuming the comment
-		// as trivia so one stray C-style comment doesn't shred the rest
-		// of the file, but report TV's error at TV's anchor.
-		this.lexerErrors.push(
-			this.atLineStart
-				? {
-						line: startLine,
-						column: 1,
-						message: 'Syntax error at input "new line"',
-					}
-				: {
-						line: startLine,
-						column: startColumn + 1,
-						message: 'Syntax error at input "*"',
-					},
-		);
-		this.advance(); // consume *
-
-		while (!this.isAtEnd()) {
-			if (this.peek() === "*" && this.peekNext() === "/") {
-				this.advance(); // *
-				this.advance(); // /
-				break;
-			}
-
-			if (
-				this.peek() === "\n" ||
-				(this.peek() === "\r" && this.peekNext() !== "\n")
-			) {
-				this.line++;
-				this.column = 0;
-			}
-
-			this.advance();
-		}
-
-		const value = this.source.substring(start, this.pos);
-		this.addToken(TokenType.COMMENT, value, value.length, {
-			line: startLine,
-			column: startColumn,
-		});
-	}
-
-	/**
-	 * A triple-delimited multiline string: `"""..."""` or `'''...'''`.
-	 *
-	 * Everything between the delimiters is literal text, including the newlines
-	 * and every space used for indentation, so this scanner deliberately does
-	 * NOT apply `scanString`'s continuation rule (the one that ends a literal
-	 * when the next line starts at column 1 - see INV025). A multiline string's
-	 * lines routinely start at column 1; that is the point of the form.
-	 *
-	 * The token keeps its delimiters in `value`, exactly as the single-line form
-	 * keeps its quotes, so consumers that strip delimiters must strip three.
-	 * see INV145
-	 */
-	private scanMultilineString(quote: string): void {
-		const start = this.pos - 1;
-		const startLine = this.line;
-		const startColumn = this.column - 1;
-
-		this.advance(); // second opening delimiter
-		this.advance(); // third opening delimiter
-
-		while (!this.isAtEnd()) {
-			if (this.peek() === "\\") {
-				// Escapes still apply, so `\"""` does not close the literal.
-				this.advance();
-
-				if (!this.isAtEnd()) this.advance();
-				continue;
-			}
-
-			if (
-				this.peek() === quote &&
-				this.peekNext() === quote &&
-				this.source.charAt(this.pos + 2) === quote
-			) {
-				this.advance();
-				this.advance();
-				this.advance();
-				const value = this.source.substring(start, this.pos);
-				this.addToken(TokenType.STRING, value, value.length, {
-					line: startLine,
-					column: startColumn,
-				});
-
-				return;
-			}
-
-			if (
-				this.peek() === "\n" ||
-				(this.peek() === "\r" && this.peekNext() !== "\n")
-			) {
-				// Literal newline inside the string (\r\n breaks at the \n; a
-				// lone \r is its own break - see G005).
-				this.line++;
-				this.column = 0;
-			}
-
-			this.advance();
-		}
-
-		// Ran to EOF without the closing delimiter.
-		this.lexerErrors.push({
-			line: startLine,
-			column: startColumn + 1,
-			message: `mismatched character '<EOF>' expecting '${quote.repeat(3)}'`,
-		});
-		const value = this.source.substring(start, this.pos);
-		this.addToken(TokenType.STRING, value, value.length, {
-			line: startLine,
-			column: startColumn,
-		});
-	}
-
-	private scanString(quote: string): void {
-		const start = this.pos - 1;
-		const startLine = this.line;
-		const startColumn = this.column - 1;
-
-		while (this.peek() !== quote && !this.isAtEnd()) {
-			if (this.peek() === "\\") {
-				this.advance(); // Skip escape char
-
-				// Valid escape sequences: \n, \t, \\, \", \', etc.
-				// Just skip the next character whatever it is
-				if (!this.isAtEnd()) {
-					this.advance(); // Skip escaped char
-				}
-			} else if (
-				this.peek() === "\n" ||
-				(this.peek() === "\r" && this.peekNext() !== "\n")
-			) {
-				// Multiline strings are valid in Pine Script v6 (though deprecated)
-				// Each wrapped line adds exactly one space regardless of indentation
-				// We preserve the raw source; normalization happens at a higher level if needed
-				// (\r\n breaks at the \n; a lone \r is its own break - see G005)
-				//
-				// The string continues onto the next line only if that line
-				// starts with whitespace or is blank. A non-whitespace char at
-				// column 1 (even the closing quote itself) terminates the
-				// literal with TV's CE10017, anchored at column 1 of the line
-				// where the literal opens. see INV025
-				const after = this.source[this.pos + 1];
-
-				if (
-					after !== undefined &&
-					after !== " " &&
-					after !== "\t" &&
-					after !== "\u00a0" &&
-					after !== "\n" &&
-					after !== "\r"
-				) {
-					// TV has TWO broken-string wordings (probed 2026-06-07,
-					// INV047 p10-p16): the v6 compiler emits CE10017 anchored
-					// at the broken line's column 1 when a closing quote
-					// exists ANYWHERE later in the source, and CE10004
-					// `mismatched character '\n' expecting <quote>` anchored
-					// at the EOL when the broken string is the source's last
-					// quote. The pre-v6 compiler ALWAYS uses the mismatched
-					// wording at the EOL (p15 - same shape, later quote
-					// present, still mismatched). see TODO #47
-					const hasLaterQuote = this.source.indexOf(quote, this.pos) !== -1;
-
-					if (this.detectedVersion === "6" && hasLaterQuote) {
-						this.lexerErrors.push({
-							line: startLine,
-							column: 1,
-							message:
-								"Missing enclosing character in the literal string. Enclose literal strings using a set of quotation marks (\") or apostrophes (') on the same code line.",
-						});
-					} else {
-						this.lexerErrors.push({
-							line: this.line,
-							column: this.column,
-							message: `mismatched character '\\n' expecting '${quote}'`,
-						});
-					}
-
-					const broken = this.source.substring(start, this.pos);
-					this.addToken(TokenType.STRING, broken, broken.length, {
-						line: startLine,
-						column: startColumn,
-					});
-					// The statement holding the broken literal is unsalvageable,
-					// and the closers for any openers counted on it are usually
-					// swallowed by the shifted string lexing that follows (e.g.
-					// `"],` lexes as one STRING token). Leaving bracketDepth > 0
-					// here suppressed NEWLINE emission for the REST of the file,
-					// silently merging every later statement - declarations
-					// evaporated and hundreds of phantom "undefined variable"
-					// records followed. Treat the break as a hard statement
-					// boundary instead: reset the depth bookkeeping so the next
-					// line lexes fresh. see INV047
-					this.bracketDepth = 0;
-					this.openBrackets.length = 0;
-
-					return; // the line break is re-scanned as a normal NEWLINE
-				}
-
-				this.line++;
-				this.column = 0;
-				this.advance(); // consume the newline
-			} else {
-				this.advance();
-			}
-		}
-
-		if (this.isAtEnd()) {
-			// Unterminated string - reached end of file without closing quote
-			this.lexerErrors.push({
-				line: startLine,
-				column: startColumn + (this.pos - start),
-				message: `mismatched character '<EOF>' expecting '${quote}'`,
-			});
-			const value = this.source.substring(start, this.pos);
-			this.addToken(TokenType.STRING, value, value.length, {
-				line: startLine,
-				column: startColumn,
-			});
-
-			return;
-		}
-
-		this.advance(); // Closing quote
-		const value = this.source.substring(start, this.pos);
-		this.addToken(TokenType.STRING, value, value.length, {
-			line: startLine,
-			column: startColumn,
-		});
-	}
-
-	private scanNumber(): void {
-		const start = this.pos - 1;
-
-		while (this.isDigit(this.peek())) {
-			this.advance();
-		}
-
-		// Decimal part - handle both "1.5" and "1." (trailing dot)
-		if (this.peek() === ".") {
-			const nextChar = this.peekNext();
-
-			// Check if this is a decimal point (followed by digit) or trailing dot (followed by non-identifier)
-			if (this.isDigit(nextChar) || !this.isAlpha(nextChar)) {
-				this.advance(); // consume .
-
-				while (this.isDigit(this.peek())) {
-					this.advance();
-				}
-			}
-		}
-
-		// Scientific notation
-		if (this.peek() === "e" || this.peek() === "E") {
-			this.advance();
-
-			if (this.peek() === "+" || this.peek() === "-") {
-				this.advance();
-			}
-
-			while (this.isDigit(this.peek())) {
-				this.advance();
-			}
-		}
-
-		const value = this.source.substring(start, this.pos);
-		this.addToken(TokenType.NUMBER, value, value.length);
-	}
-
-	/**
-	 * Scan a number that starts with a decimal point (e.g., .1, .5, .123)
-	 * The '.' has already been consumed when this is called.
-	 */
-	private scanNumberStartingWithDot(): void {
-		const start = this.pos - 1; // Include the '.' we already consumed
-
-		// Consume digits after the decimal point
-		while (this.isDigit(this.peek())) {
-			this.advance();
-		}
-
-		// Scientific notation (e.g., .1e5)
-		if (this.peek() === "e" || this.peek() === "E") {
-			this.advance();
-
-			if (this.peek() === "+" || this.peek() === "-") {
-				this.advance();
-			}
-
-			while (this.isDigit(this.peek())) {
-				this.advance();
-			}
-		}
-
-		const value = this.source.substring(start, this.pos);
-		this.addToken(TokenType.NUMBER, value, value.length);
-	}
-
-	private scanHexColor(): void {
-		const start = this.pos - 1; // Include the '#'
-
-		// Count hex digits after #
-		let hexCount = 0;
-
-		while (this.isHexDigit(this.peek()) && hexCount < 8) {
-			this.advance();
-			hexCount++;
-		}
-
-		// Valid hex colors are #RRGGBB (6 digits) or #RRGGBBAA (8 digits)
-		if (hexCount === 6 || hexCount === 8) {
-			const value = this.source.substring(start, this.pos);
-			this.addToken(TokenType.COLOR, value, value.length);
-		} else {
-			// Invalid hex color - treat as error or identifier
-			// For now, just consume it as an identifier-like token
-			while (this.isAlphaNumeric(this.peek())) {
-				this.advance();
-			}
-
-			const value = this.source.substring(start, this.pos);
-			this.addToken(TokenType.IDENTIFIER, value, value.length);
-		}
-	}
-
-	private scanIdentifier(): void {
-		const start = this.pos - 1;
-
-		while (this.isAlphaNumeric(this.peek()) || this.peek() === "_") {
-			this.advance();
-		}
-
-		const value = this.source.substring(start, this.pos);
-
-		// Check for boolean literals first (before keywords)
-		if (value === "true" || value === "false") {
-			this.addToken(TokenType.BOOL, value, value.length);
-		} else if (LEXER_KEYWORDS.has(value)) {
-			this.addToken(TokenType.KEYWORD, value, value.length);
-		} else {
-			this.addToken(TokenType.IDENTIFIER, value, value.length);
-		}
-	}
-
-	private advance(): string {
-		const char = this.source.charAt(this.pos);
-		this.pos++;
-		this.column++;
-
-		return char;
-	}
-
-	private peek(): string {
-		if (this.isAtEnd()) return "\0";
-
-		return this.source.charAt(this.pos);
-	}
-
-	private peekNext(): string {
-		if (this.pos + 1 >= this.source.length) return "\0";
-
-		return this.source.charAt(this.pos + 1);
-	}
-
-	private isAtEnd(): boolean {
-		return this.pos >= this.source.length;
-	}
-
-	private isDigit(char: string): boolean {
-		return char >= "0" && char <= "9";
-	}
-
-	private isHexDigit(char: string): boolean {
-		return (
-			(char >= "0" && char <= "9") ||
-			(char >= "a" && char <= "f") ||
-			(char >= "A" && char <= "F")
-		);
-	}
-
-	private isAlpha(char: string): boolean {
-		return (
-			(char >= "a" && char <= "z") ||
-			(char >= "A" && char <= "Z") ||
-			char === "_"
-		);
-	}
-
-	private isAlphaNumeric(char: string): boolean {
-		return this.isAlpha(char) || this.isDigit(char);
-	}
-
-	// `at` overrides the token's stamped position - required for tokens
-	// that can span lines (strings, block comments), where the default
-	// `this.column - length` arithmetic lands on the END line with a
-	// nonsense (often negative) column. see TODO #37 / INV019.
-	private addToken(
-		type: TokenType,
-		value: string,
-		length: number,
-		at?: { line: number; column: number },
-	): void {
-		// Only set indent on the first real token of each line
-		let indentValue = this.atLineStart ? this.currentIndent : undefined;
-
-		// Special case: 'if' after 'else' should have the same indentation as 'else'
-		// This handles 'else if' statements where both tokens should have the same indent
-		if (type === TokenType.KEYWORD && value === "if" && !this.atLineStart) {
-			// Check if the previous token was 'else' on the same line
-			const prevToken = this.tokens[this.tokens.length - 1];
-
-			if (
-				prevToken &&
-				prevToken.type === TokenType.KEYWORD &&
-				prevToken.value === "else" &&
-				prevToken.line === this.line
-			) {
-				indentValue = prevToken.indent;
-			}
-		}
-
-		// Mark that we're no longer at the start of the line (except for NEWLINE tokens)
-		if (
-			type !== TokenType.NEWLINE &&
-			type !== TokenType.WHITESPACE &&
-			this.atLineStart
-		) {
-			this.atLineStart = false;
-
-			// A comment-only line neither trips nor clears the v5 paren-wrap
-			// rule (probed: TV ignores it). A closer on its own line draws a
-			// different TV wording at a joined-line anchor and is left alone.
-			// see INV176
-			if (this.pendingParenWrap && type !== TokenType.COMMENT) {
-				if (
-					this.currentIndent % 4 === 0 &&
-					type !== TokenType.RPAREN &&
-					type !== TokenType.RBRACKET
-				) {
-					const anchor = this.joinedWrapAnchor(this.pendingParenWrap);
-					this.lexerErrors.push({
-						line: anchor.line,
-						column: anchor.column,
-						message:
-							'Syntax error at input "end of line without line continuation"',
-					});
-				}
-
-				this.pendingParenWrap = null;
-			}
-		}
-
-		this.tokens.push({
-			type,
-			value,
-			line: at?.line ?? this.line,
-			column: at?.column ?? this.column - length,
-			length,
-			indent: indentValue,
-		});
-	}
+  private source: string;
+  private pos: number = 0;
+  private line: number = 1;
+  private column: number = 1;
+  private tokens: Token[] = [];
+  private currentIndent: number = 0; // Track current line's indentation
+  private atLineStart: boolean = true; // Track if we're at the start of a line
+  private lexerErrors: LexerError[] = [];
+  private detectedVersion: string | null = null;
+  // One CE10005 per file - NBSP-obfuscated scripts carry thousands. see INV029
+  private nbspErrorReported: boolean = false;
+  // Open ( / [ nesting depth. Newlines inside a bracket group are
+  // continuations, not statement boundaries, so no NEWLINE token is
+  // emitted while depth > 0 - this is what lets `x = (` ... `)` and
+  // multi-line calls/tuples span lines. Clamped at 0 so a stray `)` in
+  // a broken file can't suppress newlines for the rest of the source.
+  // see TODO #34 / plan/31.
+  private bracketDepth: number = 0;
+  // Positions of currently-open ( / [ so an opener still unmatched at
+  // EOF can be reported where TV reports it: the earliest unclosed `(`
+  // is CE10015 "Syntax error: Missing closing parenthesis" anchored at
+  // the opener's line, column 1; an unclosed `[` is CE10156 at the
+  // bracket itself. A closer pops the nearest opener regardless of
+  // which character it is - mismatched pairs only occur in already-
+  // broken files. see INV046
+  private openBrackets: Array<{
+    char: "(" | "[";
+    line: number;
+    column: number;
+  }> = [];
+  // v5 ONLY: a line wrapped inside ( ) still may not continue at an indent
+  // that is a multiple of 4 (tabs count 4). v6 lifted that restriction for
+  // parenthesised wraps, and the manual documents only the v6 rule, so the
+  // v5 case is invisible from the docs. TV reports CE10156 anchored at the
+  // EOL of the line being wrapped; a comment-only line in between is
+  // ignored. Set at a line break while a `(` is open, consumed by the next
+  // line's first real token. see INV176
+  private pendingParenWrap: { line: number; column: number } | null = null;
+
+  constructor(source: string) {
+    this.source = source;
+  }
+
+  tokenize(): Token[] {
+    while (this.pos < this.source.length) {
+      this.scanToken();
+    }
+
+    // An opener still unmatched at EOF: report the EARLIEST one (TV
+    // stops at its first error, so one record per file). see INV046
+    const unclosed = this.openBrackets[0];
+
+    if (unclosed) {
+      this.lexerErrors.push(
+        unclosed.char === "("
+          ? {
+              line: unclosed.line,
+              column: 1,
+              message: "Syntax error: Missing closing parenthesis",
+            }
+          : {
+              line: unclosed.line,
+              column: unclosed.column,
+              message: 'Syntax error at input "["',
+            },
+      );
+    }
+
+    this.addToken(TokenType.EOF, "", 0);
+
+    return this.tokens;
+  }
+
+  getErrors(): LexerError[] {
+    return this.lexerErrors;
+  }
+
+  private scanToken(): void {
+    const _start = this.pos;
+    const _startColumn = this.column;
+    const char = this.advance();
+
+    switch (char) {
+      case " ":
+      case "\t":
+      case "\u00a0":
+        // Count indentation at line start. U+00A0 (non-breaking
+        // space) appears as indentation in real published scripts;
+        // silently dropping it gave body tokens indent 0 and made
+        // function bodies swallow the rest of the file. see plan/31.
+        // (TV does NOT treat NBSP indentation as block indent - it
+        // wrap-joins such lines - but our lenient reading keeps
+        // bodies intact; see INV029 probe b.)
+        if (this.atLineStart) {
+          this.currentIndent += char === "\t" ? 4 : 1;
+        } else if (char === "\u00a0" && this.bracketDepth === 0 && !this.nbspErrorReported) {
+          // Mid-line NBSP at bracket depth 0 is a lexical error in
+          // TV: CE10005 "no viable alternative at character",
+          // anchored at the NBSP itself. Inside ( ) / [ ] TV accepts
+          // NBSP as plain whitespace (both probed 2026-06-04 - see
+          // INV029). Report only the FIRST one: NBSP-obfuscated
+          // published scripts carry tens of thousands of NBSPs (one
+          // corpus file has 41749), and TV itself emits exactly one
+          // CE10005 and stops. Recover by treating it as a plain
+          // space so downstream diagnostics survive.
+          this.nbspErrorReported = true;
+          this.lexerErrors.push({
+            line: this.line,
+            column: this.column - 1,
+            message: 'no viable alternative at character "\u00a0"',
+          });
+        }
+
+        break;
+
+      case "\r":
+        // A lone \r is a line terminator; \r\n pairs break at the \n.
+        // TV, VS Code, and LSP all split on \r\n | \r | \n, so a file
+        // with \r\r\n endings holds TWO breaks per line and a CR-only
+        // file breaks at every \r. Skipping \r entirely made CR-only
+        // files one giant comment line and halved \r\r\n line numbers
+        // against TV's. see G005 / TODO #38.
+        if (this.peek() !== "\n") {
+          this.handleLineBreak();
+        }
+
+        break;
+
+      case "\n":
+        this.handleLineBreak();
+        break;
+
+      case "(":
+        this.bracketDepth++;
+        this.openBrackets.push({
+          char: "(",
+          line: this.line,
+          column: this.column - 1,
+        });
+        this.addToken(TokenType.LPAREN, "(", 1);
+        break;
+      case ")":
+        this.bracketDepth = Math.max(0, this.bracketDepth - 1);
+        this.openBrackets.pop();
+        this.addToken(TokenType.RPAREN, ")", 1);
+        break;
+      case "[":
+        this.bracketDepth++;
+        this.openBrackets.push({
+          char: "[",
+          line: this.line,
+          column: this.column - 1,
+        });
+        this.addToken(TokenType.LBRACKET, "[", 1);
+        break;
+      case "]":
+        this.bracketDepth = Math.max(0, this.bracketDepth - 1);
+        this.openBrackets.pop();
+        this.addToken(TokenType.RBRACKET, "]", 1);
+        break;
+      case ",":
+        this.addToken(TokenType.COMMA, ",", 1);
+        break;
+      case ".":
+        // Check if this is a number starting with . (e.g., .1 = 0.1)
+        if (this.isDigit(this.peek())) {
+          this.scanNumberStartingWithDot();
+        } else {
+          this.addToken(TokenType.DOT, ".", 1);
+        }
+
+        break;
+      case "?":
+        this.addToken(TokenType.TERNARY, "?", 1);
+        break;
+
+      case "+":
+        if (this.peek() === "=") {
+          this.advance();
+          this.addToken(TokenType.COMPOUND_ASSIGN, "+=", 2);
+        } else {
+          this.addToken(TokenType.PLUS, "+", 1);
+        }
+
+        break;
+      case "-":
+        if (this.peek() === "=") {
+          this.advance();
+          this.addToken(TokenType.COMPOUND_ASSIGN, "-=", 2);
+        } else {
+          this.addToken(TokenType.MINUS, "-", 1);
+        }
+
+        break;
+      case "*":
+        if (this.peek() === "=") {
+          this.advance();
+          this.addToken(TokenType.COMPOUND_ASSIGN, "*=", 2);
+        } else {
+          this.addToken(TokenType.MULTIPLY, "*", 1);
+        }
+
+        break;
+      case "%":
+        if (this.peek() === "=") {
+          this.advance();
+          this.addToken(TokenType.COMPOUND_ASSIGN, "%=", 2);
+        } else {
+          this.addToken(TokenType.MODULO, "%", 1);
+        }
+
+        break;
+
+      case "/":
+        if (this.peek() === "/") {
+          this.scanComment();
+        } else if (this.peek() === "*") {
+          this.scanBlockComment();
+        } else if (this.peek() === "=") {
+          this.advance();
+          this.addToken(TokenType.COMPOUND_ASSIGN, "/=", 2);
+        } else {
+          this.addToken(TokenType.DIVIDE, "/", 1);
+        }
+
+        break;
+
+      case ":":
+        if (this.peek() === "=") {
+          this.advance();
+          this.addToken(TokenType.ASSIGN, ":=", 2);
+        } else {
+          this.addToken(TokenType.COLON, ":", 1);
+        }
+
+        break;
+
+      case "=":
+        if (this.peek() === "=") {
+          this.advance();
+          this.addToken(TokenType.COMPARE, "==", 2);
+        } else if (this.peek() === ">") {
+          this.advance();
+          this.addToken(TokenType.ARROW, "=>", 2);
+        } else {
+          this.addToken(TokenType.ASSIGN, "=", 1);
+        }
+
+        break;
+
+      case "!":
+        if (this.peek() === "=") {
+          this.advance();
+          this.addToken(TokenType.COMPARE, "!=", 2);
+        } else {
+          // Pine Script uses 'not' for negation, not '!'
+          // Produce an error token so the parser can report a meaningful error
+          this.addToken(TokenType.ERROR, "!", 1);
+        }
+
+        break;
+
+      case "<":
+        if (this.peek() === "=") {
+          this.advance();
+          this.addToken(TokenType.COMPARE, "<=", 2);
+        } else {
+          this.addToken(TokenType.COMPARE, "<", 1);
+        }
+
+        break;
+
+      case ">":
+        if (this.peek() === "=") {
+          this.advance();
+          this.addToken(TokenType.COMPARE, ">=", 2);
+        } else {
+          this.addToken(TokenType.COMPARE, ">", 1);
+        }
+
+        break;
+
+      case "#":
+        // Check for hex color literal (#RRGGBB or #RRGGBBAA)
+        this.scanHexColor();
+        break;
+
+      case '"':
+      case "'":
+        // Three delimiters open a MULTILINE string (`"""..."""` /
+        // `'''...'''`), added to Pine in April 2026. It is a distinct
+        // literal form, not a run of single-line strings: the newlines
+        // between the delimiters are literal text, so the scanner must
+        // consume them rather than treat the line break as the broken-
+        // string error a single-pair literal would draw. see INV145
+        if (this.peek() === char && this.peekNext() === char) {
+          this.scanMultilineString(char);
+        } else {
+          this.scanString(char);
+        }
+
+        break;
+
+      default:
+        if (this.isDigit(char)) {
+          this.scanNumber();
+        } else if (this.isAlpha(char)) {
+          this.scanIdentifier();
+        }
+
+        break;
+    }
+  }
+
+  /**
+   * TV reports the v5 paren-wrap error in JOINED-LINE coordinates: the
+   * statement's first line, with columns accumulated over each line from
+   * there to the offending one - leading whitespace stripped, one joining
+   * space added per line. Our own anchor is the offending line's EOL, which
+   * is the same point whenever the statement is one line long (every probe in
+   * INV176 except two corpus files).
+   *
+   * The statement's start is recovered by walking BACK over continuation
+   * lines rather than by tracking it: a NEWLINE IS emitted after a trailing
+   * operator at depth 0 (`x = a or` / `    (b and` / `    c)` - the shape
+   * both outlier files have), so the lexer's newline bookkeeping does not
+   * know where the statement began. A line whose trimmed text ends in an
+   * operator, comma or opener cannot end a statement, which is a purely
+   * textual test needing no token state.
+   *
+   * v5-gated by its only caller. see INV176
+   */
+  private joinedWrapAnchor(pending: { line: number; column: number }): {
+    line: number;
+    column: number;
+  } {
+    const lineText = (n: number): string => this.source.split("\n")[n - 1] ?? "";
+
+    const continues = (n: number): boolean => {
+      const t = lineText(n)
+        .replace(/\/\/.*$/, "")
+        .trimEnd();
+
+      return /(?:[+\-*/%?:,=<>([{]|\b(?:and|or|not)|=>|:=)$/.test(t);
+    };
+
+    let start = pending.line;
+
+    while (start > 1 && continues(start - 1)) start--;
+
+    if (start === pending.line) return pending;
+    let column = 0;
+
+    for (let n = start; n <= pending.line; n++) {
+      column += lineText(n).replace(/^\s+/, "").length + 1;
+    }
+
+    return { line: start, column };
+  }
+
+  // Shared by the "\n" and lone-"\r" cases in scanToken. see G005.
+  private handleLineBreak(): void {
+    if (this.bracketDepth === 0) {
+      this.addToken(TokenType.NEWLINE, "\n", 1);
+      this.pendingParenWrap = null;
+    } else if (
+      this.detectedVersion === "5" &&
+      this.openBrackets[this.openBrackets.length - 1]?.char === "("
+    ) {
+      // `this.column` is already past the line-break character, so the
+      // EOL (TV's anchor) is one column back. see INV176
+      this.pendingParenWrap = { line: this.line, column: this.column - 1 };
+    } else {
+      this.pendingParenWrap = null;
+    }
+
+    this.line++;
+    this.column = 1;
+    this.atLineStart = true;
+    this.currentIndent = 0;
+  }
+
+  private scanComment(): void {
+    const start = this.pos - 1;
+    const _startColumn = this.column - 1;
+
+    // Advance past the second '/'
+    this.advance();
+
+    // Check for annotation (//@version=6)
+    if (this.peek() === "@") {
+      while (this.peek() !== "\n" && this.peek() !== "\r" && !this.isAtEnd()) {
+        this.advance();
+      }
+
+      const value = this.source.substring(start, this.pos);
+      this.addToken(TokenType.ANNOTATION, value, value.length);
+
+      // Extract version information
+      this.extractVersionFromAnnotation(value);
+
+      return;
+    }
+
+    // Regular comment (a lone \r terminates the line too - see G005)
+    while (this.peek() !== "\n" && this.peek() !== "\r" && !this.isAtEnd()) {
+      this.advance();
+    }
+
+    const value = this.source.substring(start, this.pos);
+    this.addToken(TokenType.COMMENT, value, value.length);
+
+    // A version directive written with whitespace (`// @version=5`,
+    // `//@version = 5`) lands here as a COMMENT rather than an ANNOTATION.
+    // Still scan it for the version so detection is whitespace-tolerant,
+    // but DON'T reclassify it as an annotation: doing so would turn every
+    // `// @param` / `// @function` doc comment into an annotation token and
+    // cascade the parser. see G004
+    this.extractVersionFromAnnotation(value);
+  }
+
+  private extractVersionFromAnnotation(annotation: string): void {
+    // Parse //@version=X where X is 2, 4, 5, or 6. Tolerate whitespace
+    // between // and @version and around the = (e.g. `// @version = 5`).
+    //
+    // FIRST wins, not last. TV takes the leading directive and ignores any
+    // later one; last-wins let a `//@version=4` further down the file
+    // retroactively rewrite the declared version, and because the version
+    // is consumed at different points (the multiline-string rule below
+    // reads it mid-lex, the checker reads it after) the file ended up
+    // validated against no coherent version at all. see INV146
+    if (this.detectedVersion !== null) return;
+    const match = annotation.match(/\/\/\s*@version\s*=\s*(\d+)/);
+
+    if (match) {
+      this.detectedVersion = match[1];
+    }
+  }
+
+  getDetectedVersion(): string | null {
+    return this.detectedVersion;
+  }
+
+  private scanBlockComment(): void {
+    const start = this.pos - 1;
+    const startLine = this.line;
+    const startColumn = this.column - 1;
+    // Pine has NO block comments - TV lexes `/` `*` as two operator
+    // tokens and the parse fails emergently: a line-leading `/*` gets
+    // CE10156 'Syntax error at input "new line"' at column 1, a
+    // mid-line one gets CE10156 'Syntax error at input "*"' at the
+    // `*` (both probed - see INV043). We keep consuming the comment
+    // as trivia so one stray C-style comment doesn't shred the rest
+    // of the file, but report TV's error at TV's anchor.
+    this.lexerErrors.push(
+      this.atLineStart
+        ? {
+            line: startLine,
+            column: 1,
+            message: 'Syntax error at input "new line"',
+          }
+        : {
+            line: startLine,
+            column: startColumn + 1,
+            message: 'Syntax error at input "*"',
+          },
+    );
+    this.advance(); // consume *
+
+    while (!this.isAtEnd()) {
+      if (this.peek() === "*" && this.peekNext() === "/") {
+        this.advance(); // *
+        this.advance(); // /
+        break;
+      }
+
+      if (this.peek() === "\n" || (this.peek() === "\r" && this.peekNext() !== "\n")) {
+        this.line++;
+        this.column = 0;
+      }
+
+      this.advance();
+    }
+
+    const value = this.source.substring(start, this.pos);
+    this.addToken(TokenType.COMMENT, value, value.length, {
+      line: startLine,
+      column: startColumn,
+    });
+  }
+
+  /**
+   * A triple-delimited multiline string: `"""..."""` or `'''...'''`.
+   *
+   * Everything between the delimiters is literal text, including the newlines
+   * and every space used for indentation, so this scanner deliberately does
+   * NOT apply `scanString`'s continuation rule (the one that ends a literal
+   * when the next line starts at column 1 - see INV025). A multiline string's
+   * lines routinely start at column 1; that is the point of the form.
+   *
+   * The token keeps its delimiters in `value`, exactly as the single-line form
+   * keeps its quotes, so consumers that strip delimiters must strip three.
+   * see INV145
+   */
+  private scanMultilineString(quote: string): void {
+    const start = this.pos - 1;
+    const startLine = this.line;
+    const startColumn = this.column - 1;
+
+    this.advance(); // second opening delimiter
+    this.advance(); // third opening delimiter
+
+    while (!this.isAtEnd()) {
+      if (this.peek() === "\\") {
+        // Escapes still apply, so `\"""` does not close the literal.
+        this.advance();
+
+        if (!this.isAtEnd()) this.advance();
+        continue;
+      }
+
+      if (
+        this.peek() === quote &&
+        this.peekNext() === quote &&
+        this.source.charAt(this.pos + 2) === quote
+      ) {
+        this.advance();
+        this.advance();
+        this.advance();
+        const value = this.source.substring(start, this.pos);
+        this.addToken(TokenType.STRING, value, value.length, {
+          line: startLine,
+          column: startColumn,
+        });
+
+        return;
+      }
+
+      if (this.peek() === "\n" || (this.peek() === "\r" && this.peekNext() !== "\n")) {
+        // Literal newline inside the string (\r\n breaks at the \n; a
+        // lone \r is its own break - see G005).
+        this.line++;
+        this.column = 0;
+      }
+
+      this.advance();
+    }
+
+    // Ran to EOF without the closing delimiter.
+    this.lexerErrors.push({
+      line: startLine,
+      column: startColumn + 1,
+      message: `mismatched character '<EOF>' expecting '${quote.repeat(3)}'`,
+    });
+    const value = this.source.substring(start, this.pos);
+    this.addToken(TokenType.STRING, value, value.length, {
+      line: startLine,
+      column: startColumn,
+    });
+  }
+
+  private scanString(quote: string): void {
+    const start = this.pos - 1;
+    const startLine = this.line;
+    const startColumn = this.column - 1;
+
+    while (this.peek() !== quote && !this.isAtEnd()) {
+      if (this.peek() === "\\") {
+        this.advance(); // Skip escape char
+
+        // Valid escape sequences: \n, \t, \\, \", \', etc.
+        // Just skip the next character whatever it is
+        if (!this.isAtEnd()) {
+          this.advance(); // Skip escaped char
+        }
+      } else if (this.peek() === "\n" || (this.peek() === "\r" && this.peekNext() !== "\n")) {
+        // Multiline strings are valid in Pine Script v6 (though deprecated)
+        // Each wrapped line adds exactly one space regardless of indentation
+        // We preserve the raw source; normalization happens at a higher level if needed
+        // (\r\n breaks at the \n; a lone \r is its own break - see G005)
+        //
+        // The string continues onto the next line only if that line
+        // starts with whitespace or is blank. A non-whitespace char at
+        // column 1 (even the closing quote itself) terminates the
+        // literal with TV's CE10017, anchored at column 1 of the line
+        // where the literal opens. see INV025
+        const after = this.source[this.pos + 1];
+
+        if (
+          after !== undefined &&
+          after !== " " &&
+          after !== "\t" &&
+          after !== "\u00a0" &&
+          after !== "\n" &&
+          after !== "\r"
+        ) {
+          // TV has TWO broken-string wordings (probed 2026-06-07,
+          // INV047 p10-p16): the v6 compiler emits CE10017 anchored
+          // at the broken line's column 1 when a closing quote
+          // exists ANYWHERE later in the source, and CE10004
+          // `mismatched character '\n' expecting <quote>` anchored
+          // at the EOL when the broken string is the source's last
+          // quote. The pre-v6 compiler ALWAYS uses the mismatched
+          // wording at the EOL (p15 - same shape, later quote
+          // present, still mismatched). see TODO #47
+          const hasLaterQuote = this.source.indexOf(quote, this.pos) !== -1;
+
+          if (this.detectedVersion === "6" && hasLaterQuote) {
+            this.lexerErrors.push({
+              line: startLine,
+              column: 1,
+              message:
+                "Missing enclosing character in the literal string. Enclose literal strings using a set of quotation marks (\") or apostrophes (') on the same code line.",
+            });
+          } else {
+            this.lexerErrors.push({
+              line: this.line,
+              column: this.column,
+              message: `mismatched character '\\n' expecting '${quote}'`,
+            });
+          }
+
+          const broken = this.source.substring(start, this.pos);
+          this.addToken(TokenType.STRING, broken, broken.length, {
+            line: startLine,
+            column: startColumn,
+          });
+          // The statement holding the broken literal is unsalvageable,
+          // and the closers for any openers counted on it are usually
+          // swallowed by the shifted string lexing that follows (e.g.
+          // `"],` lexes as one STRING token). Leaving bracketDepth > 0
+          // here suppressed NEWLINE emission for the REST of the file,
+          // silently merging every later statement - declarations
+          // evaporated and hundreds of phantom "undefined variable"
+          // records followed. Treat the break as a hard statement
+          // boundary instead: reset the depth bookkeeping so the next
+          // line lexes fresh. see INV047
+          this.bracketDepth = 0;
+          this.openBrackets.length = 0;
+
+          return; // the line break is re-scanned as a normal NEWLINE
+        }
+
+        this.line++;
+        this.column = 0;
+        this.advance(); // consume the newline
+      } else {
+        this.advance();
+      }
+    }
+
+    if (this.isAtEnd()) {
+      // Unterminated string - reached end of file without closing quote
+      this.lexerErrors.push({
+        line: startLine,
+        column: startColumn + (this.pos - start),
+        message: `mismatched character '<EOF>' expecting '${quote}'`,
+      });
+      const value = this.source.substring(start, this.pos);
+      this.addToken(TokenType.STRING, value, value.length, {
+        line: startLine,
+        column: startColumn,
+      });
+
+      return;
+    }
+
+    this.advance(); // Closing quote
+    const value = this.source.substring(start, this.pos);
+    this.addToken(TokenType.STRING, value, value.length, {
+      line: startLine,
+      column: startColumn,
+    });
+  }
+
+  private scanNumber(): void {
+    const start = this.pos - 1;
+
+    while (this.isDigit(this.peek())) {
+      this.advance();
+    }
+
+    // Decimal part - handle both "1.5" and "1." (trailing dot)
+    if (this.peek() === ".") {
+      const nextChar = this.peekNext();
+
+      // Check if this is a decimal point (followed by digit) or trailing dot (followed by non-identifier)
+      if (this.isDigit(nextChar) || !this.isAlpha(nextChar)) {
+        this.advance(); // consume .
+
+        while (this.isDigit(this.peek())) {
+          this.advance();
+        }
+      }
+    }
+
+    // Scientific notation
+    if (this.peek() === "e" || this.peek() === "E") {
+      this.advance();
+
+      if (this.peek() === "+" || this.peek() === "-") {
+        this.advance();
+      }
+
+      while (this.isDigit(this.peek())) {
+        this.advance();
+      }
+    }
+
+    const value = this.source.substring(start, this.pos);
+    this.addToken(TokenType.NUMBER, value, value.length);
+  }
+
+  /**
+   * Scan a number that starts with a decimal point (e.g., .1, .5, .123)
+   * The '.' has already been consumed when this is called.
+   */
+  private scanNumberStartingWithDot(): void {
+    const start = this.pos - 1; // Include the '.' we already consumed
+
+    // Consume digits after the decimal point
+    while (this.isDigit(this.peek())) {
+      this.advance();
+    }
+
+    // Scientific notation (e.g., .1e5)
+    if (this.peek() === "e" || this.peek() === "E") {
+      this.advance();
+
+      if (this.peek() === "+" || this.peek() === "-") {
+        this.advance();
+      }
+
+      while (this.isDigit(this.peek())) {
+        this.advance();
+      }
+    }
+
+    const value = this.source.substring(start, this.pos);
+    this.addToken(TokenType.NUMBER, value, value.length);
+  }
+
+  private scanHexColor(): void {
+    const start = this.pos - 1; // Include the '#'
+
+    // Count hex digits after #
+    let hexCount = 0;
+
+    while (this.isHexDigit(this.peek()) && hexCount < 8) {
+      this.advance();
+      hexCount++;
+    }
+
+    // Valid hex colors are #RRGGBB (6 digits) or #RRGGBBAA (8 digits)
+    if (hexCount === 6 || hexCount === 8) {
+      const value = this.source.substring(start, this.pos);
+      this.addToken(TokenType.COLOR, value, value.length);
+    } else {
+      // Invalid hex color - treat as error or identifier
+      // For now, just consume it as an identifier-like token
+      while (this.isAlphaNumeric(this.peek())) {
+        this.advance();
+      }
+
+      const value = this.source.substring(start, this.pos);
+      this.addToken(TokenType.IDENTIFIER, value, value.length);
+    }
+  }
+
+  private scanIdentifier(): void {
+    const start = this.pos - 1;
+
+    while (this.isAlphaNumeric(this.peek()) || this.peek() === "_") {
+      this.advance();
+    }
+
+    const value = this.source.substring(start, this.pos);
+
+    // Check for boolean literals first (before keywords)
+    if (value === "true" || value === "false") {
+      this.addToken(TokenType.BOOL, value, value.length);
+    } else if (LEXER_KEYWORDS.has(value)) {
+      this.addToken(TokenType.KEYWORD, value, value.length);
+    } else {
+      this.addToken(TokenType.IDENTIFIER, value, value.length);
+    }
+  }
+
+  private advance(): string {
+    const char = this.source.charAt(this.pos);
+    this.pos++;
+    this.column++;
+
+    return char;
+  }
+
+  private peek(): string {
+    if (this.isAtEnd()) return "\0";
+
+    return this.source.charAt(this.pos);
+  }
+
+  private peekNext(): string {
+    if (this.pos + 1 >= this.source.length) return "\0";
+
+    return this.source.charAt(this.pos + 1);
+  }
+
+  private isAtEnd(): boolean {
+    return this.pos >= this.source.length;
+  }
+
+  private isDigit(char: string): boolean {
+    return char >= "0" && char <= "9";
+  }
+
+  private isHexDigit(char: string): boolean {
+    return (
+      (char >= "0" && char <= "9") || (char >= "a" && char <= "f") || (char >= "A" && char <= "F")
+    );
+  }
+
+  private isAlpha(char: string): boolean {
+    return (char >= "a" && char <= "z") || (char >= "A" && char <= "Z") || char === "_";
+  }
+
+  private isAlphaNumeric(char: string): boolean {
+    return this.isAlpha(char) || this.isDigit(char);
+  }
+
+  // `at` overrides the token's stamped position - required for tokens
+  // that can span lines (strings, block comments), where the default
+  // `this.column - length` arithmetic lands on the END line with a
+  // nonsense (often negative) column. see TODO #37 / INV019.
+  private addToken(
+    type: TokenType,
+    value: string,
+    length: number,
+    at?: { line: number; column: number },
+  ): void {
+    // Only set indent on the first real token of each line
+    let indentValue = this.atLineStart ? this.currentIndent : undefined;
+
+    // Special case: 'if' after 'else' should have the same indentation as 'else'
+    // This handles 'else if' statements where both tokens should have the same indent
+    if (type === TokenType.KEYWORD && value === "if" && !this.atLineStart) {
+      // Check if the previous token was 'else' on the same line
+      const prevToken = this.tokens[this.tokens.length - 1];
+
+      if (
+        prevToken &&
+        prevToken.type === TokenType.KEYWORD &&
+        prevToken.value === "else" &&
+        prevToken.line === this.line
+      ) {
+        indentValue = prevToken.indent;
+      }
+    }
+
+    // Mark that we're no longer at the start of the line (except for NEWLINE tokens)
+    if (type !== TokenType.NEWLINE && type !== TokenType.WHITESPACE && this.atLineStart) {
+      this.atLineStart = false;
+
+      // A comment-only line neither trips nor clears the v5 paren-wrap
+      // rule (probed: TV ignores it). A closer on its own line draws a
+      // different TV wording at a joined-line anchor and is left alone.
+      // see INV176
+      if (this.pendingParenWrap && type !== TokenType.COMMENT) {
+        if (
+          this.currentIndent % 4 === 0 &&
+          type !== TokenType.RPAREN &&
+          type !== TokenType.RBRACKET
+        ) {
+          const anchor = this.joinedWrapAnchor(this.pendingParenWrap);
+          this.lexerErrors.push({
+            line: anchor.line,
+            column: anchor.column,
+            message: 'Syntax error at input "end of line without line continuation"',
+          });
+        }
+
+        this.pendingParenWrap = null;
+      }
+    }
+
+    this.tokens.push({
+      type,
+      value,
+      line: at?.line ?? this.line,
+      column: at?.column ?? this.column - length,
+      length,
+      indent: indentValue,
+    });
+  }
 }

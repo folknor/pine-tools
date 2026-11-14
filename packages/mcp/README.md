@@ -27,9 +27,7 @@ Add to your Claude Desktop configuration file:
   "mcpServers": {
     "pine-script": {
       "command": "node",
-      "args": [
-        "/absolute/path/to/pinescript-vscode-extension/dist/packages/mcp/bin/pine-mcp.js"
-      ]
+      "args": ["/absolute/path/to/pinescript-vscode-extension/dist/packages/mcp/bin/pine-mcp.js"]
     }
   }
 }
@@ -59,6 +57,7 @@ node dist/packages/mcp/bin/pine-mcp.js
 Validate Pine Script code and return errors/warnings.
 
 **Input:**
+
 ```json
 {
   "code": "x = 1\ny = close + open"
@@ -66,6 +65,7 @@ Validate Pine Script code and return errors/warnings.
 ```
 
 **Output:**
+
 ```json
 {
   "success": true,
@@ -79,6 +79,7 @@ Validate Pine Script code and return errors/warnings.
 Look up documentation for a symbol.
 
 **Input:**
+
 ```json
 {
   "symbol": "ta.sma"
@@ -86,6 +87,7 @@ Look up documentation for a symbol.
 ```
 
 **Output:**
+
 ```json
 {
   "found": true,
@@ -103,6 +105,7 @@ Look up documentation for a symbol.
 List available functions, optionally by namespace.
 
 **Input:**
+
 ```json
 {
   "namespace": "ta"
@@ -110,6 +113,7 @@ List available functions, optionally by namespace.
 ```
 
 **Output:**
+
 ```json
 {
   "count": 120,
@@ -123,6 +127,7 @@ List available functions, optionally by namespace.
 Format Pine Script code.
 
 **Input:**
+
 ```json
 {
   "code": "x=1\ny=2"
@@ -130,6 +135,7 @@ Format Pine Script code.
 ```
 
 **Output:**
+
 ```json
 {
   "formatted": "x = 1\ny = 2"
@@ -165,6 +171,7 @@ packages/mcp/
 ```
 
 All language intelligence is delegated to `@pinescript/language-service`, which provides:
+
 - Code validation
 - Symbol lookup
 - Completions

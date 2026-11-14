@@ -1,63 +1,30 @@
 {
-  "activationEvents": [
-    "onLanguage:pine"
+  "name": "pine-tools",
+  "displayName": "Pine Script Tools",
+  "version": "0.5.0",
+  "description": "Unofficial Pine Script v6 tools, including a language service, LSP, MCP, Visual Studio Code extension, CLI linter tool, and more.",
+  "categories": [
+    "Linters",
+    "Programming Languages",
+    "Snippets"
   ],
+  "keywords": [
+    "diagnostics",
+    "indicators",
+    "intellisense",
+    "pine",
+    "pine-script",
+    "pinescript",
+    "strategies",
+    "syntax",
+    "trading",
+    "tradingview",
+    "v6"
+  ],
+  "license": "MIT",
   "author": {
     "name": "folknor",
     "url": "https://github.com/folknor"
-  },
-  "bin": {
-    "pine-lsp": "./dist/packages/lsp/bin/pine-lsp.js",
-    "pine-mcp": "./dist/packages/mcp/bin/pine-mcp.js",
-    "pine-validate": "./dist/packages/cli/src/cli.js"
-  },
-  "categories": [
-    "Programming Languages",
-    "Linters",
-    "Snippets"
-  ],
-  "contributes": {
-    "commands": [
-      {
-        "command": "pine.validate",
-        "title": "Pine: Validate current file"
-      },
-      {
-        "command": "pine.showDocs",
-        "title": "Pine: Show docs for symbol"
-      }
-    ],
-    "configuration": {
-      "properties": {
-        "pine.applyFileAssociation": {
-          "default": true,
-          "description": "On activation, ensure files.associations maps *.pine to the pine language.",
-          "type": "boolean"
-        }
-      },
-      "title": "Pine Script Extension"
-    },
-    "grammars": [
-      {
-        "language": "pine",
-        "path": "./syntaxes/pine.tmLanguage.json",
-        "scopeName": "source.pine"
-      }
-    ],
-    "languages": [
-      {
-        "aliases": [
-          "Pine",
-          "Pine Script",
-          "pine"
-        ],
-        "configuration": "./language-configuration.json",
-        "extensions": [
-          ".pine"
-        ],
-        "id": "pine"
-      }
-    ]
   },
   "contributors": [
     {
@@ -65,62 +32,17 @@
       "url": "https://github.com/jpantsjoha"
     }
   ],
-  "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.30.0",
-    "glob": "^13.0.6",
-    "vscode-languageclient": "^10.1.0",
-    "vscode-languageserver": "^10.1.0",
-    "vscode-languageserver-textdocument": "^1.0.12",
-    "zod": "^4.4.3"
-  },
-  "description": "Unofficial Pine Script v6 tools, including a language service, LSP, MCP, Visual Studio Code extension, CLI linter tool, and more.",
-  "devDependencies": {
-    "@oxlint/plugins": "1.93.0",
-    "@types/node": "^26.3.0",
-    "@types/turndown": "^5.0.6",
-    "@types/vscode": "^1.134.0",
-    "@vitest/ui": "^4.1.11",
-    "@vscode/vsce": "^3.9.2",
-    "@vscode/vsce-sign": "^2.1.0",
-    "esbuild": "^0.28.2",
-    "fast-check": "^4.9.0",
-    "husky": "^9.1.7",
-    "keytar": "^7.9.0",
-    "oxfmt": "0.78.0",
-    "oxlint": "1.93.0",
-    "puppeteer": "^25.8.0",
-    "tslib": "^2.8.1",
-    "turndown": "^7.2.4",
-    "turndown-plugin-gfm": "^1.0.2",
-    "typescript": "7.0.2",
-    "vitest": "^4.1.11"
-  },
-  "displayName": "Pine Script Tools",
-  "engines": {
-    "vscode": "^1.125.0"
-  },
-  "keywords": [
-    "pine",
-    "pinescript",
-    "pine-script",
-    "tradingview",
-    "trading",
-    "indicators",
-    "strategies",
-    "syntax",
-    "intellisense",
-    "diagnostics",
-    "v6"
-  ],
-  "license": "MIT",
-  "main": "./dist/packages/vscode/src/extension.js",
-  "name": "pine-tools",
-  "packageManager": "pnpm",
-  "publisher": "folknor",
   "repository": {
     "type": "git",
     "url": "https://github.com/folknor/pine-tools.git"
   },
+  "publisher": "folknor",
+  "bin": {
+    "pine-lsp": "./dist/packages/lsp/bin/pine-lsp.js",
+    "pine-mcp": "./dist/packages/mcp/bin/pine-mcp.js",
+    "pine-validate": "./dist/packages/cli/src/cli.js"
+  },
+  "main": "./dist/packages/vscode/src/extension.js",
   "scripts": {
     "audit:fixtures": "pnpm run build:tsc && node scripts/audit-fixtures.mjs",
     "build": "node scripts/build-extension.js",
@@ -170,5 +92,83 @@
     "test:watch": "vitest",
     "watch": "node scripts/build-extension.js --watch"
   },
-  "version": "0.5.0"
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "glob": "^13.0.6",
+    "vscode-languageclient": "^10.1.0",
+    "vscode-languageserver": "^10.1.0",
+    "vscode-languageserver-textdocument": "^1.0.12",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@oxlint/plugins": "1.93.0",
+    "@types/node": "^26.3.0",
+    "@types/turndown": "^5.0.6",
+    "@types/vscode": "^1.134.0",
+    "@vitest/ui": "^4.1.11",
+    "@vscode/vsce": "^3.9.2",
+    "@vscode/vsce-sign": "^2.1.0",
+    "esbuild": "^0.28.2",
+    "fast-check": "^4.9.0",
+    "husky": "^9.1.7",
+    "keytar": "^7.9.0",
+    "oxfmt": "0.78.0",
+    "oxlint": "1.93.0",
+    "puppeteer": "^25.8.0",
+    "tslib": "^2.8.1",
+    "turndown": "^7.2.4",
+    "turndown-plugin-gfm": "^1.0.2",
+    "typescript": "7.0.2",
+    "vitest": "^4.1.11"
+  },
+  "contributes": {
+    "commands": [
+      {
+        "command": "pine.validate",
+        "title": "Pine: Validate current file"
+      },
+      {
+        "command": "pine.showDocs",
+        "title": "Pine: Show docs for symbol"
+      }
+    ],
+    "configuration": {
+      "properties": {
+        "pine.applyFileAssociation": {
+          "default": true,
+          "description": "On activation, ensure files.associations maps *.pine to the pine language.",
+          "type": "boolean"
+        }
+      },
+      "title": "Pine Script Extension"
+    },
+    "grammars": [
+      {
+        "language": "pine",
+        "path": "./syntaxes/pine.tmLanguage.json",
+        "scopeName": "source.pine"
+      }
+    ],
+    "languages": [
+      {
+        "aliases": [
+          "Pine",
+          "Pine Script",
+          "pine"
+        ],
+        "configuration": "./language-configuration.json",
+        "extensions": [
+          ".pine"
+        ],
+        "id": "pine"
+      }
+    ]
+  },
+  "activationEvents": [
+    "onLanguage:pine"
+  ],
+  "engines": {
+    "vscode": "^1.125.0"
+  },
+  "packageManager": "pnpm"
 }

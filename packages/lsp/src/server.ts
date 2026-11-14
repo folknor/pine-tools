@@ -4,11 +4,11 @@
  */
 
 import {
-	createConnection,
-	type InitializeParams,
-	type InitializeResult,
-	ProposedFeatures,
-	TextDocuments,
+  createConnection,
+  type InitializeParams,
+  type InitializeResult,
+  ProposedFeatures,
+  TextDocuments,
 } from "vscode-languageserver/node";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { PineLanguageService } from "../../language-service/src";
@@ -39,19 +39,19 @@ const languageService = new PineLanguageService();
 // ========== Lifecycle Handlers ==========
 
 connection.onInitialize((_params: InitializeParams): InitializeResult => {
-	connection.console.log("Pine Script Language Server initialized");
+  connection.console.log("Pine Script Language Server initialized");
 
-	return {
-		capabilities: getCapabilities(),
-	};
+  return {
+    capabilities: getCapabilities(),
+  };
 });
 
 connection.onInitialized(() => {
-	connection.console.log("Pine Script Language Server ready");
+  connection.console.log("Pine Script Language Server ready");
 });
 
 connection.onShutdown(() => {
-	connection.console.log("Pine Script Language Server shutting down");
+  connection.console.log("Pine Script Language Server shutting down");
 });
 
 // ========== Setup Feature Handlers ==========

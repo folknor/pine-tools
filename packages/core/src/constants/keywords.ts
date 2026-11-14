@@ -13,64 +13,64 @@
  * These tokens are classified as KEYWORD type during tokenization.
  */
 export const LEXER_KEYWORDS = new Set([
-	// Control flow
-	"if",
-	"else",
-	"for",
-	"while",
-	"break",
-	"continue",
-	"return",
-	"switch",
-	"case",
-	"default",
+  // Control flow
+  "if",
+  "else",
+  "for",
+  "while",
+  "break",
+  "continue",
+  "return",
+  "switch",
+  "case",
+  "default",
 
-	// Variable declarations
-	"var",
-	"varip",
-	"const",
+  // Variable declarations
+  "var",
+  "varip",
+  "const",
 
-	// Special values
-	"na",
+  // Special values
+  "na",
 
-	// Module system
-	"export",
-	"import",
-	"as",
+  // Module system
+  "export",
+  "import",
+  "as",
 
-	// Loop constructs
-	"in",
-	"to",
-	"by",
+  // Loop constructs
+  "in",
+  "to",
+  "by",
 
-	// User-defined types
-	"type",
-	"enum",
-	"method",
+  // User-defined types
+  "type",
+  "enum",
+  "method",
 
-	// Logical operators
-	"and",
-	"or",
-	"not",
+  // Logical operators
+  "and",
+  "or",
+  "not",
 
-	// Type keywords (base types)
-	"int",
-	"float",
-	"bool",
-	"string",
-	"color",
-	"line",
-	"label",
-	"box",
-	"table",
-	"array",
-	"matrix",
-	"map",
+  // Type keywords (base types)
+  "int",
+  "float",
+  "bool",
+  "string",
+  "color",
+  "line",
+  "label",
+  "box",
+  "table",
+  "array",
+  "matrix",
+  "map",
 
-	// Type qualifiers
-	"series",
-	"simple",
-	"input",
+  // Type qualifiers
+  "series",
+  "simple",
+  "input",
 ]);
 
 /**
@@ -78,23 +78,23 @@ export const LEXER_KEYWORDS = new Set([
  * Includes both base types and qualifiers.
  */
 export const TYPE_KEYWORDS = new Set([
-	// Base types
-	"int",
-	"float",
-	"bool",
-	"string",
-	"color",
-	"line",
-	"label",
-	"box",
-	"table",
-	"array",
-	"matrix",
-	"map",
+  // Base types
+  "int",
+  "float",
+  "bool",
+  "string",
+  "color",
+  "line",
+  "label",
+  "box",
+  "table",
+  "array",
+  "matrix",
+  "map",
 
-	// Qualifiers
-	"series",
-	"simple",
+  // Qualifiers
+  "series",
+  "simple",
 ]);
 
 /**
@@ -102,18 +102,18 @@ export const TYPE_KEYWORDS = new Set([
  * Used for parsing variable declarations like `int x = 1`.
  */
 export const VAR_TYPE_KEYWORDS = [
-	"int",
-	"float",
-	"bool",
-	"string",
-	"color",
-	"line",
-	"label",
-	"box",
-	"table",
-	"array",
-	"matrix",
-	"map",
+  "int",
+  "float",
+  "bool",
+  "string",
+  "color",
+  "line",
+  "label",
+  "box",
+  "table",
+  "array",
+  "matrix",
+  "map",
 ] as const;
 
 /**
@@ -141,28 +141,28 @@ export const VAR_TYPE_KEYWORDS = [
  *    position-blaming G001 warns about.
  */
 export const TV_RESERVED_BINDING_NAMES = new Set([
-	"and",
-	"as",
-	"break",
-	"by",
-	"continue",
-	"do",
-	"else",
-	"export",
-	"false",
-	"for",
-	"if",
-	"import",
-	"in",
-	"not",
-	"or",
-	"return",
-	"switch",
-	"to",
-	"true",
-	"var",
-	"varip",
-	"while",
+  "and",
+  "as",
+  "break",
+  "by",
+  "continue",
+  "do",
+  "else",
+  "export",
+  "false",
+  "for",
+  "if",
+  "import",
+  "in",
+  "not",
+  "or",
+  "return",
+  "switch",
+  "to",
+  "true",
+  "var",
+  "varip",
+  "while",
 ]);
 
 /**
@@ -170,43 +170,43 @@ export const TV_RESERVED_BINDING_NAMES = new Set([
  * These prevent user variables from shadowing language constructs.
  */
 export const RESERVED_KEYWORDS = [
-	// Control flow
-	"break",
-	"continue",
-	"if",
-	"else",
-	"for",
-	"while",
-	"switch",
-	"return",
+  // Control flow
+  "break",
+  "continue",
+  "if",
+  "else",
+  "for",
+  "while",
+  "switch",
+  "return",
 
-	// Module system
-	"import",
-	"export",
+  // Module system
+  "import",
+  "export",
 
-	// Boolean literals (handled specially by lexer, but reserved)
-	"true",
-	"false",
+  // Boolean literals (handled specially by lexer, but reserved)
+  "true",
+  "false",
 
-	// Logical operators
-	"and",
-	"or",
-	"not",
+  // Logical operators
+  "and",
+  "or",
+  "not",
 
-	// Variable declarations
-	"var",
-	"varip",
+  // Variable declarations
+  "var",
+  "varip",
 
-	// User-defined types
-	"type",
-	"method",
-	"enum",
+  // User-defined types
+  "type",
+  "method",
+  "enum",
 
-	// Type qualifiers
-	"series",
-	"simple",
-	"const",
+  // Type qualifiers
+  "series",
+  "simple",
+  "const",
 
-	// Special values
-	"na",
+  // Special values
+  "na",
 ] as const;

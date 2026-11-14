@@ -11,15 +11,12 @@ import { convertCompletionItem } from "../converters";
  * Setup completion handler.
  */
 export function setupCompletionHandler(
-	connection: Connection,
-	languageService: PineLanguageService,
+  connection: Connection,
+  languageService: PineLanguageService,
 ): void {
-	connection.onCompletion((params: CompletionParams) => {
-		const completions = languageService.getCompletions(
-			params.textDocument.uri,
-			params.position,
-		);
+  connection.onCompletion((params: CompletionParams) => {
+    const completions = languageService.getCompletions(params.textDocument.uri, params.position);
 
-		return completions.map(convertCompletionItem);
-	});
+    return completions.map(convertCompletionItem);
+  });
 }

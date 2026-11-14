@@ -25,12 +25,12 @@ node scripts/lint-batch.mjs --tv scripts/probes/mutate-delete-decl
 
 ## TV verdicts (`pine-lint --tv`, 2026-08-03)
 
-| script | TV |
-|---|---|
-| `shadow-only.pine` (`extend = false`, used only as `extend.none`) | clean |
-| `shadow-only-deleted.pine` (the mutant) | **clean** - so the site was a wasted probe |
-| `shadow-plus-bare.pine` (also uses `extend` bare) | clean |
-| `shadow-plus-bare-deleted.pine` (the mutant) | **`5:6 Undeclared identifier "extend"`** - a real CE10272, site correctly kept |
+| script                                                            | TV                                                                             |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `shadow-only.pine` (`extend = false`, used only as `extend.none`) | clean                                                                          |
+| `shadow-only-deleted.pine` (the mutant)                           | **clean** - so the site was a wasted probe                                     |
+| `shadow-plus-bare.pine` (also uses `extend` bare)                 | clean                                                                          |
+| `shadow-plus-bare-deleted.pine` (the mutant)                      | **`5:6 Undeclared identifier "extend"`** - a real CE10272, site correctly kept |
 
 The two deleted forms disagreeing with each other is what makes this decisive:
 the skip is keyed on whether a use depends on the declaration, not on the name

@@ -5,11 +5,11 @@
 export { getCapabilities } from "./capabilities";
 
 export {
-	convertCompletionItem,
-	convertDiagnostic,
-	convertHover,
-	convertSignatureHelp,
-	convertTextEdit,
+  convertCompletionItem,
+  convertDiagnostic,
+  convertHover,
+  convertSignatureHelp,
+  convertTextEdit,
 } from "./converters";
 
 // Note: The server is started by importing './server' directly,

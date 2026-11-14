@@ -29,7 +29,7 @@ different licenses, a structural separation is maintained:
   code - never sees third-party source code.
 - Separate, persistent **review sessions** are maintained for each relevant
   third-party project. These sessions have context about third-party
-  implementations and are consulted for analysis, comparison, and critique - 
+  implementations and are consulted for analysis, comparison, and critique -
   but they produce analysis and critique, never code, pseudocode, or
   structural blueprints.
 - This separation is enforced by tooling

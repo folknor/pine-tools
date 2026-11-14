@@ -20,25 +20,25 @@ const jsonMode = args.includes("--json");
 const file = args.find((a) => !a.startsWith("--"));
 
 if (!file) {
-	console.error("usage: compare-tv.mjs <file.pine> [--json]");
-	process.exit(1);
+  console.error("usage: compare-tv.mjs <file.pine> [--json]");
+  process.exit(1);
 }
 
 function run(spawnArgs) {
-	return new Promise((res) => {
-		const c = spawn("pine-lint", spawnArgs, { stdio: ["ignore", "pipe", "pipe"] });
-		let out = "";
-		c.stdout.on("data", (d) => (out += d));
-		c.on("close", (code) => res({ out, code }));
-	});
+  return new Promise((res) => {
+    const c = spawn("pine-lint", spawnArgs, { stdio: ["ignore", "pipe", "pipe"] });
+    let out = "";
+    c.stdout.on("data", (d) => (out += d));
+    c.on("close", (code) => res({ out, code }));
+  });
 }
 
 // Fill TV's message templates ("The function {functionName} ..." + ctx)
 // so the text is human-readable in the diff output.
 function fillTemplate(message, ctx) {
-	if (!ctx) return message;
+  if (!ctx) return message;
 
-	return message.replace(/\{(\w+)\}/g, (m, key) => ctx[key] ?? m);
+  return message.replace(/\{(\w+)\}/g, (m, key) => ctx[key] ?? m);
 }
 
 // An unparseable response means "no verdict", NOT "no errors" - diffing
@@ -47,40 +47,40 @@ function fillTemplate(message, ctx) {
 // Picks both diagnostics channels: TV's translate_light returns a
 // `warnings` array (CW codes) beside `errors` - see INV018 / TODO #36.
 function pickDiagnostics(raw) {
-	try {
-		const j = JSON.parse(raw);
+  try {
+    const j = JSON.parse(raw);
 
-		const mapDiag = (e) => ({
-			// TV sends a few diagnostics with no span at all (CE10250
-			// "Script doesn't contain any statements") - anchor those at
-			// the file start, matching our local emission. see INV045
-			line: e.start?.line ?? 1,
-			col: e.start?.column ?? 1,
-			message: fillTemplate(e.message ?? "", e.ctx),
-			// The CE/CW code when present - mutation-run.mjs groups
-			// survivors by (operator, TV code). see TODO #48
-			...(e.code ? { code: e.code } : {}),
-		});
+    const mapDiag = (e) => ({
+      // TV sends a few diagnostics with no span at all (CE10250
+      // "Script doesn't contain any statements") - anchor those at
+      // the file start, matching our local emission. see INV045
+      line: e.start?.line ?? 1,
+      col: e.start?.column ?? 1,
+      message: fillTemplate(e.message ?? "", e.ctx),
+      // The CE/CW code when present - mutation-run.mjs groups
+      // survivors by (operator, TV code). see TODO #48
+      ...(e.code ? { code: e.code } : {}),
+    });
 
-		return {
-			ok: true,
-			errors: (j.result?.errors ?? j.errors ?? []).map(mapDiag),
-			warnings: (j.result?.warnings ?? j.warnings ?? []).map(mapDiag),
-		};
-	} catch (e) {
-		return {
-			ok: false,
-			errors: [],
-			warnings: [],
-			parseError: `${e.message}; raw: ${raw.slice(0, 200)}`,
-		};
-	}
+    return {
+      ok: true,
+      errors: (j.result?.errors ?? j.errors ?? []).map(mapDiag),
+      warnings: (j.result?.warnings ?? j.warnings ?? []).map(mapDiag),
+    };
+  } catch (e) {
+    return {
+      ok: false,
+      errors: [],
+      warnings: [],
+      parseError: `${e.message}; raw: ${raw.slice(0, 200)}`,
+    };
+  }
 }
 
 const [localRes, tvRes, source] = await Promise.all([
-	run([file]),
-	run(["--tv", file]),
-	readFile(file, "utf8"),
+  run([file]),
+  run(["--tv", file]),
+  readFile(file, "utf8"),
 ]);
 
 const localE = pickDiagnostics(localRes.out);
@@ -93,18 +93,18 @@ tvE.errors = remapTvDiagnostics(source, tvE.errors);
 tvE.warnings = remapTvDiagnostics(source, tvE.warnings);
 
 if (!localE.ok || !tvE.ok) {
-	const side = !tvE.ok ? "tv" : "local";
-	const detail = (!tvE.ok ? tvE : localE).parseError;
-	const exitCode = !tvE.ok ? tvRes.code : localRes.code;
+  const side = !tvE.ok ? "tv" : "local";
+  const detail = (!tvE.ok ? tvE : localE).parseError;
+  const exitCode = !tvE.ok ? tvRes.code : localRes.code;
 
-	if (jsonMode) {
-		console.log(JSON.stringify({ file, unavailable: side, exitCode, detail }, null, 2));
-	} else {
-		console.error(`${side} side unavailable (exit ${exitCode}) - no verdict, skipping diff`);
-		console.error(`  ${detail}`);
-	}
+  if (jsonMode) {
+    console.log(JSON.stringify({ file, unavailable: side, exitCode, detail }, null, 2));
+  } else {
+    console.error(`${side} side unavailable (exit ${exitCode}) - no verdict, skipping diff`);
+    console.error(`  ${detail}`);
+  }
 
-	process.exit(2);
+  process.exit(2);
 }
 
 const local = localE.errors;
@@ -114,81 +114,84 @@ const tv = tvE.errors;
 // separately rather than counted as agreement (so a reviewer can confirm
 // the overlap is the same bug under two vocabularies).
 function diffByPosition(localList, tvList) {
-	const localByPos = new Map();
+  const localByPos = new Map();
 
-	for (const e of localList) {
-		const k = `${e.line}:${e.col}`;
+  for (const e of localList) {
+    const k = `${e.line}:${e.col}`;
 
-		if (!localByPos.has(k)) localByPos.set(k, []);
-		localByPos.get(k).push(e);
-	}
+    if (!localByPos.has(k)) localByPos.set(k, []);
+    localByPos.get(k).push(e);
+  }
 
-	const tvByPos = new Map();
+  const tvByPos = new Map();
 
-	for (const e of tvList) {
-		const k = `${e.line}:${e.col}`;
+  for (const e of tvList) {
+    const k = `${e.line}:${e.col}`;
 
-		if (!tvByPos.has(k)) tvByPos.set(k, []);
-		tvByPos.get(k).push(e);
-	}
+    if (!tvByPos.has(k)) tvByPos.set(k, []);
+    tvByPos.get(k).push(e);
+  }
 
-	const localOnly = localList.filter((e) => !tvByPos.has(`${e.line}:${e.col}`));
-	const tvOnly = tvList.filter((e) => !localByPos.has(`${e.line}:${e.col}`));
+  const localOnly = localList.filter((e) => !tvByPos.has(`${e.line}:${e.col}`));
+  const tvOnly = tvList.filter((e) => !localByPos.has(`${e.line}:${e.col}`));
 
-	const samePositionDifferentMessage = [];
+  const samePositionDifferentMessage = [];
 
-	for (const [k, locals] of localByPos.entries()) {
-		const tvs = tvByPos.get(k);
+  for (const [k, locals] of localByPos.entries()) {
+    const tvs = tvByPos.get(k);
 
-		if (!tvs) continue;
+    if (!tvs) continue;
 
-		for (const l of locals) {
-			for (const t of tvs) {
-				if (l.message !== t.message) {
-					samePositionDifferentMessage.push({
-						line: l.line,
-						col: l.col,
-						localMessage: l.message,
-						tvMessage: t.message,
-					});
-				}
-			}
-		}
-	}
+    for (const l of locals) {
+      for (const t of tvs) {
+        if (l.message !== t.message) {
+          samePositionDifferentMessage.push({
+            line: l.line,
+            col: l.col,
+            localMessage: l.message,
+            tvMessage: t.message,
+          });
+        }
+      }
+    }
+  }
 
-	return { localOnly, tvOnly, samePositionDifferentMessage };
+  return { localOnly, tvOnly, samePositionDifferentMessage };
 }
 
-const { localOnly, tvOnly, samePositionDifferentMessage } = diffByPosition(
-	local,
-	tv,
-);
+const { localOnly, tvOnly, samePositionDifferentMessage } = diffByPosition(local, tv);
 
 const warningDiff = diffByPosition(localE.warnings, tvE.warnings);
 
 if (jsonMode) {
-	console.log(JSON.stringify({
-		file,
-		local,
-		tv,
-		localOnly,
-		tvOnly,
-		samePositionDifferentMessage,
-		warnings: {
-			local: localE.warnings,
-			tv: tvE.warnings,
-			localOnly: warningDiff.localOnly,
-			tvOnly: warningDiff.tvOnly,
-			samePositionDifferentMessage: warningDiff.samePositionDifferentMessage,
-		},
-	}, null, 2));
-	process.exit(0);
+  console.log(
+    JSON.stringify(
+      {
+        file,
+        local,
+        tv,
+        localOnly,
+        tvOnly,
+        samePositionDifferentMessage,
+        warnings: {
+          local: localE.warnings,
+          tv: tvE.warnings,
+          localOnly: warningDiff.localOnly,
+          tvOnly: warningDiff.tvOnly,
+          samePositionDifferentMessage: warningDiff.samePositionDifferentMessage,
+        },
+      },
+      null,
+      2,
+    ),
+  );
+  process.exit(0);
 }
 
 console.log(`=== local (${local.length} errors) ===`);
 
 for (const e of local.slice(0, 30)) {
-	console.log(`  ${e.line}:${e.col}  ${e.message}`);
+  console.log(`  ${e.line}:${e.col}  ${e.message}`);
 }
 
 if (local.length > 30) console.log(`  … +${local.length - 30} more`);
@@ -196,7 +199,7 @@ if (local.length > 30) console.log(`  … +${local.length - 30} more`);
 console.log(`\n=== tradingview (${tv.length} errors) ===`);
 
 for (const e of tv.slice(0, 30)) {
-	console.log(`  ${e.line}:${e.col}  ${e.message}`);
+  console.log(`  ${e.line}:${e.col}  ${e.message}`);
 }
 
 if (tv.length > 30) console.log(`  … +${tv.length - 30} more`);
@@ -208,7 +211,7 @@ const localByMsg = new Map();
 for (const e of localOnly) localByMsg.set(e.message, (localByMsg.get(e.message) ?? 0) + 1);
 
 for (const [m, c] of [...localByMsg.entries()].sort((a, b) => b[1] - a[1]).slice(0, 15)) {
-	console.log(`  ${String(c).padStart(4)}  ${m}`);
+  console.log(`  ${String(c).padStart(4)}  ${m}`);
 }
 
 console.log(`\n=== tv-only (TV flags, we silent - ${tvOnly.length}) ===`);
@@ -218,33 +221,33 @@ const tvByMsg = new Map();
 for (const e of tvOnly) tvByMsg.set(e.message, (tvByMsg.get(e.message) ?? 0) + 1);
 
 for (const [m, c] of [...tvByMsg.entries()].sort((a, b) => b[1] - a[1]).slice(0, 15)) {
-	console.log(`  ${String(c).padStart(4)}  ${m}`);
+  console.log(`  ${String(c).padStart(4)}  ${m}`);
 }
 
 if (samePositionDifferentMessage.length > 0) {
-	console.log(`\n=== same-position different-message (${samePositionDifferentMessage.length}) ===`);
-	console.log("  (both linters flagged this position; usually same bug, different wording)");
+  console.log(`\n=== same-position different-message (${samePositionDifferentMessage.length}) ===`);
+  console.log("  (both linters flagged this position; usually same bug, different wording)");
 
-	for (const p of samePositionDifferentMessage.slice(0, 10)) {
-		console.log(`  ${p.line}:${p.col}`);
-		console.log(`    local: ${p.localMessage.slice(0, 90)}`);
-		console.log(`    tv:    ${p.tvMessage.slice(0, 90)}`);
-	}
+  for (const p of samePositionDifferentMessage.slice(0, 10)) {
+    console.log(`  ${p.line}:${p.col}`);
+    console.log(`    local: ${p.localMessage.slice(0, 90)}`);
+    console.log(`    tv:    ${p.tvMessage.slice(0, 90)}`);
+  }
 
-	if (samePositionDifferentMessage.length > 10) {
-		console.log(`  … +${samePositionDifferentMessage.length - 10} more`);
-	}
+  if (samePositionDifferentMessage.length > 10) {
+    console.log(`  … +${samePositionDifferentMessage.length - 10} more`);
+  }
 }
 
 // WARNING channel (CW codes) - see INV018 / TODO #36
 console.log(
-	`\n=== warnings: local ${localE.warnings.length} / tv ${tvE.warnings.length}, local-only ${warningDiff.localOnly.length} / tv-only ${warningDiff.tvOnly.length} ===`,
+  `\n=== warnings: local ${localE.warnings.length} / tv ${tvE.warnings.length}, local-only ${warningDiff.localOnly.length} / tv-only ${warningDiff.tvOnly.length} ===`,
 );
 
 for (const e of warningDiff.localOnly.slice(0, 15)) {
-	console.log(`  local-only ${e.line}:${e.col}  ${e.message.slice(0, 90)}`);
+  console.log(`  local-only ${e.line}:${e.col}  ${e.message.slice(0, 90)}`);
 }
 
 for (const e of warningDiff.tvOnly.slice(0, 15)) {
-	console.log(`  tv-only    ${e.line}:${e.col}  ${e.message.slice(0, 90)}`);
+  console.log(`  tv-only    ${e.line}:${e.col}  ${e.message.slice(0, 90)}`);
 }

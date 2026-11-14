@@ -7,31 +7,33 @@
 // Usage: node scripts/summarize-regression.mjs [--appeared|--disappeared] [--files <template-substring>]
 //   default prints both channels' category tables
 //   --files lists the per-file counts for categories matching the substring
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import path from 'node:path';
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 
 const report = JSON.parse(
-  readFileSync(path.join(root, 'lint-reports', 'regression-report.json'), 'utf8'),
+  readFileSync(path.join(root, "lint-reports", "regression-report.json"), "utf8"),
 );
 
 const args = process.argv.slice(2);
-const filesFilter = args.includes('--files') ? args[args.indexOf('--files') + 1] : null;
+const filesFilter = args.includes("--files") ? args[args.indexOf("--files") + 1] : null;
 const channels = [];
 
-if (args.includes('--appeared') || (!args.includes('--disappeared') && !filesFilter)) channels.push('appeared');
+if (args.includes("--appeared") || (!args.includes("--disappeared") && !filesFilter))
+  channels.push("appeared");
 
-if (args.includes('--disappeared') || (!args.includes('--appeared') && !filesFilter)) channels.push('disappeared');
+if (args.includes("--disappeared") || (!args.includes("--appeared") && !filesFilter))
+  channels.push("disappeared");
 
-if (filesFilter && channels.length === 0) channels.push('appeared', 'disappeared');
+if (filesFilter && channels.length === 0) channels.push("appeared", "disappeared");
 
 function template(msg) {
   return msg
     .replace(/'[^']*'/g, "'*'")
     .replace(/"[^"]*"/g, '"*"')
-    .replace(/\b\d+\b/g, 'N');
+    .replace(/\b\d+\b/g, "N");
 }
 
 for (const channel of channels) {
@@ -53,7 +55,9 @@ for (const channel of channels) {
   }
 
   const sorted = [...byTemplate.entries()].sort((a, b) => b[1].count - a[1].count);
-  console.log(`\n=== ${channel} (${sorted.reduce((s, [, e]) => s + e.count, 0)} records, ${sorted.length} categories) ===`);
+  console.log(
+    `\n=== ${channel} (${sorted.reduce((s, [, e]) => s + e.count, 0)} records, ${sorted.length} categories) ===`,
+  );
 
   for (const [t, entry] of sorted) {
     console.log(`  ${String(entry.count).padStart(5)}  ${entry.files.size} file(s)  ${t}`);

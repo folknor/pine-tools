@@ -55,7 +55,7 @@ TradingView's `pine-lint` is a reference, not the spec. It has real bugs:
 it stops at the first error, blames whitespace for a missing `)`
 elsewhere in the file, silently accepts nonsense expressions, and its
 results sometimes change run-to-run for no apparent reason. **Matching
-it is not the goal.** Our linter should catch what TV catches *and*
+it is not the goal.** Our linter should catch what TV catches _and_
 what TV misses.
 
 ### Hard rules
@@ -105,6 +105,7 @@ For every concrete TV-vs-us discrepancy we choose to act on:
    So a fix whose point is suppressing that cascade cannot be pinned by a
    fixture at all; pin the parse errors there and carry the validation half
    in a probe with the expected `pine-lint -H` output written down.
+
 2. **Open an investigation** under `investigations/INV###-name/` with
    `notes.md` and the repro file (or a pointer to the regression
    fixture). Sequential numbering, never reuse. Index entries live in
@@ -125,16 +126,17 @@ For every concrete TV-vs-us discrepancy we choose to act on:
    **Confirm TV actually answered.** An empty error list is NOT proof of
    acceptance - a crashed/timed-out `--tv` call can look identical to "TV
    reported no errors." Record `success:true` / real TV output, and when a
-   result claims "TV accepts," sanity-check that `--tv` *disagrees* with our
+   result claims "TV accepts," sanity-check that `--tv` _disagrees_ with our
    local validator somewhere (proving it reached TV, not a fallback/empty
    result). This exact ambiguity manufactured the false gotcha G002.
+
 3. **Annotate code decisions inline** with a `// see INV###` or
    `// see G###` pointer. Don't wax lyrical in the code - the long
    reasoning lives in the markdown.
-4. **Record side-knowledge as gotchas.** A gotcha is something *we
-   can't fix* that we need to remember when working - Pine language
+4. **Record side-knowledge as gotchas.** A gotcha is something _we
+   can't fix_ that we need to remember when working - Pine language
    quirks, TV linter behaviors, scraping anomalies in upstream docs.
-   It is *not* a known bug in our own code (those go in `notes/todo.md` as
+   It is _not_ a known bug in our own code (those go in `notes/todo.md` as
    work items). Examples: "TV's parser flakes on multiline strings",
    "Pine v6 deprecates multiline string literals but still parses
    them". Add `gotchas/G###.md` with as much context as possible.
@@ -152,11 +154,13 @@ so a reader can scan the entire trail of decisions from one place.
 ## Architecture: Data vs Syntax
 
 **Hardcoded in parser** (grammar fundamentals):
+
 - Keywords: `if`, `else`, `for`, `while`, `var`, `varip`, `return`, `import`, `export`, `method`, `once` (contextual - see INV177)
 - Operators: `+`, `-`, `*`, `/`, `and`, `or`, `not`, `?:`
 - Type keywords: `int`, `float`, `bool`, `string`, `color`, `array`, `matrix`, `map`
 
 **Generated from pine-data/** (API data):
+
 - Function signatures, parameters, return types
 - Built-in variables (`close`, `high`, `volume`)
 - Constants (`color.red`, `shape.circle`)
@@ -167,7 +171,7 @@ reference page's "Type" field - never guess them by namespace. The old
 `inferVariableType` / `inferConstantType` heuristics were retired for
 exactly that reason; don't reintroduce that pattern.
 
-When TV's *linter* accepts more than its *reference* documents (the reference
+When TV's _linter_ accepts more than its _reference_ documents (the reference
 under-documents accepted types - see `gotchas/G002`), or any language fact
 can't be scraped, verify it with `pine-lint --tv` (record the date) and bake
 it into the **pipeline** (`generate.ts` overrides / `union-types.ts`) so it
@@ -242,18 +246,18 @@ pnpm run lint:categorize                      # Group refreshed inventory
 
 **Use the dev tools above instead of complex shell commands.** These tools are pre-approved and avoid permission prompts:
 
-| Instead of... | Use this |
-|---------------|----------|
-| `cat > /tmp/test.js << 'EOF' ... EOF && node /tmp/test.js` | `pnpm run debug:internals -- validate 'code'` |
-| `echo 'code' > /tmp/test.pine && node dist/.../cli.js /tmp/test.pine` | `pnpm run test:snippet -- 'code'` |
-| `for f in ...; do jq ...; done` on lint reports | `pnpm run debug:internals -- analyze --filter "..."` |
-| Grepping for function definitions in pine-data | `pnpm run debug:internals -- lookup <name>` |
-| Creating temp files to test Parser/Validator | `pnpm run debug:internals -- parse 'code'` or `validate 'code'` |
-| Manually slicing large parser repros | `pnpm run debug:repro -- <file.pine> --line <N> --source parser` |
-| One-file local-vs-TV comparisons | `pnpm run debug:compare -- <file.pine>` |
-| Debugging lexer tokens and indentation | `pnpm run debug:tokens 'code'` |
-| Scanning pinescripts for v6 parse errors | `pnpm run debug:corpus --summary` or `--errors` |
-| `for f in ...; do pine-lint $f; done` loops | `node scripts/lint-batch.mjs <files\|dirs\|globs>` (also `--diff` for per-file TV diffs) |
+| Instead of...                                                         | Use this                                                                                 |
+| --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `cat > /tmp/test.js << 'EOF' ... EOF && node /tmp/test.js`            | `pnpm run debug:internals -- validate 'code'`                                            |
+| `echo 'code' > /tmp/test.pine && node dist/.../cli.js /tmp/test.pine` | `pnpm run test:snippet -- 'code'`                                                        |
+| `for f in ...; do jq ...; done` on lint reports                       | `pnpm run debug:internals -- analyze --filter "..."`                                     |
+| Grepping for function definitions in pine-data                        | `pnpm run debug:internals -- lookup <name>`                                              |
+| Creating temp files to test Parser/Validator                          | `pnpm run debug:internals -- parse 'code'` or `validate 'code'`                          |
+| Manually slicing large parser repros                                  | `pnpm run debug:repro -- <file.pine> --line <N> --source parser`                         |
+| One-file local-vs-TV comparisons                                      | `pnpm run debug:compare -- <file.pine>`                                                  |
+| Debugging lexer tokens and indentation                                | `pnpm run debug:tokens 'code'`                                                           |
+| Scanning pinescripts for v6 parse errors                              | `pnpm run debug:corpus --summary` or `--errors`                                          |
+| `for f in ...; do pine-lint $f; done` loops                           | `node scripts/lint-batch.mjs <files\|dirs\|globs>` (also `--diff` for per-file TV diffs) |
 
 The dev tools handle temp files, JSON parsing, and output formatting automatically.
 
@@ -262,7 +266,7 @@ The dev tools handle temp files, JSON parsing, and output formatting automatical
 ## Pine reference oracle (`po`)
 
 `po` (Pine v6 oracle CLI, installed on PATH) is the local source of truth for
-*what a Pine identifier is and how the language behaves* - the reference you
+_what a Pine identifier is and how the language behaves_ - the reference you
 consult while implementing builtins and reading corpus scripts. It is backed by
 a baked `pine-data` snapshot (run `po version` for the snapshot date and
 catalog counts: ~475 functions, 161 variables, 237 constants, 28 keywords,
@@ -289,6 +293,7 @@ indexed manual). Output is always text.
 ---
 
 **Library Import Resolution Usage:**
+
 ```pine
 /// @source ./libs/my-library.pine
 import User/MyLibrary/1 as myLib
@@ -302,18 +307,18 @@ x = myLib.myFunction(close)  // IntelliSense works!
 
 All API data is scraped from TradingView docs and generated:
 
-| Command | Output |
-|---------|--------|
-| `crawl` | `pine-data/raw/v6/v6-language-constructs.json` (TOC inventory of every reference section) |
-| `scrape` | `pine-data/raw/v6/complete-v6-details.json` (+ DOM mirror under `.cache/dom/`) |
-| `reextract:dom` | re-derives `overloadArgs` from the mirror, **offline** - run after every `scrape` (see below) |
-| `reextract:sections` | re-derives `returnsDescription`/`remarks`/`seeAlso` from the mirror, **offline** - run after every `scrape` (see below) |
-| `generate` | `pine-data/v6/*.ts` + `*.json` (vendor-friendly snapshot for downstream Rust/non-node consumers) |
-| `generate:libraries` | `pine-data/v6/libraries.{ts,json}` - the `export` surface of each vendored Pine library under `vendor/<Author>/<Lib>/<Version>.pine`, keyed by `Author/Lib/Version`. The checker validates imported-library member calls against this (CE10271 on unknown exports). Offline, parses with the COMPILED core parser so it needs a prior `build`. SKIPS libraries that don't parse cleanly (incomplete export set -> would cause FPs; left lenient). Re-run after vendoring/updating a library...
-| `fetch:library` | Downloads a published library's source from TV pine-facade into `vendor/<Author>/<Lib>/<Major>.pine` (the only network step in this feature; public `open_no_auth` libs only). `--from <file>` reads a newline-separated ref list. Port of piners' `pine_facade.rs`. See INV067. |
-| `generate:syntax` | `syntaxes/pine.tmLanguage.json` |
-| `scrape:manual` | `pine-data/raw/v6/manual-pages.json` (page inventory) + `.cache/manual/v6/*.html` mirror |
-| `generate:manual` | `pine-manual/v6/**.md` (per-page tree mirroring the Manual's URLs) + `README.md` index |
+| Command              | Output                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `crawl`              | `pine-data/raw/v6/v6-language-constructs.json` (TOC inventory of every reference section)                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `scrape`             | `pine-data/raw/v6/complete-v6-details.json` (+ DOM mirror under `.cache/dom/`)                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `reextract:dom`      | re-derives `overloadArgs` from the mirror, **offline** - run after every `scrape` (see below)                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `reextract:sections` | re-derives `returnsDescription`/`remarks`/`seeAlso` from the mirror, **offline** - run after every `scrape` (see below)                                                                                                                                                                                                                                                                                                                                                                        |
+| `generate`           | `pine-data/v6/*.ts` + `*.json` (vendor-friendly snapshot for downstream Rust/non-node consumers)                                                                                                                                                                                                                                                                                                                                                                                               |
+| `generate:libraries` | `pine-data/v6/libraries.{ts,json}` - the `export` surface of each vendored Pine library under `vendor/<Author>/<Lib>/<Version>.pine`, keyed by `Author/Lib/Version`. The checker validates imported-library member calls against this (CE10271 on unknown exports). Offline, parses with the COMPILED core parser so it needs a prior `build`. SKIPS libraries that don't parse cleanly (incomplete export set -> would cause FPs; left lenient). Re-run after vendoring/updating a library... |
+| `fetch:library`      | Downloads a published library's source from TV pine-facade into `vendor/<Author>/<Lib>/<Major>.pine` (the only network step in this feature; public `open_no_auth` libs only). `--from <file>` reads a newline-separated ref list. Port of piners' `pine_facade.rs`. See INV067.                                                                                                                                                                                                               |
+| `generate:syntax`    | `syntaxes/pine.tmLanguage.json`                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `scrape:manual`      | `pine-data/raw/v6/manual-pages.json` (page inventory) + `.cache/manual/v6/*.html` mirror                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `generate:manual`    | `pine-manual/v6/**.md` (per-page tree mirroring the Manual's URLs) + `README.md` index                                                                                                                                                                                                                                                                                                                                                                                                         |
 
 ### Manual (prose guide) vs Reference (API data)
 
@@ -361,7 +366,7 @@ The message is TV's own, so the checker carries no wording of its own.
 
 Every reference item also carries the prose sub-sections the structured fields
 otherwise drop, for downstream/external consumers: `returnsDescription` (the
-Returns *sentence*, distinct from the typed `returns`), `remarks` (free-text
+Returns _sentence_, distinct from the typed `returns`), `remarks` (free-text
 caveats - na-handling, every-bar-calling, side effects), and `seeAlso` (bare
 cross-ref symbol names). These are re-derived offline by `reextract:sections`
 from the `.cache/dom` mirror; **our own checker does not read them** - they are
@@ -384,7 +389,7 @@ emits that export when `libraries.ts` exists. See INV142.)
 
 **WARNING: Always run `pnpm run reextract:dom` AND `pnpm run reextract:sections`
 after any `scrape`.** A `scrape` rebuilds `complete-v6-details.json` from the
-per-function cache (`.cache/function-details/`), which holds the scrape's *own*
+per-function cache (`.cache/function-details/`), which holds the scrape's _own_
 extraction - NOT the offline re-derivation. Skipping `reextract:dom` reverts the
 variadic `overloadArgs` (e.g. `math.max` → empty) and per-overload descriptions
 to the cache's pre-fix state; skipping `reextract:sections` drops every
@@ -464,7 +469,7 @@ happens to equal the fallback; they agree by coincidence.
 
 **Be sparing with `scrape` - it hits TradingView's site.** Most type work does
 **not** need a re-scrape. The scrape captures every overloaded function's
-*per-overload* argument types into `overloadArgs` (the "overload dump") inside
+_per-overload_ argument types into `overloadArgs` (the "overload dump") inside
 `pine-data/raw/v6/complete-v6-details.json`. The union of those into a single
 type per parameter is computed **offline at generate-time** by
 `packages/pipeline/src/union-types.ts`. So to iterate the union / type-derivation
@@ -480,10 +485,10 @@ node scripts/regression-check.mjs   # verify against the snapshot baseline
 `pnpm run generate` is deterministic and offline - re-running it produces a
 byte-identical `functions.json`.
 
-**Changing what is *extracted* from the DOM is also offline now.** Every
+**Changing what is _extracted_ from the DOM is also offline now.** Every
 `scrape` mirrors each function's rendered element to `.cache/dom/<name>/{base,
 overload-<i>}.html` (gitignored - a local build artifact; we never commit TV's
-HTML to this public repo). So a DOM-*extraction* change does **not** need a
+HTML to this public repo). So a DOM-_extraction_ change does **not** need a
 re-scrape either:
 
 ```bash
@@ -497,10 +502,11 @@ node scripts/regression-check.mjs
 ```
 
 The mirror is built as a byproduct of any normal `scrape`. **Only re-scrape
-(hitting TV) when the mirror is missing or TV's DOM *structure* itself changed**
- - e.g. a new field that isn't captured in the snapshot at all. The overload arg
-widget renders dynamically per sub-anchor, so the mirror snapshots each overload
-separately (`scrape.ts` `saveDomSnapshot`). See TODO #22.
+(hitting TV) when the mirror is missing or TV's DOM _structure_ itself changed**
+
+- e.g. a new field that isn't captured in the snapshot at all. The overload arg
+  widget renders dynamically per sub-anchor, so the mirror snapshots each overload
+  separately (`scrape.ts` `saveDomSnapshot`). See TODO #22.
 
 ### Polymorphic Functions
 
@@ -528,10 +534,13 @@ TODO #17 / git log.)
 ## Key Implementation Details
 
 ### Function Overloads
+
 `hasOverloads()` in `builtins.ts` detects overloaded functions by checking for `type: "unknown"` parameters. The type checker skips positional type checking for these functions.
 
 ### Type Coercion
+
 `types.ts` handles:
+
 - `simple<T>` ↔ `series<T>` coercion
 - `series<T>` → `T` coercion (series values in simple contexts)
 - `int` ↔ `float` bidirectional coercion
@@ -547,7 +556,7 @@ TODO #17 / git log.)
 
 - **Legacy color constants** - v4/v5 scripts use bare `red`, `green`, etc. In v6, must use `color.red`. Not fixing since these are pre-v6 scripts.
 - **Invalid parameter names** - Some scripts use deprecated params like `type` (input) and `when` (strategy). These are v5 params not valid in v6.
-- **Argument type-checking is v6-only** - pine-data ships only v6 signatures, so we don't validate argument *types* on `//@version=4`/`5` scripts (their signatures differ - e.g. v4 `input`'s `type` param). Legacy scripts are left lenient; arg-type mismatches are flagged only for v6. See INV013 / G004.
+- **Argument type-checking is v6-only** - pine-data ships only v6 signatures, so we don't validate argument _types_ on `//@version=4`/`5` scripts (their signatures differ - e.g. v4 `input`'s `type` param). Legacy scripts are left lenient; arg-type mismatches are flagged only for v6. See INV013 / G004.
 - **Legacy bool contexts accept numerics** - v4/v5 auto-coerce int/float in if/while/ternary conditions and `and`/`or`/`not` operands (TV compiles with a warning; v6 errors). `boolContextOk` in `checker.ts` gates the bool-context errors accordingly; string/color operands are flagged on every version. See INV060.
 - **Nested inline switches with tuples** - Deeply nested inline switches with tuple assignments inside case bodies are not yet fully supported. Basic inline switch with tuples works.
 - **Built-in unused variable warnings - RETRACTED 2026-08-25 (see [INV168](investigations/INV168-unused-variable-builtins/notes.md)).** This entry claimed `UnifiedPineValidator` reports built-in variables/keywords as "declared but never used". It does not, and cannot: `SymbolTable.initializeBuiltins` defines every built-in variable, function, keyword and namespace with `used: true`; the SemanticAnalyzer's copy of the rule - the only one that reaches a user - populates its map solely from user declarations and parameters; and the validator's own copy was unreachable, since both the CLI and the language service keep only ERRORS from `validate()` - that dead copy has since been deleted. A 2257-file sweep found 15 warnings on built-in NAMES, every one of them correct (a user declaration shadowing the name and genuinely never read).
@@ -555,12 +564,14 @@ TODO #17 / git log.)
 ### Multiline String Behavior (v6)
 
 Multiline strings are valid but **deprecated** in v6:
+
 ```pine
 string TT = "Line 1
      Line 2"  // Each wrapped line adds exactly one space
 ```
 
 Recommended approach - concatenate with `+`:
+
 ```pine
 string TT = "Line 1 " +
      "Line 2"
@@ -581,8 +592,8 @@ installed to `~/.local/bin/pine-lint` by `pnpm run install:cli` - re-run after
 any CLI source change). Run bare, it executes our offline parser + validator;
 with `--tv` it forwards the source to TradingView's `translate_light` endpoint
 and returns TV's response instead. TradingView is the source of truth for Pine
-v6 *validity* - when our checker disagrees, TV (via `--tv`) wins. (But see the
-Methodology section above: TV *silence* is evidence, not authority.)
+v6 _validity_ - when our checker disagrees, TV (via `--tv`) wins. (But see the
+Methodology section above: TV _silence_ is evidence, not authority.)
 
 **`--tv` is not the Pine editor.** It forwards to `translate_light`, which
 typechecks but does not enforce the editor's contextual restrictions on
@@ -648,6 +659,7 @@ pnpm run debug:diff -- --count 20 --save    # Save discrepancies to JSON
 ```
 
 **What it finds:**
+
 - **Only in TradingView** - Errors we're missing (false negatives)
 - **Only in Internal** - Errors we report that TV doesn't (false positives)
 - **Different messages** - Same error, different wording
@@ -657,12 +669,12 @@ pnpm run debug:diff -- --count 20 --save    # Save discrepancies to JSON
 The standing layout, across every project. Three live folders plus one retired,
 split by durability first, subject second.
 
-| Folder | Contents | Rule |
-|---|---|---|
+| Folder       | Contents                                                                                                                                                                                                                                                      | Rule                                                                 |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
 | `reference/` | Durable in-repo reference for anyone working on or with the code - how the thing is built and why: `architecture.md`, `technical-implementation-spec.md`, `performance.md` (the durable record of measured numbers over time), invariants, protocol contracts | Citable from source as a source of truth. What it says must be true. |
-| `docs/` | Durable in-repo documentation of how the thing is used - guides, CLI reference, the consumer-facing API surface. Sometimes exposed as a hand-edited VitePress gh-pages site | Same must-be-true rule. |
-| `notes/` | Transient - work items (`todo.md`), future plans, hypotheticals, bug reports, research, analysis. Things that will die | No truth guarantee. Nothing durable cites it. |
-| `plans/` | Retired | Plan documents are transient: they go in `notes/`. |
+| `docs/`      | Durable in-repo documentation of how the thing is used - guides, CLI reference, the consumer-facing API surface. Sometimes exposed as a hand-edited VitePress gh-pages site                                                                                   | Same must-be-true rule.                                              |
+| `notes/`     | Transient - work items (`todo.md`), future plans, hypotheticals, bug reports, research, analysis. Things that will die                                                                                                                                        | No truth guarantee. Nothing durable cites it.                        |
+| `plans/`     | Retired                                                                                                                                                                                                                                                       | Plan documents are transient: they go in `notes/`.                   |
 
 `reference/` and `docs/` are both durable and both binding. The difference is
 subject, not audience: `reference/` covers how the thing is built and why - what

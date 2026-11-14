@@ -1,52 +1,52 @@
 import { PineV6 } from "../../../pine-data/v6";
 import { DocumentManager, type ParsedDocument } from "./documents";
 import {
-	type CodeActionContext,
-	type DefinitionResult,
-	format as formatImpl,
-	formatToString,
-	getAllConstantNames,
-	getAllFunctionNames,
-	getAllVariableNames,
-	getCodeActions as getCodeActionsImpl,
-	getCompletions as getCompletionsImpl,
-	getDefinition as getDefinitionImpl,
-	getDiagnostics as getDiagnosticsImpl,
-	getDocumentSymbols as getDocumentSymbolsImpl,
-	getFoldingRanges as getFoldingRangesImpl,
-	getHover as getHoverImpl,
-	getInlayHints as getInlayHintsImpl,
-	getReferences as getReferencesImpl,
-	getSemanticTokens as getSemanticTokensImpl,
-	getSemanticTokensLegend,
-	getSignatureHelp as getSignatureHelpImpl,
-	getSymbolInfo as getSymbolInfoImpl,
-	type PrepareRenameResult,
-	prepareRename as prepareRenameImpl,
-	type ReferencesOptions,
-	type RenameResult,
-	rename as renameImpl,
+  type CodeActionContext,
+  type DefinitionResult,
+  format as formatImpl,
+  formatToString,
+  getAllConstantNames,
+  getAllFunctionNames,
+  getAllVariableNames,
+  getCodeActions as getCodeActionsImpl,
+  getCompletions as getCompletionsImpl,
+  getDefinition as getDefinitionImpl,
+  getDiagnostics as getDiagnosticsImpl,
+  getDocumentSymbols as getDocumentSymbolsImpl,
+  getFoldingRanges as getFoldingRangesImpl,
+  getHover as getHoverImpl,
+  getInlayHints as getInlayHintsImpl,
+  getReferences as getReferencesImpl,
+  getSemanticTokens as getSemanticTokensImpl,
+  getSemanticTokensLegend,
+  getSignatureHelp as getSignatureHelpImpl,
+  getSymbolInfo as getSymbolInfoImpl,
+  type PrepareRenameResult,
+  prepareRename as prepareRenameImpl,
+  type ReferencesOptions,
+  type RenameResult,
+  rename as renameImpl,
 } from "./features";
 import type {
-	CodeAction,
-	CompletionItem,
-	Diagnostic,
-	DocumentSymbol,
-	FoldingRange,
-	FormattingOptions,
-	HoverInfo,
-	InlayHint,
-	Location,
-	Position,
-	Range,
-	SemanticTokensResult,
-	SignatureHelp,
-	SymbolInfo,
-	TextEdit,
+  CodeAction,
+  CompletionItem,
+  Diagnostic,
+  DocumentSymbol,
+  FoldingRange,
+  FormattingOptions,
+  HoverInfo,
+  InlayHint,
+  Location,
+  Position,
+  Range,
+  SemanticTokensResult,
+  SignatureHelp,
+  SymbolInfo,
+  TextEdit,
 } from "./types";
 
 export interface HoverOptions {
-	mode?: "full" | "summary";
+  mode?: "full" | "summary";
 }
 
 /**
@@ -71,260 +71,244 @@ export interface HoverOptions {
  * ```
  */
 export class PineLanguageService {
-	private documents = new DocumentManager();
+  private documents = new DocumentManager();
 
-	// ========== Document Management ==========
+  // ========== Document Management ==========
 
-	/**
-	 * Open a new document or replace an existing one.
-	 */
-	openDocument(uri: string, content: string, version: number): void {
-		this.documents.open(uri, content, version);
-	}
+  /**
+   * Open a new document or replace an existing one.
+   */
+  openDocument(uri: string, content: string, version: number): void {
+    this.documents.open(uri, content, version);
+  }
 
-	/**
-	 * Update an existing document with new content.
-	 */
-	updateDocument(uri: string, content: string, version: number): void {
-		this.documents.update(uri, content, version);
-	}
+  /**
+   * Update an existing document with new content.
+   */
+  updateDocument(uri: string, content: string, version: number): void {
+    this.documents.update(uri, content, version);
+  }
 
-	/**
-	 * Close a document and free resources.
-	 */
-	closeDocument(uri: string): void {
-		this.documents.close(uri);
-	}
+  /**
+   * Close a document and free resources.
+   */
+  closeDocument(uri: string): void {
+    this.documents.close(uri);
+  }
 
-	/**
-	 * Get a parsed document by URI.
-	 */
-	getDocument(uri: string): ParsedDocument | undefined {
-		return this.documents.get(uri);
-	}
+  /**
+   * Get a parsed document by URI.
+   */
+  getDocument(uri: string): ParsedDocument | undefined {
+    return this.documents.get(uri);
+  }
 
-	// ========== Language Features ==========
+  // ========== Language Features ==========
 
-	/**
-	 * Get completions at a position in a document.
-	 */
-	getCompletions(uri: string, position: Position): CompletionItem[] {
-		const doc = this.documents.get(uri);
+  /**
+   * Get completions at a position in a document.
+   */
+  getCompletions(uri: string, position: Position): CompletionItem[] {
+    const doc = this.documents.get(uri);
 
-		if (!doc) return [];
+    if (!doc) return [];
 
-		return getCompletionsImpl(doc, position);
-	}
+    return getCompletionsImpl(doc, position);
+  }
 
-	/**
-	 * Get hover information at a position in a document.
-	 */
-	getHover(
-		uri: string,
-		position: Position,
-		options?: HoverOptions,
-	): HoverInfo | null {
-		const doc = this.documents.get(uri);
+  /**
+   * Get hover information at a position in a document.
+   */
+  getHover(uri: string, position: Position, options?: HoverOptions): HoverInfo | null {
+    const doc = this.documents.get(uri);
 
-		if (!doc) return null;
+    if (!doc) return null;
 
-		return getHoverImpl(doc, position, options);
-	}
+    return getHoverImpl(doc, position, options);
+  }
 
-	/**
-	 * Get signature help at a position in a document.
-	 */
-	getSignatureHelp(uri: string, position: Position): SignatureHelp | null {
-		const doc = this.documents.get(uri);
+  /**
+   * Get signature help at a position in a document.
+   */
+  getSignatureHelp(uri: string, position: Position): SignatureHelp | null {
+    const doc = this.documents.get(uri);
 
-		if (!doc) return null;
+    if (!doc) return null;
 
-		return getSignatureHelpImpl(doc, position);
-	}
+    return getSignatureHelpImpl(doc, position);
+  }
 
-	/**
-	 * Get diagnostics (errors and warnings) for a document.
-	 */
-	getDiagnostics(uri: string): Diagnostic[] {
-		const doc = this.documents.get(uri);
+  /**
+   * Get diagnostics (errors and warnings) for a document.
+   */
+  getDiagnostics(uri: string): Diagnostic[] {
+    const doc = this.documents.get(uri);
 
-		if (!doc) return [];
+    if (!doc) return [];
 
-		return getDiagnosticsImpl(doc);
-	}
+    return getDiagnosticsImpl(doc);
+  }
 
-	/**
-	 * Format a document.
-	 */
-	format(uri: string, options?: FormattingOptions): TextEdit[] {
-		const doc = this.documents.get(uri);
+  /**
+   * Format a document.
+   */
+  format(uri: string, options?: FormattingOptions): TextEdit[] {
+    const doc = this.documents.get(uri);
 
-		if (!doc) return [];
+    if (!doc) return [];
 
-		return formatImpl(doc, options);
-	}
+    return formatImpl(doc, options);
+  }
 
-	/**
-	 * Get document symbols (outline) for a document.
-	 */
-	getDocumentSymbols(uri: string): DocumentSymbol[] {
-		const doc = this.documents.get(uri);
+  /**
+   * Get document symbols (outline) for a document.
+   */
+  getDocumentSymbols(uri: string): DocumentSymbol[] {
+    const doc = this.documents.get(uri);
 
-		if (!doc) return [];
+    if (!doc) return [];
 
-		return getDocumentSymbolsImpl(doc);
-	}
+    return getDocumentSymbolsImpl(doc);
+  }
 
-	/**
-	 * Get the definition location of a symbol at a position.
-	 */
-	getDefinition(uri: string, position: Position): DefinitionResult | null {
-		const doc = this.documents.get(uri);
+  /**
+   * Get the definition location of a symbol at a position.
+   */
+  getDefinition(uri: string, position: Position): DefinitionResult | null {
+    const doc = this.documents.get(uri);
 
-		if (!doc) return null;
+    if (!doc) return null;
 
-		return getDefinitionImpl(doc, position);
-	}
+    return getDefinitionImpl(doc, position);
+  }
 
-	/**
-	 * Find all references to a symbol at a position.
-	 */
-	getReferences(
-		uri: string,
-		position: Position,
-		options?: ReferencesOptions,
-	): Location[] {
-		const doc = this.documents.get(uri);
+  /**
+   * Find all references to a symbol at a position.
+   */
+  getReferences(uri: string, position: Position, options?: ReferencesOptions): Location[] {
+    const doc = this.documents.get(uri);
 
-		if (!doc) return [];
+    if (!doc) return [];
 
-		return getReferencesImpl(doc, position, options);
-	}
+    return getReferencesImpl(doc, position, options);
+  }
 
-	/**
-	 * Prepare rename: check if symbol can be renamed and return its range.
-	 */
-	prepareRename(uri: string, position: Position): PrepareRenameResult | null {
-		const doc = this.documents.get(uri);
+  /**
+   * Prepare rename: check if symbol can be renamed and return its range.
+   */
+  prepareRename(uri: string, position: Position): PrepareRenameResult | null {
+    const doc = this.documents.get(uri);
 
-		if (!doc) return null;
+    if (!doc) return null;
 
-		return prepareRenameImpl(doc, position);
-	}
+    return prepareRenameImpl(doc, position);
+  }
 
-	/**
-	 * Rename a symbol at a position.
-	 */
-	rename(
-		uri: string,
-		position: Position,
-		newName: string,
-	): RenameResult | null {
-		const doc = this.documents.get(uri);
+  /**
+   * Rename a symbol at a position.
+   */
+  rename(uri: string, position: Position, newName: string): RenameResult | null {
+    const doc = this.documents.get(uri);
 
-		if (!doc) return null;
+    if (!doc) return null;
 
-		return renameImpl(doc, position, newName);
-	}
+    return renameImpl(doc, position, newName);
+  }
 
-	/**
-	 * Get code actions (quick fixes) for a range in a document.
-	 */
-	getCodeActions(
-		uri: string,
-		range: Range,
-		context: CodeActionContext,
-	): CodeAction[] {
-		const doc = this.documents.get(uri);
+  /**
+   * Get code actions (quick fixes) for a range in a document.
+   */
+  getCodeActions(uri: string, range: Range, context: CodeActionContext): CodeAction[] {
+    const doc = this.documents.get(uri);
 
-		if (!doc) return [];
+    if (!doc) return [];
 
-		return getCodeActionsImpl(doc, range, context);
-	}
+    return getCodeActionsImpl(doc, range, context);
+  }
 
-	/**
-	 * Get inlay hints for a range in a document.
-	 */
-	getInlayHints(uri: string, range: Range): InlayHint[] {
-		const doc = this.documents.get(uri);
+  /**
+   * Get inlay hints for a range in a document.
+   */
+  getInlayHints(uri: string, range: Range): InlayHint[] {
+    const doc = this.documents.get(uri);
 
-		if (!doc) return [];
+    if (!doc) return [];
 
-		return getInlayHintsImpl(doc, range);
-	}
+    return getInlayHintsImpl(doc, range);
+  }
 
-	/**
-	 * Get folding ranges for a document.
-	 */
-	getFoldingRanges(uri: string): FoldingRange[] {
-		const doc = this.documents.get(uri);
+  /**
+   * Get folding ranges for a document.
+   */
+  getFoldingRanges(uri: string): FoldingRange[] {
+    const doc = this.documents.get(uri);
 
-		if (!doc) return [];
+    if (!doc) return [];
 
-		return getFoldingRangesImpl(doc);
-	}
+    return getFoldingRangesImpl(doc);
+  }
 
-	/**
-	 * Get semantic tokens for a document.
-	 */
-	getSemanticTokens(uri: string): SemanticTokensResult {
-		const doc = this.documents.get(uri);
+  /**
+   * Get semantic tokens for a document.
+   */
+  getSemanticTokens(uri: string): SemanticTokensResult {
+    const doc = this.documents.get(uri);
 
-		if (!doc) return { data: [] };
+    if (!doc) return { data: [] };
 
-		return getSemanticTokensImpl(doc);
-	}
+    return getSemanticTokensImpl(doc);
+  }
 
-	/**
-	 * Get the semantic tokens legend (static).
-	 */
-	static getSemanticTokensLegend() {
-		return getSemanticTokensLegend();
-	}
+  /**
+   * Get the semantic tokens legend (static).
+   */
+  static getSemanticTokensLegend() {
+    return getSemanticTokensLegend();
+  }
 
-	// ========== Static Helpers (no document needed) ==========
+  // ========== Static Helpers (no document needed) ==========
 
-	/**
-	 * Look up documentation for a symbol.
-	 * This is a static method that doesn't require a document.
-	 */
-	static getSymbolInfo(symbol: string): SymbolInfo | null {
-		return getSymbolInfoImpl(symbol);
-	}
+  /**
+   * Look up documentation for a symbol.
+   * This is a static method that doesn't require a document.
+   */
+  static getSymbolInfo(symbol: string): SymbolInfo | null {
+    return getSymbolInfoImpl(symbol);
+  }
 
-	/**
-	 * Get all function names, optionally filtered by namespace.
-	 */
-	static getAllFunctions(namespace?: string): string[] {
-		return getAllFunctionNames(namespace);
-	}
+  /**
+   * Get all function names, optionally filtered by namespace.
+   */
+  static getAllFunctions(namespace?: string): string[] {
+    return getAllFunctionNames(namespace);
+  }
 
-	/**
-	 * Get all variable names, optionally filtered by namespace.
-	 */
-	static getAllVariables(namespace?: string): string[] {
-		return getAllVariableNames(namespace);
-	}
+  /**
+   * Get all variable names, optionally filtered by namespace.
+   */
+  static getAllVariables(namespace?: string): string[] {
+    return getAllVariableNames(namespace);
+  }
 
-	/**
-	 * Get all constant names, optionally filtered by namespace.
-	 */
-	static getAllConstants(namespace?: string): string[] {
-		return getAllConstantNames(namespace);
-	}
+  /**
+   * Get all constant names, optionally filtered by namespace.
+   */
+  static getAllConstants(namespace?: string): string[] {
+    return getAllConstantNames(namespace);
+  }
 
-	/**
-	 * Get all available namespaces.
-	 */
-	static getAllNamespaces(): string[] {
-		return Array.from(PineV6.getAllNamespaces());
-	}
+  /**
+   * Get all available namespaces.
+   */
+  static getAllNamespaces(): string[] {
+    return Array.from(PineV6.getAllNamespaces());
+  }
 
-	/**
-	 * Format code directly (without needing to open a document).
-	 * Useful for CLI and MCP tools.
-	 */
-	static formatCode(code: string): string {
-		return formatToString(code);
-	}
+  /**
+   * Format code directly (without needing to open a document).
+   * Useful for CLI and MCP tools.
+   */
+  static formatCode(code: string): string {
+    return formatToString(code);
+  }
 }

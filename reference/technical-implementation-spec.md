@@ -48,6 +48,7 @@ the same artifact.
    `.pine` repro fixture with its `// @expects` directives, or a `--tv` probe
    recorded in an INV - is itself a brick of the spec, specified to the same
    standard and laid before the brick it gates.
+
 6. **A keep/revert path.** The implementation unit is one coherent, fully
    intrusive change that lands and is then kept or reverted on its gate
    results - never a tiny gated probe or an env-var experiment switch. The
@@ -100,6 +101,6 @@ the same artifact.
   temporary routing switches left as the way forward.
 - **Aggressive internal rewrites assumed.** Old abstractions earn no protection
   from age; shared abstractions and generic reuse are not goals in themselves.
-  Correctness and maintainability of the *result* still hold, as does the
+  Correctness and maintainability of the _result_ still hold, as does the
   Data-vs-Syntax discipline (the generated JSON stays the self-contained source
   of truth; the checker reads facts, it does not hardcode them).

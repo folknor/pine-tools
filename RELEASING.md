@@ -55,12 +55,12 @@ release is assembled on the maintainer's machine.
 
 The release uploads four version-stamped artifacts:
 
-| Artifact | Contents |
-|----------|----------|
-| `pine-tools-<version>.vsix` | The VS Code extension bundle. |
-| `pine-lint` | The self-contained Node CLI (executable; `#!/usr/bin/env node`). |
-| `pine-data-v6-<version>.zip` | `pine-data/v6/*.json` + the `pine-manual/v6` tree + `manifest.json`. |
-| `pine-manual-v6-<version>.zip` | The `pine-manual/v6` tree + `manifest.json`. |
+| Artifact                       | Contents                                                             |
+| ------------------------------ | -------------------------------------------------------------------- |
+| `pine-tools-<version>.vsix`    | The VS Code extension bundle.                                        |
+| `pine-lint`                    | The self-contained Node CLI (executable; `#!/usr/bin/env node`).     |
+| `pine-data-v6-<version>.zip`   | `pine-data/v6/*.json` + the `pine-manual/v6` tree + `manifest.json`. |
+| `pine-manual-v6-<version>.zip` | The `pine-manual/v6` tree + `manifest.json`.                         |
 
 `manifest.json` records the version, tag, short git SHA, and build time.
 

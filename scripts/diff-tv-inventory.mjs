@@ -16,33 +16,33 @@ const names = (file) => new Set(read(file).map((x) => x.name));
 
 // Our shipped names.
 const ours = {
-	var: names("pine-data/v6/variables.json"),
-	const: names("pine-data/v6/constants.json"),
-	fun: names("pine-data/v6/functions.json"),
+  var: names("pine-data/v6/variables.json"),
+  const: names("pine-data/v6/constants.json"),
+  fun: names("pine-data/v6/functions.json"),
 };
 
 // TV catalog names by category. Function TOC text may carry "()" - strip it.
 const tv = { var: new Set(), const: new Set(), fun: new Set() };
 
 for (const item of probe.catalog) {
-	if (!(item.category in tv)) continue;
-	const n = item.text.replace(/\(\)$/, "").trim();
-	tv[item.category].add(n);
+  if (!(item.category in tv)) continue;
+  const n = item.text.replace(/\(\)$/, "").trim();
+  tv[item.category].add(n);
 }
 
 const diff = {};
 
 for (const cat of ["var", "const", "fun"]) {
-	const missing = [...tv[cat]].filter((n) => !ours[cat].has(n)).sort();
-	const extra = [...ours[cat]].filter((n) => !tv[cat].has(n)).sort();
-	diff[cat] = {
-		tvCount: tv[cat].size,
-		oursCount: ours[cat].size,
-		missingCount: missing.length,
-		extraCount: extra.length,
-		missing,
-		extra,
-	};
+  const missing = [...tv[cat]].filter((n) => !ours[cat].has(n)).sort();
+  const extra = [...ours[cat]].filter((n) => !tv[cat].has(n)).sort();
+  diff[cat] = {
+    tvCount: tv[cat].size,
+    oursCount: ours[cat].size,
+    missingCount: missing.length,
+    extraCount: extra.length,
+    missing,
+    extra,
+  };
 }
 
 const OUT = path.join(REPO, "lint-reports", "tv-inventory-diff.json");
@@ -50,12 +50,12 @@ const OUT = path.join(REPO, "lint-reports", "tv-inventory-diff.json");
 fs.writeFileSync(OUT, JSON.stringify(diff, null, 2));
 
 for (const cat of ["var", "const", "fun"]) {
-	const d = diff[cat];
-	console.log(
-		`\n=== ${cat}: TV ${d.tvCount} / ours ${d.oursCount} - missing ${d.missingCount}, extra ${d.extraCount} ===`,
-	);
-	console.log("MISSING (in TV, not us):");
-	console.log("  " + (d.missing.join(", ") || "(none)"));
+  const d = diff[cat];
+  console.log(
+    `\n=== ${cat}: TV ${d.tvCount} / ours ${d.oursCount} - missing ${d.missingCount}, extra ${d.extraCount} ===`,
+  );
+  console.log("MISSING (in TV, not us):");
+  console.log("  " + (d.missing.join(", ") || "(none)"));
 }
 
 console.log(`\nFull diff (incl. 'extra') written to ${OUT}`);

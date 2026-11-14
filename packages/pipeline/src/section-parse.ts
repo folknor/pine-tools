@@ -22,9 +22,9 @@
  */
 
 export interface ReferenceSections {
-	returnsDescription?: string;
-	remarks?: string;
-	seeAlso?: string[];
+  returnsDescription?: string;
+  remarks?: string;
+  seeAlso?: string[];
 }
 
 // Operator symbols (?:, [], +=, ==, …) collapse to the same string under the
@@ -33,142 +33,131 @@ export interface ReferenceSections {
 // char as its hex code instead, giving every symbol a unique, stable slug.
 // `?:` → "_3f_3a", `[]` → "_5b_5d", `+=` → "_2b_3d", `+` → "_2b".
 export function operatorSlug(symbol: string): string {
-	return symbol.replace(
-		/[^a-zA-Z0-9]/g,
-		(c) => `_${c.charCodeAt(0).toString(16)}`,
-	);
+  return symbol.replace(/[^a-zA-Z0-9]/g, (c) => `_${c.charCodeAt(0).toString(16)}`);
 }
 
 function decodeEntities(s: string): string {
-	return s
-		.replace(/&lt;/g, "<")
-		.replace(/&gt;/g, ">")
-		.replace(/&quot;/g, '"')
-		.replace(/&#39;/g, "'")
-		.replace(/&nbsp;/g, " ")
-		.replace(/&amp;/g, "&");
+  return s
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&");
 }
 
 function stripTags(s: string): string {
-	return s.replace(/<[^>]+>/g, "");
+  return s.replace(/<[^>]+>/g, "");
 }
 
 // Collapse runs of spaces/tabs to a single space but preserve paragraph breaks.
 // Block-level boundaries (</p>, <br>) are turned into newlines BEFORE tags are
 // stripped so multi-paragraph Remarks don't run together.
 function normalizeProse(htmlSlice: string): string {
-	const withBreaks = htmlSlice
-		.replace(/<\/p>/gi, "\n")
-		.replace(/<br\s*\/?>/gi, "\n");
+  const withBreaks = htmlSlice.replace(/<\/p>/gi, "\n").replace(/<br\s*\/?>/gi, "\n");
 
-	const text = decodeEntities(stripTags(withBreaks));
+  const text = decodeEntities(stripTags(withBreaks));
 
-	return text
-		.replace(/[ \t]+/g, " ")
-		.replace(/ *\n */g, "\n")
-		.replace(/\n{3,}/g, "\n\n")
-		.trim();
+  return text
+    .replace(/[ \t]+/g, " ")
+    .replace(/ *\n */g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
-const SUB_HEADER_RE =
-	/<div class="tv-pine-reference-item__sub-header[^"]*">([\s\S]*?)<\/div>/g;
+const SUB_HEADER_RE = /<div class="tv-pine-reference-item__sub-header[^"]*">([\s\S]*?)<\/div>/g;
 
 // Return the HTML between the sub-header whose label matches `label` and the
 // next sub-header (or end of input). null if that section is absent.
 function sliceSection(html: string, label: string): string | null {
-	SUB_HEADER_RE.lastIndex = 0;
-	const headers: Array<{ label: string; end: number }> = [];
+  SUB_HEADER_RE.lastIndex = 0;
+  const headers: Array<{ label: string; end: number }> = [];
 
-	for (const m of html.matchAll(SUB_HEADER_RE)) {
-		headers.push({
-			label: stripTags(m[1]).trim().toLowerCase(),
-			end: m.index + m[0].length,
-		});
-	}
+  for (const m of html.matchAll(SUB_HEADER_RE)) {
+    headers.push({
+      label: stripTags(m[1]).trim().toLowerCase(),
+      end: m.index + m[0].length,
+    });
+  }
 
-	for (let i = 0; i < headers.length; i++) {
-		if (headers[i].label !== label.toLowerCase()) continue;
-		const start = headers[i].end;
+  for (let i = 0; i < headers.length; i++) {
+    if (headers[i].label !== label.toLowerCase()) continue;
+    const start = headers[i].end;
 
-		const stop =
-			i + 1 < headers.length ? findHeaderStart(html, start) : html.length;
+    const stop = i + 1 < headers.length ? findHeaderStart(html, start) : html.length;
 
-		return html.slice(start, stop);
-	}
+    return html.slice(start, stop);
+  }
 
-	return null;
+  return null;
 }
 
 // The end offsets in `headers` point past a header div; to bound a section we
 // need the START of the following header. Re-find it from `from`.
 function findHeaderStart(html: string, from: number): number {
-	const idx = html.indexOf(
-		'<div class="tv-pine-reference-item__sub-header',
-		from,
-	);
+  const idx = html.indexOf('<div class="tv-pine-reference-item__sub-header', from);
 
-	return idx === -1 ? html.length : idx;
+  return idx === -1 ? html.length : idx;
 }
 
 // All `__text tv-text` blocks inside a section slice, joined as paragraphs.
 // Arg-type rows (which carry a `__arg-type` span) are never part of Returns /
 // Remarks, but we skip them defensively.
 function proseFromSlice(slice: string): string {
-	const re =
-		/<div class="tv-pine-reference-item__text tv-text">([\s\S]*?)<\/div>/g;
+  const re = /<div class="tv-pine-reference-item__text tv-text">([\s\S]*?)<\/div>/g;
 
-	const parts: string[] = [];
+  const parts: string[] = [];
 
-	for (const m of slice.matchAll(re)) {
-		if (m[1].includes("tv-pine-reference-item__arg-type")) continue;
-		const prose = normalizeProse(m[1]);
+  for (const m of slice.matchAll(re)) {
+    if (m[1].includes("tv-pine-reference-item__arg-type")) continue;
+    const prose = normalizeProse(m[1]);
 
-		if (prose) parts.push(prose);
-	}
+    if (prose) parts.push(prose);
+  }
 
-	return parts.join("\n");
+  return parts.join("\n");
 }
 
 export function extractSections(html: string): ReferenceSections {
-	const out: ReferenceSections = {};
+  const out: ReferenceSections = {};
 
-	const returnsSlice = sliceSection(html, "Returns");
+  const returnsSlice = sliceSection(html, "Returns");
 
-	if (returnsSlice) {
-		const prose = proseFromSlice(returnsSlice);
+  if (returnsSlice) {
+    const prose = proseFromSlice(returnsSlice);
 
-		if (prose) out.returnsDescription = prose;
-	}
+    if (prose) out.returnsDescription = prose;
+  }
 
-	const remarksSlice = sliceSection(html, "Remarks");
+  const remarksSlice = sliceSection(html, "Remarks");
 
-	if (remarksSlice) {
-		const prose = proseFromSlice(remarksSlice);
+  if (remarksSlice) {
+    const prose = proseFromSlice(remarksSlice);
 
-		if (prose) out.remarks = prose;
-	}
+    if (prose) out.remarks = prose;
+  }
 
-	const seeAlsoSlice = sliceSection(html, "See also");
+  const seeAlsoSlice = sliceSection(html, "See also");
 
-	if (seeAlsoSlice) {
-		const names: string[] = [];
-		const re = /<a [^>]*>([\s\S]*?)<\/a>/g;
+  if (seeAlsoSlice) {
+    const names: string[] = [];
+    const re = /<a [^>]*>([\s\S]*?)<\/a>/g;
 
-		for (const m of seeAlsoSlice.matchAll(re)) {
-			// Cross-ref labels render as "array.max()" / "na" - drop the trailing
-			// "()" so the value is the bare symbol consumers can look up. Generic
-			// constructors render with placeholder type args ("map.new<type,type>",
-			// "array.new<type>"); strip those too so the value is the bare lookup key.
-			const name = decodeEntities(stripTags(m[1]))
-				.trim()
-				.replace(/\(\)$/, "")
-				.replace(/<[^>]*>$/, "");
+    for (const m of seeAlsoSlice.matchAll(re)) {
+      // Cross-ref labels render as "array.max()" / "na" - drop the trailing
+      // "()" so the value is the bare symbol consumers can look up. Generic
+      // constructors render with placeholder type args ("map.new<type,type>",
+      // "array.new<type>"); strip those too so the value is the bare lookup key.
+      const name = decodeEntities(stripTags(m[1]))
+        .trim()
+        .replace(/\(\)$/, "")
+        .replace(/<[^>]*>$/, "");
 
-			if (name) names.push(name);
-		}
+      if (name) names.push(name);
+    }
 
-		if (names.length) out.seeAlso = names;
-	}
+    if (names.length) out.seeAlso = names;
+  }
 
-	return out;
+  return out;
 }

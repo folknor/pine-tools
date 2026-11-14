@@ -57,9 +57,9 @@ indicator("t")
 plot(hist)
 ```
 
-| | verdict |
-|---|---|
-| `--tv` | **clean** |
+|           | verdict                                                                                      |
+| --------- | -------------------------------------------------------------------------------------------- |
+| `--tv`    | **clean**                                                                                    |
 | pine-lint | 4 errors: `Undeclared identifier "line"`, `"signal"`, then `Undefined variable 'hist'` twice |
 
 `line` is a type keyword, and TradingView permits type keywords as
@@ -79,9 +79,9 @@ outputs are conventionally named `line`, `signal`, `hist`. Ours to fix.
 [a, b] := f()
 ```
 
-| | verdict |
-|---|---|
-| `--tv` | 1 error at 6:8 - `Mismatched input ":=" expecting set "="` |
+|           | verdict                                                                                                          |
+| --------- | ---------------------------------------------------------------------------------------------------------------- |
+| `--tv`    | 1 error at 6:8 - `Mismatched input ":=" expecting set "="`                                                       |
 | pine-lint | 3 errors: `Syntax error at input ":="` at 6:8, then `"a" is already defined` and `"b" is already defined` at 6:1 |
 
 The verdict is right and the position of the real error is right. The two
@@ -107,13 +107,13 @@ The same family as the already-confirmed `ta.fixnan` / `ta.nz`: a bare
 Pine name that piners also registers under a `ta.` prefix TradingView does
 not have.
 
-| spelling | what Pine actually has | `po lookup` |
-|---|---|---|
-| `ta.hl2` | `hl2`, a top-level **variable** | no match |
-| `ta.hlc3` | `hlc3`, a variable | no match |
-| `ta.ohlc4` | `ohlc4`, a variable | no match |
-| `ta.hlcc4` | `hlcc4`, a variable | no match |
-| `ta.sum` | `math.sum`, a function | no match |
+| spelling   | what Pine actually has          | `po lookup` |
+| ---------- | ------------------------------- | ----------- |
+| `ta.hl2`   | `hl2`, a top-level **variable** | no match    |
+| `ta.hlc3`  | `hlc3`, a variable              | no match    |
+| `ta.ohlc4` | `ohlc4`, a variable             | no match    |
+| `ta.hlcc4` | `hlcc4`, a variable             | no match    |
+| `ta.sum`   | `math.sum`, a function          | no match    |
 
 The first four are a sharper case than `ta.fixnan`, because the bare names
 are **variables, not functions** - so the `ta.` spelling is not a
@@ -136,11 +136,11 @@ can write.
 Not defects in the runtime, but worth knowing if any of these fixtures are
 read as describing Pine:
 
-| shape | example | `--tv` |
-|---|---|---|
-| anonymous closures | `bump = () => ...` | `Syntax error at input ")"` |
-| return-type annotations | `f(int x) -> bool => x + 1` | `Syntax error at input "x"` |
-| generic functions | `identity<T>(T value) -> T => value` | `Syntax error at input "("` |
+| shape                   | example                              | `--tv`                      |
+| ----------------------- | ------------------------------------ | --------------------------- |
+| anonymous closures      | `bump = () => ...`                   | `Syntax error at input ")"` |
+| return-type annotations | `f(int x) -> bool => x + 1`          | `Syntax error at input "x"` |
+| generic functions       | `identity<T>(T value) -> T => value` | `Syntax error at input "("` |
 
 206 extracted fixtures use `=>` closure syntax. pine-lint rejects all
 three shapes too, at the same positions, differing only by the wording in

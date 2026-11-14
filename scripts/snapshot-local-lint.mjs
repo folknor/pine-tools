@@ -18,58 +18,62 @@ const args = process.argv.slice(2);
 let concurrency = 8;
 
 for (let i = 0; i < args.length; i++) {
-	if (args[i] === "--concurrency") concurrency = Number(args[++i]);
+  if (args[i] === "--concurrency") concurrency = Number(args[++i]);
 }
 
 const FIXTURES = resolve("fixtures");
 const OUT = resolve("lint-reports/local-baseline.json");
 
 try {
-	await access(FIXTURES);
+  await access(FIXTURES);
 } catch {
-	console.error(
-		`No ${FIXTURES} - the corpus is gitignored and machine-local. It was built by scripts/collect-pine-fixtures.mjs (removed; recoverable from git history), which walked a source tree copying .pine files by sha256.`,
-	);
-	process.exit(2);
+  console.error(
+    `No ${FIXTURES} - the corpus is gitignored and machine-local. It was built by scripts/collect-pine-fixtures.mjs (removed; recoverable from git history), which walked a source tree copying .pine files by sha256.`,
+  );
+  process.exit(2);
 }
 
 function run(file) {
-	return new Promise((res) => {
-		const c = spawn("pine-lint", [file], { stdio: ["ignore", "pipe", "pipe"] });
-		let out = "";
-		c.stdout.on("data", (d) => (out += d));
-		const t = setTimeout(() => c.kill("SIGKILL"), 30_000);
-		c.on("close", () => {
-			clearTimeout(t);
-			res(out);
-		});
-		c.on("error", () => {
-			clearTimeout(t);
-			res("");
-		});
-	});
+  return new Promise((res) => {
+    const c = spawn("pine-lint", [file], { stdio: ["ignore", "pipe", "pipe"] });
+    let out = "";
+    c.stdout.on("data", (d) => (out += d));
+    const t = setTimeout(() => c.kill("SIGKILL"), 30_000);
+    c.on("close", () => {
+      clearTimeout(t);
+      res(out);
+    });
+    c.on("error", () => {
+      clearTimeout(t);
+      res("");
+    });
+  });
 }
 
 // Structured errors carry an unfilled template + ctx (see INV061); render
 // them so baseline records distinguish different findings at the same
 // position. Must mirror regression-check.mjs exactly.
 function fillTemplate(message, ctx) {
-	if (!ctx) return message;
+  if (!ctx) return message;
 
-	return message.replace(/\{(\w+)\}/g, (m, key) => ctx[key] ?? m);
+  return message.replace(/\{(\w+)\}/g, (m, key) => ctx[key] ?? m);
 }
 
 function pickErrors(raw) {
-	try {
-		const j = JSON.parse(raw);
-		const errs = j.result?.errors ?? j.errors ?? [];
+  try {
+    const j = JSON.parse(raw);
+    const errs = j.result?.errors ?? j.errors ?? [];
 
-		return errs
-			.map((e) => ({ line: e.start?.line ?? 0, col: e.start?.column ?? 0, message: fillTemplate(e.message ?? "", e.ctx) }))
-			.sort((a, b) => a.line - b.line || a.col - b.col || a.message.localeCompare(b.message));
-	} catch {
-		return null;
-	}
+    return errs
+      .map((e) => ({
+        line: e.start?.line ?? 0,
+        col: e.start?.column ?? 0,
+        message: fillTemplate(e.message ?? "", e.ctx),
+      }))
+      .sort((a, b) => a.line - b.line || a.col - b.col || a.message.localeCompare(b.message));
+  } catch {
+    return null;
+  }
 }
 
 const entries = (await readdir(FIXTURES)).filter((n) => n.endsWith(".pine")).sort();
@@ -79,16 +83,16 @@ const entries = (await readdir(FIXTURES)).filter((n) => n.endsWith(".pine")).sor
 let gitCommit = "unknown";
 
 try {
-	gitCommit = execSync("git rev-parse HEAD", { encoding: "utf-8" }).trim();
+  gitCommit = execSync("git rev-parse HEAD", { encoding: "utf-8" }).trim();
 } catch {
-	// not a git checkout - leave "unknown"
+  // not a git checkout - leave "unknown"
 }
 
 const baseline = {
-	generatedAt: new Date().toISOString(),
-	gitCommit,
-	fixtureCount: entries.length,
-	files: {},
+  generatedAt: new Date().toISOString(),
+  gitCommit,
+  fixtureCount: entries.length,
+  files: {},
 };
 
 let next = 0;
@@ -96,22 +100,26 @@ let done = 0;
 const startedAt = Date.now();
 
 async function worker() {
-	while (true) {
-		const i = next++;
+  while (true) {
+    const i = next++;
 
-		if (i >= entries.length) return;
-		const name = entries[i];
-		const errs = pickErrors(await run(join(FIXTURES, name)));
-		baseline.files[name] = { errors: errs ?? [], parseFailed: errs === null };
-		done++;
+    if (i >= entries.length) return;
+    const name = entries[i];
+    const errs = pickErrors(await run(join(FIXTURES, name)));
+    baseline.files[name] = { errors: errs ?? [], parseFailed: errs === null };
+    done++;
 
-		if (done % 200 === 0 || done === entries.length) {
-			process.stderr.write(`  ${done}/${entries.length} (${((Date.now() - startedAt) / 1000).toFixed(1)}s)\n`);
-		}
-	}
+    if (done % 200 === 0 || done === entries.length) {
+      process.stderr.write(
+        `  ${done}/${entries.length} (${((Date.now() - startedAt) / 1000).toFixed(1)}s)\n`,
+      );
+    }
+  }
 }
 
-console.log(`snapshotting local pine-lint over ${entries.length} fixtures (concurrency ${concurrency})…`);
+console.log(
+  `snapshotting local pine-lint over ${entries.length} fixtures (concurrency ${concurrency})…`,
+);
 
 await Promise.all(Array.from({ length: concurrency }, worker));
 

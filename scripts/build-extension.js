@@ -29,12 +29,9 @@ fs.mkdirSync(pineDataDist, { recursive: true });
 const pineDataSrc = path.join(__dirname, "..", "pine-data", "v6");
 
 for (const file of fs.readdirSync(pineDataSrc)) {
-	if (file.endsWith(".json")) {
-		fs.copyFileSync(
-			path.join(pineDataSrc, file),
-			path.join(pineDataDist, file),
-		);
-	}
+  if (file.endsWith(".json")) {
+    fs.copyFileSync(path.join(pineDataSrc, file), path.join(pineDataDist, file));
+  }
 }
 
 // Release stamp. All three values are injected into every bundle via esbuild
@@ -45,10 +42,10 @@ for (const file of fs.readdirSync(pineDataSrc)) {
 const pkgVersion = require("../package.json").version;
 
 const buildTime = (() => {
-	const d = new Date();
-	const pad = (n) => String(n).padStart(2, "0");
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, "0");
 
-	return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 })();
 
 // The commit this bundle was built from, suffixed `-dirty` when the working
@@ -58,107 +55,107 @@ const buildTime = (() => {
 // checkout (a published tarball, a vendored copy), which must not fail the
 // build.
 const gitRef = (() => {
-	const git = (args) =>
-		execFileSync("git", args, {
-			cwd: path.join(__dirname, ".."),
-			encoding: "utf8",
-			stdio: ["ignore", "pipe", "ignore"],
-		}).trim();
+  const git = (args) =>
+    execFileSync("git", args, {
+      cwd: path.join(__dirname, ".."),
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
 
-	try {
-		const sha = git(["rev-parse", "--short", "HEAD"]);
-		const dirty = git(["status", "--porcelain"]) !== "";
+  try {
+    const sha = git(["rev-parse", "--short", "HEAD"]);
+    const dirty = git(["status", "--porcelain"]) !== "";
 
-		return dirty ? `${sha}-dirty` : sha;
-	} catch {
-		return "unknown";
-	}
+    return dirty ? `${sha}-dirty` : sha;
+  } catch {
+    return "unknown";
+  }
 })();
 
 // Common build options
 const commonOptions = {
-	bundle: true,
-	platform: "node",
-	target: "node18",
-	format: "cjs",
-	sourcemap: !production,
-	minify: production,
-	treeShaking: true,
-	define: {
-		__VERSION__: JSON.stringify(pkgVersion),
-		__BUILD_TIME__: JSON.stringify(buildTime),
-		__GIT_REF__: JSON.stringify(gitRef),
-	},
+  bundle: true,
+  platform: "node",
+  target: "node18",
+  format: "cjs",
+  sourcemap: !production,
+  minify: production,
+  treeShaking: true,
+  define: {
+    __VERSION__: JSON.stringify(pkgVersion),
+    __BUILD_TIME__: JSON.stringify(buildTime),
+    __GIT_REF__: JSON.stringify(gitRef),
+  },
 };
 
 // Build the extension client
 const extensionConfig = {
-	...commonOptions,
-	entryPoints: ["packages/vscode/src/extension.ts"],
-	outfile: "dist/packages/vscode/src/extension.js",
-	external: ["vscode"], // vscode is provided by VS Code runtime
+  ...commonOptions,
+  entryPoints: ["packages/vscode/src/extension.ts"],
+  outfile: "dist/packages/vscode/src/extension.js",
+  external: ["vscode"], // vscode is provided by VS Code runtime
 };
 
 // Build the LSP server
 const lspConfig = {
-	...commonOptions,
-	entryPoints: ["packages/lsp/bin/pine-lsp.ts"],
-	outfile: "dist/packages/lsp/bin/pine-lsp.js",
-	external: [], // Bundle everything for the LSP server
+  ...commonOptions,
+  entryPoints: ["packages/lsp/bin/pine-lsp.ts"],
+  outfile: "dist/packages/lsp/bin/pine-lsp.js",
+  external: [], // Bundle everything for the LSP server
 };
 
 // Build the MCP server
 const mcpConfig = {
-	...commonOptions,
-	entryPoints: ["packages/mcp/bin/pine-mcp.ts"],
-	outfile: "dist/packages/mcp/bin/pine-mcp.js",
-	external: [], // Bundle everything for the MCP server
+  ...commonOptions,
+  entryPoints: ["packages/mcp/bin/pine-mcp.ts"],
+  outfile: "dist/packages/mcp/bin/pine-mcp.js",
+  external: [], // Bundle everything for the MCP server
 };
 
 // Build the CLI. __VERSION__ / __BUILD_TIME__ are injected via commonOptions
 // so `pine-lint --version` reports the package version and when this binary
 // was produced.
 const cliConfig = {
-	...commonOptions,
-	entryPoints: ["packages/cli/src/cli.ts"],
-	outfile: "dist/packages/cli/src/cli.js",
-	external: [],
-	banner: {
-		js: "#!/usr/bin/env node",
-	},
+  ...commonOptions,
+  entryPoints: ["packages/cli/src/cli.ts"],
+  outfile: "dist/packages/cli/src/cli.js",
+  external: [],
+  banner: {
+    js: "#!/usr/bin/env node",
+  },
 };
 
 async function build() {
-	try {
-		if (watch) {
-			// Watch mode
-			const contexts = await Promise.all([
-				esbuild.context(extensionConfig),
-				esbuild.context(lspConfig),
-				esbuild.context(mcpConfig),
-				esbuild.context(cliConfig),
-			]);
+  try {
+    if (watch) {
+      // Watch mode
+      const contexts = await Promise.all([
+        esbuild.context(extensionConfig),
+        esbuild.context(lspConfig),
+        esbuild.context(mcpConfig),
+        esbuild.context(cliConfig),
+      ]);
 
-			await Promise.all(contexts.map((ctx) => ctx.watch()));
-			console.log("Watching for changes...");
-		} else {
-			// One-time build
-			await Promise.all([
-				esbuild.build(extensionConfig),
-				esbuild.build(lspConfig),
-				esbuild.build(mcpConfig),
-				esbuild.build(cliConfig),
-			]);
+      await Promise.all(contexts.map((ctx) => ctx.watch()));
+      console.log("Watching for changes...");
+    } else {
+      // One-time build
+      await Promise.all([
+        esbuild.build(extensionConfig),
+        esbuild.build(lspConfig),
+        esbuild.build(mcpConfig),
+        esbuild.build(cliConfig),
+      ]);
 
-			// Make CLI executable
-			fs.chmodSync("dist/packages/cli/src/cli.js", 0o755);
+      // Make CLI executable
+      fs.chmodSync("dist/packages/cli/src/cli.js", 0o755);
 
-			console.log("Build complete!");
-		}
-	} catch (error) {
-		console.error("Build failed:", error);
-		process.exit(1);
-	}
+      console.log("Build complete!");
+    }
+  } catch (error) {
+    console.error("Build failed:", error);
+    process.exit(1);
+  }
 }
 
 build();

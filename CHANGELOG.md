@@ -161,8 +161,8 @@
   REQUIRED parameter types. `f(float x)` and `f(float x, float scale = 1.0)`
   are illegal - an optional parameter cannot disambiguate a call that omits it
   - and so are same-arity pairs whose full lists differ only in their
-  optionals. An untyped required parameter is undetermined and collides with
-  nothing. Twelve probes, zero disagreement with TradingView. See INV165.
+    optionals. An untyped required parameter is undetermined and collides with
+    nothing. Twelve probes, zero disagreement with TradingView. See INV165.
 - `UNUSED_VARIABLE` moved from the `analysis` stage to `lint`. TradingView
   emits nothing for an unused variable, and `analysis` means "TradingView says
   this too" - so `--no-lint` now silences it, and it no longer inflates the
@@ -360,7 +360,7 @@
 - `_`, Pine's discard identifier, no longer produces warnings. Two rules fired
   on it: `UNUSED_VARIABLE` reported it as declared-but-never-used, and
   `SHADOW_VARIABLE` (CW10013) reported a second `_` as shadowing the first.
-  The manual reserves `_` for *marking* a binding unused and it is the only way
+  The manual reserves `_` for _marking_ a binding unused and it is the only way
   to drop part of a tuple, so both were warning at the identifier for doing its
   job - and there was no quieter spelling, since naming the unwanted legs
   (`[_m, _sg, _h]`) warns once per name and produces more warnings than it
@@ -375,8 +375,8 @@
 - New error CE10088: a user-defined function or method may not reassign a
   global variable. TradingView rejects it and we accepted it silently, so a
   file passed locally and then failed at chart load - the dangerous direction.
-  The boundary is what makes the check safe: reassigning a global *scalar* is
-  the error, while mutating a *field* of a global object (`state.flag := true`)
+  The boundary is what makes the check safe: reassigning a global _scalar_ is
+  the error, while mutating a _field_ of a global object (`state.flag := true`)
   is legal and is the ordinary way to carry mutable state into a function.
   Locals and parameters that shadow a global are unaffected, as is a `:=` in a
   top-level `if` block. Not version-gated. 24 new errors across the corpus, all
@@ -389,7 +389,7 @@
   into a helper - the rule was flagging the only correct construction. Removes
   10 corpus findings. See INV151.
 - `REPAINTING_SECURITY` no longer treats an explicit
-  `lookahead = barmerge.lookahead_off` as an exemption. That is the *default*,
+  `lookahead = barmerge.lookahead_off` as an exemption. That is the _default_,
   so writing it out produces the identical call to omitting it, and the rule
   warned on one spelling and not the other - with the silent half being the one
   that hid a repainting read. A sweep of the 97 corpus calls passing it
@@ -399,7 +399,7 @@
   INV152.
 - New rule `LOOKAHEAD_BIAS` splits the un-offset `request.security` finding in
   two. A call passing `lookahead = barmerge.lookahead_on` with no history offset
-  reads the requested period from its *start*, so on historical bars it returns
+  reads the requested period from its _start_, so on historical bars it returns
   data that did not exist yet; that is now its own rule with its own wording.
   Everything else keeps `REPAINTING_SECURITY`, reworded: `lookahead_off`
   (written or defaulted) leaks nothing - history settles on the period's final
@@ -501,7 +501,7 @@
   2026-08-21). See INV146.
 - Pre-v5 scripts now get one "not supported" diagnostic instead of a cascade
   of v6 argument errors. `pine-data` ships only v6 signatures, and while
-  argument-*type* checking was already gated to v6, the unknown-argument-*name*
+  argument-_type_ checking was already gated to v6, the unknown-argument-_name_
   error was not - so correct v4 (`input(..., type = input.source)`,
   `plot(..., transp = 50)`) was reported as invalid. TradingView refuses these
   outright with "Supported versions are >= 5"; we now mirror that. Parse
@@ -584,7 +584,7 @@
   about its insides, so every member of an imported UDT instance stayed
   lenient. Libraries now emit their type fields, and imported types register
   through the same machinery as local UDTs. Two pre-existing bugs surfaced and
-  were fixed en route, neither about imports: UDT-annotated *parameters* typed
+  were fixed en route, neither about imports: UDT-annotated _parameters_ typed
   as `unknown` (so `f(pt p) => p.bogusField` was silent for local types too),
   and the field scanner silently dropping `varip`-qualified and UDT-typed array
   fields - a live false positive on TV-clean code that cost one library 17 of
@@ -645,7 +645,7 @@
   the leading type token to match TV. See INV129 through INV133.
 
 - Warn on user-global-index UDFs called inconsistently. TV emits CW10003 when a
-  UDF body indexes a user-declared global series variable *and* the call sits
+  UDF body indexes a user-declared global series variable _and_ the call sits
   in an inconsistent context (conditional or in a loop). Neither ingredient is
   sufficient alone, which is why an earlier bare user-global-index rule
   over-fired; the classification deliberately does not cascade to callers. See
@@ -677,12 +677,12 @@
   rather than series, which alone removed 249 corpus false positives on
   TV-clean files from the dominant MA-selector idiom; a conditional `:=` to a
   const under a series-gated branch makes its target series; history-dependent
-  *method* calls register under their bare name and so can warn; and a local
+  _method_ calls register under their bare name and so can warn; and a local
   assigned under an undetermined gate no longer counts as own-scope history.
   See INV114 through INV116, INV120.
 - Detect history-dependence of imported-library calls. CW10003 fires when a
   conditionally-called function is history-dependent, including one living in
-  an imported library, but we knew only each library's export *names*. Library
+  an imported library, but we knew only each library's export _names_. Library
   generation now scans vendored bodies and records which exports are
   history-dependent. For libraries whose source cannot be redistributed, the
   API fact alone is recorded, derived once and the source discarded. See

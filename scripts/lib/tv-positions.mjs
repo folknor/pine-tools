@@ -22,29 +22,29 @@
 // The code part of a line: everything up to a `//` comment that is not
 // inside a string literal, INCLUDING the whitespace before the comment.
 function codePartLength(line) {
-	let quote = null;
+  let quote = null;
 
-	for (let i = 0; i < line.length; i++) {
-		const ch = line[i];
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
 
-		if (quote) {
-			if (ch === "\\") i++;
-			else if (ch === quote) quote = null;
-		} else if (ch === '"' || ch === "'") {
-			quote = ch;
-		} else if (ch === "/" && line[i + 1] === "/") {
-			return i;
-		}
-	}
+    if (quote) {
+      if (ch === "\\") i++;
+      else if (ch === quote) quote = null;
+    } else if (ch === '"' || ch === "'") {
+      quote = ch;
+    } else if (ch === "/" && line[i + 1] === "/") {
+      return i;
+    }
+  }
 
-	return line.length;
+  return line.length;
 }
 
 function leadingWhitespaceLength(line) {
-	// u00a0 (nbsp): TV accepts nbsp indentation (see plan/31).
-	const m = line.match(/^[ \t\u00a0]*/);
+  // u00a0 (nbsp): TV accepts nbsp indentation (see plan/31).
+  const m = line.match(/^[ \t\u00a0]*/);
 
-	return m ? m[0].length : 0;
+  return m ? m[0].length : 0;
 }
 
 /**
@@ -56,95 +56,95 @@ function leadingWhitespaceLength(line) {
  * whitespace) - mapping bails rather than guessing.
  */
 export function mapTvPositionToPhysical(lines, line, col) {
-	const original = { line, col };
-	let li = line - 1;
+  const original = { line, col };
+  let li = line - 1;
 
-	if (li < 0 || li >= lines.length) return original;
-	// First physical line contributes its full code part (indent kept).
-	let contributed = codePartLength(lines[li]);
-	let c = col;
+  if (li < 0 || li >= lines.length) return original;
+  // First physical line contributes its full code part (indent kept).
+  let contributed = codePartLength(lines[li]);
+  let c = col;
 
-	while (c > contributed) {
-		c -= contributed + 1; // +1 for the join space
-		li++;
+  while (c > contributed) {
+    c -= contributed + 1; // +1 for the join space
+    li++;
 
-		if (c < 1) return original; // pointed at the join space itself
+    if (c < 1) return original; // pointed at the join space itself
 
-		if (li >= lines.length) return original;
-		const next = lines[li];
-		const indent = leadingWhitespaceLength(next);
+    if (li >= lines.length) return original;
+    const next = lines[li];
+    const indent = leadingWhitespaceLength(next);
 
-		// A continuation line must be indented and non-empty.
-		if (indent === 0 || indent === next.length) return original;
-		contributed = codePartLength(next) - indent;
+    // A continuation line must be indented and non-empty.
+    if (indent === 0 || indent === next.length) return original;
+    contributed = codePartLength(next) - indent;
 
-		if (contributed <= 0) return original; // comment-only line
+    if (contributed <= 0) return original; // comment-only line
 
-		if (c <= contributed) {
-			return { line: li + 1, col: indent + c };
-		}
-	}
+    if (c <= contributed) {
+      return { line: li + 1, col: indent + c };
+    }
+  }
 
-	return original;
+  return original;
 }
 
 // NOTE: kept byte-for-byte in sync with the copy in
 // packages/core/src/common/sourcePositions.ts (this .mjs can't import the TS
 // core module). Change both together. see INV128
 function buildRawToDisplayLineMap(source) {
-	const rawToDisplay = [0, 1];
-	let rawLine = 1;
-	let displayLine = 1;
-	let i = 0;
+  const rawToDisplay = [0, 1];
+  let rawLine = 1;
+  let displayLine = 1;
+  let i = 0;
 
-	while (i < source.length) {
-		const ch = source[i];
+  while (i < source.length) {
+    const ch = source[i];
 
-		if (ch === "\r") {
-			let runEnd = i;
+    if (ch === "\r") {
+      let runEnd = i;
 
-			while (source[runEnd] === "\r") runEnd++;
+      while (source[runEnd] === "\r") runEnd++;
 
-			if (source[runEnd] === "\n") {
-				const crCount = runEnd - i;
+      if (source[runEnd] === "\n") {
+        const crCount = runEnd - i;
 
-				for (let n = 0; n < crCount - 1; n++) {
-					rawLine++;
-					rawToDisplay[rawLine] = displayLine;
-				}
+        for (let n = 0; n < crCount - 1; n++) {
+          rawLine++;
+          rawToDisplay[rawLine] = displayLine;
+        }
 
-				rawLine++;
-				displayLine++;
-				rawToDisplay[rawLine] = displayLine;
-				i = runEnd + 1;
-			} else {
-				while (i < runEnd) {
-					rawLine++;
-					displayLine++;
-					rawToDisplay[rawLine] = displayLine;
-					i++;
-				}
-			}
+        rawLine++;
+        displayLine++;
+        rawToDisplay[rawLine] = displayLine;
+        i = runEnd + 1;
+      } else {
+        while (i < runEnd) {
+          rawLine++;
+          displayLine++;
+          rawToDisplay[rawLine] = displayLine;
+          i++;
+        }
+      }
 
-			continue;
-		}
+      continue;
+    }
 
-		if (ch === "\n") {
-			rawLine++;
-			displayLine++;
-			rawToDisplay[rawLine] = displayLine;
-		}
+    if (ch === "\n") {
+      rawLine++;
+      displayLine++;
+      rawToDisplay[rawLine] = displayLine;
+    }
 
-		i++;
-	}
+    i++;
+  }
 
-	return rawToDisplay;
+  return rawToDisplay;
 }
 
 function mapRawToDisplay(rawToDisplay, position) {
-	const line = rawToDisplay[position.line] ?? position.line;
+  const line = rawToDisplay[position.line] ?? position.line;
 
-	return line === position.line ? position : { ...position, line };
+  return line === position.line ? position : { ...position, line };
 }
 
 /**
@@ -154,24 +154,24 @@ function mapRawToDisplay(rawToDisplay, position) {
  * (so \r\r\n is two breaks) - see G005.
  */
 export function remapTvDiagnostics(source, diags) {
-	const lines = source.split(/\r\n|\r|\n/);
-	const rawToDisplay = buildRawToDisplayLineMap(source);
+  const lines = source.split(/\r\n|\r|\n/);
+  const rawToDisplay = buildRawToDisplayLineMap(source);
 
-	return diags.map((d) => {
-		const physical = mapTvPositionToPhysical(lines, d.line, d.col);
-		const display = mapRawToDisplay(rawToDisplay, physical);
+  return diags.map((d) => {
+    const physical = mapTvPositionToPhysical(lines, d.line, d.col);
+    const display = mapRawToDisplay(rawToDisplay, physical);
 
-		if (display.line === d.line && display.col === d.col) return d;
-		const extra = {};
+    if (display.line === d.line && display.col === d.col) return d;
+    const extra = {};
 
-		if (physical.line !== d.line || physical.col !== d.col) {
-			extra.tvLogical = { line: d.line, col: d.col };
-		}
+    if (physical.line !== d.line || physical.col !== d.col) {
+      extra.tvLogical = { line: d.line, col: d.col };
+    }
 
-		if (display.line !== physical.line) {
-			extra.rawPosition = { line: physical.line, col: physical.col };
-		}
+    if (display.line !== physical.line) {
+      extra.rawPosition = { line: physical.line, col: physical.col };
+    }
 
-		return { ...d, line: display.line, col: display.col, ...extra };
-	});
+    return { ...d, line: display.line, col: display.col, ...extra };
+  });
 }

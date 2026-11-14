@@ -1,956 +1,922 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import {
-	PineLanguageService,
-	DiagnosticSeverity,
-	CompletionItemKind,
-	SymbolKind,
-	CodeActionKind,
-	InlayHintKind,
-	FoldingRangeKind,
-	SemanticTokenType,
+  PineLanguageService,
+  DiagnosticSeverity,
+  CompletionItemKind,
+  SymbolKind,
+  CodeActionKind,
+  InlayHintKind,
+  FoldingRangeKind,
+  SemanticTokenType,
 } from "../src";
 import { parseLibrary, clearLibraryCache } from "../src/features/imports";
 
 describe("PineLanguageService", () => {
-	let service: PineLanguageService;
+  let service: PineLanguageService;
 
-	beforeEach(() => {
-		service = new PineLanguageService();
-	});
+  beforeEach(() => {
+    service = new PineLanguageService();
+  });
 
-	describe("Document Management", () => {
-		it("should open and close documents", () => {
-			service.openDocument("test.pine", "x = 1", 1);
-			expect(service.getDocument("test.pine")).toBeDefined();
+  describe("Document Management", () => {
+    it("should open and close documents", () => {
+      service.openDocument("test.pine", "x = 1", 1);
+      expect(service.getDocument("test.pine")).toBeDefined();
 
-			service.closeDocument("test.pine");
-			expect(service.getDocument("test.pine")).toBeUndefined();
-		});
+      service.closeDocument("test.pine");
+      expect(service.getDocument("test.pine")).toBeUndefined();
+    });
 
-		it("should update documents", () => {
-			service.openDocument("test.pine", "x = 1", 1);
-			service.updateDocument("test.pine", "x = 2", 2);
+    it("should update documents", () => {
+      service.openDocument("test.pine", "x = 1", 1);
+      service.updateDocument("test.pine", "x = 2", 2);
 
-			const doc = service.getDocument("test.pine");
-			expect(doc?.content).toBe("x = 2");
-			expect(doc?.version).toBe(2);
-		});
-	});
+      const doc = service.getDocument("test.pine");
+      expect(doc?.content).toBe("x = 2");
+      expect(doc?.version).toBe(2);
+    });
+  });
 
-	describe("Completions", () => {
-		it("should return namespace completions after dot", () => {
-			service.openDocument("test.pine", "x = ta.", 1);
-			const completions = service.getCompletions("test.pine", {
-				line: 0,
-				character: 7,
-			});
+  describe("Completions", () => {
+    it("should return namespace completions after dot", () => {
+      service.openDocument("test.pine", "x = ta.", 1);
+      const completions = service.getCompletions("test.pine", {
+        line: 0,
+        character: 7,
+      });
 
-			expect(completions.length).toBeGreaterThan(0);
-			expect(completions.some((c) => c.label === "sma")).toBe(true);
-			expect(completions.some((c) => c.label === "ema")).toBe(true);
-		});
+      expect(completions.length).toBeGreaterThan(0);
+      expect(completions.some((c) => c.label === "sma")).toBe(true);
+      expect(completions.some((c) => c.label === "ema")).toBe(true);
+    });
 
-		it("should return all completions at empty position", () => {
-			service.openDocument("test.pine", "", 1);
-			const completions = service.getCompletions("test.pine", {
-				line: 0,
-				character: 0,
-			});
+    it("should return all completions at empty position", () => {
+      service.openDocument("test.pine", "", 1);
+      const completions = service.getCompletions("test.pine", {
+        line: 0,
+        character: 0,
+      });
 
-			// Should have keywords
-			expect(completions.some((c) => c.label === "if")).toBe(true);
-			expect(completions.some((c) => c.label === "for")).toBe(true);
+      // Should have keywords
+      expect(completions.some((c) => c.label === "if")).toBe(true);
+      expect(completions.some((c) => c.label === "for")).toBe(true);
 
-			// Should have namespaces
-			expect(completions.some((c) => c.label === "ta")).toBe(true);
-			expect(completions.some((c) => c.label === "math")).toBe(true);
+      // Should have namespaces
+      expect(completions.some((c) => c.label === "ta")).toBe(true);
+      expect(completions.some((c) => c.label === "math")).toBe(true);
 
-			// Should have global functions
-			expect(completions.some((c) => c.label === "plot")).toBe(true);
+      // Should have global functions
+      expect(completions.some((c) => c.label === "plot")).toBe(true);
 
-			// Should have standalone variables
-			expect(completions.some((c) => c.label === "close")).toBe(true);
-		});
+      // Should have standalone variables
+      expect(completions.some((c) => c.label === "close")).toBe(true);
+    });
 
-		it("should return parameter completions inside function call", () => {
-			service.openDocument("test.pine", 'x = input.int(', 1);
-			const completions = service.getCompletions("test.pine", {
-				line: 0,
-				character: 14,
-			});
+    it("should return parameter completions inside function call", () => {
+      service.openDocument("test.pine", "x = input.int(", 1);
+      const completions = service.getCompletions("test.pine", {
+        line: 0,
+        character: 14,
+      });
 
-			// Should have parameter names
-			expect(completions.some((c) => c.label === "defval")).toBe(true);
-			expect(completions.some((c) => c.label === "title")).toBe(true);
-		});
-	});
+      // Should have parameter names
+      expect(completions.some((c) => c.label === "defval")).toBe(true);
+      expect(completions.some((c) => c.label === "title")).toBe(true);
+    });
+  });
 
-	describe("Hover", () => {
-		it("should return hover for function", () => {
-			service.openDocument("test.pine", "x = ta.sma(close, 14)", 1);
-			const hover = service.getHover("test.pine", { line: 0, character: 7 });
+  describe("Hover", () => {
+    it("should return hover for function", () => {
+      service.openDocument("test.pine", "x = ta.sma(close, 14)", 1);
+      const hover = service.getHover("test.pine", { line: 0, character: 7 });
 
-			expect(hover).not.toBeNull();
-			expect(hover?.contents).toContain("sma");
-		});
+      expect(hover).not.toBeNull();
+      expect(hover?.contents).toContain("sma");
+    });
 
-		it("should return hover for variable", () => {
-			service.openDocument("test.pine", "x = close", 1);
-			const hover = service.getHover("test.pine", { line: 0, character: 5 });
+    it("should return hover for variable", () => {
+      service.openDocument("test.pine", "x = close", 1);
+      const hover = service.getHover("test.pine", { line: 0, character: 5 });
 
-			expect(hover).not.toBeNull();
-			expect(hover?.contents).toContain("close");
-		});
+      expect(hover).not.toBeNull();
+      expect(hover?.contents).toContain("close");
+    });
 
-		it("should return null for unknown symbol", () => {
-			service.openDocument("test.pine", "x = unknownThing", 1);
-			const hover = service.getHover("test.pine", { line: 0, character: 5 });
+    it("should return null for unknown symbol", () => {
+      service.openDocument("test.pine", "x = unknownThing", 1);
+      const hover = service.getHover("test.pine", { line: 0, character: 5 });
 
-			expect(hover).toBeNull();
-		});
-	});
+      expect(hover).toBeNull();
+    });
+  });
 
-	describe("Signature Help", () => {
-		it("should return signature for function call", () => {
-			service.openDocument("test.pine", "x = ta.sma(", 1);
-			const sig = service.getSignatureHelp("test.pine", {
-				line: 0,
-				character: 11,
-			});
+  describe("Signature Help", () => {
+    it("should return signature for function call", () => {
+      service.openDocument("test.pine", "x = ta.sma(", 1);
+      const sig = service.getSignatureHelp("test.pine", {
+        line: 0,
+        character: 11,
+      });
 
-			expect(sig).not.toBeNull();
-			expect(sig?.signatures.length).toBeGreaterThan(0);
-			expect(sig?.signatures[0].label).toContain("sma");
-		});
+      expect(sig).not.toBeNull();
+      expect(sig?.signatures.length).toBeGreaterThan(0);
+      expect(sig?.signatures[0].label).toContain("sma");
+    });
 
-		it("should track active parameter", () => {
-			service.openDocument("test.pine", "x = ta.sma(close, ", 1);
-			const sig = service.getSignatureHelp("test.pine", {
-				line: 0,
-				character: 18,
-			});
+    it("should track active parameter", () => {
+      service.openDocument("test.pine", "x = ta.sma(close, ", 1);
+      const sig = service.getSignatureHelp("test.pine", {
+        line: 0,
+        character: 18,
+      });
 
-			expect(sig).not.toBeNull();
-			expect(sig?.activeParameter).toBe(1);
-		});
-	});
+      expect(sig).not.toBeNull();
+      expect(sig?.activeParameter).toBe(1);
+    });
+  });
 
-	describe("Diagnostics", () => {
-		it("should return parse errors", () => {
-			service.openDocument("test.pine", "x = ", 1);
-			const diagnostics = service.getDiagnostics("test.pine");
+  describe("Diagnostics", () => {
+    it("should return parse errors", () => {
+      service.openDocument("test.pine", "x = ", 1);
+      const diagnostics = service.getDiagnostics("test.pine");
 
-			expect(diagnostics.length).toBeGreaterThan(0);
-			expect(diagnostics[0].severity).toBe(DiagnosticSeverity.Error);
-		});
+      expect(diagnostics.length).toBeGreaterThan(0);
+      expect(diagnostics[0].severity).toBe(DiagnosticSeverity.Error);
+    });
 
-		it("should warn about missing version header", () => {
-			service.openDocument("test.pine", "x = 1", 1);
-			const diagnostics = service.getDiagnostics("test.pine");
+    it("should warn about missing version header", () => {
+      service.openDocument("test.pine", "x = 1", 1);
+      const diagnostics = service.getDiagnostics("test.pine");
 
-			expect(
-				diagnostics.some((d) => d.message.includes("//@version=6")),
-			).toBe(true);
-		});
+      expect(diagnostics.some((d) => d.message.includes("//@version=6"))).toBe(true);
+    });
 
-		it("should not warn if version header present", () => {
-			service.openDocument("test.pine", "//@version=6\nx = 1", 1);
-			const diagnostics = service.getDiagnostics("test.pine");
+    it("should not warn if version header present", () => {
+      service.openDocument("test.pine", "//@version=6\nx = 1", 1);
+      const diagnostics = service.getDiagnostics("test.pine");
 
-			expect(
-				diagnostics.some((d) => d.message.includes("//@version=6")),
-			).toBe(false);
-		});
+      expect(diagnostics.some((d) => d.message.includes("//@version=6"))).toBe(false);
+    });
 
-		it("should detect plotshape shape= error", () => {
-			service.openDocument(
-				"test.pine",
-				"//@version=6\nplotshape(true, shape=shape.circle)",
-				1,
-			);
-			const diagnostics = service.getDiagnostics("test.pine");
+    it("should detect plotshape shape= error", () => {
+      service.openDocument("test.pine", "//@version=6\nplotshape(true, shape=shape.circle)", 1);
+      const diagnostics = service.getDiagnostics("test.pine");
 
-			expect(
-				diagnostics.some((d) => d.message.includes('Did you mean "style"')),
-			).toBe(true);
-		});
-	});
+      expect(diagnostics.some((d) => d.message.includes('Did you mean "style"'))).toBe(true);
+    });
+  });
 
-	describe("Formatting", () => {
-		it("should trim trailing whitespace", () => {
-			const result = PineLanguageService.formatCode("x = 1   \ny = 2  ");
-			expect(result).toBe("x = 1\ny = 2\n");
-		});
+  describe("Formatting", () => {
+    it("should trim trailing whitespace", () => {
+      const result = PineLanguageService.formatCode("x = 1   \ny = 2  ");
+      expect(result).toBe("x = 1\ny = 2\n");
+    });
 
-		it("should collapse multiple blank lines", () => {
-			const result = PineLanguageService.formatCode("x = 1\n\n\n\ny = 2");
-			expect(result).toBe("x = 1\n\ny = 2\n");
-		});
+    it("should collapse multiple blank lines", () => {
+      const result = PineLanguageService.formatCode("x = 1\n\n\n\ny = 2");
+      expect(result).toBe("x = 1\n\ny = 2\n");
+    });
 
-		it("should ensure final newline", () => {
-			const result = PineLanguageService.formatCode("x = 1");
-			expect(result).toBe("x = 1\n");
-		});
+    it("should ensure final newline", () => {
+      const result = PineLanguageService.formatCode("x = 1");
+      expect(result).toBe("x = 1\n");
+    });
 
-		it("should add spacing around compound operators", () => {
-			const result = PineLanguageService.formatCode("x:=1\ny+=2\nz==3");
-			expect(result).toBe("x := 1\ny += 2\nz == 3\n");
-		});
+    it("should add spacing around compound operators", () => {
+      const result = PineLanguageService.formatCode("x:=1\ny+=2\nz==3");
+      expect(result).toBe("x := 1\ny += 2\nz == 3\n");
+    });
 
-		it("should add spacing after commas", () => {
-			const result = PineLanguageService.formatCode("f(a,b,c)");
-			expect(result).toBe("f(a, b, c)\n");
-		});
+    it("should add spacing after commas", () => {
+      const result = PineLanguageService.formatCode("f(a,b,c)");
+      expect(result).toBe("f(a, b, c)\n");
+    });
 
-		it("should not modify strings", () => {
-			const result = PineLanguageService.formatCode('x = "a,b,c"');
-			expect(result).toBe('x = "a,b,c"\n');
-		});
+    it("should not modify strings", () => {
+      const result = PineLanguageService.formatCode('x = "a,b,c"');
+      expect(result).toBe('x = "a,b,c"\n');
+    });
 
-		it("should preserve comments", () => {
-			const result = PineLanguageService.formatCode("x = 1 // a+b comment");
-			expect(result).toBe("x = 1 // a+b comment\n");
-		});
-	});
+    it("should preserve comments", () => {
+      const result = PineLanguageService.formatCode("x = 1 // a+b comment");
+      expect(result).toBe("x = 1 // a+b comment\n");
+    });
+  });
 
-	describe("Rename Symbol", () => {
-		it("should rename variable and all references", () => {
-			service.openDocument(
-				"test.pine",
-				`//@version=6
+  describe("Rename Symbol", () => {
+    it("should rename variable and all references", () => {
+      service.openDocument(
+        "test.pine",
+        `//@version=6
 myVar = 42
 x = myVar + 1
 y = myVar * 2
 `,
-				1,
-			);
-			const result = service.rename(
-				"test.pine",
-				{ line: 1, character: 0 },
-				"newName",
-			);
+        1,
+      );
+      const result = service.rename("test.pine", { line: 1, character: 0 }, "newName");
 
-			expect(result).not.toBeNull();
-			expect(result?.changes.length).toBe(3); // 3 occurrences
-			expect(result?.changes.every((c) => c.newText === "newName")).toBe(true);
-		});
+      expect(result).not.toBeNull();
+      expect(result?.changes.length).toBe(3); // 3 occurrences
+      expect(result?.changes.every((c) => c.newText === "newName")).toBe(true);
+    });
 
-		it("should not rename built-in symbols", () => {
-			service.openDocument("test.pine", "//@version=6\nx = close", 1);
-			const result = service.rename(
-				"test.pine",
-				{ line: 1, character: 5 },
-				"newName",
-			);
+    it("should not rename built-in symbols", () => {
+      service.openDocument("test.pine", "//@version=6\nx = close", 1);
+      const result = service.rename("test.pine", { line: 1, character: 5 }, "newName");
 
-			expect(result).toBeNull();
-		});
+      expect(result).toBeNull();
+    });
 
-		it("should prepare rename for user-defined symbols", () => {
-			service.openDocument(
-				"test.pine",
-				`//@version=6
+    it("should prepare rename for user-defined symbols", () => {
+      service.openDocument(
+        "test.pine",
+        `//@version=6
 myVar = 42
 `,
-				1,
-			);
-			const result = service.prepareRename("test.pine", {
-				line: 1,
-				character: 2,
-			});
+        1,
+      );
+      const result = service.prepareRename("test.pine", {
+        line: 1,
+        character: 2,
+      });
 
-			expect(result).not.toBeNull();
-			expect(result?.placeholder).toBe("myVar");
-		});
+      expect(result).not.toBeNull();
+      expect(result?.placeholder).toBe("myVar");
+    });
 
-		it("should not prepare rename for built-ins", () => {
-			service.openDocument("test.pine", "//@version=6\nx = close", 1);
-			const result = service.prepareRename("test.pine", {
-				line: 1,
-				character: 5,
-			});
+    it("should not prepare rename for built-ins", () => {
+      service.openDocument("test.pine", "//@version=6\nx = close", 1);
+      const result = service.prepareRename("test.pine", {
+        line: 1,
+        character: 5,
+      });
 
-			expect(result).toBeNull();
-		});
+      expect(result).toBeNull();
+    });
 
-		it("should reject invalid identifier names", () => {
-			service.openDocument("test.pine", "//@version=6\nmyVar = 42", 1);
-			const result = service.rename(
-				"test.pine",
-				{ line: 1, character: 0 },
-				"123invalid", // Invalid: starts with number
-			);
+    it("should reject invalid identifier names", () => {
+      service.openDocument("test.pine", "//@version=6\nmyVar = 42", 1);
+      const result = service.rename(
+        "test.pine",
+        { line: 1, character: 0 },
+        "123invalid", // Invalid: starts with number
+      );
 
-			expect(result).toBeNull();
-		});
-	});
+      expect(result).toBeNull();
+    });
+  });
 
-	describe("Find References", () => {
-		it("should find all variable references", () => {
-			service.openDocument(
-				"test.pine",
-				`//@version=6
+  describe("Find References", () => {
+    it("should find all variable references", () => {
+      service.openDocument(
+        "test.pine",
+        `//@version=6
 myVar = 42
 x = myVar + 1
 y = myVar * 2
 `,
-				1,
-			);
-			const refs = service.getReferences("test.pine", {
-				line: 1,
-				character: 0,
-			});
+        1,
+      );
+      const refs = service.getReferences("test.pine", {
+        line: 1,
+        character: 0,
+      });
 
-			// Should find definition + 2 usages = 3 references
-			expect(refs.length).toBe(3);
-		});
+      // Should find definition + 2 usages = 3 references
+      expect(refs.length).toBe(3);
+    });
 
-		it("should find function references", () => {
-			service.openDocument(
-				"test.pine",
-				`//@version=6
+    it("should find function references", () => {
+      service.openDocument(
+        "test.pine",
+        `//@version=6
 myFunc() =>
     42
 
 x = myFunc()
 y = myFunc()
 `,
-				1,
-			);
-			const refs = service.getReferences("test.pine", {
-				line: 1,
-				character: 0,
-			});
+        1,
+      );
+      const refs = service.getReferences("test.pine", {
+        line: 1,
+        character: 0,
+      });
 
-			// Definition + 2 calls = 3 references
-			expect(refs.length).toBe(3);
-		});
+      // Definition + 2 calls = 3 references
+      expect(refs.length).toBe(3);
+    });
 
-		it("should exclude declaration when requested", () => {
-			service.openDocument(
-				"test.pine",
-				`//@version=6
+    it("should exclude declaration when requested", () => {
+      service.openDocument(
+        "test.pine",
+        `//@version=6
 myVar = 42
 x = myVar + 1
 `,
-				1,
-			);
-			const refs = service.getReferences(
-				"test.pine",
-				{ line: 1, character: 0 },
-				{ includeDeclaration: false },
-			);
+        1,
+      );
+      const refs = service.getReferences(
+        "test.pine",
+        { line: 1, character: 0 },
+        { includeDeclaration: false },
+      );
 
-			// Should find only 1 usage (not the declaration)
-			expect(refs.length).toBe(1);
-		});
+      // Should find only 1 usage (not the declaration)
+      expect(refs.length).toBe(1);
+    });
 
-		it("should find references in function bodies", () => {
-			service.openDocument(
-				"test.pine",
-				`//@version=6
+    it("should find references in function bodies", () => {
+      service.openDocument(
+        "test.pine",
+        `//@version=6
 globalVar = 10
 
 myFunc() =>
     x = globalVar
     globalVar + 1
 `,
-				1,
-			);
-			const refs = service.getReferences("test.pine", {
-				line: 1,
-				character: 0,
-			});
+        1,
+      );
+      const refs = service.getReferences("test.pine", {
+        line: 1,
+        character: 0,
+      });
 
-			// Definition + 2 usages in function = 3 references
-			expect(refs.length).toBe(3);
-		});
+      // Definition + 2 usages in function = 3 references
+      expect(refs.length).toBe(3);
+    });
 
-		it("should return empty array for unknown symbols", () => {
-			service.openDocument("test.pine", "//@version=6\nx = 1", 1);
-			const refs = service.getReferences("test.pine", {
-				line: 1,
-				character: 5, // position with no symbol
-			});
+    it("should return empty array for unknown symbols", () => {
+      service.openDocument("test.pine", "//@version=6\nx = 1", 1);
+      const refs = service.getReferences("test.pine", {
+        line: 1,
+        character: 5, // position with no symbol
+      });
 
-			expect(refs.length).toBe(0);
-		});
-	});
+      expect(refs.length).toBe(0);
+    });
+  });
 
-	describe("Go to Definition", () => {
-		it("should find variable definition", () => {
-			service.openDocument(
-				"test.pine",
-				`//@version=6
+  describe("Go to Definition", () => {
+    it("should find variable definition", () => {
+      service.openDocument(
+        "test.pine",
+        `//@version=6
 myVar = 42
 x = myVar + 1
 `,
-				1,
-			);
-			// Position on "myVar" in the usage (line 2, character 4)
-			const result = service.getDefinition("test.pine", {
-				line: 2,
-				character: 4,
-			});
+        1,
+      );
+      // Position on "myVar" in the usage (line 2, character 4)
+      const result = service.getDefinition("test.pine", {
+        line: 2,
+        character: 4,
+      });
 
-			expect(result).not.toBeNull();
-			expect(result?.isBuiltin).toBeFalsy();
-			expect(result?.location).toBeDefined();
-			expect(result?.location?.range.start.line).toBe(1); // Definition on line 1 (0-indexed)
-		});
+      expect(result).not.toBeNull();
+      expect(result?.isBuiltin).toBeFalsy();
+      expect(result?.location).toBeDefined();
+      expect(result?.location?.range.start.line).toBe(1); // Definition on line 1 (0-indexed)
+    });
 
-		it("should find function definition", () => {
-			service.openDocument(
-				"test.pine",
-				`//@version=6
+    it("should find function definition", () => {
+      service.openDocument(
+        "test.pine",
+        `//@version=6
 myFunc() =>
     42
 
 x = myFunc()
 `,
-				1,
-			);
-			// Position on "myFunc" in the call (line 4)
-			const result = service.getDefinition("test.pine", {
-				line: 4,
-				character: 5,
-			});
+        1,
+      );
+      // Position on "myFunc" in the call (line 4)
+      const result = service.getDefinition("test.pine", {
+        line: 4,
+        character: 5,
+      });
 
-			expect(result).not.toBeNull();
-			expect(result?.isBuiltin).toBeFalsy();
-			expect(result?.location?.range.start.line).toBe(1);
-		});
+      expect(result).not.toBeNull();
+      expect(result?.isBuiltin).toBeFalsy();
+      expect(result?.location?.range.start.line).toBe(1);
+    });
 
-		it("should identify built-in symbols", () => {
-			service.openDocument("test.pine", "//@version=6\nx = close", 1);
-			const result = service.getDefinition("test.pine", {
-				line: 1,
-				character: 5,
-			});
+    it("should identify built-in symbols", () => {
+      service.openDocument("test.pine", "//@version=6\nx = close", 1);
+      const result = service.getDefinition("test.pine", {
+        line: 1,
+        character: 5,
+      });
 
-			expect(result).not.toBeNull();
-			expect(result?.isBuiltin).toBe(true);
-			expect(result?.symbolInfo).toBeDefined();
-		});
+      expect(result).not.toBeNull();
+      expect(result?.isBuiltin).toBe(true);
+      expect(result?.symbolInfo).toBeDefined();
+    });
 
-		it("should identify built-in functions", () => {
-			service.openDocument("test.pine", "//@version=6\nx = ta.sma(close, 14)", 1);
-			const result = service.getDefinition("test.pine", {
-				line: 1,
-				character: 7, // on "sma"
-			});
+    it("should identify built-in functions", () => {
+      service.openDocument("test.pine", "//@version=6\nx = ta.sma(close, 14)", 1);
+      const result = service.getDefinition("test.pine", {
+        line: 1,
+        character: 7, // on "sma"
+      });
 
-			// ta.sma is a built-in
-			expect(result).not.toBeNull();
-			expect(result?.isBuiltin).toBe(true);
-		});
+      // ta.sma is a built-in
+      expect(result).not.toBeNull();
+      expect(result?.isBuiltin).toBe(true);
+    });
 
-		it("should return null for unknown symbols", () => {
-			service.openDocument("test.pine", "//@version=6\nx = unknownVar", 1);
-			const result = service.getDefinition("test.pine", {
-				line: 1,
-				character: 6,
-			});
+    it("should return null for unknown symbols", () => {
+      service.openDocument("test.pine", "//@version=6\nx = unknownVar", 1);
+      const result = service.getDefinition("test.pine", {
+        line: 1,
+        character: 6,
+      });
 
-			expect(result).toBeNull();
-		});
+      expect(result).toBeNull();
+    });
 
-		it("should find for loop iterator definition", () => {
-			service.openDocument(
-				"test.pine",
-				`//@version=6
+    it("should find for loop iterator definition", () => {
+      service.openDocument(
+        "test.pine",
+        `//@version=6
 for i = 0 to 10
     x = i
 `,
-				1,
-			);
-			// Position on "i" in the usage (line 2, character 8)
-			const result = service.getDefinition("test.pine", {
-				line: 2,
-				character: 8,
-			});
+        1,
+      );
+      // Position on "i" in the usage (line 2, character 8)
+      const result = service.getDefinition("test.pine", {
+        line: 2,
+        character: 8,
+      });
 
-			expect(result).not.toBeNull();
-			expect(result?.location?.range.start.line).toBe(1); // for loop line
-		});
-	});
+      expect(result).not.toBeNull();
+      expect(result?.location?.range.start.line).toBe(1); // for loop line
+    });
+  });
 
-	describe("Document Symbols", () => {
-		it("should return function symbols", () => {
-			service.openDocument(
-				"test.pine",
-				`//@version=6
+  describe("Document Symbols", () => {
+    it("should return function symbols", () => {
+      service.openDocument(
+        "test.pine",
+        `//@version=6
 myFunc(a, b) =>
     a + b
 `,
-				1,
-			);
-			const symbols = service.getDocumentSymbols("test.pine");
+        1,
+      );
+      const symbols = service.getDocumentSymbols("test.pine");
 
-			expect(symbols.length).toBeGreaterThan(0);
-			const func = symbols.find((s) => s.name.startsWith("myFunc"));
-			expect(func).toBeDefined();
-			expect(func?.kind).toBe(SymbolKind.Function);
-			expect(func?.name).toBe("myFunc(a, b)");
-		});
+      expect(symbols.length).toBeGreaterThan(0);
+      const func = symbols.find((s) => s.name.startsWith("myFunc"));
+      expect(func).toBeDefined();
+      expect(func?.kind).toBe(SymbolKind.Function);
+      expect(func?.name).toBe("myFunc(a, b)");
+    });
 
-		it("should return variable symbols", () => {
-			service.openDocument(
-				"test.pine",
-				`//@version=6
+    it("should return variable symbols", () => {
+      service.openDocument(
+        "test.pine",
+        `//@version=6
 x = 1
 var y = 2
 `,
-				1,
-			);
-			const symbols = service.getDocumentSymbols("test.pine");
+        1,
+      );
+      const symbols = service.getDocumentSymbols("test.pine");
 
-			const x = symbols.find((s) => s.name === "x");
-			const y = symbols.find((s) => s.name === "y");
-			expect(x).toBeDefined();
-			expect(x?.kind).toBe(SymbolKind.Variable);
-			expect(y).toBeDefined();
-			expect(y?.kind).toBe(SymbolKind.Variable);
-		});
+      const x = symbols.find((s) => s.name === "x");
+      const y = symbols.find((s) => s.name === "y");
+      expect(x).toBeDefined();
+      expect(x?.kind).toBe(SymbolKind.Variable);
+      expect(y).toBeDefined();
+      expect(y?.kind).toBe(SymbolKind.Variable);
+    });
 
-		it("should return constant symbols", () => {
-			service.openDocument(
-				"test.pine",
-				`//@version=6
+    it("should return constant symbols", () => {
+      service.openDocument(
+        "test.pine",
+        `//@version=6
 const PI = 3.14159
 `,
-				1,
-			);
-			const symbols = service.getDocumentSymbols("test.pine");
+        1,
+      );
+      const symbols = service.getDocumentSymbols("test.pine");
 
-			const pi = symbols.find((s) => s.name === "PI");
-			expect(pi).toBeDefined();
-			expect(pi?.kind).toBe(SymbolKind.Constant);
-		});
+      const pi = symbols.find((s) => s.name === "PI");
+      expect(pi).toBeDefined();
+      expect(pi?.kind).toBe(SymbolKind.Constant);
+    });
 
-		it("should return import symbols", () => {
-			service.openDocument(
-				"test.pine",
-				`//@version=6
+    it("should return import symbols", () => {
+      service.openDocument(
+        "test.pine",
+        `//@version=6
 import TradingView/ta/5 as ta
 `,
-				1,
-			);
-			const symbols = service.getDocumentSymbols("test.pine");
+        1,
+      );
+      const symbols = service.getDocumentSymbols("test.pine");
 
-			const imp = symbols.find((s) => s.name === "ta");
-			expect(imp).toBeDefined();
-			expect(imp?.kind).toBe(SymbolKind.Module);
-		});
+      const imp = symbols.find((s) => s.name === "ta");
+      expect(imp).toBeDefined();
+      expect(imp?.kind).toBe(SymbolKind.Module);
+    });
 
-		it("should return correct ranges for functions", () => {
-			service.openDocument(
-				"test.pine",
-				`//@version=6
+    it("should return correct ranges for functions", () => {
+      service.openDocument(
+        "test.pine",
+        `//@version=6
 myFunc() =>
     x = 1
     x + 1
 `,
-				1,
-			);
-			const symbols = service.getDocumentSymbols("test.pine");
+        1,
+      );
+      const symbols = service.getDocumentSymbols("test.pine");
 
-			const func = symbols.find((s) => s.name.startsWith("myFunc"));
-			expect(func).toBeDefined();
-			// Function starts at line 1 (0-indexed)
-			expect(func?.range.start.line).toBe(1);
-			// Selection range should cover just the name
-			expect(func?.selectionRange.start.line).toBe(1);
-		});
+      const func = symbols.find((s) => s.name.startsWith("myFunc"));
+      expect(func).toBeDefined();
+      // Function starts at line 1 (0-indexed)
+      expect(func?.range.start.line).toBe(1);
+      // Selection range should cover just the name
+      expect(func?.selectionRange.start.line).toBe(1);
+    });
 
-		it("should return empty array for empty document", () => {
-			service.openDocument("test.pine", "", 1);
-			const symbols = service.getDocumentSymbols("test.pine");
-			expect(symbols).toEqual([]);
-		});
+    it("should return empty array for empty document", () => {
+      service.openDocument("test.pine", "", 1);
+      const symbols = service.getDocumentSymbols("test.pine");
+      expect(symbols).toEqual([]);
+    });
 
-		it("should return empty array for unknown document", () => {
-			const symbols = service.getDocumentSymbols("unknown.pine");
-			expect(symbols).toEqual([]);
-		});
-	});
+    it("should return empty array for unknown document", () => {
+      const symbols = service.getDocumentSymbols("unknown.pine");
+      expect(symbols).toEqual([]);
+    });
+  });
 
-	describe("Static Helpers", () => {
-		it("should look up symbol info", () => {
-			const info = PineLanguageService.getSymbolInfo("ta.sma");
-			expect(info).not.toBeNull();
-			expect(info?.kind).toBe("function");
-			expect(info?.name).toBe("ta.sma");
-		});
+  describe("Static Helpers", () => {
+    it("should look up symbol info", () => {
+      const info = PineLanguageService.getSymbolInfo("ta.sma");
+      expect(info).not.toBeNull();
+      expect(info?.kind).toBe("function");
+      expect(info?.name).toBe("ta.sma");
+    });
 
-		it("should return null for unknown symbol", () => {
-			const info = PineLanguageService.getSymbolInfo("unknownSymbol");
-			expect(info).toBeNull();
-		});
+    it("should return null for unknown symbol", () => {
+      const info = PineLanguageService.getSymbolInfo("unknownSymbol");
+      expect(info).toBeNull();
+    });
 
-		it("should list all namespaces", () => {
-			const namespaces = PineLanguageService.getAllNamespaces();
-			expect(namespaces).toContain("ta");
-			expect(namespaces).toContain("math");
-			expect(namespaces).toContain("str");
-		});
+    it("should list all namespaces", () => {
+      const namespaces = PineLanguageService.getAllNamespaces();
+      expect(namespaces).toContain("ta");
+      expect(namespaces).toContain("math");
+      expect(namespaces).toContain("str");
+    });
 
-		it("should list functions by namespace", () => {
-			const functions = PineLanguageService.getAllFunctions("ta");
-			expect(functions).toContain("ta.sma");
-			expect(functions).toContain("ta.ema");
-		});
-	});
+    it("should list functions by namespace", () => {
+      const functions = PineLanguageService.getAllFunctions("ta");
+      expect(functions).toContain("ta.sma");
+      expect(functions).toContain("ta.ema");
+    });
+  });
 
-	describe("Code Actions", () => {
-		it("should offer to add version header", () => {
-			service.openDocument("test.pine", "x = 1", 1);
-			const diagnostics = service.getDiagnostics("test.pine");
-			const versionDiag = diagnostics.find((d) =>
-				d.message.includes("Recommend using //@version=6"),
-			);
+  describe("Code Actions", () => {
+    it("should offer to add version header", () => {
+      service.openDocument("test.pine", "x = 1", 1);
+      const diagnostics = service.getDiagnostics("test.pine");
+      const versionDiag = diagnostics.find((d) =>
+        d.message.includes("Recommend using //@version=6"),
+      );
 
-			expect(versionDiag).toBeDefined();
+      expect(versionDiag).toBeDefined();
 
-			const actions = service.getCodeActions(
-				"test.pine",
-				{ start: { line: 0, character: 0 }, end: { line: 0, character: 1 } },
-				{ diagnostics: [versionDiag!] },
-			);
+      const actions = service.getCodeActions(
+        "test.pine",
+        { start: { line: 0, character: 0 }, end: { line: 0, character: 1 } },
+        { diagnostics: [versionDiag!] },
+      );
 
-			expect(actions.length).toBeGreaterThan(0);
-			const addVersion = actions.find((a) => a.title === "Add //@version=6");
-			expect(addVersion).toBeDefined();
-			expect(addVersion?.kind).toBe(CodeActionKind.QuickFix);
-			expect(addVersion?.isPreferred).toBe(true);
-			expect(addVersion?.edit?.changes["test.pine"]).toBeDefined();
-		});
+      expect(actions.length).toBeGreaterThan(0);
+      const addVersion = actions.find((a) => a.title === "Add //@version=6");
+      expect(addVersion).toBeDefined();
+      expect(addVersion?.kind).toBe(CodeActionKind.QuickFix);
+      expect(addVersion?.isPreferred).toBe(true);
+      expect(addVersion?.edit?.changes["test.pine"]).toBeDefined();
+    });
 
-		it("should offer to fix plotshape shape= to style=", () => {
-			service.openDocument(
-				"test.pine",
-				`//@version=6
+    it("should offer to fix plotshape shape= to style=", () => {
+      service.openDocument(
+        "test.pine",
+        `//@version=6
 plotshape(close > open, shape=shape.triangleup)
 `,
-				1,
-			);
-			const diagnostics = service.getDiagnostics("test.pine");
-			const shapeDiag = diagnostics.find(
-				(d) =>
-					d.message.includes('Invalid parameter "shape"') &&
-					d.message.includes('Did you mean "style"'),
-			);
+        1,
+      );
+      const diagnostics = service.getDiagnostics("test.pine");
+      const shapeDiag = diagnostics.find(
+        (d) =>
+          d.message.includes('Invalid parameter "shape"') &&
+          d.message.includes('Did you mean "style"'),
+      );
 
-			expect(shapeDiag).toBeDefined();
+      expect(shapeDiag).toBeDefined();
 
-			const actions = service.getCodeActions(
-				"test.pine",
-				shapeDiag!.range,
-				{ diagnostics: [shapeDiag!] },
-			);
+      const actions = service.getCodeActions("test.pine", shapeDiag!.range, {
+        diagnostics: [shapeDiag!],
+      });
 
-			const fixAction = actions.find((a) =>
-				a.title.includes('Change "shape" to "style"'),
-			);
-			expect(fixAction).toBeDefined();
-			expect(fixAction?.kind).toBe(CodeActionKind.QuickFix);
-		});
+      const fixAction = actions.find((a) => a.title.includes('Change "shape" to "style"'));
+      expect(fixAction).toBeDefined();
+      expect(fixAction?.kind).toBe(CodeActionKind.QuickFix);
+    });
 
-		it("should offer to fix plotchar shape= to char=", () => {
-			service.openDocument(
-				"test.pine",
-				`//@version=6
+    it("should offer to fix plotchar shape= to char=", () => {
+      service.openDocument(
+        "test.pine",
+        `//@version=6
 plotchar(close > open, shape="A")
 `,
-				1,
-			);
-			const diagnostics = service.getDiagnostics("test.pine");
-			const shapeDiag = diagnostics.find(
-				(d) =>
-					d.message.includes('Invalid parameter "shape"') &&
-					d.message.includes('Did you mean "char"'),
-			);
+        1,
+      );
+      const diagnostics = service.getDiagnostics("test.pine");
+      const shapeDiag = diagnostics.find(
+        (d) =>
+          d.message.includes('Invalid parameter "shape"') &&
+          d.message.includes('Did you mean "char"'),
+      );
 
-			expect(shapeDiag).toBeDefined();
+      expect(shapeDiag).toBeDefined();
 
-			const actions = service.getCodeActions(
-				"test.pine",
-				shapeDiag!.range,
-				{ diagnostics: [shapeDiag!] },
-			);
+      const actions = service.getCodeActions("test.pine", shapeDiag!.range, {
+        diagnostics: [shapeDiag!],
+      });
 
-			const fixAction = actions.find((a) =>
-				a.title.includes('Change "shape" to "char"'),
-			);
-			expect(fixAction).toBeDefined();
-			expect(fixAction?.kind).toBe(CodeActionKind.QuickFix);
-		});
+      const fixAction = actions.find((a) => a.title.includes('Change "shape" to "char"'));
+      expect(fixAction).toBeDefined();
+      expect(fixAction?.kind).toBe(CodeActionKind.QuickFix);
+    });
 
-		it("should return empty array for no applicable fixes", () => {
-			service.openDocument("test.pine", "//@version=6\nx = 1", 1);
-			const actions = service.getCodeActions(
-				"test.pine",
-				{ start: { line: 1, character: 0 }, end: { line: 1, character: 5 } },
-				{ diagnostics: [] },
-			);
+    it("should return empty array for no applicable fixes", () => {
+      service.openDocument("test.pine", "//@version=6\nx = 1", 1);
+      const actions = service.getCodeActions(
+        "test.pine",
+        { start: { line: 1, character: 0 }, end: { line: 1, character: 5 } },
+        { diagnostics: [] },
+      );
 
-			expect(actions).toEqual([]);
-		});
-	});
+      expect(actions).toEqual([]);
+    });
+  });
 
-	describe("Inlay Hints", () => {
-		it("should show parameter hints for function calls", () => {
-			service.openDocument(
-				"test.pine",
-				`//@version=6
+  describe("Inlay Hints", () => {
+    it("should show parameter hints for function calls", () => {
+      service.openDocument(
+        "test.pine",
+        `//@version=6
 x = ta.sma(close, 14)
 `,
-				1,
-			);
-			const hints = service.getInlayHints("test.pine", {
-				start: { line: 0, character: 0 },
-				end: { line: 2, character: 0 },
-			});
+        1,
+      );
+      const hints = service.getInlayHints("test.pine", {
+        start: { line: 0, character: 0 },
+        end: { line: 2, character: 0 },
+      });
 
-			expect(hints.length).toBeGreaterThan(0);
-			// Should have hints for 'source:' and 'length:'
-			const sourceHint = hints.find((h) => h.label === "source:");
-			const lengthHint = hints.find((h) => h.label === "length:");
-			expect(sourceHint).toBeDefined();
-			expect(lengthHint).toBeDefined();
-			expect(sourceHint?.kind).toBe(InlayHintKind.Parameter);
-		});
+      expect(hints.length).toBeGreaterThan(0);
+      // Should have hints for 'source:' and 'length:'
+      const sourceHint = hints.find((h) => h.label === "source:");
+      const lengthHint = hints.find((h) => h.label === "length:");
+      expect(sourceHint).toBeDefined();
+      expect(lengthHint).toBeDefined();
+      expect(sourceHint?.kind).toBe(InlayHintKind.Parameter);
+    });
 
-		it("should not show hints for named arguments", () => {
-			service.openDocument(
-				"test.pine",
-				`//@version=6
+    it("should not show hints for named arguments", () => {
+      service.openDocument(
+        "test.pine",
+        `//@version=6
 x = input.int(defval=10, title="Value")
 `,
-				1,
-			);
-			const hints = service.getInlayHints("test.pine", {
-				start: { line: 0, character: 0 },
-				end: { line: 2, character: 0 },
-			});
+        1,
+      );
+      const hints = service.getInlayHints("test.pine", {
+        start: { line: 0, character: 0 },
+        end: { line: 2, character: 0 },
+      });
 
-			// Named arguments should not generate hints
-			expect(hints.length).toBe(0);
-		});
+      // Named arguments should not generate hints
+      expect(hints.length).toBe(0);
+    });
 
-		it("should return empty array for unknown functions", () => {
-			service.openDocument(
-				"test.pine",
-				`//@version=6
+    it("should return empty array for unknown functions", () => {
+      service.openDocument(
+        "test.pine",
+        `//@version=6
 x = myCustomFunc(1, 2, 3)
 `,
-				1,
-			);
-			const hints = service.getInlayHints("test.pine", {
-				start: { line: 0, character: 0 },
-				end: { line: 2, character: 0 },
-			});
+        1,
+      );
+      const hints = service.getInlayHints("test.pine", {
+        start: { line: 0, character: 0 },
+        end: { line: 2, character: 0 },
+      });
 
-			// Unknown functions should not generate hints
-			expect(hints.length).toBe(0);
-		});
+      // Unknown functions should not generate hints
+      expect(hints.length).toBe(0);
+    });
 
-		it("should show hints for nested function calls", () => {
-			service.openDocument(
-				"test.pine",
-				`//@version=6
+    it("should show hints for nested function calls", () => {
+      service.openDocument(
+        "test.pine",
+        `//@version=6
 x = ta.ema(ta.sma(close, 14), 21)
 `,
-				1,
-			);
-			const hints = service.getInlayHints("test.pine", {
-				start: { line: 0, character: 0 },
-				end: { line: 2, character: 0 },
-			});
+        1,
+      );
+      const hints = service.getInlayHints("test.pine", {
+        start: { line: 0, character: 0 },
+        end: { line: 2, character: 0 },
+      });
 
-			// Should have hints for both ta.sma and ta.ema
-			expect(hints.length).toBeGreaterThanOrEqual(4);
-		});
-	});
+      // Should have hints for both ta.sma and ta.ema
+      expect(hints.length).toBeGreaterThanOrEqual(4);
+    });
+  });
 
-	describe("Folding Ranges", () => {
-		it("should fold function bodies", () => {
-			service.openDocument(
-				"test.pine",
-				`//@version=6
+  describe("Folding Ranges", () => {
+    it("should fold function bodies", () => {
+      service.openDocument(
+        "test.pine",
+        `//@version=6
 myFunc() =>
     x = 1
     y = 2
     x + y
 `,
-				1,
-			);
-			const ranges = service.getFoldingRanges("test.pine");
+        1,
+      );
+      const ranges = service.getFoldingRanges("test.pine");
 
-			expect(ranges.length).toBeGreaterThan(0);
-			// Function should be foldable from line 1 to line 4 (0-indexed)
-			const funcFold = ranges.find(
-				(r) => r.startLine === 1 && r.endLine === 4,
-			);
-			expect(funcFold).toBeDefined();
-		});
+      expect(ranges.length).toBeGreaterThan(0);
+      // Function should be foldable from line 1 to line 4 (0-indexed)
+      const funcFold = ranges.find((r) => r.startLine === 1 && r.endLine === 4);
+      expect(funcFold).toBeDefined();
+    });
 
-		it("should fold if/else blocks", () => {
-			service.openDocument(
-				"test.pine",
-				`//@version=6
+    it("should fold if/else blocks", () => {
+      service.openDocument(
+        "test.pine",
+        `//@version=6
 if close > open
     x = 1
     y = 2
 `,
-				1,
-			);
-			const ranges = service.getFoldingRanges("test.pine");
+        1,
+      );
+      const ranges = service.getFoldingRanges("test.pine");
 
-			expect(ranges.length).toBeGreaterThan(0);
-			// If block should be foldable
-			const ifFold = ranges.find((r) => r.startLine === 1);
-			expect(ifFold).toBeDefined();
-		});
+      expect(ranges.length).toBeGreaterThan(0);
+      // If block should be foldable
+      const ifFold = ranges.find((r) => r.startLine === 1);
+      expect(ifFold).toBeDefined();
+    });
 
-		it("should fold for loops", () => {
-			service.openDocument(
-				"test.pine",
-				`//@version=6
+    it("should fold for loops", () => {
+      service.openDocument(
+        "test.pine",
+        `//@version=6
 for i = 0 to 10
     x = i
     y = x + 1
 `,
-				1,
-			);
-			const ranges = service.getFoldingRanges("test.pine");
+        1,
+      );
+      const ranges = service.getFoldingRanges("test.pine");
 
-			expect(ranges.length).toBeGreaterThan(0);
-			// For loop should be foldable
-			const forFold = ranges.find((r) => r.startLine === 1);
-			expect(forFold).toBeDefined();
-		});
+      expect(ranges.length).toBeGreaterThan(0);
+      // For loop should be foldable
+      const forFold = ranges.find((r) => r.startLine === 1);
+      expect(forFold).toBeDefined();
+    });
 
-		it("should fold multi-line comment blocks", () => {
-			service.openDocument(
-				"test.pine",
-				`x = 1
+    it("should fold multi-line comment blocks", () => {
+      service.openDocument(
+        "test.pine",
+        `x = 1
 // This is a comment block
 // with multiple lines
 // describing something
 y = 2
 `,
-				1,
-			);
-			const ranges = service.getFoldingRanges("test.pine");
+        1,
+      );
+      const ranges = service.getFoldingRanges("test.pine");
 
-			const commentFold = ranges.find(
-				(r) => r.kind === FoldingRangeKind.Comment,
-			);
-			expect(commentFold).toBeDefined();
-			expect(commentFold?.startLine).toBe(1);
-			expect(commentFold?.endLine).toBe(3);
-		});
+      const commentFold = ranges.find((r) => r.kind === FoldingRangeKind.Comment);
+      expect(commentFold).toBeDefined();
+      expect(commentFold?.startLine).toBe(1);
+      expect(commentFold?.endLine).toBe(3);
+    });
 
-		it("should return empty array for empty document", () => {
-			service.openDocument("test.pine", "", 1);
-			const ranges = service.getFoldingRanges("test.pine");
-			expect(ranges).toEqual([]);
-		});
-	});
+    it("should return empty array for empty document", () => {
+      service.openDocument("test.pine", "", 1);
+      const ranges = service.getFoldingRanges("test.pine");
+      expect(ranges).toEqual([]);
+    });
+  });
 
-	describe("Semantic Tokens", () => {
-		it("should return tokens for variables and functions", () => {
-			service.openDocument(
-				"test.pine",
-				`//@version=6
+  describe("Semantic Tokens", () => {
+    it("should return tokens for variables and functions", () => {
+      service.openDocument(
+        "test.pine",
+        `//@version=6
 x = ta.sma(close, 14)
 `,
-				1,
-			);
-			const result = service.getSemanticTokens("test.pine");
+        1,
+      );
+      const result = service.getSemanticTokens("test.pine");
 
-			// Should have encoded token data
-			expect(result.data.length).toBeGreaterThan(0);
-			// Each token is 5 numbers
-			expect(result.data.length % 5).toBe(0);
-		});
+      // Should have encoded token data
+      expect(result.data.length).toBeGreaterThan(0);
+      // Each token is 5 numbers
+      expect(result.data.length % 5).toBe(0);
+    });
 
-		it("should provide token legend", () => {
-			const legend = PineLanguageService.getSemanticTokensLegend();
+    it("should provide token legend", () => {
+      const legend = PineLanguageService.getSemanticTokensLegend();
 
-			expect(legend.tokenTypes).toContain("function");
-			expect(legend.tokenTypes).toContain("variable");
-			expect(legend.tokenTypes).toContain("property");
-			expect(legend.tokenModifiers).toContain("declaration");
-			expect(legend.tokenModifiers).toContain("defaultLibrary");
-		});
+      expect(legend.tokenTypes).toContain("function");
+      expect(legend.tokenTypes).toContain("variable");
+      expect(legend.tokenTypes).toContain("property");
+      expect(legend.tokenModifiers).toContain("declaration");
+      expect(legend.tokenModifiers).toContain("defaultLibrary");
+    });
 
-		it("should return empty data for empty document", () => {
-			service.openDocument("test.pine", "", 1);
-			const result = service.getSemanticTokens("test.pine");
-			expect(result.data).toEqual([]);
-		});
-	});
+    it("should return empty data for empty document", () => {
+      service.openDocument("test.pine", "", 1);
+      const result = service.getSemanticTokens("test.pine");
+      expect(result.data).toEqual([]);
+    });
+  });
 
-	describe("Library Imports", () => {
-		it("should detect imports without @source directive", () => {
-			service.openDocument(
-				"test.pine",
-				`//@version=6
+  describe("Library Imports", () => {
+    it("should detect imports without @source directive", () => {
+      service.openDocument(
+        "test.pine",
+        `//@version=6
 import TradingView/ta/12 as taLib
 x = close
 `,
-				1,
-			);
-			const diagnostics = service.getDiagnostics("test.pine");
+        1,
+      );
+      const diagnostics = service.getDiagnostics("test.pine");
 
-			// Should have an info diagnostic about missing @source
-			const sourceInfo = diagnostics.find(
-				(d) =>
-					d.message.includes("TradingView/ta/12") &&
-					d.message.includes("@source"),
-			);
-			expect(sourceInfo).toBeDefined();
-		});
+      // Should have an info diagnostic about missing @source
+      const sourceInfo = diagnostics.find(
+        (d) => d.message.includes("TradingView/ta/12") && d.message.includes("@source"),
+      );
+      expect(sourceInfo).toBeDefined();
+    });
 
-		it("should not warn when @source directive is present", () => {
-			service.openDocument(
-				"test.pine",
-				`//@version=6
+    it("should not warn when @source directive is present", () => {
+      service.openDocument(
+        "test.pine",
+        `//@version=6
 /// @source ./libs/ta.pine
 import TradingView/ta/12 as taLib
 x = close
 `,
-				1,
-			);
-			const diagnostics = service.getDiagnostics("test.pine");
+        1,
+      );
+      const diagnostics = service.getDiagnostics("test.pine");
 
-			// Should NOT have an info diagnostic about missing @source for this import
-			const sourceInfo = diagnostics.find(
-				(d) =>
-					d.message.includes("TradingView/ta/12") &&
-					d.message.includes("@source"),
-			);
-			expect(sourceInfo).toBeUndefined();
-		});
+      // Should NOT have an info diagnostic about missing @source for this import
+      const sourceInfo = diagnostics.find(
+        (d) => d.message.includes("TradingView/ta/12") && d.message.includes("@source"),
+      );
+      expect(sourceInfo).toBeUndefined();
+    });
 
-		it("should parse library exports", () => {
-			clearLibraryCache();
+    it("should parse library exports", () => {
+      clearLibraryCache();
 
-			const libraryContent = `//@version=6
+      const libraryContent = `//@version=6
 export myFunc(src, length) =>
     ta.sma(src, length)
 
 export anotherFunc() =>
     close
 `;
-			const result = parseLibrary(libraryContent, "test-lib.pine");
+      const result = parseLibrary(libraryContent, "test-lib.pine");
 
-			expect(result.exports.length).toBe(2);
-			expect(result.exports[0].name).toBe("myFunc");
-			expect(result.exports[0].kind).toBe("function");
-			expect(result.exports[1].name).toBe("anotherFunc");
-		});
-	});
+      expect(result.exports.length).toBe(2);
+      expect(result.exports[0].name).toBe("myFunc");
+      expect(result.exports[0].kind).toBe("function");
+      expect(result.exports[1].name).toBe("anotherFunc");
+    });
+  });
 });

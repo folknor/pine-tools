@@ -12,360 +12,326 @@ import type * as AST from "../src/parser/ast";
 import { Parser } from "../src/parser/parser";
 
 function parse(code: string): AST.Program {
-	const parser = new Parser(code);
-	const ast = parser.parse();
-	expect(parser.getParserErrors()).toEqual([]);
-	return ast;
+  const parser = new Parser(code);
+  const ast = parser.parse();
+  expect(parser.getParserErrors()).toEqual([]);
+  return ast;
 }
 
 function types(statements: AST.Statement[]): string[] {
-	return statements.map((s) => s.type);
+  return statements.map((s) => s.type);
 }
 
 describe("if statement blocks", () => {
-	it("keeps statements 2..n inside the consequent (#31 Finding 1)", () => {
-		const ast = parse(
-			[
-				"if close > open",
-				"    x = 1",
-				"    y = 2",
-				"    z = 3",
-				"plot(close)",
-			].join("\n"),
-		);
+  it("keeps statements 2..n inside the consequent (#31 Finding 1)", () => {
+    const ast = parse(
+      ["if close > open", "    x = 1", "    y = 2", "    z = 3", "plot(close)"].join("\n"),
+    );
 
-		expect(types(ast.body)).toEqual(["IfStatement", "ExpressionStatement"]);
-		const ifStmt = ast.body[0] as AST.IfStatement;
-		expect(ifStmt.consequent).toHaveLength(3);
-		expect(types(ifStmt.consequent)).toEqual([
-			"VariableDeclaration",
-			"VariableDeclaration",
-			"VariableDeclaration",
-		]);
-	});
+    expect(types(ast.body)).toEqual(["IfStatement", "ExpressionStatement"]);
+    const ifStmt = ast.body[0] as AST.IfStatement;
+    expect(ifStmt.consequent).toHaveLength(3);
+    expect(types(ifStmt.consequent)).toEqual([
+      "VariableDeclaration",
+      "VariableDeclaration",
+      "VariableDeclaration",
+    ]);
+  });
 
-	it("attaches else as the alternate (#31 Finding 1)", () => {
-		const ast = parse(
-			[
-				"if close > open",
-				"    x = 1",
-				"    y = 2",
-				"else",
-				"    z = 3",
-				"    w = 4",
-				"plot(close)",
-			].join("\n"),
-		);
+  it("attaches else as the alternate (#31 Finding 1)", () => {
+    const ast = parse(
+      [
+        "if close > open",
+        "    x = 1",
+        "    y = 2",
+        "else",
+        "    z = 3",
+        "    w = 4",
+        "plot(close)",
+      ].join("\n"),
+    );
 
-		expect(types(ast.body)).toEqual(["IfStatement", "ExpressionStatement"]);
-		const ifStmt = ast.body[0] as AST.IfStatement;
-		expect(ifStmt.consequent).toHaveLength(2);
-		expect(ifStmt.alternate).toBeDefined();
-		expect(ifStmt.alternate).toHaveLength(2);
-	});
+    expect(types(ast.body)).toEqual(["IfStatement", "ExpressionStatement"]);
+    const ifStmt = ast.body[0] as AST.IfStatement;
+    expect(ifStmt.consequent).toHaveLength(2);
+    expect(ifStmt.alternate).toBeDefined();
+    expect(ifStmt.alternate).toHaveLength(2);
+  });
 
-	it("nests else if chains without swallowing following statements (#31 Finding 6)", () => {
-		const ast = parse(
-			[
-				"if close > open",
-				"    x = 1",
-				"else if close < open",
-				"    y = 2",
-				"else",
-				"    z = 3",
-				"plot(close)",
-			].join("\n"),
-		);
+  it("nests else if chains without swallowing following statements (#31 Finding 6)", () => {
+    const ast = parse(
+      [
+        "if close > open",
+        "    x = 1",
+        "else if close < open",
+        "    y = 2",
+        "else",
+        "    z = 3",
+        "plot(close)",
+      ].join("\n"),
+    );
 
-		expect(types(ast.body)).toEqual(["IfStatement", "ExpressionStatement"]);
-		const outer = ast.body[0] as AST.IfStatement;
-		expect(outer.consequent).toHaveLength(1);
-		expect(outer.alternate).toHaveLength(1);
+    expect(types(ast.body)).toEqual(["IfStatement", "ExpressionStatement"]);
+    const outer = ast.body[0] as AST.IfStatement;
+    expect(outer.consequent).toHaveLength(1);
+    expect(outer.alternate).toHaveLength(1);
 
-		const inner = outer.alternate?.[0] as AST.IfStatement;
-		expect(inner.type).toBe("IfStatement");
-		expect(inner.consequent).toHaveLength(1);
-		expect(inner.alternate).toHaveLength(1);
-	});
+    const inner = outer.alternate?.[0] as AST.IfStatement;
+    expect(inner.type).toBe("IfStatement");
+    expect(inner.consequent).toHaveLength(1);
+    expect(inner.alternate).toHaveLength(1);
+  });
 
-	it("attaches a dedented else to the outer if, not the inner", () => {
-		const ast = parse(
-			[
-				"if close > open",
-				"    if close > high",
-				"        x = 1",
-				"else",
-				"    y = 2",
-				"plot(close)",
-			].join("\n"),
-		);
+  it("attaches a dedented else to the outer if, not the inner", () => {
+    const ast = parse(
+      [
+        "if close > open",
+        "    if close > high",
+        "        x = 1",
+        "else",
+        "    y = 2",
+        "plot(close)",
+      ].join("\n"),
+    );
 
-		expect(types(ast.body)).toEqual(["IfStatement", "ExpressionStatement"]);
-		const outer = ast.body[0] as AST.IfStatement;
-		expect(outer.alternate).toHaveLength(1);
+    expect(types(ast.body)).toEqual(["IfStatement", "ExpressionStatement"]);
+    const outer = ast.body[0] as AST.IfStatement;
+    expect(outer.alternate).toHaveLength(1);
 
-		const inner = outer.consequent[0] as AST.IfStatement;
-		expect(inner.type).toBe("IfStatement");
-		expect(inner.consequent).toHaveLength(1);
-		expect(inner.alternate).toBeUndefined();
-	});
+    const inner = outer.consequent[0] as AST.IfStatement;
+    expect(inner.type).toBe("IfStatement");
+    expect(inner.consequent).toHaveLength(1);
+    expect(inner.alternate).toBeUndefined();
+  });
 
-	it("does not swallow same-column siblings after a bodyless if (INV008)", () => {
-		const ast = parse(["if close > open", "plot(close)"].join("\n"));
+  it("does not swallow same-column siblings after a bodyless if (INV008)", () => {
+    const ast = parse(["if close > open", "plot(close)"].join("\n"));
 
-		expect(types(ast.body)).toEqual(["IfStatement", "ExpressionStatement"]);
-		const ifStmt = ast.body[0] as AST.IfStatement;
-		expect(ifStmt.consequent).toHaveLength(0);
-	});
+    expect(types(ast.body)).toEqual(["IfStatement", "ExpressionStatement"]);
+    const ifStmt = ast.body[0] as AST.IfStatement;
+    expect(ifStmt.consequent).toHaveLength(0);
+  });
 
-	it("does not swallow same-column siblings after a bodyless else (#31 Finding 6)", () => {
-		const ast = parse(
-			["if close > open", "    x = 1", "else", "plot(close)"].join("\n"),
-		);
+  it("does not swallow same-column siblings after a bodyless else (#31 Finding 6)", () => {
+    const ast = parse(["if close > open", "    x = 1", "else", "plot(close)"].join("\n"));
 
-		expect(types(ast.body)).toEqual(["IfStatement", "ExpressionStatement"]);
-		const ifStmt = ast.body[0] as AST.IfStatement;
-		expect(ifStmt.alternate).toHaveLength(0);
-	});
+    expect(types(ast.body)).toEqual(["IfStatement", "ExpressionStatement"]);
+    const ifStmt = ast.body[0] as AST.IfStatement;
+    expect(ifStmt.alternate).toHaveLength(0);
+  });
 
-	it("keeps indented statements after a nested if inside the outer body", () => {
-		const ast = parse(
-			[
-				"if close > open",
-				"    if close > high",
-				"        x = 1",
-				"    y = 2",
-				"plot(close)",
-			].join("\n"),
-		);
+  it("keeps indented statements after a nested if inside the outer body", () => {
+    const ast = parse(
+      ["if close > open", "    if close > high", "        x = 1", "    y = 2", "plot(close)"].join(
+        "\n",
+      ),
+    );
 
-		expect(types(ast.body)).toEqual(["IfStatement", "ExpressionStatement"]);
-		const outer = ast.body[0] as AST.IfStatement;
-		expect(types(outer.consequent)).toEqual([
-			"IfStatement",
-			"VariableDeclaration",
-		]);
-	});
+    expect(types(ast.body)).toEqual(["IfStatement", "ExpressionStatement"]);
+    const outer = ast.body[0] as AST.IfStatement;
+    expect(types(outer.consequent)).toEqual(["IfStatement", "VariableDeclaration"]);
+  });
 });
 
 describe("while statement blocks", () => {
-	it("keeps statements 2..n inside the body (#31 Finding 2)", () => {
-		const ast = parse(
-			[
-				"i = 0",
-				"while i < 10",
-				"    x = i * 2",
-				"    i := i + 1",
-				"plot(close)",
-			].join("\n"),
-		);
+  it("keeps statements 2..n inside the body (#31 Finding 2)", () => {
+    const ast = parse(
+      ["i = 0", "while i < 10", "    x = i * 2", "    i := i + 1", "plot(close)"].join("\n"),
+    );
 
-		expect(types(ast.body)).toEqual([
-			"VariableDeclaration",
-			"WhileStatement",
-			"ExpressionStatement",
-		]);
-		const whileStmt = ast.body[1] as AST.WhileStatement;
-		expect(whileStmt.body).toHaveLength(2);
-	});
+    expect(types(ast.body)).toEqual([
+      "VariableDeclaration",
+      "WhileStatement",
+      "ExpressionStatement",
+    ]);
+    const whileStmt = ast.body[1] as AST.WhileStatement;
+    expect(whileStmt.body).toHaveLength(2);
+  });
 
-	it("does not swallow same-column siblings after a bodyless while (#31 Finding 6)", () => {
-		const ast = parse(["while close > open", "plot(close)"].join("\n"));
+  it("does not swallow same-column siblings after a bodyless while (#31 Finding 6)", () => {
+    const ast = parse(["while close > open", "plot(close)"].join("\n"));
 
-		expect(types(ast.body)).toEqual(["WhileStatement", "ExpressionStatement"]);
-		const whileStmt = ast.body[0] as AST.WhileStatement;
-		expect(whileStmt.body).toHaveLength(0);
-	});
+    expect(types(ast.body)).toEqual(["WhileStatement", "ExpressionStatement"]);
+    const whileStmt = ast.body[0] as AST.WhileStatement;
+    expect(whileStmt.body).toHaveLength(0);
+  });
 });
 
 describe("inline arrow bodies", () => {
-	it("parses comma-separated statements in single-line function bodies (#35)", () => {
-		const ast = parse(
-			["f(x) => a := x, a * 2", "y = f(close)", "plot(y)"].join("\n"),
-		);
+  it("parses comma-separated statements in single-line function bodies (#35)", () => {
+    const ast = parse(["f(x) => a := x, a * 2", "y = f(close)", "plot(y)"].join("\n"));
 
-		expect(types(ast.body)).toEqual([
-			"FunctionDeclaration",
-			"VariableDeclaration",
-			"ExpressionStatement",
-		]);
-		const fn = ast.body[0] as AST.FunctionDeclaration;
-		expect(types(fn.body)).toEqual(["AssignmentStatement", "ReturnStatement"]);
-		const ret = fn.body[1] as AST.ReturnStatement;
-		expect(ret.value.type).toBe("BinaryExpression");
-	});
+    expect(types(ast.body)).toEqual([
+      "FunctionDeclaration",
+      "VariableDeclaration",
+      "ExpressionStatement",
+    ]);
+    const fn = ast.body[0] as AST.FunctionDeclaration;
+    expect(types(fn.body)).toEqual(["AssignmentStatement", "ReturnStatement"]);
+    const ret = fn.body[1] as AST.ReturnStatement;
+    expect(ret.value.type).toBe("BinaryExpression");
+  });
 
-	it("keeps plain single-expression arrow bodies as a lone ReturnStatement", () => {
-		const ast = parse(["f(x) => x * 2", "plot(f(close))"].join("\n"));
+  it("keeps plain single-expression arrow bodies as a lone ReturnStatement", () => {
+    const ast = parse(["f(x) => x * 2", "plot(f(close))"].join("\n"));
 
-		const fn = ast.body[0] as AST.FunctionDeclaration;
-		expect(types(fn.body)).toEqual(["ReturnStatement"]);
-	});
+    const fn = ast.body[0] as AST.FunctionDeclaration;
+    expect(types(fn.body)).toEqual(["ReturnStatement"]);
+  });
 });
 
 describe("switch arm bodies", () => {
-	it("parses inline statement arms (cond => a := b) (#33)", () => {
-		const ast = parse(
-			[
-				"var float a = na",
-				"b = 2.0",
-				"switch",
-				"    close > open => a := b",
-				"    => a := b * 2",
-				"plot(a)",
-			].join("\n"),
-		);
+  it("parses inline statement arms (cond => a := b) (#33)", () => {
+    const ast = parse(
+      [
+        "var float a = na",
+        "b = 2.0",
+        "switch",
+        "    close > open => a := b",
+        "    => a := b * 2",
+        "plot(a)",
+      ].join("\n"),
+    );
 
-		expect(types(ast.body)).toEqual([
-			"VariableDeclaration",
-			"VariableDeclaration",
-			"ExpressionStatement",
-			"ExpressionStatement",
-		]);
-		const switchExpr = (ast.body[2] as AST.ExpressionStatement)
-			.expression as AST.SwitchExpression;
-		expect(switchExpr.type).toBe("SwitchExpression");
-		expect(switchExpr.cases).toHaveLength(2);
-		for (const c of switchExpr.cases) {
-			expect(c.statements).toHaveLength(1);
-			expect(c.statements?.[0].type).toBe("AssignmentStatement");
-		}
-		expect(switchExpr.cases[0].condition).toBeDefined();
-		expect(switchExpr.cases[1].condition).toBeUndefined();
-	});
+    expect(types(ast.body)).toEqual([
+      "VariableDeclaration",
+      "VariableDeclaration",
+      "ExpressionStatement",
+      "ExpressionStatement",
+    ]);
+    const switchExpr = (ast.body[2] as AST.ExpressionStatement).expression as AST.SwitchExpression;
+    expect(switchExpr.type).toBe("SwitchExpression");
+    expect(switchExpr.cases).toHaveLength(2);
+    for (const c of switchExpr.cases) {
+      expect(c.statements).toHaveLength(1);
+      expect(c.statements?.[0].type).toBe("AssignmentStatement");
+    }
+    expect(switchExpr.cases[0].condition).toBeDefined();
+    expect(switchExpr.cases[1].condition).toBeUndefined();
+  });
 
-	it("parses inline comma-sequence arms (=> f(), na) (#33)", () => {
-		const ast = parse(
-			[
-				"x = switch",
-				'    close > open => runtime.error("boom"), na',
-				"    => close",
-				"plot(x)",
-			].join("\n"),
-		);
+  it("parses inline comma-sequence arms (=> f(), na) (#33)", () => {
+    const ast = parse(
+      [
+        "x = switch",
+        '    close > open => runtime.error("boom"), na',
+        "    => close",
+        "plot(x)",
+      ].join("\n"),
+    );
 
-		const decl = ast.body[0] as AST.VariableDeclaration;
-		const switchExpr = decl.init as AST.SwitchExpression;
-		expect(switchExpr.type).toBe("SwitchExpression");
-		expect(switchExpr.cases).toHaveLength(2);
+    const decl = ast.body[0] as AST.VariableDeclaration;
+    const switchExpr = decl.init as AST.SwitchExpression;
+    expect(switchExpr.type).toBe("SwitchExpression");
+    expect(switchExpr.cases).toHaveLength(2);
 
-		const seqArm = switchExpr.cases[0];
-		expect(seqArm.statements).toHaveLength(2);
-		expect(seqArm.statements?.[0].type).toBe("ExpressionStatement");
-		expect((seqArm.result as AST.Identifier).name).toBe("na");
+    const seqArm = switchExpr.cases[0];
+    expect(seqArm.statements).toHaveLength(2);
+    expect(seqArm.statements?.[0].type).toBe("ExpressionStatement");
+    expect((seqArm.result as AST.Identifier).name).toBe("na");
 
-		// A lone expression arm carries no statements
-		expect(switchExpr.cases[1].statements).toBeUndefined();
-	});
+    // A lone expression arm carries no statements
+    expect(switchExpr.cases[1].statements).toBeUndefined();
+  });
 
-	it("keeps multi-line arm statements in the AST", () => {
-		const ast = parse(
-			[
-				"x = switch",
-				"    close > open =>",
-				"        y = close * 2",
-				"        y + 1",
-				"    => na",
-				"plot(x)",
-			].join("\n"),
-		);
+  it("keeps multi-line arm statements in the AST", () => {
+    const ast = parse(
+      [
+        "x = switch",
+        "    close > open =>",
+        "        y = close * 2",
+        "        y + 1",
+        "    => na",
+        "plot(x)",
+      ].join("\n"),
+    );
 
-		const decl = ast.body[0] as AST.VariableDeclaration;
-		const switchExpr = decl.init as AST.SwitchExpression;
-		const arm = switchExpr.cases[0];
-		expect(arm.statements).toHaveLength(2);
-		expect(arm.statements?.[0].type).toBe("VariableDeclaration");
-		expect(arm.result.type).toBe("BinaryExpression");
-	});
+    const decl = ast.body[0] as AST.VariableDeclaration;
+    const switchExpr = decl.init as AST.SwitchExpression;
+    const arm = switchExpr.cases[0];
+    expect(arm.statements).toHaveLength(2);
+    expect(arm.statements?.[0].type).toBe("VariableDeclaration");
+    expect(arm.result.type).toBe("BinaryExpression");
+  });
 });
 
 describe("for statement blocks", () => {
-	it("keeps multi-statement for bodies intact", () => {
-		const ast = parse(
-			["for i = 0 to 10", "    x = i", "    y = i * 2", "plot(close)"].join(
-				"\n",
-			),
-		);
+  it("keeps multi-statement for bodies intact", () => {
+    const ast = parse(["for i = 0 to 10", "    x = i", "    y = i * 2", "plot(close)"].join("\n"));
 
-		expect(types(ast.body)).toEqual(["ForStatement", "ExpressionStatement"]);
-		const forStmt = ast.body[0] as AST.ForStatement;
-		expect(forStmt.body).toHaveLength(2);
-	});
+    expect(types(ast.body)).toEqual(["ForStatement", "ExpressionStatement"]);
+    const forStmt = ast.body[0] as AST.ForStatement;
+    expect(forStmt.body).toHaveLength(2);
+  });
 
-	it("parses a typed iterator (for int i = ...)", () => {
-		const ast = parse(
-			["for int i = 0 to 10", "    x = i", "plot(close)"].join("\n"),
-		);
+  it("parses a typed iterator (for int i = ...)", () => {
+    const ast = parse(["for int i = 0 to 10", "    x = i", "plot(close)"].join("\n"));
 
-		expect(types(ast.body)).toEqual(["ForStatement", "ExpressionStatement"]);
-		const forStmt = ast.body[0] as AST.ForStatement;
-		expect(forStmt.iterator).toBe("i");
-		expect(forStmt.body).toHaveLength(1);
-	});
+    expect(types(ast.body)).toEqual(["ForStatement", "ExpressionStatement"]);
+    const forStmt = ast.body[0] as AST.ForStatement;
+    expect(forStmt.iterator).toBe("i");
+    expect(forStmt.body).toHaveLength(1);
+  });
 
-	it("does not swallow same-column siblings after a bodyless for (#31 Finding 6)", () => {
-		const ast = parse(["for i = 0 to 10", "plot(close)"].join("\n"));
+  it("does not swallow same-column siblings after a bodyless for (#31 Finding 6)", () => {
+    const ast = parse(["for i = 0 to 10", "plot(close)"].join("\n"));
 
-		expect(types(ast.body)).toEqual(["ForStatement", "ExpressionStatement"]);
-		const forStmt = ast.body[0] as AST.ForStatement;
-		expect(forStmt.body).toHaveLength(0);
-	});
+    expect(types(ast.body)).toEqual(["ForStatement", "ExpressionStatement"]);
+    const forStmt = ast.body[0] as AST.ForStatement;
+    expect(forStmt.body).toHaveLength(0);
+  });
 
-	it("keeps multi-statement for-in bodies intact", () => {
-		const ast = parse(
-			[
-				"arr = array.from(1, 2, 3)",
-				"for item in arr",
-				"    x = item",
-				"    y = item * 2",
-				"plot(close)",
-			].join("\n"),
-		);
+  it("keeps multi-statement for-in bodies intact", () => {
+    const ast = parse(
+      [
+        "arr = array.from(1, 2, 3)",
+        "for item in arr",
+        "    x = item",
+        "    y = item * 2",
+        "plot(close)",
+      ].join("\n"),
+    );
 
-		expect(types(ast.body)).toEqual([
-			"VariableDeclaration",
-			"ForInStatement",
-			"ExpressionStatement",
-		]);
-		const forStmt = ast.body[1] as AST.ForInStatement;
-		expect(forStmt.body).toHaveLength(2);
-	});
+    expect(types(ast.body)).toEqual([
+      "VariableDeclaration",
+      "ForInStatement",
+      "ExpressionStatement",
+    ]);
+    const forStmt = ast.body[1] as AST.ForInStatement;
+    expect(forStmt.body).toHaveLength(2);
+  });
 
-	it("parses the tuple iterator form, including type-keyword names", () => {
-		const ast = parse(
-			[
-				"arr = array.from(1, 2, 3)",
-				"for [index, line] in arr",
-				"    x = index",
-				"    y = line",
-				"plot(close)",
-			].join("\n"),
-		);
+  it("parses the tuple iterator form, including type-keyword names", () => {
+    const ast = parse(
+      [
+        "arr = array.from(1, 2, 3)",
+        "for [index, line] in arr",
+        "    x = index",
+        "    y = line",
+        "plot(close)",
+      ].join("\n"),
+    );
 
-		expect(types(ast.body)).toEqual([
-			"VariableDeclaration",
-			"ForInStatement",
-			"ExpressionStatement",
-		]);
-		const forStmt = ast.body[1] as AST.ForInStatement;
-		expect(forStmt.iterator).toBe("index");
-		expect(forStmt.iterator2).toBe("line");
-		expect(forStmt.body).toHaveLength(2);
-	});
+    expect(types(ast.body)).toEqual([
+      "VariableDeclaration",
+      "ForInStatement",
+      "ExpressionStatement",
+    ]);
+    const forStmt = ast.body[1] as AST.ForInStatement;
+    expect(forStmt.iterator).toBe("index");
+    expect(forStmt.iterator2).toBe("line");
+    expect(forStmt.body).toHaveLength(2);
+  });
 
-	it("does not swallow same-column siblings after a bodyless for-in (#31 Finding 6)", () => {
-		const ast = parse(
-			["arr = array.from(1, 2, 3)", "for item in arr", "plot(close)"].join(
-				"\n",
-			),
-		);
+  it("does not swallow same-column siblings after a bodyless for-in (#31 Finding 6)", () => {
+    const ast = parse(["arr = array.from(1, 2, 3)", "for item in arr", "plot(close)"].join("\n"));
 
-		expect(types(ast.body)).toEqual([
-			"VariableDeclaration",
-			"ForInStatement",
-			"ExpressionStatement",
-		]);
-		const forStmt = ast.body[1] as AST.ForInStatement;
-		expect(forStmt.body).toHaveLength(0);
-	});
+    expect(types(ast.body)).toEqual([
+      "VariableDeclaration",
+      "ForInStatement",
+      "ExpressionStatement",
+    ]);
+    const forStmt = ast.body[1] as AST.ForInStatement;
+    expect(forStmt.body).toHaveLength(0);
+  });
 });

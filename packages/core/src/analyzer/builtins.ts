@@ -2,10 +2,10 @@
 // This module contains data about built-in functions, namespace properties, and validation rules
 
 import {
-	CONSTANTS_BY_NAME,
-	FUNCTIONS_BY_NAME,
-	type PineFunction,
-	VARIABLES_BY_NAME,
+  CONSTANTS_BY_NAME,
+  FUNCTIONS_BY_NAME,
+  type PineFunction,
+  VARIABLES_BY_NAME,
 } from "../../../../pine-data/v6";
 import { leadingQualifierOf, type Qualifier, qualRank } from "./qualifier";
 import type { PineType } from "./types";
@@ -15,9 +15,9 @@ import type { PineType } from "./types";
  * Uses flags.topLevelOnly from pine-data.
  */
 export function isTopLevelOnly(functionName: string): boolean {
-	const func = FUNCTIONS_BY_NAME.get(functionName);
+  const func = FUNCTIONS_BY_NAME.get(functionName);
 
-	return func?.flags?.topLevelOnly === true;
+  return func?.flags?.topLevelOnly === true;
 }
 
 /**
@@ -27,28 +27,28 @@ export function isTopLevelOnly(functionName: string): boolean {
  * holds no table of its own. see INV142
  */
 export function getArgGroups(
-	functionName: string,
+  functionName: string,
 ): { message: string; anyOf: string[][] } | undefined {
-	return FUNCTIONS_BY_NAME.get(functionName)?.flags?.argGroups;
+  return FUNCTIONS_BY_NAME.get(functionName)?.flags?.argGroups;
 }
 
 // Build namespace properties from pine-data
 function buildNamespaceProperties(): Record<string, PineType> {
-	const props: Record<string, PineType> = {};
+  const props: Record<string, PineType> = {};
 
-	// Import from CONSTANTS_BY_NAME
-	for (const [name, constant] of CONSTANTS_BY_NAME) {
-		props[name] = constant.type as PineType;
-	}
+  // Import from CONSTANTS_BY_NAME
+  for (const [name, constant] of CONSTANTS_BY_NAME) {
+    props[name] = constant.type as PineType;
+  }
 
-	// Import from VARIABLES_BY_NAME (namespaced ones)
-	for (const [name, variable] of VARIABLES_BY_NAME) {
-		if (name.includes(".")) {
-			props[name] = variable.type as PineType;
-		}
-	}
+  // Import from VARIABLES_BY_NAME (namespaced ones)
+  for (const [name, variable] of VARIABLES_BY_NAME) {
+    if (name.includes(".")) {
+      props[name] = variable.type as PineType;
+    }
+  }
 
-	return props;
+  return props;
 }
 
 // Namespace properties for property access type inference, built entirely
@@ -59,33 +59,32 @@ function buildNamespaceProperties(): Record<string, PineType> {
 // Pre-v6 leniency now comes from correct version detection + the existing
 // `version === "6"` gates in the checker, not from masking these for all
 // versions. see G004
-export const NAMESPACE_PROPERTIES: Record<string, PineType> =
-	buildNamespaceProperties();
+export const NAMESPACE_PROPERTIES: Record<string, PineType> = buildNamespaceProperties();
 
 // Build known namespaces from pine-data
 function buildKnownNamespaces(): string[] {
-	const namespaces = new Set<string>();
+  const namespaces = new Set<string>();
 
-	// Extract namespace prefixes from functions, variables, and constants
-	for (const name of FUNCTIONS_BY_NAME.keys()) {
-		if (name.includes(".")) {
-			namespaces.add(name.split(".")[0]);
-		}
-	}
+  // Extract namespace prefixes from functions, variables, and constants
+  for (const name of FUNCTIONS_BY_NAME.keys()) {
+    if (name.includes(".")) {
+      namespaces.add(name.split(".")[0]);
+    }
+  }
 
-	for (const name of VARIABLES_BY_NAME.keys()) {
-		if (name.includes(".")) {
-			namespaces.add(name.split(".")[0]);
-		}
-	}
+  for (const name of VARIABLES_BY_NAME.keys()) {
+    if (name.includes(".")) {
+      namespaces.add(name.split(".")[0]);
+    }
+  }
 
-	for (const name of CONSTANTS_BY_NAME.keys()) {
-		if (name.includes(".")) {
-			namespaces.add(name.split(".")[0]);
-		}
-	}
+  for (const name of CONSTANTS_BY_NAME.keys()) {
+    if (name.includes(".")) {
+      namespaces.add(name.split(".")[0]);
+    }
+  }
 
-	return [...namespaces].sort();
+  return [...namespaces].sort();
 }
 
 // Known namespaces for property validation (derived from pine-data)
@@ -98,24 +97,24 @@ export const KNOWN_NAMESPACES = buildKnownNamespaces();
 // unknown final member of a known multi-level namespace (`chart.point.newx`),
 // which the single-level check missed. see INV064
 function buildKnownNamespacePrefixes(): Set<string> {
-	const prefixes = new Set<string>();
+  const prefixes = new Set<string>();
 
-	const addFrom = (name: string) => {
-		const parts = name.split(".");
+  const addFrom = (name: string) => {
+    const parts = name.split(".");
 
-		// every proper prefix (drop the last segment, which is the member)
-		for (let i = 1; i < parts.length; i++) {
-			prefixes.add(parts.slice(0, i).join("."));
-		}
-	};
+    // every proper prefix (drop the last segment, which is the member)
+    for (let i = 1; i < parts.length; i++) {
+      prefixes.add(parts.slice(0, i).join("."));
+    }
+  };
 
-	for (const name of FUNCTIONS_BY_NAME.keys()) addFrom(name);
+  for (const name of FUNCTIONS_BY_NAME.keys()) addFrom(name);
 
-	for (const name of VARIABLES_BY_NAME.keys()) addFrom(name);
+  for (const name of VARIABLES_BY_NAME.keys()) addFrom(name);
 
-	for (const name of CONSTANTS_BY_NAME.keys()) addFrom(name);
+  for (const name of CONSTANTS_BY_NAME.keys()) addFrom(name);
 
-	return prefixes;
+  return prefixes;
 }
 
 export const KNOWN_NAMESPACE_PREFIXES = buildKnownNamespacePrefixes();
@@ -126,38 +125,38 @@ export const KNOWN_NAMESPACE_PREFIXES = buildKnownNamespacePrefixes();
 // functionSignatures.get(callee) misses. This set lets the checker
 // recognise `array.new<float>()` etc. as real builtins. see INV053
 function buildGenericFunctionBases(): Set<string> {
-	const bases = new Set<string>();
+  const bases = new Set<string>();
 
-	for (const name of FUNCTIONS_BY_NAME.keys()) {
-		const lt = name.indexOf("<");
+  for (const name of FUNCTIONS_BY_NAME.keys()) {
+    const lt = name.indexOf("<");
 
-		if (lt > 0) bases.add(name.slice(0, lt));
-	}
+    if (lt > 0) bases.add(name.slice(0, lt));
+  }
 
-	return bases;
+  return bases;
 }
 
 export const GENERIC_FUNCTION_BASES = buildGenericFunctionBases();
 
 // Function signature interface
 export interface FunctionSignature {
-	name: string;
-	parameters: ParameterInfo[];
-	returns?: string;
+  name: string;
+  parameters: ParameterInfo[];
+  returns?: string;
 }
 
 export interface ParameterInfo {
-	name: string;
-	type?: PineType;
-	// The catalog's qualified display form ("series color", "const string") -
-	// exactly TV's currentTypeDocStr in CE10123 templates. see INV061
-	rawType?: string;
-	optional?: boolean;
-	defaultValue?: string;
-	// The fixed set of accepted values for an enum-typed param (e.g.
-	// strategy.entry's `direction`: strategy.long/strategy.short). An
-	// incompatible argument is TV's CE10068. see INV100
-	allowedValues?: string[];
+  name: string;
+  type?: PineType;
+  // The catalog's qualified display form ("series color", "const string") -
+  // exactly TV's currentTypeDocStr in CE10123 templates. see INV061
+  rawType?: string;
+  optional?: boolean;
+  defaultValue?: string;
+  // The fixed set of accepted values for an enum-typed param (e.g.
+  // strategy.entry's `direction`: strategy.long/strategy.short). An
+  // incompatible argument is TV's CE10068. see INV100
+  allowedValues?: string[];
 }
 
 /**
@@ -175,152 +174,152 @@ export interface ParameterInfo {
  * - "input int" → "int" (input qualifier stripped)
  */
 const BUILTIN_SCALAR_TYPES = new Set([
-	"int",
-	"float",
-	"bool",
-	"string",
-	"color",
-	"line",
-	"label",
-	"box",
-	"table",
-	"void",
-	"na",
+  "int",
+  "float",
+  "bool",
+  "string",
+  "color",
+  "line",
+  "label",
+  "box",
+  "table",
+  "void",
+  "na",
 ]);
 
 const DRAWING_HANDLE_ANNOTATION_TYPES = new Set([
-	"line",
-	"label",
-	"box",
-	"table",
-	"linefill",
-	"polyline",
-	"chart.point",
+  "line",
+  "label",
+  "box",
+  "table",
+  "linefill",
+  "polyline",
+  "chart.point",
 ]);
 
 // Lowercase the inner type if it matches a built-in scalar; otherwise
 // preserve the original casing so user-defined types like `POI` survive.
 function normalizeInnerType(inner: string): string {
-	const trimmed = inner.trim();
-	const lower = trimmed.toLowerCase();
+  const trimmed = inner.trim();
+  const lower = trimmed.toLowerCase();
 
-	if (BUILTIN_SCALAR_TYPES.has(lower)) return lower;
+  if (BUILTIN_SCALAR_TYPES.has(lower)) return lower;
 
-	return trimmed;
+  return trimmed;
 }
 
 export function mapToPineType(typeStr?: string): PineType {
-	if (!typeStr) return "unknown";
+  if (!typeStr) return "unknown";
 
-	const trimmed = typeStr.trim();
-	const normalized = trimmed.toLowerCase();
+  const trimmed = typeStr.trim();
+  const normalized = trimmed.toLowerCase();
 
-	const typeMap: Record<string, PineType> = {
-		int: "int",
-		float: "float",
-		bool: "bool",
-		string: "string",
-		color: "color",
-		// NOTE: the drawing handles (line/label/box/table/linefill/polyline/
-		// chart.point) are NOT in this map - they are matched case-sensitively
-		// below so a user type named `Box`/`Label`/`Line` does not collide with
-		// the lowercase builtin keyword. see INV063/INV125.
-		// plot/hline are mapped: they are returned only by the builtin
-		// plot()/hline(), never by a UDF (Pine bars
-		// plot()/hline() from function bodies), so the INV063 UDF-return
-		// mis-inference cannot arise. Typing them lets arithmetic on a plot
-		// handle (`x = plot(close)` then `x + 1`) be rejected. see INV089
-		plot: "plot",
-		hline: "hline",
-		"series int": "series<int>",
-		"series float": "series<float>",
-		"series bool": "series<bool>",
-		"series string": "series<string>",
-		"series color": "series<color>",
-		// Simple qualifier variants (simple means value doesn't change per bar)
-		"simple int": "int",
-		"simple float": "float",
-		"simple bool": "bool",
-		"simple string": "string",
-		"simple color": "color",
-		// Combined qualifiers
-		"simple series int": "series<int>",
-		"simple series float": "series<float>",
-		"simple series bool": "series<bool>",
-		"simple series string": "series<string>",
-		"simple series color": "series<color>",
-		// Input qualifier variants
-		"input int": "int",
-		"input float": "float",
-		"input bool": "bool",
-		"input string": "string",
-		"input color": "color",
-		// Const qualifier variants
-		"const int": "int",
-		"const float": "float",
-		"const bool": "bool",
-		"const string": "string",
-		"const color": "color",
-	};
+  const typeMap: Record<string, PineType> = {
+    int: "int",
+    float: "float",
+    bool: "bool",
+    string: "string",
+    color: "color",
+    // NOTE: the drawing handles (line/label/box/table/linefill/polyline/
+    // chart.point) are NOT in this map - they are matched case-sensitively
+    // below so a user type named `Box`/`Label`/`Line` does not collide with
+    // the lowercase builtin keyword. see INV063/INV125.
+    // plot/hline are mapped: they are returned only by the builtin
+    // plot()/hline(), never by a UDF (Pine bars
+    // plot()/hline() from function bodies), so the INV063 UDF-return
+    // mis-inference cannot arise. Typing them lets arithmetic on a plot
+    // handle (`x = plot(close)` then `x + 1`) be rejected. see INV089
+    plot: "plot",
+    hline: "hline",
+    "series int": "series<int>",
+    "series float": "series<float>",
+    "series bool": "series<bool>",
+    "series string": "series<string>",
+    "series color": "series<color>",
+    // Simple qualifier variants (simple means value doesn't change per bar)
+    "simple int": "int",
+    "simple float": "float",
+    "simple bool": "bool",
+    "simple string": "string",
+    "simple color": "color",
+    // Combined qualifiers
+    "simple series int": "series<int>",
+    "simple series float": "series<float>",
+    "simple series bool": "series<bool>",
+    "simple series string": "series<string>",
+    "simple series color": "series<color>",
+    // Input qualifier variants
+    "input int": "int",
+    "input float": "float",
+    "input bool": "bool",
+    "input string": "string",
+    "input color": "color",
+    // Const qualifier variants
+    "const int": "int",
+    "const float": "float",
+    "const bool": "bool",
+    "const string": "string",
+    "const color": "color",
+  };
 
-	if (typeMap[normalized]) {
-		return typeMap[normalized];
-	}
+  if (typeMap[normalized]) {
+    return typeMap[normalized];
+  }
 
-	// Drawing handles are lowercase grammar keywords; match case-sensitively
-	// (against the original, not the lowercased form) so a capitalized user
-	// type like `Box`/`Label`/`Line` resolves as a UDT instead of colliding
-	// with the builtin handle. see INV063/INV125.
-	if (DRAWING_HANDLE_ANNOTATION_TYPES.has(trimmed)) {
-		return trimmed as PineType;
-	}
+  // Drawing handles are lowercase grammar keywords; match case-sensitively
+  // (against the original, not the lowercased form) so a capitalized user
+  // type like `Box`/`Label`/`Line` resolves as a UDT instead of colliding
+  // with the builtin handle. see INV063/INV125.
+  if (DRAWING_HANDLE_ANNOTATION_TYPES.has(trimmed)) {
+    return trimmed as PineType;
+  }
 
-	// For generic container types we match case-insensitively against the
-	// original (case-preserved) string and normalize only the inner type
-	// when it's a known built-in. This keeps user-defined type names like
-	// `POI` from being silently lowercased to `poi`.
+  // For generic container types we match case-insensitively against the
+  // original (case-preserved) string and normalize only the inner type
+  // when it's a known built-in. This keeps user-defined type names like
+  // `POI` from being silently lowercased to `poi`.
 
-	const arrayMatch = trimmed.match(/^(?:simple\s+)?array<(\w+)>$/i);
+  const arrayMatch = trimmed.match(/^(?:simple\s+)?array<(\w+)>$/i);
 
-	if (arrayMatch) {
-		return `array<${normalizeInnerType(arrayMatch[1])}>` as PineType;
-	}
+  if (arrayMatch) {
+    return `array<${normalizeInnerType(arrayMatch[1])}>` as PineType;
+  }
 
-	// `T[]` short form for `array<T>` (e.g. `float[]`, `int[]`). see INV004.
-	const arraySuffixMatch = trimmed.match(/^(?:simple\s+)?(\w+)\[\]$/i);
+  // `T[]` short form for `array<T>` (e.g. `float[]`, `int[]`). see INV004.
+  const arraySuffixMatch = trimmed.match(/^(?:simple\s+)?(\w+)\[\]$/i);
 
-	if (arraySuffixMatch) {
-		return `array<${normalizeInnerType(arraySuffixMatch[1])}>` as PineType;
-	}
+  if (arraySuffixMatch) {
+    return `array<${normalizeInnerType(arraySuffixMatch[1])}>` as PineType;
+  }
 
-	const matrixMatch = trimmed.match(/^(?:simple\s+)?matrix<(\w+)>$/i);
+  const matrixMatch = trimmed.match(/^(?:simple\s+)?matrix<(\w+)>$/i);
 
-	if (matrixMatch) {
-		return `matrix<${normalizeInnerType(matrixMatch[1])}>` as PineType;
-	}
+  if (matrixMatch) {
+    return `matrix<${normalizeInnerType(matrixMatch[1])}>` as PineType;
+  }
 
-	const mapMatch = trimmed.match(/^(?:simple\s+)?map<(\w+),\s*(\w+)>$/i);
+  const mapMatch = trimmed.match(/^(?:simple\s+)?map<(\w+),\s*(\w+)>$/i);
 
-	if (mapMatch) {
-		return `map<${normalizeInnerType(mapMatch[1])}, ${normalizeInnerType(mapMatch[2])}>` as PineType;
-	}
+  if (mapMatch) {
+    return `map<${normalizeInnerType(mapMatch[1])}, ${normalizeInnerType(mapMatch[2])}>` as PineType;
+  }
 
-	return "unknown";
+  return "unknown";
 }
 
 // Map return type string to PineType
 // Uses mapToPineType internally - this function exists for API clarity
 export function mapReturnTypeToPineType(returnTypeStr: string): PineType {
-	// Item 4 types the bare-keyword ANNOTATION only; builtin handle returns
-	// stay unknown (out of scope - Section 8). The six handle builtins return
-	// the qualified `series <handle>` (already -> unknown), but chart.point.*
-	// return bare `chart.point` in the data, so guard it explicitly here.
-	// see INV063/INV125.
-	if (DRAWING_HANDLE_ANNOTATION_TYPES.has(returnTypeStr.trim().toLowerCase())) {
-		return "unknown";
-	}
+  // Item 4 types the bare-keyword ANNOTATION only; builtin handle returns
+  // stay unknown (out of scope - Section 8). The six handle builtins return
+  // the qualified `series <handle>` (already -> unknown), but chart.point.*
+  // return bare `chart.point` in the data, so guard it explicitly here.
+  // see INV063/INV125.
+  if (DRAWING_HANDLE_ANNOTATION_TYPES.has(returnTypeStr.trim().toLowerCase())) {
+    return "unknown";
+  }
 
-	return mapToPineType(returnTypeStr);
+  return mapToPineType(returnTypeStr);
 }
 
 // Build function signature from PineFunction
@@ -329,47 +328,47 @@ export function mapReturnTypeToPineType(returnTypeStr: string): PineType {
 // entries (e.g., from scraping errors), we skip them rather than crashing.
 // The buildFunctionSignatures() caller handles null by not adding to the map.
 export function buildSignatureFromPineFunction(
-	name: string,
-	func: PineFunction,
+  name: string,
+  func: PineFunction,
 ): FunctionSignature | null {
-	try {
-		const parameters: ParameterInfo[] = [];
+  try {
+    const parameters: ParameterInfo[] = [];
 
-		// Use the parameters array from PineFunction
-		for (const param of func.parameters) {
-			parameters.push({
-				name: param.name,
-				type: mapToPineType(param.type),
-				rawType: param.type,
-				optional: !param.required,
-				defaultValue: param.default,
-				allowedValues: param.allowedValues,
-			});
-		}
+    // Use the parameters array from PineFunction
+    for (const param of func.parameters) {
+      parameters.push({
+        name: param.name,
+        type: mapToPineType(param.type),
+        rawType: param.type,
+        optional: !param.required,
+        defaultValue: param.default,
+        allowedValues: param.allowedValues,
+      });
+    }
 
-		return {
-			name,
-			parameters,
-			returns: func.returns || undefined,
-		};
-	} catch (_e) {
-		return null;
-	}
+    return {
+      name,
+      parameters,
+      returns: func.returns || undefined,
+    };
+  } catch (_e) {
+    return null;
+  }
 }
 
 // Build all function signatures from pine-data
 export function buildFunctionSignatures(): Map<string, FunctionSignature> {
-	const signatures = new Map<string, FunctionSignature>();
+  const signatures = new Map<string, FunctionSignature>();
 
-	for (const [name, func] of FUNCTIONS_BY_NAME) {
-		const sig = buildSignatureFromPineFunction(name, func);
+  for (const [name, func] of FUNCTIONS_BY_NAME) {
+    const sig = buildSignatureFromPineFunction(name, func);
 
-		if (sig) {
-			signatures.set(name, sig);
-		}
-	}
+    if (sig) {
+      signatures.set(name, sig);
+    }
+  }
 
-	return signatures;
+  return signatures;
 }
 
 // Is `<namespace>.<member>` a real catalog function? The built-in METHOD forms
@@ -379,39 +378,39 @@ export function buildFunctionSignatures(): Map<string, FunctionSignature> {
 // set. Generic entries are keyed with their template suffix (`array.new<float>`),
 // hence the GENERIC_FUNCTION_BASES fallback. see INV138
 export function isCatalogFunction(namespace: string, member: string): boolean {
-	const name = `${namespace}.${member}`;
+  const name = `${namespace}.${member}`;
 
-	return FUNCTIONS_BY_NAME.has(name) || GENERIC_FUNCTION_BASES.has(name);
+  return FUNCTIONS_BY_NAME.has(name) || GENERIC_FUNCTION_BASES.has(name);
 }
 
 // Check if a function is variadic (accepts variable number of arguments)
 export function isVariadicFunction(functionName: string): boolean {
-	const func = FUNCTIONS_BY_NAME.get(functionName);
+  const func = FUNCTIONS_BY_NAME.get(functionName);
 
-	return func?.flags?.variadic === true;
+  return func?.flags?.variadic === true;
 }
 
 // Get minimum required arguments for variadic functions
 export function getMinArgsForVariadic(functionName: string): number {
-	const func = FUNCTIONS_BY_NAME.get(functionName);
+  const func = FUNCTIONS_BY_NAME.get(functionName);
 
-	if (func?.flags?.minArgs !== undefined) {
-		return func.flags.minArgs;
-	}
+  if (func?.flags?.minArgs !== undefined) {
+    return func.flags.minArgs;
+  }
 
-	// Default: require at least the number of required parameters
-	if (func) {
-		return func.parameters.filter((p) => p.required).length;
-	}
+  // Default: require at least the number of required parameters
+  if (func) {
+    return func.parameters.filter((p) => p.required).length;
+  }
 
-	return 1;
+  return 1;
 }
 
 // Check if a function is polymorphic (return type depends on input)
 export function getPolymorphicType(functionName: string): string | undefined {
-	const func = FUNCTIONS_BY_NAME.get(functionName);
+  const func = FUNCTIONS_BY_NAME.get(functionName);
 
-	return func?.flags?.polymorphic;
+  return func?.flags?.polymorphic;
 }
 
 // Check if a function's return type follows one of its parameters
@@ -419,19 +418,19 @@ export function getPolymorphicType(functionName: string): string | undefined {
 // static `returns` is frozen to overload #0 and must not be used as a
 // fallback when the determining argument can't be typed. see #18
 export function hasReturnTypeParam(functionName: string): boolean {
-	const func = FUNCTIONS_BY_NAME.get(functionName);
+  const func = FUNCTIONS_BY_NAME.get(functionName);
 
-	return func?.flags?.returnTypeParam !== undefined;
+  return func?.flags?.returnTypeParam !== undefined;
 }
 
 // Check if a function has overloads (detected by having parameters with unknown type)
 // Functions with overloads have merged parameters from all overloads, some with type "unknown"
 export function hasOverloads(functionName: string): boolean {
-	const func = FUNCTIONS_BY_NAME.get(functionName);
+  const func = FUNCTIONS_BY_NAME.get(functionName);
 
-	if (!func) return false;
+  if (!func) return false;
 
-	return func.parameters.some((p) => p.type === "unknown");
+  return func.parameters.some((p) => p.type === "unknown");
 }
 
 // Whether the function ships per-overload signatures (the overloads[] field -
@@ -440,9 +439,9 @@ export function hasOverloads(functionName: string): boolean {
 // enforcement: the INV050 probe enumerates TV's preferred overload only
 // (label.new -> point), and a call may satisfy a different overload (x/y).
 export function hasOverloadSignatures(functionName: string): boolean {
-	const func = FUNCTIONS_BY_NAME.get(functionName);
+  const func = FUNCTIONS_BY_NAME.get(functionName);
 
-	return (func?.overloads?.length ?? 0) > 1;
+  return (func?.overloads?.length ?? 0) > 1;
 }
 
 // Per-overload signatures with mapped param types - the overloads[] field
@@ -451,25 +450,23 @@ export function hasOverloadSignatures(functionName: string): boolean {
 // x1/y1/x2/y2, label.new's x/y) as "unknown", which suppresses all positional
 // arg checks; resolving the actual overload a call selects and checking against
 // THAT overload's cleanly-typed params recovers them. see INV110
-export function getOverloadSignatures(
-	functionName: string,
-): FunctionSignature[] {
-	const func = FUNCTIONS_BY_NAME.get(functionName);
+export function getOverloadSignatures(functionName: string): FunctionSignature[] {
+  const func = FUNCTIONS_BY_NAME.get(functionName);
 
-	if (!func?.overloads || func.overloads.length === 0) return [];
+  if (!func?.overloads || func.overloads.length === 0) return [];
 
-	return func.overloads.map((ov) => ({
-		name: functionName,
-		parameters: ov.parameters.map((p) => ({
-			name: p.name,
-			type: mapToPineType(p.type),
-			rawType: p.type,
-			optional: !p.required,
-			defaultValue: p.default,
-			allowedValues: p.allowedValues,
-		})),
-		returns: ov.returns || undefined,
-	}));
+  return func.overloads.map((ov) => ({
+    name: functionName,
+    parameters: ov.parameters.map((p) => ({
+      name: p.name,
+      type: mapToPineType(p.type),
+      rawType: p.type,
+      optional: !p.required,
+      defaultValue: p.default,
+      allowedValues: p.allowedValues,
+    })),
+    returns: ov.returns || undefined,
+  }));
 }
 
 // The format-tail ("argN") union of the str.format / log.* family: variadic
@@ -480,59 +477,59 @@ export function getOverloadSignatures(
 // is what scopes this: math.max's tail is number0/number1 and TV does NOT
 // run this check there (probed 2026-09-10). see INV184
 export interface FormatTailUnion {
-	noun: string; // the first argN overload's type, quoted as-is by TV
-	members: Set<string>; // scalar member bases across ALL overloads
-	allowsArrays: boolean;
+  noun: string; // the first argN overload's type, quoted as-is by TV
+  members: Set<string>; // scalar member bases across ALL overloads
+  allowsArrays: boolean;
 }
 
 // Split a union type body on top-level "/" only - "array<int/float>" is one
 // member, not three.
 function splitTopLevelUnion(body: string): string[] {
-	const members: string[] = [];
-	let depth = 0;
-	let start = 0;
+  const members: string[] = [];
+  let depth = 0;
+  let start = 0;
 
-	for (let i = 0; i < body.length; i++) {
-		const ch = body[i];
+  for (let i = 0; i < body.length; i++) {
+    const ch = body[i];
 
-		if (ch === "<") depth++;
-		else if (ch === ">") depth--;
-		else if (ch === "/" && depth === 0) {
-			members.push(body.slice(start, i).trim());
-			start = i + 1;
-		}
-	}
+    if (ch === "<") depth++;
+    else if (ch === ">") depth--;
+    else if (ch === "/" && depth === 0) {
+      members.push(body.slice(start, i).trim());
+      start = i + 1;
+    }
+  }
 
-	members.push(body.slice(start).trim());
+  members.push(body.slice(start).trim());
 
-	return members;
+  return members;
 }
 
 export function formatTailUnion(functionName: string): FormatTailUnion | null {
-	const func = FUNCTIONS_BY_NAME.get(functionName);
+  const func = FUNCTIONS_BY_NAME.get(functionName);
 
-	if (!func?.flags?.variadic || !func.overloads) return null;
-	let noun: string | null = null;
-	const members = new Set<string>();
-	let allowsArrays = false;
+  if (!func?.flags?.variadic || !func.overloads) return null;
+  let noun: string | null = null;
+  const members = new Set<string>();
+  let allowsArrays = false;
 
-	for (const ov of func.overloads) {
-		const argParam = ov.parameters.find((p) => /^arg\d+$/.test(p.name));
+  for (const ov of func.overloads) {
+    const argParam = ov.parameters.find((p) => /^arg\d+$/.test(p.name));
 
-		if (!argParam?.type) continue;
+    if (!argParam?.type) continue;
 
-		if (noun === null) noun = argParam.type;
-		const body = argParam.type.replace(/^(const|input|simple|series)\s+/, "");
+    if (noun === null) noun = argParam.type;
+    const body = argParam.type.replace(/^(const|input|simple|series)\s+/, "");
 
-		for (const m of splitTopLevelUnion(body)) {
-			if (m.startsWith("array<")) allowsArrays = true;
-			else if (m) members.add(m);
-		}
-	}
+    for (const m of splitTopLevelUnion(body)) {
+      if (m.startsWith("array<")) allowsArrays = true;
+      else if (m) members.add(m);
+    }
+  }
 
-	if (noun === null || members.size === 0) return null;
+  if (noun === null || members.size === 0) return null;
 
-	return { noun, members, allowsArrays };
+  return { noun, members, allowsArrays };
 }
 
 // The required-param NAME list of the overload with the FEWEST required
@@ -547,25 +544,25 @@ export function formatTailUnion(functionName: string): FormatTailUnion | null {
 // `point`, so the floor is 1 and the x/y form is never under-supplied.
 // see INV056
 export function getMinimalRequiredParams(functionName: string): string[] {
-	const func = FUNCTIONS_BY_NAME.get(functionName);
-	const overloads = func?.overloads;
+  const func = FUNCTIONS_BY_NAME.get(functionName);
+  const overloads = func?.overloads;
 
-	if (!overloads || overloads.length === 0) return [];
-	let best: string[] | null = null;
+  if (!overloads || overloads.length === 0) return [];
+  let best: string[] | null = null;
 
-	for (const ov of overloads) {
-		const required = ov.parameters.filter((p) => p.required).map((p) => p.name);
+  for (const ov of overloads) {
+    const required = ov.parameters.filter((p) => p.required).map((p) => p.name);
 
-		if (best === null || required.length < best.length) best = required;
-	}
+    if (best === null || required.length < best.length) best = required;
+  }
 
-	return best ?? [];
+  return best ?? [];
 }
 
 // Argument info for polymorphic return type inference
 export interface ArgumentInfo {
-	name?: string; // Named argument name (undefined for positional)
-	type: PineType;
+  name?: string; // Named argument name (undefined for positional)
+  type: PineType;
 }
 
 // Get the return type for a polymorphic function based on argument types.
@@ -586,185 +583,176 @@ export interface ArgumentInfo {
  * unambiguous. see INV159
  */
 function determiningTypeFitsParam(
-	functionName: string,
-	paramName: string,
-	determined: PineType,
+  functionName: string,
+  paramName: string,
+  determined: PineType,
 ): boolean {
-	const param = FUNCTIONS_BY_NAME.get(functionName)?.parameters.find(
-		(p) => p.name === paramName,
-	);
+  const param = FUNCTIONS_BY_NAME.get(functionName)?.parameters.find((p) => p.name === paramName);
 
-	if (!param?.type) return true;
+  if (!param?.type) return true;
 
-	const members = baseOfRawType(String(param.type))
-		.split("/")
-		.map((m) => m.trim());
+  const members = baseOfRawType(String(param.type))
+    .split("/")
+    .map((m) => m.trim());
 
-	// Only a CLEAN scalar union can be decided here. Several catalog types are
-	// prose rather than a type expression - `input`'s defval reads
-	// "const int/float/bool/string/color or source-type built-ins", which splits
-	// into a member "color or source-type built-ins" and would then reject a
-	// perfectly good color, mistyping every `input(#hex)` in the corpus (100 new
-	// errors in one file before this guard). Anything else stays permissive.
-	// (CONST_SCALAR_BASES is named for its use in const-param detection below,
-	// but it is just the scalar base set - reused rather than duplicated.)
-	if (!members.every((m) => CONST_SCALAR_BASES.has(m))) return true;
-	const argBase = baseOfRawType(String(determined));
+  // Only a CLEAN scalar union can be decided here. Several catalog types are
+  // prose rather than a type expression - `input`'s defval reads
+  // "const int/float/bool/string/color or source-type built-ins", which splits
+  // into a member "color or source-type built-ins" and would then reject a
+  // perfectly good color, mistyping every `input(#hex)` in the corpus (100 new
+  // errors in one file before this guard). Anything else stays permissive.
+  // (CONST_SCALAR_BASES is named for its use in const-param detection below,
+  // but it is just the scalar base set - reused rather than duplicated.)
+  if (!members.every((m) => CONST_SCALAR_BASES.has(m))) return true;
+  const argBase = baseOfRawType(String(determined));
 
-	if (argBase === "unknown" || argBase === "na" || argBase.includes("/")) {
-		return true;
-	}
+  if (argBase === "unknown" || argBase === "na" || argBase.includes("/")) {
+    return true;
+  }
 
-	if (members.includes(argBase)) return true;
-	// int/float widen into one another, matching the accept side of the
-	// union-argument check.
-	const numeric = argBase === "int" || argBase === "float";
+  if (members.includes(argBase)) return true;
+  // int/float widen into one another, matching the accept side of the
+  // union-argument check.
+  const numeric = argBase === "int" || argBase === "float";
 
-	return numeric && (members.includes("int") || members.includes("float"));
+  return numeric && (members.includes("int") || members.includes("float"));
 }
 
 export function getPolymorphicReturnType(
-	functionName: string,
-	argTypes: PineType[],
-	argInfos?: ArgumentInfo[],
+  functionName: string,
+  argTypes: PineType[],
+  argInfos?: ArgumentInfo[],
 ): PineType | null {
-	// Resolve a return-follows-source param from the generated
-	// flags.returnTypeParam (the single source - detected offline from the
-	// overload dump, with a small override map; see union-types.ts / generate.ts
-	// RETURN_TYPE_PARAM_OVERRIDES; e.g. ta.valuewhen -> source, input -> defval).
-	// Without this, such functions fall back to the static return frozen to
-	// overload #0 (color). see TODO #17.
-	const returnTypeParam = FUNCTIONS_BY_NAME.get(functionName)?.flags
-		?.returnTypeParam as string | undefined;
+  // Resolve a return-follows-source param from the generated
+  // flags.returnTypeParam (the single source - detected offline from the
+  // overload dump, with a small override map; see union-types.ts / generate.ts
+  // RETURN_TYPE_PARAM_OVERRIDES; e.g. ta.valuewhen -> source, input -> defval).
+  // Without this, such functions fall back to the static return frozen to
+  // overload #0 (color). see TODO #17.
+  const returnTypeParam = FUNCTIONS_BY_NAME.get(functionName)?.flags?.returnTypeParam as
+    | string
+    | undefined;
 
-	if (returnTypeParam) {
-		// Find the argument that determines return type
-		let determiningType: PineType | null = null;
+  if (returnTypeParam) {
+    // Find the argument that determines return type
+    let determiningType: PineType | null = null;
 
-		if (argInfos && argInfos.length > 0) {
-			// First, check for named argument matching returnTypeParam
-			const namedArg = argInfos.find((arg) => arg.name === returnTypeParam);
+    if (argInfos && argInfos.length > 0) {
+      // First, check for named argument matching returnTypeParam
+      const namedArg = argInfos.find((arg) => arg.name === returnTypeParam);
 
-			if (namedArg) {
-				determiningType = namedArg.type;
-			} else {
-				// Fall back to positional: find position of returnTypeParam in function signature
-				const func = FUNCTIONS_BY_NAME.get(functionName);
+      if (namedArg) {
+        determiningType = namedArg.type;
+      } else {
+        // Fall back to positional: find position of returnTypeParam in function signature
+        const func = FUNCTIONS_BY_NAME.get(functionName);
 
-				if (func) {
-					const paramIndex = func.parameters.findIndex(
-						(p) => p.name === returnTypeParam,
-					);
+        if (func) {
+          const paramIndex = func.parameters.findIndex((p) => p.name === returnTypeParam);
 
-					if (paramIndex >= 0 && paramIndex < argInfos.length) {
-						// Only use positional if no named args before this position
-						const positionalArgs = argInfos.filter((a) => !a.name);
+          if (paramIndex >= 0 && paramIndex < argInfos.length) {
+            // Only use positional if no named args before this position
+            const positionalArgs = argInfos.filter((a) => !a.name);
 
-						if (paramIndex < positionalArgs.length) {
-							determiningType = positionalArgs[paramIndex].type;
-						}
-					}
-				}
-			}
-		} else if (argTypes.length > 0) {
-			// Legacy: use first argument if no argInfos provided
-			// This maintains backward compatibility
-			const func = FUNCTIONS_BY_NAME.get(functionName);
+            if (paramIndex < positionalArgs.length) {
+              determiningType = positionalArgs[paramIndex].type;
+            }
+          }
+        }
+      }
+    } else if (argTypes.length > 0) {
+      // Legacy: use first argument if no argInfos provided
+      // This maintains backward compatibility
+      const func = FUNCTIONS_BY_NAME.get(functionName);
 
-			if (func) {
-				const paramIndex = func.parameters.findIndex(
-					(p) => p.name === returnTypeParam,
-				);
+      if (func) {
+        const paramIndex = func.parameters.findIndex((p) => p.name === returnTypeParam);
 
-				if (paramIndex >= 0 && paramIndex < argTypes.length) {
-					determiningType = argTypes[paramIndex];
-				} else {
-					// Default to first argument
-					determiningType = argTypes[0];
-				}
-			} else {
-				determiningType = argTypes[0];
-			}
-		}
+        if (paramIndex >= 0 && paramIndex < argTypes.length) {
+          determiningType = argTypes[paramIndex];
+        } else {
+          // Default to first argument
+          determiningType = argTypes[0];
+        }
+      } else {
+        determiningType = argTypes[0];
+      }
+    }
 
-		// "type" is our placeholder for an unresolved / user-defined-type arg -
-		// treat it like "unknown" and fall through to the static return rather
-		// than propagating "type" into downstream arithmetic (avoids FPs like
-		// `math.abs(<unresolved>) % 2`).
-		if (
-			determiningType &&
-			determiningType !== "unknown" &&
-			(determiningType as string) !== "type" &&
-			determiningTypeFitsParam(functionName, returnTypeParam, determiningType)
-		) {
-			return determiningType;
-		}
-	}
+    // "type" is our placeholder for an unresolved / user-defined-type arg -
+    // treat it like "unknown" and fall through to the static return rather
+    // than propagating "type" into downstream arithmetic (avoids FPs like
+    // `math.abs(<unresolved>) % 2`).
+    if (
+      determiningType &&
+      determiningType !== "unknown" &&
+      (determiningType as string) !== "type" &&
+      determiningTypeFitsParam(functionName, returnTypeParam, determiningType)
+    ) {
+      return determiningType;
+    }
+  }
 
-	// Fall back to flags-based polymorphic handling from pine-data
-	const polyType = getPolymorphicType(functionName);
+  // Fall back to flags-based polymorphic handling from pine-data
+  const polyType = getPolymorphicType(functionName);
 
-	if (!polyType || argTypes.length === 0) {
-		return null;
-	}
+  if (!polyType || argTypes.length === 0) {
+    return null;
+  }
 
-	const firstArgType = argTypes[0];
+  const firstArgType = argTypes[0];
 
-	switch (polyType) {
-		case "input":
-			// Returns the same type as the first argument
-			// e.g., nz(float) -> float, nz(int) -> int
-			return firstArgType !== "unknown" ? firstArgType : null;
+  switch (polyType) {
+    case "input":
+      // Returns the same type as the first argument
+      // e.g., nz(float) -> float, nz(int) -> int
+      return firstArgType !== "unknown" ? firstArgType : null;
 
-		case "element": {
-			// Returns the element type of an array
-			// e.g., array.get(array<float>) -> float
-			if (firstArgType === "unknown") return null;
-			// If it's an array type like "array<float>", extract the element type
-			const arrayMatch = firstArgType.match(/array<(.+)>/);
+    case "element": {
+      // Returns the element type of an array
+      // e.g., array.get(array<float>) -> float
+      if (firstArgType === "unknown") return null;
+      // If it's an array type like "array<float>", extract the element type
+      const arrayMatch = firstArgType.match(/array<(.+)>/);
 
-			if (arrayMatch) {
-				return arrayMatch[1] as PineType;
-			}
+      if (arrayMatch) {
+        return arrayMatch[1] as PineType;
+      }
 
-			// For series types, return the base type
-			const seriesMatch = firstArgType.match(/series<(.+)>/);
+      // For series types, return the base type
+      const seriesMatch = firstArgType.match(/series<(.+)>/);
 
-			if (seriesMatch) {
-				return `series<${seriesMatch[1]}>` as PineType;
-			}
+      if (seriesMatch) {
+        return `series<${seriesMatch[1]}>` as PineType;
+      }
 
-			return firstArgType;
-		}
+      return firstArgType;
+    }
 
-		case "numeric":
-			// Returns the same numeric type (int stays int, float stays float)
-			// If any arg is float, result is float; otherwise int. Compare
-			// BASES so qualifier-wrapped numerics (input<int> from input.*
-			// calls) keep their int-ness instead of hitting the float
-			// fallback. see INV040
-			if (firstArgType === "unknown") return null;
+    case "numeric":
+      // Returns the same numeric type (int stays int, float stays float)
+      // If any arg is float, result is float; otherwise int. Compare
+      // BASES so qualifier-wrapped numerics (input<int> from input.*
+      // calls) keep their int-ness instead of hitting the float
+      // fallback. see INV040
+      if (firstArgType === "unknown") return null;
 
-			for (const argType of argTypes) {
-				if (baseOfRawType(String(argType)) === "float") {
-					return String(argType).includes("series<")
-						? "series<float>"
-						: "float";
-				}
-			}
+      for (const argType of argTypes) {
+        if (baseOfRawType(String(argType)) === "float") {
+          return String(argType).includes("series<") ? "series<float>" : "float";
+        }
+      }
 
-			if (baseOfRawType(String(firstArgType)) === "int") {
-				return firstArgType;
-			}
+      if (baseOfRawType(String(firstArgType)) === "int") {
+        return firstArgType;
+      }
 
-			// For other numeric types, return float as safe default
-			return String(firstArgType).includes("series<")
-				? "series<float>"
-				: "float";
+      // For other numeric types, return float as safe default
+      return String(firstArgType).includes("series<") ? "series<float>" : "float";
 
-		default:
-			return null;
-	}
+    default:
+      return null;
+  }
 }
 
 // ===========================================================================
@@ -784,23 +772,23 @@ const CONST_SCALAR_BASES = new Set(["int", "float", "bool", "string", "color"]);
 // Leading qualifier of a raw pine-data OR internal type string. "const int" ->
 // "const", "series<int>" -> "series", "int" -> undefined.
 function leadingQualifier(type: string): Qualifier | undefined {
-	return leadingQualifierOf(type);
+  return leadingQualifierOf(type);
 }
 
 function qrank(q: string | undefined): number {
-	return q ? qualRank(q as Qualifier) : 0;
+  return q ? qualRank(q as Qualifier) : 0;
 }
 
 // Base type with any qualifier stripped. Handles space form ("const int" ->
 // "int"), bracket form ("series<int>" -> "int"), unions ("const int/float" ->
 // "int/float"), and the bare scalar ("int" -> "int").
 function baseOfRawType(type: string): string {
-	const s = type.trim();
-	const bracket = s.match(/^(?:const|input|simple|series)<(.+)>$/);
+  const s = type.trim();
+  const bracket = s.match(/^(?:const|input|simple|series)<(.+)>$/);
 
-	if (bracket) return bracket[1].trim();
+  if (bracket) return bracket[1].trim();
 
-	return s.replace(/^(const|input|simple|series)\s+/, "").trim();
+  return s.replace(/^(const|input|simple|series)\s+/, "").trim();
 }
 
 // Does a param of this raw type STRICTLY require a const argument? Structural,
@@ -812,28 +800,28 @@ function baseOfRawType(type: string): string {
 //  - blobs that also accept non-const forms are excluded (input()'s
 //    "const ... or source-type built-ins").
 export function typeRequiresConst(rawType: string): boolean {
-	const t = rawType.trim();
+  const t = rawType.trim();
 
-	if (!/^const\b/.test(t)) return false;
+  if (!/^const\b/.test(t)) return false;
 
-	if (/\bor\b/.test(t) || /source/i.test(t)) return false;
+  if (/\bor\b/.test(t) || /source/i.test(t)) return false;
 
-	return baseOfRawType(t)
-		.split("/")
-		.every((b) => CONST_SCALAR_BASES.has(b.trim()));
+  return baseOfRawType(t)
+    .split("/")
+    .every((b) => CONST_SCALAR_BASES.has(b.trim()));
 }
 
 interface OverloadView {
-	parameters: Array<{ name: string; type: string }>;
-	returns: string;
+  parameters: Array<{ name: string; type: string }>;
+  returns: string;
 }
 
 function overloadViews(func: PineFunction): OverloadView[] {
-	if (func.overloads && func.overloads.length > 0) {
-		return func.overloads as OverloadView[];
-	}
+  if (func.overloads && func.overloads.length > 0) {
+    return func.overloads as OverloadView[];
+  }
 
-	return [{ parameters: func.parameters, returns: func.returns }];
+  return [{ parameters: func.parameters, returns: func.returns }];
 }
 
 // Tuple-return shapes for a builtin call: every overload whose `returns` is a
@@ -844,26 +832,26 @@ function overloadViews(func: PineFunction): OverloadView[] {
 // comma-separated scalars (ta.bb/dmi/kc/macd/supertrend/vwap), so a plain
 // comma split is sound. see TODO #51.
 export function builtinTupleReturns(functionName: string): string[][] {
-	const func = FUNCTIONS_BY_NAME.get(functionName);
+  const func = FUNCTIONS_BY_NAME.get(functionName);
 
-	if (!func) return [];
-	const shapes: string[][] = [];
+  if (!func) return [];
+  const shapes: string[][] = [];
 
-	for (const ov of overloadViews(func)) {
-		const r = (ov.returns || "").trim();
+  for (const ov of overloadViews(func)) {
+    const r = (ov.returns || "").trim();
 
-		if (!r.startsWith("[") || !r.endsWith("]")) continue;
+    if (!r.startsWith("[") || !r.endsWith("]")) continue;
 
-		const elems = r
-			.slice(1, -1)
-			.split(",")
-			.map((s) => s.trim())
-			.filter(Boolean);
+    const elems = r
+      .slice(1, -1)
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
 
-		if (elems.length > 1) shapes.push(elems);
-	}
+    if (elems.length > 1) shapes.push(elems);
+  }
 
-	return shapes;
+  return shapes;
 }
 
 // Classify a builtin call's tuple-ness for the tuple-destructure errors
@@ -877,48 +865,35 @@ export function builtinTupleReturns(functionName: string): string[][] {
 // resolution only - no type matching; this answers tuple-or-not, nothing
 // else.
 export function builtinCallTupleness(
-	functionName: string,
-	positionalCount: number,
-	namedArgs: string[],
-):
-	| { kind: "tuple"; arities: number[] }
-	| { kind: "scalar" }
-	| { kind: "unknown" } {
-	const func = FUNCTIONS_BY_NAME.get(functionName);
+  functionName: string,
+  positionalCount: number,
+  namedArgs: string[],
+): { kind: "tuple"; arities: number[] } | { kind: "scalar" } | { kind: "unknown" } {
+  const func = FUNCTIONS_BY_NAME.get(functionName);
 
-	if (!func) return { kind: "unknown" };
-	const views = overloadViews(func);
-	const isTuple = (r?: string) => (r || "").trim().startsWith("[");
-	const tupleViews = views.filter((ov) => isTuple(ov.returns));
+  if (!func) return { kind: "unknown" };
+  const views = overloadViews(func);
+  const isTuple = (r?: string) => (r || "").trim().startsWith("[");
+  const tupleViews = views.filter((ov) => isTuple(ov.returns));
 
-	if (tupleViews.length === 0) return { kind: "scalar" };
+  if (tupleViews.length === 0) return { kind: "scalar" };
 
-	const arities = [
-		...new Set(tupleViews.map((ov) => ov.returns.split(",").length)),
-	];
+  const arities = [...new Set(tupleViews.map((ov) => ov.returns.split(",").length))];
 
-	if (tupleViews.length === views.length) return { kind: "tuple", arities };
-	const scalarViews = views.filter((ov) => !isTuple(ov.returns));
+  if (tupleViews.length === views.length) return { kind: "tuple", arities };
+  const scalarViews = views.filter((ov) => !isTuple(ov.returns));
 
-	const scalarParams = new Set(
-		scalarViews.flatMap((ov) => ov.parameters.map((p) => p.name)),
-	);
+  const scalarParams = new Set(scalarViews.flatMap((ov) => ov.parameters.map((p) => p.name)));
 
-	const maxScalarArity = Math.max(
-		...scalarViews.map((ov) => ov.parameters.length),
-	);
+  const maxScalarArity = Math.max(...scalarViews.map((ov) => ov.parameters.length));
 
-	const namedTupleOnly = namedArgs.some(
-		(n) =>
-			!scalarParams.has(n) &&
-			tupleViews.some((ov) => ov.parameters.some((p) => p.name === n)),
-	);
+  const namedTupleOnly = namedArgs.some(
+    (n) => !scalarParams.has(n) && tupleViews.some((ov) => ov.parameters.some((p) => p.name === n)),
+  );
 
-	const positionalTupleOnly = positionalCount > maxScalarArity;
+  const positionalTupleOnly = positionalCount > maxScalarArity;
 
-	return namedTupleOnly || positionalTupleOnly
-		? { kind: "tuple", arities }
-		: { kind: "scalar" };
+  return namedTupleOnly || positionalTupleOnly ? { kind: "tuple", arities } : { kind: "scalar" };
 }
 
 // A param requires const iff it appears in >=1 overload and EVERY overload that
@@ -926,25 +901,22 @@ export function builtinCallTupleness(
 // (e.g. timestamp's series-string dateString overload), TV can resolve to that
 // overload, so we must not flag. Param-name based, so no full call resolution
 // is needed - sound for the qualifier question.
-export function paramRequiresConst(
-	functionName: string,
-	paramName: string,
-): boolean {
-	const func = FUNCTIONS_BY_NAME.get(functionName);
+export function paramRequiresConst(functionName: string, paramName: string): boolean {
+  const func = FUNCTIONS_BY_NAME.get(functionName);
 
-	if (!func) return false;
-	let seen = false;
+  if (!func) return false;
+  let seen = false;
 
-	for (const ov of overloadViews(func)) {
-		const p = ov.parameters.find((x) => x.name === paramName);
+  for (const ov of overloadViews(func)) {
+    const p = ov.parameters.find((x) => x.name === paramName);
 
-		if (!p) continue;
-		seen = true;
+    if (!p) continue;
+    seen = true;
 
-		if (!typeRequiresConst(p.type)) return false;
-	}
+    if (!typeRequiresConst(p.type)) return false;
+  }
 
-	return seen;
+  return seen;
 }
 
 // Positional counterpart of paramRequiresConst. A POSITIONAL argument's param
@@ -955,57 +927,52 @@ export function paramRequiresConst(
 // Otherwise TV could resolve to a lenient overload, so we must not flag.
 // Returns the param name + raw const type to quote, or null to skip.
 export function positionalConstParam(
-	functionName: string,
-	index: number,
-	positionalCount: number,
+  functionName: string,
+  index: number,
+  positionalCount: number,
 ): { name: string; docType: string } | null {
-	const func = FUNCTIONS_BY_NAME.get(functionName);
+  const func = FUNCTIONS_BY_NAME.get(functionName);
 
-	if (!func) return null;
-	const views = overloadViews(func);
+  if (!func) return null;
+  const views = overloadViews(func);
 
-	const candidates = views.filter(
-		(ov) => ov.parameters.length >= positionalCount,
-	);
+  const candidates = views.filter((ov) => ov.parameters.length >= positionalCount);
 
-	const pool = candidates.length > 0 ? candidates : views;
-	let name: string | undefined;
-	let docType: string | undefined;
+  const pool = candidates.length > 0 ? candidates : views;
+  let name: string | undefined;
+  let docType: string | undefined;
 
-	for (const ov of pool) {
-		const p = ov.parameters[index];
+  for (const ov of pool) {
+    const p = ov.parameters[index];
 
-		if (!p || !typeRequiresConst(p.type)) return null;
+    if (!p || !typeRequiresConst(p.type)) return null;
 
-		if (name === undefined) {
-			name = p.name;
-			docType = p.type;
-		} else if (name !== p.name) {
-			return null;
-		}
-	}
+    if (name === undefined) {
+      name = p.name;
+      docType = p.type;
+    } else if (name !== p.name) {
+      return null;
+    }
+  }
 
-	return name !== undefined && docType !== undefined ? { name, docType } : null;
+  return name !== undefined && docType !== undefined ? { name, docType } : null;
 }
 
 // The raw const type to quote in the CE10123 message (e.g. "const int"), taken
 // from the first overload that documents the param. Assumes paramRequiresConst
 // already returned true.
-export function getConstParamDocType(
-	functionName: string,
-	paramName: string,
-): string | undefined {
-	const func = FUNCTIONS_BY_NAME.get(functionName);
+export function getConstParamDocType(functionName: string, paramName: string): string | undefined {
+  const func = FUNCTIONS_BY_NAME.get(functionName);
 
-	if (!func) return undefined;
+  if (!func) return undefined;
 
-	for (const ov of overloadViews(func)) {
-		const p = ov.parameters.find((x) => x.name === paramName);
+  for (const ov of overloadViews(func)) {
+    const p = ov.parameters.find((x) => x.name === paramName);
 
-		if (p) return p.type;
-	}
+    if (p) return p.type;
+  }
 
-	return undefined;
+  return undefined;
 }
 
 // Scalar base members of a union param type ("series int/float/color" ->
@@ -1014,59 +981,49 @@ export function getConstParamDocType(
 // genuine "unknown". The merged param type is already the union across overloads
 // (union-types.ts), so this set is exactly what TV accepts at that param. INV016.
 export function getScalarUnionMembers(rawType: string): string[] | null {
-	const base = baseOfRawType(rawType);
+  const base = baseOfRawType(rawType);
 
-	if (!base.includes("/")) return null;
-	const members = base.split("/").map((s) => s.trim());
+  if (!base.includes("/")) return null;
+  const members = base.split("/").map((s) => s.trim());
 
-	return members.every((m) => CONST_SCALAR_BASES.has(m)) ? members : null;
+  return members.every((m) => CONST_SCALAR_BASES.has(m)) ? members : null;
 }
 
-export function namedParamUnionMembers(
-	functionName: string,
-	paramName: string,
-): string[] | null {
-	const p = FUNCTIONS_BY_NAME.get(functionName)?.parameters.find(
-		(x) => x.name === paramName,
-	);
+export function namedParamUnionMembers(functionName: string, paramName: string): string[] | null {
+  const p = FUNCTIONS_BY_NAME.get(functionName)?.parameters.find((x) => x.name === paramName);
 
-	return p ? getScalarUnionMembers(p.type) : null;
+  return p ? getScalarUnionMembers(p.type) : null;
 }
 
-export function positionalParamUnionMembers(
-	functionName: string,
-	index: number,
-): string[] | null {
-	const p = FUNCTIONS_BY_NAME.get(functionName)?.parameters[index];
+export function positionalParamUnionMembers(functionName: string, index: number): string[] | null {
+  const p = FUNCTIONS_BY_NAME.get(functionName)?.parameters[index];
 
-	return p ? getScalarUnionMembers(p.type) : null;
+  return p ? getScalarUnionMembers(p.type) : null;
 }
 
 export function unionParamInfo(
-	functionName: string,
-	index: number,
-	name?: string,
+  functionName: string,
+  index: number,
+  name?: string,
 ): { name: string; docType: string } | null {
-	const func = FUNCTIONS_BY_NAME.get(functionName);
+  const func = FUNCTIONS_BY_NAME.get(functionName);
 
-	if (!func) return null;
-	let fallback: { name: string; docType: string } | null = null;
+  if (!func) return null;
+  let fallback: { name: string; docType: string } | null = null;
 
-	for (const ov of overloadViews(func)) {
-		const p = name
-			? ov.parameters.find((x) => x.name === name)
-			: ov.parameters[index];
+  for (const ov of overloadViews(func)) {
+    const p = name ? ov.parameters.find((x) => x.name === name) : ov.parameters[index];
 
-		if (!p || !getScalarUnionMembers(p.type)) continue;
-		const info = { name: p.name, docType: p.type };
-		const base = baseOfRawType(p.type);
+    if (!p || !getScalarUnionMembers(p.type)) continue;
+    const info = { name: p.name, docType: p.type };
+    const base = baseOfRawType(p.type);
 
-		if (!fallback) fallback = info;
+    if (!fallback) fallback = info;
 
-		if (base === "int/float" || base === "int/float/color") return info;
-	}
+    if (base === "int/float" || base === "int/float/color") return info;
+  }
 
-	return fallback;
+  return fallback;
 }
 
 // The expected-type noun TV quotes in CE10123 for a union-typed parameter.
@@ -1075,15 +1032,10 @@ export function unionParamInfo(
 // draws six for that one doc type), so it is probe-measured per
 // function+parameter and merged at generate-time. Undefined for a parameter
 // the sweep could not reach, whose caller keeps its own fallback. see INV171
-export function paramExpectedNoun(
-	functionName: string,
-	paramName: string,
-): string | undefined {
-	const p = FUNCTIONS_BY_NAME.get(functionName)?.parameters.find(
-		(x) => x.name === paramName,
-	);
+export function paramExpectedNoun(functionName: string, paramName: string): string | undefined {
+  const p = FUNCTIONS_BY_NAME.get(functionName)?.parameters.find((x) => x.name === paramName);
 
-	return (p as { expectedTypeNoun?: string } | undefined)?.expectedTypeNoun;
+  return (p as { expectedTypeNoun?: string } | undefined)?.expectedTypeNoun;
 }
 
 /**
@@ -1103,43 +1055,41 @@ export function paramExpectedNoun(
  * see INV183
  */
 export function expectedNounFor(
-	functionName: string,
-	paramName: string,
-	docType: string | undefined,
+  functionName: string,
+  paramName: string,
+  docType: string | undefined,
 ): string {
-	return paramExpectedNoun(functionName, paramName) ?? docType ?? "";
+  return paramExpectedNoun(functionName, paramName) ?? docType ?? "";
 }
 
 // Qualifier + base of a built-in VARIABLE (close -> series/float,
 // syminfo.tickerid -> simple/string). Used to decide whether a bare/member
 // reference is a non-const argument. Undefined for non-builtins.
-export function getBuiltinVarInfo(
-	name: string,
-): { qualifier: string; base: string } | undefined {
-	const v = VARIABLES_BY_NAME.get(name);
+export function getBuiltinVarInfo(name: string): { qualifier: string; base: string } | undefined {
+  const v = VARIABLES_BY_NAME.get(name);
 
-	if (!v) return undefined;
+  if (!v) return undefined;
 
-	return { qualifier: v.qualifier, base: baseOfRawType(String(v.type)) };
+  return { qualifier: v.qualifier, base: baseOfRawType(String(v.type)) };
 }
 
 // A built-in CONSTANT (color.red, display.none, barmerge.gaps_off) - these are
 // const-qualified by definition.
 export function isBuiltinConstant(name: string): boolean {
-	return CONSTANTS_BY_NAME.has(name);
+  return CONSTANTS_BY_NAME.has(name);
 }
 
 // TV's qualified display type ("const color", "series float") for a built-in
 // variable or constant - the argumentType slot of CE10123 templates. see INV061
 export function getBuiltinQualifiedType(name: string): string | undefined {
-	const c = CONSTANTS_BY_NAME.get(name);
+  const c = CONSTANTS_BY_NAME.get(name);
 
-	if (c?.type) return `const ${baseOfRawType(String(c.type))}`;
-	const v = VARIABLES_BY_NAME.get(name);
+  if (c?.type) return `const ${baseOfRawType(String(c.type))}`;
+  const v = VARIABLES_BY_NAME.get(name);
 
-	if (v) return `${v.qualifier} ${baseOfRawType(String(v.type))}`;
+  if (v) return `${v.qualifier} ${baseOfRawType(String(v.type))}`;
 
-	return undefined;
+  return undefined;
 }
 
 /**
@@ -1148,67 +1098,67 @@ export function getBuiltinQualifiedType(name: string): string | undefined {
  * generic into `matrix<int` and `float>`. see INV147
  */
 function splitUnionMembers(type: string): string[] {
-	const members: string[] = [];
-	let depth = 0;
-	let start = 0;
+  const members: string[] = [];
+  let depth = 0;
+  let start = 0;
 
-	for (let i = 0; i < type.length; i++) {
-		const ch = type[i];
+  for (let i = 0; i < type.length; i++) {
+    const ch = type[i];
 
-		if (ch === "<") depth++;
-		else if (ch === ">") depth--;
-		else if (ch === "/" && depth === 0) {
-			members.push(type.slice(start, i).trim());
-			start = i + 1;
-		}
-	}
+    if (ch === "<") depth++;
+    else if (ch === ">") depth--;
+    else if (ch === "/" && depth === 0) {
+      members.push(type.slice(start, i).trim());
+      start = i + 1;
+    }
+  }
 
-	members.push(type.slice(start).trim());
+  members.push(type.slice(start).trim());
 
-	return members.filter((m) => m.length > 0);
+  return members.filter((m) => m.length > 0);
 }
 
 const GENERIC_RE = /^([A-Za-z_][\w.]*)<(.+)>$/;
 
 function baseCompatible(argBase: string, paramBase: string): boolean {
-	if (!paramBase || /unknown|\bany\b/.test(paramBase)) return true;
+  if (!paramBase || /unknown|\bany\b/.test(paramBase)) return true;
 
-	if (argBase === "unknown" || argBase === "na") return true;
-	const numeric = (x: string) => x === "int" || x === "float";
-	const argGeneric = argBase.match(GENERIC_RE);
+  if (argBase === "unknown" || argBase === "na") return true;
+  const numeric = (x: string) => x === "int" || x === "float";
+  const argGeneric = argBase.match(GENERIC_RE);
 
-	for (const pb of splitUnionMembers(paramBase)) {
-		if (pb === argBase) return true;
+  for (const pb of splitUnionMembers(paramBase)) {
+    if (pb === argBase) return true;
 
-		// A generic argument (matrix<float>, array<int>) matches a generic
-		// param by CONTAINER plus element type. Without this the whole
-		// `matrix<float>` string was compared against `matrix<int>`, no
-		// overload ever matched, and the caller silently fell back to
-		// overload #0's return - matrix.mult(m, m) typed as `array<int>`.
-		//
-		// Elements must match EXACTLY (modulo union membership): Pine
-		// collections are invariant, so no int->float widening here. Widening
-		// would let matrix<float> match overload 3's `matrix<int>` as well as
-		// overload 4's `matrix<int/float>`, and the first-wins pool order
-		// would then hand back matrix<int>. see INV147
-		const pbGeneric = pb.match(GENERIC_RE);
+    // A generic argument (matrix<float>, array<int>) matches a generic
+    // param by CONTAINER plus element type. Without this the whole
+    // `matrix<float>` string was compared against `matrix<int>`, no
+    // overload ever matched, and the caller silently fell back to
+    // overload #0's return - matrix.mult(m, m) typed as `array<int>`.
+    //
+    // Elements must match EXACTLY (modulo union membership): Pine
+    // collections are invariant, so no int->float widening here. Widening
+    // would let matrix<float> match overload 3's `matrix<int>` as well as
+    // overload 4's `matrix<int/float>`, and the first-wins pool order
+    // would then hand back matrix<int>. see INV147
+    const pbGeneric = pb.match(GENERIC_RE);
 
-		if (argGeneric && pbGeneric && argGeneric[1] === pbGeneric[1]) {
-			const argElem = argGeneric[2].trim();
-			const pbElems = splitUnionMembers(pbGeneric[2]);
+    if (argGeneric && pbGeneric && argGeneric[1] === pbGeneric[1]) {
+      const argElem = argGeneric[2].trim();
+      const pbElems = splitUnionMembers(pbGeneric[2]);
 
-			if (argElem === "unknown" || pbElems.includes("unknown")) return true;
+      if (argElem === "unknown" || pbElems.includes("unknown")) return true;
 
-			if (pbElems.includes(argElem)) return true;
-			continue;
-		}
+      if (pbElems.includes(argElem)) return true;
+      continue;
+    }
 
-		if (argGeneric || pbGeneric) continue;
+    if (argGeneric || pbGeneric) continue;
 
-		if (numeric(argBase) && numeric(pb)) return true;
-	}
+    if (numeric(argBase) && numeric(pb)) return true;
+  }
 
-	return false;
+  return false;
 }
 
 /**
@@ -1217,22 +1167,19 @@ function baseCompatible(argBase: string, paramBase: string): boolean {
  * `array<int>` (1). The specificity tie-break for overload selection. see INV147
  */
 function typeWidth(type: string): number {
-	let total = 0;
+  let total = 0;
 
-	for (const member of splitUnionMembers(type)) {
-		const generic = member.match(GENERIC_RE);
-		total += generic ? typeWidth(generic[2]) : 1;
-	}
+  for (const member of splitUnionMembers(type)) {
+    const generic = member.match(GENERIC_RE);
+    total += generic ? typeWidth(generic[2]) : 1;
+  }
 
-	return Math.max(total, 1);
+  return Math.max(total, 1);
 }
 
 /** Summed width of an overload's parameters - lower is more specific. */
 function paramWidth(ov: OverloadView): number {
-	return ov.parameters.reduce(
-		(n, p) => n + typeWidth(baseOfRawType(String(p.type ?? ""))),
-		0,
-	);
+  return ov.parameters.reduce((n, p) => n + typeWidth(baseOfRawType(String(p.type ?? ""))), 0);
 }
 
 // Resolve the RAW return type (with qualifier, e.g. "simple int") of a built-in
@@ -1242,61 +1189,55 @@ function paramWidth(ov: OverloadView): number {
 // (not the const-int dateString overload). Positional matching only; returns
 // undefined for unknown/user functions.
 export function resolveCallReturnRaw(
-	functionName: string,
-	argTypes: PineType[],
+  functionName: string,
+  argTypes: PineType[],
 ): string | undefined {
-	const func = FUNCTIONS_BY_NAME.get(functionName);
+  const func = FUNCTIONS_BY_NAME.get(functionName);
 
-	if (!func) return undefined;
-	const views = overloadViews(func);
-	const argBases = argTypes.map((t) => baseOfRawType(String(t)));
+  if (!func) return undefined;
+  const views = overloadViews(func);
+  const argBases = argTypes.map((t) => baseOfRawType(String(t)));
 
-	const anySeriesArg = argTypes.some(
-		(t) => leadingQualifier(String(t)) === "series",
-	);
+  const anySeriesArg = argTypes.some((t) => leadingQualifier(String(t)) === "series");
 
-	const candidates = views.filter((ov) => {
-		if (argBases.length > ov.parameters.length) return false;
+  const candidates = views.filter((ov) => {
+    if (argBases.length > ov.parameters.length) return false;
 
-		for (let i = 0; i < argBases.length; i++) {
-			if (!baseCompatible(argBases[i], baseOfRawType(ov.parameters[i].type))) {
-				return false;
-			}
-		}
+    for (let i = 0; i < argBases.length; i++) {
+      if (!baseCompatible(argBases[i], baseOfRawType(ov.parameters[i].type))) {
+        return false;
+      }
+    }
 
-		return true;
-	});
+    return true;
+  });
 
-	const pool = candidates.length > 0 ? candidates : views;
+  const pool = candidates.length > 0 ? candidates : views;
 
-	// With const/simple args, TV picks the lowest-qualifier matching overload.
-	// When the qualifier ties, the NARROWEST matching overload wins rather than
-	// whichever happened to be listed first: array.abs is documented as
-	// (array<int/float>) -> array<float> and (array<int>) -> array<int>, and an
-	// array<int> argument satisfies both, so pool order alone typed
-	// array.abs(array<int>) as array<float> - rejected against an array<int>
-	// declaration that TV accepts (probed 2026-08-21). see INV147
-	let bestOv = pool[0];
+  // With const/simple args, TV picks the lowest-qualifier matching overload.
+  // When the qualifier ties, the NARROWEST matching overload wins rather than
+  // whichever happened to be listed first: array.abs is documented as
+  // (array<int/float>) -> array<float> and (array<int>) -> array<int>, and an
+  // array<int> argument satisfies both, so pool order alone typed
+  // array.abs(array<int>) as array<float> - rejected against an array<int>
+  // declaration that TV accepts (probed 2026-08-21). see INV147
+  let bestOv = pool[0];
 
-	for (const ov of pool) {
-		const dq =
-			qrank(leadingQualifier(ov.returns)) -
-			qrank(leadingQualifier(bestOv.returns));
+  for (const ov of pool) {
+    const dq = qrank(leadingQualifier(ov.returns)) - qrank(leadingQualifier(bestOv.returns));
 
-		if (dq < 0 || (dq === 0 && paramWidth(ov) < paramWidth(bestOv))) {
-			bestOv = ov;
-		}
-	}
+    if (dq < 0 || (dq === 0 && paramWidth(ov) < paramWidth(bestOv))) {
+      bestOv = ov;
+    }
+  }
 
-	let best = bestOv.returns;
+  let best = bestOv.returns;
 
-	// A series argument forces at least a series result.
-	if (anySeriesArg && qrank(leadingQualifier(best)) < qrank("series")) {
-		const ser = pool.find((ov) => leadingQualifier(ov.returns) === "series");
-		best = ser
-			? ser.returns
-			: best.replace(/^(const|input|simple)\b/, "series");
-	}
+  // A series argument forces at least a series result.
+  if (anySeriesArg && qrank(leadingQualifier(best)) < qrank("series")) {
+    const ser = pool.find((ov) => leadingQualifier(ov.returns) === "series");
+    best = ser ? ser.returns : best.replace(/^(const|input|simple)\b/, "series");
+  }
 
-	return best;
+  return best;
 }

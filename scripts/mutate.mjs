@@ -39,9 +39,7 @@ import { dirname, resolve } from "node:path";
 const require = createRequire(import.meta.url);
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
-const { Lexer } = require(
-	resolve(ROOT, "dist/packages/core/src/parser/lexer.js"),
-);
+const { Lexer } = require(resolve(ROOT, "dist/packages/core/src/parser/lexer.js"));
 
 const FUNCTIONS = require(resolve(ROOT, "pine-data/v6/functions.json"));
 const VARIABLES = require(resolve(ROOT, "pine-data/v6/variables.json"));
@@ -50,9 +48,9 @@ const CONSTANTS = require(resolve(ROOT, "pine-data/v6/constants.json"));
 const FN_BY_NAME = new Map(FUNCTIONS.map((f) => [f.name, f]));
 
 const KNOWN_NAMES = new Set([
-	...FUNCTIONS.map((f) => f.name),
-	...VARIABLES.map((v) => v.name),
-	...CONSTANTS.map((c) => c.name),
+  ...FUNCTIONS.map((f) => f.name),
+  ...VARIABLES.map((v) => v.name),
+  ...CONSTANTS.map((c) => c.name),
 ]);
 
 // Dotted catalog CONSTANTS and VARIABLES that are NOT also functions - the
@@ -63,9 +61,9 @@ const KNOWN_NAMES = new Set([
 // exact confusion that kept INV170's gap hidden behind a "murky
 // const-vs-variable split" that never existed. see INV170
 const NON_FUNCTION_MEMBERS = new Set(
-	[...CONSTANTS.map((c) => c.name), ...VARIABLES.map((v) => v.name)].filter(
-		(n) => n.includes(".") && !FN_BY_NAME.has(n),
-	),
+  [...CONSTANTS.map((c) => c.name), ...VARIABLES.map((v) => v.name)].filter(
+    (n) => n.includes(".") && !FN_BY_NAME.has(n),
+  ),
 );
 
 // Every dotted catalog name's prefix - `extend` (from `extend.none`), `color`,
@@ -73,58 +71,56 @@ const NON_FUNCTION_MEMBERS = new Set(
 // the catalog. Used by delete-decl to tell a shadowing declaration apart from a
 // load-bearing one. see the note there.
 const BUILTIN_NAMESPACES = new Set(
-	[...KNOWN_NAMES]
-		.filter((n) => n.includes("."))
-		.map((n) => n.slice(0, n.indexOf("."))),
+  [...KNOWN_NAMES].filter((n) => n.includes(".")).map((n) => n.slice(0, n.indexOf("."))),
 );
 
 // Deterministic PRNG so a (fixture, seed) pair always yields the same
 // site rotation - runs are bounded and reproducible, per the #48 design.
 function mulberry32(seed) {
-	let a = seed >>> 0;
+  let a = seed >>> 0;
 
-	return () => {
-		a |= 0;
-		a = (a + 0x6d2b79f5) | 0;
-		let t = Math.imul(a ^ (a >>> 15), 1 | a);
-		t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+  return () => {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
 
-		return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-	};
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
 }
 
 // --- source <-> token plumbing ----------------------------------------------
 
 function lineStarts(source) {
-	const starts = [0];
+  const starts = [0];
 
-	for (let i = 0; i < source.length; i++) {
-		if (source[i] === "\n") starts.push(i + 1);
-	}
+  for (let i = 0; i < source.length; i++) {
+    if (source[i] === "\n") starts.push(i + 1);
+  }
 
-	return starts;
+  return starts;
 }
 
 function makeCtx(source) {
-	// Normalize line endings to \n FIRST. The lexer is G005-aware: it counts
-	// a lone \r and a \n as separate breaks, so a \r\r\n-terminated file (seen
-	// in the corpus) doubles its line numbers. Our offset reconstruction
-	// (lineStarts + split("\n")) is \n-only, so on such a file token.line
-	// indexes past the end of `starts` and every splice lands at NaN/the wrong
-	// place - a silent no-op mutant TV then "accepts". Normalizing makes the
-	// lexer, lineStarts, and split("\n") agree; both local and TV receive the
-	// same normalized mutant, so the comparison stays valid. See G005 (the
-	// lexer's \r\r\n line-doubling) and TODO #48 (the harness).
-	source = source.replace(/\r+\n|\r/g, "\n");
-	const tokens = new Lexer(source).tokenize();
-	const starts = lineStarts(source);
-	const offsetOf = (t) => starts[t.line - 1] + (t.column - 1);
+  // Normalize line endings to \n FIRST. The lexer is G005-aware: it counts
+  // a lone \r and a \n as separate breaks, so a \r\r\n-terminated file (seen
+  // in the corpus) doubles its line numbers. Our offset reconstruction
+  // (lineStarts + split("\n")) is \n-only, so on such a file token.line
+  // indexes past the end of `starts` and every splice lands at NaN/the wrong
+  // place - a silent no-op mutant TV then "accepts". Normalizing makes the
+  // lexer, lineStarts, and split("\n") agree; both local and TV receive the
+  // same normalized mutant, so the comparison stays valid. See G005 (the
+  // lexer's \r\r\n line-doubling) and TODO #48 (the harness).
+  source = source.replace(/\r+\n|\r/g, "\n");
+  const tokens = new Lexer(source).tokenize();
+  const starts = lineStarts(source);
+  const offsetOf = (t) => starts[t.line - 1] + (t.column - 1);
 
-	return { source, tokens, offsetOf };
+  return { source, tokens, offsetOf };
 }
 
 function splice(source, start, end, replacement) {
-	return source.slice(0, start) + replacement + source.slice(end);
+  return source.slice(0, start) + replacement + source.slice(end);
 }
 
 // Find every call expression in the token stream: a callee chain
@@ -133,91 +129,87 @@ function splice(source, start, end, replacement) {
 // (named-arg name tokens identified). Calls torn across statement
 // boundaries (no matching RPAREN) are skipped.
 function findCalls(ctx) {
-	const { tokens } = ctx;
-	const calls = [];
+  const { tokens } = ctx;
+  const calls = [];
 
-	for (let i = 0; i < tokens.length; i++) {
-		if (tokens[i].type !== "IDENTIFIER") continue;
-		// Walk the member chain forward.
-		let j = i;
-		const chain = [tokens[i]];
+  for (let i = 0; i < tokens.length; i++) {
+    if (tokens[i].type !== "IDENTIFIER") continue;
+    // Walk the member chain forward.
+    let j = i;
+    const chain = [tokens[i]];
 
-		while (
-			tokens[j + 1]?.type === "DOT" &&
-			tokens[j + 2]?.type === "IDENTIFIER"
-		) {
-			chain.push(tokens[j + 2]);
-			j += 2;
-		}
+    while (tokens[j + 1]?.type === "DOT" && tokens[j + 2]?.type === "IDENTIFIER") {
+      chain.push(tokens[j + 2]);
+      j += 2;
+    }
 
-		// Don't start mid-chain (previous token a DOT).
-		if (tokens[i - 1]?.type === "DOT") continue;
+    // Don't start mid-chain (previous token a DOT).
+    if (tokens[i - 1]?.type === "DOT") continue;
 
-		if (tokens[j + 1]?.type !== "LPAREN") continue;
-		const lparen = j + 1;
-		// Find the matching RPAREN and top-level arg boundaries.
-		let depth = 0;
-		let rparen = -1;
-		const argStarts = []; // token index of each arg's first token
-		const commas = []; // token indices of top-level commas
+    if (tokens[j + 1]?.type !== "LPAREN") continue;
+    const lparen = j + 1;
+    // Find the matching RPAREN and top-level arg boundaries.
+    let depth = 0;
+    let rparen = -1;
+    const argStarts = []; // token index of each arg's first token
+    const commas = []; // token indices of top-level commas
 
-		for (let k = lparen; k < tokens.length; k++) {
-			const t = tokens[k];
+    for (let k = lparen; k < tokens.length; k++) {
+      const t = tokens[k];
 
-			if (t.type === "LPAREN" || t.type === "LBRACKET") depth++;
-			else if (t.type === "RPAREN" || t.type === "RBRACKET") {
-				depth--;
+      if (t.type === "LPAREN" || t.type === "LBRACKET") depth++;
+      else if (t.type === "RPAREN" || t.type === "RBRACKET") {
+        depth--;
 
-				if (depth === 0 && t.type === "RPAREN") {
-					rparen = k;
-					break;
-				}
-			} else if (t.type === "COMMA" && depth === 1) commas.push(k);
-		}
+        if (depth === 0 && t.type === "RPAREN") {
+          rparen = k;
+          break;
+        }
+      } else if (t.type === "COMMA" && depth === 1) commas.push(k);
+    }
 
-		if (rparen === -1) continue;
+    if (rparen === -1) continue;
 
-		// Arg spans: [lparen+1 .. comma-1], [comma+1 .. ...], last ends rparen-1.
-		if (rparen > lparen + 1) {
-			let s = lparen + 1;
+    // Arg spans: [lparen+1 .. comma-1], [comma+1 .. ...], last ends rparen-1.
+    if (rparen > lparen + 1) {
+      let s = lparen + 1;
 
-			for (const c of commas) {
-				argStarts.push({ start: s, end: c - 1 });
-				s = c + 1;
-			}
+      for (const c of commas) {
+        argStarts.push({ start: s, end: c - 1 });
+        s = c + 1;
+      }
 
-			argStarts.push({ start: s, end: rparen - 1 });
-		}
+      argStarts.push({ start: s, end: rparen - 1 });
+    }
 
-		const args = argStarts.map(({ start, end }) => {
-			const named =
-				(tokens[start]?.type === "IDENTIFIER" ||
-					tokens[start]?.type === "KEYWORD") &&
-				tokens[start + 1]?.type === "ASSIGN";
+    const args = argStarts.map(({ start, end }) => {
+      const named =
+        (tokens[start]?.type === "IDENTIFIER" || tokens[start]?.type === "KEYWORD") &&
+        tokens[start + 1]?.type === "ASSIGN";
 
-			return { start, end, named, nameTok: named ? tokens[start] : null };
-		});
+      return { start, end, named, nameTok: named ? tokens[start] : null };
+    });
 
-		calls.push({
-			name: chain.map((t) => t.value).join("."),
-			nameTokens: chain,
-			lparen,
-			rparen,
-			commas,
-			args,
-		});
-	}
+    calls.push({
+      name: chain.map((t) => t.value).join("."),
+      nameTokens: chain,
+      lparen,
+      rparen,
+      commas,
+      args,
+    });
+  }
 
-	return calls;
+  return calls;
 }
 
 // A typo'd name guaranteed absent from the catalog.
 function typoName(name) {
-	let candidate = `${name}x`;
+  let candidate = `${name}x`;
 
-	while (KNOWN_NAMES.has(candidate)) candidate += "x";
+  while (KNOWN_NAMES.has(candidate)) candidate += "x";
 
-	return candidate;
+  return candidate;
 }
 
 // --- operators ---------------------------------------------------------------
@@ -226,529 +218,513 @@ function typoName(name) {
 // site = { line, col, desc, apply() -> mutant source }.
 
 export const OPERATORS = {
-	// Remove the LAST positional argument of a catalog call whose params are
-	// all required and all supplied positionally - the remaining call misses
-	// a required arg on every overload-free signature.
-	"drop-required-arg": {
-		expectedClass: "CE10165",
-		describe: "remove the last positional argument of a fully-required call",
-		findSites(ctx) {
-			const sites = [];
-
-			for (const call of findCalls(ctx)) {
-				const fn = FN_BY_NAME.get(call.name);
-
-				if (!fn) continue;
-
-				if ((fn.overloads ?? []).length > 0) continue;
-
-				if (fn.flags?.variadic) continue;
-
-				if (fn.parameters.some((p) => !p.type || p.type === "unknown"))
-					continue;
-				const requiredCount = fn.parameters.filter((p) => p.required).length;
-
-				if (requiredCount === 0) continue;
-
-				if (call.args.length === 0 || call.args.some((a) => a.named)) continue;
-
-				if (call.args.length > requiredCount) continue; // drop would hit an optional
-				const { tokens, offsetOf, source } = ctx;
-				const lastArg = call.args[call.args.length - 1];
-
-				// Splice from the comma before the last arg (or from after the
-				// lparen when it is the only arg) to just before the rparen.
-				const from =
-					call.args.length === 1
-						? offsetOf(tokens[call.lparen]) + 1
-						: offsetOf(tokens[call.commas[call.commas.length - 1]]);
-
-				const to = offsetOf(tokens[call.rparen]);
-				const t = tokens[lastArg.start];
-				sites.push({
-					line: t.line,
-					col: t.column,
-					desc: `${call.name}(...): drop arg ${call.args.length} ("${fn.parameters[call.args.length - 1].name}")`,
-					apply: () => splice(source, from, to, ""),
-				});
-			}
-
-			return sites;
-		},
-	},
-
-	// Typo the final member of a builtin namespaced call (ta.sma -> ta.smax).
-	"typo-member": {
-		expectedClass: "CE10271",
-		describe: "typo the member name of a builtin namespaced call",
-		findSites(ctx) {
-			const sites = [];
-
-			for (const call of findCalls(ctx)) {
-				if (call.nameTokens.length < 2) continue;
-
-				if (!FN_BY_NAME.has(call.name)) continue;
-				const { offsetOf, source } = ctx;
-				const memberTok = call.nameTokens[call.nameTokens.length - 1];
-				const from = offsetOf(memberTok);
-				const to = from + memberTok.value.length;
-
-				const replacement = typoName(call.name).slice(
-					call.name.length - memberTok.value.length,
-				);
-
-				sites.push({
-					line: memberTok.line,
-					col: memberTok.column,
-					desc: `${call.name} -> ${call.name.slice(0, -memberTok.value.length)}${replacement}`,
-					apply: () => splice(source, from, to, replacement),
-				});
-			}
-
-			return sites;
-		},
-	},
-
-	// Replace a single-token positional STRING argument with 42 where the
-	// catalog types that param as a string - a provable CE10123.
-	"wrong-type-literal": {
-		expectedClass: "CE10123",
-		describe: "replace a string literal argument with 42",
-		findSites(ctx) {
-			const sites = [];
-
-			for (const call of findCalls(ctx)) {
-				const fn = FN_BY_NAME.get(call.name);
-
-				if (!fn) continue;
-
-				if ((fn.overloads ?? []).length > 0) continue;
-				const { tokens, offsetOf, source } = ctx;
-				call.args.forEach((arg, idx) => {
-					if (arg.named || arg.start !== arg.end) return;
-					const t = tokens[arg.start];
-
-					if (t.type !== "STRING") return;
-					const param = fn.parameters[idx];
-
-					if (!param?.type?.includes("string")) return;
-					const from = offsetOf(t);
-					sites.push({
-						line: t.line,
-						col: t.column,
-						desc: `${call.name}(... ${t.value} -> 42 ...) [param "${param.name}": ${param.type}]`,
-						apply: () => splice(source, from, from + t.value.length, "42"),
-					});
-				});
-			}
-
-			return sites;
-		},
-	},
-
-	// Typo a NAMED argument's name in a catalog call (overlay= -> overlayx=).
-	"typo-param-name": {
-		expectedClass: "CE10120",
-		describe: "typo a named argument's parameter name",
-		findSites(ctx) {
-			const sites = [];
-
-			for (const call of findCalls(ctx)) {
-				const fn = FN_BY_NAME.get(call.name);
-
-				if (!fn) continue;
-				const { offsetOf, source } = ctx;
-				const paramNames = new Set(fn.parameters.map((p) => p.name));
-
-				for (const arg of call.args) {
-					if (!arg.named) continue;
-
-					if (!paramNames.has(arg.nameTok.value)) continue; // already broken
-					let typo = `${arg.nameTok.value}x`;
-
-					while (paramNames.has(typo)) typo += "x";
-					const from = offsetOf(arg.nameTok);
-					sites.push({
-						line: arg.nameTok.line,
-						col: arg.nameTok.column,
-						desc: `${call.name}(${arg.nameTok.value}= -> ${typo}=)`,
-						apply: () =>
-							splice(source, from, from + arg.nameTok.value.length, typo),
-					});
-				}
-			}
-
-			return sites;
-		},
-	},
-
-	// Name the FIRST positional argument of an all-positional call, so the
-	// second positional argument now follows a named one. TV rejects that
-	// ordering outright (CE10157) for builtins and user functions alike.
-	//
-	// The variadic guard is load-bearing rather than tidiness: TV refuses
-	// keyword arguments on a variadic function with CE10119 ("Functions that
-	// accept a variable number of arguments cannot accept keyword arguments"),
-	// so a math.max mutant would be rejected for the WRONG reason and count as
-	// killed while proving nothing about the ordering rule. Measured in INV171,
-	// which hit exactly that on math.max/min/avg.
-	//
-	// Overloaded functions are skipped for the usual reason: the
-	// positional-to-parameter mapping is ambiguous across signatures, so the
-	// name we would splice in may not be the parameter that position fills.
-	// see INV169
-	"positional-after-named": {
-		expectedClass: "CE10157",
-		describe: "name the first argument so a later positional one follows it",
-		findSites(ctx) {
-			const sites = [];
-
-			for (const call of findCalls(ctx)) {
-				const fn = FN_BY_NAME.get(call.name);
-
-				if (!fn) continue;
-
-				if ((fn.overloads ?? []).length > 0) continue;
-
-				if (fn.flags?.variadic) continue;
-
-				// Need at least two arguments and none already named, so the
-				// mutation introduces the ordering violation rather than
-				// depending on one the source already had.
-				if (call.args.length < 2) continue;
-
-				if (call.args.some((a) => a.named)) continue;
-				const paramName = fn.parameters?.[0]?.name;
-
-				if (!paramName) continue;
-				const { tokens, offsetOf, source } = ctx;
-				const first = tokens[call.args[0].start];
-				const from = offsetOf(first);
-				sites.push({
-					line: first.line,
-					col: first.column,
-					desc: `${call.name}(${paramName} = ... , <positional>) - positional after named`,
-					apply: () => splice(source, from, from, `${paramName} = `),
-				});
-			}
-
-			return sites;
-		},
-	},
-
-	// Call a builtin namespaced CONSTANT or VARIABLE as if it were a function
-	// (`color.red` -> `color.red(1)`). TV answers CE10271 "Could not find
-	// function or function reference", because the predicate is simply whether
-	// a FUNCTION of that name exists - which is why a member that is also a
-	// function (ta.tr, both a variable and ta.tr(handle_na)) must be excluded
-	// rather than mutated into a valid call. see INV170
-	"member-called-as-function": {
-		expectedClass: "CE10271",
-		describe: "call a builtin namespaced constant or variable as a function",
-		findSites(ctx) {
-			const sites = [];
-			const { tokens, offsetOf, source } = ctx;
-
-			for (let i = 0; i < tokens.length; i++) {
-				// A chain may START at a KEYWORD, not just an IDENTIFIER: the
-				// namespaces that are also TYPE names - color, line, label, box,
-				// table - lex as KEYWORD, and they hold most of the interesting
-				// constants (`color.red`). Requiring IDENTIFIER here silently
-				// skipped every `color.*` site, which is the whole point of the
-				// operator.
-				const startsChain =
-					tokens[i].type === "IDENTIFIER" || tokens[i].type === "KEYWORD";
-
-				if (!startsChain) continue;
-
-				if (tokens[i - 1]?.type === "DOT") continue; // don't start mid-chain
-				let j = i;
-				const chain = [tokens[i]];
-
-				while (
-					tokens[j + 1]?.type === "DOT" &&
-					(tokens[j + 2]?.type === "IDENTIFIER" ||
-						tokens[j + 2]?.type === "KEYWORD")
-				) {
-					chain.push(tokens[j + 2]);
-					j += 2;
-				}
-
-				if (chain.length < 2) continue;
-				const name = chain.map((t) => t.value).join(".");
-
-				if (!NON_FUNCTION_MEMBERS.has(name)) continue;
-
-				// Already a call, or being assigned to - leave it alone.
-				if (tokens[j + 1]?.type === "LPAREN") continue;
-
-				if (tokens[j + 1]?.type === "ASSIGN") continue;
-				const last = chain[chain.length - 1];
-				const end = offsetOf(last) + last.value.length;
-				sites.push({
-					line: last.line,
-					col: last.column,
-					desc: `${name} -> ${name}(1)`,
-					apply: () => splice(source, end, end, "(1)"),
-				});
-			}
-
-			return sites;
-		},
-	},
-
-	// Delete a single-line top-level declaration whose name is used later.
-	"delete-decl": {
-		expectedClass: "CE10272",
-		describe: "delete a top-level single-line declaration that is used later",
-		findSites(ctx) {
-			const sites = [];
-			const { tokens, source } = ctx;
-			const starts = lineStarts(source);
-			const lines = source.split("\n");
-
-			for (let i = 0; i < tokens.length; i++) {
-				const t = tokens[i];
-
-				// Statement start: IDENTIFIER at column 1 followed by `=` (a
-				// plain declaration; `:=`/`var`/typed forms are skipped - this
-				// operator wants the simplest unambiguous shape).
-				if (t.type !== "IDENTIFIER" || t.column !== 1) continue;
-
-				// `=` and `:=` both lex as ASSIGN - distinguish by value so
-				// reassignments (`x := 10`) are skipped: deleting one leaves the
-				// variable still declared, so TV accepts (a wasted probe, not a
-				// CE10272). This is the `:=`-skip the comment above promises.
-				if (tokens[i + 1]?.type !== "ASSIGN" || tokens[i + 1].value !== "=")
-					continue;
-
-				if (tokens[i - 1] && tokens[i - 1].type !== "NEWLINE") continue;
-				// Single-line statements only: the declaration must end on its
-				// own line (next line blank, comment, or column-1 code - no
-				// wrapped continuations to reason about).
-				const next = lines[t.line]; // 0-based: the line AFTER t.line
-
-				if (next !== undefined && /^[ \t]/.test(next) && next.trim() !== "")
-					continue;
-
-				// The name must be USED later (a later token outside this line),
-				// and the use must actually DEPEND on the declaration. A name that
-				// shadows a builtin NAMESPACE resolves fine without it as long as
-				// every use is a namespace-member access: `extend = false` whose
-				// only use is `extend.none` deletes to still-valid Pine, so TV
-				// accepts and the mutant is not broken code - a wasted probe of the
-				// same shape as the `:=` skip above. A BARE use (`extend + 1`) does
-				// depend on the declaration, so such a site is still generated.
-				const usedLater = tokens.some((u, k) => {
-					if (k <= i) return false;
-
-					if (u.type !== "IDENTIFIER" || u.value !== t.value) return false;
-
-					if (u.line <= t.line) return false;
-
-					if (tokens[k + 1]?.type === "ASSIGN") return false;
-
-					if (
-						BUILTIN_NAMESPACES.has(u.value) &&
-						tokens[k + 1]?.type === "DOT"
-					)
-						return false;
-
-					return true;
-				});
-
-				if (!usedLater) continue;
-				const from = starts[t.line - 1];
-				const to = t.line < starts.length ? starts[t.line] : source.length;
-				sites.push({
-					line: t.line,
-					col: 1,
-					desc: `delete declaration "${lines[t.line - 1].trim().slice(0, 60)}"`,
-					apply: () => splice(source, from, to, ""),
-				});
-			}
-
-			return sites;
-		},
-	},
-
-	// Delete the closing ")" of a call - an unclosed "(" is TV's CE10015
-	// at the opener's logical line, column 1 (INV046). Deleting a NESTED
-	// call's closer still leaves exactly one unclosed opener overall
-	// (closers pop the nearest opener), so the breakage stays single-site.
-	"unbalance-bracket": {
-		expectedClass: "CE10015",
-		describe: 'delete the closing ")" of a call',
-		findSites(ctx) {
-			const sites = [];
-			const { tokens, offsetOf, source } = ctx;
-
-			for (const call of findCalls(ctx)) {
-				const rp = tokens[call.rparen];
-				const from = offsetOf(rp);
-				sites.push({
-					line: rp.line,
-					col: rp.column,
-					desc: `${call.name}(...: delete ")" at ${rp.line}:${rp.column}`,
-					apply: () => splice(source, from, from + 1, ""),
-				});
-			}
-
-			return sites;
-		},
-	},
-
-	// Replace the base type keyword of a simple typed declaration
-	// (`float x = ...` -> `series x = ...`) - a bare qualifier with no
-	// base type is TV's CE10147 "Cannot specify a type form ... without
-	// also specifying the type", anchored at the qualifier (INV024
-	// addendum, probes p08-p10). Top-level statement starts only (bare at
-	// column 1, or after a column-1 var/varip), matching the probed forms.
-	"bad-qualifier-form": {
-		expectedClass: "CE10147",
-		describe: "replace a declaration's base type keyword with a bare qualifier",
-		findSites(ctx) {
-			const sites = [];
-			const { tokens, offsetOf, source } = ctx;
-
-			const baseTypes = new Set([
-				"float",
-				"int",
-				"bool",
-				"string",
-				"color",
-				"line",
-				"label",
-				"box",
-				"table",
-			]);
-
-			for (let i = 0; i < tokens.length; i++) {
-				const t = tokens[i];
-
-				if (t.type !== "KEYWORD" || !baseTypes.has(t.value)) continue;
-
-				if (tokens[i + 1]?.type !== "IDENTIFIER") continue;
-
-				if (tokens[i + 2]?.type !== "ASSIGN") continue;
-				const prev = tokens[i - 1];
-
-				const bare =
-					t.column === 1 && (!prev || prev.type === "NEWLINE");
-
-				const afterVar =
-					prev?.type === "KEYWORD" &&
-					(prev.value === "var" || prev.value === "varip") &&
-					prev.column === 1;
-
-				if (!bare && !afterVar) continue;
-				const from = offsetOf(t);
-				sites.push({
-					line: t.line,
-					col: t.column,
-					desc: `"${t.value} ${tokens[i + 1].value} =" -> "series ${tokens[i + 1].value} ="`,
-					apply: () => splice(source, from, from + t.value.length, "series"),
-				});
-			}
-
-			return sites;
-		},
-	},
+  // Remove the LAST positional argument of a catalog call whose params are
+  // all required and all supplied positionally - the remaining call misses
+  // a required arg on every overload-free signature.
+  "drop-required-arg": {
+    expectedClass: "CE10165",
+    describe: "remove the last positional argument of a fully-required call",
+    findSites(ctx) {
+      const sites = [];
+
+      for (const call of findCalls(ctx)) {
+        const fn = FN_BY_NAME.get(call.name);
+
+        if (!fn) continue;
+
+        if ((fn.overloads ?? []).length > 0) continue;
+
+        if (fn.flags?.variadic) continue;
+
+        if (fn.parameters.some((p) => !p.type || p.type === "unknown")) continue;
+        const requiredCount = fn.parameters.filter((p) => p.required).length;
+
+        if (requiredCount === 0) continue;
+
+        if (call.args.length === 0 || call.args.some((a) => a.named)) continue;
+
+        if (call.args.length > requiredCount) continue; // drop would hit an optional
+        const { tokens, offsetOf, source } = ctx;
+        const lastArg = call.args[call.args.length - 1];
+
+        // Splice from the comma before the last arg (or from after the
+        // lparen when it is the only arg) to just before the rparen.
+        const from =
+          call.args.length === 1
+            ? offsetOf(tokens[call.lparen]) + 1
+            : offsetOf(tokens[call.commas[call.commas.length - 1]]);
+
+        const to = offsetOf(tokens[call.rparen]);
+        const t = tokens[lastArg.start];
+        sites.push({
+          line: t.line,
+          col: t.column,
+          desc: `${call.name}(...): drop arg ${call.args.length} ("${fn.parameters[call.args.length - 1].name}")`,
+          apply: () => splice(source, from, to, ""),
+        });
+      }
+
+      return sites;
+    },
+  },
+
+  // Typo the final member of a builtin namespaced call (ta.sma -> ta.smax).
+  "typo-member": {
+    expectedClass: "CE10271",
+    describe: "typo the member name of a builtin namespaced call",
+    findSites(ctx) {
+      const sites = [];
+
+      for (const call of findCalls(ctx)) {
+        if (call.nameTokens.length < 2) continue;
+
+        if (!FN_BY_NAME.has(call.name)) continue;
+        const { offsetOf, source } = ctx;
+        const memberTok = call.nameTokens[call.nameTokens.length - 1];
+        const from = offsetOf(memberTok);
+        const to = from + memberTok.value.length;
+
+        const replacement = typoName(call.name).slice(call.name.length - memberTok.value.length);
+
+        sites.push({
+          line: memberTok.line,
+          col: memberTok.column,
+          desc: `${call.name} -> ${call.name.slice(0, -memberTok.value.length)}${replacement}`,
+          apply: () => splice(source, from, to, replacement),
+        });
+      }
+
+      return sites;
+    },
+  },
+
+  // Replace a single-token positional STRING argument with 42 where the
+  // catalog types that param as a string - a provable CE10123.
+  "wrong-type-literal": {
+    expectedClass: "CE10123",
+    describe: "replace a string literal argument with 42",
+    findSites(ctx) {
+      const sites = [];
+
+      for (const call of findCalls(ctx)) {
+        const fn = FN_BY_NAME.get(call.name);
+
+        if (!fn) continue;
+
+        if ((fn.overloads ?? []).length > 0) continue;
+        const { tokens, offsetOf, source } = ctx;
+        call.args.forEach((arg, idx) => {
+          if (arg.named || arg.start !== arg.end) return;
+          const t = tokens[arg.start];
+
+          if (t.type !== "STRING") return;
+          const param = fn.parameters[idx];
+
+          if (!param?.type?.includes("string")) return;
+          const from = offsetOf(t);
+          sites.push({
+            line: t.line,
+            col: t.column,
+            desc: `${call.name}(... ${t.value} -> 42 ...) [param "${param.name}": ${param.type}]`,
+            apply: () => splice(source, from, from + t.value.length, "42"),
+          });
+        });
+      }
+
+      return sites;
+    },
+  },
+
+  // Typo a NAMED argument's name in a catalog call (overlay= -> overlayx=).
+  "typo-param-name": {
+    expectedClass: "CE10120",
+    describe: "typo a named argument's parameter name",
+    findSites(ctx) {
+      const sites = [];
+
+      for (const call of findCalls(ctx)) {
+        const fn = FN_BY_NAME.get(call.name);
+
+        if (!fn) continue;
+        const { offsetOf, source } = ctx;
+        const paramNames = new Set(fn.parameters.map((p) => p.name));
+
+        for (const arg of call.args) {
+          if (!arg.named) continue;
+
+          if (!paramNames.has(arg.nameTok.value)) continue; // already broken
+          let typo = `${arg.nameTok.value}x`;
+
+          while (paramNames.has(typo)) typo += "x";
+          const from = offsetOf(arg.nameTok);
+          sites.push({
+            line: arg.nameTok.line,
+            col: arg.nameTok.column,
+            desc: `${call.name}(${arg.nameTok.value}= -> ${typo}=)`,
+            apply: () => splice(source, from, from + arg.nameTok.value.length, typo),
+          });
+        }
+      }
+
+      return sites;
+    },
+  },
+
+  // Name the FIRST positional argument of an all-positional call, so the
+  // second positional argument now follows a named one. TV rejects that
+  // ordering outright (CE10157) for builtins and user functions alike.
+  //
+  // The variadic guard is load-bearing rather than tidiness: TV refuses
+  // keyword arguments on a variadic function with CE10119 ("Functions that
+  // accept a variable number of arguments cannot accept keyword arguments"),
+  // so a math.max mutant would be rejected for the WRONG reason and count as
+  // killed while proving nothing about the ordering rule. Measured in INV171,
+  // which hit exactly that on math.max/min/avg.
+  //
+  // Overloaded functions are skipped for the usual reason: the
+  // positional-to-parameter mapping is ambiguous across signatures, so the
+  // name we would splice in may not be the parameter that position fills.
+  // see INV169
+  "positional-after-named": {
+    expectedClass: "CE10157",
+    describe: "name the first argument so a later positional one follows it",
+    findSites(ctx) {
+      const sites = [];
+
+      for (const call of findCalls(ctx)) {
+        const fn = FN_BY_NAME.get(call.name);
+
+        if (!fn) continue;
+
+        if ((fn.overloads ?? []).length > 0) continue;
+
+        if (fn.flags?.variadic) continue;
+
+        // Need at least two arguments and none already named, so the
+        // mutation introduces the ordering violation rather than
+        // depending on one the source already had.
+        if (call.args.length < 2) continue;
+
+        if (call.args.some((a) => a.named)) continue;
+        const paramName = fn.parameters?.[0]?.name;
+
+        if (!paramName) continue;
+        const { tokens, offsetOf, source } = ctx;
+        const first = tokens[call.args[0].start];
+        const from = offsetOf(first);
+        sites.push({
+          line: first.line,
+          col: first.column,
+          desc: `${call.name}(${paramName} = ... , <positional>) - positional after named`,
+          apply: () => splice(source, from, from, `${paramName} = `),
+        });
+      }
+
+      return sites;
+    },
+  },
+
+  // Call a builtin namespaced CONSTANT or VARIABLE as if it were a function
+  // (`color.red` -> `color.red(1)`). TV answers CE10271 "Could not find
+  // function or function reference", because the predicate is simply whether
+  // a FUNCTION of that name exists - which is why a member that is also a
+  // function (ta.tr, both a variable and ta.tr(handle_na)) must be excluded
+  // rather than mutated into a valid call. see INV170
+  "member-called-as-function": {
+    expectedClass: "CE10271",
+    describe: "call a builtin namespaced constant or variable as a function",
+    findSites(ctx) {
+      const sites = [];
+      const { tokens, offsetOf, source } = ctx;
+
+      for (let i = 0; i < tokens.length; i++) {
+        // A chain may START at a KEYWORD, not just an IDENTIFIER: the
+        // namespaces that are also TYPE names - color, line, label, box,
+        // table - lex as KEYWORD, and they hold most of the interesting
+        // constants (`color.red`). Requiring IDENTIFIER here silently
+        // skipped every `color.*` site, which is the whole point of the
+        // operator.
+        const startsChain = tokens[i].type === "IDENTIFIER" || tokens[i].type === "KEYWORD";
+
+        if (!startsChain) continue;
+
+        if (tokens[i - 1]?.type === "DOT") continue; // don't start mid-chain
+        let j = i;
+        const chain = [tokens[i]];
+
+        while (
+          tokens[j + 1]?.type === "DOT" &&
+          (tokens[j + 2]?.type === "IDENTIFIER" || tokens[j + 2]?.type === "KEYWORD")
+        ) {
+          chain.push(tokens[j + 2]);
+          j += 2;
+        }
+
+        if (chain.length < 2) continue;
+        const name = chain.map((t) => t.value).join(".");
+
+        if (!NON_FUNCTION_MEMBERS.has(name)) continue;
+
+        // Already a call, or being assigned to - leave it alone.
+        if (tokens[j + 1]?.type === "LPAREN") continue;
+
+        if (tokens[j + 1]?.type === "ASSIGN") continue;
+        const last = chain[chain.length - 1];
+        const end = offsetOf(last) + last.value.length;
+        sites.push({
+          line: last.line,
+          col: last.column,
+          desc: `${name} -> ${name}(1)`,
+          apply: () => splice(source, end, end, "(1)"),
+        });
+      }
+
+      return sites;
+    },
+  },
+
+  // Delete a single-line top-level declaration whose name is used later.
+  "delete-decl": {
+    expectedClass: "CE10272",
+    describe: "delete a top-level single-line declaration that is used later",
+    findSites(ctx) {
+      const sites = [];
+      const { tokens, source } = ctx;
+      const starts = lineStarts(source);
+      const lines = source.split("\n");
+
+      for (let i = 0; i < tokens.length; i++) {
+        const t = tokens[i];
+
+        // Statement start: IDENTIFIER at column 1 followed by `=` (a
+        // plain declaration; `:=`/`var`/typed forms are skipped - this
+        // operator wants the simplest unambiguous shape).
+        if (t.type !== "IDENTIFIER" || t.column !== 1) continue;
+
+        // `=` and `:=` both lex as ASSIGN - distinguish by value so
+        // reassignments (`x := 10`) are skipped: deleting one leaves the
+        // variable still declared, so TV accepts (a wasted probe, not a
+        // CE10272). This is the `:=`-skip the comment above promises.
+        if (tokens[i + 1]?.type !== "ASSIGN" || tokens[i + 1].value !== "=") continue;
+
+        if (tokens[i - 1] && tokens[i - 1].type !== "NEWLINE") continue;
+        // Single-line statements only: the declaration must end on its
+        // own line (next line blank, comment, or column-1 code - no
+        // wrapped continuations to reason about).
+        const next = lines[t.line]; // 0-based: the line AFTER t.line
+
+        if (next !== undefined && /^[ \t]/.test(next) && next.trim() !== "") continue;
+
+        // The name must be USED later (a later token outside this line),
+        // and the use must actually DEPEND on the declaration. A name that
+        // shadows a builtin NAMESPACE resolves fine without it as long as
+        // every use is a namespace-member access: `extend = false` whose
+        // only use is `extend.none` deletes to still-valid Pine, so TV
+        // accepts and the mutant is not broken code - a wasted probe of the
+        // same shape as the `:=` skip above. A BARE use (`extend + 1`) does
+        // depend on the declaration, so such a site is still generated.
+        const usedLater = tokens.some((u, k) => {
+          if (k <= i) return false;
+
+          if (u.type !== "IDENTIFIER" || u.value !== t.value) return false;
+
+          if (u.line <= t.line) return false;
+
+          if (tokens[k + 1]?.type === "ASSIGN") return false;
+
+          if (BUILTIN_NAMESPACES.has(u.value) && tokens[k + 1]?.type === "DOT") return false;
+
+          return true;
+        });
+
+        if (!usedLater) continue;
+        const from = starts[t.line - 1];
+        const to = t.line < starts.length ? starts[t.line] : source.length;
+        sites.push({
+          line: t.line,
+          col: 1,
+          desc: `delete declaration "${lines[t.line - 1].trim().slice(0, 60)}"`,
+          apply: () => splice(source, from, to, ""),
+        });
+      }
+
+      return sites;
+    },
+  },
+
+  // Delete the closing ")" of a call - an unclosed "(" is TV's CE10015
+  // at the opener's logical line, column 1 (INV046). Deleting a NESTED
+  // call's closer still leaves exactly one unclosed opener overall
+  // (closers pop the nearest opener), so the breakage stays single-site.
+  "unbalance-bracket": {
+    expectedClass: "CE10015",
+    describe: 'delete the closing ")" of a call',
+    findSites(ctx) {
+      const sites = [];
+      const { tokens, offsetOf, source } = ctx;
+
+      for (const call of findCalls(ctx)) {
+        const rp = tokens[call.rparen];
+        const from = offsetOf(rp);
+        sites.push({
+          line: rp.line,
+          col: rp.column,
+          desc: `${call.name}(...: delete ")" at ${rp.line}:${rp.column}`,
+          apply: () => splice(source, from, from + 1, ""),
+        });
+      }
+
+      return sites;
+    },
+  },
+
+  // Replace the base type keyword of a simple typed declaration
+  // (`float x = ...` -> `series x = ...`) - a bare qualifier with no
+  // base type is TV's CE10147 "Cannot specify a type form ... without
+  // also specifying the type", anchored at the qualifier (INV024
+  // addendum, probes p08-p10). Top-level statement starts only (bare at
+  // column 1, or after a column-1 var/varip), matching the probed forms.
+  "bad-qualifier-form": {
+    expectedClass: "CE10147",
+    describe: "replace a declaration's base type keyword with a bare qualifier",
+    findSites(ctx) {
+      const sites = [];
+      const { tokens, offsetOf, source } = ctx;
+
+      const baseTypes = new Set([
+        "float",
+        "int",
+        "bool",
+        "string",
+        "color",
+        "line",
+        "label",
+        "box",
+        "table",
+      ]);
+
+      for (let i = 0; i < tokens.length; i++) {
+        const t = tokens[i];
+
+        if (t.type !== "KEYWORD" || !baseTypes.has(t.value)) continue;
+
+        if (tokens[i + 1]?.type !== "IDENTIFIER") continue;
+
+        if (tokens[i + 2]?.type !== "ASSIGN") continue;
+        const prev = tokens[i - 1];
+
+        const bare = t.column === 1 && (!prev || prev.type === "NEWLINE");
+
+        const afterVar =
+          prev?.type === "KEYWORD" &&
+          (prev.value === "var" || prev.value === "varip") &&
+          prev.column === 1;
+
+        if (!bare && !afterVar) continue;
+        const from = offsetOf(t);
+        sites.push({
+          line: t.line,
+          col: t.column,
+          desc: `"${t.value} ${tokens[i + 1].value} =" -> "series ${tokens[i + 1].value} ="`,
+          apply: () => splice(source, from, from + t.value.length, "series"),
+        });
+      }
+
+      return sites;
+    },
+  },
 };
 
 // --- driver -------------------------------------------------------------------
 
 // Generate up to sitesPer mutants per operator, site choice rotated by seed.
 export function generateMutants(
-	source,
-	{ operators = Object.keys(OPERATORS), sitesPer = 1, seed = 1 } = {},
+  source,
+  { operators = Object.keys(OPERATORS), sitesPer = 1, seed = 1 } = {},
 ) {
-	const ctx = makeCtx(source);
-	const mutants = [];
+  const ctx = makeCtx(source);
+  const mutants = [];
 
-	for (const op of operators) {
-		const def = OPERATORS[op];
+  for (const op of operators) {
+    const def = OPERATORS[op];
 
-		if (!def) throw new Error(`unknown operator: ${op}`);
+    if (!def) throw new Error(`unknown operator: ${op}`);
 
-		const sites = def
-			.findSites(ctx)
-			.sort((a, b) => a.line - b.line || a.col - b.col);
+    const sites = def.findSites(ctx).sort((a, b) => a.line - b.line || a.col - b.col);
 
-		if (sites.length === 0) continue;
-		const rng = mulberry32(seed * 7919 + op.length);
-		const picked = new Set();
+    if (sites.length === 0) continue;
+    const rng = mulberry32(seed * 7919 + op.length);
+    const picked = new Set();
 
-		for (let n = 0; n < Math.min(sitesPer, sites.length); n++) {
-			let idx = Math.floor(rng() * sites.length);
+    for (let n = 0; n < Math.min(sitesPer, sites.length); n++) {
+      let idx = Math.floor(rng() * sites.length);
 
-			while (picked.has(idx)) idx = (idx + 1) % sites.length;
-			picked.add(idx);
-			const site = sites[idx];
-			mutants.push({
-				operator: op,
-				expectedClass: def.expectedClass,
-				site: { line: site.line, col: site.col, desc: site.desc },
-				totalSites: sites.length,
-				mutant: site.apply(),
-			});
-		}
-	}
+      while (picked.has(idx)) idx = (idx + 1) % sites.length;
+      picked.add(idx);
+      const site = sites[idx];
+      mutants.push({
+        operator: op,
+        expectedClass: def.expectedClass,
+        site: { line: site.line, col: site.col, desc: site.desc },
+        totalSites: sites.length,
+        mutant: site.apply(),
+      });
+    }
+  }
 
-	return mutants;
+  return mutants;
 }
 
 // --- CLI ----------------------------------------------------------------------
 
-const isMain =
-	process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+const isMain = process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 
 if (isMain) {
-	const args = process.argv.slice(2);
-	const file = args.find((a) => !a.startsWith("--"));
+  const args = process.argv.slice(2);
+  const file = args.find((a) => !a.startsWith("--"));
 
-	const opt = (name, dflt) => {
-		const i = args.indexOf(`--${name}`);
+  const opt = (name, dflt) => {
+    const i = args.indexOf(`--${name}`);
 
-		return i !== -1 ? args[i + 1] : dflt;
-	};
+    return i !== -1 ? args[i + 1] : dflt;
+  };
 
-	if (!file) {
-		console.error(
-			"usage: mutate.mjs <file.pine> [--operators a,b] [--sites-per N] [--seed N] [--print <i>]",
-		);
-		process.exit(1);
-	}
+  if (!file) {
+    console.error(
+      "usage: mutate.mjs <file.pine> [--operators a,b] [--sites-per N] [--seed N] [--print <i>]",
+    );
+    process.exit(1);
+  }
 
-	const source = readFileSync(file, "utf8");
+  const source = readFileSync(file, "utf8");
 
-	const mutants = generateMutants(source, {
-		operators: opt("operators", Object.keys(OPERATORS).join(",")).split(","),
-		sitesPer: Number(opt("sites-per", "1")),
-		seed: Number(opt("seed", "1")),
-	});
+  const mutants = generateMutants(source, {
+    operators: opt("operators", Object.keys(OPERATORS).join(",")).split(","),
+    sitesPer: Number(opt("sites-per", "1")),
+    seed: Number(opt("seed", "1")),
+  });
 
-	const printIdx = opt("print", null);
+  const printIdx = opt("print", null);
 
-	if (printIdx !== null) {
-		const m = mutants[Number(printIdx)];
+  if (printIdx !== null) {
+    const m = mutants[Number(printIdx)];
 
-		if (!m) {
-			console.error(`no mutant ${printIdx} (have ${mutants.length})`);
-			process.exit(1);
-		}
+    if (!m) {
+      console.error(`no mutant ${printIdx} (have ${mutants.length})`);
+      process.exit(1);
+    }
 
-		const out = opt("out", null);
+    const out = opt("out", null);
 
-		if (out) writeFileSync(out, m.mutant);
-		else process.stdout.write(m.mutant);
-	} else {
-		for (const [i, m] of mutants.entries()) {
-			console.log(
-				`[${i}] ${m.operator}  ${m.site.line}:${m.site.col}  expect=${m.expectedClass}  (${m.totalSites} sites)  ${m.site.desc}`,
-			);
-		}
+    if (out) writeFileSync(out, m.mutant);
+    else process.stdout.write(m.mutant);
+  } else {
+    for (const [i, m] of mutants.entries()) {
+      console.log(
+        `[${i}] ${m.operator}  ${m.site.line}:${m.site.col}  expect=${m.expectedClass}  (${m.totalSites} sites)  ${m.site.desc}`,
+      );
+    }
 
-		if (mutants.length === 0) console.log("no mutable sites found");
-	}
+    if (mutants.length === 0) console.log("no mutable sites found");
+  }
 }

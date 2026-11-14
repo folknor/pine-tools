@@ -37,12 +37,12 @@ const LOOKS_LIKE_SCRIPT = /\/\/@version|indicator\s*\(|strategy\s*\(|library\s*\
 const RUST_INTERPOLATION = /\{[A-Za-z_]/;
 
 function* rustFiles(dir) {
-	for (const entry of readdirSync(dir)) {
-		const path = join(dir, entry);
+  for (const entry of readdirSync(dir)) {
+    const path = join(dir, entry);
 
-		if (statSync(path).isDirectory()) yield* rustFiles(path);
-		else if (entry.endsWith(".rs")) yield path;
-	}
+    if (statSync(path).isDirectory()) yield* rustFiles(path);
+    else if (entry.endsWith(".rs")) yield path;
+  }
 }
 
 mkdirSync(OUT, { recursive: true });
@@ -54,34 +54,34 @@ let skippedNotScript = 0;
 const seen = new Set();
 
 for (const file of rustFiles(SOURCE)) {
-	const text = readFileSync(file, "utf8");
-	let index = 0;
+  const text = readFileSync(file, "utf8");
+  let index = 0;
 
-	for (const match of text.matchAll(RAW_STRING)) {
-		const body = match[2];
-		scanned++;
+  for (const match of text.matchAll(RAW_STRING)) {
+    const body = match[2];
+    scanned++;
 
-		if (!LOOKS_LIKE_SCRIPT.test(body)) {
-			skippedNotScript++;
-			continue;
-		}
+    if (!LOOKS_LIKE_SCRIPT.test(body)) {
+      skippedNotScript++;
+      continue;
+    }
 
-		if (RUST_INTERPOLATION.test(body)) {
-			skippedInterpolation++;
-			continue;
-		}
+    if (RUST_INTERPOLATION.test(body)) {
+      skippedInterpolation++;
+      continue;
+    }
 
-		// Identical fixtures recur across files; one copy is enough.
-		const key = body.trim();
+    // Identical fixtures recur across files; one copy is enough.
+    const key = body.trim();
 
-		if (seen.has(key)) continue;
-		seen.add(key);
+    if (seen.has(key)) continue;
+    seen.add(key);
 
-		const source = /\/\/@version/.test(body) ? body : `//@version=6\n${body}`;
-		const stem = basename(file, ".rs");
-		writeFileSync(join(OUT, `${stem}-${index++}.pine`), `${source.trimEnd()}\n`);
-		written++;
-	}
+    const source = /\/\/@version/.test(body) ? body : `//@version=6\n${body}`;
+    const stem = basename(file, ".rs");
+    writeFileSync(join(OUT, `${stem}-${index++}.pine`), `${source.trimEnd()}\n`);
+    written++;
+  }
 }
 
 console.log(`scanned raw strings:      ${scanned}`);
@@ -90,6 +90,8 @@ console.log(`  not script-like:        ${skippedNotScript}`);
 
 console.log(`  rust interpolation:     ${skippedInterpolation}`);
 
-console.log(`  duplicates:             ${scanned - skippedNotScript - skippedInterpolation - written}`);
+console.log(
+  `  duplicates:             ${scanned - skippedNotScript - skippedInterpolation - written}`,
+);
 
 console.log(`written to ${OUT}: ${written}`);

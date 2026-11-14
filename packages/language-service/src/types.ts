@@ -5,264 +5,264 @@
 
 // Position & Range (0-indexed, like LSP)
 export interface Position {
-	line: number; // 0-indexed
-	character: number; // 0-indexed (UTF-16 code units)
+  line: number; // 0-indexed
+  character: number; // 0-indexed (UTF-16 code units)
 }
 
 export interface Range {
-	start: Position;
-	end: Position;
+  start: Position;
+  end: Position;
 }
 
 export interface Location {
-	uri: string;
-	range: Range;
+  uri: string;
+  range: Range;
 }
 
 // Diagnostics
 export enum DiagnosticSeverity {
-	Error = 1,
-	Warning = 2,
-	Information = 3,
-	Hint = 4,
+  Error = 1,
+  Warning = 2,
+  Information = 3,
+  Hint = 4,
 }
 
 export interface Diagnostic {
-	range: Range;
-	severity: DiagnosticSeverity;
-	message: string;
-	source?: string; // "pine-lint"
-	code?: string; // Error code for lookup
+  range: Range;
+  severity: DiagnosticSeverity;
+  message: string;
+  source?: string; // "pine-lint"
+  code?: string; // Error code for lookup
 }
 
 // Completions
 export enum CompletionItemKind {
-	Text = 1,
-	Method = 2,
-	Function = 3,
-	Constructor = 4,
-	Field = 5,
-	Variable = 6,
-	Class = 7,
-	Interface = 8,
-	Module = 9,
-	Property = 10,
-	Unit = 11,
-	Value = 12,
-	Enum = 13,
-	Keyword = 14,
-	Snippet = 15,
-	Color = 16,
-	File = 17,
-	Reference = 18,
-	Folder = 19,
-	EnumMember = 20,
-	Constant = 21,
-	Struct = 22,
-	Event = 23,
-	Operator = 24,
-	TypeParameter = 25,
+  Text = 1,
+  Method = 2,
+  Function = 3,
+  Constructor = 4,
+  Field = 5,
+  Variable = 6,
+  Class = 7,
+  Interface = 8,
+  Module = 9,
+  Property = 10,
+  Unit = 11,
+  Value = 12,
+  Enum = 13,
+  Keyword = 14,
+  Snippet = 15,
+  Color = 16,
+  File = 17,
+  Reference = 18,
+  Folder = 19,
+  EnumMember = 20,
+  Constant = 21,
+  Struct = 22,
+  Event = 23,
+  Operator = 24,
+  TypeParameter = 25,
 }
 
 export enum InsertTextFormat {
-	PlainText = 1,
-	Snippet = 2,
+  PlainText = 1,
+  Snippet = 2,
 }
 
 export interface CompletionItem {
-	label: string;
-	kind: CompletionItemKind;
-	detail?: string; // Short description (shown inline)
-	documentation?: string; // Full markdown docs
-	insertText?: string; // Text to insert (may differ from label)
-	insertTextFormat?: InsertTextFormat;
+  label: string;
+  kind: CompletionItemKind;
+  detail?: string; // Short description (shown inline)
+  documentation?: string; // Full markdown docs
+  insertText?: string; // Text to insert (may differ from label)
+  insertTextFormat?: InsertTextFormat;
 }
 
 // Hover
 export interface HoverInfo {
-	contents: string; // Markdown
-	range?: Range;
+  contents: string; // Markdown
+  range?: Range;
 }
 
 // Signature Help
 export interface ParameterInfo {
-	label: string;
-	documentation?: string;
+  label: string;
+  documentation?: string;
 }
 
 export interface SignatureInfo {
-	label: string; // Full signature: "ta.sma(source, length)"
-	documentation?: string; // Markdown description
-	parameters: ParameterInfo[];
+  label: string; // Full signature: "ta.sma(source, length)"
+  documentation?: string; // Markdown description
+  parameters: ParameterInfo[];
 }
 
 export interface SignatureHelp {
-	signatures: SignatureInfo[];
-	activeSignature: number;
-	activeParameter: number;
+  signatures: SignatureInfo[];
+  activeSignature: number;
+  activeParameter: number;
 }
 
 // Formatting
 export interface TextEdit {
-	range: Range;
-	newText: string;
+  range: Range;
+  newText: string;
 }
 
 export interface FormattingOptions {
-	tabSize: number;
-	insertSpaces: boolean;
+  tabSize: number;
+  insertSpaces: boolean;
 }
 
 // Document Symbols
 export enum SymbolKind {
-	File = 1,
-	Module = 2,
-	Namespace = 3,
-	Package = 4,
-	Class = 5,
-	Method = 6,
-	Property = 7,
-	Field = 8,
-	Constructor = 9,
-	Enum = 10,
-	Interface = 11,
-	Function = 12,
-	Variable = 13,
-	Constant = 14,
-	String = 15,
-	Number = 16,
-	Boolean = 17,
-	Array = 18,
-	Object = 19,
-	Key = 20,
-	Null = 21,
-	EnumMember = 22,
-	Struct = 23,
-	Event = 24,
-	Operator = 25,
-	TypeParameter = 26,
+  File = 1,
+  Module = 2,
+  Namespace = 3,
+  Package = 4,
+  Class = 5,
+  Method = 6,
+  Property = 7,
+  Field = 8,
+  Constructor = 9,
+  Enum = 10,
+  Interface = 11,
+  Function = 12,
+  Variable = 13,
+  Constant = 14,
+  String = 15,
+  Number = 16,
+  Boolean = 17,
+  Array = 18,
+  Object = 19,
+  Key = 20,
+  Null = 21,
+  EnumMember = 22,
+  Struct = 23,
+  Event = 24,
+  Operator = 25,
+  TypeParameter = 26,
 }
 
 export interface DocumentSymbol {
-	name: string;
-	kind: SymbolKind;
-	range: Range;
-	selectionRange: Range;
-	children?: DocumentSymbol[];
+  name: string;
+  kind: SymbolKind;
+  range: Range;
+  selectionRange: Range;
+  children?: DocumentSymbol[];
 }
 
 // Symbol lookup (static, no document needed)
 export interface SymbolInfo {
-	name: string;
-	kind: "function" | "variable" | "constant";
-	syntax?: string;
-	description: string;
-	returns?: string;
-	type?: string;
-	parameters?: ParameterInfo[];
-	namespace?: string;
-	deprecated?: boolean;
+  name: string;
+  kind: "function" | "variable" | "constant";
+  syntax?: string;
+  description: string;
+  returns?: string;
+  type?: string;
+  parameters?: ParameterInfo[];
+  namespace?: string;
+  deprecated?: boolean;
 }
 
 // Code Actions
 export enum CodeActionKind {
-	Empty = "",
-	QuickFix = "quickfix",
-	Refactor = "refactor",
-	RefactorExtract = "refactor.extract",
-	RefactorInline = "refactor.inline",
-	RefactorRewrite = "refactor.rewrite",
-	Source = "source",
-	SourceOrganizeImports = "source.organizeImports",
-	SourceFixAll = "source.fixAll",
+  Empty = "",
+  QuickFix = "quickfix",
+  Refactor = "refactor",
+  RefactorExtract = "refactor.extract",
+  RefactorInline = "refactor.inline",
+  RefactorRewrite = "refactor.rewrite",
+  Source = "source",
+  SourceOrganizeImports = "source.organizeImports",
+  SourceFixAll = "source.fixAll",
 }
 
 export interface CodeAction {
-	title: string;
-	kind: CodeActionKind;
-	diagnostics?: Diagnostic[];
-	isPreferred?: boolean;
-	edit?: WorkspaceEdit;
+  title: string;
+  kind: CodeActionKind;
+  diagnostics?: Diagnostic[];
+  isPreferred?: boolean;
+  edit?: WorkspaceEdit;
 }
 
 export interface WorkspaceEdit {
-	changes: { [uri: string]: TextEdit[] };
+  changes: { [uri: string]: TextEdit[] };
 }
 
 // Inlay Hints
 export enum InlayHintKind {
-	Type = 1,
-	Parameter = 2,
+  Type = 1,
+  Parameter = 2,
 }
 
 export interface InlayHint {
-	position: Position;
-	label: string;
-	kind: InlayHintKind;
-	paddingLeft?: boolean;
-	paddingRight?: boolean;
+  position: Position;
+  label: string;
+  kind: InlayHintKind;
+  paddingLeft?: boolean;
+  paddingRight?: boolean;
 }
 
 // Folding Ranges
 export enum FoldingRangeKind {
-	Comment = "comment",
-	Imports = "imports",
-	Region = "region",
+  Comment = "comment",
+  Imports = "imports",
+  Region = "region",
 }
 
 export interface FoldingRange {
-	startLine: number;
-	endLine: number;
-	kind?: FoldingRangeKind;
+  startLine: number;
+  endLine: number;
+  kind?: FoldingRangeKind;
 }
 
 // Semantic Tokens
 export enum SemanticTokenType {
-	Namespace = 0,
-	Type = 1,
-	Class = 2,
-	Enum = 3,
-	Interface = 4,
-	Struct = 5,
-	TypeParameter = 6,
-	Parameter = 7,
-	Variable = 8,
-	Property = 9,
-	EnumMember = 10,
-	Event = 11,
-	Function = 12,
-	Method = 13,
-	Macro = 14,
-	Keyword = 15,
-	Modifier = 16,
-	Comment = 17,
-	String = 18,
-	Number = 19,
-	Regexp = 20,
-	Operator = 21,
+  Namespace = 0,
+  Type = 1,
+  Class = 2,
+  Enum = 3,
+  Interface = 4,
+  Struct = 5,
+  TypeParameter = 6,
+  Parameter = 7,
+  Variable = 8,
+  Property = 9,
+  EnumMember = 10,
+  Event = 11,
+  Function = 12,
+  Method = 13,
+  Macro = 14,
+  Keyword = 15,
+  Modifier = 16,
+  Comment = 17,
+  String = 18,
+  Number = 19,
+  Regexp = 20,
+  Operator = 21,
 }
 
 export enum SemanticTokenModifier {
-	Declaration = 0,
-	Definition = 1,
-	Readonly = 2,
-	Static = 3,
-	Deprecated = 4,
-	Abstract = 5,
-	Async = 6,
-	Modification = 7,
-	Documentation = 8,
-	DefaultLibrary = 9,
+  Declaration = 0,
+  Definition = 1,
+  Readonly = 2,
+  Static = 3,
+  Deprecated = 4,
+  Abstract = 5,
+  Async = 6,
+  Modification = 7,
+  Documentation = 8,
+  DefaultLibrary = 9,
 }
 
 export interface SemanticToken {
-	line: number;
-	character: number;
-	length: number;
-	tokenType: SemanticTokenType;
-	tokenModifiers: SemanticTokenModifier[];
+  line: number;
+  character: number;
+  length: number;
+  tokenType: SemanticTokenType;
+  tokenModifiers: SemanticTokenModifier[];
 }
 
 export interface SemanticTokensResult {
-	data: number[];
+  data: number[];
 }

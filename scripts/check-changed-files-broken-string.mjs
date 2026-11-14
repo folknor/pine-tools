@@ -4,21 +4,21 @@
 // rejects at the lexer stage - because the INV047 lexer/parser recovery fixes
 // only alter behavior after a broken string literal. A changed file WITHOUT
 // one would mean we changed behavior on a possibly TV-clean file - flag it.
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import path from 'node:path';
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 
 const report = JSON.parse(
-  readFileSync(path.join(root, 'lint-reports', 'regression-report.json'), 'utf8'),
+  readFileSync(path.join(root, "lint-reports", "regression-report.json"), "utf8"),
 );
 
 const baseline = JSON.parse(
-  readFileSync(path.join(root, 'lint-reports', 'local-baseline.json'), 'utf8'),
+  readFileSync(path.join(root, "lint-reports", "local-baseline.json"), "utf8"),
 );
 
-const MARKER = 'Missing enclosing character in the literal string';
+const MARKER = "Missing enclosing character in the literal string";
 
 let suspicious = 0;
 
@@ -29,7 +29,9 @@ for (const f of report.filesChanged ?? []) {
 
   if (!inBaseline && !inAppeared) {
     suspicious++;
-    console.log(`NO broken-string record: ${f.file} (appeared ${f.appeared?.length ?? 0}, disappeared ${f.disappeared?.length ?? 0})`);
+    console.log(
+      `NO broken-string record: ${f.file} (appeared ${f.appeared?.length ?? 0}, disappeared ${f.disappeared?.length ?? 0})`,
+    );
   }
 }
 

@@ -13,7 +13,7 @@ Current counts live in `lint-reports/failures-by-category.json` -
 regenerate with `node scripts/find-real-failures.mjs` followed by
 `node scripts/categorize-failures.mjs`. Past investigations are
 indexed at [investigations/README.md](../investigations/README.md)
-and are not duplicated here - this file is for *pending* work only.
+and are not duplicated here - this file is for _pending_ work only.
 
 (This file lived at `TODO.md` in the repository root until 2026-08-25, which
 is the name older investigation notes cite it by.)
@@ -76,7 +76,7 @@ library-member call - and INV167 fixed it the same day; the figures above are
 from the post-fix sweep, which also left warning local-only unchanged at 41.
 It is still 0 in the post-INV168 sweep. See #80.
 
-Two categories are now *expected* local-only and must not be read as
+Two categories are now _expected_ local-only and must not be read as
 over-strictness when that sweep happens - both are TV holes we deliberately do
 not match, each pinned by a fixture: G008 (collection `:=` skips the element
 check - unsound, TV lets a float into an `array<int>` through the alias) and
@@ -332,13 +332,13 @@ IDs so the two stay in sync.
   **(a) A receiver whose name is BOTH a type and a namespace is a false
   positive.** Probed 2026-08-27, all `//@version=6` with `indicator("t")`:
 
-  | receiver decl | call | TV | us |
-  |---|---|---|---|
+  | receiver decl                      | call               | TV        | us      |
+  | ---------------------------------- | ------------------ | --------- | ------- |
   | `color = array.new<float>(3, 1.0)` | `color.pushx(2.0)` | **clean** | CE10271 |
   | `label = array.new<float>(3, 1.0)` | `label.pushx(2.0)` | **clean** | CE10271 |
-  | `math = array.new<float>(3, 1.0)` | `math.pushx(2.0)` | CE10271 | CE10271 |
-  | `arr = array.new<float>(3, 1.0)` | `arr.pushx(2.0)` | CE10271 | CE10271 |
-  | `string = "abc"` | `string.foo()` | CE10271 | CE10271 |
+  | `math = array.new<float>(3, 1.0)`  | `math.pushx(2.0)`  | CE10271   | CE10271 |
+  | `arr = array.new<float>(3, 1.0)`   | `arr.pushx(2.0)`   | CE10271   | CE10271 |
+  | `string = "abc"`                   | `string.foo()`     | CE10271   | CE10271 |
 
   The discriminant is not "shadows a namespace" (`math` shadows one and still
   errors) and not "is a type name" (`string` is one and still errors) - it is
@@ -369,23 +369,23 @@ IDs so the two stay in sync.
   but occasionally skips legitimate declarations between the error
   and the next true top-level statement, accounting for some of the
   "Undefined variable …" appearances that surfaced after INV012.
-  Sampling suggests *most* of those are real findings the cascade
+  Sampling suggests _most_ of those are real findings the cascade
   was hiding (e.g. comma-pair declarations our parser doesn't
   recognise), not sync over-skipping - so the upside here is smaller
   than it first looked. **Half-measure attempted** (looser sync that
   preferred next-NEWLINE over column-1 when followed by a plausible
-  statement-start keyword) - produced 2244 *new* cascade FPs and was
+  statement-start keyword) - produced 2244 _new_ cascade FPs and was
   reverted. The real fix needs a parser-state stack tracking
   "currently inside function body / switch arm / if body / type
-  body" and a sync that skips to the end of *that* context, not the
+  body" and a sync that skips to the end of _that_ context, not the
   next column-1. Bigger refactor; defer until someone has appetite
   for the stack-threading work.
 - **#21 - verify and shore up the generate-time fact layer in
   `generate.ts`.** Not a refactor for its own sake: the hand-coded maps
-  all sit *upstream* of the generated JSON, so the "self-contained
+  all sit _upstream_ of the generated JSON, so the "self-contained
   `functions.json`" goal is already satisfied today. The item is about
-  two risks in the inputs: (1) *unverified guessing* and (2) *silent
-  drift* - facts stored as bare TS literals carry no re-verification
+  two risks in the inputs: (1) _unverified guessing_ and (2) _silent
+  drift_ - facts stored as bare TS literals carry no re-verification
   recipe, which is exactly how G002's bad widenings survived. Risk (1)
   was real and large - the param-requiredness polarity bug, fixed via
   INV050's 475-function probe sweep
@@ -595,6 +595,7 @@ IDs so the two stay in sync.
   blind spot #81 and #74 both hit, where a 0-changed corpus gate meant
   nothing. Also still open: re-run when the corpus itself grows (the
   both-clean pool has sat at 697 across every run so far).
+
 - **#52 - fixture-coverage build-out (the census target list).**
   `scripts/fixture-coverage.mjs` parses every corpus + test fixture and
   cross-references the JSON catalog to list entries referenced in zero
@@ -743,11 +744,10 @@ IDs so the two stay in sync.
 
   **Remaining, and each needs evidence we cannot generate from this repo:**
   - **Every other function's domain.** Coverage today is THREE facts. `length
-    > 0` on `ta.ema`/`ta.rma`/..., and `leftbars >= 0` on `ta.pivotlow`,
-    almost certainly hold - and "almost certainly" is what manufactured the
-    retracted G002. Each row costs one chart capture, since neither pine-lint
-    mode can see an RE-class error. The `_notAdded` block in
-    `runtime-domains.json` records each omission with its reason.
+    > 0`on`ta.ema`/`ta.rma`/..., and `leftbars >= 0`on`ta.pivotlow`,
+    > almost certainly hold - and "almost certainly" is what manufactured the
+    > retracted G002. Each row costs one chart capture, since neither pine-lint
+    > mode can see an RE-class error. The `_notAdded`block in`runtime-domains.json` records each omission with its reason.
   - **The RE10004 ceiling** (5000 historical candles). Still one banner from
     one script; whether the limit is per-call, global, or interacts with
     `max_bars_back` is unestablished. Deliberately not baked in - a `max: 5000`
@@ -843,6 +843,7 @@ IDs so the two stay in sync.
   is not evidence here. The corpus passes no wrong-base scalars to union
   parameters, so it exercises none of this - the same "corpus proves nothing"
   shape as #81 above. The fixture is the pin.
+
 - **#71 - user-function overloads are unmodelled
   ([INV157](../investigations/INV157-blackbox-audit-adoption/notes.md), cluster
   B).** Pine lets a user function be declared more than once with different
@@ -1042,22 +1043,22 @@ regression fixture into the corpus - polluting the very baseline the regression
 contract measures against. Anyone rebuilding a corpus should start from that
 history version AND exclude the repo.
 
-| script | purpose |
-|---|---|
-| `scripts/compare-tv.mjs` | One file at a time: runs local + `--tv` in parallel, prints the error diff (local-only / tv-only) for that file. Pass `--json` to emit machine-readable output. Repro tool. |
-| `scripts/lint-batch.mjs` | Batch lint: files, directories, or quoted globs; one compact errors/warnings block per file. `--diff` runs the compare-tv position diff per file (TV-capped at concurrency 4), `--tv` shows TV verdicts, plus `--errors-only`/`--filter`/`--quiet`/`--json`. Replaces ad-hoc `for f in ...` shell loops - the probe-directory workhorse. |
-| `scripts/find-real-failures.mjs` | Runs local + `--tv` on every v6 fixture, records per-file false positives (we flag, TV doesn't) and false negatives (TV flags, we don't). Writes `lint-reports/real-failures.json`. Hits TV ~750 times (~2 min at concurrency 4). |
-| `scripts/categorize-failures.mjs` | Reads `real-failures.json`, normalizes error messages into templates (strips line numbers, variable names, etc.), groups every occurrence under one of 48 / 19 categories, writes `lint-reports/failures-by-category.json`. |
-| `scripts/snapshot-local-lint.mjs` | Runs `pine-lint` (local) on every fixture and writes `lint-reports/local-baseline.json` - sorted per-file error lists. The regression contract. Re-run after every intentional change. |
-| `scripts/regression-check.mjs` | Reruns local lint over the corpus and diffs against the baseline. **No network.** Annotates disappeared errors against `real-failures.json` to distinguish "fixed a known FP" from "stopped catching a real error". Exits non-zero on any new error appearance. |
-| `scripts/summarize-regression.mjs` | Groups `regression-report.json`'s appeared/disappeared records into message templates so a 1000-record diff reads as a dozen categories; `--files <substring>` lists per-file counts for matching categories. Run right after `regression-check.mjs`. |
-| `pnpm run debug:repro -- <file> --line <N>` | Preferred parser-recovery repro tool. Runs local validation, finds a target diagnostic, slices and minimizes a candidate while preserving that diagnostic class/source, and prints token context plus AST path. Use this before falling back to manual slicing. |
-| `scripts/check-changed-files-broken-string.mjs` | INV047 safety check: verifies every regression-changed fixture carries a broken-string record (i.e. is a file TV rejects at the lexer stage), flagging any possibly-TV-clean file whose behavior changed. |
-| `scripts/audit-fixtures.mjs` | Scans every `.pine` fixture under `packages/core/test/fixtures/` without running vitest. Flags fixtures with malformed `@expects` directives and fixtures whose only assertion is a total `errors: N` count (no per-error coverage), printing suggested `// @expects error: line=N, message="..."` directives ready to paste. Exits non-zero on malformed directives. Wrapper: `pnpm run audit:fixtures` (also rebuilds the compiled helpers it imports). |
-| `scripts/fixture-coverage.mjs` | Coverage census behind #52. Parses every corpus + test fixture with our own parser and cross-references the JSON catalog to surface BLIND SPOTS: catalog entries referenced in zero fixtures, behavioral flags whose rule is never exercised (esp. `topLevelOnly` functions never called in a violating local scope - the INV054 class), and a structural-shape census (member-chain depth, switch/forIn/tuple/enum) per set. Deterministic, offline, ~2s. `--json` for machine output. It finds gaps, it does not judge correctness - the uncovered-function list is #52's fixture-building target list. |
-| `scripts/mutate.mjs` | The (b) piece of #48. Generates single-site mutants from a clean `.pine`: text-level splices at lexer-located sites, one mutation per mutant, operators mapped to the TV error code they should provoke (drop-required-arg/CE10165, typo-member/CE10271, wrong-type-literal/CE10123, typo-param-name/CE10120, delete-decl/CE10272, unbalance-bracket/CE10015, bad-qualifier-form/CE10147). Module (for the orchestrator) + CLI (`--print <i> --out <path>` for inspection). Offline. |
-| `scripts/mutation-run.mjs` | The (c) piece of #48. Picks BOTH-CLEAN fixtures (local AND TV 0 errors, from `real-failures.json`), generates mutants, judges each via `compare-tv.mjs --json`, classifies tv-accepts / killed / SURVIVOR (TV rejects, we accept - the FN signal), groups survivors by (operator, TV code). Bounded TV budget: fixtures x operators x sites-per calls, seed-rotated. `--dry-run` = local side only, zero TV calls. Quiet by default (the full-pool dry-run is ~19k mutants, whose per-mutant stream buries the summary); `--verbose` restores it, and survivors always print. There is NO `--help` - an unrecognised flag is ignored and the run starts spending TV immediately. Reports to `mutation-reports/` (gitignored). Run 1 (seed 1, 86 mutants): 1 survivor -> INV062. Run 2 (seed 2, 7 operators, 115 mutants): 0 survivors; the 2 tv-accepts were TV FNs -> G006. |
-| `scripts/audit-error-reachability.mjs` | The check-site half of #48's free slice. Enumerates every `addError`/`addWarning`/`addTemplateError` call site in the compiled checker + SemanticAnalyzer, wraps them at runtime to capture call-site stack frames, and validates corpus + test fixtures + investigation probes in-process. Reports DEAD sites (never fire anywhere - the INV050 class), probe-only sites (nothing pins them), and corpus-but-never-in-tests sites (untested real-world behavior). Offline, ~30s. `--json` for machine output. First run yielded INV059 (4 findings); the INV061 addTemplateError widening yielded the str.tostring(map) catch. |
+| script                                          | purpose                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `scripts/compare-tv.mjs`                        | One file at a time: runs local + `--tv` in parallel, prints the error diff (local-only / tv-only) for that file. Pass `--json` to emit machine-readable output. Repro tool.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `scripts/lint-batch.mjs`                        | Batch lint: files, directories, or quoted globs; one compact errors/warnings block per file. `--diff` runs the compare-tv position diff per file (TV-capped at concurrency 4), `--tv` shows TV verdicts, plus `--errors-only`/`--filter`/`--quiet`/`--json`. Replaces ad-hoc `for f in ...` shell loops - the probe-directory workhorse.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `scripts/find-real-failures.mjs`                | Runs local + `--tv` on every v6 fixture, records per-file false positives (we flag, TV doesn't) and false negatives (TV flags, we don't). Writes `lint-reports/real-failures.json`. Hits TV ~750 times (~2 min at concurrency 4).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `scripts/categorize-failures.mjs`               | Reads `real-failures.json`, normalizes error messages into templates (strips line numbers, variable names, etc.), groups every occurrence under one of 48 / 19 categories, writes `lint-reports/failures-by-category.json`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `scripts/snapshot-local-lint.mjs`               | Runs `pine-lint` (local) on every fixture and writes `lint-reports/local-baseline.json` - sorted per-file error lists. The regression contract. Re-run after every intentional change.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `scripts/regression-check.mjs`                  | Reruns local lint over the corpus and diffs against the baseline. **No network.** Annotates disappeared errors against `real-failures.json` to distinguish "fixed a known FP" from "stopped catching a real error". Exits non-zero on any new error appearance.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `scripts/summarize-regression.mjs`              | Groups `regression-report.json`'s appeared/disappeared records into message templates so a 1000-record diff reads as a dozen categories; `--files <substring>` lists per-file counts for matching categories. Run right after `regression-check.mjs`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `pnpm run debug:repro -- <file> --line <N>`     | Preferred parser-recovery repro tool. Runs local validation, finds a target diagnostic, slices and minimizes a candidate while preserving that diagnostic class/source, and prints token context plus AST path. Use this before falling back to manual slicing.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `scripts/check-changed-files-broken-string.mjs` | INV047 safety check: verifies every regression-changed fixture carries a broken-string record (i.e. is a file TV rejects at the lexer stage), flagging any possibly-TV-clean file whose behavior changed.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `scripts/audit-fixtures.mjs`                    | Scans every `.pine` fixture under `packages/core/test/fixtures/` without running vitest. Flags fixtures with malformed `@expects` directives and fixtures whose only assertion is a total `errors: N` count (no per-error coverage), printing suggested `// @expects error: line=N, message="..."` directives ready to paste. Exits non-zero on malformed directives. Wrapper: `pnpm run audit:fixtures` (also rebuilds the compiled helpers it imports).                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `scripts/fixture-coverage.mjs`                  | Coverage census behind #52. Parses every corpus + test fixture with our own parser and cross-references the JSON catalog to surface BLIND SPOTS: catalog entries referenced in zero fixtures, behavioral flags whose rule is never exercised (esp. `topLevelOnly` functions never called in a violating local scope - the INV054 class), and a structural-shape census (member-chain depth, switch/forIn/tuple/enum) per set. Deterministic, offline, ~2s. `--json` for machine output. It finds gaps, it does not judge correctness - the uncovered-function list is #52's fixture-building target list.                                                                                                                                                                                                                                                                    |
+| `scripts/mutate.mjs`                            | The (b) piece of #48. Generates single-site mutants from a clean `.pine`: text-level splices at lexer-located sites, one mutation per mutant, operators mapped to the TV error code they should provoke (drop-required-arg/CE10165, typo-member/CE10271, wrong-type-literal/CE10123, typo-param-name/CE10120, delete-decl/CE10272, unbalance-bracket/CE10015, bad-qualifier-form/CE10147). Module (for the orchestrator) + CLI (`--print <i> --out <path>` for inspection). Offline.                                                                                                                                                                                                                                                                                                                                                                                         |
+| `scripts/mutation-run.mjs`                      | The (c) piece of #48. Picks BOTH-CLEAN fixtures (local AND TV 0 errors, from `real-failures.json`), generates mutants, judges each via `compare-tv.mjs --json`, classifies tv-accepts / killed / SURVIVOR (TV rejects, we accept - the FN signal), groups survivors by (operator, TV code). Bounded TV budget: fixtures x operators x sites-per calls, seed-rotated. `--dry-run` = local side only, zero TV calls. Quiet by default (the full-pool dry-run is ~19k mutants, whose per-mutant stream buries the summary); `--verbose` restores it, and survivors always print. There is NO `--help` - an unrecognised flag is ignored and the run starts spending TV immediately. Reports to `mutation-reports/` (gitignored). Run 1 (seed 1, 86 mutants): 1 survivor -> INV062. Run 2 (seed 2, 7 operators, 115 mutants): 0 survivors; the 2 tv-accepts were TV FNs -> G006. |
+| `scripts/audit-error-reachability.mjs`          | The check-site half of #48's free slice. Enumerates every `addError`/`addWarning`/`addTemplateError` call site in the compiled checker + SemanticAnalyzer, wraps them at runtime to capture call-site stack frames, and validates corpus + test fixtures + investigation probes in-process. Reports DEAD sites (never fire anywhere - the INV050 class), probe-only sites (nothing pins them), and corpus-but-never-in-tests sites (untested real-world behavior). Offline, ~30s. `--json` for machine output. First run yielded INV059 (4 findings); the INV061 addTemplateError widening yielded the str.tostring(map) catch.                                                                                                                                                                                                                                              |
 
 Repro for any fixture:
 
@@ -1182,13 +1183,13 @@ inventory (the table once started at 1086+1072+549; post-TV-stop
 cascades are excluded since INV025 - no TV verdict there). Confirmable
 counts:
 
-| count | files | category |
-|---|---|---|
-| 20 | 2 | `Syntax error at input "end of line without line continuation"` *(probe-backed TPs - INV042's wrap rule, surfaced pre-stop in the two mangle carriers; INV081 re-probed colon-wrap accept/reject cases and kept this strict)* |
-| 8 | 1 | `Syntax error at input "index"` *(TPs - `bar index` mangle sites, probed INV081; TV anchors one CE10156 at `index`; INV082 suppresses the duplicate recovered-prefix `bar` semantic noise)* |
-| 3 | 3 | `Undefined variable '*'. Did you mean '*'?` |
-| 3 | 3 | `Undefined variable '*'` |
-| 2-1 | - | long tail: `:` `==` |
+| count | files | category                                                                                                                                                                                                                      |
+| ----- | ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 20    | 2     | `Syntax error at input "end of line without line continuation"` _(probe-backed TPs - INV042's wrap rule, surfaced pre-stop in the two mangle carriers; INV081 re-probed colon-wrap accept/reject cases and kept this strict)_ |
+| 8     | 1     | `Syntax error at input "index"` _(TPs - `bar index` mangle sites, probed INV081; TV anchors one CE10156 at `index`; INV082 suppresses the duplicate recovered-prefix `bar` semantic noise)_                                   |
+| 3     | 3     | `Undefined variable '*'. Did you mean '*'?`                                                                                                                                                                                   |
+| 3     | 3     | `Undefined variable '*'`                                                                                                                                                                                                      |
+| 2-1   | -     | long tail: `:` `==`                                                                                                                                                                                                           |
 
 ## Type checker - over-strict bool / arg / assign rules
 
@@ -1199,18 +1200,18 @@ INV122-INV133 qualifier/consistency trail). The current report has no
 live TV-only type-checker categories. The remaining local-only type row
 is documented full-file mangle residue:
 
-| count | files | category |
-|---|---|---|
-| 1 | 1 | `Cannot call "operator ?:" with argument ...` (`8439b236...` mangled ternary-wrap recovery residue; the clean synthetic INV026 trio now matches TV at the branch argument positions, and INV081 confirms the plot-style-condition shape is a real TV CE10123 in isolation) |
+| count | files | category                                                                                                                                                                                                                                                                   |
+| ----- | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1     | 1     | `Cannot call "operator ?:" with argument ...` (`8439b236...` mangled ternary-wrap recovery residue; the clean synthetic INV026 trio now matches TV at the branch argument positions, and INV081 confirms the plot-style-condition shape is a real TV CE10123 in isolation) |
 
 Do not relax bool checks to chase this row; there is no current #9
 carrier that justifies the old per-call-site qualifier propagation plan.
 
 ## Type checker - false negatives
 
-| count | files | category |
-|---|---|---|
-| 0 | 0 | No current TV-only error categories in the refreshed 2026-06-20 sweep. The old `35a58bb9...` ternary trio now uses TV's CE10123 operator diagnostic at the branch argument positions. |
+| count | files | category                                                                                                                                                                              |
+| ----- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0     | 0     | No current TV-only error categories in the refreshed 2026-06-20 sweep. The old `35a58bb9...` ternary trio now uses TV's CE10123 operator diagnostic at the branch argument positions. |
 
 Every other row this table once held is cleared (INV028, INV032-INV041).
 

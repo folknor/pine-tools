@@ -24,52 +24,50 @@ const CONST_RE = /^const\b/;
 // unions ("const int/float") and the generic-input blob
 // ("const int/float/bool/string/color or source-type built-ins").
 function baseOf(type) {
-	return type.replace(CONST_RE, "").trim();
+  return type.replace(CONST_RE, "").trim();
 }
 
 const rows = [];
 
 for (const fn of functions) {
-	const overloaded = (fn.parameters ?? []).some((p) => p.type === "unknown");
+  const overloaded = (fn.parameters ?? []).some((p) => p.type === "unknown");
 
-	for (const p of fn.parameters ?? []) {
-		if (typeof p.type === "string" && CONST_RE.test(p.type)) {
-			rows.push({
-				fn: fn.name,
-				param: p.name,
-				type: p.type,
-				base: baseOf(p.type),
-				required: p.required === true,
-				overloaded,
-			});
-		}
-	}
+  for (const p of fn.parameters ?? []) {
+    if (typeof p.type === "string" && CONST_RE.test(p.type)) {
+      rows.push({
+        fn: fn.name,
+        param: p.name,
+        type: p.type,
+        base: baseOf(p.type),
+        required: p.required === true,
+        overloaded,
+      });
+    }
+  }
 }
 
 if (process.argv.includes("--json")) {
-	process.stdout.write(`${JSON.stringify(rows, null, 2)}\n`);
+  process.stdout.write(`${JSON.stringify(rows, null, 2)}\n`);
 } else {
-	const byBase = new Map();
+  const byBase = new Map();
 
-	for (const r of rows) byBase.set(r.base, (byBase.get(r.base) ?? 0) + 1);
+  for (const r of rows) byBase.set(r.base, (byBase.get(r.base) ?? 0) + 1);
 
-	console.log(`Total const-typed params: ${rows.length}`);
-	console.log(
-		`Across functions: ${new Set(rows.map((r) => r.fn)).size}`,
-	);
-	console.log(
-		`On overloaded fns (merged param may be ambiguous): ${rows.filter((r) => r.overloaded).length}`,
-	);
-	console.log("\nBy base type:");
+  console.log(`Total const-typed params: ${rows.length}`);
+  console.log(`Across functions: ${new Set(rows.map((r) => r.fn)).size}`);
+  console.log(
+    `On overloaded fns (merged param may be ambiguous): ${rows.filter((r) => r.overloaded).length}`,
+  );
+  console.log("\nBy base type:");
 
-	for (const [base, n] of [...byBase.entries()].sort((a, b) => b[1] - a[1])) {
-		console.log(`  ${String(n).padStart(4)}  ${base}`);
-	}
+  for (const [base, n] of [...byBase.entries()].sort((a, b) => b[1] - a[1])) {
+    console.log(`  ${String(n).padStart(4)}  ${base}`);
+  }
 
-	console.log("\nAll (fn :: param :: type):");
+  console.log("\nAll (fn :: param :: type):");
 
-	for (const r of rows.sort((a, b) => a.fn.localeCompare(b.fn))) {
-		const tag = r.overloaded ? " [overloaded]" : "";
-		console.log(`  ${r.fn} :: ${r.param} :: ${r.type}${tag}`);
-	}
+  for (const r of rows.sort((a, b) => a.fn.localeCompare(b.fn))) {
+    const tag = r.overloaded ? " [overloaded]" : "";
+    console.log(`  ${r.fn} :: ${r.param} :: ${r.type}${tag}`);
+  }
 }

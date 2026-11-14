@@ -1,79 +1,68 @@
 {
-	"compilerOptions": {
-		// Modern target and module options
-		"target": "ES2022",
-		"module": "NodeNext",
-		"moduleResolution": "NodeNext",
-		"lib": ["ES2022"],
+  "compilerOptions": {
+    // Modern target and module options
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2022"],
 
-		// Output options
-		"outDir": "dist",
-		"rootDir": ".",
-		"sourceMap": true,
-		"declaration": true,
-		"declarationMap": true,
-		"removeComments": false,
-		"importHelpers": true,
+    // Output options
+    "outDir": "dist",
+    "rootDir": ".",
+    "sourceMap": true,
+    "declaration": true,
+    "declarationMap": true,
+    "removeComments": false,
+    "importHelpers": true,
 
-		// Module and path resolution
-		"esModuleInterop": true,
-		"allowSyntheticDefaultImports": true,
-		"resolveJsonModule": true,
-		"paths": {
-			"@core/*": ["./packages/core/src/*"],
-			"@lsp/*": ["./packages/lsp/src/*"],
-			"@vscode/*": ["./packages/vscode/src/*"],
-			"@cli/*": ["./packages/cli/src/*"],
-			"@pipeline/*": ["./packages/pipeline/src/*"],
-			"@test/*": ["./test/*"],
-			"@pine-data/*": ["./pine-data/*"]
-		},
+    // Module and path resolution
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "paths": {
+      "@core/*": ["./packages/core/src/*"],
+      "@lsp/*": ["./packages/lsp/src/*"],
+      "@vscode/*": ["./packages/vscode/src/*"],
+      "@cli/*": ["./packages/cli/src/*"],
+      "@pipeline/*": ["./packages/pipeline/src/*"],
+      "@test/*": ["./test/*"],
+      "@pine-data/*": ["./pine-data/*"]
+    },
 
-		// Strict type checking (balanced)
-		"strict": true,
-		"noImplicitAny": true,
-		"strictNullChecks": true,
-		"strictFunctionTypes": true,
-		"strictBindCallApply": true,
-		"strictPropertyInitialization": true,
-		"noImplicitThis": true,
-		"alwaysStrict": true,
-		"noUnusedLocals": false,
-		"noUnusedParameters": false,
-		"noImplicitReturns": true,
-		"noFallthroughCasesInSwitch": true,
-		"noImplicitOverride": true,
+    // Strict type checking (balanced)
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
 
-		// Keep exactOptionalPropertyTypes disabled for compatibility
-		"exactOptionalPropertyTypes": false,
-		"noUncheckedIndexedAccess": false,
-		"noPropertyAccessFromIndexSignature": false,
+    // Keep exactOptionalPropertyTypes disabled for compatibility
+    "exactOptionalPropertyTypes": false,
+    "noUncheckedIndexedAccess": false,
+    "noPropertyAccessFromIndexSignature": false,
 
-		// Additional checks
-		"skipLibCheck": true,
-		"forceConsistentCasingInFileNames": true,
+    // Additional checks
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
 
-		// Code generation
-		"experimentalDecorators": true,
-		"emitDecoratorMetadata": true,
+    // Code generation
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
 
-		// Type definitions
-		"types": ["node", "vscode"]
-	},
-	"include": [
-		"packages/**/*.ts",
-		"test/**/*.ts",
-		"pine-data/**/*.ts",
-		"dev-tools/**/*.ts"
-	],
-	"exclude": [
-		"node_modules",
-		"dist",
-		"**/*.js",
-		"**/*.d.ts",
-		"packages/pipeline/**/*.ts"
-	],
-	"ts-node": {
-		"esm": true
-	}
+    // Type definitions
+    "types": ["node", "vscode"]
+  },
+  "include": ["packages/**/*.ts", "test/**/*.ts", "pine-data/**/*.ts", "dev-tools/**/*.ts"],
+  "exclude": ["node_modules", "dist", "**/*.js", "**/*.d.ts", "packages/pipeline/**/*.ts"],
+  "ts-node": {
+    "esm": true
+  }
 }

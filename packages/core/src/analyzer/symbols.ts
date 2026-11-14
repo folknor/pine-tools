@@ -1,316 +1,307 @@
 // Symbol Table for tracking variables, functions, and scopes
 
-import {
-	FUNCTIONS_BY_NAME,
-	PineV6,
-	VARIABLES_BY_NAME,
-} from "../../../../pine-data/v6";
+import { FUNCTIONS_BY_NAME, PineV6, VARIABLES_BY_NAME } from "../../../../pine-data/v6";
 import { RESERVED_KEYWORDS } from "../constants/keywords";
 import type { PineType } from "./types";
 
 export interface Symbol {
-	name: string;
-	type: PineType;
-	line: number;
-	column: number;
-	used: boolean;
-	kind: "variable" | "function" | "parameter" | "method";
-	declaredWith?: "var" | "varip" | "const" | null; // for variables
-	// A `for` counter / `for...in` element. Pine makes these immutable: any
-	// reassignment is TV's CE10174 "cannot be mutable". see INV099
-	loopVar?: boolean;
+  name: string;
+  type: PineType;
+  line: number;
+  column: number;
+  used: boolean;
+  kind: "variable" | "function" | "parameter" | "method";
+  declaredWith?: "var" | "varip" | "const" | null; // for variables
+  // A `for` counter / `for...in` element. Pine makes these immutable: any
+  // reassignment is TV's CE10174 "cannot be mutable". see INV099
+  loopVar?: boolean;
 }
 
 export class Scope {
-	// Variables / functions / parameters live in one namespace, methods in
-	// another. Pine allows `int n = bar_index` and `method n(float v) =>
-	// not na(v)` to coexist - a bare `n` resolves to the variable, while
-	// `n(5.0)` / `(5.0).n()` resolve to the method. see INV006.
-	private symbols: Map<string, Symbol> = new Map();
-	private methods: Map<string, Symbol> = new Map();
-	private parent: Scope | null;
-	private children: Scope[] = [];
+  // Variables / functions / parameters live in one namespace, methods in
+  // another. Pine allows `int n = bar_index` and `method n(float v) =>
+  // not na(v)` to coexist - a bare `n` resolves to the variable, while
+  // `n(5.0)` / `(5.0).n()` resolve to the method. see INV006.
+  private symbols: Map<string, Symbol> = new Map();
+  private methods: Map<string, Symbol> = new Map();
+  private parent: Scope | null;
+  private children: Scope[] = [];
 
-	constructor(parent: Scope | null = null) {
-		this.parent = parent;
-	}
+  constructor(parent: Scope | null = null) {
+    this.parent = parent;
+  }
 
-	define(symbol: Symbol): void {
-		if (symbol.kind === "method") {
-			this.methods.set(symbol.name, symbol);
-		} else {
-			this.symbols.set(symbol.name, symbol);
-		}
-	}
+  define(symbol: Symbol): void {
+    if (symbol.kind === "method") {
+      this.methods.set(symbol.name, symbol);
+    } else {
+      this.symbols.set(symbol.name, symbol);
+    }
+  }
 
-	lookup(name: string): Symbol | undefined {
-		const symbol = this.symbols.get(name);
+  lookup(name: string): Symbol | undefined {
+    const symbol = this.symbols.get(name);
 
-		if (symbol) return symbol;
+    if (symbol) return symbol;
 
-		if (this.parent) return this.parent.lookup(name);
+    if (this.parent) return this.parent.lookup(name);
 
-		return undefined;
-	}
+    return undefined;
+  }
 
-	// Lookup for call sites - accepts methods too. Variables take
-	// precedence (which would error elsewhere if the variable isn't
-	// callable), then methods, then walk parents.
-	lookupCallable(name: string): Symbol | undefined {
-		const symbol = this.symbols.get(name);
+  // Lookup for call sites - accepts methods too. Variables take
+  // precedence (which would error elsewhere if the variable isn't
+  // callable), then methods, then walk parents.
+  lookupCallable(name: string): Symbol | undefined {
+    const symbol = this.symbols.get(name);
 
-		if (symbol) return symbol;
-		const method = this.methods.get(name);
+    if (symbol) return symbol;
+    const method = this.methods.get(name);
 
-		if (method) return method;
+    if (method) return method;
 
-		if (this.parent) return this.parent.lookupCallable(name);
+    if (this.parent) return this.parent.lookupCallable(name);
 
-		return undefined;
-	}
+    return undefined;
+  }
 
-	lookupLocal(name: string): Symbol | undefined {
-		return this.symbols.get(name);
-	}
+  lookupLocal(name: string): Symbol | undefined {
+    return this.symbols.get(name);
+  }
 
-	getAllSymbols(): Symbol[] {
-		return [
-			...Array.from(this.symbols.values()),
-			...Array.from(this.methods.values()),
-		];
-	}
+  getAllSymbols(): Symbol[] {
+    return [...Array.from(this.symbols.values()), ...Array.from(this.methods.values())];
+  }
 
-	markUsed(name: string): void {
-		const symbol = this.symbols.get(name) ?? this.methods.get(name);
+  markUsed(name: string): void {
+    const symbol = this.symbols.get(name) ?? this.methods.get(name);
 
-		if (symbol) {
-			symbol.used = true;
-		} else if (this.parent) {
-			this.parent.markUsed(name);
-		}
-	}
+    if (symbol) {
+      symbol.used = true;
+    } else if (this.parent) {
+      this.parent.markUsed(name);
+    }
+  }
 
-	createChild(): Scope {
-		const child = new Scope(this);
-		this.children.push(child);
+  createChild(): Scope {
+    const child = new Scope(this);
+    this.children.push(child);
 
-		return child;
-	}
+    return child;
+  }
 
-	getParent(): Scope | null {
-		return this.parent;
-	}
+  getParent(): Scope | null {
+    return this.parent;
+  }
 }
 
 export class SymbolTable {
-	private globalScope: Scope;
-	private currentScope: Scope;
+  private globalScope: Scope;
+  private currentScope: Scope;
 
-	constructor() {
-		this.globalScope = new Scope();
-		this.currentScope = this.globalScope;
-		this.initializeBuiltins();
-	}
+  constructor() {
+    this.globalScope = new Scope();
+    this.currentScope = this.globalScope;
+    this.initializeBuiltins();
+  }
 
-	private initializeBuiltins(): void {
-		// Built-in variables - from pine-data layer
-		// Mark as used: true - builtins shouldn't trigger "unused variable" warnings
-		for (const [name, variable] of VARIABLES_BY_NAME) {
-			// Skip namespaced variables (they're accessed via namespace)
-			if (name.includes(".")) continue;
+  private initializeBuiltins(): void {
+    // Built-in variables - from pine-data layer
+    // Mark as used: true - builtins shouldn't trigger "unused variable" warnings
+    for (const [name, variable] of VARIABLES_BY_NAME) {
+      // Skip namespaced variables (they're accessed via namespace)
+      if (name.includes(".")) continue;
 
-			this.globalScope.define({
-				name,
-				type: variable.type as PineType,
-				line: 0,
-				column: 0,
-				used: true, // Builtins are language-provided, not user-declared
-				kind: "variable",
-			});
-		}
+      this.globalScope.define({
+        name,
+        type: variable.type as PineType,
+        line: 0,
+        column: 0,
+        used: true, // Builtins are language-provided, not user-declared
+        kind: "variable",
+      });
+    }
 
-		// Built-in functions - from pine-data layer
-		for (const [name] of FUNCTIONS_BY_NAME) {
-			// Skip namespaced functions (they're accessed via namespace)
-			if (name.includes(".")) continue;
+    // Built-in functions - from pine-data layer
+    for (const [name] of FUNCTIONS_BY_NAME) {
+      // Skip namespaced functions (they're accessed via namespace)
+      if (name.includes(".")) continue;
 
-			// Don't overwrite variables with functions (e.g., hour is both a variable and function)
-			// The variable type is more useful for type checking; function calls get resolved separately
-			const existing = this.globalScope.lookup(name);
+      // Don't overwrite variables with functions (e.g., hour is both a variable and function)
+      // The variable type is more useful for type checking; function calls get resolved separately
+      const existing = this.globalScope.lookup(name);
 
-			if (existing && existing.kind === "variable") continue;
+      if (existing && existing.kind === "variable") continue;
 
-			this.globalScope.define({
-				name,
-				type: "unknown",
-				line: 0,
-				column: 0,
-				used: true, // Builtins are language-provided, not user-declared
-				kind: "function",
-			});
-		}
+      this.globalScope.define({
+        name,
+        type: "unknown",
+        line: 0,
+        column: 0,
+        used: true, // Builtins are language-provided, not user-declared
+        kind: "function",
+      });
+    }
 
-		// Keywords (treated as reserved symbols)
-		// Defined in constants/keywords.ts per architecture principle
-		for (const name of RESERVED_KEYWORDS) {
-			this.globalScope.define({
-				name,
-				type: "unknown", // Keywords don't have a value type
-				line: 0,
-				column: 0,
-				used: true, // Keywords are language-provided, not user-declared
-				kind: "variable",
-			});
-		}
+    // Keywords (treated as reserved symbols)
+    // Defined in constants/keywords.ts per architecture principle
+    for (const name of RESERVED_KEYWORDS) {
+      this.globalScope.define({
+        name,
+        type: "unknown", // Keywords don't have a value type
+        line: 0,
+        column: 0,
+        used: true, // Keywords are language-provided, not user-declared
+        kind: "variable",
+      });
+    }
 
-		// Namespaces - from pine-data layer
-		for (const name of PineV6.getAllNamespaces()) {
-			this.globalScope.define({
-				name,
-				type: "unknown",
-				line: 0,
-				column: 0,
-				used: true, // Namespaces are language-provided, not user-declared
-				kind: "variable",
-			});
-		}
-	}
+    // Namespaces - from pine-data layer
+    for (const name of PineV6.getAllNamespaces()) {
+      this.globalScope.define({
+        name,
+        type: "unknown",
+        line: 0,
+        column: 0,
+        used: true, // Namespaces are language-provided, not user-declared
+        kind: "variable",
+      });
+    }
+  }
 
-	enterScope(): void {
-		this.currentScope = this.currentScope.createChild();
-	}
+  enterScope(): void {
+    this.currentScope = this.currentScope.createChild();
+  }
 
-	exitScope(): void {
-		const parent = this.currentScope.getParent();
+  exitScope(): void {
+    const parent = this.currentScope.getParent();
 
-		if (parent) {
-			this.currentScope = parent;
-		}
-	}
+    if (parent) {
+      this.currentScope = parent;
+    }
+  }
 
-	define(symbol: Symbol): void {
-		this.currentScope.define(symbol);
-	}
+  define(symbol: Symbol): void {
+    this.currentScope.define(symbol);
+  }
 
-	lookup(name: string): Symbol | undefined {
-		return this.currentScope.lookup(name);
-	}
+  lookup(name: string): Symbol | undefined {
+    return this.currentScope.lookup(name);
+  }
 
-	// Call-site lookup that also considers method declarations. See
-	// Scope.lookupCallable / INV006.
-	lookupCallable(name: string): Symbol | undefined {
-		return this.currentScope.lookupCallable(name);
-	}
+  // Call-site lookup that also considers method declarations. See
+  // Scope.lookupCallable / INV006.
+  lookupCallable(name: string): Symbol | undefined {
+    return this.currentScope.lookupCallable(name);
+  }
 
-	lookupLocal(name: string): Symbol | undefined {
-		return this.currentScope.lookupLocal(name);
-	}
+  lookupLocal(name: string): Symbol | undefined {
+    return this.currentScope.lookupLocal(name);
+  }
 
-	// Does `name` resolve, from the CURRENT scope, to the global scope's own
-	// entry? Identity against `globalScope.lookupLocal` rather than a depth
-	// count, so a parameter or body-local that shadows a global answers false -
-	// which is what keeps the CE10088 global-mutation check off shadowed names.
-	// see INV150
-	resolvesToGlobal(name: string): boolean {
-		const resolved = this.currentScope.lookup(name);
+  // Does `name` resolve, from the CURRENT scope, to the global scope's own
+  // entry? Identity against `globalScope.lookupLocal` rather than a depth
+  // count, so a parameter or body-local that shadows a global answers false -
+  // which is what keeps the CE10088 global-mutation check off shadowed names.
+  // see INV150
+  resolvesToGlobal(name: string): boolean {
+    const resolved = this.currentScope.lookup(name);
 
-		return (
-			resolved !== undefined && resolved === this.globalScope.lookupLocal(name)
-		);
-	}
+    return resolved !== undefined && resolved === this.globalScope.lookupLocal(name);
+  }
 
-	markUsed(name: string): void {
-		this.currentScope.markUsed(name);
-	}
+  markUsed(name: string): void {
+    this.currentScope.markUsed(name);
+  }
 
-	update(symbol: Symbol): void {
-		// Update the symbol in the current scope
-		// This is used for type promotion when a variable's type changes
-		const existing = this.currentScope.lookupLocal(symbol.name);
+  update(symbol: Symbol): void {
+    // Update the symbol in the current scope
+    // This is used for type promotion when a variable's type changes
+    const existing = this.currentScope.lookupLocal(symbol.name);
 
-		if (existing) {
-			this.currentScope.define(symbol); // Replace the existing symbol
-		}
-	}
+    if (existing) {
+      this.currentScope.define(symbol); // Replace the existing symbol
+    }
+  }
 
-	getCurrentScope(): Scope {
-		return this.currentScope;
-	}
+  getCurrentScope(): Scope {
+    return this.currentScope;
+  }
 
-	getGlobalScope(): Scope {
-		return this.globalScope;
-	}
+  getGlobalScope(): Scope {
+    return this.globalScope;
+  }
 
-	getScopeDepth(): number {
-		let depth = 0;
-		let scope: Scope | null = this.currentScope;
+  getScopeDepth(): number {
+    let depth = 0;
+    let scope: Scope | null = this.currentScope;
 
-		while (scope?.getParent()) {
-			depth++;
-			scope = scope.getParent();
-		}
+    while (scope?.getParent()) {
+      depth++;
+      scope = scope.getParent();
+    }
 
-		return depth;
-	}
+    return depth;
+  }
 
-	// Find similar symbol names (for typo suggestions)
-	findSimilarSymbols(name: string, threshold: number = 2): string[] {
-		const allSymbols = this.getAllSymbolNames();
-		const similar: string[] = [];
+  // Find similar symbol names (for typo suggestions)
+  findSimilarSymbols(name: string, threshold: number = 2): string[] {
+    const allSymbols = this.getAllSymbolNames();
+    const similar: string[] = [];
 
-		for (const symbolName of allSymbols) {
-			const distance = this.levenshteinDistance(name, symbolName);
+    for (const symbolName of allSymbols) {
+      const distance = this.levenshteinDistance(name, symbolName);
 
-			if (distance <= threshold && distance > 0) {
-				similar.push(symbolName);
-			}
-		}
+      if (distance <= threshold && distance > 0) {
+        similar.push(symbolName);
+      }
+    }
 
-		return similar.sort((a, b) => {
-			const distA = this.levenshteinDistance(name, a);
-			const distB = this.levenshteinDistance(name, b);
+    return similar.sort((a, b) => {
+      const distA = this.levenshteinDistance(name, a);
+      const distB = this.levenshteinDistance(name, b);
 
-			return distA - distB;
-		});
-	}
+      return distA - distB;
+    });
+  }
 
-	private getAllSymbolNames(): string[] {
-		const names: string[] = [];
-		let scope: Scope | null = this.currentScope;
+  private getAllSymbolNames(): string[] {
+    const names: string[] = [];
+    let scope: Scope | null = this.currentScope;
 
-		while (scope) {
-			names.push(...scope.getAllSymbols().map((s) => s.name));
-			scope = scope.getParent();
-		}
+    while (scope) {
+      names.push(...scope.getAllSymbols().map((s) => s.name));
+      scope = scope.getParent();
+    }
 
-		return [...new Set(names)];
-	}
+    return [...new Set(names)];
+  }
 
-	private levenshteinDistance(a: string, b: string): number {
-		const matrix: number[][] = [];
+  private levenshteinDistance(a: string, b: string): number {
+    const matrix: number[][] = [];
 
-		for (let i = 0; i <= b.length; i++) {
-			matrix[i] = [i];
-		}
+    for (let i = 0; i <= b.length; i++) {
+      matrix[i] = [i];
+    }
 
-		for (let j = 0; j <= a.length; j++) {
-			matrix[0][j] = j;
-		}
+    for (let j = 0; j <= a.length; j++) {
+      matrix[0][j] = j;
+    }
 
-		for (let i = 1; i <= b.length; i++) {
-			for (let j = 1; j <= a.length; j++) {
-				if (b.charAt(i - 1) === a.charAt(j - 1)) {
-					matrix[i][j] = matrix[i - 1][j - 1];
-				} else {
-					matrix[i][j] = Math.min(
-						matrix[i - 1][j - 1] + 1, // substitution
-						matrix[i][j - 1] + 1, // insertion
-						matrix[i - 1][j] + 1, // deletion
-					);
-				}
-			}
-		}
+    for (let i = 1; i <= b.length; i++) {
+      for (let j = 1; j <= a.length; j++) {
+        if (b.charAt(i - 1) === a.charAt(j - 1)) {
+          matrix[i][j] = matrix[i - 1][j - 1];
+        } else {
+          matrix[i][j] = Math.min(
+            matrix[i - 1][j - 1] + 1, // substitution
+            matrix[i][j - 1] + 1, // insertion
+            matrix[i - 1][j] + 1, // deletion
+          );
+        }
+      }
+    }
 
-		return matrix[b.length][a.length];
-	}
+    return matrix[b.length][a.length];
+  }
 }

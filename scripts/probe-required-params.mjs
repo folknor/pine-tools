@@ -50,9 +50,7 @@ const execFileP = promisify(execFile);
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const OUT = join(root, "pine-data/raw/v6/required-params-probe.json");
 
-const functions = JSON.parse(
-	readFileSync(join(root, "pine-data/v6/functions.json"), "utf8"),
-);
+const functions = JSON.parse(readFileSync(join(root, "pine-data/v6/functions.json"), "utf8"));
 
 const byName = new Map(functions.map((f) => [f.name, f]));
 
@@ -63,126 +61,118 @@ const retryOnly = args.includes("--retry");
 
 const SETTLED = new Set(["ok", "id-supplied", "variadic"]);
 
-const prior =
-	existsSync(OUT) ? JSON.parse(readFileSync(OUT, "utf8")) : { results: {} };
+const prior = existsSync(OUT) ? JSON.parse(readFileSync(OUT, "utf8")) : { results: {} };
 
 // Catalog names can be templates - call them instantiated.
 function callName(name) {
-	return name
-		.replace("<type,type>", "<string, float>")
-		.replace("<type>", "<float>");
+  return name.replace("<type,type>", "<string, float>").replace("<type>", "<float>");
 }
 
 // Fixture for the first param of crash-prone fns: a fresh collection of the
 // matching kind, or `close` for series params (max_bars_back).
 function firstArgFixture(fn) {
-	const t = fn?.parameters?.[0]?.type ?? "";
-	const ns = fn?.name ?? "";
+  const t = fn?.parameters?.[0]?.type ?? "";
+  const ns = fn?.name ?? "";
 
-	if (/array/.test(t) || ns.startsWith('array.'))
-		return { decl: "a0 = array.new<float>(3)", arg: "a0" };
+  if (/array/.test(t) || ns.startsWith("array."))
+    return { decl: "a0 = array.new<float>(3)", arg: "a0" };
 
-	if (/map/.test(t) || ns.startsWith('map.'))
-		return { decl: "m0 = map.new<string, float>()", arg: "m0" };
+  if (/map/.test(t) || ns.startsWith("map."))
+    return { decl: "m0 = map.new<string, float>()", arg: "m0" };
 
-	if (/matrix/.test(t) || ns.startsWith('matrix.'))
-		return { decl: "mx0 = matrix.new<float>(2, 2)", arg: "mx0" };
+  if (/matrix/.test(t) || ns.startsWith("matrix."))
+    return { decl: "mx0 = matrix.new<float>(2, 2)", arg: "mx0" };
 
-	if (/series/.test(t)) return { decl: null, arg: "close" };
+  if (/series/.test(t)) return { decl: null, arg: "close" };
 
-	return null;
+  return null;
 }
 
 function probeVariants(name) {
-	const fn = byName.get(name);
-	const call = callName(name);
+  const fn = byName.get(name);
+  const call = callName(name);
 
-	const header = name.startsWith("strategy")
-		? 'strategy("probe")'
-		: 'indicator("probe")';
+  const header = name.startsWith("strategy") ? 'strategy("probe")' : 'indicator("probe")';
 
-	const variants = [
-		{
-			kind: "zero-arg",
-			script: `//@version=6\n${header}\nx = ${call}()\nplot(close)\n`,
-		},
-		{
-			kind: "zero-arg",
-			script: `//@version=6\n${header}\n${call}()\nplot(close)\n`,
-		},
-		{
-			kind: "zero-arg",
-			script: `//@version=6\n${header}\nplot(${call}())\n`,
-		},
-	];
+  const variants = [
+    {
+      kind: "zero-arg",
+      script: `//@version=6\n${header}\nx = ${call}()\nplot(close)\n`,
+    },
+    {
+      kind: "zero-arg",
+      script: `//@version=6\n${header}\n${call}()\nplot(close)\n`,
+    },
+    {
+      kind: "zero-arg",
+      script: `//@version=6\n${header}\nplot(${call}())\n`,
+    },
+  ];
 
-	const fixture = firstArgFixture(fn);
+  const fixture = firstArgFixture(fn);
 
-	if (fixture) {
-		const decl = fixture.decl ? `${fixture.decl}\n` : "";
-		variants.push({
-			kind: "id-supplied",
-			firstParam: fn?.parameters?.[0]?.name,
-			script: `//@version=6\n${header}\n${decl}${call}(${fixture.arg})\nplot(close)\n`,
-		});
-	}
+  if (fixture) {
+    const decl = fixture.decl ? `${fixture.decl}\n` : "";
+    variants.push({
+      kind: "id-supplied",
+      firstParam: fn?.parameters?.[0]?.name,
+      script: `//@version=6\n${header}\n${decl}${call}(${fixture.arg})\nplot(close)\n`,
+    });
+  }
 
-	return variants;
+  return variants;
 }
 
 async function tvVerdict(source) {
-	try {
-		const { stdout } = await execFileP(
-			"pine-lint",
-			["--tv", "-c", source],
-			{ timeout: 60000 },
-		);
+  try {
+    const { stdout } = await execFileP("pine-lint", ["--tv", "-c", source], { timeout: 60000 });
 
-		return JSON.parse(stdout);
-	} catch {
-		return null;
-	}
+    return JSON.parse(stdout);
+  } catch {
+    return null;
+  }
 }
 
 // Noise that says nothing about the call's own params.
-const IGNORABLE_RE =
-	/should be assigned to a variable|unused|Script .* output/i;
+const IGNORABLE_RE = /should be assigned to a variable|unused|Script .* output/i;
 
 function classify(verdict) {
-	if (!verdict || verdict.success === false) return { status: "no-verdict" };
+  if (!verdict || verdict.success === false) return { status: "no-verdict" };
 
-	const errors = (verdict.result?.errors ?? verdict.errors ?? []).map(
-		(e) => ({ code: e.code, ctx: e.ctx, message: e.message }),
-	);
+  const errors = (verdict.result?.errors ?? verdict.errors ?? []).map((e) => ({
+    code: e.code,
+    ctx: e.ctx,
+    message: e.message,
+  }));
 
-	const required = [];
-	let variadicGroup = false;
-	let foreign = false;
-	let crashed = false;
+  const required = [];
+  let variadicGroup = false;
+  let foreign = false;
+  let crashed = false;
 
-	for (const e of errors) {
-		if (e.code === "CE10165" && e.ctx?.name) {
-			// A comma/ellipsis "name" is the variadic group, not a param.
-			if (/,|\.\.\./.test(e.ctx.name)) variadicGroup = true;
-			else required.push(e.ctx.name);
-		} else if (!e.code) crashed = true; // TV-internal exception record
-		else if (e.code === "CE10118") variadicGroup = true; // wrong number of args
-		else if (!IGNORABLE_RE.test(e.message ?? "")) foreign = true;
-	}
+  for (const e of errors) {
+    if (e.code === "CE10165" && e.ctx?.name) {
+      // A comma/ellipsis "name" is the variadic group, not a param.
+      if (/,|\.\.\./.test(e.ctx.name)) variadicGroup = true;
+      else required.push(e.ctx.name);
+    } else if (!e.code) crashed = true; // TV-internal exception record
+    else if (e.code === "CE10118") variadicGroup = true; // wrong number of args
+    else if (!IGNORABLE_RE.test(e.message ?? "")) foreign = true;
+  }
 
-	if (crashed) return { status: "crash", errors };
+  if (crashed) return { status: "crash", errors };
 
-	if (variadicGroup && !foreign) return { status: "variadic", required, errors };
+  if (variadicGroup && !foreign) return { status: "variadic", required, errors };
 
-	return { status: foreign ? "ambiguous" : "ok", required, errors };
+  return { status: foreign ? "ambiguous" : "ok", required, errors };
 }
 
 const RANK = { ok: 0, "id-supplied": 1, variadic: 2, ambiguous: 3, crash: 4, "no-verdict": 5 };
 
 const targets = functions
-	.map((f) => f.name)
-	.filter((name) => !retryOnly || !SETTLED.has(prior.results[name]?.status))
-	.slice(0, limit);
+  .map((f) => f.name)
+  .filter((name) => !retryOnly || !SETTLED.has(prior.results[name]?.status))
+  .slice(0, limit);
 
 console.log(`probing ${targets.length} functions (concurrency 4)…`);
 
@@ -190,38 +180,38 @@ const results = retryOnly ? prior.results : {};
 let done = 0;
 
 async function worker(queue) {
-	for (;;) {
-		const name = queue.shift();
+  for (;;) {
+    const name = queue.shift();
 
-		if (!name) return;
-		let best = null;
+    if (!name) return;
+    let best = null;
 
-		for (const variant of probeVariants(name)) {
-			const c = classify(await tvVerdict(variant.script));
-			let entry;
+    for (const variant of probeVariants(name)) {
+      const c = classify(await tvVerdict(variant.script));
+      let entry;
 
-			if (variant.kind === "id-supplied" && (c.status === "ok" || c.status === "variadic")) {
-				entry = {
-					probe: variant.script,
-					status: "id-supplied",
-					requiredAssumed: [variant.firstParam],
-					required: c.required,
-					errors: c.errors,
-				};
-			} else {
-				entry = { probe: variant.script, ...c };
-			}
+      if (variant.kind === "id-supplied" && (c.status === "ok" || c.status === "variadic")) {
+        entry = {
+          probe: variant.script,
+          status: "id-supplied",
+          requiredAssumed: [variant.firstParam],
+          required: c.required,
+          errors: c.errors,
+        };
+      } else {
+        entry = { probe: variant.script, ...c };
+      }
 
-			if (!best || RANK[entry.status] < RANK[best.status]) best = entry;
+      if (!best || RANK[entry.status] < RANK[best.status]) best = entry;
 
-			if (entry.status === "ok" || entry.status === "variadic") break;
-		}
+      if (entry.status === "ok" || entry.status === "variadic") break;
+    }
 
-		results[name] = best;
-		done++;
+    results[name] = best;
+    done++;
 
-		if (done % 25 === 0) console.log(`  ${done}/${targets.length}`);
-	}
+    if (done % 25 === 0) console.log(`  ${done}/${targets.length}`);
+  }
 }
 
 const queue = [...targets];
@@ -230,22 +220,21 @@ await Promise.all([1, 2, 3, 4].map(() => worker(queue)));
 
 const summary = {};
 
-for (const r of Object.values(results))
-	summary[r.status] = (summary[r.status] ?? 0) + 1;
+for (const r of Object.values(results)) summary[r.status] = (summary[r.status] ?? 0) + 1;
 
 writeFileSync(
-	OUT,
-	JSON.stringify(
-		{
-			description:
-				"TV-probed required params per function: zero-arg call, required set = TV's CE10165 enumeration. See INV050.",
-			probedAt: new Date().toISOString(),
-			tool: "scripts/probe-required-params.mjs",
-			results,
-		},
-		null,
-		"\t",
-	),
+  OUT,
+  JSON.stringify(
+    {
+      description:
+        "TV-probed required params per function: zero-arg call, required set = TV's CE10165 enumeration. See INV050.",
+      probedAt: new Date().toISOString(),
+      tool: "scripts/probe-required-params.mjs",
+      results,
+    },
+    null,
+    "\t",
+  ),
 );
 
 console.log(`done: ${JSON.stringify(summary)}`);
@@ -253,11 +242,11 @@ console.log(`done: ${JSON.stringify(summary)}`);
 console.log(`written: ${OUT}`);
 
 for (const [name, r] of Object.entries(results)) {
-	if (!SETTLED.has(r.status))
-		console.log(
-			`  ${r.status.padEnd(10)} ${name}: ${(r.errors ?? [])
-				.map((e) => e.code ?? e.message)
-				.join(" | ")
-				.slice(0, 110)}`,
-		);
+  if (!SETTLED.has(r.status))
+    console.log(
+      `  ${r.status.padEnd(10)} ${name}: ${(r.errors ?? [])
+        .map((e) => e.code ?? e.message)
+        .join(" | ")
+        .slice(0, 110)}`,
+    );
 }

@@ -1,77 +1,73 @@
 // AST Extractor for pine-lint compatible output format
 // This module extracts variables, functions, types, and enums from the Pine Script AST
 
+import { CONSTANTS_BY_NAME, FUNCTIONS_BY_NAME, VARIABLES_BY_NAME } from "../../../../pine-data/v6";
 import {
-	CONSTANTS_BY_NAME,
-	FUNCTIONS_BY_NAME,
-	VARIABLES_BY_NAME,
-} from "../../../../pine-data/v6";
-import {
-	type ArgumentInfo,
-	getPolymorphicReturnType,
-	resolveCallReturnRaw,
+  type ArgumentInfo,
+  getPolymorphicReturnType,
+  resolveCallReturnRaw,
 } from "../analyzer/builtins";
 import type { PineType } from "../analyzer/types";
 import type {
-	CallExpression,
-	EnumDeclaration,
-	Expression,
-	ForInStatement,
-	ForStatement,
-	FunctionDeclaration,
-	FunctionParam,
-	Identifier,
-	Literal,
-	MemberExpression,
-	Program,
-	Statement,
-	TupleDeclaration,
-	TypeAnnotation,
-	TypeDeclaration,
-	VariableDeclaration,
+  CallExpression,
+  EnumDeclaration,
+  Expression,
+  ForInStatement,
+  ForStatement,
+  FunctionDeclaration,
+  FunctionParam,
+  Identifier,
+  Literal,
+  MemberExpression,
+  Program,
+  Statement,
+  TupleDeclaration,
+  TypeAnnotation,
+  TypeDeclaration,
+  VariableDeclaration,
 } from "./ast";
 
 // Pine-lint compatible interfaces
 export interface PineLintPosition {
-	line: number;
-	column: number;
+  line: number;
+  column: number;
 }
 
 export interface PineLintDefinition {
-	start: PineLintPosition;
-	end: PineLintPosition;
+  start: PineLintPosition;
+  end: PineLintPosition;
 }
 
 export interface PineLintVariable {
-	name: string;
-	type: string;
-	definition: PineLintDefinition;
-	scopeId?: string;
+  name: string;
+  type: string;
+  definition: PineLintDefinition;
+  scopeId?: string;
 }
 
 export interface PineLintFunctionArg {
-	name: string;
-	required: boolean;
-	allowedTypeIDs: number[];
-	displayType: string;
+  name: string;
+  required: boolean;
+  allowedTypeIDs: number[];
+  displayType: string;
 }
 
 export interface PineLintFunction {
-	name: string;
-	definition: PineLintDefinition;
-	args: PineLintFunctionArg[];
-	returnedTypes: number[];
-	syntax: string[];
+  name: string;
+  definition: PineLintDefinition;
+  args: PineLintFunctionArg[];
+  returnedTypes: number[];
+  syntax: string[];
 }
 
 export interface PineLintType {
-	name: string;
-	definition: PineLintDefinition;
+  name: string;
+  definition: PineLintDefinition;
 }
 
 export interface PineLintEnum {
-	name: string;
-	definition: PineLintDefinition;
+  name: string;
+  definition: PineLintDefinition;
 }
 
 // Which pipeline stage produced a diagnostic. "syntax" = lexer/parser errors,
@@ -84,859 +80,834 @@ export interface PineLintEnum {
 export type PineLintStage = "syntax" | "type" | "analysis" | "lint";
 
 export interface PineLintError {
-	start: PineLintPosition;
-	end: PineLintPosition;
-	message: string;
-	// The producing stage. Always set on locally-produced diagnostics; absent on
-	// errors forwarded verbatim from TradingView (--tv).
-	stage?: PineLintStage;
-	// Optional pine-lint-compatible fields. When `code` is set, `message` is
-	// expected to be the unfilled template (e.g. `"... {funId} ..."`) and `ctx`
-	// holds the values that fill those placeholders.
-	code?: string;
-	ctx?: Record<string, string>;
-	// Stable machine-readable id for a `lint`-stage diagnostic (e.g.
-	// "REPAINTING_SECURITY"). Ours, not TradingView's - the TV-mirroring stages
-	// identify themselves with `code` instead. Set so a consumer can filter or
-	// suppress by rule without pattern-matching the prose. see INV144
-	rule?: string;
+  start: PineLintPosition;
+  end: PineLintPosition;
+  message: string;
+  // The producing stage. Always set on locally-produced diagnostics; absent on
+  // errors forwarded verbatim from TradingView (--tv).
+  stage?: PineLintStage;
+  // Optional pine-lint-compatible fields. When `code` is set, `message` is
+  // expected to be the unfilled template (e.g. `"... {funId} ..."`) and `ctx`
+  // holds the values that fill those placeholders.
+  code?: string;
+  ctx?: Record<string, string>;
+  // Stable machine-readable id for a `lint`-stage diagnostic (e.g.
+  // "REPAINTING_SECURITY"). Ours, not TradingView's - the TV-mirroring stages
+  // identify themselves with `code` instead. Set so a consumer can filter or
+  // suppress by rule without pattern-matching the prose. see INV144
+  rule?: string;
 }
 
 export interface PineLintResult {
-	errors?: PineLintError[];
-	warnings?: PineLintError[];
-	variables: PineLintVariable[];
-	functions: PineLintFunction[];
-	types: PineLintType[];
-	enums: PineLintEnum[];
+  errors?: PineLintError[];
+  warnings?: PineLintError[];
+  variables: PineLintVariable[];
+  functions: PineLintFunction[];
+  types: PineLintType[];
+  enums: PineLintEnum[];
 }
 
 export interface PineLintOutput {
-	success: boolean;
-	result?: PineLintResult;
-	error?: string;
+  success: boolean;
+  result?: PineLintResult;
+  error?: string;
 }
 
 // Helper: Get function return type from pine-data
 function getFunctionReturnType(funcName: string): string | undefined {
-	const func = FUNCTIONS_BY_NAME.get(funcName);
+  const func = FUNCTIONS_BY_NAME.get(funcName);
 
-	return func?.returns;
+  return func?.returns;
 }
 
 // Helper: drop a leading `const`/`simple`/`series`/`input` qualifier so element
 // types render bare (matches pine-lint's `array<int>` rather than `array<const int>`).
 function stripTypeQualifier(t: string): string {
-	return t.replace(/^(const|simple|series|input)\s+/, "");
+  return t.replace(/^(const|simple|series|input)\s+/, "");
 }
 
 // Compute the 1-indexed source position of the last character of an expression.
 // CallExpression nodes carry endLine/endColumn from the parser (the RPAREN);
 // other forms fall back to a length-based estimate from the node's own text.
 function computeExpressionEnd(
-	expr: Expression | null,
+  expr: Expression | null,
 ): { line: number; column: number } | undefined {
-	if (!expr) return undefined;
+  if (!expr) return undefined;
 
-	if (expr.endLine !== undefined && expr.endColumn !== undefined) {
-		return { line: expr.endLine, column: expr.endColumn };
-	}
+  if (expr.endLine !== undefined && expr.endColumn !== undefined) {
+    return { line: expr.endLine, column: expr.endColumn };
+  }
 
-	if (expr.type === "Literal") {
-		const lit = expr as Literal;
-		const text = String(lit.raw ?? lit.value ?? "");
+  if (expr.type === "Literal") {
+    const lit = expr as Literal;
+    const text = String(lit.raw ?? lit.value ?? "");
 
-		return {
-			line: lit.line,
-			column: lit.column + Math.max(0, text.length - 1),
-		};
-	}
+    return {
+      line: lit.line,
+      column: lit.column + Math.max(0, text.length - 1),
+    };
+  }
 
-	if (expr.type === "Identifier") {
-		const id = expr as Identifier;
+  if (expr.type === "Identifier") {
+    const id = expr as Identifier;
 
-		return {
-			line: id.line,
-			column: id.column + Math.max(0, id.name.length - 1),
-		};
-	}
+    return {
+      line: id.line,
+      column: id.column + Math.max(0, id.name.length - 1),
+    };
+  }
 
-	if (expr.type === "MemberExpression") {
-		return computeExpressionEnd((expr as { property: Expression }).property);
-	}
+  if (expr.type === "MemberExpression") {
+    return computeExpressionEnd((expr as { property: Expression }).property);
+  }
 
-	return undefined;
+  return undefined;
 }
 
 // Helper: Get variable type from pine-data
 function getVariableType(varName: string): string | undefined {
-	const variable = VARIABLES_BY_NAME.get(varName);
+  const variable = VARIABLES_BY_NAME.get(varName);
 
-	if (variable?.type) {
-		// Normalize format: "series<float>" -> "series float"
-		return variable.type.replace(/<(\w+)>/, " $1");
-	}
+  if (variable?.type) {
+    // Normalize format: "series<float>" -> "series float"
+    return variable.type.replace(/<(\w+)>/, " $1");
+  }
 
-	const constant = CONSTANTS_BY_NAME.get(varName);
+  const constant = CONSTANTS_BY_NAME.get(varName);
 
-	if (constant?.type) {
-		return `const ${constant.type.replace(/<(\w+)>/, " $1")}`;
-	}
+  if (constant?.type) {
+    return `const ${constant.type.replace(/<(\w+)>/, " $1")}`;
+  }
 
-	return undefined;
+  return undefined;
 }
 
 export class ASTExtractor {
-	private scopeCounter = 0;
-	private extractedVariables: PineLintVariable[] = [];
-	// User-defined function return types: name → return type
-	private userDefinedFunctions: Map<string, string> = new Map();
-	private userDefinedTypes: Set<string> = new Set();
-
-	/**
-	 * Extract pine-lint compatible result from AST
-	 */
-	extract(ast: Program): PineLintResult {
-		this.scopeCounter = 0;
-		this.extractedVariables = [];
-		this.userDefinedFunctions = new Map();
-		this.userDefinedTypes = new Set();
-
-		this.collectUserDefinedTypes(ast);
-		// First pass: collect UDF return types so they're available for variable type inference
-		this.collectUserDefinedFunctions(ast);
-
-		const variables = this.extractVariables(ast);
-		const functions = this.extractFunctions(ast);
-		const types = this.extractTypes(ast);
-		const enums = this.extractEnums(ast);
-
-		return { variables, functions, types, enums };
-	}
-
-	private collectUserDefinedTypes(ast: Program): void {
-		for (const stmt of ast.body) {
-			if (stmt.type === "TypeDeclaration") {
-				this.userDefinedTypes.add((stmt as TypeDeclaration).name);
-			}
-		}
-	}
-
-	/**
-	 * First pass: collect user-defined function names and return types
-	 */
-	private collectUserDefinedFunctions(ast: Program): void {
-		for (const stmt of ast.body) {
-			if (stmt.type === "FunctionDeclaration") {
-				const funcDecl = stmt as FunctionDeclaration;
-				const returnType = this.inferFunctionReturnType(funcDecl);
-				this.userDefinedFunctions.set(funcDecl.name, returnType);
-			}
-		}
-	}
-
-	/**
-	 * Extract all variable declarations
-	 */
-	extractVariables(ast: Program): PineLintVariable[] {
-		this.extractedVariables = [];
-		// Pine-lint labels every top-level binding with scopeId "#1" (the script's
-		// main scope). Inner function declarations bump the counter via walkStatements.
-		this.scopeCounter = 1;
-		this.walkStatements(ast.body, this.extractedVariables, "#1");
-
-		return this.extractedVariables;
-	}
-
-	/**
-	 * Walk statements and collect variables
-	 */
-	private walkStatements(
-		statements: Statement[],
-		variables: PineLintVariable[],
-		scopeId: string | undefined,
-	): void {
-		for (const stmt of statements) {
-			if (stmt.type === "VariableDeclaration") {
-				const varDecl = stmt as VariableDeclaration;
-				const variable = this.extractVariable(varDecl, scopeId);
-				variables.push(variable);
-			} else if (stmt.type === "TupleDeclaration") {
-				const tupleDecl = stmt as TupleDeclaration;
-				// Extract all variables from the tuple
-				const tupleVars = this.extractTupleVariables(tupleDecl, scopeId);
-				variables.push(...tupleVars);
-			} else if (stmt.type === "FunctionDeclaration") {
-				// Extract function-local variables with new scope
-				const funcDecl = stmt as FunctionDeclaration;
-				this.scopeCounter++;
-				const funcScopeId = `#${this.scopeCounter}`;
-
-				// Add function parameters as variables
-				for (const param of funcDecl.params) {
-					const paramVar = this.extractParam(param, funcDecl.line, funcScopeId);
-					variables.push(paramVar);
-				}
-
-				// Walk function body
-				this.walkStatements(funcDecl.body, variables, funcScopeId);
-			} else if (stmt.type === "IfStatement") {
-				const ifStmt = stmt as {
-					consequent: Statement[];
-					alternate?: Statement[];
-				};
-
-				this.walkStatements(ifStmt.consequent, variables, scopeId);
-
-				if (ifStmt.alternate) {
-					this.walkStatements(ifStmt.alternate, variables, scopeId);
-				}
-			} else if (stmt.type === "ForStatement") {
-				const forStmt = stmt as ForStatement;
-				variables.push(
-					this.createIteratorVariable(
-						forStmt.iterator,
-						forStmt.line,
-						forStmt.column,
-						"series int",
-						scopeId,
-					),
-				);
-				this.walkStatements(forStmt.body, variables, scopeId);
-			} else if (stmt.type === "ForInStatement") {
-				const forInStmt = stmt as ForInStatement;
-				variables.push(
-					this.createIteratorVariable(
-						forInStmt.iterator,
-						forInStmt.line,
-						forInStmt.column,
-						// In the tuple form `for [index, value] in`, the first
-						// name is the index; alone it is the element.
-						forInStmt.iterator2 ? "series int" : "undetermined type",
-						scopeId,
-					),
-				);
-
-				if (forInStmt.iterator2) {
-					variables.push(
-						this.createIteratorVariable(
-							forInStmt.iterator2,
-							forInStmt.line,
-							forInStmt.column,
-							"undetermined type",
-							scopeId,
-						),
-					);
-				}
-
-				this.walkStatements(forInStmt.body, variables, scopeId);
-			} else if (
-				stmt.type === "WhileStatement" ||
-				stmt.type === "OnceStatement"
-			) {
-				const loopStmt = stmt as { body: Statement[] };
-				this.walkStatements(loopStmt.body, variables, scopeId);
-			} else if (stmt.type === "SequenceStatement") {
-				// Handle comma-separated declarations: x = 1, y = 2, z = 3
-				const seqStmt = stmt as { statements: Statement[] };
-				this.walkStatements(seqStmt.statements, variables, scopeId);
-			}
-		}
-	}
-
-	/**
-	 * Extract a single variable declaration
-	 */
-	private extractVariable(
-		varDecl: VariableDeclaration,
-		scopeId: string | undefined,
-	): PineLintVariable {
-		const typeString = this.inferVariableType(varDecl);
-
-		const end = computeExpressionEnd(varDecl.init) ?? {
-			line: varDecl.line,
-			column: varDecl.column + varDecl.name.length - 1,
-		};
-
-		const variable: PineLintVariable = {
-			name: varDecl.name,
-			type: typeString,
-			definition: {
-				start: { line: varDecl.line, column: varDecl.column },
-				end,
-			},
-		};
-
-		if (scopeId) {
-			variable.scopeId = scopeId;
-		}
-
-		return variable;
-	}
-
-	/**
-	 * Extract variables from a tuple declaration
-	 */
-	private extractTupleVariables(
-		tupleDecl: TupleDeclaration,
-		scopeId: string | undefined,
-	): PineLintVariable[] {
-		const variables: PineLintVariable[] = [];
-
-		// Infer type from the init expression (usually a function call returning tuple)
-		let baseType = "series float"; // Default for tuples
-
-		if (tupleDecl.init.type === "CallExpression") {
-			const call = tupleDecl.init as CallExpression;
-			const funcName = this.getCalleeString(call.callee);
-			// Get return type from pine-data
-			const returnType = getFunctionReturnType(funcName);
-
-			if (returnType) {
-				baseType = returnType;
-			}
-		}
-
-		// A `[t1, t2, t3]`-shaped return type lists the member types - index
-		// by position instead of giving every member the whole tuple type.
-		// Fall back to the unsplit string when the member count mismatches.
-		// see plan/31 Finding 5.
-		const memberTypes = this.splitTupleType(baseType);
-
-		const usableSplit =
-			memberTypes !== null && memberTypes.length === tupleDecl.names.length;
-
-		for (let i = 0; i < tupleDecl.names.length; i++) {
-			const name = tupleDecl.names[i];
-
-			const variable: PineLintVariable = {
-				name,
-				type: usableSplit ? memberTypes[i] : baseType,
-				definition: {
-					start: { line: tupleDecl.line, column: tupleDecl.column },
-					end: { line: tupleDecl.line, column: tupleDecl.column + name.length },
-				},
-			};
-
-			if (scopeId) {
-				variable.scopeId = scopeId;
-			}
-
-			variables.push(variable);
-		}
-
-		return variables;
-	}
-
-	/**
-	 * Split a tuple type string `[a, b, c]` into its member types at top
-	 * level. Bracket/angle-aware because member types can themselves carry
-	 * commas (`map<string, float>`). Returns null when the string is not a
-	 * bracketed tuple.
-	 */
-	private splitTupleType(type: string): string[] | null {
-		const trimmed = type.trim();
-
-		if (!trimmed.startsWith("[") || !trimmed.endsWith("]")) {
-			return null;
-		}
-
-		const inner = trimmed.slice(1, -1);
-		const parts: string[] = [];
-		let depth = 0;
-		let current = "";
-
-		for (const ch of inner) {
-			if (ch === "<" || ch === "[" || ch === "(") {
-				depth++;
-			} else if (ch === ">" || ch === "]" || ch === ")") {
-				depth--;
-			}
-
-			if (ch === "," && depth === 0) {
-				parts.push(current.trim());
-				current = "";
-			} else {
-				current += ch;
-			}
-		}
-
-		parts.push(current.trim());
-
-		return parts;
-	}
-
-	/**
-	 * Extract a function parameter as a variable
-	 */
-	private extractParam(
-		param: FunctionParam,
-		funcLine: number,
-		scopeId: string,
-	): PineLintVariable {
-		const typeString = param.typeAnnotation
-			? this.typeAnnotationToString(param.typeAnnotation)
-			: "undetermined type";
-
-		return {
-			name: param.name,
-			type: typeString,
-			definition: {
-				start: { line: funcLine, column: 1 },
-				end: { line: funcLine, column: 1 + param.name.length },
-			},
-			scopeId,
-		};
-	}
-
-	/**
-	 * Create an iterator variable for for/for-in loops
-	 */
-	private createIteratorVariable(
-		name: string,
-		line: number,
-		column: number,
-		type: string,
-		scopeId: string | undefined,
-	): PineLintVariable {
-		const variable: PineLintVariable = {
-			name,
-			type,
-			definition: {
-				start: { line, column },
-				end: { line, column: column + name.length },
-			},
-		};
-
-		if (scopeId) {
-			variable.scopeId = scopeId;
-		}
-
-		return variable;
-	}
-
-	/**
-	 * Infer the type of a variable from its declaration
-	 */
-	private inferVariableType(varDecl: VariableDeclaration): string {
-		// Check explicit type annotation first
-		if (varDecl.typeAnnotation) {
-			return this.typeAnnotationToString(varDecl.typeAnnotation);
-		}
-
-		// If no init expression, return undetermined
-		if (!varDecl.init) {
-			return "undetermined type";
-		}
-
-		// Infer from the init expression
-		return this.inferExpressionType(varDecl.init);
-	}
-
-	/**
-	 * Convert type annotation to pine-lint type string
-	 */
-	private typeAnnotationToString(annotation: TypeAnnotation): string {
-		const raw = annotation.name.trim();
-		const qualified = raw.match(/^(series|simple|input|const)\s+(.+)$/i);
-
-		if (qualified) {
-			const base = this.formatTypeName(qualified[2]);
-
-			return `${qualified[1].toLowerCase()} ${base}`;
-		}
-
-		const baseName = this.formatTypeName(raw);
-		const qualifier = annotation.qualifier?.toLowerCase();
-
-		if (qualifier) {
-			return `${qualifier} ${baseName}`;
-		}
-
-		if (this.userDefinedTypes.has(raw)) return raw;
-
-		// Default to simple for basic types
-		return `simple ${baseName}`;
-	}
-
-	private formatTypeName(name: string): string {
-		const trimmed = name.trim();
-
-		return this.userDefinedTypes.has(trimmed) ? trimmed : trimmed.toLowerCase();
-	}
-
-	/**
-	 * Infer the type of an expression
-	 */
-	private inferExpressionType(expr: Expression): string {
-		switch (expr.type) {
-			case "Literal": {
-				const lit = expr as { value: string | number | boolean; raw?: string };
-
-				if (typeof lit.value === "number") {
-					// Check raw string for decimal point to properly detect floats like 2.0
-					const hasDecimalPoint = lit.raw?.includes(".");
-
-					return hasDecimalPoint || !Number.isInteger(lit.value)
-						? "const float"
-						: "const int";
-				}
-
-				if (typeof lit.value === "boolean") {
-					return "const bool";
-				}
-
-				if (typeof lit.value === "string") {
-					return "const string";
-				}
-
-				return "undetermined type";
-			}
-
-			case "Identifier": {
-				const id = expr as Identifier;
-				// Check built-in variables from pine-data
-				const varType = getVariableType(id.name);
-
-				if (varType) {
-					return varType;
-				}
-
-				// Check already-extracted variables
-				const variable = this.extractedVariables.find(
-					(v) => v.name === id.name,
-				);
-
-				if (variable && variable.type !== "undetermined type") {
-					return variable.type;
-				}
-
-				return "undetermined type";
-			}
-
-			case "CallExpression": {
-				const call = expr as CallExpression;
-				const funcName = this.getCalleeString(call.callee);
-				const funcDef = FUNCTIONS_BY_NAME.get(funcName);
-				const ctorMatch = funcName.match(/^(.+)\.new$/);
-
-				if (ctorMatch && this.userDefinedTypes.has(ctorMatch[1])) {
-					return ctorMatch[1];
-				}
-
-				// Handle generic type arguments: array.new<float>() -> array<float>
-				if (call.typeArguments && call.typeArguments.length > 0) {
-					const typeArg = call.typeArguments[0];
-
-					if (funcName.startsWith("array.new")) {
-						return `array<${typeArg}>`;
-					}
-
-					if (funcName.startsWith("matrix.new")) {
-						return `matrix<${typeArg}>`;
-					}
-
-					if (funcName === "map.new") {
-						const valueArg = call.typeArguments[1];
-
-						return valueArg
-							? `map<${typeArg}, ${valueArg}>`
-							: `map<${typeArg}>`;
-					}
-				}
-
-				// array.from(arg0, arg1, ...) - element type comes from the first arg
-				if (funcName === "array.from" && call.arguments.length > 0) {
-					const elem = this.inferExpressionType(call.arguments[0].value);
-
-					return `array<${stripTypeQualifier(elem)}>`;
-				}
-
-				// Handle input functions - polymorphic return type based on defval
-				if (funcName === "input") {
-					const argInfos = call.arguments.map((arg) => ({
-						name: arg.name,
-						type: this.inferExpressionType(arg.value),
-					}));
-
-					const polyType = getPolymorphicReturnType(
-						funcName,
-						argInfos.map(
-							(info) => info.type,
-						) as import("../analyzer/types").PineType[],
-						argInfos as ArgumentInfo[],
-					);
-
-					return polyType ? `input ${polyType}` : "input int";
-				}
-
-				// Handle input.* functions (input.int, input.float, etc.)
-				if (funcName.startsWith("input.") && funcDef?.returns) {
-					const baseType = funcDef.returns.replace(/^(series|simple)\s*/, "");
-
-					return `input ${baseType}`;
-				}
-
-				// Math functions preserve input qualifier and type
-				if (
-					funcName.startsWith("math.") &&
-					funcDef &&
-					call.arguments.length > 0
-				) {
-					return this.inferExpressionType(call.arguments[0].value);
-				}
-
-				// Array element-returning functions (polymorphic on array element type)
-				if (
-					funcDef?.flags?.polymorphic === "element" &&
-					call.arguments.length > 0
-				) {
-					const arrayArgType = this.inferExpressionType(
-						call.arguments[0].value,
-					);
-
-					const arrayMatch = arrayArgType.match(/^array<(.+)>$/);
-
-					if (arrayMatch) {
-						// If function has explicit return type, use it; otherwise use element type
-						if (funcDef.returns && !funcDef.returns.includes("<type>")) {
-							return funcDef.returns;
-						}
-
-						return arrayMatch[1];
-					}
-				}
-
-				// Default: use return type from pine-data or user-defined functions
-				if (funcDef?.returns) {
-					const argTypes = call.arguments.map((arg) =>
-						this.inferExpressionType(arg.value),
-					) as PineType[];
-
-					return resolveCallReturnRaw(funcName, argTypes) ?? funcDef.returns;
-				}
-
-				// Check user-defined functions (collected in first pass)
-				const udfReturnType = this.userDefinedFunctions.get(funcName);
-
-				if (udfReturnType) {
-					return udfReturnType;
-				}
-
-				return "undetermined type";
-			}
-
-			case "MemberExpression": {
-				const member = expr as MemberExpression;
-				const fullName = this.getMemberExpressionString(member);
-
-				// Check built-in variables from pine-data
-				const memberType = getVariableType(fullName);
-
-				if (memberType) {
-					return memberType;
-				}
-
-				return "undetermined type";
-			}
-
-			case "BinaryExpression":
-			case "TernaryExpression":
-				// Binary/ternary expressions generally produce series types
-				return "series float";
-
-			case "UnaryExpression": {
-				const unary = expr as { operator: string; argument: Expression };
-				const argType = this.inferExpressionType(unary.argument);
-
-				// Unary negation preserves the qualifier and type
-				if (unary.operator === "-" || unary.operator === "+") {
-					return argType;
-				}
-
-				if (unary.operator === "not") {
-					return argType.replace(/int|float/, "bool");
-				}
-
-				return argType;
-			}
-
-			case "ArrayExpression":
-				return "array<float>";
-
-			case "IndexExpression":
-				return "series float";
-
-			default:
-				return "undetermined type";
-		}
-	}
-
-	/**
-	 * Get the string representation of a callee expression
-	 */
-	private getCalleeString(callee: Expression): string {
-		if (callee.type === "Identifier") {
-			return (callee as Identifier).name;
-		}
-
-		if (callee.type === "MemberExpression") {
-			return this.getMemberExpressionString(callee as MemberExpression);
-		}
-
-		return "";
-	}
-
-	/**
-	 * Get the full string of a member expression (e.g., "ta.sma")
-	 */
-	private getMemberExpressionString(member: MemberExpression): string {
-		const parts: string[] = [];
-		let current: Expression = member;
-
-		while (current.type === "MemberExpression") {
-			const m = current as MemberExpression;
-			parts.unshift(m.property.name);
-			current = m.object;
-		}
-
-		if (current.type === "Identifier") {
-			parts.unshift((current as Identifier).name);
-		}
-
-		return parts.join(".");
-	}
-
-	/**
-	 * Extract all function declarations
-	 */
-	extractFunctions(ast: Program): PineLintFunction[] {
-		const functions: PineLintFunction[] = [];
-
-		for (const stmt of ast.body) {
-			if (stmt.type === "FunctionDeclaration") {
-				const funcDecl = stmt as FunctionDeclaration;
-				functions.push(this.extractFunction(funcDecl));
-			}
-		}
-
-		return functions;
-	}
-
-	/**
-	 * Extract a single function declaration
-	 */
-	private extractFunction(funcDecl: FunctionDeclaration): PineLintFunction {
-		const args: PineLintFunctionArg[] = funcDecl.params.map((param) => ({
-			name: param.name,
-			required: param.defaultValue === undefined,
-			allowedTypeIDs: [],
-			displayType: param.typeAnnotation
-				? this.typeAnnotationToString(param.typeAnnotation)
-				: "undetermined type",
-		}));
-
-		const returnType = this.inferFunctionReturnType(funcDecl);
-		const paramList = funcDecl.params.map((p) => p.name).join(", ");
-		const syntax = [`${funcDecl.name}(${paramList}) → ${returnType}`];
-
-		// Estimate end position (line count based on body statements)
-		const endLine =
-			funcDecl.body.length > 0
-				? Math.max(...funcDecl.body.map((s) => s.line)) + 1
-				: funcDecl.line + 1;
-
-		return {
-			name: funcDecl.name,
-			definition: {
-				start: { line: funcDecl.line, column: funcDecl.column },
-				end: { line: endLine, column: 1 },
-			},
-			args,
-			returnedTypes: [],
-			syntax,
-		};
-	}
-
-	/**
-	 * Infer the return type of a function
-	 */
-	private inferFunctionReturnType(funcDecl: FunctionDeclaration): string {
-		// Check explicit return type annotation
-		if (funcDecl.returnType) {
-			return this.typeAnnotationToString(funcDecl.returnType);
-		}
-
-		// Look for return statements
-		for (const stmt of funcDecl.body) {
-			if (stmt.type === "ReturnStatement") {
-				const retStmt = stmt as { value: Expression };
-
-				return this.inferExpressionType(retStmt.value);
-			}
-		}
-
-		// Check last statement as implicit return
-		if (funcDecl.body.length > 0) {
-			const lastStmt = funcDecl.body[funcDecl.body.length - 1];
-
-			if (lastStmt.type === "ExpressionStatement") {
-				const exprStmt = lastStmt as { expression: Expression };
-
-				return this.inferExpressionType(exprStmt.expression);
-			}
-		}
-
-		return "undetermined type";
-	}
-
-	/**
-	 * Extract type declarations (v6 user-defined types)
-	 */
-	extractTypes(ast: Program): PineLintType[] {
-		const types: PineLintType[] = [];
-
-		for (const stmt of ast.body) {
-			if (stmt.type === "TypeDeclaration") {
-				const typeDecl = stmt as TypeDeclaration;
-				types.push({
-					name: typeDecl.name,
-					definition: {
-						start: { line: typeDecl.line, column: typeDecl.column },
-						end: {
-							line: typeDecl.line,
-							column: typeDecl.column + typeDecl.name.length,
-						},
-					},
-				});
-			}
-		}
-
-		return types;
-	}
-
-	/**
-	 * Extract enum declarations
-	 */
-	extractEnums(ast: Program): PineLintEnum[] {
-		const enums: PineLintEnum[] = [];
-
-		for (const stmt of ast.body) {
-			if (stmt.type === "EnumDeclaration") {
-				const enumDecl = stmt as EnumDeclaration;
-				enums.push({
-					name: enumDecl.name,
-					definition: {
-						start: { line: enumDecl.line, column: enumDecl.column },
-						end: {
-							line: enumDecl.line,
-							column: enumDecl.column + enumDecl.name.length,
-						},
-					},
-				});
-			}
-		}
-
-		return enums;
-	}
+  private scopeCounter = 0;
+  private extractedVariables: PineLintVariable[] = [];
+  // User-defined function return types: name → return type
+  private userDefinedFunctions: Map<string, string> = new Map();
+  private userDefinedTypes: Set<string> = new Set();
+
+  /**
+   * Extract pine-lint compatible result from AST
+   */
+  extract(ast: Program): PineLintResult {
+    this.scopeCounter = 0;
+    this.extractedVariables = [];
+    this.userDefinedFunctions = new Map();
+    this.userDefinedTypes = new Set();
+
+    this.collectUserDefinedTypes(ast);
+    // First pass: collect UDF return types so they're available for variable type inference
+    this.collectUserDefinedFunctions(ast);
+
+    const variables = this.extractVariables(ast);
+    const functions = this.extractFunctions(ast);
+    const types = this.extractTypes(ast);
+    const enums = this.extractEnums(ast);
+
+    return { variables, functions, types, enums };
+  }
+
+  private collectUserDefinedTypes(ast: Program): void {
+    for (const stmt of ast.body) {
+      if (stmt.type === "TypeDeclaration") {
+        this.userDefinedTypes.add((stmt as TypeDeclaration).name);
+      }
+    }
+  }
+
+  /**
+   * First pass: collect user-defined function names and return types
+   */
+  private collectUserDefinedFunctions(ast: Program): void {
+    for (const stmt of ast.body) {
+      if (stmt.type === "FunctionDeclaration") {
+        const funcDecl = stmt as FunctionDeclaration;
+        const returnType = this.inferFunctionReturnType(funcDecl);
+        this.userDefinedFunctions.set(funcDecl.name, returnType);
+      }
+    }
+  }
+
+  /**
+   * Extract all variable declarations
+   */
+  extractVariables(ast: Program): PineLintVariable[] {
+    this.extractedVariables = [];
+    // Pine-lint labels every top-level binding with scopeId "#1" (the script's
+    // main scope). Inner function declarations bump the counter via walkStatements.
+    this.scopeCounter = 1;
+    this.walkStatements(ast.body, this.extractedVariables, "#1");
+
+    return this.extractedVariables;
+  }
+
+  /**
+   * Walk statements and collect variables
+   */
+  private walkStatements(
+    statements: Statement[],
+    variables: PineLintVariable[],
+    scopeId: string | undefined,
+  ): void {
+    for (const stmt of statements) {
+      if (stmt.type === "VariableDeclaration") {
+        const varDecl = stmt as VariableDeclaration;
+        const variable = this.extractVariable(varDecl, scopeId);
+        variables.push(variable);
+      } else if (stmt.type === "TupleDeclaration") {
+        const tupleDecl = stmt as TupleDeclaration;
+        // Extract all variables from the tuple
+        const tupleVars = this.extractTupleVariables(tupleDecl, scopeId);
+        variables.push(...tupleVars);
+      } else if (stmt.type === "FunctionDeclaration") {
+        // Extract function-local variables with new scope
+        const funcDecl = stmt as FunctionDeclaration;
+        this.scopeCounter++;
+        const funcScopeId = `#${this.scopeCounter}`;
+
+        // Add function parameters as variables
+        for (const param of funcDecl.params) {
+          const paramVar = this.extractParam(param, funcDecl.line, funcScopeId);
+          variables.push(paramVar);
+        }
+
+        // Walk function body
+        this.walkStatements(funcDecl.body, variables, funcScopeId);
+      } else if (stmt.type === "IfStatement") {
+        const ifStmt = stmt as {
+          consequent: Statement[];
+          alternate?: Statement[];
+        };
+
+        this.walkStatements(ifStmt.consequent, variables, scopeId);
+
+        if (ifStmt.alternate) {
+          this.walkStatements(ifStmt.alternate, variables, scopeId);
+        }
+      } else if (stmt.type === "ForStatement") {
+        const forStmt = stmt as ForStatement;
+        variables.push(
+          this.createIteratorVariable(
+            forStmt.iterator,
+            forStmt.line,
+            forStmt.column,
+            "series int",
+            scopeId,
+          ),
+        );
+        this.walkStatements(forStmt.body, variables, scopeId);
+      } else if (stmt.type === "ForInStatement") {
+        const forInStmt = stmt as ForInStatement;
+        variables.push(
+          this.createIteratorVariable(
+            forInStmt.iterator,
+            forInStmt.line,
+            forInStmt.column,
+            // In the tuple form `for [index, value] in`, the first
+            // name is the index; alone it is the element.
+            forInStmt.iterator2 ? "series int" : "undetermined type",
+            scopeId,
+          ),
+        );
+
+        if (forInStmt.iterator2) {
+          variables.push(
+            this.createIteratorVariable(
+              forInStmt.iterator2,
+              forInStmt.line,
+              forInStmt.column,
+              "undetermined type",
+              scopeId,
+            ),
+          );
+        }
+
+        this.walkStatements(forInStmt.body, variables, scopeId);
+      } else if (stmt.type === "WhileStatement" || stmt.type === "OnceStatement") {
+        const loopStmt = stmt as { body: Statement[] };
+        this.walkStatements(loopStmt.body, variables, scopeId);
+      } else if (stmt.type === "SequenceStatement") {
+        // Handle comma-separated declarations: x = 1, y = 2, z = 3
+        const seqStmt = stmt as { statements: Statement[] };
+        this.walkStatements(seqStmt.statements, variables, scopeId);
+      }
+    }
+  }
+
+  /**
+   * Extract a single variable declaration
+   */
+  private extractVariable(
+    varDecl: VariableDeclaration,
+    scopeId: string | undefined,
+  ): PineLintVariable {
+    const typeString = this.inferVariableType(varDecl);
+
+    const end = computeExpressionEnd(varDecl.init) ?? {
+      line: varDecl.line,
+      column: varDecl.column + varDecl.name.length - 1,
+    };
+
+    const variable: PineLintVariable = {
+      name: varDecl.name,
+      type: typeString,
+      definition: {
+        start: { line: varDecl.line, column: varDecl.column },
+        end,
+      },
+    };
+
+    if (scopeId) {
+      variable.scopeId = scopeId;
+    }
+
+    return variable;
+  }
+
+  /**
+   * Extract variables from a tuple declaration
+   */
+  private extractTupleVariables(
+    tupleDecl: TupleDeclaration,
+    scopeId: string | undefined,
+  ): PineLintVariable[] {
+    const variables: PineLintVariable[] = [];
+
+    // Infer type from the init expression (usually a function call returning tuple)
+    let baseType = "series float"; // Default for tuples
+
+    if (tupleDecl.init.type === "CallExpression") {
+      const call = tupleDecl.init as CallExpression;
+      const funcName = this.getCalleeString(call.callee);
+      // Get return type from pine-data
+      const returnType = getFunctionReturnType(funcName);
+
+      if (returnType) {
+        baseType = returnType;
+      }
+    }
+
+    // A `[t1, t2, t3]`-shaped return type lists the member types - index
+    // by position instead of giving every member the whole tuple type.
+    // Fall back to the unsplit string when the member count mismatches.
+    // see plan/31 Finding 5.
+    const memberTypes = this.splitTupleType(baseType);
+
+    const usableSplit = memberTypes !== null && memberTypes.length === tupleDecl.names.length;
+
+    for (let i = 0; i < tupleDecl.names.length; i++) {
+      const name = tupleDecl.names[i];
+
+      const variable: PineLintVariable = {
+        name,
+        type: usableSplit ? memberTypes[i] : baseType,
+        definition: {
+          start: { line: tupleDecl.line, column: tupleDecl.column },
+          end: { line: tupleDecl.line, column: tupleDecl.column + name.length },
+        },
+      };
+
+      if (scopeId) {
+        variable.scopeId = scopeId;
+      }
+
+      variables.push(variable);
+    }
+
+    return variables;
+  }
+
+  /**
+   * Split a tuple type string `[a, b, c]` into its member types at top
+   * level. Bracket/angle-aware because member types can themselves carry
+   * commas (`map<string, float>`). Returns null when the string is not a
+   * bracketed tuple.
+   */
+  private splitTupleType(type: string): string[] | null {
+    const trimmed = type.trim();
+
+    if (!trimmed.startsWith("[") || !trimmed.endsWith("]")) {
+      return null;
+    }
+
+    const inner = trimmed.slice(1, -1);
+    const parts: string[] = [];
+    let depth = 0;
+    let current = "";
+
+    for (const ch of inner) {
+      if (ch === "<" || ch === "[" || ch === "(") {
+        depth++;
+      } else if (ch === ">" || ch === "]" || ch === ")") {
+        depth--;
+      }
+
+      if (ch === "," && depth === 0) {
+        parts.push(current.trim());
+        current = "";
+      } else {
+        current += ch;
+      }
+    }
+
+    parts.push(current.trim());
+
+    return parts;
+  }
+
+  /**
+   * Extract a function parameter as a variable
+   */
+  private extractParam(param: FunctionParam, funcLine: number, scopeId: string): PineLintVariable {
+    const typeString = param.typeAnnotation
+      ? this.typeAnnotationToString(param.typeAnnotation)
+      : "undetermined type";
+
+    return {
+      name: param.name,
+      type: typeString,
+      definition: {
+        start: { line: funcLine, column: 1 },
+        end: { line: funcLine, column: 1 + param.name.length },
+      },
+      scopeId,
+    };
+  }
+
+  /**
+   * Create an iterator variable for for/for-in loops
+   */
+  private createIteratorVariable(
+    name: string,
+    line: number,
+    column: number,
+    type: string,
+    scopeId: string | undefined,
+  ): PineLintVariable {
+    const variable: PineLintVariable = {
+      name,
+      type,
+      definition: {
+        start: { line, column },
+        end: { line, column: column + name.length },
+      },
+    };
+
+    if (scopeId) {
+      variable.scopeId = scopeId;
+    }
+
+    return variable;
+  }
+
+  /**
+   * Infer the type of a variable from its declaration
+   */
+  private inferVariableType(varDecl: VariableDeclaration): string {
+    // Check explicit type annotation first
+    if (varDecl.typeAnnotation) {
+      return this.typeAnnotationToString(varDecl.typeAnnotation);
+    }
+
+    // If no init expression, return undetermined
+    if (!varDecl.init) {
+      return "undetermined type";
+    }
+
+    // Infer from the init expression
+    return this.inferExpressionType(varDecl.init);
+  }
+
+  /**
+   * Convert type annotation to pine-lint type string
+   */
+  private typeAnnotationToString(annotation: TypeAnnotation): string {
+    const raw = annotation.name.trim();
+    const qualified = raw.match(/^(series|simple|input|const)\s+(.+)$/i);
+
+    if (qualified) {
+      const base = this.formatTypeName(qualified[2]);
+
+      return `${qualified[1].toLowerCase()} ${base}`;
+    }
+
+    const baseName = this.formatTypeName(raw);
+    const qualifier = annotation.qualifier?.toLowerCase();
+
+    if (qualifier) {
+      return `${qualifier} ${baseName}`;
+    }
+
+    if (this.userDefinedTypes.has(raw)) return raw;
+
+    // Default to simple for basic types
+    return `simple ${baseName}`;
+  }
+
+  private formatTypeName(name: string): string {
+    const trimmed = name.trim();
+
+    return this.userDefinedTypes.has(trimmed) ? trimmed : trimmed.toLowerCase();
+  }
+
+  /**
+   * Infer the type of an expression
+   */
+  private inferExpressionType(expr: Expression): string {
+    switch (expr.type) {
+      case "Literal": {
+        const lit = expr as { value: string | number | boolean; raw?: string };
+
+        if (typeof lit.value === "number") {
+          // Check raw string for decimal point to properly detect floats like 2.0
+          const hasDecimalPoint = lit.raw?.includes(".");
+
+          return hasDecimalPoint || !Number.isInteger(lit.value) ? "const float" : "const int";
+        }
+
+        if (typeof lit.value === "boolean") {
+          return "const bool";
+        }
+
+        if (typeof lit.value === "string") {
+          return "const string";
+        }
+
+        return "undetermined type";
+      }
+
+      case "Identifier": {
+        const id = expr as Identifier;
+        // Check built-in variables from pine-data
+        const varType = getVariableType(id.name);
+
+        if (varType) {
+          return varType;
+        }
+
+        // Check already-extracted variables
+        const variable = this.extractedVariables.find((v) => v.name === id.name);
+
+        if (variable && variable.type !== "undetermined type") {
+          return variable.type;
+        }
+
+        return "undetermined type";
+      }
+
+      case "CallExpression": {
+        const call = expr as CallExpression;
+        const funcName = this.getCalleeString(call.callee);
+        const funcDef = FUNCTIONS_BY_NAME.get(funcName);
+        const ctorMatch = funcName.match(/^(.+)\.new$/);
+
+        if (ctorMatch && this.userDefinedTypes.has(ctorMatch[1])) {
+          return ctorMatch[1];
+        }
+
+        // Handle generic type arguments: array.new<float>() -> array<float>
+        if (call.typeArguments && call.typeArguments.length > 0) {
+          const typeArg = call.typeArguments[0];
+
+          if (funcName.startsWith("array.new")) {
+            return `array<${typeArg}>`;
+          }
+
+          if (funcName.startsWith("matrix.new")) {
+            return `matrix<${typeArg}>`;
+          }
+
+          if (funcName === "map.new") {
+            const valueArg = call.typeArguments[1];
+
+            return valueArg ? `map<${typeArg}, ${valueArg}>` : `map<${typeArg}>`;
+          }
+        }
+
+        // array.from(arg0, arg1, ...) - element type comes from the first arg
+        if (funcName === "array.from" && call.arguments.length > 0) {
+          const elem = this.inferExpressionType(call.arguments[0].value);
+
+          return `array<${stripTypeQualifier(elem)}>`;
+        }
+
+        // Handle input functions - polymorphic return type based on defval
+        if (funcName === "input") {
+          const argInfos = call.arguments.map((arg) => ({
+            name: arg.name,
+            type: this.inferExpressionType(arg.value),
+          }));
+
+          const polyType = getPolymorphicReturnType(
+            funcName,
+            argInfos.map((info) => info.type) as import("../analyzer/types").PineType[],
+            argInfos as ArgumentInfo[],
+          );
+
+          return polyType ? `input ${polyType}` : "input int";
+        }
+
+        // Handle input.* functions (input.int, input.float, etc.)
+        if (funcName.startsWith("input.") && funcDef?.returns) {
+          const baseType = funcDef.returns.replace(/^(series|simple)\s*/, "");
+
+          return `input ${baseType}`;
+        }
+
+        // Math functions preserve input qualifier and type
+        if (funcName.startsWith("math.") && funcDef && call.arguments.length > 0) {
+          return this.inferExpressionType(call.arguments[0].value);
+        }
+
+        // Array element-returning functions (polymorphic on array element type)
+        if (funcDef?.flags?.polymorphic === "element" && call.arguments.length > 0) {
+          const arrayArgType = this.inferExpressionType(call.arguments[0].value);
+
+          const arrayMatch = arrayArgType.match(/^array<(.+)>$/);
+
+          if (arrayMatch) {
+            // If function has explicit return type, use it; otherwise use element type
+            if (funcDef.returns && !funcDef.returns.includes("<type>")) {
+              return funcDef.returns;
+            }
+
+            return arrayMatch[1];
+          }
+        }
+
+        // Default: use return type from pine-data or user-defined functions
+        if (funcDef?.returns) {
+          const argTypes = call.arguments.map((arg) =>
+            this.inferExpressionType(arg.value),
+          ) as PineType[];
+
+          return resolveCallReturnRaw(funcName, argTypes) ?? funcDef.returns;
+        }
+
+        // Check user-defined functions (collected in first pass)
+        const udfReturnType = this.userDefinedFunctions.get(funcName);
+
+        if (udfReturnType) {
+          return udfReturnType;
+        }
+
+        return "undetermined type";
+      }
+
+      case "MemberExpression": {
+        const member = expr as MemberExpression;
+        const fullName = this.getMemberExpressionString(member);
+
+        // Check built-in variables from pine-data
+        const memberType = getVariableType(fullName);
+
+        if (memberType) {
+          return memberType;
+        }
+
+        return "undetermined type";
+      }
+
+      case "BinaryExpression":
+      case "TernaryExpression":
+        // Binary/ternary expressions generally produce series types
+        return "series float";
+
+      case "UnaryExpression": {
+        const unary = expr as { operator: string; argument: Expression };
+        const argType = this.inferExpressionType(unary.argument);
+
+        // Unary negation preserves the qualifier and type
+        if (unary.operator === "-" || unary.operator === "+") {
+          return argType;
+        }
+
+        if (unary.operator === "not") {
+          return argType.replace(/int|float/, "bool");
+        }
+
+        return argType;
+      }
+
+      case "ArrayExpression":
+        return "array<float>";
+
+      case "IndexExpression":
+        return "series float";
+
+      default:
+        return "undetermined type";
+    }
+  }
+
+  /**
+   * Get the string representation of a callee expression
+   */
+  private getCalleeString(callee: Expression): string {
+    if (callee.type === "Identifier") {
+      return (callee as Identifier).name;
+    }
+
+    if (callee.type === "MemberExpression") {
+      return this.getMemberExpressionString(callee as MemberExpression);
+    }
+
+    return "";
+  }
+
+  /**
+   * Get the full string of a member expression (e.g., "ta.sma")
+   */
+  private getMemberExpressionString(member: MemberExpression): string {
+    const parts: string[] = [];
+    let current: Expression = member;
+
+    while (current.type === "MemberExpression") {
+      const m = current as MemberExpression;
+      parts.unshift(m.property.name);
+      current = m.object;
+    }
+
+    if (current.type === "Identifier") {
+      parts.unshift((current as Identifier).name);
+    }
+
+    return parts.join(".");
+  }
+
+  /**
+   * Extract all function declarations
+   */
+  extractFunctions(ast: Program): PineLintFunction[] {
+    const functions: PineLintFunction[] = [];
+
+    for (const stmt of ast.body) {
+      if (stmt.type === "FunctionDeclaration") {
+        const funcDecl = stmt as FunctionDeclaration;
+        functions.push(this.extractFunction(funcDecl));
+      }
+    }
+
+    return functions;
+  }
+
+  /**
+   * Extract a single function declaration
+   */
+  private extractFunction(funcDecl: FunctionDeclaration): PineLintFunction {
+    const args: PineLintFunctionArg[] = funcDecl.params.map((param) => ({
+      name: param.name,
+      required: param.defaultValue === undefined,
+      allowedTypeIDs: [],
+      displayType: param.typeAnnotation
+        ? this.typeAnnotationToString(param.typeAnnotation)
+        : "undetermined type",
+    }));
+
+    const returnType = this.inferFunctionReturnType(funcDecl);
+    const paramList = funcDecl.params.map((p) => p.name).join(", ");
+    const syntax = [`${funcDecl.name}(${paramList}) → ${returnType}`];
+
+    // Estimate end position (line count based on body statements)
+    const endLine =
+      funcDecl.body.length > 0
+        ? Math.max(...funcDecl.body.map((s) => s.line)) + 1
+        : funcDecl.line + 1;
+
+    return {
+      name: funcDecl.name,
+      definition: {
+        start: { line: funcDecl.line, column: funcDecl.column },
+        end: { line: endLine, column: 1 },
+      },
+      args,
+      returnedTypes: [],
+      syntax,
+    };
+  }
+
+  /**
+   * Infer the return type of a function
+   */
+  private inferFunctionReturnType(funcDecl: FunctionDeclaration): string {
+    // Check explicit return type annotation
+    if (funcDecl.returnType) {
+      return this.typeAnnotationToString(funcDecl.returnType);
+    }
+
+    // Look for return statements
+    for (const stmt of funcDecl.body) {
+      if (stmt.type === "ReturnStatement") {
+        const retStmt = stmt as { value: Expression };
+
+        return this.inferExpressionType(retStmt.value);
+      }
+    }
+
+    // Check last statement as implicit return
+    if (funcDecl.body.length > 0) {
+      const lastStmt = funcDecl.body[funcDecl.body.length - 1];
+
+      if (lastStmt.type === "ExpressionStatement") {
+        const exprStmt = lastStmt as { expression: Expression };
+
+        return this.inferExpressionType(exprStmt.expression);
+      }
+    }
+
+    return "undetermined type";
+  }
+
+  /**
+   * Extract type declarations (v6 user-defined types)
+   */
+  extractTypes(ast: Program): PineLintType[] {
+    const types: PineLintType[] = [];
+
+    for (const stmt of ast.body) {
+      if (stmt.type === "TypeDeclaration") {
+        const typeDecl = stmt as TypeDeclaration;
+        types.push({
+          name: typeDecl.name,
+          definition: {
+            start: { line: typeDecl.line, column: typeDecl.column },
+            end: {
+              line: typeDecl.line,
+              column: typeDecl.column + typeDecl.name.length,
+            },
+          },
+        });
+      }
+    }
+
+    return types;
+  }
+
+  /**
+   * Extract enum declarations
+   */
+  extractEnums(ast: Program): PineLintEnum[] {
+    const enums: PineLintEnum[] = [];
+
+    for (const stmt of ast.body) {
+      if (stmt.type === "EnumDeclaration") {
+        const enumDecl = stmt as EnumDeclaration;
+        enums.push({
+          name: enumDecl.name,
+          definition: {
+            start: { line: enumDecl.line, column: enumDecl.column },
+            end: {
+              line: enumDecl.line,
+              column: enumDecl.column + enumDecl.name.length,
+            },
+          },
+        });
+      }
+    }
+
+    return enums;
+  }
 }

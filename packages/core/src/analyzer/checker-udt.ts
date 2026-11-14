@@ -3,17 +3,14 @@
 // field typing, the CE10198 "object has no field" check, and the CE10170
 // field-default type check. see INV093, INV094.
 
-import {
-	LIBRARY_FOREIGN_TYPE_REFS,
-	TYPE_NAMES,
-} from "../../../../pine-data/v6";
+import { LIBRARY_FOREIGN_TYPE_REFS, TYPE_NAMES } from "../../../../pine-data/v6";
 import { DiagnosticSeverity } from "../common/errors";
 import type {
-	CallExpression,
-	Expression,
-	Identifier,
-	MemberExpression,
-	TypeDeclaration,
+  CallExpression,
+  Expression,
+  Identifier,
+  MemberExpression,
+  TypeDeclaration,
 } from "../parser/ast";
 import { KNOWN_NAMESPACES } from "./builtins";
 import type { UnifiedPineValidator } from "./checker";
@@ -22,51 +19,47 @@ import { elementArgAssignable, memberChainName } from "./checker-helpers";
 import { type PineType, TypeChecker } from "./types";
 
 export function resolveUdtExpressionType(
-	v: UnifiedPineValidator,
-	expr: Expression,
+  v: UnifiedPineValidator,
+  expr: Expression,
 ): PineType | null {
-	if (expr.type === "Identifier") {
-		const symbol = v.symbolTable.lookup((expr as Identifier).name);
+  if (expr.type === "Identifier") {
+    const symbol = v.symbolTable.lookup((expr as Identifier).name);
 
-		const type = symbol
-			? TypeChecker.baseTypeName(symbol.type as string)
-			: "unknown";
+    const type = symbol ? TypeChecker.baseTypeName(symbol.type as string) : "unknown";
 
-		return v.udtFieldTypes.has(type) ? (type as PineType) : null;
-	}
+    return v.udtFieldTypes.has(type) ? (type as PineType) : null;
+  }
 
-	if (expr.type === "CallExpression") {
-		const call = expr as CallExpression;
+  if (expr.type === "CallExpression") {
+    const call = expr as CallExpression;
 
-		const name =
-			call.callee.type === "Identifier"
-				? call.callee.name
-				: memberChainName(call.callee);
+    const name =
+      call.callee.type === "Identifier" ? call.callee.name : memberChainName(call.callee);
 
-		const ctor = name.match(/^(.+)\.new$/);
+    const ctor = name.match(/^(.+)\.new$/);
 
-		return ctor && v.udtFieldTypes.has(ctor[1]) ? (ctor[1] as PineType) : null;
-	}
+    return ctor && v.udtFieldTypes.has(ctor[1]) ? (ctor[1] as PineType) : null;
+  }
 
-	if (expr.type === "MemberExpression") {
-		return resolveUdtFieldType(v, expr as MemberExpression);
-	}
+  if (expr.type === "MemberExpression") {
+    return resolveUdtFieldType(v, expr as MemberExpression);
+  }
 
-	return null;
+  return null;
 }
 
 export function resolveUdtFieldType(
-	v: UnifiedPineValidator,
-	expr: MemberExpression,
+  v: UnifiedPineValidator,
+  expr: MemberExpression,
 ): PineType | null {
-	const receiverType = resolveUdtExpressionType(v, expr.object);
+  const receiverType = resolveUdtExpressionType(v, expr.object);
 
-	if (!receiverType) return null;
-	const fields = v.udtFieldTypes.get(TypeChecker.baseTypeName(receiverType));
+  if (!receiverType) return null;
+  const fields = v.udtFieldTypes.get(TypeChecker.baseTypeName(receiverType));
 
-	if (!fields) return null;
+  if (!fields) return null;
 
-	return fields.get(expr.property.name) ?? null;
+  return fields.get(expr.property.name) ?? null;
 }
 
 /**
@@ -92,154 +85,149 @@ export function resolveUdtFieldType(
  * position appropriate to their trigger. see INV143
  */
 export function checkTransitiveLibraryImports(
-	v: UnifiedPineValidator,
-	receiverType: string | null | undefined,
-	line: number,
-	column: number,
-	length: number,
+  v: UnifiedPineValidator,
+  receiverType: string | null | undefined,
+  line: number,
+  column: number,
+  length: number,
 ): void {
-	if (!receiverType) return;
-	const base = TypeChecker.baseTypeName(receiverType);
-	const dot = base.indexOf(".");
+  if (!receiverType) return;
+  const base = TypeChecker.baseTypeName(receiverType);
+  const dot = base.indexOf(".");
 
-	if (dot <= 0) return;
-	const libraryPath = v.importedLibraryPaths.get(base.slice(0, dot));
+  if (dot <= 0) return;
+  const libraryPath = v.importedLibraryPaths.get(base.slice(0, dot));
 
-	if (!libraryPath) return;
-	const refs = LIBRARY_FOREIGN_TYPE_REFS[libraryPath]?.[base.slice(dot + 1)];
+  if (!libraryPath) return;
+  const refs = LIBRARY_FOREIGN_TYPE_REFS[libraryPath]?.[base.slice(dot + 1)];
 
-	if (!refs) return;
-	const imported = new Set(v.importedLibraryPaths.values());
+  if (!refs) return;
+  const imported = new Set(v.importedLibraryPaths.values());
 
-	for (const ref of refs) {
-		if (imported.has(ref.library)) continue;
-		const key = `${ref.type}@${ref.library}`;
+  for (const ref of refs) {
+    if (imported.has(ref.library)) continue;
+    const key = `${ref.type}@${ref.library}`;
 
-		if (v.reportedTransitiveImports.has(key)) continue;
-		v.reportedTransitiveImports.add(key);
-		v.addError(
-			line,
-			column,
-			length,
-			`The type "${ref.type}" is declared in the "${ref.library}" library, but the library is not explicitly imported. To use the type, import that library`,
-			DiagnosticSeverity.Error,
-		);
-	}
+    if (v.reportedTransitiveImports.has(key)) continue;
+    v.reportedTransitiveImports.add(key);
+    v.addError(
+      line,
+      column,
+      length,
+      `The type "${ref.type}" is declared in the "${ref.library}" library, but the library is not explicitly imported. To use the type, import that library`,
+      DiagnosticSeverity.Error,
+    );
+  }
 }
 
 export function checkUdtFieldAccess(
-	v: UnifiedPineValidator,
-	expr: MemberExpression,
-	version: string,
+  v: UnifiedPineValidator,
+  expr: MemberExpression,
+  version: string,
 ): void {
-	if (version !== "6") return;
-	const receiverType = resolveUdtExpressionType(v, expr.object);
+  if (version !== "6") return;
+  const receiverType = resolveUdtExpressionType(v, expr.object);
 
-	// Field-access trigger for the transitive-import rule, anchored at the script
-	// declaration statement per TV. With no declaration statement to anchor to
-	// (an incomplete script) we stay silent rather than invent a position.
-	if (v.declarationStatementPos) {
-		checkTransitiveLibraryImports(
-			v,
-			receiverType,
-			v.declarationStatementPos.line,
-			v.declarationStatementPos.column,
-			expr.property.name.length,
-		);
-	}
+  // Field-access trigger for the transitive-import rule, anchored at the script
+  // declaration statement per TV. With no declaration statement to anchor to
+  // (an incomplete script) we stay silent rather than invent a position.
+  if (v.declarationStatementPos) {
+    checkTransitiveLibraryImports(
+      v,
+      receiverType,
+      v.declarationStatementPos.line,
+      v.declarationStatementPos.column,
+      expr.property.name.length,
+    );
+  }
 
-	if (receiverType) {
-		const fields = v.udtFieldTypes.get(TypeChecker.baseTypeName(receiverType));
+  if (receiverType) {
+    const fields = v.udtFieldTypes.get(TypeChecker.baseTypeName(receiverType));
 
-		if (!fields || fields.has(expr.property.name)) return;
-		emitNoField(v, expr);
+    if (!fields || fields.has(expr.property.name)) return;
+    emitNoField(v, expr);
 
-		return;
-	}
+    return;
+  }
 
-	// Field access on a scalar value (`close.foo`) - scalars have no fields,
-	// so any member read is TV's CE10198. Restricted to a plain IDENTIFIER
-	// receiver: inferring a deep-namespace member object (`strategy.commission`)
-	// would surface its own "Undeclared identifier" as a side effect, and a
-	// scalar sub-expression receiver is vanishingly rare. Guard against
-	// namespace/type/enum names (`color.red`, `math.pi`, `chart.point`),
-	// which are not scalar VALUES. see INV093
-	const obj = expr.object;
+  // Field access on a scalar value (`close.foo`) - scalars have no fields,
+  // so any member read is TV's CE10198. Restricted to a plain IDENTIFIER
+  // receiver: inferring a deep-namespace member object (`strategy.commission`)
+  // would surface its own "Undeclared identifier" as a side effect, and a
+  // scalar sub-expression receiver is vanishingly rare. Guard against
+  // namespace/type/enum names (`color.red`, `math.pi`, `chart.point`),
+  // which are not scalar VALUES. see INV093
+  const obj = expr.object;
 
-	if (obj.type !== "Identifier") return;
-	const n = obj.name;
+  if (obj.type !== "Identifier") return;
+  const n = obj.name;
 
-	if (
-		KNOWN_NAMESPACES.includes(n) ||
-		TYPE_NAMES.has(n) ||
-		v.declaredTypeNames.has(n) ||
-		v.declaredEnumNames.has(n) ||
-		v.importedNamespaces.has(n)
-	) {
-		return;
-	}
+  if (
+    KNOWN_NAMESPACES.includes(n) ||
+    TYPE_NAMES.has(n) ||
+    v.declaredTypeNames.has(n) ||
+    v.declaredEnumNames.has(n) ||
+    v.importedNamespaces.has(n)
+  ) {
+    return;
+  }
 
-	const objBase = TypeChecker.baseTypeName(
-		v.inferExpressionType(obj, version) as string,
-	);
+  const objBase = TypeChecker.baseTypeName(v.inferExpressionType(obj, version) as string);
 
-	if (
-		objBase === "int" ||
-		objBase === "float" ||
-		objBase === "bool" ||
-		objBase === "string" ||
-		objBase === "color"
-	) {
-		emitNoField(v, expr);
-	}
+  if (
+    objBase === "int" ||
+    objBase === "float" ||
+    objBase === "bool" ||
+    objBase === "string" ||
+    objBase === "color"
+  ) {
+    emitNoField(v, expr);
+  }
 }
 
 // TV's CE10198 "Object has no field X", anchored at the member expression
 // with the field name's length, deduped per property occurrence. see INV093
-export function emitNoField(
-	v: UnifiedPineValidator,
-	expr: MemberExpression,
-): void {
-	const key = `${expr.property.line}:${expr.property.column}:${expr.property.name}`;
+export function emitNoField(v: UnifiedPineValidator, expr: MemberExpression): void {
+  const key = `${expr.property.line}:${expr.property.column}:${expr.property.name}`;
 
-	if (v.reportedUdtFieldErrors.has(key)) return;
-	v.reportedUdtFieldErrors.add(key);
-	v.addError(
-		expr.line || expr.property.line || 0,
-		expr.column || expr.property.column || 0,
-		expr.property.name.length,
-		`Object has no field ${expr.property.name}`,
-		DiagnosticSeverity.Error,
-	);
+  if (v.reportedUdtFieldErrors.has(key)) return;
+  v.reportedUdtFieldErrors.add(key);
+  v.addError(
+    expr.line || expr.property.line || 0,
+    expr.column || expr.property.column || 0,
+    expr.property.name.length,
+    `Object has no field ${expr.property.name}`,
+    DiagnosticSeverity.Error,
+  );
 }
 
 // Duplicate UDT field (CE10186): two fields with the same name inside one
 // `type` declaration. TV anchors at the SECOND (duplicate) occurrence and
 // rejects it; the first field's type wins. v6 only (G004). see INV097
 export function checkDuplicateUdtFields(
-	v: UnifiedPineValidator,
-	statement: TypeDeclaration,
-	version: string,
+  v: UnifiedPineValidator,
+  statement: TypeDeclaration,
+  version: string,
 ): void {
-	if (version !== "6" || !statement.fields) return;
-	const seen = new Set<string>();
+  if (version !== "6" || !statement.fields) return;
+  const seen = new Set<string>();
 
-	for (const field of statement.fields) {
-		if (seen.has(field.name)) {
-			v.addTemplateError({
-				line: field.line ?? statement.line,
-				column: field.column ?? statement.column,
-				length: field.name.length,
-				message: "Duplicated field: '{fieldName}'.",
-				severity: DiagnosticSeverity.Error,
-				code: "CE10186",
-				ctx: { fieldName: field.name },
-			});
-			continue;
-		}
+  for (const field of statement.fields) {
+    if (seen.has(field.name)) {
+      v.addTemplateError({
+        line: field.line ?? statement.line,
+        column: field.column ?? statement.column,
+        length: field.name.length,
+        message: "Duplicated field: '{fieldName}'.",
+        severity: DiagnosticSeverity.Error,
+        code: "CE10186",
+        ctx: { fieldName: field.name },
+      });
+      continue;
+    }
 
-		seen.add(field.name);
-	}
+    seen.add(field.name);
+  }
 }
 
 // UDT field default value type check (CE10170): a literal default must be
@@ -248,58 +236,58 @@ export function checkDuplicateUdtFields(
 // element rule). The parser captures only literal defaults; non-literals stay
 // lenient. v6 only (G004). see INV094
 export function checkTypeFieldDefaults(
-	v: UnifiedPineValidator,
-	statement: TypeDeclaration,
-	version: string,
+  v: UnifiedPineValidator,
+  statement: TypeDeclaration,
+  version: string,
 ): void {
-	if (version !== "6" || !statement.fields) return;
+  if (version !== "6" || !statement.fields) return;
 
-	for (const field of statement.fields) {
-		if (!field.defaultValue || !field.typeAnnotation) continue;
-		// What a field default may BE - the same rule and codes as a UDF
-		// parameter default (INV172), re-measured on the field shape: CE10132
-		// (user variable) at the expression, CE10133 (any call) and CE10134
-		// (a calculation) at the FIELD's own start rather than a parameter
-		// name. Fields are always typed, so the untyped-`na` case cannot
-		// arise. 23-cell grid, 2026-09-07. see INV178
-		const shape = defaultValueViolation(v, field.defaultValue, true);
+  for (const field of statement.fields) {
+    if (!field.defaultValue || !field.typeAnnotation) continue;
+    // What a field default may BE - the same rule and codes as a UDF
+    // parameter default (INV172), re-measured on the field shape: CE10132
+    // (user variable) at the expression, CE10133 (any call) and CE10134
+    // (a calculation) at the FIELD's own start rather than a parameter
+    // name. Fields are always typed, so the untyped-`na` case cannot
+    // arise. 23-cell grid, 2026-09-07. see INV178
+    const shape = defaultValueViolation(v, field.defaultValue, true);
 
-		if (shape) {
-			v.addTemplateError({
-				line: field.line ?? statement.line,
-				column: shape.atExpression
-					? field.defaultValue.column
-					: (field.startColumn ?? field.column ?? statement.column),
-				length: 0,
-				message: shape.message,
-				severity: DiagnosticSeverity.Error,
-				code: shape.code,
-			});
-			continue;
-		}
+    if (shape) {
+      v.addTemplateError({
+        line: field.line ?? statement.line,
+        column: shape.atExpression
+          ? field.defaultValue.column
+          : (field.startColumn ?? field.column ?? statement.column),
+        length: 0,
+        message: shape.message,
+        severity: DiagnosticSeverity.Error,
+        code: shape.code,
+      });
+      continue;
+    }
 
-		const fb = TypeChecker.baseTypeName(field.typeAnnotation.name);
+    const fb = TypeChecker.baseTypeName(field.typeAnnotation.name);
 
-		if (fb !== "int" && fb !== "float" && fb !== "bool" && fb !== "string") {
-			continue; // color/array/map/UDT field defaults -> lenient
-		}
+    if (fb !== "int" && fb !== "float" && fb !== "bool" && fb !== "string") {
+      continue; // color/array/map/UDT field defaults -> lenient
+    }
 
-		const defType = v.inferExpressionType(field.defaultValue, version);
+    const defType = v.inferExpressionType(field.defaultValue, version);
 
-		if (elementArgAssignable(defType, fb)) continue;
-		const desc = v.describeArgForTemplate(field.defaultValue, defType, version);
-		v.addTemplateError({
-			line: field.line ?? statement.line,
-			column: field.column ?? statement.column,
-			length: field.name.length,
-			message:
-				"Default value of type {defValTypeExpression} can not be assigned to an argument of type {explicitType}",
-			severity: DiagnosticSeverity.Error,
-			code: "CE10170",
-			ctx: {
-				defValTypeExpression: desc.typeStr,
-				explicitType: `series ${fb}`,
-			},
-		});
-	}
+    if (elementArgAssignable(defType, fb)) continue;
+    const desc = v.describeArgForTemplate(field.defaultValue, defType, version);
+    v.addTemplateError({
+      line: field.line ?? statement.line,
+      column: field.column ?? statement.column,
+      length: field.name.length,
+      message:
+        "Default value of type {defValTypeExpression} can not be assigned to an argument of type {explicitType}",
+      severity: DiagnosticSeverity.Error,
+      code: "CE10170",
+      ctx: {
+        defValTypeExpression: desc.typeStr,
+        explicitType: `series ${fb}`,
+      },
+    });
+  }
 }

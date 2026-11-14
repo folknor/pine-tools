@@ -1,89 +1,85 @@
 import { describe, expect, it } from "vitest";
-import functions from "../../../pine-data/v6/functions.json" with {
-	type: "json",
-};
+import functions from "../../../pine-data/v6/functions.json" with { type: "json" };
 
 type Overload = { parameters: { name: string; type: string }[]; returns: string };
 type Fn = {
-	name: string;
-	parameters: { name: string; type: string }[];
-	returns: string;
-	overloads?: Overload[];
+  name: string;
+  parameters: { name: string; type: string }[];
+  returns: string;
+  overloads?: Overload[];
 };
 
 const byName = new Map((functions as Fn[]).map((f) => [f.name, f]));
 
 describe("generated functions.json - overload exposure (TODO #25)", () => {
-	it("exposes per-overload structure for an overloaded function", () => {
-		const round = byName.get("math.round");
-		expect(round?.overloads, "math.round should expose overloads").toBeDefined();
-		// All 8 qualifier/arity forms are present.
-		expect(round?.overloads?.length).toBe(8);
-		// The two-arg (number, precision) form must be visible - it is flattened
-		// out of the merged top-level syntax/returns.
-		const twoArg = round?.overloads?.find((o) => o.parameters.length === 2);
-		expect(twoArg?.parameters.map((p) => p.name)).toEqual(["number", "precision"]);
-		// Per-overload returns are exact, not frozen to overload #0.
-		const returns = new Set(round?.overloads?.map((o) => o.returns));
-		expect(returns.has("series int")).toBe(true);
-		expect(returns.has("series float")).toBe(true);
-	});
+  it("exposes per-overload structure for an overloaded function", () => {
+    const round = byName.get("math.round");
+    expect(round?.overloads, "math.round should expose overloads").toBeDefined();
+    // All 8 qualifier/arity forms are present.
+    expect(round?.overloads?.length).toBe(8);
+    // The two-arg (number, precision) form must be visible - it is flattened
+    // out of the merged top-level syntax/returns.
+    const twoArg = round?.overloads?.find((o) => o.parameters.length === 2);
+    expect(twoArg?.parameters.map((p) => p.name)).toEqual(["number", "precision"]);
+    // Per-overload returns are exact, not frozen to overload #0.
+    const returns = new Set(round?.overloads?.map((o) => o.returns));
+    expect(returns.has("series int")).toBe(true);
+    expect(returns.has("series float")).toBe(true);
+  });
 
-	it("keeps per-overload param types exact (non-unioned)", () => {
-		const round = byName.get("math.round");
-		const seriesForm = round?.overloads?.find(
-			(o) => o.returns === "series float",
-		);
-		// Exact type for this overload, not the merged union "series int/float".
-		expect(seriesForm?.parameters[0]).toMatchObject({
-			name: "number",
-			type: "series int/float",
-		});
-	});
+  it("keeps per-overload param types exact (non-unioned)", () => {
+    const round = byName.get("math.round");
+    const seriesForm = round?.overloads?.find((o) => o.returns === "series float");
+    // Exact type for this overload, not the merged union "series int/float".
+    expect(seriesForm?.parameters[0]).toMatchObject({
+      name: "number",
+      type: "series int/float",
+    });
+  });
 
-	it("omits the overloads field for non-overloaded functions", () => {
-		// `alert` has a single signature - fully described by the merged fields.
-		expect(byName.get("alert")?.overloads).toBeUndefined();
-	});
+  it("omits the overloads field for non-overloaded functions", () => {
+    // `alert` has a single signature - fully described by the merged fields.
+    expect(byName.get("alert")?.overloads).toBeUndefined();
+  });
 
-	it("every overloaded function's overload entries carry a return type", () => {
-		for (const fn of functions as Fn[]) {
-			if (!fn.overloads) continue;
-			for (const o of fn.overloads) {
-				expect(o.returns, `${fn.name} overload missing return`).toBeTruthy();
-			}
-		}
-	});
+  it("every overloaded function's overload entries carry a return type", () => {
+    for (const fn of functions as Fn[]) {
+      if (!fn.overloads) continue;
+      for (const o of fn.overloads) {
+        expect(o.returns, `${fn.name} overload missing return`).toBeTruthy();
+      }
+    }
+  });
 
-	it("no parameter has an empty description (recovered from the mirror, #25)", () => {
-		const blank: string[] = [];
-		for (const fn of functions as Fn[]) {
-			for (const p of fn.parameters as { name: string; description?: string }[]) {
-				if (!p.description) blank.push(`${fn.name}.${p.name}`);
-			}
-		}
-		expect(blank, `params missing description: ${blank.join(", ")}`).toEqual([]);
-	});
+  it("no parameter has an empty description (recovered from the mirror, #25)", () => {
+    const blank: string[] = [];
+    for (const fn of functions as Fn[]) {
+      for (const p of fn.parameters as { name: string; description?: string }[]) {
+        if (!p.description) blank.push(`${fn.name}.${p.name}`);
+      }
+    }
+    expect(blank, `params missing description: ${blank.join(", ")}`).toEqual([]);
+  });
 
-	it("exposes allowedValues and numeric ranges where documented (#25)", () => {
-		type P = { name: string; allowedValues?: string[]; min?: number; max?: number };
-		const param = (fn: string, name: string) =>
-			(byName.get(fn)?.parameters as P[])?.find((p) => p.name === name);
+  it("exposes allowedValues and numeric ranges where documented (#25)", () => {
+    type P = { name: string; allowedValues?: string[]; min?: number; max?: number };
+    const param = (fn: string, name: string) =>
+      (byName.get(fn)?.parameters as P[])?.find((p) => p.name === name);
 
-		expect(param("alert", "freq")?.allowedValues).toEqual([
-			"alert.freq_all",
-			"alert.freq_once_per_bar",
-			"alert.freq_once_per_bar_close",
-		]);
-		expect(param("color.rgb", "red")).toMatchObject({ min: 0, max: 255 });
+    expect(param("alert", "freq")?.allowedValues).toEqual([
+      "alert.freq_all",
+      "alert.freq_once_per_bar",
+      "alert.freq_once_per_bar_close",
+    ]);
+    expect(param("color.rgb", "red")).toMatchObject({ min: 0, max: 255 });
 
-		// A parameter is an enum XOR a numeric range, never both.
-		for (const fn of functions as Fn[]) {
-			for (const p of fn.parameters as P[]) {
-				if (p.allowedValues && (p.min !== undefined || p.max !== undefined)) {
-					throw new Error(`${fn.name}.${p.name} has both allowedValues and a range`);
-				}
-			}
-		}
-	});
+    // A parameter is an enum XOR a numeric range, never both.
+    for (const fn of functions as Fn[]) {
+      for (const p of fn.parameters as P[]) {
+        if (p.allowedValues && (p.min !== undefined || p.max !== undefined)) {
+          throw new Error(`${fn.name}.${p.name} has both allowedValues and a range`);
+        }
+      }
+    }
+  });
 });

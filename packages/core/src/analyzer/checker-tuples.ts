@@ -5,24 +5,24 @@
 // see INV010, INV030, INV049, INV058.
 
 import type {
-	ArrayExpression,
-	CallExpression,
-	Expression,
-	ExpressionStatement,
-	FunctionParam,
-	IfExpression,
-	IfStatement,
-	ReturnStatement,
-	Statement,
-	SwitchExpression,
-	TernaryExpression,
-	TupleDeclaration,
+  ArrayExpression,
+  CallExpression,
+  Expression,
+  ExpressionStatement,
+  FunctionParam,
+  IfExpression,
+  IfStatement,
+  ReturnStatement,
+  Statement,
+  SwitchExpression,
+  TernaryExpression,
+  TupleDeclaration,
 } from "../parser/ast";
 import {
-	builtinCallTupleness,
-	builtinTupleReturns,
-	KNOWN_NAMESPACES,
-	mapToPineType,
+  builtinCallTupleness,
+  builtinTupleReturns,
+  KNOWN_NAMESPACES,
+  mapToPineType,
 } from "./builtins";
 import type { UnifiedPineValidator } from "./checker";
 import { memberChainName } from "./checker-helpers";
@@ -34,16 +34,11 @@ import { type PineType, TypeChecker } from "./types";
  * For request.security with array argument, extracts element types.
  */
 export function inferTupleElementTypes(
-	v: UnifiedPineValidator,
-	tupleDecl: TupleDeclaration,
-	version: string = "6",
+  v: UnifiedPineValidator,
+  tupleDecl: TupleDeclaration,
+  version: string = "6",
 ): PineType[] {
-	return tupleInitElementTypes(
-		v,
-		tupleDecl.init,
-		version,
-		tupleDecl.names.length,
-	);
+  return tupleInitElementTypes(v, tupleDecl.init, version, tupleDecl.names.length);
 }
 
 // Per-element types for a tuple-producing init expression. Beyond the
@@ -55,140 +50,124 @@ export function inferTupleElementTypes(
 // (A BARE tuple literal init is itself invalid Pine - the parser emits TV's
 // `Syntax error at input "["` - but we still type its elements for recovery.)
 export function tupleInitElementTypes(
-	v: UnifiedPineValidator,
-	expr: Expression,
-	version: string,
-	expectedCount?: number,
+  v: UnifiedPineValidator,
+  expr: Expression,
+  version: string,
+  expectedCount?: number,
 ): PineType[] {
-	switch (expr.type) {
-		case "ArrayExpression": {
-			return (expr as ArrayExpression).elements.map((elem) =>
-				v.inferExpressionType(elem, version),
-			);
-		}
+  switch (expr.type) {
+    case "ArrayExpression": {
+      return (expr as ArrayExpression).elements.map((elem) => v.inferExpressionType(elem, version));
+    }
 
-		case "CallExpression": {
-			const elementTypes: PineType[] = [];
-			const call = expr as CallExpression;
-			let funcName = "";
+    case "CallExpression": {
+      const elementTypes: PineType[] = [];
+      const call = expr as CallExpression;
+      let funcName = "";
 
-			if (call.callee.type === "Identifier") {
-				funcName = call.callee.name;
-			} else if (call.callee.type === "MemberExpression") {
-				const member = call.callee;
+      if (call.callee.type === "Identifier") {
+        funcName = call.callee.name;
+      } else if (call.callee.type === "MemberExpression") {
+        const member = call.callee;
 
-				if (member.object.type === "Identifier") {
-					funcName = `${member.object.name}.${member.property.name}`;
-				}
-			}
+        if (member.object.type === "Identifier") {
+          funcName = `${member.object.name}.${member.property.name}`;
+        }
+      }
 
-			// request.security / request.security_lower_tf pass the tuple
-			// shape of their expression arg through: a tuple literal, a
-			// tuple-returning call (UDF or builtin), or an if/switch
-			// expression all yield a tuple of that arity - recurse on the
-			// arg as if it were the init itself. For _lower_tf each
-			// element is an ARRAY of the expression's element type (one
-			// value per intrabar). see TODO #51.
-			if (
-				funcName === "request.security" ||
-				funcName === "request.security_lower_tf"
-			) {
-				const named = call.arguments.find((a) => a.name === "expression");
+      // request.security / request.security_lower_tf pass the tuple
+      // shape of their expression arg through: a tuple literal, a
+      // tuple-returning call (UDF or builtin), or an if/switch
+      // expression all yield a tuple of that arity - recurse on the
+      // arg as if it were the init itself. For _lower_tf each
+      // element is an ARRAY of the expression's element type (one
+      // value per intrabar). see TODO #51.
+      if (funcName === "request.security" || funcName === "request.security_lower_tf") {
+        const named = call.arguments.find((a) => a.name === "expression");
 
-				const exprArg =
-					named?.value ??
-					(call.arguments.length >= 3 ? call.arguments[2].value : undefined);
+        const exprArg =
+          named?.value ?? (call.arguments.length >= 3 ? call.arguments[2].value : undefined);
 
-				if (exprArg) {
-					const inner = tupleInitElementTypes(
-						v,
-						exprArg,
-						version,
-						expectedCount,
-					);
+        if (exprArg) {
+          const inner = tupleInitElementTypes(v, exprArg, version, expectedCount);
 
-					for (const t of inner) {
-						if (funcName === "request.security_lower_tf") {
-							const base = TypeChecker.baseTypeName(t as string);
-							elementTypes.push(
-								t === "unknown" ? "unknown" : (`array<${base}>` as PineType),
-							);
-						} else {
-							elementTypes.push(t);
-						}
-					}
-				}
-			}
+          for (const t of inner) {
+            if (funcName === "request.security_lower_tf") {
+              const base = TypeChecker.baseTypeName(t as string);
+              elementTypes.push(t === "unknown" ? "unknown" : (`array<${base}>` as PineType));
+            } else {
+              elementTypes.push(t);
+            }
+          }
+        }
+      }
 
-			// User-defined function whose body evaluates to a tuple -
-			// recover the per-element types we captured when the
-			// function was validated. Without this every element defaults
-			// to `series<float>` and a destructured bool / int / color
-			// element gets wrongly typed downstream. see INV010. A name
-			// can carry several shapes (overloads); prefer the one whose
-			// arity matches the destructure.
-			if (elementTypes.length === 0 && funcName) {
-				const shapes =
-					v.udfTupleReturnTypes.get(funcName) ??
-					receiverMethodTupleShapes(v, call);
+      // User-defined function whose body evaluates to a tuple -
+      // recover the per-element types we captured when the
+      // function was validated. Without this every element defaults
+      // to `series<float>` and a destructured bool / int / color
+      // element gets wrongly typed downstream. see INV010. A name
+      // can carry several shapes (overloads); prefer the one whose
+      // arity matches the destructure.
+      if (elementTypes.length === 0 && funcName) {
+        const shapes = v.udfTupleReturnTypes.get(funcName) ?? receiverMethodTupleShapes(v, call);
 
-				if (shapes) {
-					const byArity =
-						expectedCount === undefined
-							? undefined
-							: shapes.find((s) => s.length === expectedCount);
+        if (shapes) {
+          const byArity =
+            expectedCount === undefined
+              ? undefined
+              : shapes.find((s) => s.length === expectedCount);
 
-					for (const t of byArity ?? shapes[0]) elementTypes.push(t);
-				}
-			}
+          for (const t of byArity ?? shapes[0]) elementTypes.push(t);
+        }
+      }
 
-			// Builtin whose tuple shape lives in the catalog's overload
-			// returns (ta.macd/bb/kc/dmi/supertrend, and ta.vwap whose
-			// merged `returns` is frozen to its scalar overload). see
-			// TODO #51 blocker 3.
-			if (elementTypes.length === 0 && funcName) {
-				const shapes = builtinTupleReturns(funcName);
+      // Builtin whose tuple shape lives in the catalog's overload
+      // returns (ta.macd/bb/kc/dmi/supertrend, and ta.vwap whose
+      // merged `returns` is frozen to its scalar overload). see
+      // TODO #51 blocker 3.
+      if (elementTypes.length === 0 && funcName) {
+        const shapes = builtinTupleReturns(funcName);
 
-				if (shapes.length > 0) {
-					const byArity =
-						expectedCount === undefined
-							? undefined
-							: shapes.find((s) => s.length === expectedCount);
+        if (shapes.length > 0) {
+          const byArity =
+            expectedCount === undefined
+              ? undefined
+              : shapes.find((s) => s.length === expectedCount);
 
-					for (const t of byArity ?? shapes[0])
-						elementTypes.push(mapToPineType(t));
-				}
-			}
+          for (const t of byArity ?? shapes[0]) elementTypes.push(mapToPineType(t));
+        }
+      }
 
-			return elementTypes;
-		}
+      return elementTypes;
+    }
 
-		case "IfExpression": {
-			const ifExpr = expr as IfExpression;
+    case "IfExpression": {
+      const ifExpr = expr as IfExpression;
 
-			return mergeTupleBranchTypes([
-				branchTailTupleTypes(v, ifExpr.consequent, version, expectedCount),
-				branchTailTupleTypes(v, ifExpr.alternate, version, expectedCount),
-			]);
-		}
+      return mergeTupleBranchTypes([
+        branchTailTupleTypes(v, ifExpr.consequent, version, expectedCount),
+        branchTailTupleTypes(v, ifExpr.alternate, version, expectedCount),
+      ]);
+    }
 
-		case "SwitchExpression": {
-			const switchExpr = expr as SwitchExpression;
+    case "SwitchExpression": {
+      const switchExpr = expr as SwitchExpression;
 
-			return mergeTupleBranchTypes(
-				switchExpr.cases.map((c) =>
-					// When `statements` is present, `result` is the last
-					// statement's expression - visit statements INSTEAD of
-					// result (see SwitchCase in ast.ts / TODO #33).
-					c.statements
-						? branchTailTupleTypes(v, c.statements, version, expectedCount)
-						: tupleInitElementTypes(v, c.result, version, expectedCount),
-				),
-			);
-		}
-	}
+      return mergeTupleBranchTypes(
+        switchExpr.cases.map((c) =>
+          // When `statements` is present, `result` is the last
+          // statement's expression - visit statements INSTEAD of
+          // result (see SwitchCase in ast.ts / TODO #33).
+          c.statements
+            ? branchTailTupleTypes(v, c.statements, version, expectedCount)
+            : tupleInitElementTypes(v, c.result, version, expectedCount),
+        ),
+      );
+    }
+  }
 
-	return [];
+  return [];
 }
 
 // `[v, t] = data.valueAtTime(ts)` - a UDF method called on a receiver
@@ -196,17 +175,17 @@ export function tupleInitElementTypes(
 // to the property name, but never for a builtin namespace object
 // (`ta.macd` must not hit a same-named user method).
 export function receiverMethodTupleShapes(
-	v: UnifiedPineValidator,
-	call: CallExpression,
+  v: UnifiedPineValidator,
+  call: CallExpression,
 ): PineType[][] | undefined {
-	if (call.callee.type !== "MemberExpression") return undefined;
-	const member = call.callee;
+  if (call.callee.type !== "MemberExpression") return undefined;
+  const member = call.callee;
 
-	if (member.object.type !== "Identifier") return undefined;
+  if (member.object.type !== "Identifier") return undefined;
 
-	if (KNOWN_NAMESPACES.includes(member.object.name)) return undefined;
+  if (KNOWN_NAMESPACES.includes(member.object.name)) return undefined;
 
-	return v.udfTupleReturnTypes.get(member.property.name);
+  return v.udfTupleReturnTypes.get(member.property.name);
 }
 
 // Classify how many tuple elements an init expression can produce, for
@@ -216,175 +195,157 @@ export function receiverMethodTupleShapes(
 // positively classify must stay silent; the first draft of this check
 // treated unclassifiable as scalar and shipped 51 FPs (TODO #51).
 export function tupleInitArity(
-	v: UnifiedPineValidator,
-	expr: Expression,
-	version: string,
-):
-	| { kind: "tuple"; arities: number[] }
-	| { kind: "scalar" }
-	| { kind: "unknown" } {
-	switch (expr.type) {
-		case "ArrayExpression":
-			return {
-				kind: "tuple",
-				arities: [(expr as ArrayExpression).elements.length],
-			};
+  v: UnifiedPineValidator,
+  expr: Expression,
+  version: string,
+): { kind: "tuple"; arities: number[] } | { kind: "scalar" } | { kind: "unknown" } {
+  switch (expr.type) {
+    case "ArrayExpression":
+      return {
+        kind: "tuple",
+        arities: [(expr as ArrayExpression).elements.length],
+      };
 
-		// None of these can produce a tuple in Pine - tuples only come
-		// from calls and block structures (TV's SHAPE wording). A bare
-		// identifier is scalar regardless of its type.
-		case "Literal":
-		case "Identifier":
-		case "BinaryExpression":
-		case "UnaryExpression":
-		case "MemberExpression":
-		case "IndexExpression":
-			return { kind: "scalar" };
+    // None of these can produce a tuple in Pine - tuples only come
+    // from calls and block structures (TV's SHAPE wording). A bare
+    // identifier is scalar regardless of its type.
+    case "Literal":
+    case "Identifier":
+    case "BinaryExpression":
+    case "UnaryExpression":
+    case "MemberExpression":
+    case "IndexExpression":
+      return { kind: "scalar" };
 
-		case "TernaryExpression": {
-			const ternary = expr as TernaryExpression;
+    case "TernaryExpression": {
+      const ternary = expr as TernaryExpression;
 
-			const branches = [
-				tupleInitArity(v, ternary.consequent, version),
-				tupleInitArity(v, ternary.alternate, version),
-			];
+      const branches = [
+        tupleInitArity(v, ternary.consequent, version),
+        tupleInitArity(v, ternary.alternate, version),
+      ];
 
-			if (branches.some((b) => b.kind === "tuple")) {
-				// CE10163 is emitted by the ternary validator. Returning unknown here
-				// avoids duplicate destructure-shape diagnostics. see INV127
-				return { kind: "unknown" };
-			}
+      if (branches.some((b) => b.kind === "tuple")) {
+        // CE10163 is emitted by the ternary validator. Returning unknown here
+        // avoids duplicate destructure-shape diagnostics. see INV127
+        return { kind: "unknown" };
+      }
 
-			if (branches.every((b) => b.kind === "scalar")) {
-				return { kind: "scalar" };
-			}
+      if (branches.every((b) => b.kind === "scalar")) {
+        return { kind: "scalar" };
+      }
 
-			return { kind: "unknown" };
-		}
+      return { kind: "unknown" };
+    }
 
-		case "CallExpression": {
-			const call = expr as CallExpression;
+    case "CallExpression": {
+      const call = expr as CallExpression;
 
-			// In-call recovery dropped arguments (INV047) - and the named
-			// args below would be incomplete.
-			if (call.recovered) return { kind: "unknown" };
-			const funcName = memberChainName(call.callee);
+      // In-call recovery dropped arguments (INV047) - and the named
+      // args below would be incomplete.
+      if (call.recovered) return { kind: "unknown" };
+      const funcName = memberChainName(call.callee);
 
-			if (!funcName) return { kind: "unknown" };
+      if (!funcName) return { kind: "unknown" };
 
-			// request.* passes its expression arg's shape through, scalar
-			// included (probe p08: scalar expr destructured is the SHAPE
-			// error).
-			if (
-				funcName === "request.security" ||
-				funcName === "request.security_lower_tf"
-			) {
-				const named = call.arguments.find((a) => a.name === "expression");
+      // request.* passes its expression arg's shape through, scalar
+      // included (probe p08: scalar expr destructured is the SHAPE
+      // error).
+      if (funcName === "request.security" || funcName === "request.security_lower_tf") {
+        const named = call.arguments.find((a) => a.name === "expression");
 
-				const exprArg =
-					named?.value ??
-					(call.arguments.length >= 3 ? call.arguments[2].value : undefined);
+        const exprArg =
+          named?.value ?? (call.arguments.length >= 3 ? call.arguments[2].value : undefined);
 
-				return exprArg
-					? tupleInitArity(v, exprArg, version)
-					: { kind: "unknown" };
-			}
+        return exprArg ? tupleInitArity(v, exprArg, version) : { kind: "unknown" };
+      }
 
-			// UDF / user-method tuple shapes captured by INV057.
-			const udfShapes =
-				v.udfTupleReturnTypes.get(funcName) ??
-				receiverMethodTupleShapes(v, call);
+      // UDF / user-method tuple shapes captured by INV057.
+      const udfShapes = v.udfTupleReturnTypes.get(funcName) ?? receiverMethodTupleShapes(v, call);
 
-			if (udfShapes)
-				return {
-					kind: "tuple",
-					arities: udfShapes.map((s) => s.length),
-				};
+      if (udfShapes)
+        return {
+          kind: "tuple",
+          arities: udfShapes.map((s) => s.length),
+        };
 
-			// A declared UDF with no captured tuple shape: scalar only when
-			// its inferred return type is concrete (capture and return
-			// inference share the same tail descent, so a tuple our capture
-			// missed would have left the return type unknown too).
-			if (v.declaredFunctionNames.has(funcName)) {
-				const sym = v.symbolTable.lookup(funcName);
+      // A declared UDF with no captured tuple shape: scalar only when
+      // its inferred return type is concrete (capture and return
+      // inference share the same tail descent, so a tuple our capture
+      // missed would have left the return type unknown too).
+      if (v.declaredFunctionNames.has(funcName)) {
+        const sym = v.symbolTable.lookup(funcName);
 
-				if (
-					sym &&
-					(sym.kind === "function" || sym.kind === "method") &&
-					sym.type !== "unknown"
-				) {
-					return { kind: "scalar" };
-				}
+        if (sym && (sym.kind === "function" || sym.kind === "method") && sym.type !== "unknown") {
+          return { kind: "scalar" };
+        }
 
-				return { kind: "unknown" };
-			}
+        return { kind: "unknown" };
+      }
 
-			// Builtin: catalog overload returns, args-aware for the mixed
-			// scalar/tuple case (ta.vwap). Void returns are scalar for the
-			// SHAPE question (probe p07).
-			return builtinCallTupleness(
-				funcName,
-				call.arguments.filter((a) => !a.name).length,
-				call.arguments.flatMap((a) => (a.name ? [a.name] : [])),
-			);
-		}
+      // Builtin: catalog overload returns, args-aware for the mixed
+      // scalar/tuple case (ta.vwap). Void returns are scalar for the
+      // SHAPE question (probe p07).
+      return builtinCallTupleness(
+        funcName,
+        call.arguments.filter((a) => !a.name).length,
+        call.arguments.flatMap((a) => (a.name ? [a.name] : [])),
+      );
+    }
 
-		case "IfExpression": {
-			const ifExpr = expr as IfExpression;
+    case "IfExpression": {
+      const ifExpr = expr as IfExpression;
 
-			return mergeBranchArities([
-				branchTailArity(v, ifExpr.consequent, version),
-				branchTailArity(v, ifExpr.alternate, version),
-			]);
-		}
+      return mergeBranchArities([
+        branchTailArity(v, ifExpr.consequent, version),
+        branchTailArity(v, ifExpr.alternate, version),
+      ]);
+    }
 
-		case "SwitchExpression": {
-			const switchExpr = expr as SwitchExpression;
+    case "SwitchExpression": {
+      const switchExpr = expr as SwitchExpression;
 
-			return mergeBranchArities(
-				switchExpr.cases.map((c) =>
-					c.statements
-						? branchTailArity(v, c.statements, version)
-						: tupleInitArity(v, c.result, version),
-				),
-			);
-		}
-	}
+      return mergeBranchArities(
+        switchExpr.cases.map((c) =>
+          c.statements
+            ? branchTailArity(v, c.statements, version)
+            : tupleInitArity(v, c.result, version),
+        ),
+      );
+    }
+  }
 
-	return { kind: "unknown" };
+  return { kind: "unknown" };
 }
 
 export function branchTailArity(
-	v: UnifiedPineValidator,
-	stmts: Statement[] | undefined,
-	version: string,
-):
-	| { kind: "tuple"; arities: number[] }
-	| { kind: "scalar" }
-	| { kind: "unknown" } {
-	if (!stmts || stmts.length === 0) return { kind: "unknown" };
-	const last = stmts[stmts.length - 1];
+  v: UnifiedPineValidator,
+  stmts: Statement[] | undefined,
+  version: string,
+): { kind: "tuple"; arities: number[] } | { kind: "scalar" } | { kind: "unknown" } {
+  if (!stmts || stmts.length === 0) return { kind: "unknown" };
+  const last = stmts[stmts.length - 1];
 
-	if (last.type === "ExpressionStatement") {
-		return tupleInitArity(v, (last as ExpressionStatement).expression, version);
-	}
+  if (last.type === "ExpressionStatement") {
+    return tupleInitArity(v, (last as ExpressionStatement).expression, version);
+  }
 
-	if (last.type === "ReturnStatement") {
-		const value = (last as ReturnStatement).value;
+  if (last.type === "ReturnStatement") {
+    const value = (last as ReturnStatement).value;
 
-		return value ? tupleInitArity(v, value, version) : { kind: "unknown" };
-	}
+    return value ? tupleInitArity(v, value, version) : { kind: "unknown" };
+  }
 
-	if (last.type === "IfStatement") {
-		const ifStmt = last as IfStatement;
+  if (last.type === "IfStatement") {
+    const ifStmt = last as IfStatement;
 
-		return mergeBranchArities([
-			branchTailArity(v, ifStmt.consequent, version),
-			branchTailArity(v, ifStmt.alternate, version),
-		]);
-	}
+    return mergeBranchArities([
+      branchTailArity(v, ifStmt.consequent, version),
+      branchTailArity(v, ifStmt.alternate, version),
+    ]);
+  }
 
-	return { kind: "unknown" };
+  return { kind: "unknown" };
 }
 
 // All branches scalar -> scalar (probe p09: an if with scalar tails
@@ -392,32 +353,21 @@ export function branchTailArity(
 // Anything mixed or unknown -> unknown (TV's behavior for a structure
 // mixing scalar and tuple tails is unprobed - stay silent).
 export function mergeBranchArities(
-	branches: Array<
-		| { kind: "tuple"; arities: number[] }
-		| { kind: "scalar" }
-		| { kind: "unknown" }
-	>,
-):
-	| { kind: "tuple"; arities: number[] }
-	| { kind: "scalar" }
-	| { kind: "unknown" } {
-	if (branches.length === 0) return { kind: "unknown" };
+  branches: Array<{ kind: "tuple"; arities: number[] } | { kind: "scalar" } | { kind: "unknown" }>,
+): { kind: "tuple"; arities: number[] } | { kind: "scalar" } | { kind: "unknown" } {
+  if (branches.length === 0) return { kind: "unknown" };
 
-	if (branches.some((b) => b.kind === "unknown")) return { kind: "unknown" };
+  if (branches.some((b) => b.kind === "unknown")) return { kind: "unknown" };
 
-	if (branches.every((b) => b.kind === "scalar")) return { kind: "scalar" };
+  if (branches.every((b) => b.kind === "scalar")) return { kind: "scalar" };
 
-	if (branches.every((b) => b.kind === "tuple")) {
-		const arities = [
-			...new Set(
-				branches.flatMap((b) => (b.kind === "tuple" ? b.arities : [])),
-			),
-		];
+  if (branches.every((b) => b.kind === "tuple")) {
+    const arities = [...new Set(branches.flatMap((b) => (b.kind === "tuple" ? b.arities : [])))];
 
-		return { kind: "tuple", arities };
-	}
+    return { kind: "tuple", arities };
+  }
 
-	return { kind: "unknown" };
+  return { kind: "unknown" };
 }
 
 // Tuple element types a statement block evaluates to: the tail
@@ -425,39 +375,39 @@ export function mergeBranchArities(
 // descent tailTupleExpr does for UDF bodies, but yielding types so
 // branches can merge).
 export function branchTailTupleTypes(
-	v: UnifiedPineValidator,
-	stmts: Statement[] | undefined,
-	version: string,
-	expectedCount?: number,
+  v: UnifiedPineValidator,
+  stmts: Statement[] | undefined,
+  version: string,
+  expectedCount?: number,
 ): PineType[] {
-	if (!stmts || stmts.length === 0) return [];
-	const last = stmts[stmts.length - 1];
+  if (!stmts || stmts.length === 0) return [];
+  const last = stmts[stmts.length - 1];
 
-	if (last.type === "ExpressionStatement") {
-		return tupleInitElementTypes(
-			v,
-			(last as ExpressionStatement).expression,
-			version,
-			expectedCount,
-		);
-	}
+  if (last.type === "ExpressionStatement") {
+    return tupleInitElementTypes(
+      v,
+      (last as ExpressionStatement).expression,
+      version,
+      expectedCount,
+    );
+  }
 
-	if (last.type === "ReturnStatement") {
-		const value = (last as ReturnStatement).value;
+  if (last.type === "ReturnStatement") {
+    const value = (last as ReturnStatement).value;
 
-		return value ? tupleInitElementTypes(v, value, version, expectedCount) : [];
-	}
+    return value ? tupleInitElementTypes(v, value, version, expectedCount) : [];
+  }
 
-	if (last.type === "IfStatement") {
-		const ifStmt = last as IfStatement;
+  if (last.type === "IfStatement") {
+    const ifStmt = last as IfStatement;
 
-		return mergeTupleBranchTypes([
-			branchTailTupleTypes(v, ifStmt.consequent, version, expectedCount),
-			branchTailTupleTypes(v, ifStmt.alternate, version, expectedCount),
-		]);
-	}
+    return mergeTupleBranchTypes([
+      branchTailTupleTypes(v, ifStmt.consequent, version, expectedCount),
+      branchTailTupleTypes(v, ifStmt.alternate, version, expectedCount),
+    ]);
+  }
 
-	return [];
+  return [];
 }
 
 // Merge per-branch tuple element types. For each element prefer the
@@ -466,32 +416,32 @@ export function branchTailTupleTypes(
 // that knows better (the same reasoning behind tailTupleExpr's
 // consequent preference - see INV030).
 export function mergeTupleBranchTypes(branches: PineType[][]): PineType[] {
-	const candidates = branches.filter((types) => types.length > 0);
+  const candidates = branches.filter((types) => types.length > 0);
 
-	if (candidates.length === 0) return [];
-	const length = Math.max(...candidates.map((types) => types.length));
-	const merged: PineType[] = [];
+  if (candidates.length === 0) return [];
+  const length = Math.max(...candidates.map((types) => types.length));
+  const merged: PineType[] = [];
 
-	for (let i = 0; i < length; i++) {
-		let pick: PineType | undefined;
+  for (let i = 0; i < length; i++) {
+    let pick: PineType | undefined;
 
-		for (const types of candidates) {
-			const t = types[i];
+    for (const types of candidates) {
+      const t = types[i];
 
-			if (!t) continue;
+      if (!t) continue;
 
-			if (t !== "na") {
-				pick = t;
-				break;
-			}
+      if (t !== "na") {
+        pick = t;
+        break;
+      }
 
-			if (!pick) pick = t;
-		}
+      if (!pick) pick = t;
+    }
 
-		merged.push(pick ?? "unknown");
-	}
+    merged.push(pick ?? "unknown");
+  }
 
-	return merged;
+  return merged;
 }
 
 // Record a captured tuple-return shape under the UDF's name. Same-arity
@@ -499,22 +449,22 @@ export function mergeTupleBranchTypes(branches: PineType[][]): PineType[] {
 // genuine overload (function + method overloads share a name) and
 // accumulates so the destructure site can pick by element count.
 export function recordUdfTupleReturn(
-	v: UnifiedPineValidator,
-	name: string,
-	types: PineType[],
+  v: UnifiedPineValidator,
+  name: string,
+  types: PineType[],
 ): void {
-	const existing = v.udfTupleReturnTypes.get(name);
+  const existing = v.udfTupleReturnTypes.get(name);
 
-	if (!existing) {
-		v.udfTupleReturnTypes.set(name, [types]);
+  if (!existing) {
+    v.udfTupleReturnTypes.set(name, [types]);
 
-		return;
-	}
+    return;
+  }
 
-	const sameArity = existing.findIndex((t) => t.length === types.length);
+  const sameArity = existing.findIndex((t) => t.length === types.length);
 
-	if (sameArity >= 0) existing[sameArity] = types;
-	else existing.push(types);
+  if (sameArity >= 0) existing[sameArity] = types;
+  else existing.push(types);
 }
 
 /**
@@ -527,58 +477,58 @@ export function recordUdfTupleReturn(
  * see INV010, INV030.
  */
 export function inferUdfTupleReturnTypes(
-	v: UnifiedPineValidator,
-	body: Statement[],
-	version: string,
-	params?: FunctionParam[],
-	bindings?: Map<string, PineType>,
+  v: UnifiedPineValidator,
+  body: Statement[],
+  version: string,
+  params?: FunctionParam[],
+  bindings?: Map<string, PineType>,
 ): PineType[] | undefined {
-	if (body.length === 0) return undefined;
+  if (body.length === 0) return undefined;
 
-	// Mirror inferFunctionReturnType's temp-scope setup so the
-	// element-type inference sees the parameters and any locals, with the same
-	// cache isolation and UDF fixpoint bindings as the scalar path. see INV123.
-	const savedExpressionTypes = v.expressionTypes;
-	v.expressionTypes = new Map();
-	v.symbolTable.enterScope();
-	defineParamsWithBindings(v, params, bindings);
+  // Mirror inferFunctionReturnType's temp-scope setup so the
+  // element-type inference sees the parameters and any locals, with the same
+  // cache isolation and UDF fixpoint bindings as the scalar path. see INV123.
+  const savedExpressionTypes = v.expressionTypes;
+  v.expressionTypes = new Map();
+  v.symbolTable.enterScope();
+  defineParamsWithBindings(v, params, bindings);
 
-	for (const stmt of body) {
-		v.collectDeclarations(stmt, version);
-	}
+  for (const stmt of body) {
+    v.collectDeclarations(stmt, version);
+  }
 
-	const types = branchTailTupleTypes(v, body, version);
-	v.symbolTable.exitScope();
-	v.expressionTypes = savedExpressionTypes;
+  const types = branchTailTupleTypes(v, body, version);
+  v.symbolTable.exitScope();
+  v.expressionTypes = savedExpressionTypes;
 
-	return types.length > 0 ? types : undefined;
+  return types.length > 0 ? types : undefined;
 }
 
 /**
  * Define tuple element variables in the symbol table.
  */
 export function defineTupleVariables(
-	v: UnifiedPineValidator,
-	tupleDecl: TupleDeclaration,
-	elementTypes: PineType[],
+  v: UnifiedPineValidator,
+  tupleDecl: TupleDeclaration,
+  elementTypes: PineType[],
 ): void {
-	for (let i = 0; i < tupleDecl.names.length; i++) {
-		const name = tupleDecl.names[i];
-		// Use the inferred element type. When inference produced nothing
-		// (an import-alias call - #41's data gap - or any shape we can't
-		// classify), the element is UNKNOWN, not series<float>: guessing
-		// float made every destructured color/bool from a library call a
-		// type-mismatch FP downstream (INV049 residual, INV059).
-		const varType = elementTypes[i] || "unknown";
+  for (let i = 0; i < tupleDecl.names.length; i++) {
+    const name = tupleDecl.names[i];
+    // Use the inferred element type. When inference produced nothing
+    // (an import-alias call - #41's data gap - or any shape we can't
+    // classify), the element is UNKNOWN, not series<float>: guessing
+    // float made every destructured color/bool from a library call a
+    // type-mismatch FP downstream (INV049 residual, INV059).
+    const varType = elementTypes[i] || "unknown";
 
-		v.symbolTable.define({
-			name,
-			type: varType,
-			line: tupleDecl.line,
-			column: tupleDecl.column,
-			used: false,
-			kind: "variable",
-			declaredWith: null,
-		});
-	}
+    v.symbolTable.define({
+      name,
+      type: varType,
+      line: tupleDecl.line,
+      column: tupleDecl.column,
+      used: false,
+      kind: "variable",
+      declaredWith: null,
+    });
+  }
 }

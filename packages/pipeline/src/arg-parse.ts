@@ -21,21 +21,21 @@
  * identical results regardless of source-HTML formatting.
  */
 export function parseArgTypeText(
-	text: string,
+  text: string,
 ): Array<{ name: string; type: string; description: string }> {
-	const collapsed = text.replace(/\s+/g, " ").trim();
-	const match = collapsed.match(/^(.+?)\s*\(([^)]+)\)\s*(.*)$/);
+  const collapsed = text.replace(/\s+/g, " ").trim();
+  const match = collapsed.match(/^(.+?)\s*\(([^)]+)\)\s*(.*)$/);
 
-	if (!match) return [];
-	const type = match[2].trim();
-	const description = match[3].trim();
-	const out: Array<{ name: string; type: string; description: string }> = [];
+  if (!match) return [];
+  const type = match[2].trim();
+  const description = match[3].trim();
+  const out: Array<{ name: string; type: string; description: string }> = [];
 
-	for (const raw of match[1].split(",")) {
-		const name = raw.trim();
+  for (const raw of match[1].split(",")) {
+    const name = raw.trim();
 
-		if (name && name !== "...") out.push({ name, type, description });
-	}
+    if (name && name !== "...") out.push({ name, type, description });
+  }
 
-	return out;
+  return out;
 }
